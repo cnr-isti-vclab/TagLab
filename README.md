@@ -4,7 +4,7 @@ LabelLab was created to support the activity of annotation and extraction of sta
 
 ![ScreenShot](Screenshot.png)
 
-
+  
 ### Interaction:
 LabelLab allows you to :
 
