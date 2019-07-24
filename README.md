@@ -13,6 +13,9 @@ LabelLab allows you to :
       - pan/ 'move' tool  selected + left button
        -with every other tool selected the pan is activated with ctrl + left button
 - segment coral instances using the Deep Extreme Cut network fine-tuned on coral images.
+
+Deep Extreme Cut original code : https://github.com/scaelles/DEXTR-PyTorch/
+
 - assign a class with the 'Assign class' tool. Area and perimeter are now displayed in pixels (the scale can be added to transform measures in mm) in the segmentation info panel on the right.
 - simultaneously turn off the visibility of one or more classes, (ctrl + left button/disable all but the selected, shift + left button, inverse operation), change the class transparency using the above slider.
 - edit the incorrect edges with the 'Edit Border' tool.
