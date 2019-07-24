@@ -35,8 +35,13 @@ self.image_map_filename = "...\\MyFolderName\\MyFileName.png"
 self.project_dir = "...\\MyFolderName\\MyProjectFolder
 self.export_dir = "...\\MyFolderName\\MyExportFolder
 ```
+
+##_Download the network weights http://vcg.isti.cnr.it/~cignoni/LabelLab/dextr_corals.pth and save the .pth file in the 'model' folder _ 
+
 To add/delete a label name or change a RGB value go to Labels.py file and edit the dictionary: self.LABELS_LIST.
-To lauch the tool simply launch LabelLab.py .
+To lauch the tool simply launch LabelLab.py.
+
+
 
 ### Requirements: 
 
