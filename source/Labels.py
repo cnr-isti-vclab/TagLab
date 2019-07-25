@@ -19,6 +19,13 @@
 from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication, QWidget, QSizePolicy, QLabel, QToolButton, QPushButton, QHBoxLayout, QVBoxLayout
+from pathlib import Path
+import os
+
+path = Path(__file__).parent.absolute()
+imdir = str(path)
+imdir =imdir.replace('source', '')
+
 
 # CLASS COLORS - DEFAULT
 class Labels:
@@ -151,8 +158,8 @@ class LabelsWidget(QWidget):
         self.setMinimumHeight(200)
 
 
-        self.icon_eyeopen = QIcon("eye.png")
-        self.icon_eyeclosed = QIcon("cross.png")
+        self.icon_eyeopen = QIcon(imdir+"icons\\eye.png")
+        self.icon_eyeclosed = QIcon(imdir+"icons\\cross.png")
 
         labels_layout = QVBoxLayout()
         self.setLayout(labels_layout)

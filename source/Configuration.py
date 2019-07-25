@@ -26,7 +26,7 @@ class Configuration:
         ##### DATA INITIALIZATION #####
 
         # CHOOSE YOUR MAP
-        self.image_map_filename = "C:\\TOOL\\map\\CROP.png"
+        self.image_map_filename = "C:\\TOOL\\map\\CROP.jpg"
         # CHOOSE A PROJECT DIR
         self.project_dir = "C:\\TOOL\\projects"
         # CHOOSE A EXPORT DIR
