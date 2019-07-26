@@ -1,4 +1,4 @@
-# LabelLab                                               
+# TagLab                                               
 # A semi-automatic segmentation tool                                    
 #
 # Copyright(C) 2019                                         
@@ -69,10 +69,10 @@ logging.basicConfig(level=logging.DEBUG, filemode='w', filename=LOG_FILENAME, fo
 logfile = logging.getLogger("tool-logger")
 
 
-class LabelLab(QWidget):
+class TagLab(QWidget):
 
     def __init__(self, configuration, parent=None):
-        super(LabelLab, self).__init__(parent)
+        super(TagLab, self).__init__(parent)
 
         ##### CUSTOM STYLE #####
 
@@ -392,7 +392,7 @@ class LabelLab(QWidget):
 
         self.setLayout(main_layout)
 
-        self.setWindowTitle("LabelLab")
+        self.setWindowTitle("TagLab")
 
 
         ##### FURTHER INITIALIZAION #####
@@ -1704,7 +1704,7 @@ if __name__ == '__main__':
     conf = Configuration()
 
     # Create the inspection tool
-    tool = LabelLab(conf)
+    tool = TagLab(conf)
 
     # Show the viewer and run the application.
     tool.show()

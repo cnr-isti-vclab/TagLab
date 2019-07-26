@@ -1,12 +1,12 @@
-### LabelLab:  July 2019 Version 
+### TagLab:  July 2019 Version 
 
-LabelLab was created to support the activity of annotation and extraction of statistical data from ortho-maps of benthic communities. The tool includes different types of CNN-based segmentation networks specially trained for agnostic (relative only to contours) or semantic (also related to species) recognition of corals. LabelLab is an ongoing project of the Visual Computing Lab http://vcg.isti.cnr.it/.
+TagLab was created to support the activity of annotation and extraction of statistical data from ortho-maps of benthic communities. The tool includes different types of CNN-based segmentation networks specially trained for agnostic (relative only to contours) or semantic (also related to species) recognition of corals. TagLab is an ongoing project of the Visual Computing Lab http://vcg.isti.cnr.it/.
 
 ![ScreenShot](Screenshot.png)
 
   
 ### Interaction:
-LabelLab allows you to :
+TagLab allows you to :
 
 - zoom and navigate a large map using a Map viewer
        -zoom/ mouse wheel
@@ -27,7 +27,7 @@ Deep Extreme Cut original code : https://github.com/scaelles/DEXTR-PyTorch/
 - Export a .jpg file of a black background with totally opaque labels.
 
 
-### Install LabelLab
+### Install TagLab
 
 To start a new project go to the Configuration.py file and fill the fields:
 ```sh
@@ -36,10 +36,10 @@ self.project_dir = "...\\MyFolderName\\MyProjectFolder
 self.export_dir = "...\\MyFolderName\\MyExportFolder
 ```
 
-##_Download the network weights http://vcg.isti.cnr.it/~cignoni/LabelLab/dextr_corals.pth and save the .pth file in the 'models' folder _ 
+##_Download the network weights http://vcg.isti.cnr.it/~cignoni/TagLab/dextr_corals.pth and save the .pth file in the 'models' folder _ 
 
 To add/delete a label name or change a RGB value go to Labels.py file and edit the dictionary: self.LABELS_LIST.
-To lauch the tool simply launch LabelLab.py.
+To lauch the tool simply launch TagLab.py.
 
 
 
