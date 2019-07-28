@@ -28,22 +28,8 @@ Deep Extreme Cut original code : https://github.com/scaelles/DEXTR-PyTorch/
 
 
 ### Install TagLab
-
-To start a new project go to the Configuration.py file and fill the fields:
-```sh
-self.image_map_filename = "...\\MyFolderName\\MyFileName.png"
-self.project_dir = "...\\MyFolderName\\MyProjectFolder
-self.export_dir = "...\\MyFolderName\\MyExportFolder
-```
-
-##_Download the network weights http://vcg.isti.cnr.it/~cignoni/TagLab/dextr_corals.pth and save the .pth file in the 'models' folder _ 
-
-To add/delete a label name or change a RGB value go to Labels.py file and edit the dictionary: self.LABELS_LIST.
-To lauch the tool simply launch TagLab.py.
-
-
-
-### Requirements: 
+#### Step 0: Requirements
+Taglab relies on the following libraries/packages:
 
 | Python Version: 3.6 - CUDA 10.0  |
 |---|
@@ -54,7 +40,26 @@ To lauch the tool simply launch TagLab.py.
 |  pandas 0.24.0 |
 | scipy 1.2.0  |
 
+#### Step 1: Clone the repo
+Just click on the "Clone or Download" button at the top of this page and unzip the whole package in a folder of your choice. 
 
+#### Step 2: Download the network weights
+TagLab use a retrained dextr network for the four click segmentation, the file with the weights is not included in the repo for its size and have to be downloaded separtately from the following link and you must save the .pth file in the 'models' folder
+
+http://vcg.isti.cnr.it/~cignoni/TagLab/dextr_corals.pth  
+
+#### Step 3: Configure and start
+Enter in the folder where you have downloaded the rep and edit the Configuration.py file; you have to fill the followng fields:
+```sh
+self.image_map_filename = "...\\MyFolderName\\MyFileName.png"
+self.project_dir = "...\\MyFolderName\\MyProjectFolder
+self.export_dir = "...\\MyFolderName\\MyExportFolder
+```
+
+Finally to lauch the tool simply start, with python, TagLab.py.
+
+#### Step 4: Label Configuration
+The set of label used in the tool is customizable; to add/delete a label name or change a RGB value go to Labels.py file and edit the dictionary: self.LABELS_LIST.
  
 ### Future adjustment : Agust/September - 2019
 
