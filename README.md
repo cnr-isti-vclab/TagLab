@@ -61,7 +61,7 @@ Finally to lauch the tool simply start, with python, TagLab.py.
 #### Step 4: Label Configuration
 The set of label used in the tool is customizable; to add/delete a label name or change a RGB value go to Labels.py file and edit the dictionary: self.LABELS_LIST.
  
-### Future adjustment : Agust/September - 2019
+### Future adjustment : late 2019
 
 - Optimization of the EditBorder tool (currently slow on large instances).
 - Project initialization Interface (Map, scale, Folder, Global Coordinates).
