@@ -26,11 +26,11 @@ class Configuration:
         ##### DATA INITIALIZATION #####
 
         # CHOOSE YOUR MAP
-        self.image_map_filename = "C:\\TOOL\\map\\CROP.jpg"
+        self.image_map_filename = "./map/CROP.jpg"
         # CHOOSE A PROJECT DIR
-        self.project_dir = "C:\\TOOL\\projects"
+        self.project_dir = "./projects"
         # CHOOSE A EXPORT DIR
-        self.export_dir = "C:\\TOOL\\exports"
+        self.export_dir = "./exports"
 
 
         # MAP INFO - OPTIONAL: CHANGE THE THUMBNAIL NAME ACCORDING TO YOUR MAP NAME
