@@ -137,6 +137,8 @@ class QtImageViewerPlus(QGraphicsView):
         self.setMouseTracking(True)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
 
+        self.setContextMenuPolicy(Qt.CustomContextMenu)
+
 
     def disableScrollBars(self):
 

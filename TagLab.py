@@ -373,9 +373,6 @@ class TagLab(QWidget):
         ##### FURTHER INITIALIZAION #####
         #################################
 
-        self.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.customContextMenuRequested.connect(self.openContextMenu)
-
         self.map_top = 0
         self.map_left = 0
         self.map_bottom = 0
@@ -403,6 +400,9 @@ class TagLab(QWidget):
         self.viewerplus.rightMouseButtonPressed.connect(self.toolsOpsRightPressed)
         self.viewerplus.mouseMoveLeftPressed.connect(self.toolsOpsMouseMove)
         self.viewerplus.leftMouseButtonDoubleClicked.connect(self.selectOp)
+
+        self.viewerplus.customContextMenuRequested.connect(self.openContextMenu)
+
 
         self.current_selection = None
 
@@ -496,9 +496,7 @@ class TagLab(QWidget):
         subtractAction.setShortcutVisibleInContextMenu(True)
         menu.addAction(subtractAction)
 
-        pt = self.viewerplus.mapToScene(position)
-
-        action = menu.exec_(self.mapToGlobal(position))
+        action = menu.exec_(self.viewerplus.mapToGlobal(position))
 
         if action == deleteAction:
             self.deleteSelected()
