@@ -31,7 +31,7 @@ from skimage import measure
 
 import matplotlib.pyplot as plt
 
-from PyQt5.QtCore import Qt, QSize, QPoint, QPointF, QLineF, QRectF, QTimer, pyqtSlot, pyqtSignal
+from PyQt5.QtCore import Qt, QSize, QDir, QPoint, QPointF, QLineF, QRectF, QTimer, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QPainterPath, QFont, QColor, QPolygonF, QImage, QPixmap, QIcon, QKeySequence, \
     QPen, QBrush, qRgb, qRed, qGreen, qBlue
 from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QDialog, QMenuBar, QMenu, QSizePolicy, QScrollArea, QLabel, QToolButton, QPushButton, QSlider, \
@@ -1783,11 +1783,14 @@ class TagLab(QWidget):
         Save the current project.
         """
 
+
         f = open(filename, "w")
 
         dict_to_save = {}
-        dict_to_save["Project Name"] = self.project_name
-        dict_to_save["Map File"] = self.map_image_filename
+
+        dir = QDir(self.working_dir)
+        dict_to_save["Project Name"] = dir.relativeFilePath(self.project_name)
+        dict_to_save["Map File"] = dir.relativeFilePath(self.map_image_filename)
         dict_to_save["Acquisition Date"] = self.map_acquisition_date
         dict_to_save["Map Scale"] = self.map_px_to_mm_factor
         dict_to_save["Segmentation Data"] = [] # a list of blobs, each blob is a dictionary
