@@ -58,9 +58,6 @@ class Blob(object):
             self.centroid = np.zeros((2))
             self.bbox = np.zeros((4))
 
-            # placeholrder; 4x4 empty mask
-            self.mask = np.zeros((4,4))
-
             # placeholder; empty contour
             self.contour = np.zeros((2, 2))
             self.inner_contours = []
@@ -95,22 +92,21 @@ class Blob(object):
             self.bbox[2] = width
             self.bbox[3] = height
 
-            # to extract the contour we use the mask cropped according to the bbox
-            self.mask = region.image.astype(int)
-            self.contour = np.zeros((2, 2))
-            self.inner_contours = []
-
             # QPainterPath associated with the contours
             self.qpath = None
 
             # QGraphicsItem associated with the QPainterPath
             self.qpath_gitem = None
 
-            self.createContourFromMask()
+            # to extract the contour we use the mask cropped according to the bbox
+            input_mask = region.image.astype(int)
+            self.contour = np.zeros((2, 2))
+            self.inner_contours = []
+            self.createContourFromMask(input_mask)
             self.setupForDrawing()
 
             self.calculatePerimeter()
-            self.calculateArea()
+            self.calculateArea(input_mask)
 
             # a string with a progressive number to identify the instance
             self.instance_name = "coral" + str(id)
@@ -160,18 +156,42 @@ class Blob(object):
 
         return blob
 
+    def getMask(self):
+        """
+        It creates the mask from the contour and returns it.
+        """
 
-    def updateMask(self, new_bbox, new_mask):
+        r = self.bbox[3]
+        c = self.bbox[2]
+
+        mask = np.zeros((r, c))
+
+        # main polygon
+        [rr, cc] = polygon(self.contour[:, 1], self.contour[:, 0])
+        rr = rr - int(self.bbox[0])
+        cc = cc - int(self.bbox[1])
+        mask[rr, cc] = 1
+
+        # holes
+        for inner_contour in self.inner_contours:
+            [rr, cc] = polygon(inner_contour[:, 1], inner_contour[:, 0])
+            rr = rr - int(self.bbox[0])
+            cc = cc - int(self.bbox[1])
+            mask[rr, cc] = 0
+
+        return mask
+
+
+    def updateUsingMask(self, new_bbox, new_mask):
 
         self.bbox = new_bbox
-        self.mask = new_mask
 
-        self.createContourFromMask()
+        self.createContourFromMask(new_mask)
         self.setupForDrawing()
 
         self.calculatePerimeter()
-        self.calculateArea()
-        self.calculateCentroid()
+        self.calculateArea(new_mask)
+        self.calculateCentroid(new_mask)
 
 
     def snapToBorder(self, points):
@@ -209,14 +229,16 @@ class Blob(object):
         input_arr = gaussian(input_arr, 2)
         # input_arr = segmentation.inverse_gaussian_gradient(input_arr, alpha=1, sigma=1)
 
+        blob_mask = self.getMask()
+
         crack_mask = flood(input_arr, (int(y_crop), int(x_crop)), tolerance=tolerance).astype(int)
-        cracked_blob = np.logical_and((self.mask > 0), (crack_mask < 1))
+        cracked_blob = np.logical_and((blob_mask > 0), (crack_mask < 1))
         cracked_blob = cracked_blob.astype(int)
 
         if preview:
             return cracked_blob
         else:
-            self.updateMask(self.bbox, cracked_blob)
+            self.updateUsingMask(self.bbox, cracked_blob)
             return cracked_blob
 
 
@@ -258,12 +280,13 @@ class Blob(object):
         bbox_union = [y_top, x_left, x_right - x_left, y_bottom - y_top]
         mask_union = np.zeros((bbox_union[3], bbox_union[2]))
 
-        for y in range(self.mask.shape[0]):
-            for x in range(self.mask.shape[1]):
+        blob_mask = self.getMask()
+        for y in range(blob_mask.shape[0]):
+            for x in range(blob_mask.shape[1]):
 
                 yy = y + (self.bbox[0] - bbox_union[0])
                 xx = x + (self.bbox[1] - bbox_union[1])
-                mask_union[yy,xx] = self.mask[y,x]
+                mask_union[yy,xx] = blob_mask[y,x]
 
 
         for i in range(points.shape[0]):
@@ -280,7 +303,7 @@ class Blob(object):
 
         mask_union = ndi.binary_fill_holes(mask_union).astype(int)
 
-        self.updateMask(bbox_union, mask_union)
+        self.updateUsingMask(bbox_union, mask_union)
 
         # RE-ADD THE ORIGINAL INNER CONTOURS (I.E. THE HOLES)
         if original_inner_contours:
@@ -289,13 +312,6 @@ class Blob(object):
 
                 # recover inner contour list
                 self.inner_contours.append(inner_contour)
-
-                # update mask
-                [rr,cc] = polygon(inner_contour[:, 1], inner_contour[:, 0])
-                rr = rr - int(self.bbox[0])
-                cc = cc - int(self.bbox[1])
-                self.mask[rr, cc] = 0
-
 
             # update qpainterpath
             self.setupForDrawing()
@@ -333,12 +349,13 @@ class Blob(object):
         bbox_union = [y_top, x_left, x_right - x_left, y_bottom - y_top]
         mask_union = np.zeros((bbox_union[3], bbox_union[2]))
 
-        for y in range(self.mask.shape[0]):
-            for x in range(self.mask.shape[1]):
+        blob_mask = self.getMask()
+        for y in range(blob_mask.shape[0]):
+            for x in range(blob_mask.shape[1]):
 
                 yy = y + (self.bbox[0] - bbox_union[0])
                 xx = x + (self.bbox[1] - bbox_union[1])
-                mask_union[yy,xx] = self.mask[y,x]
+                mask_union[yy,xx] = blob_mask[y,x]
 
         for i in range(points.shape[0]):
 
@@ -371,19 +388,21 @@ class Blob(object):
                   for coords in region.coords:
                       mask_union[coords[0], coords[1]] = 0
 
-        self.updateMask(bbox_union, mask_union)
+        self.updateUsingMask(bbox_union, mask_union)
 
 
-    def createContourFromMask(self):
+    def createContourFromMask(self, mask):
         """
         It creates the contour (and the corrisponding polygon) from the blob mask.
         """
+
+        # NOTE: The mask is expected to be cropped around its bbox (!!) (see the __init__)
 
         self.inner_contours.clear()
 
         # we need to pad the mask to avoid to break the contour that touchs the borders
         PADDED_SIZE = 2
-        img_padded = pad(self.mask, (PADDED_SIZE, PADDED_SIZE), mode="constant", constant_values=(0, 0))
+        img_padded = pad(mask, (PADDED_SIZE, PADDED_SIZE), mode="constant", constant_values=(0, 0))
 
         contours = measure.find_contours(img_padded, 0)
 
@@ -475,21 +494,23 @@ class Blob(object):
         else:
             rgba = qRgba(self.class_color[0], self.class_color[1], self.class_color[2], 100)
 
+        blob_mask = self.getMask()
         for x in range(w):
             for y in range(h):
-                if self.mask[y, x] == 1:
+                if mask[y, x] == 1:
                     self.qimg_mask.setPixel(x, y, rgba)
 
         self.pxmap_mask = QPixmap.fromImage(self.qimg_mask)
 
-    def calculateCentroid(self):
+    def calculateCentroid(self, mask):
 
         sumx = 0.0
         sumy = 0.0
         n = 0
-        for y in range(self.mask.shape[0]):
-            for x in range(self.mask.shape[1]):
-                if self.mask[y, x] == 1:
+
+        for y in range(mask.shape[0]):
+            for x in range(mask.shape[1]):
+                if mask[y, x] == 1:
                     sumx += float(x)
                     sumy += float(y)
                     n += 1
@@ -530,12 +551,12 @@ class Blob(object):
         for contour in self.inner_contours:
             self.perimeter += self.calculateContourPerimeter(self.contour)
 
-    def calculateArea(self):
+    def calculateArea(self, mask):
 
         self.area = 0.0
-        for y in range(self.mask.shape[0]):
-            for x in range(self.mask.shape[1]):
-                if self.mask[y, x] == 1:
+        for y in range(mask.shape[0]):
+            for x in range(mask.shape[1]):
+                if mask[y, x] == 1:
                     self.area += 1.0
 
     def fromDict(self, dict):
@@ -758,7 +779,7 @@ class Annotation(object):
 
         if pixels_intersected > 0:
 
-            blobA.updateMask(bbox_union, mask_union)
+            blobA.updateUsingMask(bbox_union, mask_union)
 
             return True
 

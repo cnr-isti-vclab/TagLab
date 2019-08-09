@@ -3,6 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="895e85ce-645c-449d-830d-2429beffa92d" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/TagLab.py" beforeDir="false" afterPath="$PROJECT_DIR$/TagLab.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/source/Annotation.py" beforeDir="false" afterPath="$PROJECT_DIR$/source/Annotation.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -12,11 +13,10 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/TagLab.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="361">
-              <caret line="1789" lean-forward="true" selection-start-line="1789" selection-end-line="1789" />
+            <state>
               <folding>
                 <element signature="e#689#699#0" expanded="true" />
               </folding>
@@ -27,8 +27,20 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/source/QtImageViewerPlus.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2176">
+            <state relative-caret-position="631">
               <caret line="131" selection-start-line="131" selection-end-line="131" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/source/Annotation.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="323">
+              <caret line="176" column="52" selection-start-line="176" selection-start-column="52" selection-end-line="176" selection-end-column="52" />
+              <folding>
+                <element signature="e#1242#1253#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -37,17 +49,36 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>Merge</find>
-      <find>openContextMenu</find>
-      <find>def</find>
-      <find>self.viewerplus</find>
-      <find>contextMenu</find>
-      <find>def openContext</find>
-      <find>def openCo</find>
       <find>def savePro</find>
       <find>def save</find>
       <find>QDir</find>
       <find>relativeFil</find>
+      <find>createQPixmapFromMask</find>
+      <find>draw_polygon</find>
+      <find>draw</find>
+      <find>elf.mask</find>
+      <find>def con</find>
+      <find>def createConto</find>
+      <find>def</find>
+      <find>createContour</find>
+      <find>def createContour</find>
+      <find>self.qimg</find>
+      <find>self.updateMask</find>
+      <find>self.</find>
+      <find>def updateMas</find>
+      <find>updateMask</find>
+      <find>self.updateMaskl</find>
+      <find>RE-ADD</find>
+      <find>self.mas</find>
+      <find>calculateCentroid</find>
+      <find>self.calculateCentroid</find>
+      <find>calculateArae</find>
+      <find>calculateArea</find>
+      <find>def calculateCentroid</find>
+      <find>self.mask</find>
+      <find>def setupforDrawing</find>
+      <find>polygon</find>
+      <find>def get</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -58,6 +89,7 @@
       <list>
         <option value="$PROJECT_DIR$/source/QtImageViewerPlus.py" />
         <option value="$PROJECT_DIR$/TagLab.py" />
+        <option value="$PROJECT_DIR$/source/Annotation.py" />
       </list>
     </option>
   </component>
@@ -119,8 +151,8 @@
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.24973656" />
-      <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49929875" visible="true" weight="0.24973656" />
+      <window_info id="Structure" order="1" sideWeight="0.50070125" side_tool="true" visible="true" weight="0.24973656" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
@@ -141,8 +173,7 @@
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/TagLab.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="361">
-          <caret line="1789" lean-forward="true" selection-start-line="1789" selection-end-line="1789" />
+        <state>
           <folding>
             <element signature="e#689#699#0" expanded="true" />
           </folding>
@@ -151,8 +182,18 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/source/QtImageViewerPlus.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2176">
+        <state relative-caret-position="631">
           <caret line="131" selection-start-line="131" selection-end-line="131" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/source/Annotation.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="323">
+          <caret line="176" column="52" selection-start-line="176" selection-start-column="52" selection-end-line="176" selection-end-column="52" />
+          <folding>
+            <element signature="e#1242#1253#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>

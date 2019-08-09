@@ -1783,7 +1783,6 @@ class TagLab(QWidget):
         Save the current project.
         """
 
-
         f = open(filename, "w")
 
         dict_to_save = {}
