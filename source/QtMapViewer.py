@@ -20,11 +20,8 @@
 """ PyQt map viewer widget.
 """
 
-import math
-import numpy as np
-import pickle
 from PyQt5.QtCore import Qt, QRectF, pyqtSignal
-from PyQt5.QtGui import QImage, QPixmap, QPainter, QBrush, QPen, QColor, qRgb, qRed, qGreen, qBlue
+from PyQt5.QtGui import QImage, QPixmap, QPainter, QBrush, QPen, QColor, qRgb, qRgba, qRed, qGreen, qBlue
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
 
 
@@ -44,8 +41,6 @@ class QtMapViewer(QGraphicsView):
         QGraphicsView.__init__(self)
 
         self.setStyleSheet("color: rgb(49,51,53)")
-
-
 
         MIN_SIZE = 300
         MAX_SIZE = 500
@@ -83,18 +78,18 @@ class QtMapViewer(QGraphicsView):
         # transparency
         self.opacity = 1.0
 
-        self.pixmap = QPixmap(MIN_SIZE, MIN_SIZE)
-
         self.HIGHLIGHT_RECT_WIDTH = 10
         self.HIGHLIGHT_RECT_HEIGHT = 10
         self.HIGHLIGHT_COLOR = QColor(200, 200, 200)
         self.overlay_image = QImage(self.HIGHLIGHT_RECT_WIDTH, self.HIGHLIGHT_RECT_HEIGHT, QImage.Format_ARGB32)
         self.overlay_image.fill(self.HIGHLIGHT_COLOR)
 
-        self.viewport().setMinimumWidth(MIN_SIZE)
-        self.viewport().setMinimumHeight(MIN_SIZE)
-        self.setMaximumWidth(self.THUMB_SIZE + self.BORDER_SIZE)
-        self.setMaximumHeight(self.THUMB_SIZE + self.BORDER_SIZE)
+        self.setFixedWidth(self.THUMB_SIZE)
+        self.setFixedHeight(self.THUMB_SIZE)
+
+        self.pixmap = QPixmap(self.THUMB_SIZE, self.THUMB_SIZE)
+        self.imgwidth = 0
+        self.imgheight = 0
 
     def image(self):
         """ Returns the scene's current image as a QImage.
@@ -111,7 +106,16 @@ class QtMapViewer(QGraphicsView):
     def setImage(self, image):
         """ Set the scene's current image (input image must be a QImage)
         """
-        if type(image) is QImage:
+
+        if image is None:
+
+            qimg = QImage(self.THUMB_SIZE, self.THUMB_SIZE, QImage.Format_ARGB32)
+            qimg.fill(qRgba(40, 40, 40, 255))
+            self.pixmap = QPixmap.fromImage(qimg)
+            self.imgwidth = self.THUMB_SIZE
+            self.imgheight = self.THUMB_SIZE
+
+        elif type(image) is QImage:
             imageARGB32 = image.convertToFormat(QImage.Format_ARGB32)
             self.pixmap = QPixmap.fromImage(imageARGB32)
             self.imgwidth = image.width()
@@ -125,10 +129,13 @@ class QtMapViewer(QGraphicsView):
             self._pxmapitem = self.scene.addPixmap(self.pixmap)
 
         # Set scene size to image size (!)
-        aspectratio = self.imgheight / self.imgwidth
-        h = (int)(aspectratio * self.width())
-        self.setMaximumHeight(h)
         self.setSceneRect(QRectF(self.pixmap.rect()))
+
+        if self.imgwidth > self.imgheight:
+
+            aspectratio = self.imgheight / self.imgwidth
+            h = (int)(aspectratio * self.width())
+            self.setFixedHeight(h)
 
         # calculate zoom factor
         pixels_of_border = 10
@@ -204,16 +211,18 @@ class QtMapViewer(QGraphicsView):
         """ Maintain current zoom on resize.
         """
 
-        pixels_of_border = 10
-        zf1 = (self.geometry().width() - pixels_of_border) / self.imgwidth
-        zf2 = (self.geometry().height() - pixels_of_border) / self.imgheight
-        zf = min(zf1, zf2)
-        if zf > 1.0:
-            zf = 1.0
+        if self.imgwidth > 0 and self.imgheight > 0:
 
-        self.zoom_factor = zf
+            pixels_of_border = 10
+            zf1 = (self.geometry().width() - pixels_of_border) / self.imgwidth
+            zf2 = (self.geometry().height() - pixels_of_border) / self.imgheight
+            zf = min(zf1, zf2)
+            if zf > 1.0:
+                zf = 1.0
 
-        self.updateViewer()
+            self.zoom_factor = zf
+
+            self.updateViewer()
 
     def mousePressEvent(self, event):
 

@@ -113,7 +113,7 @@ class Blob(object):
             self.calculateArea()
 
             # a string with a progressive number to identify the instance
-            self.instace_name = "coral" + str(id)
+            self.instance_name = "coral" + str(id)
 
             # a string with a progressive number to identify the blob plus its centroid
             xc = int(self.centroid[0])
@@ -500,12 +500,12 @@ class Blob(object):
 
         xc = int(self.centroid[0])
         yc = int(self.centroid[1])
-        self.instace_name = "coral-" + str(xc) + "-" + str(yc)
+        self.instance_name = "coral-" + str(xc) + "-" + str(yc)
 
     def calculateContourPerimeter(self, contour):
 
         # perimeter of the outer contour
-        px1 = contour[0 ,0]
+        px1 = contour[0, 0]
         py1 = contour[0, 1]
         N = contour.shape[0]
         pxlast = contour[N-1, 0]
@@ -537,6 +537,66 @@ class Blob(object):
             for x in range(self.mask.shape[1]):
                 if self.mask[y, x] == 1:
                     self.area += 1.0
+
+    def fromDict(self, dict):
+        """
+        Set the blob information given it represented as a dictionary.
+        """
+
+        self.bbox = np.asarray(dict["bbox"])
+
+        self.centroid = np.asarray(dict["centroid"])
+        self.area = dict["area"]
+        self.perimeter = dict["perimeter"]
+
+        self.contour = np.asarray(dict["contour"])
+        inner_contours = dict["inner contours"]
+        self.inner_contours = []
+        for c in inner_contours:
+            self.inner_contours.append(np.asarray(c))
+
+        self.deep_extreme_points = np.asarray(dict["deep_extreme_points"])
+        self.class_name = dict["class name"]
+        self.class_color = dict["class color"]
+        self.instance_name = dict["instance name"]
+        self.blob_name = dict["blob name"]
+        self.id = dict["id"]
+        self.info = dict["info"]
+
+        # finalize blob
+        self.setupForDrawing()
+
+
+    def toDict(self):
+        """
+        Get the blob information as a dictionary.
+        """
+
+        dict = {}
+
+        dict["bbox"] = self.bbox.tolist()
+
+        dict["centroid"] = self.centroid.tolist()
+        dict["area"] = self.area
+        dict["perimeter"] = self.perimeter
+
+        dict["contour"] = self.contour.tolist()
+
+        dict["inner contours"] = []
+        for c in self.inner_contours:
+            dict["inner_contours"].append(c.tolist())
+
+        dict["deep_extreme_points"] = self.deep_extreme_points.tolist()
+
+        dict["class name"] = self.class_name
+        dict["class color"] = self.class_color
+
+        dict["instance name"] = self.instance_name
+        dict["blob name"] = self.blob_name
+        dict["id"] = self.id
+        dict["info"] = self.info
+
+        return dict
 
 
 class Group(object):
@@ -886,88 +946,3 @@ class Annotation(object):
         myPNG.save(filename)
 
 
-    def load(self, filename):
-        """
-        Load all the blobs.
-        """
-
-        f = bz2.BZ2File(filename, "rb")
-
-        # load segmentation blobs
-        number_of_blobs = pickle.load(f)
-        for i in range(number_of_blobs):
-
-            blob = Blob(None, 0, 0, 0) # empty blob
-
-            blob.bbox = pickle.load(f)
-            blob.centroid = pickle.load(f)
-            blob.area = pickle.load(f)
-            blob.perimeter = pickle.load(f)
-
-            blob.mask = pickle.load(f)
-            blob.contour = pickle.load(f)
-            number_of_inner_contours = pickle.load(f)
-            for i in range(number_of_inner_contours):
-                contour = pickle.load(f)
-                blob.inner_contours.append(contour)
-
-            blob.deep_extreme_points = pickle.load(f)
-            blob.class_name = pickle.load(f)
-            blob.class_color = pickle.load(f)
-            blob.instace_name = pickle.load(f)
-            blob.blob_name = pickle.load(f)
-            blob.id = pickle.load(f)
-            blob.info = pickle.load(f)
-
-            # finalize blob
-            blob.setupForDrawing()
-
-            # add to the list of all blobs
-            self.seg_blobs.append(blob)
-
-            if i % 10 == 0:
-                perc = (100.0*i) / (float)(number_of_blobs)
-                print("Loading %.2f %%" % perc)
-
-        f.close()
-
-    def save(self, filename):
-        """
-        Save all the blobs.
-        """
-
-        f = bz2.BZ2File(filename, "wb")
-
-        # save segmentation blobs
-
-        number_of_blobs = len(self.seg_blobs)
-        pickle.dump(number_of_blobs, f)
-
-        for i, blob in enumerate(self.seg_blobs):
-
-            pickle.dump(blob.bbox, f)
-            pickle.dump(blob.centroid, f)
-            pickle.dump(blob.area, f)
-            pickle.dump(blob.perimeter, f)
-
-            pickle.dump(blob.mask, f)
-            pickle.dump(blob.contour, f)
-            number_of_inner_contours = len(blob.inner_contours)
-            pickle.dump(number_of_inner_contours, f)
-            if number_of_inner_contours > 0:
-                for contour in blob.inner_contours:
-                    pickle.dump(contour, f)
-
-            pickle.dump(blob.deep_extreme_points, f)
-            pickle.dump(blob.class_name, f)
-            pickle.dump(blob.class_color, f)
-            pickle.dump(blob.instace_name, f)
-            pickle.dump(blob.blob_name, f)
-            pickle.dump(blob.id, f)
-            pickle.dump(blob.info, f)
-
-            if i % 10 == 0:
-                perc = (100.0*i) / (float)(number_of_blobs)
-                print("Saving.. %.2f %%" % perc)
-
-        f.close()
