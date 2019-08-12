@@ -605,7 +605,7 @@ class Blob(object):
 
         dict["inner contours"] = []
         for c in self.inner_contours:
-            dict["inner_contours"].append(c.tolist())
+            dict["inner contours"].append(c.tolist())
 
         dict["deep_extreme_points"] = self.deep_extreme_points.tolist()
 
@@ -638,9 +638,10 @@ class Group(object):
         sumy = 0.0
         n = 0
         for blob in self.blobs:
-            for y in range(blob.mask.shape[0]):
-                for x in range(blob.mask.shape[1]):
-                    if blob.mask[y, x] == 1:
+            blob_mask = blob.getMask()
+            for y in range(blob_mask.shape[0]):
+                for x in range(blob_mask.shape[1]):
+                    if blob_mask[y, x] == 1:
                         sumx += float(x + blob.bbox[1])
                         sumy += float(y + blob.bbox[0])
                         n += 1
@@ -749,6 +750,9 @@ class Annotation(object):
         bbox_union = [y_top, x_left, x_right - x_left, y_bottom - y_top]
         mask_union = np.zeros((bbox_union[3], bbox_union[2]))
 
+        blobA_mask = blobA.getMask()
+        blobB_mask = blobB.getMask()
+
         for y in range(y1A, y2A):
             for x in range(x1A, x2A):
 
@@ -758,7 +762,7 @@ class Annotation(object):
                 xU = x - bbox_union[1]
                 yU = y - bbox_union[0]
 
-                if blobA.mask[yA, xA] == 1:
+                if blobA_mask[yA, xA] == 1:
                     mask_union[yU, xU] = 1
 
         pixels_intersected = 0
@@ -771,7 +775,7 @@ class Annotation(object):
                 xU = x - bbox_union[1]
                 yU = y - bbox_union[0]
 
-                if blobB.mask[yB, xB] == 1:
+                if blobB_mask[yB, xB] == 1:
                     if mask_union[yU, xU] == 1:
                         pixels_intersected += 1
 
@@ -798,30 +802,15 @@ class Annotation(object):
         x2A = x1A + blobA.bbox[2]
         y2A = y1A + blobA.bbox[3]
 
-        #penA = QPen(Qt.white)
-        #penA.setWidth(6)
-        #rectA = QRectF(x1A, y1A, x2A-x1A, y2A - y1A)
-        #scene.addRect(rectA, penA, QBrush())
-
         y1B = blobB.bbox[0]
         x1B = blobB.bbox[1]
         x2B = x1B + blobB.bbox[2]
         y2B = y1B + blobB.bbox[3]
 
-        #penB = QPen(Qt.white)
-        #penB.setWidth(6)
-        #rectB = QRectF(x1B, y1B, x2B-x1B, y2B - y1B)
-        #scene.addRect(rectB, penB, QBrush())
-
         x_left = max(x1A, x1B)
         y_top = max(y1A, y1B)
         x_right = min(x2A, x2B)
         y_bottom = min(y2A, y2B)
-
-        #pen = QPen(Qt.red)
-        #pen.setWidth(6)
-        #rectI = QRectF(x_left, y_top, x_right-x_left, y_bottom - y_top)
-        #scene.addRect(rectI, pen, QBrush())
 
         # check if the selection is empty
         if x_right < x_left or y_bottom < y_top:
@@ -833,6 +822,9 @@ class Annotation(object):
             xsup = x_right - blobA.bbox[1]
             ysup = y_bottom - blobA.bbox[0]
 
+            blobA_mask = blobA.getMask()
+            blobB_mask = blobB.getMask()
+
             flag = False
             for y in range(yinf, ysup):
                 for x in range(xinf, xsup):
@@ -840,14 +832,14 @@ class Annotation(object):
                     xB = x + blobA.bbox[1] - blobB.bbox[1]
                     yB = y + blobA.bbox[0] - blobB.bbox[0]
 
-                    if blobB.mask[yB, xB] == 1:
-                        blobA.mask[y, x] = 0
+                    if blobB_mask[yB, xB] == 1:
+                        blobA_mask[y, x] = 0
                         flag = True  # at least one pixel intersect
 
             # bbox is the same
             # mask has been updated directly
             if flag:
-                blobA.updateMask(blobA.bbox, blobA.mask)
+                blobA.updateUsingMask(blobA.bbox, blobA_mask)
                 return True
             else:
                 return False
@@ -952,10 +944,11 @@ class Annotation(object):
             else:
                 rgb = qRgb(blob.class_color[0], blob.class_color[1], blob.class_color[2])
 
-            for x in range(blob.mask.shape[1]):
-                for y in range(blob.mask.shape[0]):
+            blob_mask = blob.getMask()
+            for x in range(blob_mask.shape[1]):
+                for y in range(blob_mask.shape[0]):
 
-                    if blob.mask[y, x] == 1:
+                    if blob_mask[y, x] == 1:
                         myPNG.setPixel(x + blob.bbox[1], y + blob.bbox[0], rgb)
 
             # draw black border

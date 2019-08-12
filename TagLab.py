@@ -29,8 +29,6 @@ import numpy as np
 import numpy.ma as ma
 from skimage import measure
 
-import matplotlib.pyplot as plt
-
 from PyQt5.QtCore import Qt, QSize, QDir, QPoint, QPointF, QLineF, QRectF, QTimer, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QPainterPath, QFont, QColor, QPolygonF, QImage, QPixmap, QIcon, QKeySequence, \
     QPen, QBrush, qRgb, qRed, qGreen, qBlue
@@ -42,7 +40,6 @@ import torch
 from torch.nn.functional import upsample
 
 from collections import OrderedDict
-from PIL import Image
 
 # DEEP EXTREME
 import models.deeplab_resnet as resnet
@@ -56,7 +53,7 @@ from source.QtInfoWidget import QtInfoWidget
 from source.QtCrackWidget import QtCrackWidget
 from source.QtExportWidget import QtExportWidget
 #from QtInfoWidget import QtInfoWidget
-from source.Annotation import Annotation
+from source.Annotation import Annotation, Blob
 from source.Labels import Labels, LabelsWidget
 from source import utils
 
@@ -653,7 +650,11 @@ class TagLab(QWidget):
             # APPLY THE EDITBORDER OPERATION
             if self.tool_used == "EDITBORDER":
 
+                logfile.info("EDITBORDER operations")
+
                 if len(self.selected_blobs) > 0:
+
+                    logfile.info("EDITBORDER operations begins..")
 
                     selected_blob = self.selected_blobs[0]
 
@@ -664,11 +665,15 @@ class TagLab(QWidget):
 
                     new_points = selected_blob.snapToBorder(pts)
 
+                    logfile.info("EDITBORDER operations not done (invalid snap).")
+
                     if new_points is not None:
 
                         selected_blob.addToMask(new_points)
 
                         selected_blob.cutFromMask(new_points)
+
+                        logfile.info("EDITBORDER operations ends")
 
                     self.drawBlob(selected_blob, selected=True)
 
@@ -776,17 +781,6 @@ class TagLab(QWidget):
 
         self.mapviewer.drawOverlayImage(top, left, bottom, right)
 
-
-    def createMapThumbnail(self):
-
-        filename = os.path.join(self.project_dir, self.project_name, self.thumb_map_filename)
-        print(filename)
-        if not os.path.exists(filename):
-            qimg  = QImage(self.image_map_filename)
-
-            qimg_thumb = qimg.scaled(self.MAP_VIEWER_SIZE, self.MAP_VIEWER_SIZE, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-            qimg_thumb.save(filename)
-
     def resetAll(self):
 
         if self.img_map:
@@ -837,6 +831,7 @@ class TagLab(QWidget):
 
         logfile.info("MOVE tool is active")
 
+
     @pyqtSlot()
     def createCrack(self):
         """
@@ -853,9 +848,6 @@ class TagLab(QWidget):
         self.viewerplus.enableZoom()
 
         logfile.info("CREATECRACK tool is active")
-
-
-
 
 
     @pyqtSlot(float, float)
@@ -990,9 +982,10 @@ class TagLab(QWidget):
         else:
 
             if blob in self.selected_blobs:
-                pass
+                loginfo.info("An already selected blob has been added to the current selection.")
             else:
                 self.selected_blobs.append(blob)
+                logfile.info("A new blob has been selected.")
 
     @pyqtSlot()
     def noteChanged(self):
@@ -1005,7 +998,7 @@ class TagLab(QWidget):
     def updatePanelInfo(self, blob):
 
         self.editId.setText(blob.blob_name)
-        self.editInstance.setText(blob.instace_name)
+        self.editInstance.setText(blob.instance_name)
         self.lblClass.setText(blob.class_name)
 
         text1 = "Perimeter {:8.2f}".format(blob.perimeter)
@@ -1084,6 +1077,14 @@ class TagLab(QWidget):
 
             line7 = self.viewerplus.scene.addLine(ptx - X_SIZE, pty - X_SIZE, ptx + X_SIZE, pty + X_SIZE, pen)
             line8 = self.viewerplus.scene.addLine(ptx - X_SIZE, pty + X_SIZE, ptx + X_SIZE, pty - X_SIZE, pen)
+
+    def drawAnnotations(self):
+        """
+        Draw all the annotations.
+        """
+
+        for blob in self.annotations.seg_blobs:
+            self.drawBlob(blob, selected=False, group_mode=False)
 
     def drawGroup(self, group):
         """
@@ -1214,12 +1215,12 @@ class TagLab(QWidget):
         blob A = blob A U blob B
         """
 
-        logfile.debug("MERGE operation begins..")
+        logfile.info("MERGE OVERLAPPED LABELS operation")
         logfile.debug("Number of selected blobs: %d", len(self.selected_blobs))
 
         if len(self.selected_blobs) == 2:
 
-            logfile.info("MERGE operation begins..")
+            logfile.info("MERGE OVERLAPPED LABELS operation begins..")
 
             flag = self.annotations.union(self.selected_blobs)
 
@@ -1238,13 +1239,13 @@ class TagLab(QWidget):
 
                 self.resetSelection()
 
-                logfile.debug("Blobs are separated. No union operation done.")
+                logfile.debug("Blobs are separated. MERGE OVERLAPPED LABELS operation not applied.")
 
-            logfile.info("MERGE operations ends.")
+            logfile.info("MERGE OVERLAPPED LABELS operation ends.")
 
         else:
 
-            self.infoWidget(self, "You need to select <em>two</em> blobs for MERGE operation.")
+            self.infoWidget.setWarningMessage("You need to select <em>two</em> blobs for MERGE OVERLAPPED LABELS operation.")
 
 
     def subtract(self):
@@ -1252,7 +1253,12 @@ class TagLab(QWidget):
         blob A = blob A / blob B
         """
 
+        logfile.info("SUBTRACT LABELS operation")
+        logfile.debug("Number of selected blobs: %d", len(self.selected_blobs))
+
         if len(self.selected_blobs) == 2:
+
+            logfile.info("SUBTRACT LABELS operation begins..")
 
             blobA = self.selected_blobs[0]
             blobB = self.selected_blobs[1]
@@ -1270,6 +1276,8 @@ class TagLab(QWidget):
                 blob_to_remove.qpath_gitem = None
                 self.annotations.removeBlob(blob_to_remove)
 
+            logfile.info("SUBTRACT LABELS operation ends.")
+
         else:
 
             self.infoWidget.setInfoMessage(self, "You need to select <em>two</em> blobs for SUBTRACT operation.")
@@ -1280,7 +1288,12 @@ class TagLab(QWidget):
         Separe intersecting blob
         """
 
+        logfile.info("DIVIDE LABELS operation")
+        logfile.debug("Number of selected blobs: %d", len(self.selected_blobs))
+
         if len(self.selected_blobs) == 2:
+
+            logfile.info("DIVIDE LABELS operation begins..")
 
             blobA = self.selected_blobs[0]
             blobB = self.selected_blobs[1]
@@ -1288,6 +1301,8 @@ class TagLab(QWidget):
             is_empty = self.annotations.subtract(blobB, blobA, self.viewerplus.scene)
 
             self.resetSelection()
+
+            logfile.info("DIVIDE LABELS operation ends.")
 
         else:
 
@@ -1461,6 +1476,9 @@ class TagLab(QWidget):
                 ypos = self.viewerplus.clicked_y
 
                 if self.crackWidget is None:
+
+                    logfile.info("CREATECRACK tool active")
+
                     self.crackWidget = QtCrackWidget(self.img_map, selected_blob, x, y, parent=self)
                     self.crackWidget.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowTitleHint)
                     self.crackWidget.setWindowModality(Qt.WindowModal)
@@ -1543,6 +1561,8 @@ class TagLab(QWidget):
     def crackApply(self):
 
         self.crackWidget.apply()
+
+        loginfo.info("CREATECRACK creates a crack.")
 
         self.drawBlob(self.selected_blobs[0], selected=True)
 
@@ -1676,23 +1696,7 @@ class TagLab(QWidget):
 
         if filename:
 
-            f = open(filename, "r")
-
-            loaded_dict = json.loads(filename)
-
-            self.project_name = loaded_dict["Project Name"]
-            self.img_map_filename = loaded_dict["Map File"]
-            self.map_acquisition_date = loaded_dict["Acquisition Date"]
-            self.map_px_to_mm_factor = loaded_dict["Map Scale"]
-
-            f.close()
-
-            self.setupProject()
-
-            self.infoWidget.setInfoMessage("The project has been successfully open.")
-
-            # the last saved annotations of a project are automatically open
-            self.loadAnnotations()
+            self.load(filename)
 
     @pyqtSlot()
     def openRecentProject(self):
@@ -1764,7 +1768,7 @@ class TagLab(QWidget):
         self.project_name = loaded_dict["Project Name"]
         self.map_image_filename = loaded_dict["Map File"]
         self.map_acquisition_date = loaded_dict["Acquisition Date"]
-        self.map_px_to_mm_factor = loaded_dict["Map Scale"]
+        self.map_px_to_mm_factor = float(loaded_dict["Map Scale"])
 
         for blob_dict in loaded_dict["Segmentation Data"]:
 
@@ -1774,7 +1778,11 @@ class TagLab(QWidget):
 
         f.close()
 
-        self.setupProject()
+        self.loadMap()
+
+        self.setProjectTitle(self.project_name)
+
+        self.drawAnnotations()
 
         self.infoWidget.setInfoMessage("The project has been successfully open.")
 
@@ -1787,8 +1795,12 @@ class TagLab(QWidget):
 
         dict_to_save = {}
 
+        # update project name
         dir = QDir(self.working_dir)
-        dict_to_save["Project Name"] = dir.relativeFilePath(self.project_name)
+        self.project_name = dir.relativeFilePath(filename)
+        self.setProjectTitle(self.project_name)
+
+        dict_to_save["Project Name"] = self.project_name
         dict_to_save["Map File"] = dir.relativeFilePath(self.map_image_filename)
         dict_to_save["Acquisition Date"] = self.map_acquisition_date
         dict_to_save["Map Scale"] = self.map_px_to_mm_factor
@@ -1833,6 +1845,12 @@ class TagLab(QWidget):
 
 
     def segmentWithDeepExtreme(self):
+
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+
+        self.infoWidget.setInfoMessage("Segmentation is ongoing..")
+
+        logfile.info("Segmentation with Deep Extreme begins..")
 
         pad = 50
         thres = 0.8
@@ -1899,6 +1917,12 @@ class TagLab(QWidget):
             for blob in blobs:
                 self.addToSelectedList(blob)
                 self.drawBlob(blob, selected=True)
+
+            logfile.info("Segmentation with Deep Extreme ends.")
+
+            self.infoWidget.setInfoMessage("Segmentation done.")
+
+        QApplication.restoreOverrideCursor()
 
     def automaticSegmentation(self):
 
