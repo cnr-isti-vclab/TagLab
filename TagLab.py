@@ -1,21 +1,21 @@
-# TagLab                                               
-# A semi-automatic segmentation tool                                    
+# TagLab
+# A semi-automatic segmentation tool
 #
-# Copyright(C) 2019                                         
-# Visual Computing Lab                                           
-# ISTI - Italian National Research Council                              
-# All rights reserved.                                                      
-                                                                          
-# This program is free software; you can redistribute it and/or modify      
-# it under the terms of the GNU General Public License as published by      
-# the Free Software Foundation; either version 2 of the License, or         
-# (at your option) any later version.                                       
-                                                                           
-# This program is distributed in the hope that it will be useful,           
-# but WITHOUT ANY WARRANTY; without even the implied warranty of            
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the             
-#GNU General Public License (http://www.gnu.org/licenses/gpl.txt)          
-# for more details.                                               
+# Copyright(C) 2019
+# Visual Computing Lab
+# ISTI - Italian National Research Council
+# All rights reserved.
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#GNU General Public License (http://www.gnu.org/licenses/gpl.txt)
+# for more details.
 
 import sys
 import os
@@ -24,17 +24,15 @@ import time
 import random
 import datetime
 
-import bz2
+import json
 import numpy as np
 import numpy.ma as ma
 from skimage import measure
 
-import matplotlib.pyplot as plt
-
-from PyQt5.QtCore import Qt, QSize, QPoint, QPointF, QLineF, QRectF, QTimer, pyqtSlot, pyqtSignal
-from PyQt5.QtGui import QPainterPath, QPainter, QFont, QColor, QPolygonF, QImage, QPixmap, QPainter, QIcon, QKeySequence, \
+from PyQt5.QtCore import Qt, QSize, QDir, QPoint, QPointF, QLineF, QRectF, QTimer, pyqtSlot, pyqtSignal
+from PyQt5.QtGui import QPainterPath, QFont, QColor, QPolygonF, QImage, QPixmap, QIcon, QKeySequence, \
     QPen, QBrush, qRgb, qRed, qGreen, qBlue
-from PyQt5.QtWidgets import QApplication, QWidget, QMenu, QSizePolicy, QScrollArea, QLabel, QToolButton, QPushButton, QSlider, \
+from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QDialog, QMenuBar, QMenu, QSizePolicy, QScrollArea, QLabel, QToolButton, QPushButton, QSlider, \
     QMessageBox, QGroupBox, QHBoxLayout, QVBoxLayout, QTextEdit, QLineEdit, QGraphicsView, QAction
 
 # PYTORCH
@@ -42,20 +40,20 @@ import torch
 from torch.nn.functional import upsample
 
 from collections import OrderedDict
-from PIL import Image
 
 # DEEP EXTREME
 import models.deeplab_resnet as resnet
 from models.dataloaders import helpers as helpers
 
 # CUSTOM
-from source.Configuration import Configuration
 from source.QtImageViewerPlus import QtImageViewerPlus
 from source.QtMapViewer import QtMapViewer
+from source.QtMapSettingsWidget import QtMapSettingsWidget
+from source.QtInfoWidget import QtInfoWidget
 from source.QtCrackWidget import QtCrackWidget
 from source.QtExportWidget import QtExportWidget
 #from QtInfoWidget import QtInfoWidget
-from source.Annotation import Annotation
+from source.Annotation import Annotation, Blob
 from source.Labels import Labels, LabelsWidget
 from source import utils
 
@@ -71,7 +69,7 @@ logfile = logging.getLogger("tool-logger")
 
 class TagLab(QWidget):
 
-    def __init__(self, configuration, parent=None):
+    def __init__(self, parent=None):
         super(TagLab, self).__init__(parent)
 
         ##### CUSTOM STYLE #####
@@ -81,23 +79,26 @@ class TagLab(QWidget):
         ##### DATA INITIALIZATION AND SETUP #####
 
         logfile.info("Initizialization begins..")
-        self.conf = configuration
-        self.conf.createProjectFolder()
-
-        self.image_map_filename = configuration.image_map_filename
-        basename = os.path.basename(self.image_map_filename)
-        idx = basename.rfind(".")
-        self.thumb_map_filename = basename[0:idx] + "_thumb.png"
 
         # MAP VIEWER preferred size (longest side)
-        self.MAP_VIEWER_SIZE = 500
-        self.createMapThumbnail()
+        self.MAP_VIEWER_SIZE = 400
+
+        self.working_dir = os.getcwd()
+        self.project_name = "NONE"
+        self.map_image_filename = "map.png"
+        self.map_acquisition_date = "YYYY-MM-DD"
+        self.map_px_to_mm_factor = 1.0
+
+        self.recentFileActs = []
+        self.maxRecentFiles = 4
 
         # ANNOTATION DATA
         self.annotations = Annotation()
 
         ##### INTERFACE #####
         #####################
+
+        self.mapWidget = None
 
         self.tool_used = "MOVE"        # tool currently used
         self.current_selection = None  # blob currently selected
@@ -107,54 +108,17 @@ class TagLab(QWidget):
 
         ##### TOP LAYOUT
 
-        top_layout = QHBoxLayout()
+        #top_layout = QHBoxLayout()
 
-        self.scrippsIcon = QLabel()
-        pxmap = QPixmap("icons\\vclab.png")
-        pxmap = pxmap.scaledToWidth(ICON_SIZE+2)
-        self.scrippsIcon.setPixmap(pxmap)
+        #self.scrippsIcon = QLabel()
+        #pxmap = QPixmap("icons\\vclab.png")
+        #pxmap = pxmap.scaledToWidth(ICON_SIZE+2)
+        #self.scrippsIcon.setPixmap(pxmap)
 
-        # LOAD/SAVE BUTTONS
-
-        self.btnLoad = QPushButton()
-        self.btnLoad.setEnabled(True)
-        self.btnLoad.setMinimumWidth(ICON_SIZE)
-        self.btnLoad.setMinimumHeight(ICON_SIZE)
-        self.btnLoad.setIcon(QIcon("icons\\download.png"))
-        self.btnLoad.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
-        self.btnLoad.setMaximumWidth(BUTTON_SIZE)
-        self.btnLoad.setToolTip("Load Annotations")
-        self.btnLoad.clicked.connect(self.loadAnnotations)
-
-        self.btnSave = QPushButton()
-        self.btnSave.setEnabled(True)
-        self.btnSave.setMinimumWidth(ICON_SIZE)
-        self.btnSave.setMinimumHeight(ICON_SIZE)
-        self.btnSave.setIcon(QIcon("icons\\disc.png"))
-        self.btnSave.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
-        self.btnSave.setMaximumWidth(BUTTON_SIZE)
-        self.btnSave.setToolTip("Save Annotations")
-        self.btnSave.clicked.connect(self.saveAnnotations)
-
-        self.btnExport = QPushButton()
-        self.btnExport.setEnabled(True)
-        self.btnExport.setMinimumWidth(ICON_SIZE)
-        self.btnExport.setMinimumHeight(ICON_SIZE)
-        self.btnExport.setIcon(QIcon("icons\\upload.png"))
-        self.btnExport.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
-        self.btnExport.setMaximumWidth(BUTTON_SIZE)
-        self.btnExport.setToolTip("Export Data")
-        self.btnExport.clicked.connect(self.exportData)
-
-        top_layout.addWidget(self.scrippsIcon)
-        top_layout.addWidget(self.btnLoad)
-        top_layout.addWidget(self.btnSave)
-        top_layout.addWidget(self.btnExport)
-        top_layout.addStretch()
+        #top_layout.addWidget(self.scrippsIcon)
+        #top_layout.addStretch()
 
         ##### LAYOUT EDITING TOOLS (VERTICAL)
-
-        #...TODO...
 
         flatbuttonstyle1 = "\
         QPushButton:checked\
@@ -297,6 +261,7 @@ class TagLab(QWidget):
         self.viewerplus = QtImageViewerPlus()
         self.viewerplus.viewUpdated.connect(self.updateViewInfo)
 
+        layout_viewer.setSpacing(1)
         layout_viewer.addLayout(layout_slider)
         layout_viewer.addWidget(self.viewerplus)
 
@@ -353,7 +318,7 @@ class TagLab(QWidget):
         lblNote = QLabel("Note:")
         self.editNote = QTextEdit()
         self.editNote.setMinimumWidth(100)
-        self.editNote.setMaximumHeight(70)
+        self.editNote.setMaximumHeight(50)
         self.editNote.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
         self.editNote.textChanged.connect(self.noteChanged)
         layout_blobpanel = QVBoxLayout()
@@ -363,12 +328,17 @@ class TagLab(QWidget):
         layout_blobpanel.addWidget(self.editNote)
         groupbox_blobpanel.setLayout(layout_blobpanel)
 
+        # INFO WIDGET
+
+        self.infoWidget = QtInfoWidget(self)
 
         # MAP VIEWER
         self.mapviewer = QtMapViewer(self.MAP_VIEWER_SIZE)
+        self.mapviewer.setImage(None)
 
         layout_labels = QVBoxLayout()
         self.mapviewer.setStyleSheet("background-color: rgb(40,40,40); border:none")
+        layout_labels.addWidget(self.infoWidget)
         layout_labels.addWidget(groupbox_labels)
         layout_labels.addWidget(groupbox_blobpanel)
         layout_labels.addStretch()
@@ -384,22 +354,21 @@ class TagLab(QWidget):
         main_view_layout.addLayout(layout_labels)
 
         main_view_layout.setStretchFactor(layout_viewer, 10)
-        main_view_layout.setStretchFactor(layout_labels, 3)
+        main_view_layout.setStretchFactor(layout_labels, 1)
+
+        self.menubar = self.createMenuBar()
 
         main_layout = QVBoxLayout()
-        main_layout.addLayout(top_layout)
+        #main_layout.addLayout(top_layout)
+        main_layout.addWidget(self.menubar)
         main_layout.addLayout(main_view_layout)
 
         self.setLayout(main_layout)
 
-        self.setWindowTitle("TagLab")
-
+        self.setProjectTitle("NONE")
 
         ##### FURTHER INITIALIZAION #####
         #################################
-
-        self.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.customContextMenuRequested.connect(self.openContextMenu)
 
         self.map_top = 0
         self.map_left = 0
@@ -410,17 +379,8 @@ class TagLab(QWidget):
         self.sliderTrasparency.setValue(50)
         self.transparency_value = 0.5
 
-        # load the last saved annotations (if exist)
-        self.annotationFileId = 0
-        #self.loadAnnotations()
-
-        self.img_map = QImage(self.image_map_filename)
-        self.img_thumb_map = QImage(os.path.join(self.conf.project_dir, self.thumb_map_filename))
-        self.viewerplus.setImage(self.img_map)
-        self.mapviewer.setImage(self.img_thumb_map)
-        self.viewerplus.viewUpdated.connect(self.updateMapViewer)
-        self.mapviewer.setOpacity(0.5)
-
+        self.img_map  = None
+        self.Img_thumb_map = None
         self.img_overlay = QImage(16, 16, QImage.Format_RGB32)
 
         # LOAD DEEP EXTREME NETWORK
@@ -437,6 +397,9 @@ class TagLab(QWidget):
         self.viewerplus.rightMouseButtonPressed.connect(self.toolsOpsRightPressed)
         self.viewerplus.mouseMoveLeftPressed.connect(self.toolsOpsMouseMove)
         self.viewerplus.leftMouseButtonDoubleClicked.connect(self.selectOp)
+
+        self.viewerplus.customContextMenuRequested.connect(self.openContextMenu)
+
 
         self.current_selection = None
 
@@ -467,6 +430,10 @@ class TagLab(QWidget):
         self.extreme_points = np.zeros((4, 2))
         self.extreme_points_lines = []
 
+        # a dirty trick to adjust all the size..
+        self.showMinimized()
+        self.showMaximized()
+
         logfile.info("Inizialization finished!")
 
         self.move()
@@ -494,7 +461,7 @@ class TagLab(QWidget):
 
         str = "QMenu::item:selected{\
             background-color: rgb(110, 110, 120);\
-            color: rgb(110, 110, 120);\
+            color: rgb(255, 255, 255);\
             }"
 
         menu.setStyleSheet(str)
@@ -526,11 +493,7 @@ class TagLab(QWidget):
         subtractAction.setShortcutVisibleInContextMenu(True)
         menu.addAction(subtractAction)
 
-
-
-        pt = self.viewerplus.mapToScene(position)
-
-        action = menu.exec_(self.mapToGlobal(position))
+        action = menu.exec_(self.viewerplus.mapToGlobal(position))
 
         if action == deleteAction:
             self.deleteSelected()
@@ -546,6 +509,11 @@ class TagLab(QWidget):
             self.subtract()
         elif action == assignAction:
             self.assign()
+
+    def setProjectTitle(self, project_name):
+
+        title = "TagLab - [Project: " + project_name + "]"
+        self.setWindowTitle(title)
 
     def clampCoords(self, x, y):
 
@@ -565,6 +533,75 @@ class TagLab(QWidget):
             yc = self.img_map.height()
 
         return (xc, yc)
+
+    def createMenuBar(self):
+
+        newAct = QAction("New Project", self)
+        #newAct.setShortcut('Ctrl+Q')
+        newAct.setStatusTip("Create a new project")
+        newAct.triggered.connect(self.newProject)
+
+        openAct = QAction("Open Project", self)
+        #openAct.setShortcut('Ctrl+Q')
+        openAct.setStatusTip("Open an existing project")
+        openAct.triggered.connect(self.openProject)
+
+        saveAct = QAction("Save Project", self)
+        #saveAct.setShortcut('Ctrl+Q')
+        saveAct.setStatusTip("Save current project")
+        saveAct.triggered.connect(self.saveProject)
+
+        # THIS WILL BECOME "ADD MAP" TO ADD MULTIPLE MAPS (e.g. depth, different years)
+        loadMapAct = QAction("Load Map", self)
+        #saveAct.setShortcut('Ctrl+Q')
+        loadMapAct.setStatusTip("Set and load a map")
+        loadMapAct.triggered.connect(self.setMapToLoad)
+
+        exportAct = QAction("Export Data", self)
+        #exportAct.setShortcut('Ctrl+Q')
+        exportAct.setStatusTip("Export data derived from annotations")
+        exportAct.triggered.connect(self.exportData)
+
+        helpAct = QAction("Help", self)
+        #exportAct.setShortcut('Ctrl+Q')
+        #helpAct.setStatusTip("Help")
+        helpAct.triggered.connect(self.help)
+
+        aboutAct = QAction("About", self)
+        #exportAct.setShortcut('Ctrl+Q')
+        #aboutAct.setStatusTip("About")
+        aboutAct.triggered.connect(self.about)
+
+        menubar = QMenuBar()
+        menubar.setAutoFillBackground(True)
+
+        styleMenuBar = "QMenuBar::item:selected{\
+            background-color: rgb(110, 110, 120);\
+            color: rgb(255, 255, 255);\
+            }"
+
+        styleMenu = "QMenu::item:selected{\
+            background-color: rgb(110, 110, 120);\
+            color: rgb(255, 255, 255);\
+            }"
+
+        menubar.setStyleSheet(styleMenuBar)
+
+        filemenu = menubar.addMenu("&File")
+        filemenu.setStyleSheet(styleMenu)
+        filemenu.addAction(newAct)
+        filemenu.addAction(openAct)
+        filemenu.addAction(saveAct)
+        filemenu.addSeparator()
+        filemenu.addAction(loadMapAct)
+        filemenu.addSeparator()
+        filemenu.addAction(exportAct)
+        helpmenu = menubar.addMenu("&Help")
+        helpmenu.setStyleSheet(styleMenu)
+        helpmenu.addAction(helpAct)
+        helpmenu.addAction(aboutAct)
+
+        return menubar
 
     def keyPressEvent(self, event):
 
@@ -613,7 +650,11 @@ class TagLab(QWidget):
             # APPLY THE EDITBORDER OPERATION
             if self.tool_used == "EDITBORDER":
 
+                logfile.info("EDITBORDER operations")
+
                 if len(self.selected_blobs) > 0:
+
+                    logfile.info("EDITBORDER operations begins..")
 
                     selected_blob = self.selected_blobs[0]
 
@@ -624,11 +665,15 @@ class TagLab(QWidget):
 
                     new_points = selected_blob.snapToBorder(pts)
 
+                    logfile.info("EDITBORDER operations not done (invalid snap).")
+
                     if new_points is not None:
 
                         selected_blob.addToMask(new_points)
 
                         selected_blob.cutFromMask(new_points)
+
+                        logfile.info("EDITBORDER operations ends")
 
                     self.drawBlob(selected_blob, selected=True)
 
@@ -736,16 +781,28 @@ class TagLab(QWidget):
 
         self.mapviewer.drawOverlayImage(top, left, bottom, right)
 
+    def resetAll(self):
 
-    def createMapThumbnail(self):
+        if self.img_map:
+            del self.img_map
+            self.img_map = None
 
-        filename = os.path.join(self.conf.project_dir, self.thumb_map_filename)
-        print(filename)
-        if not os.path.exists(filename):
-            qimg  = QImage(self.image_map_filename)
+        if self.img_thumb_map:
+            del self.img_thumn_map
+            self.img_thumb_map = None
 
-            qimg_thumb = qimg.scaled(self.MAP_VIEWER_SIZE, self.MAP_VIEWER_SIZE, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-            qimg_thumb.save(filename)
+        if self.annotations:
+            del self.annotations
+
+        self.annotations = Annotation()
+
+        # RE-INITIALIZATION
+        self.mapWidget = None
+        self.project_name = "NONE"
+        self.map_image_filename = "map.png"
+        self.map_acquisition_date = "YYYY-MM-DD"
+        self.map_px_to_mm_factor = 1.0
+
 
     def resetToolbar(self):
 
@@ -774,6 +831,7 @@ class TagLab(QWidget):
 
         logfile.info("MOVE tool is active")
 
+
     @pyqtSlot()
     def createCrack(self):
         """
@@ -790,9 +848,6 @@ class TagLab(QWidget):
         self.viewerplus.enableZoom()
 
         logfile.info("CREATECRACK tool is active")
-
-
-
 
 
     @pyqtSlot(float, float)
@@ -927,9 +982,10 @@ class TagLab(QWidget):
         else:
 
             if blob in self.selected_blobs:
-                pass
+                loginfo.info("An already selected blob has been added to the current selection.")
             else:
                 self.selected_blobs.append(blob)
+                logfile.info("A new blob has been selected.")
 
     @pyqtSlot()
     def noteChanged(self):
@@ -942,7 +998,7 @@ class TagLab(QWidget):
     def updatePanelInfo(self, blob):
 
         self.editId.setText(blob.blob_name)
-        self.editInstance.setText(blob.instace_name)
+        self.editInstance.setText(blob.instance_name)
         self.lblClass.setText(blob.class_name)
 
         text1 = "Perimeter {:8.2f}".format(blob.perimeter)
@@ -1021,6 +1077,14 @@ class TagLab(QWidget):
 
             line7 = self.viewerplus.scene.addLine(ptx - X_SIZE, pty - X_SIZE, ptx + X_SIZE, pty + X_SIZE, pen)
             line8 = self.viewerplus.scene.addLine(ptx - X_SIZE, pty + X_SIZE, ptx + X_SIZE, pty - X_SIZE, pen)
+
+    def drawAnnotations(self):
+        """
+        Draw all the annotations.
+        """
+
+        for blob in self.annotations.seg_blobs:
+            self.drawBlob(blob, selected=False, group_mode=False)
 
     def drawGroup(self, group):
         """
@@ -1151,12 +1215,12 @@ class TagLab(QWidget):
         blob A = blob A U blob B
         """
 
-        logfile.debug("UNION operation begins..")
+        logfile.info("MERGE OVERLAPPED LABELS operation")
         logfile.debug("Number of selected blobs: %d", len(self.selected_blobs))
 
         if len(self.selected_blobs) == 2:
 
-            logfile.info("UNION operation begins..")
+            logfile.info("MERGE OVERLAPPED LABELS operation begins..")
 
             flag = self.annotations.union(self.selected_blobs)
 
@@ -1175,13 +1239,13 @@ class TagLab(QWidget):
 
                 self.resetSelection()
 
-                logfile.debug("Blobs are separated. No union operation done.")
+                logfile.debug("Blobs are separated. MERGE OVERLAPPED LABELS operation not applied.")
 
-            logfile.info("UNION operations ends.")
+            logfile.info("MERGE OVERLAPPED LABELS operation ends.")
 
         else:
 
-            QMessageBox.information(self, "MERGE OPERATION", "You need to select <em>two</em> blobs for this operation.")
+            self.infoWidget.setWarningMessage("You need to select <em>two</em> blobs for MERGE OVERLAPPED LABELS operation.")
 
 
     def subtract(self):
@@ -1189,7 +1253,12 @@ class TagLab(QWidget):
         blob A = blob A / blob B
         """
 
+        logfile.info("SUBTRACT LABELS operation")
+        logfile.debug("Number of selected blobs: %d", len(self.selected_blobs))
+
         if len(self.selected_blobs) == 2:
+
+            logfile.info("SUBTRACT LABELS operation begins..")
 
             blobA = self.selected_blobs[0]
             blobB = self.selected_blobs[1]
@@ -1207,9 +1276,11 @@ class TagLab(QWidget):
                 blob_to_remove.qpath_gitem = None
                 self.annotations.removeBlob(blob_to_remove)
 
+            logfile.info("SUBTRACT LABELS operation ends.")
+
         else:
 
-            QMessageBox.information(self, "SUBTRACT OPERATION", "You need to select <em>two</em> blobs for this operation.")
+            self.infoWidget.setInfoMessage(self, "You need to select <em>two</em> blobs for SUBTRACT operation.")
 
 
     def divide(self):
@@ -1217,7 +1288,12 @@ class TagLab(QWidget):
         Separe intersecting blob
         """
 
+        logfile.info("DIVIDE LABELS operation")
+        logfile.debug("Number of selected blobs: %d", len(self.selected_blobs))
+
         if len(self.selected_blobs) == 2:
+
+            logfile.info("DIVIDE LABELS operation begins..")
 
             blobA = self.selected_blobs[0]
             blobB = self.selected_blobs[1]
@@ -1226,9 +1302,11 @@ class TagLab(QWidget):
 
             self.resetSelection()
 
+            logfile.info("DIVIDE LABELS operation ends.")
+
         else:
 
-            QMessageBox.information(self, "DIVIDE OPERATION", "You need to select <em>two</em> blobs for this operation.")
+            self.infoWidget.setInfoMessage("You need to select <em>two</em> blobs for DIVIDE operation.")
 
     def group(self):
 
@@ -1398,6 +1476,9 @@ class TagLab(QWidget):
                 ypos = self.viewerplus.clicked_y
 
                 if self.crackWidget is None:
+
+                    logfile.info("CREATECRACK tool active")
+
                     self.crackWidget = QtCrackWidget(self.img_map, selected_blob, x, y, parent=self)
                     self.crackWidget.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowTitleHint)
                     self.crackWidget.setWindowModality(Qt.WindowModal)
@@ -1481,6 +1562,8 @@ class TagLab(QWidget):
 
         self.crackWidget.apply()
 
+        loginfo.info("CREATECRACK creates a crack.")
+
         self.drawBlob(self.selected_blobs[0], selected=True)
 
         self.resetCrackTool()
@@ -1513,57 +1596,157 @@ class TagLab(QWidget):
 
         measurepx = np.sqrt(((x2 - x1) ** 2) + ((y2 - y1) ** 2))
 
-        scale = 1.0 # just to remember to adjust the scale for each map
-        measure = measurepx * scale
+        measure = measurepx * self.map_px_to_mm_factor
 
         return measure
 
+
+    def updateRecentFileActions(self):
+
+        settings = QtCore.QSettings('VCLab', 'TagLab')
+        files = settings.value('recentFileList')
+
+        numRecentFiles = min(len(files), self.maxRecentFiles)
+
+        for i in range(numRecentFiles):
+
+            text = "&%d %s" % (i + 1, self.strippedName(files[i]))
+            self.recentFileActs[i].setText(text)
+            self.recentFileActs[i].setData(files[i])
+            self.recentFileActs[i].setVisible(True)
+
+        for j in range(numRecentFiles, self.maxRecentFiles):
+            self.recentFileActs[j].setVisible(False)
+
+        self.separatorAct.setVisible((numRecentFiles > 0))
+
+    def strippedName(self, fullFileName):
+        return QtCore.QFileInfo(fullFileName).fileName()
+
     @pyqtSlot()
-    def loadAnnotations(self):
+    def newProject(self):
 
-        annotation_files = glob.glob(os.path.join(self.conf.project_dir, "annotations*"))
-        nfiles = len(annotation_files)
+        self.resetAll()
 
-        if nfiles > 0:
+        self.setProjectTitle("NONE")
 
-            QApplication.setOverrideCursor(Qt.WaitCursor)
+    @pyqtSlot()
+    def setMapToLoad(self):
 
-            self.annotationFileId = nfiles - 1
+        if self.mapWidget is None:
+            self.mapWidget = QtMapSettingsWidget(parent=self)
+            self.mapWidget.setWindowFlags(Qt.Window)
+            self.mapWidget.setWindowModality(Qt.WindowModal)
+            self.mapWidget.btnApply.clicked.connect(self.setMapProperties)
 
-            filename = "annotations{:04d}.dat".format(self.annotationFileId)
-            fullname = os.path.join(self.conf.project_dir, filename)
-            self.annotations.load(fullname)
+            # transfer current data to widget
+            self.mapWidget.editMapFile.setText(self.map_image_filename)
+            self.mapWidget.editAcquisitionDate.setText(self.map_acquisition_date)
+            self.mapWidget.editScaleFactor.setText(str(self.map_px_to_mm_factor))
 
-            print("Annotations loaded.")
+            self.mapWidget.show()
 
-            # draw all blobs loaded
-            for blob in self.annotations.seg_blobs:
-                self.drawBlob(blob, selected=False)
+    @pyqtSlot()
+    def setMapProperties(self):
 
-            QApplication.restoreOverrideCursor()
+        map_filename = self.mapWidget.editMapFile.text()
 
+        # check if the map file exists
+        if not os.path.exists(map_filename):
+
+            self.infoWidget.setWarningMessage("Map file does not exist.")
 
         else:
 
-            print("No data files (!)")
+            # transfer settings
+            self.map_image_filename = self.mapWidget.editMapFile.text()
+            self.map_acquisition_date = self.mapWidget.editAcquisitionDate.text()
+            self.map_px_to_mm_factor = self.mapWidget.editScaleFactor.text()
 
+            # close map settings
+            self.mapWidget.close()
+            self.mapWidget = None
 
-    @pyqtSlot()
-    def saveAnnotations(self):
+            self.loadMap()
+
+    def loadMap(self):
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
 
-        annotation_files = glob.glob(os.path.join(self.conf.project_dir, "annotations*"))
-        nfiles = len(annotation_files)
+        # load map and set it
+        self.infoWidget.setInfoMessage("Map is loading..")
 
-        self.annotationFileId = nfiles
-        filename = "annotations{:04d}.dat".format(self.annotationFileId)
-        fullname = os.path.join(self.conf.project_dir, filename)
-        self.annotations.save(fullname)
-
-        print("Annotations saved.")
+        self.img_map = QImage(self.map_image_filename)
+        self.img_thumb_map = self.img_map.scaled(self.MAP_VIEWER_SIZE, self.MAP_VIEWER_SIZE, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.viewerplus.setImage(self.img_map)
+        self.mapviewer.setImage(self.img_thumb_map)
+        self.viewerplus.viewUpdated.connect(self.updateMapViewer)
+        self.mapviewer.setOpacity(0.5)
 
         QApplication.restoreOverrideCursor()
+
+        self.infoWidget.setInfoMessage("The map has been successfully loading.")
+
+    @pyqtSlot()
+    def openProject(self):
+
+        filters = "ANNOTATION PROJECT (*.json)"
+
+        filename, _ = QFileDialog.getOpenFileName(self, "Input Configuration File", self.working_dir, filters)
+
+        if filename:
+
+            self.load(filename)
+
+    @pyqtSlot()
+    def openRecentProject(self):
+        pass
+
+    @pyqtSlot()
+    def saveProject(self):
+
+        filters = "ANNOTATION PROJECT (*.json)"
+
+        filename, _ = QFileDialog.getSaveFileName(self, "Save Configuration File", self.working_dir, filters)
+
+        if filename:
+
+            self.save(filename)
+
+    @pyqtSlot()
+    def help(self):
+        pass
+
+    @pyqtSlot()
+    def about(self):
+
+        lbl1 = QLabel()
+        pxmap = QPixmap("icons\\vclab.png")
+        pxmap = pxmap.scaledToWidth(100)
+        lbl1.setPixmap(pxmap)
+
+        lbl2 = QLabel("TagLab was created to support the activity of annotation and extraction of statistical data "
+                      "from ortho-maps of benthic communities.\n"
+                      "TagLab is an ongoing project of the Visual Computing Lab (http://vcg.isti.cnr.it)")
+
+        lbl2.setWordWrap(True)
+        lbl2.setMinimumWidth(330)
+
+        layout = QHBoxLayout()
+        layout.addWidget(lbl1)
+        layout.addWidget(lbl2)
+
+        widget = QWidget(self)
+        widget.setAutoFillBackground(True)
+        widget.setStyleSheet("background-color: rgba(60,60,65,100); color: white")
+        widget.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+        widget.setMinimumWidth(430)
+        widget.setMinimumHeight(110)
+        widget.setLayout(layout)
+        widget.setWindowTitle("About")
+        widget.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
+        widget.show()
+
 
     @pyqtSlot()
     def exportData(self):
@@ -1572,6 +1755,67 @@ class TagLab(QWidget):
         exportWidget.setWindowFlags(Qt.Window)
         exportWidget.setWindowModality(Qt.WindowModal)
         exportWidget.show()
+
+    def load(self, filename):
+        """
+        Load a previously saved projects.
+        """
+
+        f = open(filename, "r")
+
+        loaded_dict = json.load(f)
+
+        self.project_name = loaded_dict["Project Name"]
+        self.map_image_filename = loaded_dict["Map File"]
+        self.map_acquisition_date = loaded_dict["Acquisition Date"]
+        self.map_px_to_mm_factor = float(loaded_dict["Map Scale"])
+
+        for blob_dict in loaded_dict["Segmentation Data"]:
+
+            blob = Blob(None, 0, 0, 0)
+            blob.fromDict(blob_dict)
+            self.annotations.seg_blobs.append(blob)
+
+        f.close()
+
+        self.loadMap()
+
+        self.setProjectTitle(self.project_name)
+
+        self.drawAnnotations()
+
+        self.infoWidget.setInfoMessage("The project has been successfully open.")
+
+    def save(self, filename):
+        """
+        Save the current project.
+        """
+
+        f = open(filename, "w")
+
+        dict_to_save = {}
+
+        # update project name
+        dir = QDir(self.working_dir)
+        self.project_name = dir.relativeFilePath(filename)
+        self.setProjectTitle(self.project_name)
+
+        dict_to_save["Project Name"] = self.project_name
+        dict_to_save["Map File"] = dir.relativeFilePath(self.map_image_filename)
+        dict_to_save["Acquisition Date"] = self.map_acquisition_date
+        dict_to_save["Map Scale"] = self.map_px_to_mm_factor
+        dict_to_save["Segmentation Data"] = [] # a list of blobs, each blob is a dictionary
+
+        for blob in self.annotations.seg_blobs:
+            dict = blob.toDict()
+            dict_to_save["Segmentation Data"].append(dict)
+
+        json.dump(dict_to_save, f)
+
+        f.close()
+
+        self.infoWidget.setInfoMessage("Project configuration has been successfully saved.")
+
 
     def loadingDeepExtremeNetwork(self):
 
@@ -1601,6 +1845,12 @@ class TagLab(QWidget):
 
 
     def segmentWithDeepExtreme(self):
+
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+
+        self.infoWidget.setInfoMessage("Segmentation is ongoing..")
+
+        logfile.info("Segmentation with Deep Extreme begins..")
 
         pad = 50
         thres = 0.8
@@ -1668,9 +1918,15 @@ class TagLab(QWidget):
                 self.addToSelectedList(blob)
                 self.drawBlob(blob, selected=True)
 
+            logfile.info("Segmentation with Deep Extreme ends.")
+
+            self.infoWidget.setInfoMessage("Segmentation done.")
+
+        QApplication.restoreOverrideCursor()
+
     def automaticSegmentation(self):
 
-        self.img_overlay = QImage(self.conf.segmentation_map_filename)
+        self.img_overlay = QImage(self.segmentation_map_filename)
         self.viewerplus.setOverlayImage(self.img_overlay)
 
 if __name__ == '__main__':
@@ -1700,11 +1956,8 @@ if __name__ == '__main__':
 
     app.setStyleSheet("QToolTip {color: white; background-color: rgb(49,51,53); border: none; }")
 
-    # Read default configuration
-    conf = Configuration()
-
     # Create the inspection tool
-    tool = TagLab(conf)
+    tool = TagLab()
 
     # Show the viewer and run the application.
     tool.show()

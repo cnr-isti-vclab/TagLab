@@ -58,9 +58,6 @@ class Blob(object):
             self.centroid = np.zeros((2))
             self.bbox = np.zeros((4))
 
-            # placeholrder; 4x4 empty mask
-            self.mask = np.zeros((4,4))
-
             # placeholder; empty contour
             self.contour = np.zeros((2, 2))
             self.inner_contours = []
@@ -95,25 +92,24 @@ class Blob(object):
             self.bbox[2] = width
             self.bbox[3] = height
 
-            # to extract the contour we use the mask cropped according to the bbox
-            self.mask = region.image.astype(int)
-            self.contour = np.zeros((2, 2))
-            self.inner_contours = []
-
             # QPainterPath associated with the contours
             self.qpath = None
 
             # QGraphicsItem associated with the QPainterPath
             self.qpath_gitem = None
 
-            self.createContourFromMask()
+            # to extract the contour we use the mask cropped according to the bbox
+            input_mask = region.image.astype(int)
+            self.contour = np.zeros((2, 2))
+            self.inner_contours = []
+            self.createContourFromMask(input_mask)
             self.setupForDrawing()
 
             self.calculatePerimeter()
-            self.calculateArea()
+            self.calculateArea(input_mask)
 
             # a string with a progressive number to identify the instance
-            self.instace_name = "coral" + str(id)
+            self.instance_name = "coral" + str(id)
 
             # a string with a progressive number to identify the blob plus its centroid
             xc = int(self.centroid[0])
@@ -160,18 +156,42 @@ class Blob(object):
 
         return blob
 
+    def getMask(self):
+        """
+        It creates the mask from the contour and returns it.
+        """
 
-    def updateMask(self, new_bbox, new_mask):
+        r = self.bbox[3]
+        c = self.bbox[2]
+
+        mask = np.zeros((r, c))
+
+        # main polygon
+        [rr, cc] = polygon(self.contour[:, 1], self.contour[:, 0])
+        rr = rr - int(self.bbox[0])
+        cc = cc - int(self.bbox[1])
+        mask[rr, cc] = 1
+
+        # holes
+        for inner_contour in self.inner_contours:
+            [rr, cc] = polygon(inner_contour[:, 1], inner_contour[:, 0])
+            rr = rr - int(self.bbox[0])
+            cc = cc - int(self.bbox[1])
+            mask[rr, cc] = 0
+
+        return mask
+
+
+    def updateUsingMask(self, new_bbox, new_mask):
 
         self.bbox = new_bbox
-        self.mask = new_mask
 
-        self.createContourFromMask()
+        self.createContourFromMask(new_mask)
         self.setupForDrawing()
 
         self.calculatePerimeter()
-        self.calculateArea()
-        self.calculateCentroid()
+        self.calculateArea(new_mask)
+        self.calculateCentroid(new_mask)
 
 
     def snapToBorder(self, points):
@@ -209,14 +229,16 @@ class Blob(object):
         input_arr = gaussian(input_arr, 2)
         # input_arr = segmentation.inverse_gaussian_gradient(input_arr, alpha=1, sigma=1)
 
+        blob_mask = self.getMask()
+
         crack_mask = flood(input_arr, (int(y_crop), int(x_crop)), tolerance=tolerance).astype(int)
-        cracked_blob = np.logical_and((self.mask > 0), (crack_mask < 1))
+        cracked_blob = np.logical_and((blob_mask > 0), (crack_mask < 1))
         cracked_blob = cracked_blob.astype(int)
 
         if preview:
             return cracked_blob
         else:
-            self.updateMask(self.bbox, cracked_blob)
+            self.updateUsingMask(self.bbox, cracked_blob)
             return cracked_blob
 
 
@@ -258,12 +280,13 @@ class Blob(object):
         bbox_union = [y_top, x_left, x_right - x_left, y_bottom - y_top]
         mask_union = np.zeros((bbox_union[3], bbox_union[2]))
 
-        for y in range(self.mask.shape[0]):
-            for x in range(self.mask.shape[1]):
+        blob_mask = self.getMask()
+        for y in range(blob_mask.shape[0]):
+            for x in range(blob_mask.shape[1]):
 
                 yy = y + (self.bbox[0] - bbox_union[0])
                 xx = x + (self.bbox[1] - bbox_union[1])
-                mask_union[yy,xx] = self.mask[y,x]
+                mask_union[yy,xx] = blob_mask[y,x]
 
 
         for i in range(points.shape[0]):
@@ -280,7 +303,7 @@ class Blob(object):
 
         mask_union = ndi.binary_fill_holes(mask_union).astype(int)
 
-        self.updateMask(bbox_union, mask_union)
+        self.updateUsingMask(bbox_union, mask_union)
 
         # RE-ADD THE ORIGINAL INNER CONTOURS (I.E. THE HOLES)
         if original_inner_contours:
@@ -289,13 +312,6 @@ class Blob(object):
 
                 # recover inner contour list
                 self.inner_contours.append(inner_contour)
-
-                # update mask
-                [rr,cc] = polygon(inner_contour[:, 1], inner_contour[:, 0])
-                rr = rr - int(self.bbox[0])
-                cc = cc - int(self.bbox[1])
-                self.mask[rr, cc] = 0
-
 
             # update qpainterpath
             self.setupForDrawing()
@@ -333,12 +349,13 @@ class Blob(object):
         bbox_union = [y_top, x_left, x_right - x_left, y_bottom - y_top]
         mask_union = np.zeros((bbox_union[3], bbox_union[2]))
 
-        for y in range(self.mask.shape[0]):
-            for x in range(self.mask.shape[1]):
+        blob_mask = self.getMask()
+        for y in range(blob_mask.shape[0]):
+            for x in range(blob_mask.shape[1]):
 
                 yy = y + (self.bbox[0] - bbox_union[0])
                 xx = x + (self.bbox[1] - bbox_union[1])
-                mask_union[yy,xx] = self.mask[y,x]
+                mask_union[yy,xx] = blob_mask[y,x]
 
         for i in range(points.shape[0]):
 
@@ -371,19 +388,21 @@ class Blob(object):
                   for coords in region.coords:
                       mask_union[coords[0], coords[1]] = 0
 
-        self.updateMask(bbox_union, mask_union)
+        self.updateUsingMask(bbox_union, mask_union)
 
 
-    def createContourFromMask(self):
+    def createContourFromMask(self, mask):
         """
         It creates the contour (and the corrisponding polygon) from the blob mask.
         """
+
+        # NOTE: The mask is expected to be cropped around its bbox (!!) (see the __init__)
 
         self.inner_contours.clear()
 
         # we need to pad the mask to avoid to break the contour that touchs the borders
         PADDED_SIZE = 2
-        img_padded = pad(self.mask, (PADDED_SIZE, PADDED_SIZE), mode="constant", constant_values=(0, 0))
+        img_padded = pad(mask, (PADDED_SIZE, PADDED_SIZE), mode="constant", constant_values=(0, 0))
 
         contours = measure.find_contours(img_padded, 0)
 
@@ -475,21 +494,23 @@ class Blob(object):
         else:
             rgba = qRgba(self.class_color[0], self.class_color[1], self.class_color[2], 100)
 
+        blob_mask = self.getMask()
         for x in range(w):
             for y in range(h):
-                if self.mask[y, x] == 1:
+                if mask[y, x] == 1:
                     self.qimg_mask.setPixel(x, y, rgba)
 
         self.pxmap_mask = QPixmap.fromImage(self.qimg_mask)
 
-    def calculateCentroid(self):
+    def calculateCentroid(self, mask):
 
         sumx = 0.0
         sumy = 0.0
         n = 0
-        for y in range(self.mask.shape[0]):
-            for x in range(self.mask.shape[1]):
-                if self.mask[y, x] == 1:
+
+        for y in range(mask.shape[0]):
+            for x in range(mask.shape[1]):
+                if mask[y, x] == 1:
                     sumx += float(x)
                     sumy += float(y)
                     n += 1
@@ -500,12 +521,12 @@ class Blob(object):
 
         xc = int(self.centroid[0])
         yc = int(self.centroid[1])
-        self.instace_name = "coral-" + str(xc) + "-" + str(yc)
+        self.instance_name = "coral-" + str(xc) + "-" + str(yc)
 
     def calculateContourPerimeter(self, contour):
 
         # perimeter of the outer contour
-        px1 = contour[0 ,0]
+        px1 = contour[0, 0]
         py1 = contour[0, 1]
         N = contour.shape[0]
         pxlast = contour[N-1, 0]
@@ -530,13 +551,73 @@ class Blob(object):
         for contour in self.inner_contours:
             self.perimeter += self.calculateContourPerimeter(self.contour)
 
-    def calculateArea(self):
+    def calculateArea(self, mask):
 
         self.area = 0.0
-        for y in range(self.mask.shape[0]):
-            for x in range(self.mask.shape[1]):
-                if self.mask[y, x] == 1:
+        for y in range(mask.shape[0]):
+            for x in range(mask.shape[1]):
+                if mask[y, x] == 1:
                     self.area += 1.0
+
+    def fromDict(self, dict):
+        """
+        Set the blob information given it represented as a dictionary.
+        """
+
+        self.bbox = np.asarray(dict["bbox"])
+
+        self.centroid = np.asarray(dict["centroid"])
+        self.area = dict["area"]
+        self.perimeter = dict["perimeter"]
+
+        self.contour = np.asarray(dict["contour"])
+        inner_contours = dict["inner contours"]
+        self.inner_contours = []
+        for c in inner_contours:
+            self.inner_contours.append(np.asarray(c))
+
+        self.deep_extreme_points = np.asarray(dict["deep_extreme_points"])
+        self.class_name = dict["class name"]
+        self.class_color = dict["class color"]
+        self.instance_name = dict["instance name"]
+        self.blob_name = dict["blob name"]
+        self.id = dict["id"]
+        self.info = dict["info"]
+
+        # finalize blob
+        self.setupForDrawing()
+
+
+    def toDict(self):
+        """
+        Get the blob information as a dictionary.
+        """
+
+        dict = {}
+
+        dict["bbox"] = self.bbox.tolist()
+
+        dict["centroid"] = self.centroid.tolist()
+        dict["area"] = self.area
+        dict["perimeter"] = self.perimeter
+
+        dict["contour"] = self.contour.tolist()
+
+        dict["inner contours"] = []
+        for c in self.inner_contours:
+            dict["inner contours"].append(c.tolist())
+
+        dict["deep_extreme_points"] = self.deep_extreme_points.tolist()
+
+        dict["class name"] = self.class_name
+        dict["class color"] = self.class_color
+
+        dict["instance name"] = self.instance_name
+        dict["blob name"] = self.blob_name
+        dict["id"] = self.id
+        dict["info"] = self.info
+
+        return dict
 
 
 class Group(object):
@@ -557,9 +638,10 @@ class Group(object):
         sumy = 0.0
         n = 0
         for blob in self.blobs:
-            for y in range(blob.mask.shape[0]):
-                for x in range(blob.mask.shape[1]):
-                    if blob.mask[y, x] == 1:
+            blob_mask = blob.getMask()
+            for y in range(blob_mask.shape[0]):
+                for x in range(blob_mask.shape[1]):
+                    if blob_mask[y, x] == 1:
                         sumx += float(x + blob.bbox[1])
                         sumy += float(y + blob.bbox[0])
                         n += 1
@@ -668,6 +750,9 @@ class Annotation(object):
         bbox_union = [y_top, x_left, x_right - x_left, y_bottom - y_top]
         mask_union = np.zeros((bbox_union[3], bbox_union[2]))
 
+        blobA_mask = blobA.getMask()
+        blobB_mask = blobB.getMask()
+
         for y in range(y1A, y2A):
             for x in range(x1A, x2A):
 
@@ -677,7 +762,7 @@ class Annotation(object):
                 xU = x - bbox_union[1]
                 yU = y - bbox_union[0]
 
-                if blobA.mask[yA, xA] == 1:
+                if blobA_mask[yA, xA] == 1:
                     mask_union[yU, xU] = 1
 
         pixels_intersected = 0
@@ -690,7 +775,7 @@ class Annotation(object):
                 xU = x - bbox_union[1]
                 yU = y - bbox_union[0]
 
-                if blobB.mask[yB, xB] == 1:
+                if blobB_mask[yB, xB] == 1:
                     if mask_union[yU, xU] == 1:
                         pixels_intersected += 1
 
@@ -698,7 +783,7 @@ class Annotation(object):
 
         if pixels_intersected > 0:
 
-            blobA.updateMask(bbox_union, mask_union)
+            blobA.updateUsingMask(bbox_union, mask_union)
 
             return True
 
@@ -717,30 +802,15 @@ class Annotation(object):
         x2A = x1A + blobA.bbox[2]
         y2A = y1A + blobA.bbox[3]
 
-        #penA = QPen(Qt.white)
-        #penA.setWidth(6)
-        #rectA = QRectF(x1A, y1A, x2A-x1A, y2A - y1A)
-        #scene.addRect(rectA, penA, QBrush())
-
         y1B = blobB.bbox[0]
         x1B = blobB.bbox[1]
         x2B = x1B + blobB.bbox[2]
         y2B = y1B + blobB.bbox[3]
 
-        #penB = QPen(Qt.white)
-        #penB.setWidth(6)
-        #rectB = QRectF(x1B, y1B, x2B-x1B, y2B - y1B)
-        #scene.addRect(rectB, penB, QBrush())
-
         x_left = max(x1A, x1B)
         y_top = max(y1A, y1B)
         x_right = min(x2A, x2B)
         y_bottom = min(y2A, y2B)
-
-        #pen = QPen(Qt.red)
-        #pen.setWidth(6)
-        #rectI = QRectF(x_left, y_top, x_right-x_left, y_bottom - y_top)
-        #scene.addRect(rectI, pen, QBrush())
 
         # check if the selection is empty
         if x_right < x_left or y_bottom < y_top:
@@ -752,6 +822,9 @@ class Annotation(object):
             xsup = x_right - blobA.bbox[1]
             ysup = y_bottom - blobA.bbox[0]
 
+            blobA_mask = blobA.getMask()
+            blobB_mask = blobB.getMask()
+
             flag = False
             for y in range(yinf, ysup):
                 for x in range(xinf, xsup):
@@ -759,14 +832,14 @@ class Annotation(object):
                     xB = x + blobA.bbox[1] - blobB.bbox[1]
                     yB = y + blobA.bbox[0] - blobB.bbox[0]
 
-                    if blobB.mask[yB, xB] == 1:
-                        blobA.mask[y, x] = 0
+                    if blobB_mask[yB, xB] == 1:
+                        blobA_mask[y, x] = 0
                         flag = True  # at least one pixel intersect
 
             # bbox is the same
             # mask has been updated directly
             if flag:
-                blobA.updateMask(blobA.bbox, blobA.mask)
+                blobA.updateUsingMask(blobA.bbox, blobA_mask)
                 return True
             else:
                 return False
@@ -871,10 +944,11 @@ class Annotation(object):
             else:
                 rgb = qRgb(blob.class_color[0], blob.class_color[1], blob.class_color[2])
 
-            for x in range(blob.mask.shape[1]):
-                for y in range(blob.mask.shape[0]):
+            blob_mask = blob.getMask()
+            for x in range(blob_mask.shape[1]):
+                for y in range(blob_mask.shape[0]):
 
-                    if blob.mask[y, x] == 1:
+                    if blob_mask[y, x] == 1:
                         myPNG.setPixel(x + blob.bbox[1], y + blob.bbox[0], rgb)
 
             # draw black border
@@ -886,88 +960,3 @@ class Annotation(object):
         myPNG.save(filename)
 
 
-    def load(self, filename):
-        """
-        Load all the blobs.
-        """
-
-        f = bz2.BZ2File(filename, "rb")
-
-        # load segmentation blobs
-        number_of_blobs = pickle.load(f)
-        for i in range(number_of_blobs):
-
-            blob = Blob(None, 0, 0, 0) # empty blob
-
-            blob.bbox = pickle.load(f)
-            blob.centroid = pickle.load(f)
-            blob.area = pickle.load(f)
-            blob.perimeter = pickle.load(f)
-
-            blob.mask = pickle.load(f)
-            blob.contour = pickle.load(f)
-            number_of_inner_contours = pickle.load(f)
-            for i in range(number_of_inner_contours):
-                contour = pickle.load(f)
-                blob.inner_contours.append(contour)
-
-            blob.deep_extreme_points = pickle.load(f)
-            blob.class_name = pickle.load(f)
-            blob.class_color = pickle.load(f)
-            blob.instace_name = pickle.load(f)
-            blob.blob_name = pickle.load(f)
-            blob.id = pickle.load(f)
-            blob.info = pickle.load(f)
-
-            # finalize blob
-            blob.setupForDrawing()
-
-            # add to the list of all blobs
-            self.seg_blobs.append(blob)
-
-            if i % 10 == 0:
-                perc = (100.0*i) / (float)(number_of_blobs)
-                print("Loading %.2f %%" % perc)
-
-        f.close()
-
-    def save(self, filename):
-        """
-        Save all the blobs.
-        """
-
-        f = bz2.BZ2File(filename, "wb")
-
-        # save segmentation blobs
-
-        number_of_blobs = len(self.seg_blobs)
-        pickle.dump(number_of_blobs, f)
-
-        for i, blob in enumerate(self.seg_blobs):
-
-            pickle.dump(blob.bbox, f)
-            pickle.dump(blob.centroid, f)
-            pickle.dump(blob.area, f)
-            pickle.dump(blob.perimeter, f)
-
-            pickle.dump(blob.mask, f)
-            pickle.dump(blob.contour, f)
-            number_of_inner_contours = len(blob.inner_contours)
-            pickle.dump(number_of_inner_contours, f)
-            if number_of_inner_contours > 0:
-                for contour in blob.inner_contours:
-                    pickle.dump(contour, f)
-
-            pickle.dump(blob.deep_extreme_points, f)
-            pickle.dump(blob.class_name, f)
-            pickle.dump(blob.class_color, f)
-            pickle.dump(blob.instace_name, f)
-            pickle.dump(blob.blob_name, f)
-            pickle.dump(blob.id, f)
-            pickle.dump(blob.info, f)
-
-            if i % 10 == 0:
-                perc = (100.0*i) / (float)(number_of_blobs)
-                print("Saving.. %.2f %%" % perc)
-
-        f.close()
