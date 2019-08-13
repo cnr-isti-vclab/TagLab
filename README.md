@@ -1,4 +1,4 @@
-### TagLab:  July 2019 Version 
+### TagLab: an image segmentation tool oriented to marine data analysis
 
 TagLab was created to support the activity of annotation and extraction of statistical data from ortho-maps of benthic communities. The tool includes different types of CNN-based segmentation networks specially trained for agnostic (relative only to contours) or semantic (also related to species) recognition of corals. TagLab is an ongoing project of the Visual Computing Lab http://vcg.isti.cnr.it/.
 
@@ -6,7 +6,7 @@ TagLab was created to support the activity of annotation and extraction of stati
 
   
 ### Interaction:
-TagLab allows you to :
+TagLab allows to :
 
 - zoom and navigate a large map using a Map viewer
        -zoom/ mouse wheel
@@ -27,41 +27,34 @@ Deep Extreme Cut original code : https://github.com/scaelles/DEXTR-PyTorch/
 - Export a .jpg file of a black background with totally opaque labels.
 
 
-### Install TagLab
+### Installing TagLab
 #### Step 0: Requirements
-Taglab relies on the following libraries/packages:
+Taglab relies on __*CUDA 10*__ and __*Python 3.6*__ and needs a few packages to be installed. Probably the simplest way to prepare a clean pc to run TagLab is to install the standard python distribution (3.6 version) and then run the pip installer for adding all following packages:
 
-| Python Version: 3.6 - CUDA 10.0  |
-|---|
-|  pytorch 1.0.0  |
-|   pyqt5 5.13.0|
-|  scikit-image 0.15.0 |
-|  scikit-learn 0.20.2 |
-|  pandas 0.24.0 |
-| scipy 1.2.0  |
+| Package    | Command |
+|-----------|----|
+|  pytorch 1.0+  | `pip3 install torch==1.2.0 torchvision==0.4.0 -f https://download.pytorch.org/whl/torch_stable.html `|
+|  pyqt5 5.13+|  `pip3 install pyqt5 ` |
+|  scikit-image  |  `pip3 install scikit-image `|
+|  scikit-learn  | `pip3 install scikit-learn `|
+|  pandas  | `pip3 install pandas `|
+|  opencv-python | `pip3 install opencv-python `|
+|  matplotlib  | `pip3 install matplotlib `|
 
-#### Step 1: Clone the repo
+
+
+#### Step 1: Clone the repository
 Just click on the "Clone or Download" button at the top of this page and unzip the whole package in a folder of your choice. 
 
 #### Step 2: Download the network weights
-TagLab use a retrained dextr network for the four click segmentation, the file with the weights is not included in the repo for its size and have to be downloaded separtately from the following link and you must save the .pth file in the 'models' folder
+TagLab uses a retrained _dextr_ network for the four-click segmentation; the file with the weights is not included in the git repository for its size and have to be downloaded from this **[link](http://vcg.isti.cnr.it/~cignoni/TagLab/dextr_corals.pth  )**; the downloaded `dextr_corals.pth` file must be placed in the `models` folder of the repository downloaded at the previous steps
 
-http://vcg.isti.cnr.it/~cignoni/TagLab/dextr_corals.pth  
 
-#### Step 3: Configure and start
-Enter in the folder where you have downloaded the rep and edit the Configuration.py file; you have to fill the followng fields:
-```sh
-self.image_map_filename = "...\\MyFolderName\\MyFileName.png"
-self.project_dir = "...\\MyFolderName\\MyProjectFolder
-self.export_dir = "...\\MyFolderName\\MyExportFolder
-```
+#### Step 3: Run
+Open a python prompt and just start `TagLab.py`, the tool will start and you can try to open the sample that you can find in the `projects` folder. 
 
-Finally to lauch the tool simply start, with python, TagLab.py.
-
-#### Step 4: Label Configuration
-The set of label used in the tool is customizable; to add/delete a label name or change a RGB value go to Labels.py file and edit the dictionary: self.LABELS_LIST.
  
-### Future adjustment : late 2019
+### Planned features : late 2019
 
 - Optimization of the EditBorder tool (currently slow on large instances).
 - Project initialization Interface (Map, scale, Folder, Global Coordinates).
