@@ -1562,7 +1562,7 @@ class TagLab(QWidget):
 
         self.crackWidget.apply()
 
-        loginfo.info("CREATECRACK creates a crack.")
+        logfile.info("CREATECRACK creates a crack.")
 
         self.drawBlob(self.selected_blobs[0], selected=True)
 
