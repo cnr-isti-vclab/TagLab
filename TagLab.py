@@ -606,7 +606,8 @@ class TagLab(QWidget):
     def keyPressEvent(self, event):
 
         key_pressed = event.text()
-        logfile.info("Key %s has been pressed.", key_pressed)
+        str = "Key '" + key_pressed + "' has been pressed."
+        logfile.info(str)
 
         if event.key() == Qt.Key_Escape:
             # RESET CURRENT OPERATION
@@ -982,10 +983,11 @@ class TagLab(QWidget):
         else:
 
             if blob in self.selected_blobs:
-                loginfo.info("An already selected blob has been added to the current selection.")
+                logfile.info("An already selected blob has been added to the current selection.")
             else:
                 self.selected_blobs.append(blob)
-                logfile.info("A new blob has been selected.")
+                str = "A new blob (" + blob.blob_name + ") has been selected."
+                logfile.info(str)
 
     @pyqtSlot()
     def noteChanged(self):
@@ -1280,7 +1282,7 @@ class TagLab(QWidget):
 
         else:
 
-            self.infoWidget.setInfoMessage(self, "You need to select <em>two</em> blobs for SUBTRACT operation.")
+            self.infoWidget.setInfoMessage("You need to select <em>two</em> blobs for SUBTRACT operation.")
 
 
     def divide(self):
