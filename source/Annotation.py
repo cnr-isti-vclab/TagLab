@@ -890,8 +890,7 @@ class Annotation(object):
     def export_data_table_for_Scripps(self, filename):
 
         # create a list of properties
-        properties = ['class_name', 'centroid_x', 'centroid_y', 'coral_area', 'coral_perimeter']
-        # manca 'coral_maximum_diameter' che è da aggiungere in annotation]
+        properties = ['Class name', 'Centroid x', 'Centroid y', 'Coral area', 'Coral perimeter', 'Coral maximum diameter', 'Coral note']
 
         # create a list of instances
         name_list = []
@@ -900,13 +899,12 @@ class Annotation(object):
             name_list.append(index)
 
         number_of_seg = len(self.seg_blobs)
-        coral_area = np.zeros(number_of_seg)
         class_name = []
         centroid_x = np.zeros(number_of_seg)
         centroid_y = np.zeros(number_of_seg)
         coral_area = np.zeros(number_of_seg)
         coral_perimeter = np.zeros(number_of_seg)
-        # coral_maximum_diameter= np.zeros(number_of_seg)
+        coral_maximum_diameter = np.zeros(number_of_seg)
         coral_note = []
 
         for i, blob in enumerate(self.seg_blobs):
@@ -915,17 +913,18 @@ class Annotation(object):
             centroid_y[i] = blob.centroid[1]
             coral_area[i] = blob.area
             coral_perimeter[i] = blob.perimeter
-            # coral_maximum_diameter[i]= blob.major_axis_length
+            #coral_maximum_diameter[i] = blob.major_axis_length
             coral_note.append(blob.note)
 
 
         # create a dictionary
         dic = {
-            'Class_name': class_name,
+            'Class name': class_name,
             'Centroid x': centroid_x,
             'Centroid y': centroid_y,
             'Coral area': coral_area,
             'Coral perimeter': coral_perimeter,
+            'Coral maximum diameter': coral_maximum_diameter,
             'Coral note': coral_note }
 
         # create dataframe
