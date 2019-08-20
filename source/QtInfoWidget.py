@@ -10,7 +10,7 @@ class QtInfoWidget(QWidget):
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
 
         fnt = QFont("Times", 8)
-        self.lblMessage = QLabel("To begin, create a new project or load an existing one.")
+        self.lblMessage = QLabel("To begin, open an existing project or load a map.")
         self.lblMessage.setAlignment(Qt.AlignLeft)
         self.lblMessage.setMaximumHeight(50)
         self.lblMessage.setFont(fnt)

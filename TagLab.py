@@ -379,8 +379,8 @@ class TagLab(QWidget):
         self.sliderTrasparency.setValue(50)
         self.transparency_value = 0.5
 
-        self.img_map  = None
-        self.Img_thumb_map = None
+        self.img_map = None
+        self.img_thumb_map = None
         self.img_overlay = QImage(16, 16, QImage.Format_RGB32)
 
         # LOAD DEEP EXTREME NETWORK
@@ -783,12 +783,12 @@ class TagLab(QWidget):
 
     def resetAll(self):
 
-        if self.img_map:
+        if self.img_map is not None:
             del self.img_map
             self.img_map = None
 
-        if self.img_thumb_map:
-            del self.img_thumn_map
+        if self.img_thumb_map is not None:
+            del self.img_thumb_map
             self.img_thumb_map = None
 
         if self.annotations:
@@ -1629,6 +1629,8 @@ class TagLab(QWidget):
         self.resetAll()
 
         self.setProjectTitle("NONE")
+
+        self.infoWidget.setInfoMessage("TagLab has been reset. To continue open an existing project or load a map.")
 
     @pyqtSlot()
     def setMapToLoad(self):
