@@ -874,7 +874,7 @@ class TagLab(QWidget):
 
                 elif len(self.selected_blobs) > 0:
 
-                    if modifiers != Qt.ShiftModifier:
+                    if not (modifiers & Qt.ShiftModifier):
                         self.resetSelection()
 
                     self.addToSelectedList(selected_blob)
@@ -1406,14 +1406,13 @@ class TagLab(QWidget):
 
         modifiers = QApplication.queryKeyboardModifiers()
 
-        if self.tool_used == "ASSIGN" and modifiers != Qt.ControlModifier:
+        if self.tool_used == "ASSIGN" and not (modifiers & Qt.ControlModifier):
 
             selected_blob = self.annotations.clickedBlob(x, y)
 
             if selected_blob is not None:
 
                 if not self.isSelected(selected_blob):
-
                     self.resetSelection()
                     self.addToSelectedList(selected_blob)
 
@@ -1427,7 +1426,7 @@ class TagLab(QWidget):
 
                     self.drawBlob(blob, selected=True)
 
-        elif self.tool_used == "EDITBORDER" and modifiers != Qt.ControlModifier:
+        elif self.tool_used == "EDITBORDER" and not (modifiers & Qt.ControlModifier):
 
             if len(self.selected_blobs) == 1:
 
@@ -1489,7 +1488,7 @@ class TagLab(QWidget):
                     self.crackWidget.closeCrackWidget.connect(self.crackCancel)
                     self.crackWidget.show()
 
-        elif self.tool_used == "RULER" and modifiers != Qt.ControlModifier:
+        elif self.tool_used == "RULER" and not (modifiers & Qt.ControlModifier):
 
             if self.ruler_points_number < 2:
 
@@ -1506,7 +1505,7 @@ class TagLab(QWidget):
 
         elif self.tool_used == "DEEPEXTREME":
 
-            if self.extreme_points_number < 4 and modifiers != Qt.ControlModifier:
+            if self.extreme_points_number < 4 and not (modifiers & Qt.ControlModifier):
 
                 ind = self.extreme_points_number
                 self.extreme_points[ind, 0] = x
