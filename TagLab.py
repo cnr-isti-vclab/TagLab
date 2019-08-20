@@ -1661,7 +1661,7 @@ class TagLab(QWidget):
             # transfer settings
             self.map_image_filename = self.mapWidget.editMapFile.text()
             self.map_acquisition_date = self.mapWidget.editAcquisitionDate.text()
-            self.map_px_to_mm_factor = self.mapWidget.editScaleFactor.text()
+            self.map_px_to_mm_factor = float(self.mapWidget.editScaleFactor.text())
 
             # close map settings
             self.mapWidget.close()
