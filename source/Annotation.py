@@ -126,8 +126,8 @@ class Blob(object):
         # color of the class
         self.class_color = [128, 128, 128]
 
-        # generic info, i.e. damage type
-        self.info = ""
+        # note about the coral, i.e. damage type
+        self.note = ""
 
         # QImage corresponding to the current mask
         self.qimg_mask = None
@@ -152,7 +152,7 @@ class Blob(object):
         blob.classcolor = self.classcolor
         blob.instance_name = self.instance_name
         blob.id = self.id
-        blob.info = self.info
+        blob.note = self.note
 
         return blob
 
@@ -277,7 +277,7 @@ class Blob(object):
         x_right = max(x2A, x2B) + 2
         y_bottom = max(y2A, y2B) + 2
 
-        bbox_union = [y_top, x_left, x_right - x_left, y_bottom - y_top]
+        bbox_union = np.array([y_top, x_left, x_right - x_left, y_bottom - y_top])
         mask_union = np.zeros((bbox_union[3], bbox_union[2]))
 
         blob_mask = self.getMask()
@@ -346,7 +346,7 @@ class Blob(object):
         x_right = max(x2A, x2B) + 2
         y_bottom = max(y2A, y2B) + 2
 
-        bbox_union = [y_top, x_left, x_right - x_left, y_bottom - y_top]
+        bbox_union = np.array([y_top, x_left, x_right - x_left, y_bottom - y_top])
         mask_union = np.zeros((bbox_union[3], bbox_union[2]))
 
         blob_mask = self.getMask()
@@ -582,7 +582,7 @@ class Blob(object):
         self.instance_name = dict["instance name"]
         self.blob_name = dict["blob name"]
         self.id = dict["id"]
-        self.info = dict["info"]
+        self.note = dict["note"]
 
         # finalize blob
         self.setupForDrawing()
@@ -615,7 +615,7 @@ class Blob(object):
         dict["instance name"] = self.instance_name
         dict["blob name"] = self.blob_name
         dict["id"] = self.id
-        dict["info"] = self.info
+        dict["note"] = self.note
 
         return dict
 
@@ -747,7 +747,7 @@ class Annotation(object):
         x_right = max(x2A, x2B)
         y_bottom = max(y2A, y2B)
 
-        bbox_union = [y_top, x_left, x_right - x_left, y_bottom - y_top]
+        bbox_union = np.array([y_top, x_left, x_right - x_left, y_bottom - y_top])
         mask_union = np.zeros((bbox_union[3], bbox_union[2]))
 
         blobA_mask = blobA.getMask()
@@ -907,6 +907,7 @@ class Annotation(object):
         coral_area = np.zeros(number_of_seg)
         coral_perimeter = np.zeros(number_of_seg)
         # coral_maximum_diameter= np.zeros(number_of_seg)
+        coral_note = []
 
         for i, blob in enumerate(self.seg_blobs):
             class_name.append(blob.class_name)
@@ -915,14 +916,17 @@ class Annotation(object):
             coral_area[i] = blob.area
             coral_perimeter[i] = blob.perimeter
             # coral_maximum_diameter[i]= blob.major_axis_length
+            coral_note.append(blob.note)
+
 
         # create a dictionary
         dic = {
-            'class_name': class_name,
-            'centroid_x': centroid_x,
-            'centroid_y': centroid_y,
-            'coral_area': coral_area,
-            'coral_perimeter': coral_perimeter}
+            'Class_name': class_name,
+            'Centroid x': centroid_x,
+            'Centroid y': centroid_y,
+            'Coral area': coral_area,
+            'Coral perimeter': coral_perimeter,
+            'Coral note': coral_note }
 
         # create dataframe
         df = pd.DataFrame(dic, columns=properties, index=name_list)

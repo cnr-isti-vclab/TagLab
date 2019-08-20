@@ -993,7 +993,7 @@ class TagLab(QWidget):
         if len(self.selected_blobs) > 0:
 
             for blob in self.selected_blobs:
-                blob.info = self.editNote.toPlainText()
+                blob.note = self.editNote.toPlainText()
 
     def updatePanelInfo(self, blob):
 
@@ -1007,7 +1007,7 @@ class TagLab(QWidget):
         text2 = "Area: {:8.2f}".format(blob.area)
         self.lblA.setText(text2)
 
-        self.editNote.setPlainText(blob.info)
+        self.editNote.setPlainText(blob.note)
 
 
     def deleteSelected(self):
