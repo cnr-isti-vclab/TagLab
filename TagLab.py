@@ -180,8 +180,21 @@ class TagLab(QWidget):
         self.btnEditBorder.setIcon(QIcon("icons\\edit.png"))
         self.btnEditBorder.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
         self.btnEditBorder.setMaximumWidth(BUTTON_SIZE)
-        self.btnEditBorder.setToolTip("Edit Border")
+        self.btnEditBorder.setToolTip("Edit border")
         self.btnEditBorder.clicked.connect(self.editBorder)
+
+        self.btnFreehand = QPushButton()
+        self.btnFreehand.setEnabled(True)
+        self.btnFreehand.setCheckable(True)
+        self.btnFreehand.setFlat(True)
+        self.btnFreehand.setStyleSheet(flatbuttonstyle1)
+        self.btnFreehand.setMinimumWidth(ICON_SIZE)
+        self.btnFreehand.setMinimumHeight(ICON_SIZE)
+        self.btnFreehand.setIcon(QIcon("icons\\edit.png"))
+        self.btnFreehand.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
+        self.btnFreehand.setMaximumWidth(BUTTON_SIZE)
+        self.btnFreehand.setToolTip("Freehand segmentation")
+        self.btnFreehand.clicked.connect(self.freehandSegmentation)
 
         self.btnCreateCrack = QPushButton()
         self.btnCreateCrack.setEnabled(True)
@@ -228,6 +241,7 @@ class TagLab(QWidget):
         layout_tools.addWidget(self.btnMove)
         layout_tools.addWidget(self.btnAssign)
         layout_tools.addWidget(self.btnEditBorder)
+        layout_tools.addWidget(self.btnFreehand)
         layout_tools.addWidget(self.btnCreateCrack)
         layout_tools.addWidget(self.btnRuler)
         #layout_tools.addWidget(self.btnCutter)
@@ -417,6 +431,11 @@ class TagLab(QWidget):
         self.editborder_points = np.array(())
         self.editborder_qpath = None
         self.editborder_qpath_gitem = None
+
+        # DATA FOR THE FREEHAND TOOL
+        self.freehand_points = np.array(())
+        self.freehand_qpath = None
+        self.freehand_qpath_gitem = None
 
         # DATA FOR THE CREATECRACK TOOL
         self.crackWidget = None
@@ -616,6 +635,8 @@ class TagLab(QWidget):
             self.resetSelection()
             if self.tool_used == "EDITBORDER":
                 self.resetEditBorder()
+            elif self.tool_used == "FREEHAND":
+                self.resetFreehand()
             elif self.tool_used == "RULER":
                 self.resetRulerTool()
             elif self.tool_used == "DEEPEXTREME":
@@ -683,6 +704,37 @@ class TagLab(QWidget):
 
                 self.resetEditBorder()
 
+
+            # APPLY THE FREEHAND OPERATION
+            elif self.tool_used == "FREEHAND":
+
+                logfile.info("FREEHAND operation begins..")
+
+                pxs = utils.draw_open_polygon(self.freehand_points[:, 1], self.freehand_points[:, 0])
+                pts = np.asarray(pxs)
+                pts = pts.transpose()
+                pts[:, [1, 0]] = pts[:, [0, 1]]
+
+                # create an empty blob
+                blob = Blob(None, 0, 0, 0)
+
+                flagValid = blob.createFromClosedCurve(pts)
+
+                if flagValid is True:
+                    logfile.info("FREEHAND operation ends.")
+
+                    id = len(self.annotations.seg_blobs)
+                    blob.setId(id + 1)
+                    self.annotations.seg_blobs.append(blob)
+
+                    self.resetSelection()
+                    self.addToSelectedList(blob)
+                    self.drawBlob(blob, selected=True)
+
+                else:
+                    logfile.info("FREEHAND operation not done (invalid snap).")
+
+                self.resetFreehand()
 
             # APPLY DEEP EXTREME (IF FOUR POINTS HAVE BEEN SELECTED)
             elif self.tool_used == "DEEPEXTREME" and self.extreme_points_number == 4:
@@ -813,6 +865,7 @@ class TagLab(QWidget):
         self.btnMove.setChecked(False)
         self.btnAssign.setChecked(False)
         self.btnEditBorder.setChecked(False)
+        self.btnFreehand.setChecked(False)
         self.btnRuler.setChecked(False)
         self.btnCreateCrack.setChecked(False)
 
@@ -936,6 +989,29 @@ class TagLab(QWidget):
 
         logfile.info("EDITBORDER tool is active")
 
+    @pyqtSlot()
+    def freehandSegmentation(self):
+        """
+        Activate the tool "FREEHAND" for manual segmentation.
+        """
+
+        self.resetToolbar()
+        self.resetTools()
+        self.resetSelection()
+
+        self.btnFreehand.setChecked(True)
+        self.tool_used = "FREEHAND"
+
+        pen = QPen(Qt.black)
+        pen.setWidth(self.BLOB_BORDER_WIDTH)
+
+        self.freehand_qpath = QPainterPath()
+        self.freehand_qpath_gitem = self.viewerplus.scene.addPath(self.freehand_qpath, pen, QBrush())
+
+        self.viewerplus.disablePan()
+        self.viewerplus.enableZoom()
+
+        logfile.info("FREEHAND tool is active")
 
     @pyqtSlot()
     def ruler(self):
@@ -1357,13 +1433,23 @@ class TagLab(QWidget):
 
     def resetEditBorder(self):
 
-        if self.editborder_qpath_gitem != None:
+        if self.editborder_qpath_gitem is not None:
             self.editborder_qpath = QPainterPath()
             self.editborder_qpath_gitem.setPath(self.editborder_qpath)
         else:
             self.editborder_qpath = None
 
         self.editborder_points = np.array(())
+
+    def resetFreehand(self):
+
+        if self.freehand_qpath_gitem is not None:
+            self.freehand_qpath = QPainterPath()
+            self.freehand_qpath_gitem.setPath(self.freehand_qpath)
+        else:
+            self.freehand_qpath = None
+
+        self.freehand_points = np.array(())
 
     def resetCrackTool(self):
 
@@ -1452,12 +1538,12 @@ class TagLab(QWidget):
                     pen.setCapStyle(Qt.RoundCap)
                     pen.setWidth(self.BLOB_BORDER_WIDTH)
 
-                    if self.editborder_qpath == None:
+                    if self.editborder_qpath is None:
                         self.editborder_qpath = QPainterPath()
 
                     self.editborder_qpath.moveTo(QPointF(x, y))
 
-                    if self.editborder_qpath_gitem == None:
+                    if self.editborder_qpath_gitem is None:
                         self.editborder_qpath_gitem = self.viewerplus.scene.addPath(self.editborder_qpath, pen, QBrush())
                     else:
                         self.editborder_qpath_gitem.setPath(self.editborder_qpath)
@@ -1474,6 +1560,39 @@ class TagLab(QWidget):
             else:
 
                 logfile.info("Invalid EDITBORDER drawing (no blob selected) (!)")
+
+        elif self.tool_used == "FREEHAND" and not (modifiers & Qt.ControlModifier):
+
+            logfile.info("FREEHAND drawing")
+
+            if len(self.freehand_points) == 0:
+
+                self.freehand_points = np.array([[x, y]])
+
+                pen = QPen(Qt.black)
+                pen.setJoinStyle(Qt.MiterJoin)
+                pen.setCapStyle(Qt.RoundCap)
+                pen.setWidth(self.BLOB_BORDER_WIDTH)
+
+                if self.freehand_qpath is None:
+                    self.freehand_qpath = QPainterPath()
+
+                self.freehand_qpath.moveTo(QPointF(x, y))
+
+                if self.freehand_qpath_gitem is None:
+                    self.freehand_qpath_gitem = self.viewerplus.scene.addPath(self.freehand_qpath, pen, QBrush())
+                else:
+                    self.freehand_qpath_gitem.setPath(self.freehand_qpath)
+
+                logfile.debug("Number of FREEHAND points: %d", self.freehand_points.shape[0])
+
+            else:
+
+                self.freehand_points = np.append(self.freehand_points, [[x, y]], axis=0)
+                self.freehand_qpath.lineTo(QPointF(x, y))
+                self.freehand_qpath_gitem.setPath(self.freehand_qpath)
+
+                logfile.debug("Number of FREEHAND points: %d", self.freehand_points.shape[0])
 
         elif self.tool_used == "CREATECRACK":
 
@@ -1562,6 +1681,18 @@ class TagLab(QWidget):
                     self.editborder_qpath_gitem.setPath(self.editborder_qpath)
 
                     logfile.debug("Number of EDITBORDER points: %d", self.editborder_points.shape[0])
+
+            elif self.tool_used == "FREEHAND":
+
+                logfile.info("FREEHAND moving")
+
+                if len(self.freehand_points) > 0:
+
+                    self.freehand_points = np.append(self.freehand_points, [[x, y]], axis=0)
+                    self.freehand_qpath.lineTo(QPointF(x,y))
+                    self.freehand_qpath_gitem.setPath(self.freehand_qpath)
+
+                    logfile.debug("Number of FREEHAND points: %d", self.freehand_points.shape[0])
 
 
     @pyqtSlot()
