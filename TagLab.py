@@ -613,6 +613,7 @@ class TagLab(QWidget):
 
         if event.key() == Qt.Key_Escape:
             # RESET CURRENT OPERATION
+            self.resetSelection()
             if self.tool_used == "EDITBORDER":
                 self.resetEditBorder()
             elif self.tool_used == "RULER":
@@ -859,7 +860,9 @@ class TagLab(QWidget):
         Selection operation.
         """
 
-        if not self.tool_used == "DEEPEXTREME":
+        # NOTE: double click selection is disabled with ASSIGN, RULER and DEEPEXTREME tools
+
+        if not self.tool_used == "ASSIGN" and not self.tool_used == "RULER" and not self.tool_used == "DEEPEXTREME" :
 
             selected_blob = self.annotations.clickedBlob(x, y)
 
@@ -942,6 +945,8 @@ class TagLab(QWidget):
 
         self.resetToolbar()
         self.resetTools()
+
+        self.resetSelection()
 
         self.btnRuler.setChecked(True)
         self.tool_used = "RULER"
@@ -1415,7 +1420,11 @@ class TagLab(QWidget):
             if selected_blob is not None:
 
                 if not self.isSelected(selected_blob):
-                    self.resetSelection()
+
+                    # if shift is not pressed reset current selection
+                    if not (modifiers & Qt.ShiftModifier):
+                        self.resetSelection()
+
                     self.addToSelectedList(selected_blob)
 
                 for blob in self.selected_blobs:
@@ -1787,7 +1796,7 @@ class TagLab(QWidget):
 
         QApplication.restoreOverrideCursor()
 
-        self.loadMap()ù
+        self.loadMap()
 
         self.setProjectTitle(self.project_name)
 
