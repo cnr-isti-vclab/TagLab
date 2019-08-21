@@ -89,6 +89,8 @@ class TagLab(QWidget):
         self.map_acquisition_date = "YYYY-MM-DD"
         self.map_px_to_mm_factor = 1.0
 
+        self.project_to_save = ""
+
         self.recentFileActs = []
         self.maxRecentFiles = 4
 
@@ -436,22 +438,22 @@ class TagLab(QWidget):
 
         logfile.info("Inizialization finished!")
 
+        # autosave timer
+        self.timer = None
+
         self.move()
 
-        # AUTOSAVE
-        self.flagAutosave = True
 
-        if self.flagAutosave:
-            self.timer = QTimer(self)
-            self.timer.timeout.connect(self.autosave)
-            self.timer.start(180000)   # save every 3 minute
-        else:
-            self.timer = None
+    def activateAutosave(self):
 
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.autosave)
+        self.timer.start(180000)  # save every 3 minute
 
     @pyqtSlot()
     def autosave(self):
-        print("Save annotations, please ! ")
+
+        self.save(self.project_name)
 
     # call by pressing right button
     def openContextMenu(self, position):
@@ -1764,6 +1766,8 @@ class TagLab(QWidget):
         Load a previously saved projects.
         """
 
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+
         f = open(filename, "r")
 
         loaded_dict = json.load(f)
@@ -1781,18 +1785,25 @@ class TagLab(QWidget):
 
         f.close()
 
-        self.loadMap()
+        QApplication.restoreOverrideCursor()
+
+        self.loadMap()ù
 
         self.setProjectTitle(self.project_name)
 
+        if self.timer is None:
+            self.activateAutosave()
+
         self.drawAnnotations()
 
-        self.infoWidget.setInfoMessage("The project has been successfully open.")
+        self.infoWidget.setInfoMessage("The given project has been successfully open.")
 
     def save(self, filename):
         """
         Save the current project.
         """
+
+        QApplication.setOverrideCursor(Qt.WaitCursor)
 
         f = open(filename, "w")
 
@@ -1817,7 +1828,12 @@ class TagLab(QWidget):
 
         f.close()
 
-        self.infoWidget.setInfoMessage("Project configuration has been successfully saved.")
+        QApplication.restoreOverrideCursor()
+
+        if self.timer is None:
+            self.activateAutosave()
+
+        self.infoWidget.setInfoMessage("Current project has been successfully saved.")
 
 
     def loadingDeepExtremeNetwork(self):
