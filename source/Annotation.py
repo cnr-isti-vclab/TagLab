@@ -111,7 +111,7 @@ class Blob(object):
             # a string with a progressive number to identify the instance
             self.instance_name = "coral" + str(id)
 
-            # a string with a progressive number to identify the blob plus its centroid
+            # a string with a number to identify the blob plus its centroid
             xc = int(self.centroid[0])
             yc = int(self.centroid[1])
             self.blob_name = "blob" + str(id) + "-" + str(xc) + "-" + str(yc)
@@ -155,6 +155,14 @@ class Blob(object):
         blob.note = self.note
 
         return blob
+
+    def setId(self, id):
+
+        # a string with a number to identify the blob plus its centroid
+        xc = int(self.centroid[0])
+        yc = int(self.centroid[1])
+        self.blob_name = "blob" + str(id) + "-" + str(xc) + "-" + str(yc)
+        self.id = id
 
     def getMask(self):
         """
@@ -215,6 +223,79 @@ class Blob(object):
             snappoints = points[first_el:last_el, :].copy()
 
         return snappoints
+
+
+    def createFromClosedCurve(self, points):
+        """
+        It creates a blob starting from a closed curve. If the curve is not closed False is returned.
+        If the curve intersect itself many times the first segmented region is created.
+        """
+
+        pt_min = np.amin(points, axis=0)
+        xmin = pt_min[0]
+        ymin = pt_min[1]
+        pt_max = np.amax(points, axis=0)
+        xmax = pt_max[0]
+        ymax = pt_max[1]
+
+        x_left = int(xmin) - 8
+        y_top = int(ymin) - 8
+        x_right = int(xmax) + 8
+        y_bottom = int(ymax) + 8
+
+        bbox = np.array([y_top, x_left, x_right - x_left, y_bottom - y_top])
+        mask = np.zeros((bbox[3], bbox[2]))
+        mask_area = bbox[3] * bbox[2]
+
+        for i in range(points.shape[0]):
+
+            x = points[i, 0]
+            y = points[i, 1]
+
+            yy = int(y) - bbox[0]
+            xx = int(x) - bbox[1]
+
+            for offsetx in range(-1,2):
+                for offsety in range(-1,2):
+                    mask[yy + offsety, xx + offsetx] = 1
+
+        mask_flood = flood(mask, (4, 4), tolerance=0).astype(int)
+
+        for i in range(points.shape[0]):
+
+            x = points[i, 0]
+            y = points[i, 1]
+
+            yy = int(y) - bbox[0]
+            xx = int(x) - bbox[1]
+
+            for offsetx in range(-1,2):
+                for offsety in range(-1,2):
+                    mask_flood[yy + offsety, xx + offsetx] = 1
+
+        for y in range(mask_flood.shape[0]):
+            for x in range(mask_flood.shape[1]):
+                if mask_flood[y, x] == 1:
+                    mask[y, x] = 0
+                else:
+                    mask[y, x] = 1
+
+        mask = ndi.binary_fill_holes(mask).astype(int)
+
+        # check
+        regions = measure.regionprops(mask)
+
+        if len(regions) != 1:
+            return False
+        else:
+
+            region = regions[0]
+            check = region.area / mask_area
+            if check > 0.95:
+                return False
+            else:
+                self.updateUsingMask(bbox, mask)
+                return True
 
     def createCrack(self, input_arr, x, y, tolerance, preview=True):
 
