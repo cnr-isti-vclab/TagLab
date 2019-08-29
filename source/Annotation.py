@@ -485,7 +485,7 @@ class Blob(object):
         PADDED_SIZE = 2
         img_padded = pad(mask, (PADDED_SIZE, PADDED_SIZE), mode="constant", constant_values=(0, 0))
 
-        contours = measure.find_contours(img_padded, 0)
+        contours = measure.find_contours(img_padded, 0.5)
 
         number_of_contours = len(contours)
 
@@ -502,11 +502,10 @@ class Blob(object):
 
             # divide the contours in OUTER contour and INNER contours
             for i, contour in enumerate(contours):
-                coords = measure.approximate_polygon(contour, tolerance=1.2)
                 if i == index:
-                    self.contour = np.array(coords)
+                    self.contour = np.array(contour)
                 else:
-                    coordinates = np.array(coords)
+                    coordinates = np.array(contour)
                     self.inner_contours.append(coordinates)
 
             # adjust the coordinates of the outer contour
