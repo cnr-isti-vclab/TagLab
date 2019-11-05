@@ -158,8 +158,8 @@ class LabelsWidget(QWidget):
         self.setMinimumHeight(200)
 
 
-        self.icon_eyeopen = QIcon(imdir+"icons\\eye.png")
-        self.icon_eyeclosed = QIcon(imdir+"icons\\cross.png")
+        self.icon_eyeopen = QIcon(imdir+os.path.join("icons","eye.png"))
+        self.icon_eyeclosed = QIcon(imdir+os.path.join("icons","cross.png"))
 
         labels_layout = QVBoxLayout()
         self.setLayout(labels_layout)
