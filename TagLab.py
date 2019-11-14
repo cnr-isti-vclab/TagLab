@@ -110,16 +110,6 @@ class TagLab(QWidget):
 
         ##### TOP LAYOUT
 
-        #top_layout = QHBoxLayout()
-
-        #self.scrippsIcon = QLabel()
-        #pxmap = QPixmap(os.path.join("icons","vclab.png"))
-        #pxmap = pxmap.scaledToWidth(ICON_SIZE+2)
-        #self.scrippsIcon.setPixmap(pxmap)
-
-        #top_layout.addWidget(self.scrippsIcon)
-        #top_layout.addStretch()
-
         ##### LAYOUT EDITING TOOLS (VERTICAL)
 
         flatbuttonstyle1 = "\
@@ -231,7 +221,7 @@ class TagLab(QWidget):
         self.btnDeepExtreme.setStyleSheet(flatbuttonstyle2)
         self.btnDeepExtreme.setMinimumWidth(ICON_SIZE)
         self.btnDeepExtreme.setMinimumHeight(ICON_SIZE)
-        self.btnDeepExtreme.setIcon(QIcon(os.path.join("icons","dexter.png")))
+        self.btnDeepExtreme.setIcon(QIcon(os.path.join("icons", "dexter.png")))
         self.btnDeepExtreme.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
         self.btnDeepExtreme.setMaximumWidth(BUTTON_SIZE)
         self.btnDeepExtreme.setToolTip("Deep Extreme")
@@ -375,7 +365,6 @@ class TagLab(QWidget):
         self.menubar = self.createMenuBar()
 
         main_layout = QVBoxLayout()
-        #main_layout.addLayout(top_layout)
         main_layout.addWidget(self.menubar)
         main_layout.addLayout(main_view_layout)
 
@@ -1866,7 +1855,9 @@ class TagLab(QWidget):
     def about(self):
 
         lbl1 = QLabel()
-        pxmap = QPixmap(os.path.join("icons","vclab.png"))
+
+        # BIG taglab icon
+        pxmap = QPixmap(os.path.join("icons", "taglab100px.png"))
         pxmap = pxmap.scaledToWidth(100)
         lbl1.setPixmap(pxmap)
 
@@ -2092,6 +2083,9 @@ if __name__ == '__main__':
 
     # Create the QApplication.
     app = QApplication(sys.argv)
+
+    # set application icon
+    app.setWindowIcon(QIcon(os.path.join("icons", "taglab50px.png")))
 
     slider_style1 = "\
     QSlider::groove::horizontal\
