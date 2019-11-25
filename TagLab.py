@@ -732,6 +732,11 @@ class TagLab(QWidget):
 
                     created_blobs = self.annotations.cut(selected_blob, pts)
 
+                    # empty the current selection..
+                    self.resetSelection()
+                    self.removeBlob(selected_blob)
+
+                    # ..and re-assign it
                     for blob in created_blobs:
                         self.addToSelectedList(blob)
 
@@ -739,7 +744,6 @@ class TagLab(QWidget):
                     # self.updatePanelInfo(blob)
 
                     created_blobs.clear()
-                    self.removeBlob(selected_blob)
                     print(1)
                     self.resetCut()
                     logfile.info("CUT operations ends")
@@ -876,7 +880,7 @@ class TagLab(QWidget):
 
         self.mapviewer.drawOverlayImage(top, left, bottom, right)
 
-    def resetAll(self):
+    def reseAll(self):
 
         if self.img_map is not None:
             del self.img_map
@@ -1165,10 +1169,7 @@ class TagLab(QWidget):
 
         for blob in self.selected_blobs:
 
-            self.viewerplus.scene.removeItem(blob.qpath_gitem)
-            blob.qpath_gitem = None
-
-            self.annotations.removeBlob(blob)
+            self.removeBlob(blob)
 
         self.selected_blobs.clear()
 
@@ -1251,7 +1252,7 @@ class TagLab(QWidget):
         """
 
         for blob in self.selected_blobs:
-            if blob.group != None:
+            if blob.group is not None:
                 self.drawGroup(blob.group)
 
         for blob in self.selected_blobs:
@@ -1264,21 +1265,22 @@ class TagLab(QWidget):
         and the selection flag is ignored.
         """
 
-        # reset the current graphics item
+        # if it has just been created remove the current graphics item in order to set it again
         if blob.qpath_gitem is not None:
             self.viewerplus.scene.removeItem(blob.qpath_gitem)
+            del blob.qpath_gitem
             blob.qpath_gitem = None
 
         pen = QPen(Qt.black)
         pen.setWidth(self.BLOB_BORDER_WIDTH)
 
-        if selected == True:
+        if selected is True:
 
             pen.setColor(Qt.white)
 
         else:
 
-            if group_mode == True:
+            if group_mode is True:
                 pen.setColor(Qt.lightGray)
             else:
                 pen.setColor(Qt.black)
@@ -1364,12 +1366,13 @@ class TagLab(QWidget):
 
         # remove from the scene
         self.viewerplus.scene.removeItem(blob.qpath_gitem)
+        del blob.qpath_gitem  # QGraphicsScene does not delete the item
         blob.qpath_gitem = None
-
-
 
         # remove from the blob list
         self.annotations.removeBlob(blob)
+
+        self.viewerplus.scene.invalidate()
 
     def union(self):
         """
@@ -1392,9 +1395,7 @@ class TagLab(QWidget):
                 self.resetSelection()
 
                 # remove the blob "B"
-                self.viewerplus.scene.removeItem(blob_to_remove.qpath_gitem)
-                blob_to_remove.qpath_gitem = None
-                self.annotations.removeBlob(blob_to_remove)
+                self.remove(blob_to_remove)
 
             else:
 
@@ -1433,9 +1434,7 @@ class TagLab(QWidget):
                 blob_to_remove = blobB
 
                 # remove the blob "B"
-                self.viewerplus.scene.removeItem(blob_to_remove.qpath_gitem)
-                blob_to_remove.qpath_gitem = None
-                self.annotations.removeBlob(blob_to_remove)
+                self.removeBlob(blob_to_remove)
 
             logfile.info("SUBTRACT LABELS operation ends.")
 
