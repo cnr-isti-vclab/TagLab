@@ -122,6 +122,16 @@ class Labels:
 
         return [0, 0, 0]
 
+    def searchColor(self, color):
+        """
+        This function returns the index of the given color, -1 if the color does not exist.
+        :return: The index of the given color.
+        """
+
+        for idx, c in enumerate(self.LABELS_LIST):
+            if c[1][0] == color[0] and c[1][1] == color[1] and c[1][2] == color[2]:
+                return idx
+
 
 class ClickableLabel(QLabel):
 
@@ -158,8 +168,8 @@ class LabelsWidget(QWidget):
         self.setMinimumHeight(200)
 
 
-        self.icon_eyeopen = QIcon(imdir+"icons\\eye.png")
-        self.icon_eyeclosed = QIcon(imdir+"icons\\cross.png")
+        self.icon_eyeopen = QIcon(imdir+os.path.join("icons","eye.png"))
+        self.icon_eyeclosed = QIcon(imdir+os.path.join("icons","cross.png"))
 
         labels_layout = QVBoxLayout()
         self.setLayout(labels_layout)

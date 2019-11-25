@@ -455,7 +455,7 @@ class Blob(object):
 
         if len(regions) > 1:
 
-            # TENERE SOLO QUELLA CON AREA MASSIMA ??
+            # TENERE SOLO QUELLA CON AREA MASSIMA
 
             area_max = 0
             region_to_remove = None
@@ -472,6 +472,9 @@ class Blob(object):
         self.updateUsingMask(bbox_union, mask_union)
 
 
+
+
+
     def createContourFromMask(self, mask):
         """
         It creates the contour (and the corrisponding polygon) from the blob mask.
@@ -485,7 +488,7 @@ class Blob(object):
         PADDED_SIZE = 2
         img_padded = pad(mask, (PADDED_SIZE, PADDED_SIZE), mode="constant", constant_values=(0, 0))
 
-        contours = measure.find_contours(img_padded, 0)
+        contours = measure.find_contours(img_padded, 0.5)
 
         number_of_contours = len(contours)
 
@@ -502,11 +505,10 @@ class Blob(object):
 
             # divide the contours in OUTER contour and INNER contours
             for i, contour in enumerate(contours):
-                coords = measure.approximate_polygon(contour, tolerance=1.2)
                 if i == index:
-                    self.contour = np.array(coords)
+                    self.contour = np.array(contour)
                 else:
-                    coordinates = np.array(coords)
+                    coordinates = np.array(contour)
                     self.inner_contours.append(coordinates)
 
             # adjust the coordinates of the outer contour
@@ -967,6 +969,73 @@ class Annotation(object):
                 selected_blob = blob
 
         return selected_blob
+
+
+
+    def cut(self, selected, points):
+        """
+        Given a curve specified as a set of points and a selected blob, the operation cuts it in several separed new blobs
+        """
+
+        # enlarge the mask
+        y1A = selected.bbox[0]
+        x1A = selected.bbox[1]
+        x2A = x1A + selected.bbox[2]
+        y2A = y1A + selected.bbox[3]
+
+        pt_min = np.amin(points, axis=0)
+        xmin = pt_min[0]
+        ymin = pt_min[1]
+        pt_max = np.amax(points, axis=0)
+        xmax = pt_max[0]
+        ymax = pt_max[1]
+
+        x1B = int(xmin)
+        y1B = int(ymin)
+        x2B = int(xmax)
+        y2B = int(ymax)
+
+        x_left = min(x1A, x1B) - 2
+        y_top = min(y1A, y1B) - 2
+        x_right = max(x2A, x2B) + 2
+        y_bottom = max(y2A, y2B) + 2
+
+        bbox_union = np.array([y_top, x_left, x_right - x_left, y_bottom - y_top])
+        mask_union = np.zeros((bbox_union[3], bbox_union[2]))
+
+        blob_mask = selected.getMask()
+        for y in range(blob_mask.shape[0]):
+            for x in range(blob_mask.shape[1]):
+
+                yy = y + (selected.bbox[0] - bbox_union[0])
+                xx = x + (selected.bbox[1] - bbox_union[1])
+                mask_union[yy,xx] = blob_mask[y,x]
+
+        for i in range(points.shape[0]):
+
+            x = points[i, 0]
+            y = points[i, 1]
+
+            yy = int(y) - bbox_union[0]
+            xx = int(x) - bbox_union[1]
+
+            for offsetx in range(-1, 2):
+                for offsety in range(-1, 2):
+                    mask_union[yy + offsety, xx + offsetx] = 0
+
+        label_image = measure.label(mask_union)
+        area_th = 30
+        created_blobs = []
+        for region in measure.regionprops(label_image):
+
+            if region.area > area_th:
+                id = len(self.seg_blobs)
+                blob = Blob(region, x_left, y_top, id + 1)
+                self.seg_blobs.append(blob)
+                created_blobs.append(blob)
+
+        return created_blobs
+
 
     def export_data_table_for_Scripps(self, filename):
 

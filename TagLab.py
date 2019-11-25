@@ -55,6 +55,7 @@ from source.QtExportWidget import QtExportWidget
 #from QtInfoWidget import QtInfoWidget
 from source.Annotation import Annotation, Blob
 from source.Labels import Labels, LabelsWidget
+from source.MapClassifier import MapClassifier
 from source import utils
 
 # LOGGING
@@ -110,16 +111,6 @@ class TagLab(QWidget):
 
         ##### TOP LAYOUT
 
-        #top_layout = QHBoxLayout()
-
-        #self.scrippsIcon = QLabel()
-        #pxmap = QPixmap("icons\\vclab.png")
-        #pxmap = pxmap.scaledToWidth(ICON_SIZE+2)
-        #self.scrippsIcon.setPixmap(pxmap)
-
-        #top_layout.addWidget(self.scrippsIcon)
-        #top_layout.addStretch()
-
         ##### LAYOUT EDITING TOOLS (VERTICAL)
 
         flatbuttonstyle1 = "\
@@ -151,7 +142,7 @@ class TagLab(QWidget):
         self.btnMove.setStyleSheet(flatbuttonstyle1)
         self.btnMove.setMinimumWidth(ICON_SIZE)
         self.btnMove.setMinimumHeight(ICON_SIZE)
-        self.btnMove.setIcon(QIcon("icons\\move.png"))
+        self.btnMove.setIcon(QIcon(os.path.join("icons","move.png")))
         self.btnMove.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
         self.btnMove.setMaximumWidth(BUTTON_SIZE)
         self.btnMove.setToolTip("Move")
@@ -164,7 +155,7 @@ class TagLab(QWidget):
         self.btnAssign.setStyleSheet(flatbuttonstyle1)
         self.btnAssign.setMinimumWidth(ICON_SIZE)
         self.btnAssign.setMinimumHeight(ICON_SIZE)
-        self.btnAssign.setIcon(QIcon("icons\\bucket.png"))
+        self.btnAssign.setIcon(QIcon(os.path.join("icons","bucket.png")))
         self.btnAssign.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
         self.btnAssign.setMaximumWidth(BUTTON_SIZE)
         self.btnAssign.setToolTip("Assign class")
@@ -177,11 +168,24 @@ class TagLab(QWidget):
         self.btnEditBorder.setStyleSheet(flatbuttonstyle1)
         self.btnEditBorder.setMinimumWidth(ICON_SIZE)
         self.btnEditBorder.setMinimumHeight(ICON_SIZE)
-        self.btnEditBorder.setIcon(QIcon("icons\\edit.png"))
+        self.btnEditBorder.setIcon(QIcon(os.path.join("icons","edit.png")))
         self.btnEditBorder.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
         self.btnEditBorder.setMaximumWidth(BUTTON_SIZE)
         self.btnEditBorder.setToolTip("Edit border")
         self.btnEditBorder.clicked.connect(self.editBorder)
+
+        self.btnCut = QPushButton()
+        self.btnCut.setEnabled(True)
+        self.btnCut.setCheckable(True)
+        self.btnCut.setFlat(True)
+        self.btnCut.setStyleSheet(flatbuttonstyle1)
+        self.btnCut.setMinimumWidth(ICON_SIZE)
+        self.btnCut.setMinimumHeight(ICON_SIZE)
+        self.btnCut.setIcon(QIcon(os.path.join("icons", "scissors.png")))
+        self.btnCut.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
+        self.btnCut.setMaximumWidth(BUTTON_SIZE)
+        self.btnCut.setToolTip("Cut Segmentation")
+        self.btnCut.clicked.connect(self.cut)
 
         self.btnFreehand = QPushButton()
         self.btnFreehand.setEnabled(True)
@@ -190,7 +194,7 @@ class TagLab(QWidget):
         self.btnFreehand.setStyleSheet(flatbuttonstyle1)
         self.btnFreehand.setMinimumWidth(ICON_SIZE)
         self.btnFreehand.setMinimumHeight(ICON_SIZE)
-        self.btnFreehand.setIcon(QIcon("icons\\pencil.png"))
+        self.btnFreehand.setIcon(QIcon(os.path.join("icons","pencil.png")))
         self.btnFreehand.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
         self.btnFreehand.setMaximumWidth(BUTTON_SIZE)
         self.btnFreehand.setToolTip("Freehand segmentation")
@@ -203,7 +207,7 @@ class TagLab(QWidget):
         self.btnCreateCrack.setStyleSheet(flatbuttonstyle1)
         self.btnCreateCrack.setMinimumWidth(ICON_SIZE)
         self.btnCreateCrack.setMinimumHeight(ICON_SIZE)
-        self.btnCreateCrack.setIcon(QIcon("icons\\crack.png"))
+        self.btnCreateCrack.setIcon(QIcon(os.path.join("icons","crack.png")))
         self.btnCreateCrack.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
         self.btnCreateCrack.setMaximumWidth(BUTTON_SIZE)
         self.btnCreateCrack.setToolTip("Create crack")
@@ -216,7 +220,7 @@ class TagLab(QWidget):
         self.btnRuler.setStyleSheet(flatbuttonstyle1)
         self.btnRuler.setMinimumWidth(ICON_SIZE)
         self.btnRuler.setMinimumHeight(ICON_SIZE)
-        self.btnRuler.setIcon(QIcon("icons\\ruler.png"))
+        self.btnRuler.setIcon(QIcon(os.path.join("icons","ruler.png")))
         self.btnRuler.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
         self.btnRuler.setMaximumWidth(BUTTON_SIZE)
         self.btnRuler.setToolTip("Measure tool")
@@ -231,7 +235,7 @@ class TagLab(QWidget):
         self.btnDeepExtreme.setStyleSheet(flatbuttonstyle2)
         self.btnDeepExtreme.setMinimumWidth(ICON_SIZE)
         self.btnDeepExtreme.setMinimumHeight(ICON_SIZE)
-        self.btnDeepExtreme.setIcon(QIcon("icons\\dexter.png"))
+        self.btnDeepExtreme.setIcon(QIcon(os.path.join("icons", "dexter.png")))
         self.btnDeepExtreme.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
         self.btnDeepExtreme.setMaximumWidth(BUTTON_SIZE)
         self.btnDeepExtreme.setToolTip("Deep Extreme")
@@ -242,12 +246,11 @@ class TagLab(QWidget):
         layout_tools.addWidget(self.btnAssign)
         layout_tools.addWidget(self.btnFreehand)
         layout_tools.addWidget(self.btnEditBorder)
+        layout_tools.addWidget(self.btnCut)
         layout_tools.addWidget(self.btnCreateCrack)
         layout_tools.addWidget(self.btnRuler)
-        #layout_tools.addWidget(self.btnCutter)
         layout_tools.addSpacing(10)
         layout_tools.addWidget(self.btnDeepExtreme)
-        #layout_tools.addWidget(self.btnAutomaticSeg)
         layout_tools.addStretch()
 
 
@@ -375,7 +378,6 @@ class TagLab(QWidget):
         self.menubar = self.createMenuBar()
 
         main_layout = QVBoxLayout()
-        #main_layout.addLayout(top_layout)
         main_layout.addWidget(self.menubar)
         main_layout.addLayout(main_view_layout)
 
@@ -431,6 +433,11 @@ class TagLab(QWidget):
         self.editborder_points = np.array(())
         self.editborder_qpath = None
         self.editborder_qpath_gitem = None
+
+        # DATA FOR THE CUT TOOL
+        self.cut_points = np.array(())
+        self.cut_qpath = None
+        self.cut_qpath_gitem = None
 
         # DATA FOR THE FREEHAND TOOL
         self.freehand_points = np.array(())
@@ -635,6 +642,8 @@ class TagLab(QWidget):
             self.resetSelection()
             if self.tool_used == "EDITBORDER":
                 self.resetEditBorder()
+            elif self.tool_used == "CUT":
+                self.resetCut()
             elif self.tool_used == "FREEHAND":
                 self.resetFreehand()
             elif self.tool_used == "RULER":
@@ -670,6 +679,8 @@ class TagLab(QWidget):
             self.deepExtreme()
         elif event.key() == Qt.Key_P:
             self.drawDeepExtremePoints()
+        elif event.key() == Qt.Key_X:
+            self.applyClassifier()
         elif event.key() == Qt.Key_Space:
 
             # APPLY THE EDITBORDER OPERATION
@@ -704,6 +715,34 @@ class TagLab(QWidget):
 
                 self.resetEditBorder()
 
+            elif self.tool_used == "CUT":
+
+                logfile.info("CUT operations")
+
+                if len(self.selected_blobs) > 0:
+
+                    logfile.info("CUT operations begins..")
+
+                    selected_blob = self.selected_blobs[0]
+
+                    pxs = utils.draw_open_polygon(self.cut_points[:, 1], self.cut_points[:, 0])
+                    pts = np.asarray(pxs)
+                    pts = pts.transpose()
+                    pts[:, [1, 0]] = pts[:, [0, 1]]
+
+                    created_blobs = self.annotations.cut(selected_blob, pts)
+
+                    for blob in created_blobs:
+                        self.addToSelectedList(blob)
+
+                    self.drawSelectedBlobs()
+                    # self.updatePanelInfo(blob)
+
+                    created_blobs.clear()
+                    self.removeBlob(selected_blob)
+                    print(1)
+                    self.resetCut()
+                    logfile.info("CUT operations ends")
 
             # APPLY THE FREEHAND OPERATION
             elif self.tool_used == "FREEHAND":
@@ -865,6 +904,7 @@ class TagLab(QWidget):
         self.btnMove.setChecked(False)
         self.btnAssign.setChecked(False)
         self.btnEditBorder.setChecked(False)
+        self.btnCut.setChecked(False)
         self.btnFreehand.setChecked(False)
         self.btnRuler.setChecked(False)
         self.btnCreateCrack.setChecked(False)
@@ -915,7 +955,8 @@ class TagLab(QWidget):
 
         # NOTE: double click selection is disabled with ASSIGN, RULER and DEEPEXTREME tools
 
-        if not self.tool_used == "ASSIGN" and not self.tool_used == "RULER" and not self.tool_used == "DEEPEXTREME" :
+        if not self.tool_used == "ASSIGN" and not self.tool_used == "RULER" and not self.tool_used == "DEEPEXTREME":
+
 
             selected_blob = self.annotations.clickedBlob(x, y)
 
@@ -988,6 +1029,31 @@ class TagLab(QWidget):
         self.viewerplus.enableZoom()
 
         logfile.info("EDITBORDER tool is active")
+
+    @pyqtSlot()
+    def cut(self):
+        """
+        CUT
+        """
+        self.resetToolbar()
+        self.resetTools()
+
+        if len(self.selected_blobs) > 1:
+            self.resetSelection()
+
+        self.btnCut.setChecked(True)
+        self.tool_used = "CUT"
+
+        pen = QPen(Qt.black)
+        pen.setWidth(self.BLOB_BORDER_WIDTH)
+
+        self.cut_qpath = QPainterPath()
+        self.cut_qpath_gitem = self.viewerplus.scene.addPath(self.cut_qpath, pen, QBrush())
+
+        self.viewerplus.disablePan()
+        self.viewerplus.enableZoom()
+
+        logfile.info("CUT tool is active")
 
     @pyqtSlot()
     def freehandSegmentation(self):
@@ -1199,7 +1265,7 @@ class TagLab(QWidget):
         """
 
         # reset the current graphics item
-        if blob.qpath_gitem != None:
+        if blob.qpath_gitem is not None:
             self.viewerplus.scene.removeItem(blob.qpath_gitem)
             blob.qpath_gitem = None
 
@@ -1294,6 +1360,16 @@ class TagLab(QWidget):
                 self.ruler_text_gi.setDefaultTextColor(Qt.white)
                 self.ruler_text_gi.setPos(posx, posy)
 
+    def removeBlob(self, blob):
+
+        # remove from the scene
+        self.viewerplus.scene.removeItem(blob.qpath_gitem)
+        blob.qpath_gitem = None
+
+
+
+        # remove from the blob list
+        self.annotations.removeBlob(blob)
 
     def union(self):
         """
@@ -1441,6 +1517,18 @@ class TagLab(QWidget):
 
         self.editborder_points = np.array(())
 
+
+    def resetCut(self):
+
+        if self.cut_qpath_gitem is not None:
+            self.cut_qpath = QPainterPath()
+            self.cut_qpath_gitem.setPath(self.cut_qpath)
+        else:
+            self.cut_qpath = None
+
+        self.cut_points = np.array(())
+
+
     def resetFreehand(self):
 
         if self.freehand_qpath_gitem is not None:
@@ -1489,6 +1577,7 @@ class TagLab(QWidget):
     def resetTools(self):
 
         self.resetEditBorder()
+        self.resetCut()
         self.resetCrackTool()
         self.resetRulerTool()
         self.resetDeepExtremeTool()
@@ -1560,6 +1649,47 @@ class TagLab(QWidget):
             else:
 
                 logfile.info("Invalid EDITBORDER drawing (no blob selected) (!)")
+
+
+        elif self.tool_used == "CUT" and not (modifiers & Qt.ControlModifier):
+
+            if len(self.selected_blobs) == 1:
+
+                logfile.info("CUT drawing")
+
+                if len(self.cut_points) == 0:
+
+                    self.cut_points = np.array([[x, y]])
+
+                    pen = QPen(Qt.black)
+                    pen.setJoinStyle(Qt.MiterJoin)
+                    pen.setCapStyle(Qt.RoundCap)
+                    pen.setWidth(self.BLOB_BORDER_WIDTH)
+
+                    if self.cut_qpath is None:
+                        self.cut_qpath = QPainterPath()
+
+                    self.cut_qpath.moveTo(QPointF(x, y))
+
+                    if self.cut_qpath_gitem is None:
+                        self.cut_qpath_gitem = self.viewerplus.scene.addPath(self.cut_qpath, pen, QBrush())
+                    else:
+                        self.cut_qpath_gitem.setPath(self.cut_qpath)
+
+                    logfile.debug("Number of CUT points: %d", self.cut_points.shape[0])
+
+                else:
+
+                    self.cut_points = np.append(self.cut_points, [[x, y]], axis=0)
+                    self.cut_qpath.lineTo(QPointF(x, y))
+                    self.cut_qpath_gitem.setPath(self.cut_qpath)
+
+                    logfile.debug("Number of CUT points: %d", self.cut_points.shape[0])
+            else:
+
+                logfile.info("Invalid CUT (no blob selected) (!)")
+
+
 
         elif self.tool_used == "FREEHAND" and not (modifiers & Qt.ControlModifier):
 
@@ -1681,6 +1811,18 @@ class TagLab(QWidget):
                     self.editborder_qpath_gitem.setPath(self.editborder_qpath)
 
                     logfile.debug("Number of EDITBORDER points: %d", self.editborder_points.shape[0])
+
+            elif self.tool_used == "CUT":
+
+                logfile.info("CUT moving")
+
+                if len(self.cut_points) > 0:
+
+                    self.cut_points = np.append(self.cut_points, [[x, y]], axis=0)
+                    self.cut_qpath.lineTo(QPointF(x,y))
+                    self.cut_qpath_gitem.setPath(self.cut_qpath)
+
+                    logfile.debug("Number of CUTTED points: %d", self.cut_points.shape[0])
 
             elif self.tool_used == "FREEHAND":
 
@@ -1866,7 +2008,9 @@ class TagLab(QWidget):
     def about(self):
 
         lbl1 = QLabel()
-        pxmap = QPixmap("icons\\vclab.png")
+
+        # BIG taglab icon
+        pxmap = QPixmap(os.path.join("icons", "taglab100px.png"))
         pxmap = pxmap.scaledToWidth(100)
         lbl1.setPixmap(pxmap)
 
@@ -1975,6 +2119,30 @@ class TagLab(QWidget):
 
         self.infoWidget.setInfoMessage("Current project has been successfully saved.")
 
+    def resetNetworks(self):
+
+        torch.cuda.empty_cache()
+
+        if self.deepextreme_net is not None:
+            del self.deepextreme_net
+            self.deepextreme_net = None
+
+
+    def applyClassifier(self):
+
+        # free GPU memory
+        self.resetNetworks()
+
+        # setup a classifier
+        classifier = MapClassifier("pocillopora")
+
+        # and runs it
+        classifier.run(self.img_map, 768, 512, 128)
+
+        # import generated label map
+        filename = os.path.join("temp", "labelmap.png")
+        self.annotations.import_label_map(filename)
+        self.drawAnnotations()
 
     def loadingDeepExtremeNetwork(self):
 
@@ -2092,6 +2260,9 @@ if __name__ == '__main__':
 
     # Create the QApplication.
     app = QApplication(sys.argv)
+
+    # set application icon
+    app.setWindowIcon(QIcon(os.path.join("icons", "taglab50px.png")))
 
     slider_style1 = "\
     QSlider::groove::horizontal\
