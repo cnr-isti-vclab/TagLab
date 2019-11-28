@@ -29,7 +29,7 @@ import numpy as np
 import numpy.ma as ma
 from skimage import measure
 
-from PyQt5.QtCore import Qt, QSize, QDir, QPoint, QPointF, QLineF, QRectF, QTimer, pyqtSlot, pyqtSignal
+from PyQt5.QtCore import Qt, QSize, QDir, QPoint, QPointF, QLineF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo
 from PyQt5.QtGui import QPainterPath, QFont, QColor, QPolygonF, QImage, QPixmap, QIcon, QKeySequence, \
     QPen, QBrush, qRgb, qRed, qGreen, qBlue
 from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QDialog, QMenuBar, QMenu, QSizePolicy, QScrollArea, QLabel, QToolButton, QPushButton, QSlider, \
@@ -422,7 +422,7 @@ class TagLab(QWidget):
         self.current_selection = None
 
         # DRAWING SETTINGS
-        self.BLOB_BORDER_WIDTH = 3
+        self.BLOB_BORDER_WIDTH = 2
         self.CROSS_LINE_WIDTH = 6
 
         # DATA FOR THE SELECTION
@@ -565,23 +565,23 @@ class TagLab(QWidget):
     def createMenuBar(self):
 
         newAct = QAction("New Project", self)
-        #newAct.setShortcut('Ctrl+Q')
+        newAct.setShortcut('Ctrl+N')
         newAct.setStatusTip("Create a new project")
         newAct.triggered.connect(self.newProject)
 
         openAct = QAction("Open Project", self)
-        #openAct.setShortcut('Ctrl+Q')
+        openAct.setShortcut('Ctrl+O')
         openAct.setStatusTip("Open an existing project")
         openAct.triggered.connect(self.openProject)
 
         saveAct = QAction("Save Project", self)
-        #saveAct.setShortcut('Ctrl+Q')
+        saveAct.setShortcut('Ctrl+S')
         saveAct.setStatusTip("Save current project")
         saveAct.triggered.connect(self.saveProject)
 
         # THIS WILL BECOME "ADD MAP" TO ADD MULTIPLE MAPS (e.g. depth, different years)
         loadMapAct = QAction("Load Map", self)
-        #saveAct.setShortcut('Ctrl+Q')
+        loadMapAct.setShortcut('Ctrl+L')
         loadMapAct.setStatusTip("Set and load a map")
         loadMapAct.triggered.connect(self.setMapToLoad)
 
@@ -880,7 +880,7 @@ class TagLab(QWidget):
 
         self.mapviewer.drawOverlayImage(top, left, bottom, right)
 
-    def reseAll(self):
+    def resetAll(self):
 
         if self.img_map is not None:
             del self.img_map
@@ -1120,6 +1120,8 @@ class TagLab(QWidget):
         self.btnDeepExtreme.setChecked(True)
         self.tool_used = "DEEPEXTREME"
 
+        self.viewerplus.showCrossair = True
+
         self.viewerplus.disablePan()
         self.viewerplus.enableZoom()
 
@@ -1273,6 +1275,7 @@ class TagLab(QWidget):
 
         pen = QPen(Qt.black)
         pen.setWidth(self.BLOB_BORDER_WIDTH)
+        pen.setCosmetic(True)
 
         if selected is True:
 
@@ -1581,6 +1584,9 @@ class TagLab(QWidget):
         self.resetRulerTool()
         self.resetDeepExtremeTool()
 
+        self.viewerplus.showCrossair = False
+        self.viewerplus.scene.invalidate(self.viewerplus.scene.sceneRect())
+
 
     @pyqtSlot(float, float)
     def toolsOpsLeftPressed(self, x, y):
@@ -1773,6 +1779,7 @@ class TagLab(QWidget):
 
                 pen = QPen(Qt.red)
                 pen.setWidth(self.CROSS_LINE_WIDTH)
+                pen.setCosmetic(True)
                 brush = QBrush(Qt.SolidPattern)
                 brush.setColor(Qt.red)
 
@@ -1887,7 +1894,7 @@ class TagLab(QWidget):
 
     def updateRecentFileActions(self):
 
-        settings = QtCore.QSettings('VCLab', 'TagLab')
+        settings = QSettings('VCLab', 'TagLab')
         files = settings.value('recentFileList')
 
         numRecentFiles = min(len(files), self.maxRecentFiles)
@@ -1905,7 +1912,7 @@ class TagLab(QWidget):
         self.separatorAct.setVisible((numRecentFiles > 0))
 
     def strippedName(self, fullFileName):
-        return QtCore.QFileInfo(fullFileName).fileName()
+        return QFileInfo(fullFileName).fileName()
 
     @pyqtSlot()
     def newProject(self):

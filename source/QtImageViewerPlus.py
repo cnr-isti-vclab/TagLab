@@ -23,7 +23,7 @@
 
 import os.path
 from PyQt5.QtCore import Qt, QPointF, QRectF, pyqtSignal, QT_VERSION_STR
-from PyQt5.QtGui import QImage, QPixmap, QPainter, QPainterPath
+from PyQt5.QtGui import QImage, QPixmap, QPainter, QPainterPath, QPen
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QFileDialog
 
 
@@ -114,6 +114,8 @@ class QtImageViewerPlus(QGraphicsView):
         # Panning is enabled if and only if the image is greater than the viewport.
         self.panEnabled = True
         self.zoomEnabled = True
+        self.showCrossair = False
+        self.mouseCoords = QPointF(0, 0)
 
         self.clicked_x = 0
         self.clicked_y = 0
@@ -243,6 +245,14 @@ class QtImageViewerPlus(QGraphicsView):
 
             self._pxmapitem.setPixmap(pxmap)
 
+    #used for crossair cursor
+    def drawForeground(self, painter, rect):
+        if self.showCrossair:
+            painter.setClipRect(rect)
+            painter.setPen(QPen(Qt.white, 1))
+            painter.drawLine(self.mouseCoords.x(), rect.top(), self.mouseCoords.x(), rect.bottom())
+            painter.drawLine(rect.left(), self.mouseCoords.y(), rect.right(), self.mouseCoords.y())
+
     def setWorkingMode(self, mode):
         """
         Set the current working mode of the viewer.
@@ -342,6 +352,11 @@ class QtImageViewerPlus(QGraphicsView):
         if event.buttons() == Qt.LeftButton:
             clippedCoords = self.clipScenePos(scenePos)
             self.mouseMoveLeftPressed.emit(clippedCoords[0], clippedCoords[1])
+
+        if self.showCrossair == True:
+            self.mouseCoords = scenePos
+            self.scene.invalidate(self.sceneRect(), QGraphicsScene.ForegroundLayer)
+
 
     def mouseDoubleClickEvent(self, event):
 
