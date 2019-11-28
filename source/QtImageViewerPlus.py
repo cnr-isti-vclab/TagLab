@@ -360,7 +360,9 @@ class QtImageViewerPlus(QGraphicsView):
 
             pt = event.angleDelta()
 
-            self.zoom_factor = self.zoom_factor + pt.y() / 2400.0
+            #self.zoom_factor = self.zoom_factor + pt.y() / 2400.0
+            #uniform zoom.
+            self.zoom_factor = self.zoom_factor*pow(pow(2, 1/2), pt.y()/100);
             if self.zoom_factor < self.ZOOM_FACTOR_MIN:
                 self.zoom_factor = self.ZOOM_FACTOR_MIN
             if self.zoom_factor > self.ZOOM_FACTOR_MAX:
