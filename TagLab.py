@@ -594,7 +594,7 @@ class TagLab(QWidget):
         undoAct = QAction("Undo", self)
         undoAct.setShortcut('Ctrl+Z')
         undoAct.setStatusTip("Undo")
-        undoAct.triggered.connect(self.undo)
+#        undoAct.triggered.connect(self.undo)
 
         helpAct = QAction("Help", self)
         #exportAct.setShortcut('Ctrl+Q')
@@ -1941,6 +1941,7 @@ class TagLab(QWidget):
     def setMapToLoad(self):
 
         if self.mapWidget is None:
+
             self.mapWidget = QtMapSettingsWidget(parent=self)
             self.mapWidget.setWindowFlags(Qt.Window)
             self.mapWidget.setWindowModality(Qt.WindowModal)
@@ -1952,6 +1953,13 @@ class TagLab(QWidget):
             self.mapWidget.editScaleFactor.setText(str(self.map_px_to_mm_factor))
 
             self.mapWidget.show()
+
+        else:
+
+            # show it again
+            if self.mapWidget.isHidden():
+                self.mapWidget.show()
+
 
     @pyqtSlot()
     def setMapProperties(self):
