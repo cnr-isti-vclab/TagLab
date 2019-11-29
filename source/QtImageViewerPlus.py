@@ -28,43 +28,10 @@ from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QFileDialog
 
 
 class QtImageViewerPlus(QGraphicsView):
-    """ PyQt image viewer widget with annotation capabilities.
+    """
+    PyQt image viewer widget with annotation capabilities.
     QGraphicsView handles a scene composed by an image plus shapes (rectangles, polygons, blobs).
     The input image (it must be a QImage) is internally converted into a QPixmap.
-
-    WORKING MODE:
-
-      - NORMAL              -> image viewer with pan and zoom capabilities
-      - RECTS_ANNOTATION    -> annotate use a rectangle
-      - POLYGONS_ANNOTATION -> annotate use a polygon
-      - BLOBS_ANNOTATION    -> add or remove a blob
-
-    KEYBOARDS:
-
-      - SPACEBAR        : toggle between different working modes
-
-    MOUSE INTERACTION:
-
-      - NORMAL MODE:
-
-          Left mouse button drag: pan image.
-          Mouse wheel: zoom in/zoom out.
-
-      - RECTS_ANNOTATION MODE:
-
-          - Left mouse button drag: define the rectangle.
-
-      - BLOBS_ANNOTATION MODE:
-
-          Left mouse button: select a blob
-          Right mouse button: remove a selected blob
-
-      - POLYGONS_ANNOTATION MODE:
-
-          Left mouse button: add a point.
-          Right mouse button: remove a point.
-          Left mouse button doubleclick: close the polygon.
-
     """
 
     # Mouse button signals emit image scene (x, y) coordinates.
@@ -83,10 +50,6 @@ class QtImageViewerPlus(QGraphicsView):
         QGraphicsView.__init__(self)
 
         self.setStyleSheet("background-color: rgb(40,40,40)")
-
-        self.mode_list = ["NORMAL", "RECTS_ANNOTATION", "BLOBS_ANNOTATION", "POLYGONS_ANNOTATION"]
-        self.current_mode = 0
-        self.mode = self.mode_list[self.current_mode]
 
         # Image is displayed as a QPixmap in a QGraphicsScene attached to this QGraphicsView.
         self.scene = QGraphicsScene()
@@ -252,18 +215,6 @@ class QtImageViewerPlus(QGraphicsView):
             painter.setPen(QPen(Qt.white, 1))
             painter.drawLine(self.mouseCoords.x(), rect.top(), self.mouseCoords.x(), rect.bottom())
             painter.drawLine(rect.left(), self.mouseCoords.y(), rect.right(), self.mouseCoords.y())
-
-    def setWorkingMode(self, mode):
-        """
-        Set the current working mode of the viewer.
-        'mode' should be an integer with the following values:
-
-          mode = 0 -> NORMAL
-          mode = 1 -> ANNOTATION WITH RECTS
-          mode = 2 -> ANNOTATION WITH BLOBS
-          mode = 3 -> ANNOTATION WITH POLYGONS
-        """
-        self.mode = self.mode_list[mode]
 
     def updateViewer(self):
         """ Show current zoom (if showing entire image, apply current aspect ratio mode).
