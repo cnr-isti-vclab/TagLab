@@ -23,6 +23,7 @@ import glob
 import time
 import random
 import datetime
+import copy
 
 import json
 import numpy as np
@@ -590,6 +591,11 @@ class TagLab(QWidget):
         exportAct.setStatusTip("Export data derived from annotations")
         exportAct.triggered.connect(self.exportData)
 
+        undoAct = QAction("Undo", self)
+        undoAct.setShortcut('Ctrl+Z')
+        undoAct.setStatusTip("Undo")
+        undoAct.triggered.connect(self.undo)
+
         helpAct = QAction("Help", self)
         #exportAct.setShortcut('Ctrl+Q')
         #helpAct.setStatusTip("Help")
@@ -624,6 +630,10 @@ class TagLab(QWidget):
         filemenu.addAction(loadMapAct)
         filemenu.addSeparator()
         filemenu.addAction(exportAct)
+
+        helpmenu = menubar.addMenu("&Edit")
+        helpmenu.addAction(undoAct)
+
         helpmenu = menubar.addMenu("&Help")
         helpmenu.setStyleSheet(styleMenu)
         helpmenu.addAction(helpAct)
@@ -699,6 +709,7 @@ class TagLab(QWidget):
                     pts = pts.transpose()
                     pts[:, [1, 0]] = pts[:, [0, 1]]
 
+                    self.addUndo()
                     new_points = selected_blob.snapToBorder(pts)
 
                     logfile.info("EDITBORDER operations not done (invalid snap).")
@@ -730,6 +741,7 @@ class TagLab(QWidget):
                     pts = pts.transpose()
                     pts[:, [1, 0]] = pts[:, [0, 1]]
 
+                    self.addUndo()
                     created_blobs = self.annotations.cut(selected_blob, pts)
 
                     # empty the current selection..
@@ -768,6 +780,7 @@ class TagLab(QWidget):
 
                     id = len(self.annotations.seg_blobs)
                     blob.setId(id + 1)
+                    self.addUndo()
                     self.annotations.seg_blobs.append(blob)
 
                     self.resetSelection()
@@ -1169,8 +1182,8 @@ class TagLab(QWidget):
 
     def deleteSelected(self):
 
+        self.addUndo()
         for blob in self.selected_blobs:
-
             self.removeBlob(blob)
 
         self.selected_blobs.clear()
@@ -1398,7 +1411,7 @@ class TagLab(QWidget):
                 self.resetSelection()
 
                 # remove the blob "B"
-                self.remove(blob_to_remove)
+                self.removeBlob(blob_to_remove)
 
             else:
 
@@ -1428,12 +1441,12 @@ class TagLab(QWidget):
             blobA = self.selected_blobs[0]
             blobB = self.selected_blobs[1]
 
+            self.addUndo()
             flag_intersection = self.annotations.subtract(blobA, blobB, self.viewerplus.scene)
 
             self.resetSelection()
 
             if flag_intersection:
-
                 blob_to_remove = blobB
 
                 # remove the blob "B"
@@ -1461,6 +1474,7 @@ class TagLab(QWidget):
             blobA = self.selected_blobs[0]
             blobB = self.selected_blobs[1]
 
+            self.addUndo()
             is_empty = self.annotations.subtract(blobB, blobA, self.viewerplus.scene)
 
             self.resetSelection()

@@ -148,8 +148,8 @@ class Blob(object):
         blob.centroid = self.centroid.copy()
         blob.bbox = self.bbox.copy()
 
-        blob.classname = self.classname
-        blob.classcolor = self.classcolor
+        blob.class_name = self.class_name
+        blob.class_color = self.class_color
         blob.instance_name = self.instance_name
         blob.id = self.id
         blob.note = self.note
@@ -484,7 +484,7 @@ class Blob(object):
 
         self.inner_contours.clear()
 
-        # we need to pad the mask to avoid to break the contour that touchs the borders
+        # we need to pad the mask to avoid to break the contour that touches the borders
         PADDED_SIZE = 2
         img_padded = pad(mask, (PADDED_SIZE, PADDED_SIZE), mode="constant", constant_values=(0, 0))
 
@@ -580,7 +580,7 @@ class Blob(object):
         blob_mask = self.getMask()
         for x in range(w):
             for y in range(h):
-                if mask[y, x] == 1:
+                if blob_mask[y, x] == 1:
                     self.qimg_mask.setPixel(x, y, rgba)
 
         self.pxmap_mask = QPixmap.fromImage(self.qimg_mask)
@@ -753,6 +753,7 @@ class Annotation(object):
 
         # list of all groups
         self.groups = []
+        self.undo_blobs = []
 
 
     def addGroup(self, blobs):
@@ -801,6 +802,7 @@ class Annotation(object):
         # remove from the list of the blobs
         index = self.seg_blobs.index(blob)
         del self.seg_blobs[index]
+
 
     def as_dict(self, i):
 
@@ -865,7 +867,6 @@ class Annotation(object):
                     mask_union[yU, xU] = 1
 
         if pixels_intersected > 0:
-
             blobA.updateUsingMask(bbox_union, mask_union)
 
             return True
@@ -1031,6 +1032,8 @@ class Annotation(object):
             if region.area > area_th:
                 id = len(self.seg_blobs)
                 blob = Blob(region, x_left, y_top, id + 1)
+                blob.class_color = selected.class_color
+                blob.class_name = selected.class_name
                 self.seg_blobs.append(blob)
                 created_blobs.append(blob)
 
