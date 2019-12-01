@@ -472,9 +472,6 @@ class Blob(object):
         self.updateUsingMask(bbox_union, mask_union)
 
 
-
-
-
     def createContourFromMask(self, mask):
         """
         It creates the contour (and the corrisponding polygon) from the blob mask.
@@ -1040,6 +1037,48 @@ class Annotation(object):
         return created_blobs
 
 
+    ###########################################################################
+    ### IMPORT / EXPORT
+
+    def import_label_map(self, filename):
+        """
+        It imports a label map and create the corresponding blobs.
+        """
+
+        qimg_label_map = QImage(filename)
+        qimg_label_map = qimg_label_map.convertToFormat(QImage.Format_RGB32)
+        label_map = utils.qimageToNumpyArray(qimg_label_map)
+        label_map = label_map.astype(np.int32)
+
+        # dirty trick to save time..
+        label_coded = label_map[:, :, 0] + label_map[:, :, 1] + label_map[:, :, 2]
+
+        labels = measure.label(label_coded, connectivity=1)
+
+        #label_no_borders = clear_border(labels)
+
+        label_info = Labels()
+
+        too_much_small_area = 10
+        region_big = None
+        for region in measure.regionprops(labels):
+            if region.area > too_much_small_area:
+                id = len(self.seg_blobs)
+                blob = Blob(region, 0, 0, id+1)
+
+                # assign class
+                row = region.coords[0,0]
+                col = region.coords[0,1]
+                color = label_map[row, col]
+
+                index = label_info.searchColor(color)
+
+                blob.class_name = label_info.getClassName(index)
+                blob.class_color = label_info.getColorByIndex(index)
+
+                self.seg_blobs.append(blob)
+
+
     def export_data_table_for_Scripps(self, filename):
 
         # create a list of properties
@@ -1116,3 +1155,46 @@ class Annotation(object):
         myPNG.save(filename)
 
 
+    def export_new_dataset(self, map, tile_size, step, basename):
+
+        # create a black canvas of the same size of your map
+        w = map.width()
+        h = map.height()
+
+        labelimg = QImage(w, h, QImage.Format_RGB32)
+        labelimg.fill(qRgb(0, 0, 0))
+
+        # CREATE LABEL IMAGE
+        for i, blob in enumerate(self.seg_blobs):
+
+            if blob.class_color == "Empty":
+                rgb = qRgb(255, 255, 255)
+            else:
+                rgb = qRgb(blob.class_color[0], blob.class_color[1], blob.class_color[2])
+
+            blob_mask = blob.getMask()
+            for x in range(blob_mask.shape[1]):
+                for y in range(blob_mask.shape[0]):
+
+                    if blob_mask[y, x] == 1:
+                        labelimg.setPixel(x + blob.bbox[1], y + blob.bbox[0], rgb)
+
+        tile_cols = int((w - tile_size) / step)
+        tile_rows = int((h - tile_size) / step)
+
+        deltaW = int(tile_size / 2) + 1
+        deltaH = int(tile_size / 2) + 1
+
+        for row in range(tile_rows):
+            for col in range(tile_cols):
+
+                top = deltaH + row * step
+                left = deltaW + col * step
+                cropimg = utils.cropQImage(map, [top, left, tile_size, tile_size])
+                croplabel = utils.cropQImage(labelimg, [top, left, tile_size, tile_size])
+
+                filenameRGB = basename + "_RGB_" + str.format("{0:02d}", (row)) + "_" + str.format("{0:02d}", (col)) + ".png"
+                filenameLabel = basename + "_L_" + str.format("{0:02d}", (row)) + "_" + str.format("{0:02d}", (col)) + ".png"
+
+                cropimg.save(filenameRGB)
+                croplabel.save(filenameLabel)
