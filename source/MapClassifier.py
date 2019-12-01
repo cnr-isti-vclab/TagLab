@@ -33,12 +33,12 @@ from models.dataloaders import helpers as helpers
 # DEEPLAB V3+
 from models.deeplab import DeepLab
 
-from PyQt5.QtCore import Qt, QSize, QDir, QPoint, QPointF, QLineF, QRectF, QTimer, pyqtSlot, pyqtSignal
-from PyQt5.QtGui import QPainter, QColor, QImage, QPixmap, qRgb, qRed, qGreen, qBlue
+from PyQt5.QtCore import QCoreApplication, Qt, QObject, pyqtSlot, pyqtSignal
+from PyQt5.QtGui import QPainter, QImage, QColor, QPixmap, qRgb, qRed, qGreen, qBlue
 
 from source import utils
 
-class MapClassifier(object):
+class MapClassifier(QObject):
     """
     Given the name of the classifier, the MapClassifier loads and creates it. T
     The interface is common to all the classifier, a map is subdivide into overlapping tiles,
@@ -46,7 +46,11 @@ class MapClassifier(object):
     classification map.
     """
 
-    def __init__(self, classifier_name):
+    # custom signal
+    updateProgress = pyqtSignal(float)
+
+    def __init__(self, classifier_name, parent=None):
+        super(QObject, self).__init__(parent)
 
         self.nclasses = 0
         self.label_colors = []
@@ -118,6 +122,11 @@ class MapClassifier(object):
         self.net.eval()
 
         # classification (per-tiles)
+        tiles_number = tile_rows * tile_cols
+
+        processing_steps = 0
+        total_processing_steps = 2 * tiles_number
+
         for row in range(tile_rows):
             for col in range(tile_cols):
 
@@ -126,8 +135,6 @@ class MapClassifier(object):
                 k = 0
                 for i in range(-1,2):
                     for j in range(-1,2):
-
-                        print(row,col,i,j)
 
                         top = row * STEP_SIZE + i * AGGREGATION_STEP
                         left = col * STEP_SIZE + j * AGGREGATION_STEP
@@ -158,6 +165,10 @@ class MapClassifier(object):
                             scores[k] = outputs[0].cpu().numpy()
                             k = k + 1
 
+                processing_steps += 1
+                self.updateProgress.emit( (100.0*processing_steps) / total_processing_steps )
+                QCoreApplication.processEvents()
+
                 preds_avg, preds_bayesian = self.aggregateScores(scores, tile_sz=TILE_SIZE,
                                                     center_window_size=AGGREGATION_WINDOW_SIZE, step=AGGREGATION_STEP)
 
@@ -172,6 +183,10 @@ class MapClassifier(object):
                 tilename = str(row) + "_" + str(col) + ".png"
                 filename = os.path.join(temp_dir, tilename)
                 utils.rgbToQImage(resimg).save(filename)
+
+                processing_steps += 1
+                self.updateProgress.emit( (100.0*processing_steps) / total_processing_steps )
+                QCoreApplication.processEvents()
 
         # put tiles together
         qimglabel = QImage(W, H, QImage.Format_RGB32)
