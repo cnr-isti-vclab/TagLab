@@ -51,6 +51,7 @@ from source.QtImageViewerPlus import QtImageViewerPlus
 from source.QtMapViewer import QtMapViewer
 from source.QtMapSettingsWidget import QtMapSettingsWidget
 from source.QtInfoWidget import QtInfoWidget
+from source.QtProgressBarCustom import QtProgressBarCustom
 from source.QtCrackWidget import QtCrackWidget
 from source.QtExportWidget import QtExportWidget
 #from QtInfoWidget import QtInfoWidget
@@ -402,9 +403,6 @@ class TagLab(QWidget):
         self.img_thumb_map = None
         self.img_overlay = QImage(16, 16, QImage.Format_RGB32)
 
-        # LOAD DEEP EXTREME NETWORK
-        self.loadingDeepExtremeNetwork()
-
         # EVENTS
         self.labels_widget.visibilityChanged.connect(self.updateVisibility)
 
@@ -458,6 +456,10 @@ class TagLab(QWidget):
         self.extreme_points_number = 0
         self.extreme_points = np.zeros((4, 2))
         self.extreme_points_lines = []
+
+        # NETWORKS
+        self.deepextreme_net = None
+        self.corals_classifier = None
 
         # a dirty trick to adjust all the size..
         self.showMinimized()
@@ -943,6 +945,7 @@ class TagLab(QWidget):
         self.viewerplus.enablePan()
         self.viewerplus.enableZoom()
 
+        self.infoWidget.setInfoMessage("Move Tool is active")
         logfile.info("MOVE tool is active")
 
 
@@ -961,6 +964,7 @@ class TagLab(QWidget):
         self.viewerplus.enablePan()
         self.viewerplus.enableZoom()
 
+        self.infoWidget.setInfoMessage("Crack Tool is active")
         logfile.info("CREATECRACK tool is active")
 
 
@@ -1018,6 +1022,7 @@ class TagLab(QWidget):
         self.viewerplus.disablePan()
         self.viewerplus.enableZoom()
 
+        self.infoWidget.setInfoMessage("Assign Tool is active")
         logfile.info("ASSIGN tool is active")
 
     @pyqtSlot()
@@ -1045,6 +1050,7 @@ class TagLab(QWidget):
         self.viewerplus.disablePan()
         self.viewerplus.enableZoom()
 
+        self.infoWidget.setInfoMessage("Edit Border Tool is active")
         logfile.info("EDITBORDER tool is active")
 
     @pyqtSlot()
@@ -1094,6 +1100,7 @@ class TagLab(QWidget):
         self.viewerplus.disablePan()
         self.viewerplus.enableZoom()
 
+        self.infoWidget.setInfoMessage("Freehand Tool is active")
         logfile.info("FREEHAND tool is active")
 
     @pyqtSlot()
@@ -1113,6 +1120,7 @@ class TagLab(QWidget):
         self.viewerplus.disablePan()
         self.viewerplus.enableZoom()
 
+        self.infoWidget.setInfoMessage("Ruler Tool is active")
         logfile.info("RULER tool is active")
 
     @pyqtSlot()
@@ -1130,6 +1138,11 @@ class TagLab(QWidget):
         self.resetTools()
         self.resetSelection()
 
+        if self.deepextreme_net is None:
+            self.resetNetworks()
+            self.infoWidget.setInfoMessage("Loading deepextreme network..")
+            self.loadingDeepExtremeNetwork()
+
         self.btnDeepExtreme.setChecked(True)
         self.tool_used = "DEEPEXTREME"
 
@@ -1138,6 +1151,7 @@ class TagLab(QWidget):
         self.viewerplus.disablePan()
         self.viewerplus.enableZoom()
 
+        self.infoWidget.setInfoMessage("4-click tool is active")
         logfile.info("DEEPEXTREME tool is active")
 
 
@@ -2155,22 +2169,43 @@ class TagLab(QWidget):
             del self.deepextreme_net
             self.deepextreme_net = None
 
+        if self.corals_classifier is not None:
+            del self.corals_classifier
+            self.corals_classifier = None
+
 
     def applyClassifier(self):
 
         # free GPU memory
         self.resetNetworks()
 
+        progress_bar = QtProgressBarCustom(parent=self)
+        progress_bar.setWindowFlags(Qt.ToolTip | Qt.CustomizeWindowHint)
+        progress_bar.setWindowModality(Qt.WindowModal)
+        pos = self.viewerplus.pos()
+        progress_bar.move(pos.x()+15, pos.y()+30)
+        progress_bar.show()
+
         # setup a classifier
-        classifier = MapClassifier("pocillopora")
+        progress_bar.setProgress(0.0)
+        QApplication.processEvents()
+
+        self.infoWidget.setInfoMessage("Setup automatic classification..")
+        self.corals_classifier = MapClassifier("pocillopora")
+        self.corals_classifier.updateProgress.connect(progress_bar.setProgress)
 
         # and runs it
-        classifier.run(self.img_map, 768, 512, 128)
+        self.infoWidget.setInfoMessage("Automatic classification is running..")
+        self.corals_classifier.run(self.img_map, 768, 512, 128)
 
         # import generated label map
         filename = os.path.join("temp", "labelmap.png")
         self.annotations.import_label_map(filename)
         self.drawAnnotations()
+
+        progress_bar.close()
+        del progress_bar
+
 
     def loadingDeepExtremeNetwork(self):
 
