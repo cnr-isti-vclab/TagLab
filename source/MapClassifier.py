@@ -73,6 +73,10 @@ class MapClassifier(QObject):
             pass
 
 
+        self.processing_step = 0
+        self.total_processing_steps = 0
+
+
     def _load_pocillopora_classifier(self):
 
         modelName = "pocillopora.net"
@@ -124,8 +128,8 @@ class MapClassifier(QObject):
         # classification (per-tiles)
         tiles_number = tile_rows * tile_cols
 
-        processing_steps = 0
-        total_processing_steps = 2 * tiles_number
+        self.processing_step = 0
+        self.total_processing_steps = 19 * tiles_number
 
         for row in range(tile_rows):
             for col in range(tile_cols):
@@ -165,9 +169,9 @@ class MapClassifier(QObject):
                             scores[k] = outputs[0].cpu().numpy()
                             k = k + 1
 
-                processing_steps += 1
-                self.updateProgress.emit( (100.0*processing_steps) / total_processing_steps )
-                QCoreApplication.processEvents()
+                            self.processing_step += 1
+                            self.updateProgress.emit( (100.0 * self.processing_step) / self.total_processing_steps )
+                            QCoreApplication.processEvents()
 
                 preds_avg, preds_bayesian = self.aggregateScores(scores, tile_sz=TILE_SIZE,
                                                     center_window_size=AGGREGATION_WINDOW_SIZE, step=AGGREGATION_STEP)
@@ -184,8 +188,8 @@ class MapClassifier(QObject):
                 filename = os.path.join(temp_dir, tilename)
                 utils.rgbToQImage(resimg).save(filename)
 
-                processing_steps += 1
-                self.updateProgress.emit( (100.0*processing_steps) / total_processing_steps )
+                self.processing_step += 1
+                self.updateProgress.emit( (100.0 * self.processing_step) / self.total_processing_steps )
                 QCoreApplication.processEvents()
 
         # put tiles together
@@ -254,6 +258,10 @@ class MapClassifier(QObject):
                             scores_counter[yy, xx] = counter + 1
 
                 k = k + 1
+
+                self.processing_step += 1
+                self.updateProgress.emit( (100.0 * self.processing_step) / self.total_processing_steps )
+                QCoreApplication.processEvents()
 
         #####   AGGREGATE SCORES BY AVERAGING THEM   ##################################################
 

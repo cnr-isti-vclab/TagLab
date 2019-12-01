@@ -1,5 +1,5 @@
-from PyQt5.QtCore import Qt, QMargins, QSize, pyqtSlot, pyqtSignal
-from PyQt5.QtGui import QPainter, QBrush, QPixmap, QIcon, qRgb, qRed, qGreen, qBlue, QFont
+from PyQt5.QtCore import Qt, QMargins, QRect, QSize, pyqtSlot, pyqtSignal
+from PyQt5.QtGui import QPainter, QBrush, QPixmap, QPen, QIcon, qRgb, qRed, qGreen, qBlue, QFont
 from PyQt5.QtWidgets import QWidget, QGroupBox, QSizePolicy, QSlider, QLabel, QHBoxLayout, QVBoxLayout
 
 class QtProgressBarCustom(QWidget):
@@ -9,32 +9,45 @@ class QtProgressBarCustom(QWidget):
 
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
 
-        self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        self.setMinimumWidth(400)
-        self.setMinimumHeight(40)
-
         self.bar_width = 400
+        self.bar_height = 30
 
-        self.pxmapBar = QPixmap(self.bar_width, 30)
+        self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+        self.setMinimumWidth(self.bar_width)
+        self.setMinimumHeight(self.bar_height+10)
+
+        self.pxmapBar = QPixmap(self.bar_width, self.bar_height)
         self.pxmapBar.fill(Qt.darkBlue)
         self.lblBar = QLabel()
         self.lblBar.setPixmap(self.pxmapBar)
 
-        fnt = QFont("Times", 11)
-        self.lblProgress = QLabel("0.00 %")
-        self.lblProgress.setAlignment(Qt.AlignLeft)
-        self.lblProgress.setMaximumHeight(30)
-        self.lblProgress.setFont(fnt)
-        self.lblProgress.setStyleSheet("color: rgb(255,255,255)")
-
         layoutH = QHBoxLayout()
-        layoutH.addWidget(QLabel("Classification: "))
         layoutH.addWidget(self.lblBar)
-        layoutH.addWidget(self.lblProgress)
         layoutH.setContentsMargins(QMargins(0, 0, 0, 0))
         self.setLayout(layoutH)
 
         self.setAutoFillBackground(True)
+
+        self.current_progress = 0.0
+        self.message = "Classification"
+
+
+    def setMessage(self, text, visualize_progress):
+        """
+        Update the message displayed by the progress bar. The current progress can be displayed together with the message, or not.
+        """
+
+        self.message = text
+
+        if visualize_progress is True:
+
+            txt = self.message + "{:.2f} %".format(self.current_progress)
+
+        else:
+
+            txt = self.message
+
+        self.drawBar(txt)
 
 
     @pyqtSlot(float)
@@ -43,15 +56,29 @@ class QtProgressBarCustom(QWidget):
         Set the current progress of the processing. The value goes from 0.0 to 100.0
         """
 
-        txt = "{:.2f} %".format(progress)
-        self.lblProgress.setText(txt)
+        txt = self.message + "{:.2f} %".format(progress)
 
-        w = (self.bar_width * progress) / 100.0
+        self.current_progress = progress
 
-        brush = QBrush(Qt.blue)
+        self.drawBar(txt)
+
+
+    def drawBar(self, txt):
+        """
+        Visualize the current progress.
+        """
+
+        w = (self.bar_width * self.current_progress) / 100.0
+
         painter = QPainter(self.pxmapBar)
-        painter.setBrush(brush)
-        painter .drawRect(0, 0, int(w), 30)
+        painter.setBrush(QBrush(Qt.darkBlue))
+        painter.drawRect(0, 0, self.bar_width, 30)
+        painter.setBrush(QBrush(Qt.blue))
+        painter.drawRect(0, 0, int(w), 30)
+        painter.setPen(QPen(Qt.white))
+        painter.setFont(QFont("Times", 10, QFont.Bold));
+        painter.drawText(QRect(0, 0, self.bar_width, 30), Qt.AlignCenter, txt)
+
         painter.end()
 
         self.lblBar.setPixmap(self.pxmapBar)
