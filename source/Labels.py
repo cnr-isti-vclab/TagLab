@@ -132,6 +132,7 @@ class Labels:
             if c[1][0] == color[0] and c[1][1] == color[1] and c[1][2] == color[2]:
                 return idx
 
+        return -1
 
 class ClickableLabel(QLabel):
 
