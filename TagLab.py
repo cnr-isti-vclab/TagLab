@@ -2197,20 +2197,18 @@ class TagLab(QWidget):
         self.corals_classifier.updateProgress.connect(progress_bar.setProgress)
 
         # rescaling the map to fit the target scale of the network
-        #
-        # progress_bar.setMessage("Map rescaling..", False)
-        # QApplication.processEvents()
-        #
-        # THIS MUST BE CHECKED (!)
-        #
-        # # target scale factor: 1 pixel = 0.9 mm -> 1.1111 pixel / 1mm
-        # target_scale_factor = 0.9
-        # scale_factor = target_scale_factor / self.map_px_to_mm_factor
-        #
-        # w = self.img_map.width() * scale_factor
-        # h = self.img_map.height() * scale_factor
-        #
-        # input_img_map = self.img_map.scaled(w, h, Qt.SmoothTransformation)
+
+        progress_bar.setMessage("Map rescaling..", False)
+        QApplication.processEvents()
+
+        # target scale factor: 1 pixel = 0.9 mm -> 1.1111 pixel / 1mm
+        target_scale_factor = 0.9
+        scale_factor = target_scale_factor / self.map_px_to_mm_factor
+
+        w = self.img_map.width() * scale_factor
+        h = self.img_map.height() * scale_factor
+
+        input_img_map = self.img_map.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
 
         progress_bar.setMessage("Classification: ", True)
         progress_bar.setProgress(0.0)
@@ -2218,18 +2216,15 @@ class TagLab(QWidget):
 
         # runs the classifier
         self.infoWidget.setInfoMessage("Automatic classification is running..")
-        self.corals_classifier.run(self.img_map, 768, 512, 128)
+        self.corals_classifier.run(input_img_map, 768, 512, 128)
 
         # import generated label map
         progress_bar.setMessage("Finalizing classification results..", False)
         QApplication.processEvents()
 
         filename = os.path.join("temp", "labelmap.png")
-        self.annotations.import_label_map(filename)
+        self.annotations.import_label_map(filename, self.img_map)
         self.drawAnnotations()
-
-        # apply inverse scale factor to the blobs
-        # TODO...
 
         progress_bar.close()
         del progress_bar

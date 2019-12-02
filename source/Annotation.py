@@ -37,6 +37,7 @@ from skimage.filters import gaussian
 from skimage import segmentation
 
 from source import utils
+from source.Labels import Labels
 
 import pandas as pd
 
@@ -1040,13 +1041,19 @@ class Annotation(object):
     ###########################################################################
     ### IMPORT / EXPORT
 
-    def import_label_map(self, filename):
+    def import_label_map(self, filename, reference_map):
         """
         It imports a label map and create the corresponding blobs.
+        The label map is rescaled such that it coincides with the reference map.
         """
 
         qimg_label_map = QImage(filename)
         qimg_label_map = qimg_label_map.convertToFormat(QImage.Format_RGB32)
+
+        w = reference_map.width()
+        h = reference_map.height()
+        qimg_label_map = qimg_label_map.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+
         label_map = utils.qimageToNumpyArray(qimg_label_map)
         label_map = label_map.astype(np.int32)
 
@@ -1073,10 +1080,12 @@ class Annotation(object):
 
                 index = label_info.searchColor(color)
 
-                blob.class_name = label_info.getClassName(index)
-                blob.class_color = label_info.getColorByIndex(index)
+                if index >= 0:
 
-                self.seg_blobs.append(blob)
+                    blob.class_name = label_info.getClassName(index)
+                    blob.class_color = label_info.getColorByIndex(index)
+
+                    self.seg_blobs.append(blob)
 
 
     def export_data_table_for_Scripps(self, filename):
