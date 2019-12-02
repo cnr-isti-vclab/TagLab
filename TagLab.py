@@ -596,7 +596,7 @@ class TagLab(QWidget):
         undoAct = QAction("Undo", self)
         undoAct.setShortcut('Ctrl+Z')
         undoAct.setStatusTip("Undo")
-#        undoAct.triggered.connect(self.undo)
+        undoAct.triggered.connect(self.undo)
 
         helpAct = QAction("Help", self)
         #exportAct.setShortcut('Ctrl+Q')
@@ -1499,6 +1499,103 @@ class TagLab(QWidget):
 
             self.infoWidget.setInfoMessage("You need to select <em>two</em> blobs for DIVIDE operation.")
 
+    def refineBorder(self):
+        """
+        Refine blob border
+        """
+
+        logfile.info("REFINE BORDER operation")
+        logfile.debug("Number of selected blobs: %d", len(self.selected_blobs))
+
+        # padding mask to allow moving boundary
+        padding = 30
+
+        if len(self.selected_blobs) == 1:
+
+            logfile.info("REFINE BORDER operation begins..")
+
+            blob = self.selected_blobs[0]
+
+            mask = blob.getMask()
+            mask = np.pad(mask, (padding, padding), mode='constant', constant_values=(0, 0)).astype(np.ubyte)
+
+            bbox = blob.bbox
+            print("Blob box before pad: ", bbox[1], bbox[0]) # is left, 0 is top.
+
+            bbox[0] -= padding; #top
+            bbox[1] -= padding; #left
+            bbox[2] += 2*padding; #width
+            bbox[3] += 2*padding; #height
+
+
+
+            #pred = np.pad(blob.pred_mask, (padding, padding), mode='constant', constant_values=(0, 0))
+
+            #careful: this overwrites blob.bbox
+
+
+            img = utils.cropQImage(self.img_map, bbox);
+
+
+            coraline = Coraline(utils.qimageToNumpyArray(img), mask)
+
+            if hasattr(blob, 'pred_mask'):
+                top = bbox[0] - blob.pred_top
+                bottom = top + mask.shape[0]
+                left = bbox[1] - blob.pred_left
+                right = left + mask.shape[1]
+
+#                pred_mask = blob.pred_mask[top:bottom, left:right].copy()
+
+#                coraline.setPred(pred_mask)
+
+            coraline.setConservative(0.3)
+            coraline.setLambda(0.2)
+            #result is returned changing mask.
+            coraline.segment()
+            self.addUndo()
+            blob.updateUsingMask(bbox, mask.astype(np.int))
+
+            self.resetSelection()
+
+            logfile.info("DIVIDE LABELS operation ends.")
+
+        else:
+
+            self.infoWidget.setInfoMessage("You need to select <em>one</em> blob for REFINE operation.")
+
+    def addUndo(self):
+        copied = []
+        for blob in self.annotations.seg_blobs:
+            reblob = copy.deepcopy(blob)
+            if blob.qpath is not None:
+                reblob.qpath = QPainterPath(blob.qpath)
+            reblob.qpath_gitem = None
+
+            reblob.selected = blob in self.selected_blobs
+            copied.append(reblob)
+
+        self.annotations.undo_blobs.append(copied)
+        if len(self.annotations.undo_blobs) > 10:
+            self.annotations.undo_blobs.pop(0)
+
+    def undo(self):
+        if len(self.annotations.undo_blobs) > 0:
+            self.selected_blobs.clear()
+            for blob in self.annotations.seg_blobs:
+                if blob.qpath_gitem is not None:
+                    self.viewerplus.scene.removeItem(blob.qpath_gitem)
+                    blob.qpath_gitem = None
+
+            self.annotations.seg_blobs = self.annotations.undo_blobs.pop()
+            for blob in self.annotations.seg_blobs:
+                if blob.selected is True:
+                    self.selected_blobs.append(blob)
+                self.drawBlob(blob, blob.selected)
+
+
+
+
     def group(self):
 
         if len(self.selected_blobs) > 0:
@@ -2006,6 +2103,13 @@ class TagLab(QWidget):
         self.infoWidget.setInfoMessage("Map is loading..")
 
         self.img_map = QImage(self.map_image_filename)
+
+        if self.img_map.isNull():
+            msgBox = QMessageBox()
+            msgBox.setText("Could not load or find the image: " + self.map_image_filename)
+            msgBox.exec()
+            return
+
         self.img_thumb_map = self.img_map.scaled(self.MAP_VIEWER_SIZE, self.MAP_VIEWER_SIZE, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.viewerplus.setImage(self.img_map)
         self.mapviewer.setImage(self.img_thumb_map)
