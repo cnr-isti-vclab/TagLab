@@ -225,8 +225,9 @@ class QtImageViewerPlus(QGraphicsView):
         self.resetTransform()
         self.scale(self.zoom_factor, self.zoom_factor)
 
-        painter = QPainter(self)
-        self.scene.render(painter)
+        self.invalidateScene()
+        #painter = QPainter(self)
+        #self.scene.render(painter)
 
         # notify that the view has been updated
         #self.viewUpdated.emit()
@@ -263,7 +264,7 @@ class QtImageViewerPlus(QGraphicsView):
 
         if event.button() == Qt.LeftButton:
             # if self.panEnabled:
-            if self.panEnabled or (not self.panEnabled and event.modifiers() & Qt.ControlModifier):
+            if self.panEnabled or (event.modifiers() & Qt.ControlModifier):
                 self.setDragMode(QGraphicsView.ScrollHandDrag)
             clippedCoords = self.clipScenePos(scenePos)
             self.leftMouseButtonPressed.emit(clippedCoords[0], clippedCoords[1])
