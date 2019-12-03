@@ -37,8 +37,12 @@ from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QDialog, QMenuBa
     QMessageBox, QGroupBox, QHBoxLayout, QVBoxLayout, QTextEdit, QLineEdit, QGraphicsView, QAction
 
 # PYTORCH
-import torch
-from torch.nn.functional import upsample
+try:
+    import torch
+    from torch.nn.functional import upsample
+except Exception as e:
+    print("Cuda not installed, probably." + str(e))
+    exit()
 
 from collections import OrderedDict
 
