@@ -59,6 +59,7 @@ from source.Annotation import Annotation, Blob
 from source.Labels import Labels, LabelsWidget
 from source.MapClassifier import MapClassifier
 from source import utils
+from coraline.Coraline import Coraline
 
 # LOGGING
 import logging
@@ -524,6 +525,13 @@ class TagLab(QWidget):
         subtractAction.setShortcutVisibleInContextMenu(True)
         menu.addAction(subtractAction)
 
+        menu.addSeparator()
+
+        refineAction = QAction("Refine Border", self)
+        refineAction.setShortcut(QKeySequence("R"))
+        refineAction.setShortcutVisibleInContextMenu(True)
+        menu.addAction(refineAction)
+
         action = menu.exec_(self.viewerplus.mapToGlobal(position))
 
         if action == deleteAction:
@@ -540,6 +548,8 @@ class TagLab(QWidget):
             self.subtract()
         elif action == assignAction:
             self.assign()
+        elif action == refineAction:
+            self.refineBorder()
 
     def setProjectTitle(self, project_name):
 
@@ -674,6 +684,9 @@ class TagLab(QWidget):
         elif event.key() == Qt.Key_D:
             # SUBTRACTION BETWEEN TWO BLOBS (A = A / B), BLOB B IS NOT DELETED
             self.divide()
+        elif event.key() == Qt.Key_R:
+            # REFINE BORDER
+            self.refineBorder()
         elif event.key() == Qt.Key_G:
             # GROUP TOGETHER THE SELECTED BLOBS
             self.group()
@@ -1510,6 +1523,8 @@ class TagLab(QWidget):
         # padding mask to allow moving boundary
         padding = 30
 
+
+
         if len(self.selected_blobs) == 1:
 
             logfile.info("REFINE BORDER operation begins..")
@@ -1536,27 +1551,25 @@ class TagLab(QWidget):
 
             img = utils.cropQImage(self.img_map, bbox);
 
+            try:
+                coraline = Coraline(utils.qimageToNumpyArray(img), mask)
 
-            coraline = Coraline(utils.qimageToNumpyArray(img), mask)
-
-            if hasattr(blob, 'pred_mask'):
-                top = bbox[0] - blob.pred_top
-                bottom = top + mask.shape[0]
-                left = bbox[1] - blob.pred_left
-                right = left + mask.shape[1]
-
+            except Exception as e:
+                msgBox = QMessageBox()
+                msgBox.setText(str(e))
+                msgBox.exec()
+                return
 #                pred_mask = blob.pred_mask[top:bottom, left:right].copy()
 
 #                coraline.setPred(pred_mask)
 
-            coraline.setConservative(0.3)
-            coraline.setLambda(0.2)
+            coraline.setConservative(1.0)
+            coraline.setLambda(0.0)
             #result is returned changing mask.
             coraline.segment()
             self.addUndo()
             blob.updateUsingMask(bbox, mask.astype(np.int))
-
-            self.resetSelection()
+            self.drawBlob(blob, selected=True)
 
             logfile.info("DIVIDE LABELS operation ends.")
 
@@ -1576,7 +1589,7 @@ class TagLab(QWidget):
             copied.append(reblob)
 
         self.annotations.undo_blobs.append(copied)
-        if len(self.annotations.undo_blobs) > 10:
+        if len(self.annotations.undo_blobs) > 20:
             self.annotations.undo_blobs.pop(0)
 
     def undo(self):

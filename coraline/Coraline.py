@@ -1,11 +1,17 @@
 import ctypes as C
 from ctypes import cdll
-lib = cdll.LoadLibrary('./libcoraline.so')
+
+try:
+	lib = cdll.LoadLibrary('coraline/libcoraline.so')
+except:
+	lib = None
 
 import numpy as np
 
 class Coraline(object):
 	def __init__(self, img, mask):
+		if lib is None:
+			raise Exception("Coraline library (libcoraline.so) not found.")
 		w = img.shape[1]
 		h = img.shape[0]
 		W = mask.shape[1]
