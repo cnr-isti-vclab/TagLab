@@ -1057,12 +1057,10 @@ class Annotation(object):
         label_map = utils.qimageToNumpyArray(qimg_label_map)
         label_map = label_map.astype(np.int32)
 
-        # dirty trick to save time..
-        label_coded = label_map[:, :, 0] + label_map[:, :, 1] + label_map[:, :, 2]
+        # RGB -> label code association (ok, it is a dirty trick but it saves time..)
+        label_coded = label_map[:, :, 0] + (label_map[:, :, 1] << 8) + (label_map[:, :, 2] << 16)
 
         labels = measure.label(label_coded, connectivity=1)
-
-        #label_no_borders = clear_border(labels)
 
         label_info = Labels()
 
