@@ -248,6 +248,21 @@ class TagLab(QWidget):
         self.btnDeepExtreme.setToolTip("Deep Extreme")
         self.btnDeepExtreme.clicked.connect(self.deepExtreme)
 
+        self.btnApplyClassifier = QPushButton()
+        self.btnApplyClassifier.setEnabled(True)
+        self.btnApplyClassifier.setCheckable(True)
+        self.btnApplyClassifier.setFlat(True)
+        self.btnApplyClassifier.setStyleSheet(flatbuttonstyle2)
+        self.btnApplyClassifier.setMinimumWidth(ICON_SIZE)
+        self.btnApplyClassifier.setMinimumHeight(ICON_SIZE)
+        self.btnApplyClassifier.setIcon(QIcon(os.path.join("icons", "auto.png")))
+        self.btnApplyClassifier.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
+        self.btnApplyClassifier.setMaximumWidth(BUTTON_SIZE)
+        self.btnApplyClassifier.setToolTip("Fully automatic calssification")
+        self.btnApplyClassifier.clicked.connect(self.applyClassifier)
+
+
+
         layout_tools.setSpacing(0)
         layout_tools.addWidget(self.btnMove)
         layout_tools.addWidget(self.btnAssign)
@@ -258,6 +273,8 @@ class TagLab(QWidget):
         layout_tools.addWidget(self.btnRuler)
         layout_tools.addSpacing(10)
         layout_tools.addWidget(self.btnDeepExtreme)
+        layout_tools.addWidget(self.btnApplyClassifier)
+
         layout_tools.addStretch()
 
 
