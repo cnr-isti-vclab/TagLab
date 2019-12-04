@@ -24,7 +24,6 @@ from PyQt5.QtGui import QImage, qRgb, qRgba
 import numpy as np
 import math
 from skimage.draw import line
-import matplotlib.pyplot as plt
 
 def clampCoords(x, y, W, H):
 
@@ -59,7 +58,8 @@ def draw_open_polygon(r, c):
 
 
 def showMaskAndCurve(mask, bbox, curve, fig_number):
-
+    import matplotlib.pyplot as plt
+    
     arr = mask.copy()
 
     if curve is not None:

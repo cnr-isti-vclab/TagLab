@@ -20,6 +20,7 @@
 import math
 import bz2
 import pickle
+import copy
 import numpy as np
 
 from skimage import measure
@@ -50,10 +51,7 @@ class Blob(object):
 
     def __init__(self, region, offset_x, offset_y, id):
 
-        if region == None:
-
-            # AN EMPTY BLOB IS CREATED..
-
+        if region == None:     # AN EMPTY BLOB IS CREATED..
             self.area = 0.0
             self.perimeter = 0.0
             self.centroid = np.zeros((2))
@@ -142,19 +140,25 @@ class Blob(object):
         # membership group (if any)
         self.group = None
 
-    def copy(self):
+    def __deepcopy__(self, memo):
+        #avoid recursion!
+        deepcopy_method = self.__deepcopy__
+        self.__deepcopy__ = None
+        #save and later restore qobjects
+        path = self.qpath
+        pathitem = self.qpath_gitem
+        #no deep copy for qobjects
+        self.qpath = None
+        self.qpath_gitem = None
 
-        blob = Blob()
+        blob = copy.deepcopy(self)
 
-        blob.centroid = self.centroid.copy()
-        blob.bbox = self.bbox.copy()
-
-        blob.class_name = self.class_name
-        blob.class_color = self.class_color
-        blob.instance_name = self.instance_name
-        blob.id = self.id
-        blob.note = self.note
-
+        blob.qpath = QPainterPath(path)
+        blob.qpath_gitem = None
+        self.qpath = path
+        self.qpath_gitem = pathitem
+        #restore deepcopy (also to the newly created Blob!
+        blob.__deepcopy__ = self.__deepcopy__ = deepcopy_method
         return blob
 
     def setId(self, id):

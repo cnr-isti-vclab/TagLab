@@ -23,7 +23,7 @@ import glob
 import time
 import random
 import datetime
-import copy
+from copy import deepcopy
 
 import json
 import numpy as np
@@ -41,8 +41,9 @@ try:
     import torch
     from torch.nn.functional import upsample
 except Exception as e:
-    print("Cuda not installed, probably." + str(e))
-    exit()
+    print("Incompatible version between pytorch, cuda and python.\n" +
+          "Knowing working version combinations are\n: Cuda 10.0, pytorch 1.0.0, python 3.6.8" + str(e))
+   # exit()
 
 from collections import OrderedDict
 
@@ -1601,11 +1602,7 @@ class TagLab(QWidget):
     def addUndo(self):
         copied = []
         for blob in self.annotations.seg_blobs:
-            reblob = copy.deepcopy(blob)
-            if blob.qpath is not None:
-                reblob.qpath = QPainterPath(blob.qpath)
-            reblob.qpath_gitem = None
-
+            reblob = deepcopy(blob)
             reblob.selected = blob in self.selected_blobs
             copied.append(reblob)
 
@@ -1626,8 +1623,6 @@ class TagLab(QWidget):
                 if blob.selected is True:
                     self.selected_blobs.append(blob)
                 self.drawBlob(blob, blob.selected)
-
-
 
 
     def group(self):

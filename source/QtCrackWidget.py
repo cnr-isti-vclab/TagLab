@@ -24,8 +24,6 @@ from source.QtImageViewerPlus import QtImageViewerPlus
 from skimage.color import rgb2gray
 from source import utils
 
-import matplotlib.pyplot as plt
-
 class QtCrackWidget(QWidget):
 
     closeCrackWidget = pyqtSignal()
