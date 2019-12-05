@@ -609,7 +609,7 @@ class TagLab(QWidget):
         openAct.triggered.connect(self.openProject)
 
         saveAct = QAction("Save Project", self)
-        saveAct.setShortcut('Ctrl+S')
+        saveAct.setShortcut('Ctrl+Alt+S')
         saveAct.setStatusTip("Save current project")
         saveAct.triggered.connect(self.saveProject)
 
@@ -680,6 +680,8 @@ class TagLab(QWidget):
         str = "Key '" + key_pressed + "' has been pressed."
         logfile.info(str)
 
+        modifiers = QApplication.queryKeyboardModifiers()
+
         if event.key() == Qt.Key_Escape:
             # RESET CURRENT OPERATION
             self.resetSelection()
@@ -693,6 +695,8 @@ class TagLab(QWidget):
                 self.resetRulerTool()
             elif self.tool_used == "DEEPEXTREME":
                 self.resetDeepExtremeTool()
+        elif event.key() == Qt.Key_S and modifiers == Qt.ControlModifier:
+            self.save(self.project_name)
         elif event.key() == Qt.Key_Delete:
             # DELETE SELECTED BLOBS
             self.deleteSelected()
