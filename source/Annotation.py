@@ -1097,11 +1097,15 @@ class Annotation(object):
 
         # create a list of instances
         name_list = []
+        visible_blobs = []
         for blob in self.seg_blobs:
-            index = blob.blob_name
-            name_list.append(index)
 
-        number_of_seg = len(self.seg_blobs)
+            if blob.qpath_gitem.isVisible():
+                index = blob.blob_name
+                name_list.append(index)
+                visible_blobs.append(blob)
+
+        number_of_seg = len(name_list)
         class_name = []
         centroid_x = np.zeros(number_of_seg)
         centroid_y = np.zeros(number_of_seg)
@@ -1110,7 +1114,8 @@ class Annotation(object):
         coral_maximum_diameter = np.zeros(number_of_seg)
         coral_note = []
 
-        for i, blob in enumerate(self.seg_blobs):
+        for i, blob in enumerate(visible_blobs):
+
             class_name.append(blob.class_name)
             centroid_x[i] = blob.centroid[0]
             centroid_y[i] = blob.centroid[1]
@@ -1134,6 +1139,7 @@ class Annotation(object):
         df = pd.DataFrame(dic, columns=properties, index=name_list)
         df.to_csv(filename, sep='\t')
 
+
     def export_image_data_for_Scripps(self, map, filename):
 
         # create a black canvas of the same size of your map
@@ -1145,23 +1151,25 @@ class Annotation(object):
 
         for i, blob in enumerate(self.seg_blobs):
 
-            if blob.class_color == "Empty":
-                rgb = qRgb(255, 255, 255)
-            else:
-                rgb = qRgb(blob.class_color[0], blob.class_color[1], blob.class_color[2])
+            if blob.qpath_gitem.isVisible():
 
-            blob_mask = blob.getMask()
-            for x in range(blob_mask.shape[1]):
-                for y in range(blob_mask.shape[0]):
+                if blob.class_color == "Empty":
+                    rgb = qRgb(255, 255, 255)
+                else:
+                    rgb = qRgb(blob.class_color[0], blob.class_color[1], blob.class_color[2])
 
-                    if blob_mask[y, x] == 1:
-                        myPNG.setPixel(x + blob.bbox[1], y + blob.bbox[0], rgb)
+                blob_mask = blob.getMask()
+                for x in range(blob_mask.shape[1]):
+                    for y in range(blob_mask.shape[0]):
 
-            # draw black border
-            [rr, cc] = polygon_perimeter(blob.contour[:, 1], blob.contour[:, 0])
-            if rr.size > 0:
-                for i in range(len(rr)):
-                    myPNG.setPixel(cc[i], rr[i], qRgb(0, 0, 0))
+                        if blob_mask[y, x] == 1:
+                            myPNG.setPixel(x + blob.bbox[1], y + blob.bbox[0], rgb)
+
+                # draw black border
+                [rr, cc] = polygon_perimeter(blob.contour[:, 1], blob.contour[:, 0])
+                if rr.size > 0:
+                    for i in range(len(rr)):
+                        myPNG.setPixel(cc[i], rr[i], qRgb(0, 0, 0))
 
         myPNG.save(filename)
 
@@ -1178,17 +1186,19 @@ class Annotation(object):
         # CREATE LABEL IMAGE
         for i, blob in enumerate(self.seg_blobs):
 
-            if blob.class_color == "Empty":
-                rgb = qRgb(255, 255, 255)
-            else:
-                rgb = qRgb(blob.class_color[0], blob.class_color[1], blob.class_color[2])
+            if blob.qpath_gitem.isVisible():
 
-            blob_mask = blob.getMask()
-            for x in range(blob_mask.shape[1]):
-                for y in range(blob_mask.shape[0]):
+                if blob.class_color == "Empty":
+                    rgb = qRgb(255, 255, 255)
+                else:
+                    rgb = qRgb(blob.class_color[0], blob.class_color[1], blob.class_color[2])
 
-                    if blob_mask[y, x] == 1:
-                        labelimg.setPixel(x + blob.bbox[1], y + blob.bbox[0], rgb)
+                blob_mask = blob.getMask()
+                for x in range(blob_mask.shape[1]):
+                    for y in range(blob_mask.shape[0]):
+
+                        if blob_mask[y, x] == 1:
+                            labelimg.setPixel(x + blob.bbox[1], y + blob.bbox[0], rgb)
 
         tile_cols = int((w - tile_size) / step)
         tile_rows = int((h - tile_size) / step)
