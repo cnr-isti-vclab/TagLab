@@ -95,7 +95,8 @@ uchar *Coraline::segment() {
 	savePPM(test, w, h, string("mask.ppm")); */
 	
 	pixels = distanceField();
-	setColorDistribution();
+	if(lambda > 0.0f)
+		setColorDistribution();
 	if(method == GEODESIC)
 		return geodesic();
 	else
@@ -159,9 +160,10 @@ uchar *Coraline::graphCut() {
 			else
 				wback = 100000;
 		} else {
-			
-			wfore = lambda*foreprob[i];
-			wback = lambda*backprob[i];
+			if (lambda > 0) {
+				wfore = lambda * foreprob[i];
+				wback = lambda * backprob[i];
+			}
 			
 			float distance_penalty = conservative*(distance[i]/(radius-1));
 			if(mask[i] == 1) //was fore
@@ -207,7 +209,7 @@ uchar *Coraline::graphCut() {
 	uchar *res = new uchar[w*h];
 	memcpy(res, mask, w*h);
 	
-	printf("Flow = %f\n", flow);
+	//printf("Flow = %f\n", flow);
 	for(int k = 0; k < pixels.size(); k++) {
 		if(graph.what_segment(k) == maxflow::Graph<double, double, double>::SOURCE)
 			res[pixels[k]] = 1; //1 foreground, 2 background

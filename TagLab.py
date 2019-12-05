@@ -64,7 +64,6 @@ from source.Annotation import Annotation, Blob
 from source.Labels import Labels, LabelsWidget
 from source.MapClassifier import MapClassifier
 from source import utils
-from coraline.Coraline import Coraline
 
 # LOGGING
 import logging
@@ -793,7 +792,6 @@ class TagLab(QWidget):
                     # self.updatePanelInfo(blob)
 
                     created_blobs.clear()
-                    print(1)
                     self.resetCut()
                     logfile.info("CUT operations ends")
 
@@ -1556,9 +1554,7 @@ class TagLab(QWidget):
             mask = blob.getMask()
             mask = np.pad(mask, (padding, padding), mode='constant', constant_values=(0, 0)).astype(np.ubyte)
 
-            bbox = blob.bbox
-            print("Blob box before pad: ", bbox[1], bbox[0]) # is left, 0 is top.
-
+            bbox = blob.bbox.copy()
             bbox[0] -= padding; #top
             bbox[1] -= padding; #left
             bbox[2] += 2*padding; #width
@@ -1574,26 +1570,22 @@ class TagLab(QWidget):
             img = utils.cropQImage(self.img_map, bbox);
 
             try:
-                coraline = Coraline(utils.qimageToNumpyArray(img), mask)
+                from coraline.Coraline import segment
+
+                #                pred_mask = blob.pred_mask[top:bottom, left:right].copy()
+                segment(utils.qimageToNumpyArray(img), mask, 0.0, 1.0)
 
             except Exception as e:
                 msgBox = QMessageBox()
                 msgBox.setText(str(e))
                 msgBox.exec()
                 return
-#                pred_mask = blob.pred_mask[top:bottom, left:right].copy()
 
-#                coraline.setPred(pred_mask)
-
-            coraline.setConservative(1.0)
-            coraline.setLambda(0.0)
-            #result is returned changing mask.
-            coraline.segment()
             self.addUndo()
             blob.updateUsingMask(bbox, mask.astype(np.int))
             self.drawBlob(blob, selected=True)
 
-            logfile.info("DIVIDE LABELS operation ends.")
+            logfile.info("REFINE BORDER operation ends.")
 
         else:
 
@@ -2388,7 +2380,8 @@ class TagLab(QWidget):
 
         self.deepextreme_net.load_state_dict(new_state_dict)
         self.deepextreme_net.eval()
-
+        if not torch.cuda.is_available():
+            print("CUDA NOT AVAILABLE!")
 
     def segmentWithDeepExtreme(self):
 

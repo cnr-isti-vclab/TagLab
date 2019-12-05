@@ -4,13 +4,38 @@
 #include <algorithm>
 using namespace std;
 
+
+#if defined(_WIN32)
+  // MS Windows DLLs (*.dll)
+#define CORALINE_EXPORT_C __declspec(dllexport)
+#else 
+  // Unix-like Shared Object (.so) operating systems and GCC.
+#define CORALINE_EXPORT_C MATHTOOLS_EXTERN_C __attribute__ ((visibility ("default")))
+#endif 
+
 extern "C" {
+
+	CORALINE_EXPORT_C void Coraline_segment(uchar* img, uchar* mask, int w, int h, float lambda = 0.0, float conservative = 1.0) {
+		Coraline* coraline = new Coraline(img, mask, w, h);
+		coraline->lambda = lambda;
+		//std::cout << "Lambda:" << lambda << std::endl;
+		coraline->conservative = conservative;
+		uchar* segment = coraline->segment();
+		//printf("Segmented");
+		memcpy(coraline->mask, segment, (size_t)w * (size_t)h);
+		//printf("copied");
+		delete[]segment;
+		delete coraline;
+		//printf("deleted");
+	}
+/*	//Horrible hack since Python truncate pointers.
+	Coraline* global = 0;
 	double clamp(double v, double lo, double hi) {
 		if(v < lo) v = lo;
 		if(v > hi) v = hi;
 		return v;
 	}
-	Coraline* Coraline_new(uchar *img, uchar *mask, int w, int h) {
+	CORALINE_EXPORT_C Coraline* Coraline_new(uchar *img, uchar *mask, int w, int h) {
 		
 		uchar *tmp = new uchar[w*h*3];
 		for(int i = 0; i < w*h; i++)
@@ -20,19 +45,25 @@ extern "C" {
 		fprintf(file, "P6\n%d %d\n255\n", w, h);
 		fwrite(tmp, w*h*3, 1, file);
 		fclose(file); 
+		delete[]tmp;
 		
 		file = fopen("img.ppm", "wb");
 		fprintf(file, "P6\n%d %d\n255\n", w, h);
 		fwrite(img, w*h*3, 1, file);
 		fclose(file); 
-		
-		return new Coraline(img, mask, w, h);
+		Coraline *coraline = new Coraline(img, mask, w, h);
+		global = coraline;
+		cout << "Coraline pointer: " << (void*)coraline << "\n";
+		return coraline;
 	}
-	void Coraline_delete(Coraline *coraline) {
+	CORALINE_EXPORT_C void Coraline_delete(Coraline *coraline) {
+		if (global != coraline)
+			coraline = global;
 		delete coraline;
 	}
-	void Coraline_setPred(Coraline *coraline, double *pred, int w, int h) {
-		
+	CORALINE_EXPORT_C void Coraline_setPred(Coraline *coraline, double *pred, int w, int h) {
+		if (global != coraline)
+			coraline = global;
 		vector<uchar> img(w*h*3);
 		for(int i = 0; i < w*h; i++) {
 			pred[i] -= 0.8;
@@ -42,19 +73,34 @@ extern "C" {
 		FILE *file = fopen("pred.ppm", "wb");
 		fprintf(file, "P6\n%d %d\n255\n", w, h);
 		fwrite(img.data(), w*h*3, 1, file);
-		fclose(file); 
-		
+		fclose(file);  
+		cout << "Coraline pointer: " << (void*)coraline << "\n";
+
 		coraline->setPred(pred, w, h);
 	}
 	
-	void Coraline_setLambda(Coraline *coraline, float lambda) {
+	CORALINE_EXPORT_C void Coraline_setLambda(Coraline *coraline, float lambda) {
+		if (global != coraline)
+			coraline = global;
+		cout << "Coraline pointer: " << (void*)coraline << "\n";
+
 		coraline->lambda = lambda;
 	}
-	void Coraline_setConservative(Coraline *coraline, float conservative) {
+
+	CORALINE_EXPORT_C void Coraline_setConservative(Coraline *coraline, float conservative) {
+		if (global != coraline)
+			coraline = global;
+		cout << "Coraline pointer: " << (void*)coraline << "\n";
+
 		coraline->conservative = conservative;
 	}
 	
-	unsigned char *Coraline_segment(Coraline* coraline) { 
+	CORALINE_EXPORT_C unsigned char *Coraline_segment(Coraline* coraline) {
+		if (global != coraline)
+			coraline = global;
+		cout << "Coraline pointer: " << (void*)coraline << "\n";
+
+
 		int w = coraline->w;
 		int h = coraline->h;
 		
@@ -68,10 +114,10 @@ extern "C" {
 		FILE *file = fopen("result.ppm", "wb");
 		fprintf(file, "P6\n%d %d\n255\n", w, h);
 		fwrite(tmp, w*h*3, 1, file);
-		
 		fclose(file); 
+		delete []tmp;
 		return coraline->mask; 
-	}
+	}*/
 }
 
 /*

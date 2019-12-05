@@ -1,4 +1,9 @@
 cmake_minimum_required(VERSION 3.1)
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
+
+#SET(CMAKE_CONFIGURATION_TYPES ${CMAKE_BUILD_TYPE} CACHE STRING "" FORCE)
+
 project(coraline)
 
 SET(CORALINE_SOURCE_PATH src)
@@ -33,7 +38,7 @@ SET(EXE_HEADERS
 )
 
 ADD_LIBRARY(coralinelib SHARED ${LIB_SOURCES} ${LIB_HEADERS})
-ADD_EXECUTABLE(coralineexe ${EXE_SOURCE} ${EXE_HEADERS})
+#ADD_EXECUTABLE(coralineexe ${EXE_SOURCE} ${EXE_HEADERS})
 
 SET(CORALINE_DEFINITIONS "") 
 
@@ -59,18 +64,18 @@ elseif(APPLE)
 endif()
 
 target_include_directories(coralinelib PUBLIC ${CORALINE_SOURCE_PATH})
-target_include_directories(coralineexe PUBLIC ${CORALINE_SOURCE_PATH})
+#target_include_directories(coralineexe PUBLIC ${CORALINE_SOURCE_PATH})
 
-target_link_libraries(coralineexe PUBLIC coralinelib)
+#target_link_libraries(coralineexe PUBLIC coralinelib)
 
 target_compile_definitions(coralinelib PUBLIC ${CORALINE_DEFINITIONS})
 target_compile_options    (coralinelib PUBLIC ${CORALINELIB_CFLAGS})
-target_compile_options    (coralineexe PUBLIC ${CORALINEEXE_CFLAGS})
+#target_compile_options    (coralineexe PUBLIC ${CORALINEEXE_CFLAGS})
 set_target_properties     (coralinelib PROPERTIES DEBUG_POSTFIX "d")
-set_target_properties     (coralineexe PROPERTIES OUTPUT_NAME "coraline")
+#set_target_properties     (coralineexe PROPERTIES OUTPUT_NAME "coraline")
 set_target_properties     (coralinelib PROPERTIES OUTPUT_NAME "coraline")
 
-INSTALL(TARGETS coralinelib coralineexe
+INSTALL(TARGETS coralinelib #coralineexe
 	RUNTIME DESTINATION bin
 	BUNDLE DESTINATION bin
 	LIBRARY DESTINATION lib
