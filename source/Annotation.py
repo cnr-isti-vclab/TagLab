@@ -494,6 +494,8 @@ class Blob(object):
 
         number_of_contours = len(contours)
 
+        threshold = 20 #min number of points in a small hole
+
         if number_of_contours > 1:
 
             # search the longest contour
@@ -510,6 +512,7 @@ class Blob(object):
                 if i == index:
                     self.contour = np.array(contour)
                 else:
+                    if contour.shape[0] > threshold:
                     coordinates = np.array(contour)
                     self.inner_contours.append(coordinates)
 
