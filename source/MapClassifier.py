@@ -73,6 +73,7 @@ class MapClassifier(QObject):
             pass
 
 
+        self.flagStopProcessing = False
         self.processing_step = 0
         self.total_processing_steps = 0
 
@@ -132,7 +133,14 @@ class MapClassifier(QObject):
         self.total_processing_steps = 19 * tiles_number
 
         for row in range(tile_rows):
+
+            if self.flagStopProcessing is True:
+                break
+
             for col in range(tile_cols):
+
+                if self.flagStopProcessing is True:
+                    break
 
                 scores = np.zeros((9, self.nclasses, TILE_SIZE, TILE_SIZE))
 
@@ -172,6 +180,10 @@ class MapClassifier(QObject):
                             self.processing_step += 1
                             self.updateProgress.emit( (100.0 * self.processing_step) / self.total_processing_steps )
                             QCoreApplication.processEvents()
+
+
+                if self.flagStopProcessing is True:
+                    break
 
                 preds_avg, preds_bayesian = self.aggregateScores(scores, tile_sz=TILE_SIZE,
                                                     center_window_size=AGGREGATION_WINDOW_SIZE, step=AGGREGATION_STEP)
@@ -226,6 +238,9 @@ class MapClassifier(QObject):
         del self.net
         self.net = None
 
+    def stopProcessing(self):
+
+        self.flagStopProcessing = True
 
     def aggregateScores(self, scores, tile_sz, center_window_size, step):
         """

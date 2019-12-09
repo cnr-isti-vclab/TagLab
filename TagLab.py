@@ -702,6 +702,9 @@ class TagLab(QWidget):
                 self.resetRulerTool()
             elif self.tool_used == "DEEPEXTREME":
                 self.resetDeepExtremeTool()
+            elif self.tool_used == "AUTOCLASS":
+                self.corals_classifier.stopProcessing()
+
             self.tool_used = self.tool_orig
 
         elif event.key() == Qt.Key_S and modifiers == Qt.ControlModifier:
@@ -2330,9 +2333,11 @@ class TagLab(QWidget):
         # free GPU memory
         self.resetNetworks()
 
+        self.tool_used = "AUTOCLASS"
+
         progress_bar = QtProgressBarCustom(parent=self)
         progress_bar.setWindowFlags(Qt.ToolTip | Qt.CustomizeWindowHint)
-        progress_bar.setWindowModality(Qt.WindowModal)
+        progress_bar.setWindowModality(Qt.NonModal)
         pos = self.viewerplus.pos()
         progress_bar.move(pos.x()+15, pos.y()+30)
         progress_bar.show()
@@ -2369,13 +2374,15 @@ class TagLab(QWidget):
         self.infoWidget.setInfoMessage("Automatic classification is running..")
         self.corals_classifier.run(input_img_map, 768, 512, 128)
 
-        # import generated label map
-        progress_bar.setMessage("Finalizing classification results..", False)
-        QApplication.processEvents()
+        if self.corals_classifier.flagStopProcessing is False:
 
-        filename = os.path.join("temp", "labelmap.png")
-        self.annotations.import_label_map(filename, self.img_map)
-        self.drawAnnotations()
+            # import generated label map
+            progress_bar.setMessage("Finalizing classification results..", False)
+            QApplication.processEvents()
+
+            filename = os.path.join("temp", "labelmap.png")
+            self.annotations.import_label_map(filename, self.img_map)
+            self.drawAnnotations()
 
         progress_bar.close()
         del progress_bar
