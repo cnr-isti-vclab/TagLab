@@ -58,7 +58,8 @@ from source.QtProgressBarCustom import QtProgressBarCustom
 from source.QtCrackWidget import QtCrackWidget
 from source.QtExportWidget import QtExportWidget
 #from QtInfoWidget import QtInfoWidget
-from source.Annotation import Annotation, Blob
+from source.Blob import Blob
+from source.Annotation import Annotation
 from source.Labels import Labels, LabelsWidget
 from source.MapClassifier import MapClassifier
 from source import utils
