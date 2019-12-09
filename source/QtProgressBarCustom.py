@@ -1,5 +1,5 @@
 from PyQt5.QtCore import Qt, QMargins, QRect, QSize, pyqtSlot, pyqtSignal
-from PyQt5.QtGui import QPainter, QBrush, QPixmap, QPen, QIcon, qRgb, qRed, qGreen, qBlue, QFont
+from PyQt5.QtGui import QPainter, QBrush, QPixmap, QPen, QColor, QIcon, qRgb, qRed, qGreen, qBlue, QFont
 from PyQt5.QtWidgets import QWidget, QGroupBox, QSizePolicy, QSlider, QLabel, QHBoxLayout, QVBoxLayout
 
 class QtProgressBarCustom(QWidget):
@@ -71,9 +71,9 @@ class QtProgressBarCustom(QWidget):
         w = (self.bar_width * self.current_progress) / 100.0
 
         painter = QPainter(self.pxmapBar)
-        painter.setBrush(QBrush(Qt.darkBlue))
+        painter.setBrush(QBrush(QColor(qRgb(60, 60, 60))))
         painter.drawRect(0, 0, self.bar_width, 30)
-        painter.setBrush(QBrush(Qt.blue))
+        painter.setBrush(QBrush(QColor(qRgb(0, 201, 209))))
         painter.drawRect(0, 0, int(w), 30)
         painter.setPen(QPen(Qt.white))
         painter.setFont(QFont("Times", 10, QFont.Bold));
