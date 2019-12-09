@@ -443,7 +443,7 @@ class TagLab(QWidget):
         self.current_selection = None
 
         # DRAWING SETTINGS
-        self.BLOB_BORDER_WIDTH = 2
+        self.BLOB_BORDER_WIDTH = 3
         self.CROSS_LINE_WIDTH = 6
 
         # DATA FOR THE SELECTION
@@ -2473,13 +2473,14 @@ class TagLab(QWidget):
 
             segm_mask = result.astype(int)
 
-            blobs = self.annotations.addBlob(segm_mask, left_map_pos, top_map_pos, area_extreme_points)
+            blobs = self.annotations.blobsFromMask(segm_mask, left_map_pos, top_map_pos, area_extreme_points)
 
             for blob in blobs:
                 blob.deep_extreme_points = extreme_points_to_use
 
             self.resetSelection()
             for blob in blobs:
+                self.annotations.seg_blobs.append(blob)
                 self.addToSelectedList(blob)
                 self.drawBlob(blob, selected=True)
 

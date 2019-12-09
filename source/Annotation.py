@@ -93,8 +93,15 @@ class Annotation(object):
         self.groups.append(group)
         return group
 
-    def addBlob(self, seg_mask, map_pos_x, map_pos_y, area_mask):
+    def addBlob(self, blob):
+        self.seg_blobs.append(blob)
 
+    def removeBlob(self, blob):
+        index = self.seg_blobs.index(blob)
+        del self.seg_blobs[index]
+
+
+    def blobsFromMask(self, seg_mask, map_pos_x, map_pos_y, area_mask):
         # create the blobs from the segmentation mask
 
         last_blobs_added = []
@@ -110,7 +117,7 @@ class Annotation(object):
 
                 id = len(self.seg_blobs)
                 blob = Blob(region, map_pos_x, map_pos_y, id+1)
-                self.seg_blobs.append(blob)
+                #self.seg_blobs.append(blob)
 
                 last_blobs_added.append(blob)
 
@@ -127,11 +134,7 @@ class Annotation(object):
         index = self.groups.index(group)
         del self.groups[index]
 
-    def removeBlob(self, blob):
 
-        # remove from the list of the blobs
-        index = self.seg_blobs.index(blob)
-        del self.seg_blobs[index]
 
 
     def as_dict(self, i):
