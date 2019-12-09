@@ -513,8 +513,8 @@ class Blob(object):
                     self.contour = np.array(contour)
                 else:
                     if contour.shape[0] > threshold:
-                    coordinates = np.array(contour)
-                    self.inner_contours.append(coordinates)
+                        coordinates = np.array(contour)
+                        self.inner_contours.append(coordinates)
 
             # adjust the coordinates of the outer contour
             # (NOTE THAT THE COORDINATES OF THE BBOX ARE IN THE GLOBAL MAP COORDINATES SYSTEM)

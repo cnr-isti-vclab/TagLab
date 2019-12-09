@@ -19,9 +19,7 @@
 
 import sys
 import os
-import glob
 import time
-import random
 import datetime
 from copy import deepcopy
 
@@ -111,6 +109,7 @@ class TagLab(QWidget):
         self.mapWidget = None
 
         self.tool_used = "MOVE"        # tool currently used
+        self.tool_orig = "MOVE"        # tool originally used when a shift key changes the current tool
         self.current_selection = None  # blob currently selected
 
         ICON_SIZE = 48
@@ -553,6 +552,11 @@ class TagLab(QWidget):
         refineAction.setShortcutVisibleInContextMenu(True)
         menu.addAction(refineAction)
 
+#        refineActionAll = QAction("Refine All Borders", self)
+#        refineActionAll.setShortcut(QKeySequence("^"))
+#        refineActionAll.setShortcutVisibleInContextMenu(True)
+#        menu.addAction(refineActionAll)
+
         action = menu.exec_(self.viewerplus.mapToGlobal(position))
 
         if action == deleteAction:
@@ -571,6 +575,8 @@ class TagLab(QWidget):
             self.assign()
         elif action == refineAction:
             self.refineBorder()
+#        elif action == refineActionAll:
+#            self.refineAllBorders()
 
     def setProjectTitle(self, project_name):
 
@@ -695,6 +701,8 @@ class TagLab(QWidget):
                 self.resetRulerTool()
             elif self.tool_used == "DEEPEXTREME":
                 self.resetDeepExtremeTool()
+            self.tool_used = self.tool_orig
+
         elif event.key() == Qt.Key_S and modifiers == Qt.ControlModifier:
             self.save(self.project_name)
         elif event.key() == Qt.Key_Delete:
@@ -837,6 +845,8 @@ class TagLab(QWidget):
                 self.segmentWithDeepExtreme()
                 self.resetDeepExtremeTool()
 
+            self.tool_used = self.tool_orig
+
     @pyqtSlot()
     def sliderTrasparencyChanged(self):
 
@@ -977,7 +987,7 @@ class TagLab(QWidget):
         self.resetTools()
 
         self.btnMove.setChecked(True)
-        self.tool_used = "MOVE"
+        self.tool_used = self.tool_orig = "MOVE"
 
         self.viewerplus.enablePan()
         self.viewerplus.enableZoom()
@@ -996,7 +1006,7 @@ class TagLab(QWidget):
         self.resetTools()
 
         self.btnCreateCrack.setChecked(True)
-        self.tool_used = "CREATECRACK"
+        self.tool_used = self.tool_orig = "CREATECRACK"
 
         self.viewerplus.enablePan()
         self.viewerplus.enableZoom()
@@ -1054,7 +1064,7 @@ class TagLab(QWidget):
         self.resetTools()
 
         self.btnAssign.setChecked(True)
-        self.tool_used = "ASSIGN"
+        self.tool_used = self.tool_orig = "ASSIGN"
 
         self.viewerplus.disablePan()
         self.viewerplus.enableZoom()
@@ -1076,7 +1086,7 @@ class TagLab(QWidget):
             self.resetSelection()
 
         self.btnEditBorder.setChecked(True)
-        self.tool_used = "EDITBORDER"
+        self.tool_used = self.tool_orig = "EDITBORDER"
 
         pen = QPen(Qt.black)
         pen.setWidth(self.BLOB_BORDER_WIDTH)
@@ -1102,7 +1112,7 @@ class TagLab(QWidget):
             self.resetSelection()
 
         self.btnCut.setChecked(True)
-        self.tool_used = "CUT"
+        self.tool_used = self.tool_orig = "CUT"
 
         pen = QPen(Qt.black)
         pen.setWidth(self.BLOB_BORDER_WIDTH)
@@ -1126,7 +1136,7 @@ class TagLab(QWidget):
         self.resetSelection()
 
         self.btnFreehand.setChecked(True)
-        self.tool_used = "FREEHAND"
+        self.tool_used = self.tool_orig = "FREEHAND"
 
         pen = QPen(Qt.black)
         pen.setWidth(self.BLOB_BORDER_WIDTH)
@@ -1152,7 +1162,7 @@ class TagLab(QWidget):
         self.resetSelection()
 
         self.btnRuler.setChecked(True)
-        self.tool_used = "RULER"
+        self.tool_used = self.tool_orig = "RULER"
 
         self.viewerplus.disablePan()
         self.viewerplus.enableZoom()
@@ -1181,7 +1191,7 @@ class TagLab(QWidget):
             self.loadingDeepExtremeNetwork()
 
         self.btnDeepExtreme.setChecked(True)
-        self.tool_used = "DEEPEXTREME"
+        self.tool_used = self.tool_orig = "DEEPEXTREME"
 
         self.viewerplus.showCrossair = True
 
@@ -1614,11 +1624,13 @@ class TagLab(QWidget):
                     self.viewerplus.scene.removeItem(blob.qpath_gitem)
                     blob.qpath_gitem = None
 
-            self.annotations.seg_blobs = self.annotations.undo_blobs.pop()
+            self.annotations.seg_blobs = self.annotations.undo_blobs.pop(-1)
             for blob in self.annotations.seg_blobs:
                 if blob.selected is True:
                     self.selected_blobs.append(blob)
                 self.drawBlob(blob, blob.selected)
+
+            self.updateVisibility()
 
 
     def group(self):
@@ -1742,8 +1754,13 @@ class TagLab(QWidget):
     def toolsOpsLeftPressed(self, x, y):
 
         modifiers = QApplication.queryKeyboardModifiers()
+        if modifiers & Qt.ControlModifier:
+            return
 
-        if self.tool_used == "ASSIGN" and not (modifiers & Qt.ControlModifier):
+        if (modifiers & Qt.ShiftModifier) and self.tool_used == "FREEHAND":
+            self.tool_used = "EDITBORDER"
+
+        if self.tool_used == "ASSIGN":
 
             selected_blob = self.annotations.clickedBlob(x, y)
 
@@ -1767,14 +1784,12 @@ class TagLab(QWidget):
 
                     self.drawBlob(blob, selected=True)
 
-        elif self.tool_used == "EDITBORDER" and not (modifiers & Qt.ControlModifier):
-
+        elif self.tool_used == "EDITBORDER":
             if len(self.selected_blobs) == 1:
 
                 logfile.info("EDITBORDER drawing")
 
                 if len(self.editborder_points) == 0:
-
                     self.editborder_points = np.array([[x, y]])
 
                     pen = QPen(Qt.black)
@@ -1795,7 +1810,6 @@ class TagLab(QWidget):
                     logfile.debug("Number of EDITBORDER points: %d", self.editborder_points.shape[0])
 
                 else:
-
                     self.editborder_points = np.append(self.editborder_points, [[x, y]], axis=0)
                     self.editborder_qpath.lineTo(QPointF(x, y))
                     self.editborder_qpath_gitem.setPath(self.editborder_qpath)
@@ -1806,7 +1820,7 @@ class TagLab(QWidget):
                 logfile.info("Invalid EDITBORDER drawing (no blob selected) (!)")
 
 
-        elif self.tool_used == "CUT" and not (modifiers & Qt.ControlModifier):
+        elif self.tool_used == "CUT":
 
             if len(self.selected_blobs) == 1:
 
@@ -1846,7 +1860,7 @@ class TagLab(QWidget):
 
 
 
-        elif self.tool_used == "FREEHAND" and not (modifiers & Qt.ControlModifier):
+        elif self.tool_used == "FREEHAND":
 
             logfile.info("FREEHAND drawing")
 
@@ -1872,7 +1886,6 @@ class TagLab(QWidget):
                 logfile.debug("Number of FREEHAND points: %d", self.freehand_points.shape[0])
 
             else:
-
                 self.freehand_points = np.append(self.freehand_points, [[x, y]], axis=0)
                 self.freehand_qpath.lineTo(QPointF(x, y))
                 self.freehand_qpath_gitem.setPath(self.freehand_qpath)
@@ -1903,7 +1916,7 @@ class TagLab(QWidget):
                     self.crackWidget.closeCrackWidget.connect(self.crackCancel)
                     self.crackWidget.show()
 
-        elif self.tool_used == "RULER" and not (modifiers & Qt.ControlModifier):
+        elif self.tool_used == "RULER":
 
             if self.ruler_points_number < 2:
 
@@ -1920,7 +1933,7 @@ class TagLab(QWidget):
 
         elif self.tool_used == "DEEPEXTREME":
 
-            if self.extreme_points_number < 4 and not (modifiers & Qt.ControlModifier):
+            if self.extreme_points_number < 4:
 
                 ind = self.extreme_points_number
                 self.extreme_points[ind, 0] = x
@@ -1954,43 +1967,43 @@ class TagLab(QWidget):
     @pyqtSlot(float, float)
     def toolsOpsMouseMove(self, x, y):
 
-        if not (QApplication.keyboardModifiers() & Qt.ControlModifier):
+        modifiers = QApplication.queryKeyboardModifiers()
 
-            if self.tool_used == "EDITBORDER":
+        if self.tool_used == "EDITBORDER":
 
-                logfile.info("EDIBORDER moving")
+            logfile.info("EDIBORDER moving")
 
-                if len(self.editborder_points) > 0:
+            if len(self.editborder_points) > 0:
 
-                    self.editborder_points = np.append(self.editborder_points, [[x, y]], axis=0)
-                    self.editborder_qpath.lineTo(QPointF(x,y))
-                    self.editborder_qpath_gitem.setPath(self.editborder_qpath)
+                self.editborder_points = np.append(self.editborder_points, [[x, y]], axis=0)
+                self.editborder_qpath.lineTo(QPointF(x,y))
+                self.editborder_qpath_gitem.setPath(self.editborder_qpath)
 
-                    logfile.debug("Number of EDITBORDER points: %d", self.editborder_points.shape[0])
+                logfile.debug("Number of EDITBORDER points: %d", self.editborder_points.shape[0])
 
-            elif self.tool_used == "CUT":
+        elif self.tool_used == "CUT":
 
-                logfile.info("CUT moving")
+            logfile.info("CUT moving")
 
-                if len(self.cut_points) > 0:
+            if len(self.cut_points) > 0:
 
-                    self.cut_points = np.append(self.cut_points, [[x, y]], axis=0)
-                    self.cut_qpath.lineTo(QPointF(x,y))
-                    self.cut_qpath_gitem.setPath(self.cut_qpath)
+                self.cut_points = np.append(self.cut_points, [[x, y]], axis=0)
+                self.cut_qpath.lineTo(QPointF(x,y))
+                self.cut_qpath_gitem.setPath(self.cut_qpath)
 
-                    logfile.debug("Number of CUTTED points: %d", self.cut_points.shape[0])
+                logfile.debug("Number of CUTTED points: %d", self.cut_points.shape[0])
 
-            elif self.tool_used == "FREEHAND":
+        elif self.tool_used == "FREEHAND":
 
-                logfile.info("FREEHAND moving")
+            logfile.info("FREEHAND moving")
 
-                if len(self.freehand_points) > 0:
+            if len(self.freehand_points) > 0:
 
-                    self.freehand_points = np.append(self.freehand_points, [[x, y]], axis=0)
-                    self.freehand_qpath.lineTo(QPointF(x,y))
-                    self.freehand_qpath_gitem.setPath(self.freehand_qpath)
+                self.freehand_points = np.append(self.freehand_points, [[x, y]], axis=0)
+                self.freehand_qpath.lineTo(QPointF(x,y))
+                self.freehand_qpath_gitem.setPath(self.freehand_qpath)
 
-                    logfile.debug("Number of FREEHAND points: %d", self.freehand_points.shape[0])
+                logfile.debug("Number of FREEHAND points: %d", self.freehand_points.shape[0])
 
 
     @pyqtSlot()
@@ -2229,6 +2242,14 @@ class TagLab(QWidget):
 
         self.project_name = loaded_dict["Project Name"]
         self.map_image_filename = loaded_dict["Map File"]
+        info = QFileInfo(self.map_image_filename)
+        if not info.exists():
+            self.map_image_filename = QFileInfo(filename).dir().filePath(loaded_dict["Map File"])
+            info = QFileInfo(self.map_image_filename)
+
+            if not info.exists():
+                (self.map_image_filename, filter) = QFileDialog.getOpenFileName(self, "Couldn't find the map, please select it:", QFileInfo(filename).dir().path(), "Image Files (*.png *.jpg)")
+
         self.map_acquisition_date = loaded_dict["Acquisition Date"]
         self.map_px_to_mm_factor = float(loaded_dict["Map Scale"])
 
