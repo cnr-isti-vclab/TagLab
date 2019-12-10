@@ -33,6 +33,8 @@ import pandas as pd
 
 from source.Blob import Blob
 
+import timeit
+
 class Group(object):
 
     def __init__(self, blobs, id):
@@ -302,67 +304,40 @@ class Annotation(object):
 
 
 
-    def cut(self, selected, points):
+    def cut(self, blob, points):
         """
         Given a curve specified as a set of points and a selected blob, the operation cuts it in several separed new blobs
         """
 
-        # enlarge the mask
-        y1A = selected.bbox[0]
-        x1A = selected.bbox[1]
-        x2A = x1A + selected.bbox[2]
-        y2A = y1A + selected.bbox[3]
+        bbox = blob.bbox
+        mask = blob.getMask()
 
-        pt_min = np.amin(points, axis=0)
-        xmin = pt_min[0]
-        ymin = pt_min[1]
-        pt_max = np.amax(points, axis=0)
-        xmax = pt_max[0]
-        ymax = pt_max[1]
+        #w and h in image space
+        h = mask.shape[0]
+        w = mask.shape[1]
 
-        x1B = int(xmin)
-        y1B = int(ymin)
-        x2B = int(xmax)
-        y2B = int(ymax)
+        #remember points is (x, y) while numpy is (y, x)
+        points = points - [bbox[1], bbox[0]]
+        points = np.swapaxes(points, 0, 1).astype(int)
 
-        x_left = min(x1A, x1B) - 2
-        y_top = min(y1A, y1B) - 2
-        x_right = max(x2A, x2B) + 2
-        y_bottom = max(y2A, y2B) + 2
+        points = points[:, (points[0] > 0) & (points[1] > 0) & (points[0] < w-1) & (points[1] < h-1)]
+        index = points[1,]*w + points[0,]
 
-        bbox_union = np.array([y_top, x_left, x_right - x_left, y_bottom - y_top])
-        mask_union = np.zeros((bbox_union[3], bbox_union[2]))
+        for x in range(-1, 2):
+            for y in range(-1, 2):
+                np.put(mask, index + y*w + x, 0, 'clip')
 
-        blob_mask = selected.getMask()
-        for y in range(blob_mask.shape[0]):
-            for x in range(blob_mask.shape[1]):
 
-                yy = y + (selected.bbox[0] - bbox_union[0])
-                xx = x + (selected.bbox[1] - bbox_union[1])
-                mask_union[yy,xx] = blob_mask[y,x]
-
-        for i in range(points.shape[0]):
-
-            x = points[i, 0]
-            y = points[i, 1]
-
-            yy = int(y) - bbox_union[0]
-            xx = int(x) - bbox_union[1]
-
-            for offsetx in range(-1, 2):
-                for offsety in range(-1, 2):
-                    mask_union[yy + offsety, xx + offsetx] = 0
-
-        label_image = measure.label(mask_union)
+        label_image = measure.label(mask)
         area_th = 30
         created_blobs = []
         for region in measure.regionprops(label_image):
 
             if region.area > area_th:
                 id = len(self.seg_blobs)
-                blob = Blob(region, x_left, y_top, id + 1)
-                blob.class_color = selected.class_color
-                blob.class_name = selected.class_name
+                blob = Blob(region, bbox[1], bbox[0], id + 1)
+                blob.class_color = blob.class_color
+                blob.class_name = blob.class_name
                 created_blobs.append(blob)
 
         return created_blobs
