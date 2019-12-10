@@ -83,8 +83,6 @@ class Annotation(object):
 
         # list of all groups
         self.groups = []
-        self.undo_blobs = []
-
 
     def addGroup(self, blobs):
 
@@ -201,11 +199,9 @@ class Annotation(object):
 
         if pixels_intersected > 0:
             blobA.updateUsingMask(bbox_union, mask_union)
-
             return True
 
         else:
-
             return False
 
 
@@ -367,7 +363,6 @@ class Annotation(object):
                 blob = Blob(region, x_left, y_top, id + 1)
                 blob.class_color = selected.class_color
                 blob.class_name = selected.class_name
-                self.seg_blobs.append(blob)
                 created_blobs.append(blob)
 
         return created_blobs
@@ -401,6 +396,8 @@ class Annotation(object):
 
         too_much_small_area = 10
         region_big = None
+
+        created_blobs = []
         for region in measure.regionprops(labels):
             if region.area > too_much_small_area:
                 id = len(self.seg_blobs)
@@ -418,7 +415,9 @@ class Annotation(object):
                     blob.class_name = label_info.getClassName(index)
                     blob.class_color = label_info.getColorByIndex(index)
 
-                    self.seg_blobs.append(blob)
+                    created_blobs.append(blob)
+
+        return created_blobs
 
 
     def export_data_table_for_Scripps(self, filename):

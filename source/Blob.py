@@ -92,7 +92,7 @@ class Blob(object):
             self.contour = np.zeros((2, 2))
             self.inner_contours = []
             self.createContourFromMask(input_mask)
-            self.setupForDrawing()
+            #self.setupForDrawing()
 
             self.calculatePerimeter()
             self.calculateArea(input_mask)
@@ -113,7 +113,7 @@ class Blob(object):
         self.class_name = "Empty"
 
         # color of the class
-        self.class_color = [128, 128, 128]
+        #self.class_color = [128, 128, 128]
 
         # note about the coral, i.e. damage type
         self.note = ""
@@ -129,6 +129,33 @@ class Blob(object):
 
         # membership group (if any)
         self.group = None
+    def copy(self):
+        blob = Blob(None, 0, 0, 0)
+
+        blob.area = self.area
+        blob.perimeter = self.perimeter
+        blob.centroid = self.centroid
+        blob.bbox = self.bbox
+
+        blob.contour = self.contour.copy()
+        for inner in self.inner_contours:
+            blob.inner_contours.append(inner.copy())
+        blob.qpath_gitem = None
+        blob.qpath = None
+
+        blob.instance_name = blob.instance_name
+        blob.blob_name = self.blob_name
+        blob.id = self.id
+
+        blob.class_name = self.class_name
+
+        blob.deep_extreme_points = self.deep_extreme_points
+
+        self.note = ""
+        self.qimg_mask = None
+        self.pxmap_mask = None
+        self.pxmap_mask_gitem = None
+        return blob
 
     def __deepcopy__(self, memo):
         #avoid recursion!
@@ -142,8 +169,12 @@ class Blob(object):
         self.qpath_gitem = None
 
         blob = copy.deepcopy(self)
+        blob.contour = self.contour.copy()
+        blob.inner_contours.clear()
+        for inner in self.inner_contours:
+            blob.inner_contours.append(inner.copy())
 
-        blob.qpath = QPainterPath(path)
+        blob.qpath = None
         blob.qpath_gitem = None
         self.qpath = path
         self.qpath_gitem = pathitem
@@ -190,7 +221,6 @@ class Blob(object):
         self.bbox = new_bbox
 
         self.createContourFromMask(new_mask)
-        self.setupForDrawing()
 
         self.calculatePerimeter()
         self.calculateArea(new_mask)
@@ -204,9 +234,7 @@ class Blob(object):
           2) the end segments of the curve are removed until they snap
 
         """
-
-        contour = self.contour.copy()
-        test = points_in_poly(points, contour)
+        test = points_in_poly(points, self.contour)
         jump = np.gradient(test.astype(int))
         ind = np.nonzero(jump)
         ind = np.asarray(ind)
@@ -311,11 +339,10 @@ class Blob(object):
         cracked_blob = np.logical_and((blob_mask > 0), (crack_mask < 1))
         cracked_blob = cracked_blob.astype(int)
 
-        if preview:
-            return cracked_blob
-        else:
+        if not preview:
             self.updateUsingMask(self.bbox, cracked_blob)
-            return cracked_blob
+
+        return cracked_blob
 
 
     def addToMask(self, points):
@@ -388,9 +415,6 @@ class Blob(object):
 
                 # recover inner contour list
                 self.inner_contours.append(inner_contour)
-
-            # update qpainterpath
-            self.setupForDrawing()
 
 
     def cutFromMask(self, points):
@@ -663,7 +687,7 @@ class Blob(object):
         self.note = dict["note"]
 
         # finalize blob
-        self.setupForDrawing()
+        #self.setupForDrawing()
 
 
     def toDict(self):
