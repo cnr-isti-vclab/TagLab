@@ -84,6 +84,12 @@ class TagLab(QWidget):
 
         ##### DATA INITIALIZATION AND SETUP #####
 
+        # LOAD CONFIGURATION FILE
+
+        f = open("config.json", "r")
+        config_dict = json.load(f)
+        self.available_classifiers = config_dict["Available Classifiers"]
+
         logfile.info("Initizialization begins..")
 
         # MAP VIEWER preferred size (longest side)
