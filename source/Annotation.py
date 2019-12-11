@@ -32,8 +32,8 @@ from source.Labels import Labels
 import pandas as pd
 
 from source.Blob import Blob
+import source.Mask as Mask
 
-import timeit
 
 class Group(object):
 
@@ -146,65 +146,13 @@ class Annotation(object):
         """
         Create a new blob that is the union of the (two) blobs given
         """
-
-        blobA = blobs[0]
-        blobB = blobs[1]
-
-        y1A = blobA.bbox[0]
-        x1A = blobA.bbox[1]
-        x2A = x1A + blobA.bbox[2]
-        y2A = y1A + blobA.bbox[3]
-
-        y1B = blobB.bbox[0]
-        x1B = blobB.bbox[1]
-        x2B = x1B + blobB.bbox[2]
-        y2B = y1B + blobB.bbox[3]
-
-        x_left = min(x1A, x1B)
-        y_top = min(y1A, y1B)
-        x_right = max(x2A, x2B)
-        y_bottom = max(y2A, y2B)
-
-        bbox_union = np.array([y_top, x_left, x_right - x_left, y_bottom - y_top])
-        mask_union = np.zeros((bbox_union[3], bbox_union[2]))
-
-        blobA_mask = blobA.getMask()
-        blobB_mask = blobB.getMask()
-
-        for y in range(y1A, y2A):
-            for x in range(x1A, x2A):
-
-                xA = x - blobA.bbox[1]
-                yA = y - blobA.bbox[0]
-
-                xU = x - bbox_union[1]
-                yU = y - bbox_union[0]
-
-                if blobA_mask[yA, xA] == 1:
-                    mask_union[yU, xU] = 1
-
-        pixels_intersected = 0
-        for y in range(y1B, y2B):
-            for x in range(x1B, x2B):
-
-                xB = x - blobB.bbox[1]
-                yB = y - blobB.bbox[0]
-
-                xU = x - bbox_union[1]
-                yU = y - bbox_union[0]
-
-                if blobB_mask[yB, xB] == 1:
-                    if mask_union[yU, xU] == 1:
-                        pixels_intersected += 1
-
-                    mask_union[yU, xU] = 1
-
-        if pixels_intersected > 0:
-            blobA.updateUsingMask(bbox_union, mask_union)
+        #boxs are in image space, masks invert x and y.
+        (mask, box) = Mask.union(blobs[0].getMask(), blobs[0].bbox, blobs[1].getMask(), blobs[1].bbox)
+        if mask.any():
+            # measure is brutally slower with non int types (factor 4), while byte&bool would be faster by 25%, conversion is fast.
+            blobs[0].updateUsingMask(box, mask.astype(int))
             return True
-
-        else:
-            return False
+        return False
 
 
     def subtract(self, blobA, blobB, scene):
@@ -212,52 +160,12 @@ class Annotation(object):
         Create a new blob that subtracting the second blob from the first one
         """
 
-        y1A = blobA.bbox[0]
-        x1A = blobA.bbox[1]
-        x2A = x1A + blobA.bbox[2]
-        y2A = y1A + blobA.bbox[3]
-
-        y1B = blobB.bbox[0]
-        x1B = blobB.bbox[1]
-        x2B = x1B + blobB.bbox[2]
-        y2B = y1B + blobB.bbox[3]
-
-        x_left = max(x1A, x1B)
-        y_top = max(y1A, y1B)
-        x_right = min(x2A, x2B)
-        y_bottom = min(y2A, y2B)
-
-        # check if the selection is empty
-        if x_right < x_left or y_bottom < y_top:
-            return False
-        else:
-
-            xinf = x_left - blobA.bbox[1]
-            yinf = y_top - blobA.bbox[0]
-            xsup = x_right - blobA.bbox[1]
-            ysup = y_bottom - blobA.bbox[0]
-
-            blobA_mask = blobA.getMask()
-            blobB_mask = blobB.getMask()
-
-            flag = False
-            for y in range(yinf, ysup):
-                for x in range(xinf, xsup):
-
-                    xB = x + blobA.bbox[1] - blobB.bbox[1]
-                    yB = y + blobA.bbox[0] - blobB.bbox[0]
-
-                    if blobB_mask[yB, xB] == 1:
-                        blobA_mask[y, x] = 0
-                        flag = True  # at least one pixel intersect
-
-            # bbox is the same
-            # mask has been updated directly
-            if flag:
-                blobA.updateUsingMask(blobA.bbox, blobA_mask)
-                return True
-            else:
-                return False
+        (mask, box) = Mask.subtract(blobA.getMask(), blobA.bbox, blobB.getMask(), blobB.bbox)
+        if mask.any():
+            # measure is brutally slower with non int types (factor 4), while byte&bool would be faster by 25%, conversion is fast.
+            blobA.updateUsingMask(box, mask.astype(int))
+            return True
+        return False
 
 
     def statistics(self):
@@ -309,7 +217,11 @@ class Annotation(object):
         Given a curve specified as a set of points and a selected blob, the operation cuts it in several separed new blobs
         """
 
-        bbox = blob.bbox
+        #(mask, box) = Mask.cut(blob.getMask(), blob.bbox, points)
+
+
+
+        box = blob.bbox
         mask = blob.getMask()
 
         #w and h in image space
@@ -317,7 +229,7 @@ class Annotation(object):
         w = mask.shape[1]
 
         #remember points is (x, y) while numpy is (y, x)
-        points = points - [bbox[1], bbox[0]]
+        points = points - [box[1], box[0]]
         points = np.swapaxes(points, 0, 1).astype(int)
 
         points = points[:, (points[0] > 0) & (points[1] > 0) & (points[0] < w-1) & (points[1] < h-1)]
@@ -335,7 +247,7 @@ class Annotation(object):
 
             if region.area > area_th:
                 id = len(self.seg_blobs)
-                blob = Blob(region, bbox[1], bbox[0], id + 1)
+                blob = Blob(region, box[1], box[0], id + 1)
                 blob.class_color = blob.class_color
                 blob.class_name = blob.class_name
                 created_blobs.append(blob)

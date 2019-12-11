@@ -32,6 +32,8 @@ from skimage.measure import points_in_poly
 from skimage.draw import polygon_perimeter, polygon
 from skimage.filters import gaussian
 
+import timeit
+
 class Blob(object):
     """
     Blob data. A blob is a group of pixels.
@@ -198,7 +200,7 @@ class Blob(object):
         r = self.bbox[3]
         c = self.bbox[2]
 
-        mask = np.zeros((r, c))
+        mask = np.zeros((r, c), dtype=np.bool_)
 
         # main polygon
         [rr, cc] = polygon(self.contour[:, 1], self.contour[:, 0])
@@ -253,7 +255,6 @@ class Blob(object):
         It creates a blob starting from a closed curve. If the curve is not closed False is returned.
         If the curve intersect itself many times the first segmented region is created.
         """
-
         pt_min = np.amin(points, axis=0)
         xmin = pt_min[0]
         ymin = pt_min[1]
@@ -318,6 +319,7 @@ class Blob(object):
                 return False
             else:
                 self.updateUsingMask(bbox, mask)
+                # your code
                 return True
 
     def createCrack(self, input_arr, x, y, tolerance, preview=True):
