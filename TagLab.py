@@ -617,6 +617,10 @@ class TagLab(QWidget):
         loadMapAct.setStatusTip("Set and load a map")
         loadMapAct.triggered.connect(self.setMapToLoad)
 
+        importAct = QAction("Import Label Map", self)
+        importAct.setStatusTip("Import a label map")
+        importAct.triggered.connect(self.importLabelMap)
+
         exportAct = QAction("Export Data", self)
         #exportAct.setShortcut('Ctrl+Q')
         exportAct.setStatusTip("Export data derived from annotations")
@@ -660,6 +664,7 @@ class TagLab(QWidget):
         filemenu.addSeparator()
         filemenu.addAction(loadMapAct)
         filemenu.addSeparator()
+        filemenu.addAction(importAct)
         filemenu.addAction(exportAct)
 
         editmenu = menubar.addMenu("&Edit")
@@ -2047,6 +2052,18 @@ class TagLab(QWidget):
 
 
     @pyqtSlot()
+    def importLabelMap(self):
+        """
+        Import a label map
+        """
+
+        filters = "Image (*.png *.jpg)"
+        filename, _ = QFileDialog.getOpenFileName(self, "Input Map File", "", filters)
+        created_blobs = self.annotations.import_label_map(filename, self.img_map)
+        for blob in created_blobs:
+            self.addBlob(blob, selected=False)
+
+    @pyqtSlot()
     def exportData(self):
 
         exportWidget = QtExportWidget(self.img_map, self.annotations, parent=self)
@@ -2205,8 +2222,7 @@ class TagLab(QWidget):
             filename = os.path.join("temp", "labelmap.png")
             created_blobs = self.annotations.import_label_map(filename, self.img_map)
             for blob in created_blobs:
-                self.addBlob(self, selected=False)
-            #self.drawAnnotations()
+                self.addBlob(blob, selected=False)
 
         progress_bar.close()
         del progress_bar
