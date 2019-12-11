@@ -116,14 +116,6 @@ class QtMapSettingsWidget(QWidget):
 
         self.setWindowTitle("MAP SETTINGS")
 
-    # @pyqtSlot()
-    # def chooseProjectFolder(self):
-    #
-    #     folderName = QFileDialog.getExistingDirectory(self, "Choose Project Folder", "")
-    #
-    #     if folderName:
-    #         self.editProjectFolder.setText(folderName)
-
 
     @pyqtSlot()
     def chooseMapFile(self):
@@ -132,3 +124,4 @@ class QtMapSettingsWidget(QWidget):
         fileName, _ = QFileDialog.getOpenFileName(self, "Input Map File", "", filters)
         if fileName:
             self.editMapFile.setText(fileName)
+
