@@ -496,20 +496,9 @@ class TagLab(QWidget):
         self.selected_blobs = []
         self.MAX_SELECTED = 5 # maximum number of selected blobs
 
-        # DATA FOR THE EDITBORDER TOOL
-        self.editborder_points = np.array(())
-        self.editborder_qpath = None
-        self.editborder_qpath_gitem = None
-
-        # DATA FOR THE CUT TOOL
-        self.cut_points = np.array(())
-        self.cut_qpath = None
-        self.cut_qpath_gitem = None
-
-        # DATA FOR THE FREEHAND TOOL
-        self.freehand_points = np.array(())
-        self.freehand_qpath = None
-        self.freehand_qpath_gitem = None
+        # DATA FOR THE EDITBORDER , CUT and FREEHAND TOOL
+        self.edit_points = []
+        self.edit_qpath_gitem = None
 
         # DATA FOR THE CREATECRACK TOOL
         self.crackWidget = None
@@ -707,12 +696,8 @@ class TagLab(QWidget):
         if event.key() == Qt.Key_Escape:
             # RESET CURRENT OPERATION
             self.resetSelection()
-            if self.tool_used == "EDITBORDER":
+            if self.tool_used in ["EDITBORDER", "CUT", "FREEHAND"]:
                 self.resetEditBorder()
-            elif self.tool_used == "CUT":
-                self.resetCut()
-            elif self.tool_used == "FREEHAND":
-                self.resetFreehand()
             elif self.tool_used == "RULER":
                 self.resetRulerTool()
             elif self.tool_used == "DEEPEXTREME":
@@ -760,94 +745,69 @@ class TagLab(QWidget):
             self.applyClassifier()
         elif event.key() == Qt.Key_Space:
 
-            # APPLY THE EDITBORDER OPERATION
-            if self.tool_used == "EDITBORDER":
+            #drawing operations are grouped
+            if self.tool_used in ["EDITBORDER", "CUT", "FREEHAND"]:
+                x = np.zeros(shape=(0))
+                y = np.zeros(shape=(0))
+                for line in self.edit_points:
+                    (a, b) = utils.draw_open_polygon(line[:, 1], line[:, 0])
+                    x = np.append(x, a)
+                    y = np.append(y, b)
 
-                logfile.info("EDITBORDER operations")
+                points = np.asarray([x, y]).astype(int)
+                points = points.transpose()
+                points[:, [1, 0]] = points[:, [0, 1]]
 
-                if len(self.selected_blobs) > 0:
+                if points.shape[0] == 0:
+                    logfile.info(self.tool_used + " no drawing path!")
+                    return
 
 
-                    logfile.info("EDITBORDER operations begins..")
+                if self.tool_used == "FREEHAND":
+                    blob = Blob(None, 0, 0, 0)
 
-                    selected_blob = self.selected_blobs[0]
+                    flagValid = blob.createFromClosedCurve(points)
 
-                    pxs = utils.draw_open_polygon(self.editborder_points[:, 1], self.editborder_points[:, 0])
-                    pts = np.asarray(pxs)
-                    pts = pts.transpose()
-                    pts[:, [1, 0]] = pts[:, [0, 1]]
+                    if flagValid is True:
+                        logfile.info("FREEHAND operation ends.")
 
-                    new_points = selected_blob.snapToBorder(pts)
+                        id = len(self.annotations.seg_blobs)
+                        blob.setId(id + 1)
 
-                    if new_points is not None:
-                        blob = selected_blob.copy()
-
-                        blob.addToMask(new_points)
-                        blob.cutFromMask(new_points)
-
-                        self.removeBlob(selected_blob)
+                        self.resetSelection()
                         self.addBlob(blob, selected=True)
                         self.saveUndo()
+                    else:
+                        logfile.info("FREEHAND operation not done (invalid snap).")
 
-                        logfile.info("EDITBORDER operations ends")
-
-                self.resetEditBorder()
-
-            elif self.tool_used == "CUT":
-
-                logfile.info("CUT operations")
-
-                if len(self.selected_blobs) > 0:
-
-                    logfile.info("CUT operations begins..")
+                #editborder and cut require a selected area
+                if self.tool_used in ["EDITBORDER", "CUT"]:
+                    if len(self.selected_blobs) != 1:
+                        logfile.info(self.tool_used + " a selected area (just one) is required.")
+                        return
 
                     selected_blob = self.selected_blobs[0]
+                    points = selected_blob.snapToBorder(points)
 
-                    pxs = utils.draw_open_polygon(self.cut_points[:, 1], self.cut_points[:, 0])
-                    pts = np.asarray(pxs)
-                    pts = pts.transpose()
-                    pts[:, [1, 0]] = pts[:, [0, 1]]
+                if self.tool_used == "EDITBORDER":
+                    blob = selected_blob.copy()
 
-                    created_blobs = self.annotations.cut(selected_blob, pts)
+                    blob.addToMask(points)
+                    blob.cutFromMask(points)
 
                     self.removeBlob(selected_blob)
-                    for blob in created_blobs:
-                        self.addBlob(blob, selected=True)
-                    self.saveUndo()
-
-                    #self.drawSelectedBlobs()
-                    # self.updatePanelInfo(blob)
-                    self.resetCut()
-                    logfile.info("CUT operations ends")
-
-            # APPLY THE FREEHAND OPERATION
-            elif self.tool_used == "FREEHAND":
-
-                logfile.info("FREEHAND operation begins..")
-
-                pxs = utils.draw_open_polygon(self.freehand_points[:, 1], self.freehand_points[:, 0])
-                pts = np.asarray(pxs)
-                pts = pts.transpose()
-                pts[:, [1, 0]] = pts[:, [0, 1]]
-
-                # create an empty blob
-                blob = Blob(None, 0, 0, 0)
-
-                flagValid = blob.createFromClosedCurve(pts)
-
-                if flagValid is True:
-                    logfile.info("FREEHAND operation ends.")
-
-                    id = len(self.annotations.seg_blobs)
-                    blob.setId(id + 1)
-
-                    self.resetSelection()
                     self.addBlob(blob, selected=True)
                     self.saveUndo()
-                else:
-                    logfile.info("FREEHAND operation not done (invalid snap).")
 
-                self.resetFreehand()
+                if self.tool_used == "CUT":
+                    created_blobs = self.annotations.cut(selected_blob, points)
+
+                    for blob in created_blobs:
+                        self.addBlob(blob, selected=True)
+                    self.removeBlob(selected_blob)
+                    self.saveUndo()
+
+                self.resetEditBorder()
 
             # APPLY DEEP EXTREME (IF FOUR POINTS HAVE BEEN SELECTED)
             elif self.tool_used == "DEEPEXTREME" and self.extreme_points_number == 4:
@@ -856,6 +816,7 @@ class TagLab(QWidget):
                 self.resetDeepExtremeTool()
 
             self.tool_used = self.tool_orig
+
 
     @pyqtSlot()
     def sliderTrasparencyChanged(self):
@@ -1083,9 +1044,6 @@ class TagLab(QWidget):
         self.btnEditBorder.setChecked(True)
         self.tool_used = self.tool_orig = "EDITBORDER"
 
-        self.editborder_qpath = QPainterPath()
-        self.editborder_qpath_gitem = self.viewerplus.scene.addPath(self.editborder_qpath, self.border_pen)
-
         self.viewerplus.disablePan()
         self.viewerplus.enableZoom()
 
@@ -1106,9 +1064,7 @@ class TagLab(QWidget):
         self.btnCut.setChecked(True)
         self.tool_used = self.tool_orig = "CUT"
 
-        self.cut_qpath = QPainterPath()
-        #TODO could remove QBrush?
-        self.cut_qpath_gitem = self.viewerplus.scene.addPath(self.cut_qpath, self.border_pen)
+        self.edit_qpath_gitem = self.viewerplus.scene.addPath(QPainterPath(), self.border_pen)
 
         self.viewerplus.disablePan()
         self.viewerplus.enableZoom()
@@ -1128,8 +1084,7 @@ class TagLab(QWidget):
         self.btnFreehand.setChecked(True)
         self.tool_used = self.tool_orig = "FREEHAND"
 
-        self.freehand_qpath = QPainterPath()
-        self.freehand_qpath_gitem = self.viewerplus.scene.addPath(self.freehand_qpath, self.border_pen)
+        self.edit_qpath_gitem = self.viewerplus.scene.addPath(QPainterPath(), self.border_pen)
 
         self.viewerplus.disablePan()
         self.viewerplus.enableZoom()
@@ -1681,35 +1636,12 @@ class TagLab(QWidget):
 
     def resetEditBorder(self):
 
-        if self.editborder_qpath_gitem is not None:
-            self.editborder_qpath = QPainterPath()
-            self.editborder_qpath_gitem.setPath(self.editborder_qpath)
+        if self.edit_qpath_gitem is not None:
+            self.edit_qpath_gitem.setPath(QPainterPath())
         else:
-            self.editborder_qpath = None
+            self.edit_qpath = None
 
-        self.editborder_points = np.array(())
-
-
-    def resetCut(self):
-
-        if self.cut_qpath_gitem is not None:
-            self.cut_qpath = QPainterPath()
-            self.cut_qpath_gitem.setPath(self.cut_qpath)
-        else:
-            self.cut_qpath = None
-
-        self.cut_points = np.array(())
-
-
-    def resetFreehand(self):
-
-        if self.freehand_qpath_gitem is not None:
-            self.freehand_qpath = QPainterPath()
-            self.freehand_qpath_gitem.setPath(self.freehand_qpath)
-        else:
-            self.freehand_qpath = None
-
-        self.freehand_points = np.array(())
+        self.edit_points = []
 
     def resetCrackTool(self):
 
@@ -1749,7 +1681,6 @@ class TagLab(QWidget):
     def resetTools(self):
 
         self.resetEditBorder()
-        self.resetCut()
         self.resetCrackTool()
         self.resetRulerTool()
         self.resetDeepExtremeTool()
@@ -1780,98 +1711,22 @@ class TagLab(QWidget):
 
                 self.resetSelection()
 
-        elif self.tool_used == "EDITBORDER":
-            if len(self.selected_blobs) == 1:
+        elif self.tool_used in ["EDITBORDER", "CUT", "FREEHAND"]:
 
-                logfile.info("EDITBORDER drawing")
+            logfile.info("DRAWING")
 
-                if len(self.editborder_points) == 0:
-                    self.editborder_points = np.array([[x, y]])
-
-                    if self.editborder_qpath is None:
-                        self.editborder_qpath = QPainterPath()
-
-                    self.editborder_qpath.moveTo(QPointF(x, y))
-
-                    if self.editborder_qpath_gitem is None:
-                        self.editborder_qpath_gitem = self.viewerplus.scene.addPath(self.editborder_qpath, self.border_pen)
-                    else:
-                        self.editborder_qpath_gitem.setPath(self.editborder_qpath)
-
-                    logfile.debug("Number of EDITBORDER points: %d", self.editborder_points.shape[0])
-
-                else:
-                    self.editborder_points = np.append(self.editborder_points, [[x, y]], axis=0)
-                    self.editborder_qpath.lineTo(QPointF(x, y))
-                    self.editborder_qpath_gitem.setPath(self.editborder_qpath)
-
-                    logfile.debug("Number of EDITBORDER points: %d", self.editborder_points.shape[0])
-            else:
-
-                logfile.info("Invalid EDITBORDER drawing (no blob selected) (!)")
+            if len(self.edit_points) == 0: #first point, initialize
+                self.edit_qpath_gitem = self.viewerplus.scene.addPath(QPainterPath(), self.border_pen)
 
 
-        elif self.tool_used == "CUT":
+            self.edit_points.append(np.array([[x, y]]))
 
-            if len(self.selected_blobs) == 1:
+            path = self.edit_qpath_gitem.path()
+            path.moveTo(QPointF(x, y))
+            self.edit_qpath_gitem.setPath(path)
+            self.viewerplus.scene.invalidate()
 
-                logfile.info("CUT drawing")
-
-                if len(self.cut_points) == 0:
-
-                    self.cut_points = np.array([[x, y]])
-
-                    if self.cut_qpath is None:
-                        self.cut_qpath = QPainterPath()
-
-                    self.cut_qpath.moveTo(QPointF(x, y))
-
-                    if self.cut_qpath_gitem is None:
-                        self.cut_qpath_gitem = self.viewerplus.scene.addPath(self.cut_qpath, self.border_pen)
-                    else:
-                        self.cut_qpath_gitem.setPath(self.cut_qpath)
-
-                    logfile.debug("Number of CUT points: %d", self.cut_points.shape[0])
-
-                else:
-
-                    self.cut_points = np.append(self.cut_points, [[x, y]], axis=0)
-                    self.cut_qpath.lineTo(QPointF(x, y))
-                    self.cut_qpath_gitem.setPath(self.cut_qpath)
-
-                    logfile.debug("Number of CUT points: %d", self.cut_points.shape[0])
-            else:
-
-                logfile.info("Invalid CUT (no blob selected) (!)")
-
-
-
-        elif self.tool_used == "FREEHAND":
-
-            logfile.info("FREEHAND drawing")
-
-            if len(self.freehand_points) == 0:
-
-                self.freehand_points = np.array([[x, y]])
-
-                if self.freehand_qpath is None:
-                    self.freehand_qpath = QPainterPath()
-
-                self.freehand_qpath.moveTo(QPointF(x, y))
-
-                if self.freehand_qpath_gitem is None:
-                    self.freehand_qpath_gitem = self.viewerplus.scene.addPath(self.freehand_qpath, self.border_pen)
-                else:
-                    self.freehand_qpath_gitem.setPath(self.freehand_qpath)
-
-                logfile.debug("Number of FREEHAND points: %d", self.freehand_points.shape[0])
-
-            else:
-                self.freehand_points = np.append(self.freehand_points, [[x, y]], axis=0)
-                self.freehand_qpath.lineTo(QPointF(x, y))
-                self.freehand_qpath_gitem.setPath(self.freehand_qpath)
-
-                logfile.debug("Number of FREEHAND points: %d", self.freehand_points.shape[0])
+            logfile.debug("Number of DRAWING paths: %d", len(self.edit_points))
 
         elif self.tool_used == "CREATECRACK":
 
@@ -1953,41 +1808,22 @@ class TagLab(QWidget):
 
         modifiers = QApplication.queryKeyboardModifiers()
 
-        if self.tool_used == "EDITBORDER":
+        if self.tool_used in ["EDITBORDER", "CUT", "FREEHAND"]:
 
-            logfile.info("EDIBORDER moving")
+            logfile.info("DRAWING")
+            #check that a move didn't happen before a press
+            last = self.edit_points[-1]
+            #if len(self.edit_points) > 0 and last.shape[0] > 0:
 
-            if len(self.editborder_points) > 0:
+            self.edit_points[-1] = np.append(last, [[x, y]], axis=0)
+            path = self.edit_qpath_gitem.path()
+            path.lineTo(QPointF(x, y))
+            self.edit_qpath_gitem.setPath(path)
+            self.viewerplus.scene.invalidate()
 
-                self.editborder_points = np.append(self.editborder_points, [[x, y]], axis=0)
-                self.editborder_qpath.lineTo(QPointF(x,y))
-                self.editborder_qpath_gitem.setPath(self.editborder_qpath)
+            logfile.debug("Number of DRAWING points: %d", last.shape[0])
 
-                logfile.debug("Number of EDITBORDER points: %d", self.editborder_points.shape[0])
 
-        elif self.tool_used == "CUT":
-
-            logfile.info("CUT moving")
-
-            if len(self.cut_points) > 0:
-
-                self.cut_points = np.append(self.cut_points, [[x, y]], axis=0)
-                self.cut_qpath.lineTo(QPointF(x,y))
-                self.cut_qpath_gitem.setPath(self.cut_qpath)
-
-                logfile.debug("Number of CUTTED points: %d", self.cut_points.shape[0])
-
-        elif self.tool_used == "FREEHAND":
-
-            logfile.info("FREEHAND moving")
-
-            if len(self.freehand_points) > 0:
-
-                self.freehand_points = np.append(self.freehand_points, [[x, y]], axis=0)
-                self.freehand_qpath.lineTo(QPointF(x,y))
-                self.freehand_qpath_gitem.setPath(self.freehand_qpath)
-
-                logfile.debug("Number of FREEHAND points: %d", self.freehand_points.shape[0])
 
 
     @pyqtSlot()
