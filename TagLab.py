@@ -265,6 +265,42 @@ class TagLab(QWidget):
         self.btnApplyClassifier.setToolTip("Fully automatic calssification")
         self.btnApplyClassifier.clicked.connect(self.applyClassifier)
 
+        self.assignAction = QAction("Assign Class", self)
+        self.assignAction.setShortcut(QKeySequence("A"))
+        self.assignAction.setShortcutVisibleInContextMenu(True)
+        self.assignAction.triggered.connect(self.assign)
+
+        self.deleteAction = QAction("Delete Labels", self)
+        self.deleteAction.setShortcut(QKeySequence("Del"))
+        self.deleteAction.setShortcutVisibleInContextMenu(True)
+        self.deleteAction.triggered.connect(self.deleteSelected)
+
+        self.mergeAction = QAction("Merge Overlapped Labels", self)
+        self.mergeAction.setShortcuts(QKeySequence("M"))
+        self.mergeAction.setShortcutVisibleInContextMenu(True)
+        self.mergeAction.triggered.connect(self.union)
+
+        self.divideAction = QAction("Divide Labels", self)
+        self.divideAction.setShortcut(QKeySequence("D"))
+        self.divideAction.setShortcutVisibleInContextMenu(True)
+        self.divideAction.triggered.connect(self.divide)
+
+        self.subtractAction = QAction("Subtract Labels", self)
+        self.subtractAction.setShortcut(QKeySequence("S"))
+        self.subtractAction.setShortcutVisibleInContextMenu(True)
+        self.subtractAction.triggered.connect(self.subtract)
+
+        self.refineAction = QAction("Refine Border", self)
+        self.refineAction.setShortcut(QKeySequence("R"))
+        self.refineAction.setShortcutVisibleInContextMenu(True)
+        self.refineAction.triggered.connect(self.refineBorder)
+
+        #       in case we want a refine all selected borders
+        #        refineActionAll = QAction("Refine All Borders", self)
+        #        refineActionAll.setShortcut(QKeySequence("^"))
+        #        refineActionAll.setShortcutVisibleInContextMenu(True)
+        #        menu.addAction(refineActionAll)
+        #            self.refineAllBorders()
 
 
         layout_tools.setSpacing(0)
@@ -529,66 +565,21 @@ class TagLab(QWidget):
 
         menu.setStyleSheet(str)
 
-        assignAction = QAction("Assign Class", self)
-        assignAction.setShortcut(QKeySequence("A"))
-        assignAction.setShortcutVisibleInContextMenu(True)
-        menu.addAction(assignAction)
 
-        deleteAction = QAction("Delete Labels", self)
-        deleteAction.setShortcut(QKeySequence("Del"))
-        deleteAction.setShortcutVisibleInContextMenu(True)
-        menu.addAction(deleteAction)
+        menu.addAction(self.assignAction)
+        menu.addAction(self.deleteAction)
 
         menu.addSeparator()
 
-        mergeAction = QAction("Merge Overlapped Labels", self)
-        mergeAction.setShortcuts(QKeySequence("M"))
-        mergeAction.setShortcutVisibleInContextMenu(True)
-        menu.addAction(mergeAction)
-
-        divideAction = QAction("Divide Labels", self)
-        divideAction.setShortcut(QKeySequence("D"))
-        divideAction.setShortcutVisibleInContextMenu(True)
-        menu.addAction(divideAction)
-
-        subtractAction = QAction("Subtract Labels", self)
-        subtractAction.setShortcut(QKeySequence("S"))
-        subtractAction.setShortcutVisibleInContextMenu(True)
-        menu.addAction(subtractAction)
+        menu.addAction(self.mergeAction)
+        menu.addAction(self.divideAction)
+        menu.addAction(self.subtractAction)
 
         menu.addSeparator()
-
-        refineAction = QAction("Refine Border", self)
-        refineAction.setShortcut(QKeySequence("R"))
-        refineAction.setShortcutVisibleInContextMenu(True)
-        menu.addAction(refineAction)
-
-#       in case we want this function I leave the code here.
-#        refineActionAll = QAction("Refine All Borders", self)
-#        refineActionAll.setShortcut(QKeySequence("^"))
-#        refineActionAll.setShortcutVisibleInContextMenu(True)
-#        menu.addAction(refineActionAll)
+        menu.addAction(self.refineAction)
 
         action = menu.exec_(self.viewerplus.mapToGlobal(position))
 
-        if action == deleteAction:
-            self.deleteSelected()
-        # elif action == groupAction:
-        #     self.group()
-        # elif action == ungroupAction:
-        #     self.ungroup()
-        elif action == mergeAction:
-            self.union()
-        elif action == divideAction:
-            self.divide()
-        elif action == subtractAction:
-            self.subtract()
-        elif action == assignAction:
-            self.assign()
-        elif action == refineAction:
-            self.refineBorder()
-#        elif action == refineActionAll:
-#            self.refineAllBorders()
 
     def setProjectTitle(self, project_name):
 
@@ -682,8 +673,21 @@ class TagLab(QWidget):
         filemenu.addSeparator()
         filemenu.addAction(exportAct)
 
-        helpmenu = menubar.addMenu("&Edit")
-        helpmenu.addAction(undoAct)
+        editmenu = menubar.addMenu("&Edit")
+        editmenu.addAction(undoAct)
+        editmenu.addSeparator()
+
+        editmenu.addAction(self.assignAction)
+        editmenu.addAction(self.deleteAction)
+
+        editmenu.addSeparator()
+
+        editmenu.addAction(self.mergeAction)
+        editmenu.addAction(self.divideAction)
+        editmenu.addAction(self.subtractAction)
+
+        editmenu.addSeparator()
+        editmenu.addAction(self.refineAction)
 
         helpmenu = menubar.addMenu("&Help")
         helpmenu.setStyleSheet(styleMenu)
@@ -1545,7 +1549,7 @@ class TagLab(QWidget):
             logfile.info("REFINE BORDER operation begins..")
 
             selected = self.selected_blobs[0]
-            blob = selected.cpopy
+            blob = selected.copy()
 
             mask = blob.getMask()
             mask = np.pad(mask, (padding, padding), mode='constant', constant_values=(0, 0)).astype(np.ubyte)
@@ -1604,6 +1608,8 @@ class TagLab(QWidget):
 
         self.undo_operation['class'].append((blob, blob.class_name))
         blob.class_name = class_name
+        blob.class_color = self.labels_widget.labels.getColorByName(blob.class_name)
+
         brush = self.classBrushFromName(blob)
         blob.qpath_gitem.setBrush(brush)
 

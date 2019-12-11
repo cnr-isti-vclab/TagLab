@@ -113,7 +113,7 @@ class Blob(object):
         self.class_name = "Empty"
 
         # color of the class
-        #self.class_color = [128, 128, 128]
+        self.class_color = [128, 128, 128]
 
         # note about the coral, i.e. damage type
         self.note = ""
