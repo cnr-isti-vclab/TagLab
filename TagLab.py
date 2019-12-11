@@ -759,7 +759,7 @@ class TagLab(QWidget):
                 points[:, [1, 0]] = points[:, [0, 1]]
 
                 if points.shape[0] == 0:
-                    logfile.info(self.tool_used + " no drawing path!")
+                    self.infoWidget.setInfoMessage("You need to draw something for this operation.")
                     return
 
 
@@ -783,7 +783,7 @@ class TagLab(QWidget):
                 #editborder and cut require a selected area
                 if self.tool_used in ["EDITBORDER", "CUT"]:
                     if len(self.selected_blobs) != 1:
-                        logfile.info(self.tool_used + " a selected area (just one) is required.")
+                        self.infoWidget.setInfoMessage("A single selected area is required.")
                         return
 
                     selected_blob = self.selected_blobs[0]
@@ -1807,6 +1807,8 @@ class TagLab(QWidget):
     def toolsOpsMouseMove(self, x, y):
 
         modifiers = QApplication.queryKeyboardModifiers()
+        if modifiers & Qt.ControlModifier:
+            return
 
         if self.tool_used in ["EDITBORDER", "CUT", "FREEHAND"]:
 
