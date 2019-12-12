@@ -230,13 +230,17 @@ class Blob(object):
 
 
     def snapToBorder(self, points):
+        return self.snapToContour(points, self.contour)
+
+
+    def snapToContour(self, points, contour):
         """
         Given a curve specified as a set of points, snap the curve on the blob mask:
           1) the initial segments of the curve are removed until they snap
           2) the end segments of the curve are removed until they snap
 
         """
-        test = points_in_poly(points, self.contour)
+        test = points_in_poly(points, contour)
         jump = np.gradient(test.astype(int))
         ind = np.nonzero(jump)
         ind = np.asarray(ind)
@@ -249,6 +253,13 @@ class Blob(object):
 
         return snappoints
 
+    def snapToInternalBorders(self, points):
+        if not self.inner_contours:
+            return None
+        snappoints = np.zeros(shape=(0, 2))
+        for contour in self.inner_contours:
+            snappoints = np.append(snappoints, self.snapToContour(points, contour))
+        return snappoints
 
     def createFromClosedCurve(self, points):
         """

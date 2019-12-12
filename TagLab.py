@@ -798,14 +798,11 @@ class TagLab(QWidget):
                         return
 
                     selected_blob = self.selected_blobs[0]
-                    points = selected_blob.snapToBorder(points)
 
                 if self.tool_used == "EDITBORDER":
                     blob = selected_blob.copy()
 
-                    blob.addToMask(points)
-                    blob.cutFromMask(points)
-
+                    self.annotations.editBorder(blob, points)
                     self.removeBlob(selected_blob)
                     self.addBlob(blob, selected=True)
                     self.saveUndo()
