@@ -27,10 +27,12 @@ from scipy import ndimage as ndi
 from PyQt5.QtGui import QPainterPath, QPolygonF, QImage, QPixmap, qRgba
 from PyQt5.QtCore import QPointF
 
-from skimage.morphology import flood
+from skimage.morphology import flood, flood_fill, binary_dilation, binary_erosion
 from skimage.measure import points_in_poly
 from skimage.draw import polygon_perimeter, polygon
 from skimage.filters import gaussian
+
+import source.Mask as Mask
 
 import time
 
@@ -260,72 +262,20 @@ class Blob(object):
         It creates a blob starting from a closed curve. If the curve is not closed False is returned.
         If the curve intersect itself many times the first segmented region is created.
         """
-        pt_min = np.amin(points, axis=0)
-        xmin = pt_min[0]
-        ymin = pt_min[1]
-        pt_max = np.amax(points, axis=0)
-        xmax = pt_max[0]
-        ymax = pt_max[1]
 
-        x_left = int(xmin) - 8
-        y_top = int(ymin) - 8
-        x_right = int(xmax) + 8
-        y_bottom = int(ymax) + 8
+        box = Mask.pointsBox(points, 4)
 
-        bbox = np.array([y_top, x_left, x_right - x_left, y_bottom - y_top])
-        mask = np.zeros((bbox[3], bbox[2]))
-        mask_area = bbox[3] * bbox[2]
+        (mask, box) = Mask.jointMask(box, box)
+        Mask.paintPoints(mask, box, points, 1)
+        mask = ndi.binary_fill_holes(mask)
+        mask = binary_erosion(mask)
+        mask = binary_erosion(mask)
+        mask = binary_erosion(mask)
+        mask = binary_dilation(mask)
+        mask = binary_dilation(mask)
+        self.updateUsingMask(box, mask)
+        return True
 
-        for i in range(points.shape[0]):
-
-            x = points[i, 0]
-            y = points[i, 1]
-
-            yy = int(y) - bbox[0]
-            xx = int(x) - bbox[1]
-
-            for offsetx in range(-1,2):
-                for offsety in range(-1,2):
-                    mask[yy + offsety, xx + offsetx] = 1
-
-        mask_flood = flood(mask, (4, 4), tolerance=0).astype(int)
-
-        for i in range(points.shape[0]):
-
-            x = points[i, 0]
-            y = points[i, 1]
-
-            yy = int(y) - bbox[0]
-            xx = int(x) - bbox[1]
-
-            for offsetx in range(-1,2):
-                for offsety in range(-1,2):
-                    mask_flood[yy + offsety, xx + offsetx] = 1
-
-        for y in range(mask_flood.shape[0]):
-            for x in range(mask_flood.shape[1]):
-                if mask_flood[y, x] == 1:
-                    mask[y, x] = 0
-                else:
-                    mask[y, x] = 1
-
-        mask = ndi.binary_fill_holes(mask).astype(int)
-
-        # check
-        regions = measure.regionprops(mask)
-
-        if len(regions) != 1:
-            return False
-        else:
-
-            region = regions[0]
-            check = region.area / mask_area
-            if check > 0.95:
-                return False
-            else:
-                self.updateUsingMask(bbox, mask)
-                # your code
-                return True
 
     def createCrack(self, input_arr, x, y, tolerance, preview=True):
 
