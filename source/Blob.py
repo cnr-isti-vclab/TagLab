@@ -217,18 +217,10 @@ class Blob(object):
     def updateUsingMask(self, bbox, mask):
 
         self.bbox = bbox
-
         self.createContourFromMask(mask)
-
-        self.area = mask.sum()
-
-        #self.perimeter = measure.perimeter(mask)
         self.calculatePerimeter()
-
-        m = measure.moments(mask)
-        self.centroid = np.array((m[0, 1] / m[0, 0], m[1, 0] / m[0, 0]))
-
-
+        self.calculateCentroid(mask)
+        self.calculateArea(mask)
 
 
     def snapToBorder(self, points):
@@ -360,152 +352,6 @@ class Blob(object):
         return cracked_blob
 
 
-    def addToMask(self, points):
-        """
-        Given a curve specified as a set of points, the pixels OUTSIDE the blob but inside the handle created
-        by the curve are added to the blob.
-        """
-
-        # store the original inner contours (i.e. the holes)
-        original_inner_contours = []
-        for inner_contour in self.inner_contours:
-            duplicate_inner_contour = inner_contour.copy()
-            original_inner_contours.append(duplicate_inner_contour)
-
-        # enlarge the mask
-        y1A = self.bbox[0]
-        x1A = self.bbox[1]
-        x2A = x1A + self.bbox[2]
-        y2A = y1A + self.bbox[3]
-
-        pt_min = np.amin(points, axis=0)
-        xmin = pt_min[0]
-        ymin = pt_min[1]
-        pt_max = np.amax(points, axis=0)
-        xmax = pt_max[0]
-        ymax = pt_max[1]
-
-        x1B = int(xmin)
-        y1B = int(ymin)
-        x2B = int(xmax)
-        y2B = int(ymax)
-
-        x_left = min(x1A, x1B) - 2
-        y_top = min(y1A, y1B) - 2
-        x_right = max(x2A, x2B) + 2
-        y_bottom = max(y2A, y2B) + 2
-
-        bbox_union = np.array([y_top, x_left, x_right - x_left, y_bottom - y_top])
-        mask_union = np.zeros((bbox_union[3], bbox_union[2]))
-
-        blob_mask = self.getMask()
-        for y in range(blob_mask.shape[0]):
-            for x in range(blob_mask.shape[1]):
-
-                yy = y + (self.bbox[0] - bbox_union[0])
-                xx = x + (self.bbox[1] - bbox_union[1])
-                mask_union[yy,xx] = blob_mask[y,x]
-
-
-        for i in range(points.shape[0]):
-
-            x = points[i, 0]
-            y = points[i, 1]
-
-            yy = int(y) - bbox_union[0]
-            xx = int(x) - bbox_union[1]
-
-            for offsetx in range(-1,2):
-                for offsety in range(-1,2):
-                    mask_union[yy + offsety, xx + offsetx] = 1
-
-        mask_union = ndi.binary_fill_holes(mask_union).astype(int)
-
-        self.updateUsingMask(bbox_union, mask_union)
-
-        # RE-ADD THE ORIGINAL INNER CONTOURS (I.E. THE HOLES)
-        if original_inner_contours:
-            self.inner_contours.clear()
-            for inner_contour in original_inner_contours:
-
-                # recover inner contour list
-                self.inner_contours.append(inner_contour)
-
-
-    def cutFromMask(self, points):
-        """
-        Given a curve specified as a set of points, the pixels INSIDE the blob but "cutted" by the curve
-        are removed from the blob.
-        """
-
-        # enlarge the mask
-        y1A = self.bbox[0]
-        x1A = self.bbox[1]
-        x2A = x1A + self.bbox[2]
-        y2A = y1A + self.bbox[3]
-
-        pt_min = np.amin(points, axis=0)
-        xmin = pt_min[0]
-        ymin = pt_min[1]
-        pt_max = np.amax(points, axis=0)
-        xmax = pt_max[0]
-        ymax = pt_max[1]
-
-        x1B = int(xmin)
-        y1B = int(ymin)
-        x2B = int(xmax)
-        y2B = int(ymax)
-
-        x_left = min(x1A, x1B) - 2
-        y_top = min(y1A, y1B) - 2
-        x_right = max(x2A, x2B) + 2
-        y_bottom = max(y2A, y2B) + 2
-
-        bbox_union = np.array([y_top, x_left, x_right - x_left, y_bottom - y_top])
-        mask_union = np.zeros((bbox_union[3], bbox_union[2]))
-
-        blob_mask = self.getMask()
-        for y in range(blob_mask.shape[0]):
-            for x in range(blob_mask.shape[1]):
-
-                yy = y + (self.bbox[0] - bbox_union[0])
-                xx = x + (self.bbox[1] - bbox_union[1])
-                mask_union[yy,xx] = blob_mask[y,x]
-
-        for i in range(points.shape[0]):
-
-            x = points[i, 0]
-            y = points[i, 1]
-
-            yy = int(y) - bbox_union[0]
-            xx = int(x) - bbox_union[1]
-
-            for offsetx in range(-1,2):
-                for offsety in range(-1,2):
-                    mask_union[yy + offsety, xx + offsetx] = 0
-
-        label_image = measure.label(mask_union)
-        regions = measure.regionprops(label_image)
-
-        if len(regions) > 1:
-
-            # TENERE SOLO QUELLA CON AREA MASSIMA
-
-            area_max = 0
-            region_to_remove = None
-            for region in regions:
-
-                if region.area> area_max:
-                   area_max = region.area
-
-            for region in regions:
-                if region.area < area_max:
-                  for coords in region.coords:
-                      mask_union[coords[0], coords[1]] = 0
-
-        self.updateUsingMask(bbox_union, mask_union)
-
-
     def createContourFromMask(self, mask):
         """
         It creates the contour (and the corrisponding polygon) from the blob mask.
@@ -620,27 +466,16 @@ class Blob(object):
         self.pxmap_mask = QPixmap.fromImage(self.qimg_mask)
 
     def calculateCentroid(self, mask):
+        m = measure.moments(mask)
+        c = np.array((m[0, 1] / m[0, 0], m[1, 0] / m[0, 0]))
 
-        sumx = 0.0
-        sumy = 0.0
-        n = 0
-
-        for y in range(mask.shape[0]):
-            for x in range(mask.shape[1]):
-                if mask[y, x] == 1:
-                    sumx += float(x)
-                    sumy += float(y)
-                    n += 1
-
-        # NOTE: centroid is (x,y), bbox is [width height]
-        self.centroid[0] = int(sumx / n) + self.bbox[1]
-        self.centroid[1] = int(sumy / n) + self.bbox[0]
-
-        xc = int(self.centroid[0])
-        yc = int(self.centroid[1])
-        self.instance_name = "coral-" + str(xc) + "-" + str(yc)
+        #centroid is (x, y) while measure returns (y,x and bbox is yx)
+        self.centroid  = np.array((c[1] + self.bbox[1], c[0]+ self.bbox[0]))
+        self.blob_name = "coral-" + str(self.centroid[0]) + "-" + str(self.centroid[1])
 
     def calculateContourPerimeter(self, contour):
+
+        #self.perimeter = measure.perimeter(mask) instead?
 
         # perimeter of the outer contour
         px1 = contour[0, 0]
@@ -669,13 +504,9 @@ class Blob(object):
             self.perimeter += self.calculateContourPerimeter(self.contour)
 
     def calculateArea(self, mask):
+        self.area = mask.sum()
 
-        #raise Exception("DONT USE THIS IT'S CRAZY SLOW")
-        self.area = 0.0
-        for y in range(mask.shape[0]):
-            for x in range(mask.shape[1]):
-                if mask[y, x] == 1:
-                    self.area += 1.0
+
 
     def fromDict(self, dict):
         """
