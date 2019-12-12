@@ -149,12 +149,21 @@ class Annotation(object):
         Create a new blob that is the union of the (two) blobs given
         """
         #boxs are in image space, masks invert x and y.
-        (mask, box) = Mask.union(blobs[0].getMask(), blobs[0].bbox, blobs[1].getMask(), blobs[1].bbox)
+        boxes = []
+        for blob in blobs:
+            boxes.append(blob.bbox)
+        box = Mask.jointBox(boxes)
+        (mask, box) = Mask.jointMask(box, box)
+
+        for blob in blobs:
+            Mask.paintMask(mask, box, blob.getMask(), blob.bbox, 1)
+
         if mask.any():
             # measure is brutally slower with non int types (factor 4), while byte&bool would be faster by 25%, conversion is fast.
-            blobs[0].updateUsingMask(box, mask.astype(int))
-            return True
-        return False
+            blob = blobs[0].copy()
+            blob.updateUsingMask(box, mask.astype(int))
+            return blob
+        return None
 
 
     def subtract(self, blobA, blobB, scene):

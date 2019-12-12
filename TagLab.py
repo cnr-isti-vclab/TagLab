@@ -1403,26 +1403,21 @@ class TagLab(QWidget):
         logfile.info("MERGE OVERLAPPED LABELS operation")
         logfile.debug("Number of selected blobs: %d", len(self.selected_blobs))
 
-        if len(self.selected_blobs) == 2:
+        if len(self.selected_blobs) > 1:
 
             logfile.info("MERGE OVERLAPPED LABELS operation begins..")
 
-            blobA = self.selected_blobs[0]
-            blobB = self.selected_blobs[1]
+            #union returns a NEW blob
+            union_blob = self.annotations.union(self.selected_blobs)
 
-            #union modifies blobA
-            union_blob = blobA.copy()
-            flag = self.annotations.union([union_blob, blobB])
-
-            if flag:
-
-                self.removeBlob(blobA)
-                self.removeBlob(blobB)
+            if union_blob is None:
+                logfile.debug("Blobs are separated. MERGE OVERLAPPED LABELS operation not applied.")
+            else:
+                for blob in self.selected_blobs:
+                    self.removeBlob(blob)
                 self.addBlob(union_blob, selected=True)
                 self.saveUndo()
 
-            else:
-                logfile.debug("Blobs are separated. MERGE OVERLAPPED LABELS operation not applied.")
 
             logfile.info("MERGE OVERLAPPED LABELS operation ends.")
 

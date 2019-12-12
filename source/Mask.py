@@ -8,19 +8,24 @@ def pointsToIndices(points):
     points = np.swapaxes(points, 0, 1).astype(int)
     points[[0, 1],:] = points[[1, 0],:]
 
+def jointBox(boxes):
+    box = boxes[0]
+    for b in boxes:
+        box = np.array([
+            min(box[0], b[0]),
+            min(box[1], b[1]),
+            max(box[1] + box[2], b[1] + b[2]),
+            max(box[0] + box[3], b[0] + b[3])
+        ])
+        box[2] -= box[1]
+        box[3] -= box[0]
+    return box
+
 """
 returns (mask, bbox) where bbox is the union and mask is set to 0
 """
 def jointMask(box0, box1):
-    box = np.array([
-        min(box0[0], box1[0]),
-        min(box0[1], box1[1]),
-        max(box0[1] + box0[2], box1[1] + box1[2]),
-        max(box0[0] + box0[3], box1[0] + box1[3])
-    ])
-    box[2] -= box[1]
-    box[3] -= box[0]
-
+    box = jointBox([box0, box1])
     mask = np.zeros((box[3], box[2])).astype(np.bool_)
     return (mask, box)
 
