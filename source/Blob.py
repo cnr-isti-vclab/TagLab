@@ -32,7 +32,7 @@ from skimage.measure import points_in_poly
 from skimage.draw import polygon_perimeter, polygon
 from skimage.filters import gaussian
 
-import timeit
+import time
 
 class Blob(object):
     """
@@ -93,11 +93,7 @@ class Blob(object):
             input_mask = region.image.astype(int)
             self.contour = np.zeros((2, 2))
             self.inner_contours = []
-            self.createContourFromMask(input_mask)
-            #self.setupForDrawing()
-
-            self.calculatePerimeter()
-            self.calculateArea(input_mask)
+            self.updateUsingMask(self.bbox, input_mask)
 
             # a string with a progressive number to identify the instance
             self.instance_name = "coral" + str(id)
@@ -218,15 +214,21 @@ class Blob(object):
         return mask
 
 
-    def updateUsingMask(self, new_bbox, new_mask):
+    def updateUsingMask(self, bbox, mask):
 
-        self.bbox = new_bbox
+        self.bbox = bbox
 
-        self.createContourFromMask(new_mask)
+        self.createContourFromMask(mask)
 
+        self.area = mask.sum()
+
+        #self.perimeter = measure.perimeter(mask)
         self.calculatePerimeter()
-        self.calculateArea(new_mask)
-        self.calculateCentroid(new_mask)
+
+        m = measure.moments(mask)
+        self.centroid = np.array((m[0, 1] / m[0, 0], m[1, 0] / m[0, 0]))
+
+
 
 
     def snapToBorder(self, points):
@@ -668,6 +670,7 @@ class Blob(object):
 
     def calculateArea(self, mask):
 
+        #raise Exception("DONT USE THIS IT'S CRAZY SLOW")
         self.area = 0.0
         for y in range(mask.shape[0]):
             for x in range(mask.shape[1]):

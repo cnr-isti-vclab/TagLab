@@ -34,6 +34,8 @@ import pandas as pd
 from source.Blob import Blob
 import source.Mask as Mask
 
+import time
+
 
 class Group(object):
 
@@ -167,6 +169,76 @@ class Annotation(object):
             return True
         return False
 
+    def cut(self, blob, points):
+        """
+        Given a curve specified as a set of points and a selected blob, the operation cuts it in several separed new blobs
+        """
+
+        mask = blob.getMask()
+        box = blob.bbox
+        Mask.paintPoints(mask, box, points, 0)
+
+        label_image = measure.label(mask)
+        area_th = 30
+        created_blobs = []
+        for region in measure.regionprops(label_image):
+
+            if region.area > area_th:
+                id = len(self.seg_blobs)
+                blob = Blob(region, box[1], box[0], id + 1)
+                blob.class_color = blob.class_color
+                blob.class_name = blob.class_name
+                created_blobs.append(blob)
+
+        return created_blobs
+
+
+    def editBorder(self, blob, points):
+        #need padding
+
+        #would be lovely to be able do edit holes too.
+        #the main problem is snapping to the external contour
+        points = blob.snapToBorder(points)
+
+        if len(points) == 0:
+            return
+
+        pointsbox = Mask.pointsBox(points, 3)
+        blobmask = blob.getMask()
+
+        #add to mask painting the points as 1 and filling the holes.
+        (mask, box) = Mask.jointMask(blob.bbox, pointsbox)
+        Mask.paintMask(mask, box, blobmask, blob.bbox, 1)
+
+        #save holes
+        full = ndi.binary_fill_holes(mask.astype(int))
+        holes = full & ~mask
+
+        #cut from mask
+        Mask.paintPoints(mask, box, points, 1)
+        mask = ndi.binary_fill_holes(mask.astype(int))
+
+        #erase the points to carve to remove the internal parts.
+        Mask.paintPoints(mask, box, points, 0)
+
+        #add back holes
+        mask = mask & ~holes
+
+        regions = measure.regionprops(measure.label(mask))
+
+        if len(regions):
+            largest = regions[0]
+            for region in regions:
+                if region.area > largest.area:
+                    largest = region
+
+            #adjust the image bounding box (relative to the region mask) to directly use area.image mask
+            #image box is standard (minx, miny, maxx, maxy)
+            box = np.array([ box[0] + largest.bbox[0], box[1] + largest.bbox[1], largest.bbox[3], largest.bbox[2] ])
+
+            blob.updateUsingMask(box, largest.image.astype(int))
+
+
 
     def statistics(self):
         """
@@ -212,47 +284,6 @@ class Annotation(object):
 
 
 
-    def cut(self, blob, points):
-        """
-        Given a curve specified as a set of points and a selected blob, the operation cuts it in several separed new blobs
-        """
-
-        #(mask, box) = Mask.cut(blob.getMask(), blob.bbox, points)
-
-
-
-        box = blob.bbox
-        mask = blob.getMask()
-
-        #w and h in image space
-        h = mask.shape[0]
-        w = mask.shape[1]
-
-        #remember points is (x, y) while numpy is (y, x)
-        points = points - [box[1], box[0]]
-        points = np.swapaxes(points, 0, 1).astype(int)
-
-        points = points[:, (points[0] > 0) & (points[1] > 0) & (points[0] < w-1) & (points[1] < h-1)]
-        index = points[1,]*w + points[0,]
-
-        for x in range(-1, 2):
-            for y in range(-1, 2):
-                np.put(mask, index + y*w + x, 0, 'clip')
-
-
-        label_image = measure.label(mask)
-        area_th = 30
-        created_blobs = []
-        for region in measure.regionprops(label_image):
-
-            if region.area > area_th:
-                id = len(self.seg_blobs)
-                blob = Blob(region, box[1], box[0], id + 1)
-                blob.class_color = blob.class_color
-                blob.class_name = blob.class_name
-                created_blobs.append(blob)
-
-        return created_blobs
 
 
     ###########################################################################
