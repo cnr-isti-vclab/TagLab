@@ -1422,7 +1422,7 @@ class TagLab(QWidget):
             logfile.info("MERGE OVERLAPPED LABELS operation ends.")
 
         else:
-            self.infoWidget.setWarningMessage("You need to select <em>two</em> blobs for MERGE OVERLAPPED LABELS operation.")
+            self.infoWidget.setWarningMessage("You need to select at least <em>two</em> blobs for MERGE OVERLAPPED LABELS operation.")
 
 
     def subtract(self):
@@ -2122,7 +2122,7 @@ class TagLab(QWidget):
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
 
-        f = open(filename, "w")
+
 
         dict_to_save = {}
 
@@ -2141,8 +2141,10 @@ class TagLab(QWidget):
             dict = blob.toDict()
             dict_to_save["Segmentation Data"].append(dict)
 
-        json.dump(dict_to_save, f)
+        str = json.dumps(dict_to_save)
 
+        f = open(filename, "w")
+        f.write(str)
         f.close()
 
         QApplication.restoreOverrideCursor()

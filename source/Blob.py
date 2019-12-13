@@ -454,7 +454,7 @@ class Blob(object):
             self.perimeter += self.calculateContourPerimeter(self.contour)
 
     def calculateArea(self, mask):
-        self.area = mask.sum()
+        self.area = mask.sum().astype(float)
 
 
 
