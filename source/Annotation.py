@@ -178,10 +178,13 @@ class Annotation(object):
             return True
         return False
 
-    def cut(self, blob, points):
+
+
+    def cut(self, blob, lines):
         """
         Given a curve specified as a set of points and a selected blob, the operation cuts it in several separed new blobs
         """
+        points = blob.lineToPoints(lines)
 
         mask = blob.getMask()
         box = blob.bbox
@@ -202,13 +205,17 @@ class Annotation(object):
         return created_blobs
 
 
-    def editBorder(self, blob, points):
+    def editBorder(self, blob, lines):
         #need padding
 
         #would be lovely to be able do edit holes too.
         #the main problem is snapping to the external contour
-        points = blob.snapToBorder(points)
 
+        points = blob.lineToPoints(lines, snap = True)
+
+        if points is None:
+            return
+        
         if len(points) == 0:
             return
 
