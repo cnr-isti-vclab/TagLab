@@ -33,6 +33,8 @@ from skimage.draw import polygon_perimeter, polygon
 from skimage.filters import gaussian
 
 import source.Mask as Mask
+from source import utils
+
 
 import time
 
@@ -224,6 +226,27 @@ class Blob(object):
         self.calculateCentroid(mask)
         self.calculateArea(mask)
 
+    def lineToPoints(self, lines, snap = False):
+        points = np.empty(shape=(0, 2), dtype=int)
+
+        for line in lines:
+            p = self.drawLine(line)
+            if snap:
+                p = self.snapToBorder(p)
+            if p is None:
+                continue
+            points = np.append(points, p, axis=0)
+        return points
+
+
+    def drawLine(self, line):
+        (x, y) = utils.draw_open_polygon(line[:, 1], line[:, 0])
+        points = np.asarray([x, y]).astype(int)
+        points = points.transpose()
+        points[:, [1, 0]] = points[:, [0, 1]]
+        return points
+
+
 
     def snapToBorder(self, points):
         return self.snapToContour(points, self.contour)
@@ -257,11 +280,13 @@ class Blob(object):
             snappoints = np.append(snappoints, self.snapToContour(points, contour))
         return snappoints
 
-    def createFromClosedCurve(self, points):
+    def createFromClosedCurve(self, lines):
         """
         It creates a blob starting from a closed curve. If the curve is not closed False is returned.
         If the curve intersect itself many times the first segmented region is created.
         """
+
+        points = self.lineToPoints(lines)
 
         box = Mask.pointsBox(points, 4)
 

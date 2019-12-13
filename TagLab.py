@@ -758,18 +758,7 @@ class TagLab(QWidget):
 
             #drawing operations are grouped
             if self.tool_used in ["EDITBORDER", "CUT", "FREEHAND"]:
-                x = np.zeros(shape=(0))
-                y = np.zeros(shape=(0))
-                for line in self.edit_points:
-                    (a, b) = utils.draw_open_polygon(line[:, 1], line[:, 0])
-                    x = np.append(x, a)
-                    y = np.append(y, b)
-
-                points = np.asarray([x, y]).astype(int)
-                points = points.transpose()
-                points[:, [1, 0]] = points[:, [0, 1]]
-
-                if points.shape[0] == 0:
+                if len(self.edit_points) == 0:
                     self.infoWidget.setInfoMessage("You need to draw something for this operation.")
                     return
 
@@ -777,7 +766,7 @@ class TagLab(QWidget):
                 if self.tool_used == "FREEHAND":
                     blob = Blob(None, 0, 0, 0)
 
-                    flagValid = blob.createFromClosedCurve(points)
+                    flagValid = blob.createFromClosedCurve(self.edit_points)
 
                     if flagValid is True:
                         logfile.info("FREEHAND operation ends.")
@@ -802,13 +791,13 @@ class TagLab(QWidget):
                 if self.tool_used == "EDITBORDER":
                     blob = selected_blob.copy()
 
-                    self.annotations.editBorder(blob, points)
+                    self.annotations.editBorder(blob, self.edit_points)
                     self.removeBlob(selected_blob)
                     self.addBlob(blob, selected=True)
                     self.saveUndo()
 
                 if self.tool_used == "CUT":
-                    created_blobs = self.annotations.cut(selected_blob, points)
+                    created_blobs = self.annotations.cut(selected_blob, self.edit_points)
 
                     for blob in created_blobs:
                         self.addBlob(blob, selected=True)

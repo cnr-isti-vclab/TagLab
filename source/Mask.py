@@ -8,6 +8,19 @@ def pointsToIndices(points):
     points = np.swapaxes(points, 0, 1).astype(int)
     points[[0, 1],:] = points[[1, 0],:]
 
+"""
+compute the bounding box of a set of points in format [[x0, y0], [x1, y1]... ]
+padding is used, since when painting we draw a 'fat' line
+"""
+def pointsBox(points, pad = 0):
+    box = [points[:, 1].min()-pad,
+           points[:, 0].min()-pad,
+           points[:, 0].max() + pad,
+           points[:, 1].max() + pad]
+    box[2] -= box[1]
+    box[3] -= box[0]
+    return box
+
 def jointBox(boxes):
     box = boxes[0]
     for b in boxes:
@@ -46,18 +59,7 @@ def paintPoints(mask, box, points, value):
         for y in range(-1, 2):
             np.put(mask, index + y*w + x, value, 'clip')
 
-"""
-compute the bounding box of a set of points in format [[x0, y0], [x1, y1]... ]
-padding is used, since when painting we draw a 'fat' line
-"""
-def pointsBox(points, pad = 0):
-    box = [points[:, 1].min()-pad,
-           points[:, 0].min()-pad,
-           points[:, 0].max() + pad,
-           points[:, 1].max() + pad]
-    box[2] -= box[1]
-    box[3] -= box[0]
-    return box
+
 
 """
 paints the foreground of the mask as 'value' on the mask. dmask is the destination larger and contains smask
