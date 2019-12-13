@@ -194,10 +194,10 @@ class Annotation(object):
 
             if region.area > area_th:
                 id = len(self.seg_blobs)
-                blob = Blob(region, box[1], box[0], id + 1)
-                blob.class_color = blob.class_color
-                blob.class_name = blob.class_name
-                created_blobs.append(blob)
+                b = Blob(region, box[1], box[0], id + 1)
+                b.class_color = blob.class_color
+                b.class_name = blob.class_name
+                created_blobs.append(b)
 
         return created_blobs
 
