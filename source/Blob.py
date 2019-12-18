@@ -231,6 +231,8 @@ class Blob(object):
 
         for line in lines:
             p = self.drawLine(line)
+            if p.shape[0] == 0:
+                continue
             if snap:
                 p = self.snapToBorder(p)
             if p is None:
@@ -260,6 +262,8 @@ class Blob(object):
 
         """
         test = points_in_poly(points, contour)
+        if test is None or test.shape[0] == 0:
+            return None
         jump = np.gradient(test.astype(int))
         ind = np.nonzero(jump)
         ind = np.asarray(ind)
