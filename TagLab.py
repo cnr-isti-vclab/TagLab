@@ -57,7 +57,7 @@ from source.QtInfoWidget import QtInfoWidget
 from source.QtProgressBarCustom import QtProgressBarCustom
 from source.QtCrackWidget import QtCrackWidget
 from source.QtExportWidget import QtExportWidget
-#from QtInfoWidget import QtInfoWidget
+from source.QtClassifierWidget import QtClassifierWidget
 from source.Blob import Blob
 from source.Annotation import Annotation
 from source.Labels import Labels, LabelsWidget
@@ -269,21 +269,21 @@ class TagLab(QWidget):
         self.btnDeepExtreme.setIcon(QIcon(os.path.join("icons", "dexter.png")))
         self.btnDeepExtreme.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
         self.btnDeepExtreme.setMaximumWidth(BUTTON_SIZE)
-        self.btnDeepExtreme.setToolTip("Deep Extreme")
+        self.btnDeepExtreme.setToolTip("4-click segmentation")
         self.btnDeepExtreme.clicked.connect(self.deepExtreme)
 
-        self.btnApplyClassifier = QPushButton()
-        self.btnApplyClassifier.setEnabled(True)
-        self.btnApplyClassifier.setCheckable(True)
-        self.btnApplyClassifier.setFlat(True)
-        self.btnApplyClassifier.setStyleSheet(flatbuttonstyle2)
-        self.btnApplyClassifier.setMinimumWidth(ICON_SIZE)
-        self.btnApplyClassifier.setMinimumHeight(ICON_SIZE)
-        self.btnApplyClassifier.setIcon(QIcon(os.path.join("icons", "auto.png")))
-        self.btnApplyClassifier.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
-        self.btnApplyClassifier.setMaximumWidth(BUTTON_SIZE)
-        self.btnApplyClassifier.setToolTip("Fully automatic calssification")
-        self.btnApplyClassifier.clicked.connect(self.applyClassifier)
+        self.btnAutoClassification = QPushButton()
+        self.btnAutoClassification.setEnabled(True)
+        self.btnAutoClassification.setCheckable(True)
+        self.btnAutoClassification.setFlat(True)
+        self.btnAutoClassification.setStyleSheet(flatbuttonstyle2)
+        self.btnAutoClassification.setMinimumWidth(ICON_SIZE)
+        self.btnAutoClassification.setMinimumHeight(ICON_SIZE)
+        self.btnAutoClassification.setIcon(QIcon(os.path.join("icons", "auto.png")))
+        self.btnAutoClassification.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
+        self.btnAutoClassification.setMaximumWidth(BUTTON_SIZE)
+        self.btnAutoClassification.setToolTip("Fully automatic classification")
+        self.btnAutoClassification.clicked.connect(self.selectClassifier)
 
         self.assignAction = QAction("Assign Class", self)
         self.assignAction.setShortcut(QKeySequence("A"))
@@ -334,7 +334,7 @@ class TagLab(QWidget):
         layout_tools.addWidget(self.btnRuler)
         layout_tools.addSpacing(10)
         layout_tools.addWidget(self.btnDeepExtreme)
-        layout_tools.addWidget(self.btnApplyClassifier)
+        layout_tools.addWidget(self.btnAutoClassification)
 
         layout_tools.addStretch()
 
@@ -2193,8 +2193,6 @@ class TagLab(QWidget):
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
 
-
-
         dict_to_save = {}
 
         # update project name
@@ -2237,8 +2235,19 @@ class TagLab(QWidget):
             del self.corals_classifier
             self.corals_classifier = None
 
+    @pyqtSlot()
+    def selectClassifier(self):
 
-    def applyClassifier(self):
+        selectClassifier = QtClassifierWidget(self.available_classifiers, parent=self)
+        selectClassifier.setWindowFlags(Qt.ToolTip | Qt.CustomizeWindowHint)
+        selectClassifier.setWindowModality(Qt.WindowModal)
+        classifier_name = selectClassifier.show()
+
+        if classifier_name:
+
+            self.applyClassifier(classifier_name)
+
+    def applyClassifier(self, classifier_name):
 
         # free GPU memory
         self.resetNetworks()
@@ -2259,7 +2268,7 @@ class TagLab(QWidget):
         progress_bar.setMessage("Setup automatic classification..", False)
         QApplication.processEvents()
 
-        self.corals_classifier = MapClassifier("pocillopora")
+        self.corals_classifier = MapClassifier(classifier_name)
         self.corals_classifier.updateProgress.connect(progress_bar.setProgress)
 
         # rescaling the map to fit the target scale of the network
