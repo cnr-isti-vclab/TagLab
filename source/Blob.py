@@ -262,7 +262,7 @@ class Blob(object):
 
         """
         test = points_in_poly(points, contour)
-        if test is None or test.shape[0] == 0:
+        if test is None or test.shape[0] <= 3:
             return None
         jump = np.gradient(test.astype(int))
         ind = np.nonzero(jump)
