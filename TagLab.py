@@ -2143,8 +2143,13 @@ class TagLab(QWidget):
         QApplication.setOverrideCursor(Qt.WaitCursor)
 
         f = open(filename, "r")
-
-        loaded_dict = json.load(f)
+        try:
+            loaded_dict = json.load(f)
+        except json.JSONDecodeError as e:
+            msgBox = QMessageBox()
+            msgBox.setText("The json project contains an error:\n {0}\n\nPlease contact us.".format(str(e)))
+            msgBox.exec()
+            return
 
         self.project_name = loaded_dict["Project Name"]
         self.map_image_filename = loaded_dict["Map File"]
