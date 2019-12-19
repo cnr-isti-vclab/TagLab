@@ -26,6 +26,7 @@ import json
 import numpy as np
 import numpy.ma as ma
 from skimage import measure
+from skimage.measure import points_in_poly
 
 from PyQt5.QtCore import Qt, QSize, QDir, QPoint, QPointF, QLineF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo
 from PyQt5.QtGui import QPainterPath, QFont, QColor, QPolygonF, QImage, QPixmap, QIcon, QKeySequence, \
@@ -230,6 +231,19 @@ class TagLab(QWidget):
         self.btnCreateCrack.setToolTip("Create crack")
         self.btnCreateCrack.clicked.connect(self.createCrack)
 
+        self.btnSplitBlob = QPushButton()
+        self.btnSplitBlob.setEnabled(True)
+        self.btnSplitBlob.setCheckable(True)
+        self.btnSplitBlob.setFlat(True)
+        self.btnSplitBlob.setStyleSheet(flatbuttonstyle1)
+        self.btnSplitBlob.setMinimumWidth(ICON_SIZE)
+        self.btnSplitBlob.setMinimumHeight(ICON_SIZE)
+        self.btnSplitBlob.setIcon(QIcon(os.path.join("icons", "split.png")))
+        self.btnSplitBlob.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
+        self.btnSplitBlob.setMaximumWidth(BUTTON_SIZE)
+        self.btnSplitBlob.setToolTip("Split Blob")
+        self.btnSplitBlob.clicked.connect(self.splitBlob)
+
         self.btnRuler = QPushButton()
         self.btnRuler.setEnabled(True)
         self.btnRuler.setCheckable(True)
@@ -316,6 +330,7 @@ class TagLab(QWidget):
         layout_tools.addWidget(self.btnEditBorder)
         layout_tools.addWidget(self.btnCut)
         layout_tools.addWidget(self.btnCreateCrack)
+        layout_tools.addWidget(self.btnSplitBlob)
         layout_tools.addWidget(self.btnRuler)
         layout_tools.addSpacing(10)
         layout_tools.addWidget(self.btnDeepExtreme)
@@ -520,6 +535,11 @@ class TagLab(QWidget):
         self.extreme_points = np.zeros((4, 2))
         self.extreme_points_lines = []
 
+        # DATA FOR THE SPLIT BLOB TOOL
+        self.seeds_points_number = 0
+        self.seeds_points = []
+        self.seeds_points_lines = []
+
         # NETWORKS
         self.deepextreme_net = None
         self.corals_classifier = None
@@ -711,6 +731,8 @@ class TagLab(QWidget):
                 self.resetEditBorder()
             elif self.tool_used == "RULER":
                 self.resetRulerTool()
+            elif self.tool_used == "SPLITBLOB":
+                self.resetSplitBlobTool()
             elif self.tool_used == "DEEPEXTREME":
                 self.resetDeepExtremeTool()
             elif self.tool_used == "AUTOCLASS":
@@ -754,6 +776,11 @@ class TagLab(QWidget):
             self.drawDeepExtremePoints()
         elif event.key() == Qt.Key_X:
             self.applyClassifier()
+        elif event.key() == Qt.Key_Y:
+            self.refineAllBorders()
+        elif event.key() == Qt.Key_Z:
+            self.importLabelMap()
+
         elif event.key() == Qt.Key_Space:
 
             #drawing operations are grouped
@@ -811,6 +838,18 @@ class TagLab(QWidget):
 
                 self.segmentWithDeepExtreme()
                 self.resetDeepExtremeTool()
+
+            elif self.tool_used == "SPLITBLOB" and self.seeds_points_number > 1 and len(self.selected_blobs) == 1:
+
+                selected_blob = self.selected_blobs[0]
+                points = self.seeds_points
+                created_blobs = self.annotations.splitBlob(selected_blob, points)
+
+                for blob in created_blobs:
+                    self.addBlob(blob, selected=True)
+                self.removeBlob(selected_blob)
+                self.saveUndo()
+                self.resetSplitBlobTool()
 
             self.tool_used = self.tool_orig
 
@@ -940,6 +979,7 @@ class TagLab(QWidget):
         self.btnFreehand.setChecked(False)
         self.btnRuler.setChecked(False)
         self.btnCreateCrack.setChecked(False)
+        self.btnSplitBlob.setChecked(False)
 
         self.btnDeepExtreme.setChecked(False)
 
@@ -979,6 +1019,24 @@ class TagLab(QWidget):
 
         self.infoWidget.setInfoMessage("Crack Tool is active")
         logfile.info("CREATECRACK tool is active")
+
+    @pyqtSlot()
+    def splitBlob(self):
+        """
+        Activate the tool "Split Blob".
+        """
+
+        self.resetToolbar()
+        self.resetTools()
+
+        self.btnSplitBlob.setChecked(True)
+        self.tool_used = self.tool_orig = "SPLITBLOB"
+
+        self.viewerplus.enablePan()
+        self.viewerplus.enableZoom()
+
+        self.infoWidget.setInfoMessage("Split Blob Tool is active")
+        logfile.info("Split Blob tool is active")
 
 
     @pyqtSlot(float, float)
@@ -1220,43 +1278,9 @@ class TagLab(QWidget):
         return False
 
 
-    def drawDeepExtremePoints(self):
-
-        pen = QPen(Qt.blue)
-        pen.setWidth(self.CROSS_LINE_WIDTH)
-        brush = QBrush(Qt.SolidPattern)
-        brush.setColor(Qt.blue)
-
-        X_SIZE = 12
-
-        for blob in self.annotations.seg_blobs:
-
-            ptx = blob.deep_extreme_points[0, 0]
-            pty = blob.deep_extreme_points[0, 1]
-
-            line1 = self.viewerplus.scene.addLine(ptx - X_SIZE, pty - X_SIZE, ptx + X_SIZE, pty + X_SIZE, pen)
-            line2 = self.viewerplus.scene.addLine(ptx - X_SIZE, pty + X_SIZE, ptx + X_SIZE, pty - X_SIZE, pen)
-
-            ptx = blob.deep_extreme_points[1, 0]
-            pty = blob.deep_extreme_points[1, 1]
-
-            line3 = self.viewerplus.scene.addLine(ptx - X_SIZE, pty - X_SIZE, ptx + X_SIZE, pty + X_SIZE, pen)
-            line4 = self.viewerplus.scene.addLine(ptx - X_SIZE, pty + X_SIZE, ptx + X_SIZE, pty - X_SIZE, pen)
-
-            ptx = blob.deep_extreme_points[2, 0]
-            pty = blob.deep_extreme_points[2, 1]
-
-            line5 = self.viewerplus.scene.addLine(ptx - X_SIZE, pty - X_SIZE, ptx + X_SIZE, pty + X_SIZE, pen)
-            line6 = self.viewerplus.scene.addLine(ptx - X_SIZE, pty + X_SIZE, ptx + X_SIZE, pty - X_SIZE, pen)
-
-            ptx = blob.deep_extreme_points[3, 0]
-            pty = blob.deep_extreme_points[3, 1]
-
-            line7 = self.viewerplus.scene.addLine(ptx - X_SIZE, pty - X_SIZE, ptx + X_SIZE, pty + X_SIZE, pen)
-            line8 = self.viewerplus.scene.addLine(ptx - X_SIZE, pty + X_SIZE, ptx + X_SIZE, pty - X_SIZE, pen)
 
     def drawGroup(self, group):
-        raise Exception('SHOLD NEVER BE CALLED!')
+        raise Exception('SHOULD NEVER BE CALLED!')
         """
         Draw all the blobs of the group with a darkGray border.
         """
@@ -1381,6 +1405,20 @@ class TagLab(QWidget):
                 self.ruler_text_gi.setDefaultTextColor(Qt.white)
                 self.ruler_text_gi.setPos(posx, posy)
 
+
+    # def drawSeeds(self):
+    #
+    #     if self.seeds_points_number > 0:
+    #
+    #         # for line in self.seeds_points_points_lined:
+    #         #     self.viewerplus.scene.removeItem(line)
+    #
+    #         pen = QPen(Qt.blue)
+    #         pen.setWidth(self.CROSS_LINE_WIDTH)
+    #         brush = QBrush(Qt.SolidPattern)
+    #         brush.setColor(Qt.blue)
+    #
+    #         X_SIZE = 12
 
 
 
@@ -1670,12 +1708,23 @@ class TagLab(QWidget):
         self.extreme_points = np.zeros((4, 2))
 
 
+    def resetSplitBlobTool(self):
+
+        for line in self.seeds_points_lines:
+            self.viewerplus.scene.removeItem(line)
+
+        self.seeds_points_lines.clear()
+        self.seeds_points_number = 0
+        self.seeds_points = []
+
+
     def resetTools(self):
 
         self.resetEditBorder()
         self.resetCrackTool()
         self.resetRulerTool()
         self.resetDeepExtremeTool()
+        self.resetSplitBlobTool()
 
         self.viewerplus.showCrossair = False
         self.viewerplus.scene.invalidate(self.viewerplus.scene.sceneRect())
@@ -1761,6 +1810,34 @@ class TagLab(QWidget):
             else:
 
                 self.resetRulerTool()
+
+
+        elif self.tool_used == "SPLITBLOB":
+
+            condition = points_in_poly(np.array([[x, y]]), self.selected_blobs[0].contour)
+
+            if len(self.selected_blobs) == 1 and condition[0] == True:
+
+                clicked_point = np.array([x, y])
+                self.seeds_points.append(clicked_point)
+                self.seeds_points_number += 1
+
+                pen = QPen(Qt.cyan)
+                pen.setWidth(self.CROSS_LINE_WIDTH)
+                pen.setCosmetic(True)
+                brush = QBrush(Qt.SolidPattern)
+                brush.setColor(Qt.red)
+
+                X_SIZE = 12
+                line1 = self.viewerplus.scene.addLine(x - X_SIZE, y - X_SIZE, x + X_SIZE, y + X_SIZE, pen)
+                line2 = self.viewerplus.scene.addLine(x - X_SIZE, y + X_SIZE, x + X_SIZE, y - X_SIZE, pen)
+                self.seeds_points_lines.append(line1)
+                self.seeds_points_lines.append(line2)
+
+            elif len(self.selected_blobs) != 1:
+                self.infoWidget.setInfoMessage("A single selected area is required.")
+                self.resetSplitBlobTool()
+
 
         elif self.tool_used == "DEEPEXTREME":
 

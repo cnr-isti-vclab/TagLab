@@ -30,7 +30,8 @@ from source import utils
 from source.Labels import Labels
 
 import pandas as pd
-
+from scipy import ndimage as ndi
+from skimage.morphology import watershed
 from source.Blob import Blob
 import source.Mask as Mask
 
@@ -203,6 +204,41 @@ class Annotation(object):
                 created_blobs.append(b)
 
         return created_blobs
+
+
+    def splitBlob(self, blob, seeds):
+
+        seeds = np.asarray(seeds)
+        seeds = seeds.astype(int)
+        mask = blob.getMask()
+        box = blob.bbox
+        # x,y
+        seeds_matrix = np.zeros_like(mask)
+        # it would be useful add a slider to regulate this size parameter?
+        size = 40
+        #
+        for i in range(0, seeds.shape[0]):
+        #y,x
+            seeds_matrix[seeds[i, 1] - box[0] - (size - 1): seeds[i, 1] - box[0] + (size - 1),
+            seeds[i, 0] - box[1] - (size - 1): seeds[i, 0] - box[1] + (size - 1)] = 1
+
+        distance = ndi.distance_transform_edt(mask)
+        seeds_matrix = seeds_matrix > 0.5
+        markers = ndi.label(seeds_matrix)[0]
+        labels = watershed(-distance, markers, mask=mask)
+        created_blobs = []
+        for region in measure.regionprops(labels):
+                idx = len(self.seg_blobs)
+                b = Blob(region, box[1], box[0], idx + 1)
+                b.class_color = blob.class_color
+                b.class_name = blob.class_name
+                created_blobs.append(b)
+
+        return created_blobs
+
+
+
+
 
 
     def editBorder(self, blob, lines):
