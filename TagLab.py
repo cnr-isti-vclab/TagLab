@@ -2074,8 +2074,6 @@ class TagLab(QWidget):
             msgBox.exec()
             return
 
-            return
-
         self.project_name = loaded_dict["Project Name"]
         self.map_image_filename = loaded_dict["Map File"]
         info = QFileInfo(self.map_image_filename)
