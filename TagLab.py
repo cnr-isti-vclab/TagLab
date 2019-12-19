@@ -119,6 +119,7 @@ class TagLab(QWidget):
         #####################
 
         self.mapWidget = None
+        self.classifierWidget = None
 
         self.tool_used = "MOVE"        # tool currently used
         self.tool_orig = "MOVE"        # tool originally used when a shift key changes the current tool
@@ -2235,75 +2236,80 @@ class TagLab(QWidget):
     @pyqtSlot()
     def selectClassifier(self):
 
-        selectClassifier = QtClassifierWidget(self.available_classifiers, parent=self)
-        selectClassifier.setWindowFlags(Qt.ToolTip | Qt.CustomizeWindowHint)
-        selectClassifier.setWindowModality(Qt.WindowModal)
-        classifier_name = selectClassifier.show()
+        self.classifierWidget = QtClassifierWidget(self.available_classifiers, parent=self)
+        self.classifierWidget.setAttribute(Qt.WA_DeleteOnClose)
+        self.classifierWidget.btnApply.clicked.connect(self.applyClassifier)
+        self.classifierWidget.setWindowModality(Qt.WindowModal)
+        self.classifierWidget.show()
 
-        if classifier_name:
 
-            self.applyClassifier(classifier_name)
+    @pyqtSlot()
+    def applyClassifier(self):
 
-    def applyClassifier(self, classifier_name):
+        if self.classifierWidger:
 
-        # free GPU memory
-        self.resetNetworks()
+            classifier_name = self.classifierWidget.classifier_name()
 
-        self.tool_used = "AUTOCLASS"
+            # free GPU memory
+            self.resetNetworks()
 
-        progress_bar = QtProgressBarCustom(parent=self)
-        progress_bar.setWindowFlags(Qt.ToolTip | Qt.CustomizeWindowHint)
-        progress_bar.setWindowModality(Qt.NonModal)
-        pos = self.viewerplus.pos()
-        progress_bar.move(pos.x()+15, pos.y()+30)
-        progress_bar.show()
+            self.tool_used = "AUTOCLASS"
 
-        # setup the desired classifier
+            progress_bar = QtProgressBarCustom(parent=self)
+            progress_bar.setWindowFlags(Qt.ToolTip | Qt.CustomizeWindowHint)
+            progress_bar.setWindowModality(Qt.NonModal)
+            pos = self.viewerplus.pos()
+            progress_bar.move(pos.x()+15, pos.y()+30)
+            progress_bar.show()
 
-        self.infoWidget.setInfoMessage("Setup automatic classification..")
+            # setup the desired classifier
 
-        progress_bar.setMessage("Setup automatic classification..", False)
-        QApplication.processEvents()
+            self.infoWidget.setInfoMessage("Setup automatic classification..")
 
-        self.corals_classifier = MapClassifier(classifier_name)
-        self.corals_classifier.updateProgress.connect(progress_bar.setProgress)
-
-        # rescaling the map to fit the target scale of the network
-
-        progress_bar.setMessage("Map rescaling..", False)
-        QApplication.processEvents()
-
-        # target scale factor: 1 pixel = 0.9 mm -> 1.1111 pixel / 1mm
-        target_scale_factor = 0.9
-        scale_factor = target_scale_factor / self.map_px_to_mm_factor
-
-        w = self.img_map.width() * scale_factor
-        h = self.img_map.height() * scale_factor
-
-        input_img_map = self.img_map.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
-
-        progress_bar.setMessage("Classification: ", True)
-        progress_bar.setProgress(0.0)
-        QApplication.processEvents()
-
-        # runs the classifier
-        self.infoWidget.setInfoMessage("Automatic classification is running..")
-        self.corals_classifier.run(input_img_map, 768, 512, 128)
-
-        if self.corals_classifier.flagStopProcessing is False:
-
-            # import generated label map
-            progress_bar.setMessage("Finalizing classification results..", False)
+            progress_bar.setMessage("Setup automatic classification..", False)
             QApplication.processEvents()
 
-            filename = os.path.join("temp", "labelmap.png")
-            created_blobs = self.annotations.import_label_map(filename, self.img_map)
-            for blob in created_blobs:
-                self.addBlob(blob, selected=False)
+            self.corals_classifier = MapClassifier(classifier_name)
+            self.corals_classifier.updateProgress.connect(progress_bar.setProgress)
 
-        progress_bar.close()
-        del progress_bar
+            # rescaling the map to fit the target scale of the network
 
+            progress_bar.setMessage("Map rescaling..", False)
+            QApplication.processEvents()
+
+            # target scale factor: 1 pixel = 0.9 mm -> 1.1111 pixel / 1mm
+            target_scale_factor = 0.9
+            scale_factor = target_scale_factor / self.map_px_to_mm_factor
+
+            w = self.img_map.width() * scale_factor
+            h = self.img_map.height() * scale_factor
+
+            input_img_map = self.img_map.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+
+            progress_bar.setMessage("Classification: ", True)
+            progress_bar.setProgress(0.0)
+            QApplication.processEvents()
+
+            # runs the classifier
+            self.infoWidget.setInfoMessage("Automatic classification is running..")
+            self.corals_classifier.run(input_img_map, 768, 512, 128)
+
+            if self.corals_classifier.flagStopProcessing is False:
+
+                # import generated label map
+                progress_bar.setMessage("Finalizing classification results..", False)
+                QApplication.processEvents()
+
+                filename = os.path.join("temp", "labelmap.png")
+                created_blobs = self.annotations.import_label_map(filename, self.img_map)
+                for blob in created_blobs:
+                    self.addBlob(blob, selected=False)
+
+            progress_bar.close()
+            del progress_bar
+
+            del self.classifierWidget
+            self.classifierWidget = None
 
     def loadingDeepExtremeNetwork(self):
 

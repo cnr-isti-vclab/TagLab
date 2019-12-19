@@ -5,18 +5,18 @@
   {
     "Classifier Name": "Pocillopora",
     "Weights": "pocillopora.net",
-    "Num Classes": 2,
-    "Labels Names": ["Pocillopora", "Background"],
-    "Labels Colors": [[240, 110, 70], [0, 0, 0]],
+    "Num. Classes": 2,
+    "Classes": ["Pocillopora", "Background"],
+	"Scale": 0.66,
     "Average Norm.": [0.4450, 0.4441, 0.4351]
   },
 
   {
     "Classifier Name": "test",
     "Weights": "notexists.net",
-    "Num Classes": 3,
-    "Labels Names": ["Unknown", "Pocillopora", "Background"], 
-    "Labels Colors": [[110, 120, 110], [240, 110, 70], [0, 0, 0]],
+    "Num. Classes": 3,
+    "Classes": ["Unknown", "Pocillopora", "Background"],
+	"Scale": 1.0,
     "Average Norm.": [0.5, 0.5, 0.5]
   }
 ]

@@ -31,6 +31,8 @@ class QtClassifierWidget(QWidget):
     def __init__(self, classifiers, parent=None):
         super(QtClassifierWidget, self).__init__(parent)
 
+        self.classifiers = classifiers
+
         self.setStyleSheet("background-color: rgba(60,60,65,100); color: white")
 
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
@@ -54,20 +56,66 @@ class QtClassifierWidget(QWidget):
         layoutH0.addWidget(self.comboClassifier)
         layoutH0.addStretch()
 
+        self.lblFilename = QLabel("Filename: ")
+        self.lblNClasses = QLabel("N. of classes: ")
+        self.lblClasses = QLabel("Classes recognized: ")
+        self.lblScale = QLabel("Training scale (px-to-mm): ")
+        self.lblAvgColor = QLabel("Training avg. color: ")
+
+        layoutH1a = QVBoxLayout()
+        layoutH1a.setAlignment(Qt.AlignRight)
+        layoutH1a.addWidget(self.lblFilename)
+        layoutH1a.addWidget(self.lblNClasses)
+        layoutH1a.addWidget(self.lblClasses)
+        layoutH1a.addWidget(self.lblScale)
+        layoutH1a.addWidget(self.lblAvgColor)
+
+        LINEWIDTH = 300
+        self.editFilename = QLineEdit(classifiers[0]["Weights"])
+        self.editFilename.setReadOnly(True)
+        self.editFilename.setFixedWidth(LINEWIDTH)
+        self.editNClasses = QLineEdit(str(classifiers[0]["Num. Classes"]))
+        self.editNClasses.setReadOnly(True)
+        self.editNClasses.setFixedWidth(LINEWIDTH)
+        txt = str(classifiers[0]["Classes"])
+        txt = txt.replace('[', '')
+        txt = txt.replace(']', '')
+        txt = txt.replace("'", '')
+        self.editClasses = QLineEdit(txt)
+        self.editClasses.setFixedWidth(LINEWIDTH)
+        self.editClasses.setReadOnly(True)
+        self.editScale = QLineEdit(str(classifiers[0]["Scale"]))
+        self.editScale.setFixedWidth(LINEWIDTH)
+        self.editScale.setReadOnly(True)
+        self.editAvgColor = QLineEdit(str(classifiers[0]["Average Norm."]))
+        self.editAvgColor.setFixedWidth(LINEWIDTH)
+        self.editAvgColor.setReadOnly(True)
+
+        layoutH1b = QVBoxLayout()
+        layoutH1b.setAlignment(Qt.AlignLeft)
+        layoutH1b.addWidget(self.editFilename)
+        layoutH1b.addWidget(self.editNClasses)
+        layoutH1b.addWidget(self.editClasses)
+        layoutH1b.addWidget(self.editScale)
+        layoutH1b.addWidget(self.editAvgColor)
+
+        layoutH1 = QHBoxLayout()
+        layoutH1.addLayout(layoutH1a)
+        layoutH1.addLayout(layoutH1b)
+
         self.btnCancel = QPushButton("Cancel")
         self.btnCancel.clicked.connect(self.close)
-        self.btnExport = QPushButton("Apply")
-        self.btnExport.clicked.connect(self.export)
+        self.btnApply = QPushButton("Apply")
 
         layoutH2 = QHBoxLayout()
         layoutH2.setAlignment(Qt.AlignRight)
         layoutH2.addStretch()
         layoutH2.addWidget(self.btnCancel)
-        layoutH2.addWidget(self.btnExport)
+        layoutH2.addWidget(self.btnApply)
 
         layoutV = QVBoxLayout()
         layoutV.addLayout(layoutH0)
-        #layoutV.addLayout(layoutH1)
+        layoutV.addLayout(layoutH1)
         layoutV.addLayout(layoutH2)
         layoutV.setSpacing(3)
         self.setLayout(layoutV)
@@ -78,30 +126,18 @@ class QtClassifierWidget(QWidget):
     @pyqtSlot(int)
     def classifierChanged(self, index):
 
-        pass
+        classifier = self.classifiers[index]
+        self.editFilename.setText(classifier["Weights"])
+        self.editNClasses.setText(str(classifier["Num. Classes"]))
+        txt = str(classifier["Classes"])
+        txt = txt.replace('[', '')
+        txt = txt.replace(']', '')
+        txt = txt.replace("'", '')
+        self.editClasses.setText(txt)
+        self.editScale.setText(str(classifier["Scale"]))
+        self.editAvgColor.setText(str(classifier["Average Norm."]))
 
+    def classifier_name(self):
 
-    @pyqtSlot()
-    def export(self):
+        return self.classifiers[self.comboClassifier.index()]['Classifier Name']
 
-        index = self.comboSaveAs.currentIndex()
-
-        if index == 0:
-
-            # DATA TABLE - SCRIPPS DATA FORMAT
-            fullname = os.path.join(self.editFoldername.text(), self.editFilename.text())
-            self.ann.export_data_table_for_Scripps(fullname)
-
-        elif index == 1:
-
-            # IMAGE DATA - SCRIPPS DATA FORMAT
-            fullname = os.path.join(self.editFoldername.text(), self.editFilename.text())
-            self.ann.export_image_data_for_Scripps(self.map, fullname)
-
-        elif index == 2:
-
-            pass
-
-        print("DATA EXPORTED !!")
-
-        self.close()
