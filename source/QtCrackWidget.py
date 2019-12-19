@@ -97,7 +97,7 @@ class QtCrackWidget(QWidget):
         self.setAutoFillBackground(True)
 
         self.setWindowTitle("Crack")
-
+        self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowTitleHint)
 
     def keyPressEvent(self, event):
 

@@ -109,6 +109,7 @@ class QtExportWidget(QWidget):
         self.setLayout(layoutV)
 
         self.setWindowTitle("EXPORT DATA")
+        self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
     @pyqtSlot()
     def chooseFolder(self):

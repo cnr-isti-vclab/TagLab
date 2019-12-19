@@ -115,6 +115,7 @@ class QtMapSettingsWidget(QWidget):
         self.setLayout(layoutV)
 
         self.setWindowTitle("MAP SETTINGS")
+        self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
 
     @pyqtSlot()

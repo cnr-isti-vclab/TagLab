@@ -1789,7 +1789,6 @@ class TagLab(QWidget):
                     blob = selected_blob.copy()
 
                     self.crackWidget = QtCrackWidget(self.img_map, blob, x, y, parent=self)
-                    self.crackWidget.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowTitleHint)
                     self.crackWidget.setWindowModality(Qt.WindowModal)
                     self.crackWidget.btnCancel.clicked.connect(self.crackCancel)
                     self.crackWidget.btnApply.clicked.connect(self.crackApply)
@@ -1986,7 +1985,6 @@ class TagLab(QWidget):
         if self.mapWidget is None:
 
             self.mapWidget = QtMapSettingsWidget(parent=self)
-            self.mapWidget.setWindowFlags(Qt.Window)
             self.mapWidget.setWindowModality(Qt.WindowModal)
             self.mapWidget.btnApply.clicked.connect(self.setMapProperties)
 
@@ -2131,7 +2129,6 @@ class TagLab(QWidget):
     def exportData(self):
 
         exportWidget = QtExportWidget(self.img_map, self.annotations, parent=self)
-        exportWidget.setWindowFlags(Qt.Window)
         exportWidget.setWindowModality(Qt.WindowModal)
         exportWidget.show()
 

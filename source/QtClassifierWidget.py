@@ -73,7 +73,7 @@ class QtClassifierWidget(QWidget):
         self.setLayout(layoutV)
 
         self.setWindowTitle("SELECT CLASSIFIER")
-
+        self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
     @pyqtSlot(int)
     def classifierChanged(self, index):
