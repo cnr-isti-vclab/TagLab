@@ -791,8 +791,12 @@ class TagLab(QWidget):
                 if self.tool_used == "FREEHAND":
                     blob = Blob(None, 0, 0, 0)
 
-                    flagValid = blob.createFromClosedCurve(self.edit_points)
-
+                    try:
+                        flagValid = blob.createFromClosedCurve(self.edit_points)
+                    except Exception:
+                        self.infoWidget.setInfoMessage("Failed creating area.")
+                        logfile.info("FREEHAND operation not done (invalid snap).")
+                        return
                     if flagValid is True:
                         logfile.info("FREEHAND operation ends.")
 
@@ -1554,11 +1558,13 @@ class TagLab(QWidget):
                 msgBox.exec()
                 return
 
-
-            blob.updateUsingMask(bbox, mask.astype(np.int))
-            self.removeBlob(selected)
-            self.addBlob(blob, selected=True)
-            self.saveUndo()
+            try:
+                blob.updateUsingMask(bbox, mask.astype(np.int))
+                self.removeBlob(selected)
+                self.addBlob(blob, selected=True)
+                self.saveUndo()
+            except:
+                pass
 
             logfile.info("REFINE BORDER operation ends.")
 

@@ -185,7 +185,6 @@ class Blob(object):
         return blob
 
     def setId(self, id):
-
         # a string with a number to identify the blob plus its centroid
         xc = int(self.centroid[0])
         yc = int(self.centroid[1])
@@ -219,7 +218,6 @@ class Blob(object):
 
 
     def updateUsingMask(self, bbox, mask):
-
         self.bbox = bbox
         self.createContourFromMask(mask)
         self.calculatePerimeter()
@@ -385,7 +383,6 @@ class Blob(object):
                     xcoor = contour[i, 1]
                     self.inner_contours[j][i, 0] = xcoor - PADDED_SIZE + self.bbox[1]
                     self.inner_contours[j][i, 1] = ycoor - PADDED_SIZE + self.bbox[0]
-
         elif number_of_contours == 1:
 
             coords = measure.approximate_polygon(contours[0], tolerance=1.2)
@@ -399,8 +396,7 @@ class Blob(object):
                 self.contour[i, 0] = xcoor - PADDED_SIZE + self.bbox[1]
                 self.contour[i, 1] = ycoor - PADDED_SIZE + self.bbox[0]
         else:
-
-            print("ZERO CONTOURS -> THERE ARE SOME PROBLEMS HERE !!!!!!)")
+            raise Exception("Empty contour")
 
     def setupForDrawing(self):
         """
