@@ -644,6 +644,10 @@ class TagLab(QWidget):
         loadMapAct.setStatusTip("Set and load a map")
         loadMapAct.triggered.connect(self.setMapToLoad)
 
+        appendAct = QAction("Append Annotations", self)
+        appendAct.setStatusTip("Append to this project the annotations of another project")
+        appendAct.triggered.connect(self.appendAnnotations)
+
         importAct = QAction("Import Label Map", self)
         importAct.setStatusTip("Import a label map")
         importAct.triggered.connect(self.importLabelMap)
@@ -691,7 +695,9 @@ class TagLab(QWidget):
         filemenu.addSeparator()
         filemenu.addAction(loadMapAct)
         filemenu.addSeparator()
+        filemenu.addAction(appendAct)
         filemenu.addAction(importAct)
+        filemenu.addSeparator()
         filemenu.addAction(exportAct)
 
         editmenu = menubar.addMenu("&Edit")
@@ -2059,7 +2065,7 @@ class TagLab(QWidget):
 
         filters = "ANNOTATION PROJECT (*.json)"
 
-        filename, _ = QFileDialog.getOpenFileName(self, "Input Configuration File", self.working_dir, filters)
+        filename, _ = QFileDialog.getOpenFileName(self, "Open a project", self.working_dir, filters)
 
         if filename:
 
@@ -2074,11 +2080,22 @@ class TagLab(QWidget):
 
         filters = "ANNOTATION PROJECT (*.json)"
 
-        filename, _ = QFileDialog.getSaveFileName(self, "Save Configuration File", self.working_dir, filters)
+        filename, _ = QFileDialog.getSaveFileName(self, "Save the project", self.working_dir, filters)
 
         if filename:
 
             self.save(filename)
+
+    @pyqtSlot()
+    def appendAnnotations(self):
+
+        filters = "ANNOTATION PROJECT (*.json)"
+
+        filename, _ = QFileDialog.getOpenFileName(self, "Open a project", self.working_dir, filters)
+
+        if filename:
+
+            self.append(filename)
 
     @pyqtSlot()
     def help(self):
@@ -2186,6 +2203,39 @@ class TagLab(QWidget):
             self.drawBlob(blob)
 
         self.infoWidget.setInfoMessage("The given project has been successfully open.")
+
+
+    def append(self, filename):
+        """
+        Append the annotations of a previously saved projects.
+        """
+
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+
+        f = open(filename, "r")
+        try:
+            loaded_dict = json.load(f)
+        except json.JSONDecodeError as e:
+            msgBox = QMessageBox()
+            msgBox.setText("The json project contains an error:\n {0}\n\nPlease contact us.".format(str(e)))
+            msgBox.exec()
+            return
+
+        for blob_dict in loaded_dict["Segmentation Data"]:
+
+            blob = Blob(None, 0, 0, 0)
+            blob.fromDict(blob_dict)
+            self.annotations.seg_blobs.append(blob)
+
+        f.close()
+
+        QApplication.restoreOverrideCursor()
+
+        for blob in self.annotations.seg_blobs:
+            self.drawBlob(blob)
+
+        self.infoWidget.setInfoMessage("The given project has been successfully open.")
+
 
     def save(self, filename):
         """
