@@ -74,7 +74,7 @@ class QtClassifierWidget(QWidget):
         self.editFilename = QLineEdit(classifiers[0]["Weights"])
         self.editFilename.setReadOnly(True)
         self.editFilename.setFixedWidth(LINEWIDTH)
-        self.editNClasses = QLineEdit(str(classifiers[0]["Num. Classes"]))
+        self.editNClasses = QLineEdit(self.classes2str(classifiers[0]["Num. Classes"]))
         self.editNClasses.setReadOnly(True)
         self.editNClasses.setFixedWidth(LINEWIDTH)
         txt = str(classifiers[0]["Classes"])
@@ -87,7 +87,7 @@ class QtClassifierWidget(QWidget):
         self.editScale = QLineEdit(str(classifiers[0]["Scale"]))
         self.editScale.setFixedWidth(LINEWIDTH)
         self.editScale.setReadOnly(True)
-        self.editAvgColor = QLineEdit(str(classifiers[0]["Average Norm."]))
+        self.editAvgColor = QLineEdit(self.avgcolor2str(classifiers[0]["Average Norm."]))
         self.editAvgColor.setFixedWidth(LINEWIDTH)
         self.editAvgColor.setReadOnly(True)
 
@@ -129,15 +129,25 @@ class QtClassifierWidget(QWidget):
         classifier = self.classifiers[index]
         self.editFilename.setText(classifier["Weights"])
         self.editNClasses.setText(str(classifier["Num. Classes"]))
-        txt = str(classifier["Classes"])
-        txt = txt.replace('[', '')
-        txt = txt.replace(']', '')
-        txt = txt.replace("'", '')
-        self.editClasses.setText(txt)
+        self.editClasses.setText(self.classes2str(classifier["Classes"]))
         self.editScale.setText(str(classifier["Scale"]))
-        self.editAvgColor.setText(str(classifier["Average Norm."]))
+        self.editAvgColor.setText(self.avgcolor2str(classifier["Average Norm."]))
 
     def classifier_name(self):
 
         return self.classifiers[self.comboClassifier.index()]['Classifier Name']
+
+    def classes2str(self, classes_list):
+
+        txt = str(classes_list)
+        txt = txt.replace('[', '')
+        txt = txt.replace(']', '')
+        txt = txt.replace("'", '')
+        return txt
+
+    def avgcolor2str(self, avgcolor_list):
+
+        txt = "R = {0:.2f}, G = {1:.2f}, B = {2:.2f} ".format(avgcolor_list[0]*255.0, avgcolor_list[1]*255.0, avgcolor_list[2]*255.0)
+        return txt
+
 

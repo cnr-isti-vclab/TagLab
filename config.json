@@ -4,20 +4,20 @@
 [
   {
     "Classifier Name": "Pocillopora",
-    "Weights": "pocillopora.net",
+    "Weights": "DEEPLAB_lr=5e-05_L2=0.0005_60_moorea_rescaled_pocillopora.net",
     "Num. Classes": 2,
     "Classes": ["Pocillopora", "Background"],
-	"Scale": 0.66,
-    "Average Norm.": [0.4450, 0.4441, 0.4351]
+	"Scale": 0.6666,
+    "Average Norm.": [0.3937, 0.3833, 0.3798]
   },
 
   {
-    "Classifier Name": "test",
-    "Weights": "notexists.net",
+    "Classifier Name": "Pocillopora dead",
+    "Weights": "DEEPLAB_lr=5e-05_L2=0.0005_60_moorea_rescaled_pocillopora_dead.net",
     "Num. Classes": 3,
-    "Classes": ["Unknown", "Pocillopora", "Background"],
-	"Scale": 1.0,
-    "Average Norm.": [0.5, 0.5, 0.5]
+    "Classes": ["Pocillopora dead", "Background"],
+	"Scale": 0.6666,
+    "Average Norm.": [0.3937, 0.3833, 0.3798]
   }
 ]
 

@@ -775,8 +775,6 @@ class TagLab(QWidget):
             self.deepExtreme()
         elif event.key() == Qt.Key_P:
             self.drawDeepExtremePoints()
-        elif event.key() == Qt.Key_X:
-            self.applyClassifier()
         elif event.key() == Qt.Key_Y:
             self.refineAllBorders()
         elif event.key() == Qt.Key_Z:
@@ -789,7 +787,6 @@ class TagLab(QWidget):
                 if len(self.edit_points) == 0:
                     self.infoWidget.setInfoMessage("You need to draw something for this operation.")
                     return
-
 
                 if self.tool_used == "FREEHAND":
                     blob = Blob(None, 0, 0, 0)
