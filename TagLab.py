@@ -1043,9 +1043,9 @@ class TagLab(QWidget):
         Selection operation.
         """
 
-        # NOTE: double click selection is disabled with ASSIGN, RULER and DEEPEXTREME tools
+        # NOTE: double click selection is disabled with RULER and DEEPEXTREME tools
 
-        if self.tool_used == "ASSIGN" or self.tool_used == "RULER" or self.tool_used == "DEEPEXTREME":
+        if self.tool_used == "RULER" or self.tool_used == "DEEPEXTREME":
             return
 
         modifiers = QApplication.queryKeyboardModifiers()
