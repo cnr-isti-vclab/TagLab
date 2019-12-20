@@ -1,7 +1,7 @@
 #include "coraline.h"
 
-#include <maxflow/graph.h>
-#include <maxflow/graph.cpp>
+#include "maxflow/graph.h"
+#include "maxflow/graph.cpp"
 
 #include <iostream>
 #include <fstream>
@@ -46,6 +46,7 @@ uchar *Coraline::rgbToMask(uchar *rgbmask, int w, int h) {
 		if(r == 0 && g == 0 && b == 0) {
 			mask[i] = 0;
 		} else if(r == 255 && g == 255 && b == 255) {
+		//} else if(r == 213 && g == 165 && b == 0) {
 			mask[i] = 1;
 		} else {
 			mask[i] = 0;
@@ -164,18 +165,20 @@ uchar *Coraline::graphCut() {
 				wfore = lambda * foreprob[i];
 				wback = lambda * backprob[i];
 			}
+			float signeddistance = distance[i];
 			
-			float distance_penalty = conservative*(distance[i]/(radius-1));
-			if(mask[i] == 1) //was fore
+			if(mask[i] == 1)
+				signeddistance *= -1;
+			
+			double d = signeddistance - grow;
+			
+			float distance_penalty = conservative*(fabs(d)/(radius-1));
+			if(d < 0)
 				wback -= distance_penalty;
 			else
 				wfore -= distance_penalty;
-						
-			//double w = lambda*(color[i]-0.5);
-			//if(w < 0)
-			//	wfore = w;
-			//else
-			//	wback = -w;
+			
+			
 			if(pred) {
 				if(pred[i] > 0)
 					wfore = lambda*pred[i];
@@ -241,7 +244,7 @@ vector<int> Coraline::distanceField() {
 	vector<int> stack;
 	for(int y = 1; y < h-1; y++) {
 		for(int x = 1; x < w-1; x++) {
-			int i = x + y*w;
+			int i = x + y*w;			
 			if(isBorder(i)) {
 				distance[i] = 0.0f;
 				stack.push_back(i);
@@ -285,8 +288,16 @@ vector<int> Coraline::distanceField() {
 			int i = stack[k];
 			float d = distance[i];
 			bool ismax = true;
+
+			
 			for(int k = 0; k < 8; k++) {
 				int target = i + kernel[k];
+				
+				int x = target %h;
+				int y = (target - x)/w;
+				if(x == 0 || y == 0 || x == w-1 || y == h-1)
+					continue;
+				
 				if(target < 0 || target >= w*h) continue;
 				float &orig = distance[target];
 				if(d + filter[k] > radius) continue;

@@ -287,8 +287,10 @@ class Annotation(object):
             #adjust the image bounding box (relative to the region mask) to directly use area.image mask
             #image box is standard (minx, miny, maxx, maxy)
             box = np.array([ box[0] + largest.bbox[0], box[1] + largest.bbox[1], largest.bbox[3], largest.bbox[2] ])
-
-            blob.updateUsingMask(box, largest.image.astype(int))
+            try:
+                blob.updateUsingMask(box, largest.image.astype(int))
+            except:
+                pass
 
 
 

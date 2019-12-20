@@ -13,7 +13,7 @@ except:
 
 #import numpy as np
 
-def segment(img, mask, l = 0, conservative = 1):
+def segment(img, mask, l = 0, conservative = 0.1, grow = 0, radius = 30):
 	if lib is None:
 		raise Exception("Coraline library (libcoraline.so, coraline.dll) not found.")
 
@@ -27,7 +27,7 @@ def segment(img, mask, l = 0, conservative = 1):
 
 	#print(C.c_float(l), l)
 	lib.Coraline_segment(C.c_void_p(img.ctypes.data), C.c_void_p(mask.ctypes.data), C.c_int(w), C.c_int(h),
-						 C.c_float(l), C.c_float(conservative))
+						 C.c_float(l), C.c_float(conservative), C.c_float(grow), C.c_float(radius))
 
 #
 # class Coraline(object):

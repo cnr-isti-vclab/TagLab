@@ -10,16 +10,18 @@ using namespace std;
 #define CORALINE_EXPORT_C __declspec(dllexport)
 #else 
   // Unix-like Shared Object (.so) operating systems and GCC.
-#define CORALINE_EXPORT_C MATHTOOLS_EXTERN_C __attribute__ ((visibility ("default")))
+#define CORALINE_EXPORT_C __attribute__ ((visibility ("default")))
 #endif 
 
 extern "C" {
 
-	CORALINE_EXPORT_C void Coraline_segment(uchar* img, uchar* mask, int w, int h, float lambda = 0.0, float conservative = 1.0) {
+	CORALINE_EXPORT_C void Coraline_segment(uchar* img, uchar* mask, int w, int h, float lambda = 0.0, float conservative = 1.0, float grow = 0.0, float radius = 30) {
 		Coraline* coraline = new Coraline(img, mask, w, h);
 		coraline->lambda = lambda;
 		//std::cout << "Lambda:" << lambda << std::endl;
 		coraline->conservative = conservative;
+		coraline->grow = grow;
+		coraline->radius = radius;
 		uchar* segment = coraline->segment();
 		//printf("Segmented");
 		memcpy(coraline->mask, segment, (size_t)w * (size_t)h);

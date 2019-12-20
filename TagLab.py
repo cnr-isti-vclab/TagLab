@@ -124,6 +124,7 @@ class TagLab(QWidget):
         self.tool_used = "MOVE"        # tool currently used
         self.tool_orig = "MOVE"        # tool originally used when a shift key changes the current tool
         self.current_selection = None  # blob currently selected
+        self.refine_grow = 0.0
 
         ICON_SIZE = 48
         BUTTON_SIZE = 54
@@ -315,6 +316,17 @@ class TagLab(QWidget):
         self.refineAction.setShortcut(QKeySequence("R"))
         self.refineAction.setShortcutVisibleInContextMenu(True)
         self.refineAction.triggered.connect(self.refineBorder)
+
+        self.refineActionDilate = QAction("Refine Border Dilate", self)
+        self.refineActionDilate.setShortcut(QKeySequence("+"))
+        self.refineActionDilate.setShortcutVisibleInContextMenu(True)
+        self.refineActionDilate.triggered.connect(self.refineBorderDilate)
+
+        self.refineActionErode = QAction("Refine Border Erode", self)
+        self.refineActionErode.setShortcut(QKeySequence("-"))
+        self.refineActionErode.setShortcutVisibleInContextMenu(True)
+        self.refineActionErode.triggered.connect(self.refineBorderErode)
+
 
         #       in case we want a refine all selected borders
         #        refineActionAll = QAction("Refine All Borders", self)
@@ -758,6 +770,12 @@ class TagLab(QWidget):
         elif event.key() == Qt.Key_R:
             # REFINE BORDER
             self.refineBorder()
+        elif event.key() == Qt.Key_Plus:
+            # REFINE BORDER
+            self.refineBorderDilate()
+        elif event.key() == Qt.Key_Minus:
+            # REFINE BORDER
+            self.refineBorderErode()
         elif event.key() == Qt.Key_G:
             # GROUP TOGETHER THE SELECTED BLOBS
             self.group()
@@ -1521,6 +1539,18 @@ class TagLab(QWidget):
 
             self.infoWidget.setInfoMessage("You need to select <em>two</em> blobs for DIVIDE operation.")
 
+    def refineBorderDilate(self):
+        self.refine_grow = 10
+        self.refineBorder()
+        self.refine_grow = 0;
+
+
+    def refineBorderErode(self
+                          ):
+        self.refine_grow = -10
+        self.refineBorder()
+        self.refine_grow = 0;
+
     def refineBorder(self):
         """
         Refine blob border
@@ -1550,7 +1580,7 @@ class TagLab(QWidget):
             img = utils.cropQImage(self.img_map, bbox);
             try:
                 from coraline.Coraline import segment
-                segment(utils.qimageToNumpyArray(img), mask, 0.0, 1.0)
+                segment(utils.qimageToNumpyArray(img), mask, 0.0, conservative=0.1, grow=self.refine_grow, radius=30)
 
             except Exception as e:
                 msgBox = QMessageBox()
@@ -1564,6 +1594,7 @@ class TagLab(QWidget):
                 self.addBlob(blob, selected=True)
                 self.saveUndo()
             except:
+                print("FAILED!")
                 pass
 
             logfile.info("REFINE BORDER operation ends.")
@@ -1885,6 +1916,8 @@ class TagLab(QWidget):
         if self.tool_used in ["EDITBORDER", "CUT", "FREEHAND"]:
 
             logfile.info("DRAWING")
+            if len(self.edit_points) == 0:
+                return
             #check that a move didn't happen before a press
             last = self.edit_points[-1]
             #if len(self.edit_points) > 0 and last.shape[0] > 0:

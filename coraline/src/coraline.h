@@ -33,7 +33,8 @@ public:
     std::vector<float> backgeo;
 
     double lambda = 0.1; //relative weight of the regional data (from 0 to 1
-
+    double grow = 0.0;
+	
     double EPSILON = 0.00000000001;
 
     int w, h;
