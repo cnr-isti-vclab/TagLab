@@ -2237,8 +2237,13 @@ class TagLab(QWidget):
 
         if index > 0:
             blob_list = self.annotations.prev_blobs[index-1]
-            for blob in blob_list:
-                blob.qpath_gitem.setVisible(False)
+        else:
+            blob_list = self.annotations.seg_blobs
+
+        for blob in blob_list:
+            blob.qpath_gitem.setVisible(False)
+
+
 
     @pyqtSlot(int)
     def showPrevBlobs(self, index):
@@ -2248,8 +2253,11 @@ class TagLab(QWidget):
 
         if index > 0:
             blob_list = self.annotations.prev_blobs[index-1]
-            for blob in blob_list:
-                blob.qpath_gitem.setVisible(True)
+        else:
+            blob_list = self.annotations.seg_blobs
+
+        for blob in blob_list:
+            blob.qpath_gitem.setVisible(True)
 
     def load(self, filename):
         """
