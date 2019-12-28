@@ -92,16 +92,14 @@ class QtComparePanel(QWidget):
 
         index = self.visibility_buttons.index(button_clicked)
 
-        if index > 0:
-
-            if self.visibility_flags[index]:
-                button_clicked.setIcon(self.icon_eyeclosed)
-                self.visibility_flags[index] = False
-                self.hideAnnotations.emit(index)
-            else:
-                button_clicked.setIcon(self.icon_eyeopen)
-                self.visibility_flags[index] = True
-                self.showAnnotations.emit(index)
+        if self.visibility_flags[index]:
+            button_clicked.setIcon(self.icon_eyeclosed)
+            self.visibility_flags[index] = False
+            self.hideAnnotations.emit(index)
+        else:
+            button_clicked.setIcon(self.icon_eyeopen)
+            self.visibility_flags[index] = True
+            self.showAnnotations.emit(index)
 
     def setProject(self, project_name):
 
