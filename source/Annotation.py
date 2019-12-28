@@ -86,6 +86,9 @@ class Annotation(object):
         # list of all blobs
         self.seg_blobs = []
 
+        # annotations coming from previous years (for comparison, no editing is possible)
+        self.prev_blobs = []
+
         # list of all groups
         self.groups = []
 

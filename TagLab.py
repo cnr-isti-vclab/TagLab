@@ -58,6 +58,7 @@ from source.QtProgressBarCustom import QtProgressBarCustom
 from source.QtCrackWidget import QtCrackWidget
 from source.QtExportWidget import QtExportWidget
 from source.QtClassifierWidget import QtClassifierWidget
+from source.QtComparePanel import QtComparePanel
 from source.Blob import Blob
 from source.Annotation import Annotation
 from source.Labels import Labels, LabelsWidget
@@ -386,7 +387,6 @@ class TagLab(QWidget):
         ##### LAYOUT - labels + blob info + navigation map
 
         # LABELS
-
         self.labels_widget = LabelsWidget()
 
         scroll_area = QScrollArea()
@@ -400,6 +400,21 @@ class TagLab(QWidget):
         layout_groupbox = QVBoxLayout()
         layout_groupbox.addWidget(scroll_area)
         groupbox_labels.setLayout(layout_groupbox)
+
+        # COMPARE PANEL
+        self.compare_panel = QtComparePanel()
+
+        scroll_area2 = QScrollArea()
+        scroll_area2.setStyleSheet("background-color: rgb(40,40,40); border:none")
+        scroll_area2.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll_area2.setMinimumHeight(100)
+        scroll_area2.setWidget(self.compare_panel)
+
+        groupbox_comparison = QGroupBox("Compare Panel")
+
+        layout_groupbox2 = QVBoxLayout()
+        layout_groupbox2.addWidget(scroll_area2)
+        groupbox_comparison.setLayout(layout_groupbox2)
 
         # BLOB INFO
         groupbox_blobpanel = QGroupBox("Segmentation Info")
@@ -446,7 +461,6 @@ class TagLab(QWidget):
         groupbox_blobpanel.setLayout(layout_blobpanel)
 
         # INFO WIDGET
-
         self.infoWidget = QtInfoWidget(self)
 
         # MAP VIEWER
@@ -457,6 +471,7 @@ class TagLab(QWidget):
         self.mapviewer.setStyleSheet("background-color: rgb(40,40,40); border:none")
         layout_labels.addWidget(self.infoWidget)
         layout_labels.addWidget(groupbox_labels)
+        layout_labels.addWidget(groupbox_comparison)
         layout_labels.addWidget(groupbox_blobpanel)
         layout_labels.addStretch()
         layout_labels.addWidget(self.mapviewer)
@@ -501,6 +516,9 @@ class TagLab(QWidget):
 
         # EVENTS
         self.labels_widget.visibilityChanged.connect(self.updateVisibility)
+
+        self.compare_panel.hideAnnotations.connect(self.hidePrevBlobs)
+        self.compare_panel.showAnnotations.connect(self.showPrevBlobs)
 
         self.mapviewer.leftMouseButtonPressed.connect(self.updateMainView)
         self.mapviewer.mouseMoveLeftPressed.connect(self.updateMainView)
@@ -573,7 +591,7 @@ class TagLab(QWidget):
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.autosave)
-        self.timer.start(180000)  # save every 3 minute
+        self.timer.start(1800000)  # save every 3 minute
 
     @pyqtSlot()
     def autosave(self):
@@ -592,7 +610,6 @@ class TagLab(QWidget):
             }"
 
         menu.setStyleSheet(str)
-
 
         menu.addAction(self.assignAction)
         menu.addAction(self.deleteAction)
@@ -894,8 +911,14 @@ class TagLab(QWidget):
 
     def applyTransparency(self):
 
+        # current annotations
         for blob in self.annotations.seg_blobs:
             blob.qpath_gitem.setOpacity(self.transparency_value)
+
+        # annnotations coming from previous years
+        for blob_list in self.annotations.prev_blobs:
+            for blob in blob_list:
+                blob.qpath_gitem.setOpacity(self.transparency_value)
 
     @pyqtSlot()
     def updateVisibility(self):
@@ -983,12 +1006,25 @@ class TagLab(QWidget):
             del self.img_thumb_map
             self.img_thumb_map = None
 
+        self.resetSelection()
+
         if self.annotations:
+
+            for blob in self.annotations.seg_blobs:
+                self.undrawBlob(blob)
+                del blob
+
+            for blob_list in self.annotations.prev_blobs:
+                for blob in blob_list:
+                    self.undrawBlob(blob)
+                    del blob
+
             del self.annotations
+
+        # RE-INITIALIZATION
 
         self.annotations = Annotation()
 
-        # RE-INITIALIZATION
         self.mapWidget = None
         self.project_name = "NONE"
         self.map_image_filename = "map.png"
@@ -2186,6 +2222,29 @@ class TagLab(QWidget):
         exportWidget.setWindowModality(Qt.WindowModal)
         exportWidget.show()
 
+
+    @pyqtSlot(int)
+    def hidePrevBlobs(self, index):
+        """
+        Hide blobs coming from previous years.
+        """
+
+        if index > 0:
+            blob_list = self.annotations.prev_blobs[index-1]
+            for blob in blob_list:
+                blob.qpath_gitem.setVisible(False)
+
+    @pyqtSlot(int)
+    def showPrevBlobs(self, index):
+        """
+        Show blobs coming from previous years.
+        """
+
+        if index > 0:
+            blob_list = self.annotations.prev_blobs[index-1]
+            for blob in blob_list:
+                blob.qpath_gitem.setVisible(True)
+
     def load(self, filename):
         """
         Load a previously saved projects.
@@ -2201,6 +2260,8 @@ class TagLab(QWidget):
             msgBox.setText("The json project contains an error:\n {0}\n\nPlease contact us.".format(str(e)))
             msgBox.exec()
             return
+
+        self.resetAll()
 
         self.project_name = loaded_dict["Project Name"]
         self.map_image_filename = loaded_dict["Map File"]
@@ -2237,6 +2298,7 @@ class TagLab(QWidget):
 
         self.infoWidget.setInfoMessage("The given project has been successfully open.")
 
+        self.compare_panel.setProject(self.project_name)
 
     def append(self, filename):
         """
@@ -2254,18 +2316,23 @@ class TagLab(QWidget):
             msgBox.exec()
             return
 
+        self.compare_panel.addProject(filename)
+
+        blob_list = []
         for blob_dict in loaded_dict["Segmentation Data"]:
 
             blob = Blob(None, 0, 0, 0)
             blob.fromDict(blob_dict)
-            self.annotations.seg_blobs.append(blob)
+            blob_list.append(blob)
 
         f.close()
 
-        QApplication.restoreOverrideCursor()
+        self.annotations.prev_blobs.append(blob_list)
 
-        for blob in self.annotations.seg_blobs:
+        for blob in blob_list:
             self.drawBlob(blob)
+
+        QApplication.restoreOverrideCursor()
 
         self.infoWidget.setInfoMessage("The given project has been successfully open.")
 
