@@ -36,6 +36,7 @@ from models.deeplab import DeepLab
 from PyQt5.QtCore import QCoreApplication, Qt, QObject, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QPainter, QImage, QColor, QPixmap, qRgb, qRed, qGreen, qBlue
 
+from source.Labels import Labels
 from source import utils
 
 class MapClassifier(QObject):
@@ -49,44 +50,35 @@ class MapClassifier(QObject):
     # custom signal
     updateProgress = pyqtSignal(float)
 
-    def __init__(self, classifier_name, parent=None):
+    def __init__(self, classifier_info, parent=None):
         super(QObject, self).__init__(parent)
 
-        self.nclasses = 0
         self.label_colors = []
-        self.net = None
-        self.average_norm = [0.5, 0.5, 0.5]
 
-        if classifier_name == "pocillopora":
+        self.classifier_name = classifier_info['Classifier Name']
+        self.nclasses = classifier_info['Num. Classes']
+        self.label_names = classifier_info['Classes']
 
-            self.nclasses = 2
-            self.label_colors = [[240, 110, 170], [0, 0, 0]]
-            self.net = self._load_pocillopora_classifier()
-            self.average_norm = [0.4450, 0.4441, 0.4351]
+        labels_info = Labels()
+        for label_name in self.label_names:
+            color = labels_info.getColorByName(label_name)
+            self.label_colors.append(color)
 
-        elif classifier_name == "porites":
-
-            pass
-
-        elif classifier_name == "4classes":
-
-            pass
-
+        self.average_norm = classifier_info['Average Norm.']
+        self.net = self._load_classifier(classifier_info['Weights'])
 
         self.flagStopProcessing = False
         self.processing_step = 0
         self.total_processing_steps = 0
 
 
-    def _load_pocillopora_classifier(self):
-
-        modelName = "pocillopora.net"
+    def _load_classifier(self, modelName):
 
         models_dir = "models/"
 
         network_name = os.path.join(models_dir, modelName)
 
-        classifier_pocillopora = DeepLab(backbone='resnet', output_stride=16, num_classes=2)
+        classifier_pocillopora = DeepLab(backbone='resnet', output_stride=16, num_classes=self.nclasses)
         classifier_pocillopora.load_state_dict(torch.load(network_name))
 
         classifier_pocillopora.eval()

@@ -2437,9 +2437,9 @@ class TagLab(QWidget):
     @pyqtSlot()
     def applyClassifier(self):
 
-        if self.classifierWidger:
+        if self.classifierWidget:
 
-            classifier_name = self.classifierWidget.classifier_name()
+            classifier_selected = self.classifierWidget.selected()
 
             # free GPU memory
             self.resetNetworks()
@@ -2460,7 +2460,7 @@ class TagLab(QWidget):
             progress_bar.setMessage("Setup automatic classification..", False)
             QApplication.processEvents()
 
-            self.corals_classifier = MapClassifier(classifier_name)
+            self.corals_classifier = MapClassifier(classifier_selected)
             self.corals_classifier.updateProgress.connect(progress_bar.setProgress)
 
             # rescaling the map to fit the target scale of the network
@@ -2468,8 +2468,7 @@ class TagLab(QWidget):
             progress_bar.setMessage("Map rescaling..", False)
             QApplication.processEvents()
 
-            # target scale factor: 1 pixel = 0.9 mm -> 1.1111 pixel / 1mm
-            target_scale_factor = 0.9
+            target_scale_factor = classifier_selected['Scale']
             scale_factor = target_scale_factor / self.map_px_to_mm_factor
 
             w = self.img_map.width() * scale_factor

@@ -134,9 +134,9 @@ class QtClassifierWidget(QWidget):
         self.editScale.setText(str(classifier["Scale"]))
         self.editAvgColor.setText(self.avgcolor2str(classifier["Average Norm."]))
 
-    def classifier_name(self):
+    def selected(self):
 
-        return self.classifiers[self.comboClassifier.index()]['Classifier Name']
+        return self.classifiers[self.comboClassifier.currentIndex()]
 
     def classes2str(self, classes_list):
 
