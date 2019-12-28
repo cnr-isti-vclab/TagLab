@@ -677,9 +677,13 @@ class TagLab(QWidget):
         loadMapAct.setStatusTip("Set and load a map")
         loadMapAct.triggered.connect(self.setMapToLoad)
 
-        appendAct = QAction("Append Annotations", self)
+        appendAct = QAction("Append Annotations to Current", self)
         appendAct.setStatusTip("Append to this project the annotations of another project")
         appendAct.triggered.connect(self.appendAnnotations)
+
+        compareAct = QAction("Compare Annotations", self)
+        compareAct.setStatusTip("Compare the current annotations with the one of another project")
+        compareAct.triggered.connect(self.compareAnnotations)
 
         importAct = QAction("Import Label Map", self)
         importAct.setStatusTip("Import a label map")
@@ -729,6 +733,7 @@ class TagLab(QWidget):
         filemenu.addAction(loadMapAct)
         filemenu.addSeparator()
         filemenu.addAction(appendAct)
+        filemenu.addAction(compareAct)
         filemenu.addAction(importAct)
         filemenu.addSeparator()
         filemenu.addAction(exportAct)
@@ -2163,14 +2168,25 @@ class TagLab(QWidget):
 
     @pyqtSlot()
     def appendAnnotations(self):
+        """
+        Opens a previously saved project and append the annotations to the current ones.
+        """
 
         filters = "ANNOTATION PROJECT (*.json)"
-
         filename, _ = QFileDialog.getOpenFileName(self, "Open a project", self.working_dir, filters)
-
         if filename:
+            self.append(filename, append_to_current=True)
 
-            self.append(filename)
+    @pyqtSlot()
+    def compareAnnotations(self):
+        """
+        Opens a previously saved project and put the annotations into a different layer for comparison purposes.
+        """
+
+        filters = "ANNOTATION PROJECT (*.json)"
+        filename, _ = QFileDialog.getOpenFileName(self, "Open a project", self.working_dir, filters)
+        if filename:
+            self.append(filename, append_to_current=False)
 
     @pyqtSlot()
     def help(self):
@@ -2290,13 +2306,13 @@ class TagLab(QWidget):
         self.map_acquisition_date = loaded_dict["Acquisition Date"]
         self.map_px_to_mm_factor = float(loaded_dict["Map Scale"])
 
+        f.close()
+
         for blob_dict in loaded_dict["Segmentation Data"]:
 
             blob = Blob(None, 0, 0, 0)
             blob.fromDict(blob_dict)
             self.annotations.seg_blobs.append(blob)
-
-        f.close()
 
         QApplication.restoreOverrideCursor()
 
@@ -2304,17 +2320,17 @@ class TagLab(QWidget):
 
         self.setProjectTitle(self.project_name)
 
-        if self.timer is None:
-            self.activateAutosave()
-
         for blob in self.annotations.seg_blobs:
             self.drawBlob(blob)
+
+        if self.timer is None:
+            self.activateAutosave()
 
         self.infoWidget.setInfoMessage("The given project has been successfully open.")
 
         self.compare_panel.setProject(self.project_name)
 
-    def append(self, filename):
+    def append(self, filename, append_to_current):
         """
         Append the annotations of a previously saved projects.
         """
@@ -2330,25 +2346,33 @@ class TagLab(QWidget):
             msgBox.exec()
             return
 
-        self.compare_panel.addProject(filename)
-
-        blob_list = []
-        for blob_dict in loaded_dict["Segmentation Data"]:
-
-            blob = Blob(None, 0, 0, 0)
-            blob.fromDict(blob_dict)
-            blob_list.append(blob)
-
         f.close()
 
-        self.annotations.prev_blobs.append(blob_list)
+        if append_to_current:
 
-        for blob in blob_list:
-            self.drawBlob(blob, prev=True)
+            for blob_dict in loaded_dict["Segmentation Data"]:
+                blob = Blob(None, 0, 0, 0)
+                blob.fromDict(blob_dict)
+                self.annotations.seg_blobs.append(blob)
+                self.drawBlob(blob)
+        else:
+
+            self.compare_panel.addProject(filename)
+
+            blob_list = []
+            for blob_dict in loaded_dict["Segmentation Data"]:
+                blob = Blob(None, 0, 0, 0)
+                blob.fromDict(blob_dict)
+                blob_list.append(blob)
+
+            self.annotations.prev_blobs.append(blob_list)
+
+            for blob in blob_list:
+                self.drawBlob(blob, prev=True)
 
         QApplication.restoreOverrideCursor()
 
-        self.infoWidget.setInfoMessage("The given project has been successfully open.")
+        self.infoWidget.setInfoMessage("The annotations of the given project has been successfully loaded.")
 
 
     def save(self, filename):
