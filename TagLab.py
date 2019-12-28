@@ -542,6 +542,10 @@ class TagLab(QWidget):
         self.border_selected_pen = QPen(Qt.white, 3)
         self.border_selected_pen.setCosmetic(True)
 
+        self.border_pen_for_appended_blobs = QPen(Qt.black, 3)
+        self.border_pen_for_appended_blobs.setStyle(Qt.DotLine)
+        self.border_pen_for_appended_blobs.setCosmetic(True)
+
         self.CROSS_LINE_WIDTH = 6
 
         # DATA FOR THE SELECTION
@@ -1363,7 +1367,7 @@ class TagLab(QWidget):
         for blob in self.selected_blobs:
             self.drawBlob(blob, selected=True)
 
-    def drawBlob(self, blob):
+    def drawBlob(self, blob, prev=False):
         """
         Draw a blob according to the class color. If the blob is selected a white border is used.
         Note that if group_mode == True the blob is drawn in darkGray
@@ -1378,7 +1382,11 @@ class TagLab(QWidget):
 
         blob.setupForDrawing()
 
-        pen = self.border_selected_pen if blob in self.selected_blobs else self.border_pen
+        if prev is True:
+            pen = self.border_pen_for_appended_blobs
+        else:
+            pen = self.border_selected_pen if blob in self.selected_blobs else self.border_pen
+
         brush = self.classBrushFromName(blob)
 
         blob.qpath_gitem = self.viewerplus.scene.addPath(blob.qpath, pen, brush)
@@ -1990,8 +1998,6 @@ class TagLab(QWidget):
 
         logfile.info("CREATECRACK creates a crack.")
 
-        #self.drawBlob(self.selected_blobs[0], selected=True)
-
         self.resetCrackTool()
 
     def computeMeasure(self):
@@ -2330,7 +2336,7 @@ class TagLab(QWidget):
         self.annotations.prev_blobs.append(blob_list)
 
         for blob in blob_list:
-            self.drawBlob(blob)
+            self.drawBlob(blob, prev=True)
 
         QApplication.restoreOverrideCursor()
 
