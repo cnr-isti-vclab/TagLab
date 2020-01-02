@@ -36,7 +36,6 @@ from models.deeplab import DeepLab
 from PyQt5.QtCore import QCoreApplication, Qt, QObject, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QPainter, QImage, QColor, QPixmap, qRgb, qRed, qGreen, qBlue
 
-from source.Labels import Labels
 from source import utils
 
 class MapClassifier(QObject):
@@ -50,7 +49,7 @@ class MapClassifier(QObject):
     # custom signal
     updateProgress = pyqtSignal(float)
 
-    def __init__(self, classifier_info, parent=None):
+    def __init__(self, classifier_info, labels_info, parent=None):
         super(QObject, self).__init__(parent)
 
         self.label_colors = []
@@ -59,7 +58,6 @@ class MapClassifier(QObject):
         self.nclasses = classifier_info['Num. Classes']
         self.label_names = classifier_info['Classes']
 
-        labels_info = Labels()
         for label_name in self.label_names:
             color = labels_info.getColorByName(label_name)
             self.label_colors.append(color)

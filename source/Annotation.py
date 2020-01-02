@@ -27,7 +27,6 @@ from PyQt5.QtCore import Qt
 from skimage.draw import polygon_perimeter
 
 from source import utils
-from source.Labels import Labels
 
 import pandas as pd
 from scipy import ndimage as ndi
@@ -346,7 +345,7 @@ class Annotation(object):
     ###########################################################################
     ### IMPORT / EXPORT
 
-    def import_label_map(self, filename, reference_map):
+    def import_label_map(self, filename, reference_map, labels_info):
         """
         It imports a label map and create the corresponding blobs.
         The label map is rescaled such that it coincides with the reference map.
@@ -367,8 +366,6 @@ class Annotation(object):
 
         labels = measure.label(label_coded, connectivity=1)
 
-        label_info = Labels()
-
         too_much_small_area = 10
         region_big = None
 
@@ -383,14 +380,14 @@ class Annotation(object):
                 col = region.coords[0,1]
                 color = label_map[row, col]
 
-                index = label_info.searchColor(color)
+                for label_name in labels_info.keys():
+                    c = labels_info[label_name]
+                    if c[0] == color[0] and c[1] == color[1] and c[2] == color[2]:
+                        blob.class_name = label_name
+                        blob.class_color = c
+                        break
 
-                if index >= 0:
-
-                    blob.class_name = label_info.getClassName(index)
-                    blob.class_color = label_info.getColorByIndex(index)
-
-                    created_blobs.append(blob)
+                created_blobs.append(blob)
 
         return created_blobs
 
