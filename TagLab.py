@@ -53,6 +53,7 @@ from models.dataloaders import helpers as helpers
 from source.QtImageViewerPlus import QtImageViewerPlus
 from source.QtMapViewer import QtMapViewer
 from source.QtMapSettingsWidget import QtMapSettingsWidget
+from source.QtLabelsWidget import QtLabelsWidget
 from source.QtInfoWidget import QtInfoWidget
 from source.QtProgressBarCustom import QtProgressBarCustom
 from source.QtCrackWidget import QtCrackWidget
@@ -61,7 +62,6 @@ from source.QtClassifierWidget import QtClassifierWidget
 from source.QtComparePanel import QtComparePanel
 from source.Blob import Blob
 from source.Annotation import Annotation
-from source.Labels import Labels, LabelsWidget
 from source.MapClassifier import MapClassifier
 from source import utils
 
@@ -91,6 +91,7 @@ class TagLab(QWidget):
         f = open("config.json", "r")
         config_dict = json.load(f)
         self.available_classifiers = config_dict["Available Classifiers"]
+        self.labels = config_dict["Labels"]
 
         logfile.info("Initizialization begins..")
 
@@ -387,7 +388,7 @@ class TagLab(QWidget):
         ##### LAYOUT - labels + blob info + navigation map
 
         # LABELS
-        self.labels_widget = LabelsWidget()
+        self.labels_widget = QtLabelsWidget(self.labels)
 
         scroll_area = QScrollArea()
         scroll_area.setStyleSheet("background-color: rgb(40,40,40); border:none")
@@ -1401,7 +1402,7 @@ class TagLab(QWidget):
         brush = QBrush()
 
         if not blob.class_name == "Empty":
-            color = self.labels_widget.labels.getColorByName(blob.class_name)
+            color = self.labels[blob.class_name]
             brush = QBrush(QColor(color[0], color[1], color[2], 200))
         return brush
 
@@ -1683,7 +1684,7 @@ class TagLab(QWidget):
 
         self.undo_operation['class'].append((blob, blob.class_name))
         blob.class_name = class_name
-        blob.class_color = self.labels_widget.labels.getColorByName(blob.class_name)
+        blob.class_color = self.labels[blob.class_name]
 
         brush = self.classBrushFromName(blob)
         blob.qpath_gitem.setBrush(brush)
@@ -2233,7 +2234,7 @@ class TagLab(QWidget):
 
         filters = "Image (*.png *.jpg)"
         filename, _ = QFileDialog.getOpenFileName(self, "Input Map File", "", filters)
-        created_blobs = self.annotations.import_label_map(filename, self.img_map)
+        created_blobs = self.annotations.import_label_map(filename, self.img_map, self.labels)
         for blob in created_blobs:
             self.addBlob(blob, selected=False)
 
@@ -2460,7 +2461,7 @@ class TagLab(QWidget):
             progress_bar.setMessage("Setup automatic classification..", False)
             QApplication.processEvents()
 
-            self.corals_classifier = MapClassifier(classifier_selected)
+            self.corals_classifier = MapClassifier(classifier_selected, self.labels)
             self.corals_classifier.updateProgress.connect(progress_bar.setProgress)
 
             # rescaling the map to fit the target scale of the network
