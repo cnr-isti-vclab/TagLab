@@ -1033,7 +1033,7 @@ class TagLab(QWidget):
 
         # RE-INITIALIZATION
 
-        self.annotations = Annotation()
+        self.annotations = Annotation(self.labels)
 
         self.mapWidget = None
         self.project_name = "NONE"

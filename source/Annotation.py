@@ -458,8 +458,11 @@ class Annotation(object):
 
             if blob.qpath_gitem.isVisible():
 
-                class_color = self.labels_info[blob.class_name]
-                rgb = qRgb(class_color[0], class_color[1], class_color[2])
+                if blob.class_name == "Empty":
+                    rgb = qRgb(255, 255, 255)
+                else:
+                    class_color = self.labels_info[blob.class_name]
+                    rgb = qRgb(class_color[0], class_color[1], class_color[2])
 
                 blob_mask = blob.getMask()
                 for x in range(blob_mask.shape[1]):
