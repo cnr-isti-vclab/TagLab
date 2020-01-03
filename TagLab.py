@@ -110,7 +110,7 @@ class TagLab(QWidget):
         self.maxRecentFiles = 4
 
         # ANNOTATION DATA
-        self.annotations = Annotation()
+        self.annotations = Annotation(self.labels)
         self.undo_operations = []
         """Temporary variable to hold the added and removed of the last operation."""
         self.undo_operation =  { "remove":[], "add":[], "class":[] }

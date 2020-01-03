@@ -80,7 +80,7 @@ class Annotation(object):
         Annotation object contains all the annotations as a list of blobs.
     """
 
-    def __init__(self):
+    def __init__(self, labels_info):
 
         # list of all blobs
         self.seg_blobs = []
@@ -90,6 +90,9 @@ class Annotation(object):
 
         # list of all groups
         self.groups = []
+
+        # labels info
+        self.labels_info = labels_info
 
     def addGroup(self, blobs):
 
@@ -366,7 +369,7 @@ class Annotation(object):
 
         labels = measure.label(label_coded, connectivity=1)
 
-        too_much_small_area = 10
+        too_much_small_area = 1000
         region_big = None
 
         created_blobs = []
@@ -455,10 +458,8 @@ class Annotation(object):
 
             if blob.qpath_gitem.isVisible():
 
-                if blob.class_color == "Empty":
-                    rgb = qRgb(255, 255, 255)
-                else:
-                    rgb = qRgb(blob.class_color[0], blob.class_color[1], blob.class_color[2])
+                class_color = self.labels_info[blob.class_name]
+                rgb = qRgb(class_color[0], class_color[1], class_color[2])
 
                 blob_mask = blob.getMask()
                 for x in range(blob_mask.shape[1]):
