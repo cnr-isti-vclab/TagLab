@@ -218,8 +218,8 @@ class QtLabelsWidget(QWidget):
 
     def isClassVisible(self, class_name):
 
-        for label_name in self.labels.keys():
-            if label_name == class_name:
+        for i in range(len(self.lblClass)):
+            if self.lblClass[i].label_text == class_name:
                 return self.visibility_flags[i]
 
         return False
