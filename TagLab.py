@@ -57,7 +57,7 @@ from source.QtLabelsWidget import QtLabelsWidget
 from source.QtInfoWidget import QtInfoWidget
 from source.QtProgressBarCustom import QtProgressBarCustom
 from source.QtCrackWidget import QtCrackWidget
-from source.QtExportWidget import QtExportWidget
+from source.QtHistogramWidget import QtHistogramWidget
 from source.QtClassifierWidget import QtClassifierWidget
 from source.QtComparePanel import QtComparePanel
 from source.Blob import Blob
@@ -85,6 +85,8 @@ class TagLab(QWidget):
         self.setStyleSheet("background-color: rgb(55,55,55); color: white")
 
         ##### DATA INITIALIZATION AND SETUP #####
+
+        self.TAGLAB_VERSION = "TagLab 0.2"
 
         # LOAD CONFIGURATION FILE
 
@@ -678,6 +680,8 @@ class TagLab(QWidget):
         loadMapAct.setStatusTip("Set and load a map")
         loadMapAct.triggered.connect(self.setMapToLoad)
 
+        ### IMPORT
+
         appendAct = QAction("Append Annotations to Current", self)
         appendAct.setStatusTip("Append to this project the annotations of another project")
         appendAct.triggered.connect(self.appendAnnotations)
@@ -690,10 +694,39 @@ class TagLab(QWidget):
         importAct.setStatusTip("Import a label map")
         importAct.triggered.connect(self.importLabelMap)
 
-        exportAct = QAction("Export Data", self)
-        #exportAct.setShortcut('Ctrl+Q')
-        exportAct.setStatusTip("Export data derived from annotations")
-        exportAct.triggered.connect(self.exportData)
+
+        ### EXPORT
+
+        # la tabella
+        # la mappa
+        # shapefile(!) - gestione delle coordinate - geopy e pyhsp
+        # statistics - istogrammi, e...?
+        # training dataset
+
+        exportDataTableAct = QAction("Export Annotations as Data Table", self)
+        #exportDataTableAct.setShortcut('Ctrl+??')
+        exportDataTableAct.setStatusTip("Export current annotations as CSV table")
+        exportDataTableAct.triggered.connect(self.exportAnnAsDataTable)
+
+        exportMapAct = QAction("Export Annotations as Map", self)
+        #exportMapAct.setShortcut('Ctrl+??')
+        exportMapAct.setStatusTip("Export current annotations as a map")
+        exportMapAct.triggered.connect(self.exportAnnAsMap)
+
+        exportHistogramAct = QAction("Export Histograms", self)
+        # exportHistogramAct.setShortcut('Ctrl+??')
+        exportHistogramAct.setStatusTip("Export histograms of current annotations")
+        exportHistogramAct.triggered.connect(self.exportHistogramFromAnn)
+
+        exportShapefilesAct = QAction("Export as Shapefiles", self)
+        # exportShapefilesAct.setShortcut('Ctrl+??')
+        exportShapefilesAct.setStatusTip("Export current annotations as shapefiles")
+        exportShapefilesAct.triggered.connect(self.exportAnnAsShapefiles)
+
+        exportTrainingDatasetAct = QAction("Export New Training Dataset", self)
+        #exportTrainingDatasetAct.setShortcut('Ctrl+??')
+        exportTrainingDatasetAct.setStatusTip("Export a new training dataset based on the current annotations")
+        exportTrainingDatasetAct.triggered.connect(self.exportAnnAsTrainingDataset)
 
         undoAct = QAction("Undo", self)
         undoAct.setShortcut('Ctrl+Z')
@@ -733,11 +766,17 @@ class TagLab(QWidget):
         filemenu.addSeparator()
         filemenu.addAction(loadMapAct)
         filemenu.addSeparator()
-        filemenu.addAction(appendAct)
-        filemenu.addAction(compareAct)
-        filemenu.addAction(importAct)
+        submenuImport = filemenu.addMenu("Import")
+        submenuImport.addAction(appendAct)
+        submenuImport.addAction(compareAct)
+        submenuImport.addAction(importAct)
         filemenu.addSeparator()
-        filemenu.addAction(exportAct)
+        submenuExport = filemenu.addMenu("Export")
+        submenuExport.addAction(exportDataTableAct)
+        submenuExport.addAction(exportMapAct)
+        submenuExport.addAction(exportShapefilesAct)
+        submenuExport.addAction(exportHistogramAct)
+        submenuExport.addAction(exportTrainingDatasetAct)
 
         editmenu = menubar.addMenu("&Edit")
         editmenu.addAction(undoAct)
@@ -2160,7 +2199,6 @@ class TagLab(QWidget):
     def saveProject(self):
 
         filters = "ANNOTATION PROJECT (*.json)"
-
         filename, _ = QFileDialog.getSaveFileName(self, "Save the project", self.working_dir, filters)
 
         if filename:
@@ -2239,11 +2277,59 @@ class TagLab(QWidget):
             self.addBlob(blob, selected=False)
 
     @pyqtSlot()
-    def exportData(self):
+    def exportAnnAsDataTable(self):
 
-        exportWidget = QtExportWidget(self.img_map, self.annotations, parent=self)
-        exportWidget.setWindowModality(Qt.WindowModal)
-        exportWidget.show()
+        filters = "CSV (*.csv) ;; All Files (*)"
+        filename, _ = QFileDialog.getSaveFileName(self, "Output file", "", filters)
+
+        if filename:
+
+            self.annotations.export_data_table_for_Scripps(filename)
+
+            msgBox = QMessageBox(self)
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("Data table exported successfully!")
+            msgBox.exec()
+            return
+
+    @pyqtSlot()
+    def exportAnnAsMap(self):
+
+        filters = "PNG (*.png) ;; All Files (*)"
+        filename, _ = QFileDialog.getSaveFileName(self, "Output file", "", filters)
+
+        if filename:
+
+            self.annotations.export_image_data_for_Scripps(self.img_map, filename)
+
+            msgBox = QMessageBox(self)
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("Map exported successfully!")
+            msgBox.exec()
+            return
+
+
+    @pyqtSlot()
+    def exportHistogramFromAnn(self):
+
+        histo_widget = QtHistogramWidget(self.annotations, self)
+        histo_widget.setWindowModality(Qt.WindowModal)
+        histo_widget.show()
+
+    @pyqtSlot()
+    def exportAnnAsShapefiles(self):
+
+        pass
+
+    @pyqtSlot()
+    def exportAnnAsTrainingDataset(self):
+
+        folderName = QFileDialog.getExistingDirectory(self, "Choose Export Folder", "")
+
+        if folderName:
+
+            self.annotations.export_new_dataset(self.img_map, tile_size=1024, step=256, basename="tile")
+
 
 
     @pyqtSlot(int)
