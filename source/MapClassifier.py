@@ -58,8 +58,13 @@ class MapClassifier(QObject):
         self.nclasses = classifier_info['Num. Classes']
         self.label_names = classifier_info['Classes']
 
-        for label_name in labels_info.keys():
-            color = labels_info[label_name]
+        for label_name in self.label_names:
+
+            if label_name == "Background":
+                color = [0, 0, 0]
+            else:
+                color = labels_info[label_name]
+
             self.label_colors.append(color)
 
         self.average_norm = classifier_info['Average Norm.']
