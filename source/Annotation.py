@@ -348,7 +348,7 @@ class Annotation(object):
     ###########################################################################
     ### IMPORT / EXPORT
 
-    def import_label_map(self, filename, reference_map, labels_info):
+    def import_label_map(self, filename, reference_map):
         """
         It imports a label map and create the corresponding blobs.
         The label map is rescaled such that it coincides with the reference map.
@@ -379,12 +379,12 @@ class Annotation(object):
                 blob = Blob(region, 0, 0, id+1)
 
                 # assign class
-                row = region.coords[0,0]
-                col = region.coords[0,1]
+                row = region.coords[0, 0]
+                col = region.coords[0, 1]
                 color = label_map[row, col]
 
-                for label_name in labels_info.keys():
-                    c = labels_info[label_name]
+                for label_name in self.labels_info.keys():
+                    c = self.labels_info[label_name]
                     if c[0] == color[0] and c[1] == color[1] and c[2] == color[2]:
                         blob.class_name = label_name
                         blob.class_color = c
