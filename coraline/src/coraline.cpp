@@ -45,8 +45,7 @@ uchar *Coraline::rgbToMask(uchar *rgbmask, int w, int h) {
 		uchar b = rgbmask[i*3+2];
 		if(r == 0 && g == 0 && b == 0) {
 			mask[i] = 0;
-		} else if(r == 255 && g == 255 && b == 255) {
-		//} else if(r == 213 && g == 165 && b == 0) {
+		} else if((r == 255 && g == 255 && b == 255) || (r == 213 && g == 165 && b == 0)) {
 			mask[i] = 1;
 		} else {
 			mask[i] = 0;
@@ -225,9 +224,11 @@ double Coraline::gradient(int a, int b) { //}, double color1[3], double color2[3
 	double diff = 0.0;
 	
 	for(int i = 0; i < 3; i++)
-		diff += pow((img[a*3+ i] - img[b*3+i])/255.0, 2);
-	//double weight = std::max(EPSILON, exp(-diff*10));
-	double weight = std::max(EPSILON, exp(-sqrt(diff)*10));
+		diff += pow(((double)img[a*3+ i] - (double)img[b*3+i])/255.0, 2);
+	//if(diff < 0.0000001) return EPSILON;
+	diff = sqrt(diff);
+	double weight = std::max(EPSILON, exp(-diff*25));
+	//double weight = std::max(EPSILON, exp(-sqrt(diff)*10));
 	
 	return weight;
 }

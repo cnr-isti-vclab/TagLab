@@ -1675,7 +1675,7 @@ class TagLab(QWidget):
             img = utils.cropQImage(self.img_map, bbox);
             try:
                 from coraline.Coraline import segment
-                segment(utils.qimageToNumpyArray(img), mask, 0.0, conservative=0.1, grow=self.refine_grow, radius=30)
+                segment(utils.qimageToNumpyArray(img), mask, 0.0, conservative=0.05, grow=self.refine_grow, radius=30)
 
             except Exception as e:
                 msgBox = QMessageBox()

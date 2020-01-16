@@ -296,7 +296,7 @@ int main(int argc, char *argv[]) {
 	
 	drawBorder(rgb, mask, w, h, 0xffffff);
 	
-	unsigned char *ctest = new unsigned char[w*h*3];
+	/*unsigned char *ctest = new unsigned char[w*h*3];
 	for(int i = 0; i < w*h; i++) {
 		ctest[i*3] = ctest[i*3+1] = ctest[i*3+2] = Coraline.foreprob[i]*255;//seg[i]*64;
 	}
@@ -306,7 +306,7 @@ int main(int argc, char *argv[]) {
 		ctest[i*3] = ctest[i*3+1] = ctest[i*3+2] = Coraline.backprob[i]*255;//seg[i]*64;
 	}
 	saveSimplePPM(ctest, w, h, string("back.ppm")); 
-	delete []ctest;
+	delete []ctest; */
 	
 	delete []mask;
 	

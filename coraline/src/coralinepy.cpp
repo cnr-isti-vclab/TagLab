@@ -18,7 +18,6 @@ extern "C" {
 	CORALINE_EXPORT_C void Coraline_segment(uchar* img, uchar* mask, int w, int h, float lambda = 0.0, float conservative = 1.0, float grow = 0.0, float radius = 30) {
 		Coraline* coraline = new Coraline(img, mask, w, h);
 		coraline->lambda = lambda;
-		//std::cout << "Lambda:" << lambda << std::endl;
 		coraline->conservative = conservative;
 		coraline->grow = grow;
 		coraline->radius = radius;
