@@ -130,216 +130,32 @@ class TagLab(QWidget):
         self.current_selection = None  # blob currently selected
         self.refine_grow = 0.0
 
-        ICON_SIZE = 48
-        BUTTON_SIZE = 54
 
         ##### TOP LAYOUT
 
         ##### LAYOUT EDITING TOOLS (VERTICAL)
 
-        flatbuttonstyle1 = "\
-        QPushButton:checked\
-        {\
-            background-color: rgb(100,100,100);\
-        }\
-        QPushButton:hover\
-        {\
-            border: 1px solid darkgray;\
-        }"
+        flatbuttonstyle1 = """
+        QPushButton:checked { background-color: rgb(100,100,100); }
+        QPushButton:hover   { border: 1px solid darkgray;         }"""
 
-        flatbuttonstyle2 = "\
-        QPushButton:checked\
-        {\
-            background-color: rgb(100,100,100);\
-        }\
-        QPushButton:hover\
-        {\
-            border: 1px solid rgb(255,100,100);\
-        }"
+        flatbuttonstyle2 = """
+        QPushButton:checked { background-color: rgb(100,100,100); }
+        QPushButton:hover   { border: 1px solid rgb(255,100,100); }"""
+
+
+        self.btnMove        = self.newButton("move.png",     "Move",                  flatbuttonstyle1, self.move)
+        self.btnAssign      = self.newButton("bucket.png",   "Assign class",          flatbuttonstyle1, self.assign)
+        self.btnEditBorder  = self.newButton("edit.png",     "Edit border",           flatbuttonstyle1, self.editBorder)
+        self.btnCut         = self.newButton("scissors.png", "Cut Segmentation",      flatbuttonstyle1, self.cut)
+        self.btnFreehand    = self.newButton("pencil.png",   "Freehand segmentation", flatbuttonstyle1, self.freehandSegmentation)
+        self.btnCreateCrack = self.newButton("crack.png",    "Create crack",          flatbuttonstyle1, self.createCrack)
+        self.btnSplitBlob   = self.newButton("split.png",    "Split Blob",            flatbuttonstyle1, self.splitBlob)
+        self.btnRuler       = self.newButton("ruler.png",    "Measure tool",          flatbuttonstyle1, self.ruler)
+        self.btnDeepExtreme = self.newButton("dexter.png",   "4-click segmentation",  flatbuttonstyle2, self.deepExtreme)
+        self.btnAutoClassification = self.newButton("auto.png", "Fully automatic classification", flatbuttonstyle2, self.selectClassifier)
 
         layout_tools = QVBoxLayout()
-
-        self.btnMove = QPushButton()
-        self.btnMove.setEnabled(True)
-        self.btnMove.setCheckable(True)
-        self.btnMove.setFlat(True)
-        self.btnMove.setStyleSheet(flatbuttonstyle1)
-        self.btnMove.setMinimumWidth(ICON_SIZE)
-        self.btnMove.setMinimumHeight(ICON_SIZE)
-        self.btnMove.setIcon(QIcon(os.path.join("icons","move.png")))
-        self.btnMove.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
-        self.btnMove.setMaximumWidth(BUTTON_SIZE)
-        self.btnMove.setToolTip("Move")
-        self.btnMove.clicked.connect(self.move)
-
-        self.btnAssign = QPushButton()
-        self.btnAssign.setEnabled(True)
-        self.btnAssign.setCheckable(True)
-        self.btnAssign.setFlat(True)
-        self.btnAssign.setStyleSheet(flatbuttonstyle1)
-        self.btnAssign.setMinimumWidth(ICON_SIZE)
-        self.btnAssign.setMinimumHeight(ICON_SIZE)
-        self.btnAssign.setIcon(QIcon(os.path.join("icons","bucket.png")))
-        self.btnAssign.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
-        self.btnAssign.setMaximumWidth(BUTTON_SIZE)
-        self.btnAssign.setToolTip("Assign class")
-        self.btnAssign.clicked.connect(self.assign)
-
-        self.btnEditBorder = QPushButton()
-        self.btnEditBorder.setEnabled(True)
-        self.btnEditBorder.setCheckable(True)
-        self.btnEditBorder.setFlat(True)
-        self.btnEditBorder.setStyleSheet(flatbuttonstyle1)
-        self.btnEditBorder.setMinimumWidth(ICON_SIZE)
-        self.btnEditBorder.setMinimumHeight(ICON_SIZE)
-        self.btnEditBorder.setIcon(QIcon(os.path.join("icons","edit.png")))
-        self.btnEditBorder.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
-        self.btnEditBorder.setMaximumWidth(BUTTON_SIZE)
-        self.btnEditBorder.setToolTip("Edit border")
-        self.btnEditBorder.clicked.connect(self.editBorder)
-
-        self.btnCut = QPushButton()
-        self.btnCut.setEnabled(True)
-        self.btnCut.setCheckable(True)
-        self.btnCut.setFlat(True)
-        self.btnCut.setStyleSheet(flatbuttonstyle1)
-        self.btnCut.setMinimumWidth(ICON_SIZE)
-        self.btnCut.setMinimumHeight(ICON_SIZE)
-        self.btnCut.setIcon(QIcon(os.path.join("icons", "scissors.png")))
-        self.btnCut.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
-        self.btnCut.setMaximumWidth(BUTTON_SIZE)
-        self.btnCut.setToolTip("Cut Segmentation")
-        self.btnCut.clicked.connect(self.cut)
-
-        self.btnFreehand = QPushButton()
-        self.btnFreehand.setEnabled(True)
-        self.btnFreehand.setCheckable(True)
-        self.btnFreehand.setFlat(True)
-        self.btnFreehand.setStyleSheet(flatbuttonstyle1)
-        self.btnFreehand.setMinimumWidth(ICON_SIZE)
-        self.btnFreehand.setMinimumHeight(ICON_SIZE)
-        self.btnFreehand.setIcon(QIcon(os.path.join("icons","pencil.png")))
-        self.btnFreehand.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
-        self.btnFreehand.setMaximumWidth(BUTTON_SIZE)
-        self.btnFreehand.setToolTip("Freehand segmentation")
-        self.btnFreehand.clicked.connect(self.freehandSegmentation)
-
-        self.btnCreateCrack = QPushButton()
-        self.btnCreateCrack.setEnabled(True)
-        self.btnCreateCrack.setCheckable(True)
-        self.btnCreateCrack.setFlat(True)
-        self.btnCreateCrack.setStyleSheet(flatbuttonstyle1)
-        self.btnCreateCrack.setMinimumWidth(ICON_SIZE)
-        self.btnCreateCrack.setMinimumHeight(ICON_SIZE)
-        self.btnCreateCrack.setIcon(QIcon(os.path.join("icons","crack.png")))
-        self.btnCreateCrack.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
-        self.btnCreateCrack.setMaximumWidth(BUTTON_SIZE)
-        self.btnCreateCrack.setToolTip("Create crack")
-        self.btnCreateCrack.clicked.connect(self.createCrack)
-
-        self.btnSplitBlob = QPushButton()
-        self.btnSplitBlob.setEnabled(True)
-        self.btnSplitBlob.setCheckable(True)
-        self.btnSplitBlob.setFlat(True)
-        self.btnSplitBlob.setStyleSheet(flatbuttonstyle1)
-        self.btnSplitBlob.setMinimumWidth(ICON_SIZE)
-        self.btnSplitBlob.setMinimumHeight(ICON_SIZE)
-        self.btnSplitBlob.setIcon(QIcon(os.path.join("icons", "split.png")))
-        self.btnSplitBlob.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
-        self.btnSplitBlob.setMaximumWidth(BUTTON_SIZE)
-        self.btnSplitBlob.setToolTip("Split Blob")
-        self.btnSplitBlob.clicked.connect(self.splitBlob)
-
-        self.btnRuler = QPushButton()
-        self.btnRuler.setEnabled(True)
-        self.btnRuler.setCheckable(True)
-        self.btnRuler.setFlat(True)
-        self.btnRuler.setStyleSheet(flatbuttonstyle1)
-        self.btnRuler.setMinimumWidth(ICON_SIZE)
-        self.btnRuler.setMinimumHeight(ICON_SIZE)
-        self.btnRuler.setIcon(QIcon(os.path.join("icons","ruler.png")))
-        self.btnRuler.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
-        self.btnRuler.setMaximumWidth(BUTTON_SIZE)
-        self.btnRuler.setToolTip("Measure tool")
-        self.btnRuler.clicked.connect(self.ruler)
-
-
-
-        self.btnDeepExtreme = QPushButton()
-        self.btnDeepExtreme.setEnabled(True)
-        self.btnDeepExtreme.setCheckable(True)
-        self.btnDeepExtreme.setFlat(True)
-        self.btnDeepExtreme.setStyleSheet(flatbuttonstyle2)
-        self.btnDeepExtreme.setMinimumWidth(ICON_SIZE)
-        self.btnDeepExtreme.setMinimumHeight(ICON_SIZE)
-        self.btnDeepExtreme.setIcon(QIcon(os.path.join("icons", "dexter.png")))
-        self.btnDeepExtreme.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
-        self.btnDeepExtreme.setMaximumWidth(BUTTON_SIZE)
-        self.btnDeepExtreme.setToolTip("4-click segmentation")
-        self.btnDeepExtreme.clicked.connect(self.deepExtreme)
-
-        self.btnAutoClassification = QPushButton()
-        self.btnAutoClassification.setEnabled(True)
-        self.btnAutoClassification.setCheckable(True)
-        self.btnAutoClassification.setFlat(True)
-        self.btnAutoClassification.setStyleSheet(flatbuttonstyle2)
-        self.btnAutoClassification.setMinimumWidth(ICON_SIZE)
-        self.btnAutoClassification.setMinimumHeight(ICON_SIZE)
-        self.btnAutoClassification.setIcon(QIcon(os.path.join("icons", "auto.png")))
-        self.btnAutoClassification.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
-        self.btnAutoClassification.setMaximumWidth(BUTTON_SIZE)
-        self.btnAutoClassification.setToolTip("Fully automatic classification")
-        self.btnAutoClassification.clicked.connect(self.selectClassifier)
-
-        self.assignAction = QAction("Assign Class", self)
-        self.assignAction.setShortcut(QKeySequence("A"))
-        self.assignAction.setShortcutVisibleInContextMenu(True)
-        self.assignAction.triggered.connect(self.assign)
-
-        self.deleteAction = QAction("Delete Labels", self)
-        self.deleteAction.setShortcut(QKeySequence("Del"))
-        self.deleteAction.setShortcutVisibleInContextMenu(True)
-        self.deleteAction.triggered.connect(self.deleteSelected)
-
-        self.mergeAction = QAction("Merge Overlapped Labels", self)
-        self.mergeAction.setShortcuts(QKeySequence("M"))
-        self.mergeAction.setShortcutVisibleInContextMenu(True)
-        self.mergeAction.triggered.connect(self.union)
-
-        self.divideAction = QAction("Divide Labels", self)
-        self.divideAction.setShortcut(QKeySequence("D"))
-        self.divideAction.setShortcutVisibleInContextMenu(True)
-        self.divideAction.triggered.connect(self.divide)
-
-        self.subtractAction = QAction("Subtract Labels", self)
-        self.subtractAction.setShortcut(QKeySequence("S"))
-        self.subtractAction.setShortcutVisibleInContextMenu(True)
-        self.subtractAction.triggered.connect(self.subtract)
-
-        self.refineAction = QAction("Refine Border", self)
-        self.refineAction.setShortcut(QKeySequence("R"))
-        self.refineAction.setShortcutVisibleInContextMenu(True)
-        self.refineAction.triggered.connect(self.refineBorder)
-
-        self.refineActionDilate = QAction("Refine Border Dilate", self)
-        self.refineActionDilate.setShortcut(QKeySequence("+"))
-        self.refineActionDilate.setShortcutVisibleInContextMenu(True)
-        self.refineActionDilate.triggered.connect(self.refineBorderDilate)
-
-        self.refineActionErode = QAction("Refine Border Erode", self)
-        self.refineActionErode.setShortcut(QKeySequence("-"))
-        self.refineActionErode.setShortcutVisibleInContextMenu(True)
-        self.refineActionErode.triggered.connect(self.refineBorderErode)
-
-
-        #       in case we want a refine all selected borders
-        #        refineActionAll = QAction("Refine All Borders", self)
-        #        refineActionAll.setShortcut(QKeySequence("^"))
-        #        refineActionAll.setShortcutVisibleInContextMenu(True)
-        #        menu.addAction(refineActionAll)
-        #            self.refineAllBorders()
-
-
         layout_tools.setSpacing(0)
         layout_tools.addWidget(self.btnMove)
         layout_tools.addWidget(self.btnAssign)
@@ -352,8 +168,26 @@ class TagLab(QWidget):
         layout_tools.addSpacing(10)
         layout_tools.addWidget(self.btnDeepExtreme)
         layout_tools.addWidget(self.btnAutoClassification)
-
         layout_tools.addStretch()
+
+        #CONTEXT MENU ACTIONS
+
+        self.assignAction       = self.newAction("Assign Class",            "A",   self.assign)
+        self.deleteAction       = self.newAction("Delete Labels",           "Del", self.deleteSelectedBlobs)
+        self.mergeAction        = self.newAction("Merge Overlapped Labels", "M",   self.union)
+        self.divideAction       = self.newAction("Divide Labels",           "D",   self.divide)
+        self.subtractAction     = self.newAction("Subtract Labels",         "S",   self.subtract)
+        self.refineAction       = self.newAction("Refine Border",           "R",   self.refineBorder)
+        self.refineActionDilate = self.newAction("Refine Border Dilate",    "+",   self.refineBorderDilate)
+        self.refineActionErode  = self.newAction("Refine Border Erode",     "-",   self.refineBorderErode)
+
+        #       in case we want a refine all selected borders
+        #        refineActionAll = QAction("Refine All Borders", self)
+        #        refineActionAll.setShortcut(QKeySequence("^"))
+        #        refineActionAll.setShortcutVisibleInContextMenu(True)
+        #        menu.addAction(refineActionAll)
+        #            self.refineAllBorders()
+
 
 
         ###### LAYOUT MAIN VIEW
@@ -555,28 +389,21 @@ class TagLab(QWidget):
         self.selected_blobs = []
         self.MAX_SELECTED = 5 # maximum number of selected blobs
 
-        # DATA FOR THE EDITBORDER , CUT and FREEHAND TOOL
+        # DATA FOR THE EDITBORDER , CUT and FREEHAND TOOLS
         self.edit_points = []
         self.edit_qpath_gitem = None
 
         # DATA FOR THE CREATECRACK TOOL
         self.crackWidget = None
 
-        # DATA FOR THE RULER TOOL
-        self.ruler_points_number = 0
-        self.ruler_points = np.zeros((2, 2))
-        self.ruler_lines = []
-        self.ruler_text_gi = None
+        # DATA FOR THE RULER, DEEP EXTREME and SPLIT TOOLS
+        self.pick_points_number = 0
+        self.pick_points = []
+        self.pick_markers = []
 
-        # DATA FOR THE DEEP EXTREME TOOL
-        self.extreme_points_number = 0
-        self.extreme_points = np.zeros((4, 2))
-        self.extreme_points_lines = []
-
-        # DATA FOR THE SPLIT BLOB TOOL
-        self.seeds_points_number = 0
-        self.seeds_points = []
-        self.seeds_points_lines = []
+        self.split_pick_style   = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.cyan, 'size': 12}
+        self.ruler_pick_style   = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.cyan, 'size': 12}
+        self.extreme_pick_style = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.red,  'size': 12}
 
         # NETWORKS
         self.deepextreme_net = None
@@ -593,6 +420,32 @@ class TagLab(QWidget):
 
         self.move()
 
+    #just to make the code less verbose
+    def newAction(self, text, shortcut, callback):
+        action  = QAction(text, self)
+        action.setShortcut(QKeySequence(shortcut))
+        action.setShortcutVisibleInContextMenu(True)
+        action.triggered.connect(callback)
+        return action
+
+
+    def newButton(self, icon, tooltip, style, callback):
+        ICON_SIZE = 48
+        BUTTON_SIZE = 54
+
+        button = QPushButton()
+        button.setEnabled(True)
+        button.setCheckable(True)
+        button.setFlat(True)
+        button.setStyleSheet(style)
+        button.setMinimumWidth(ICON_SIZE)
+        button.setMinimumHeight(ICON_SIZE)
+        button.setIcon(QIcon(os.path.join("icons", icon)))
+        button.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
+        button.setMaximumWidth(BUTTON_SIZE)
+        button.setToolTip(tooltip)
+        button.clicked.connect(callback)
+        return button
 
     def activateAutosave(self):
 
@@ -640,21 +493,8 @@ class TagLab(QWidget):
 
     def clampCoords(self, x, y):
 
-        xc = int(x)
-        yc = int(y)
-
-        if xc < 0:
-            xc = 0
-
-        if yc < 0:
-            yc = 0
-
-        if xc > self.img_map.width():
-            xc = self.img_map.width()
-
-        if yc > self.img_map.height():
-            yc = self.img_map.height()
-
+        xc = max(0, min(int(x), self.img_map.width()))
+        yc = max(0, min(int(y), self.img_map.height()))
         return (xc, yc)
 
     def createMenuBar(self):
@@ -815,11 +655,11 @@ class TagLab(QWidget):
             if self.tool_used in ["EDITBORDER", "CUT", "FREEHAND"]:
                 self.resetEditBorder()
             elif self.tool_used == "RULER":
-                self.resetRulerTool()
+                self.resetPickPoints()
             elif self.tool_used == "SPLITBLOB":
-                self.resetSplitBlobTool()
+                self.resetPickPoints()
             elif self.tool_used == "DEEPEXTREME":
-                self.resetDeepExtremeTool()
+                self.resetPickPoints()
             elif self.tool_used == "AUTOCLASS":
                 self.corals_classifier.stopProcessing()
 
@@ -827,46 +667,54 @@ class TagLab(QWidget):
 
         elif event.key() == Qt.Key_S and modifiers == Qt.ControlModifier:
             self.save(self.project_name)
+
         elif event.key() == Qt.Key_Delete:
-            # DELETE SELECTED BLOBS
-            self.deleteSelected()
+            self.deleteSelectedBlobs()
+
         elif event.key() == Qt.Key_M:
-            # MERGE BETWEEN TWO BLOBS
             self.union()
+
         elif event.key() == Qt.Key_S:
             # SUBTRACTION BETWEEN TWO BLOBS (A = A / B), THEN BLOB B IS DELETED
             self.subtract()
+
         elif event.key() == Qt.Key_D:
             # SUBTRACTION BETWEEN TWO BLOBS (A = A / B), BLOB B IS NOT DELETED
             self.divide()
+
         elif event.key() == Qt.Key_R:
-            # REFINE BORDER
             self.refineBorder()
+
         elif event.key() == Qt.Key_Plus:
-            # REFINE BORDER
             self.refineBorderDilate()
+
         elif event.key() == Qt.Key_Minus:
-            # REFINE BORDER
             self.refineBorderErode()
+
         elif event.key() == Qt.Key_G:
-            # GROUP TOGETHER THE SELECTED BLOBS
-            self.group()
+            self.groupBlobs()
+
         elif event.key() == Qt.Key_U:
-            # UNGROUP THE BLOBS OF A GROUP (ONE BLOB OF THE GROUP SHOULD BE SELECTED)
-            self.ungroup()
+            self.ungroupBlobs()
+
         elif event.key() == Qt.Key_A:
             # ACTIVATE "ASSIGN" TOOL
             self.assign()
+
         elif event.key() == Qt.Key_H:
             # ACTIVATE THE "HOLE" TOOL
             self.hole()
+
         elif event.key() == Qt.Key_4:
             # ACTIVATE "DEEP EXTREME" TOOL
             self.deepExtreme()
+
         elif event.key() == Qt.Key_P:
             self.drawDeepExtremePoints()
+
         elif event.key() == Qt.Key_Y:
             self.refineAllBorders()
+
         elif event.key() == Qt.Key_Z:
             self.importLabelMap()
 
@@ -926,22 +774,22 @@ class TagLab(QWidget):
                 self.resetEditBorder()
 
             # APPLY DEEP EXTREME (IF FOUR POINTS HAVE BEEN SELECTED)
-            elif self.tool_used == "DEEPEXTREME" and self.extreme_points_number == 4:
+            elif self.tool_used == "DEEPEXTREME" and self.pick_points_number == 4:
 
                 self.segmentWithDeepExtreme()
-                self.resetDeepExtremeTool()
+                self.resetPickPoints()
 
-            elif self.tool_used == "SPLITBLOB" and self.seeds_points_number > 1 and len(self.selected_blobs) == 1:
+            elif self.tool_used == "SPLITBLOB" and self.pick_points_number > 1 and len(self.selected_blobs) == 1:
 
                 selected_blob = self.selected_blobs[0]
-                points = self.seeds_points
+                points = self.pick_points
                 created_blobs = self.annotations.splitBlob(selected_blob, points)
 
                 for blob in created_blobs:
                     self.addBlob(blob, selected=True)
                 self.removeBlob(selected_blob)
                 self.saveUndo()
-                self.resetSplitBlobTool()
+                self.resetPickPoints()
 
             self.tool_used = self.tool_orig
 
@@ -1361,7 +1209,7 @@ class TagLab(QWidget):
         self.editNote.setPlainText(blob.note)
 
 
-    def deleteSelected(self):
+    def deleteSelectedBlobs(self):
 
         for blob in self.selected_blobs:
             self.removeBlob(blob)
@@ -1456,86 +1304,53 @@ class TagLab(QWidget):
         blob.qpath_gitem = None
         self.viewerplus.scene.invalidate()
 
+    def addPickPoint(self, x, y, style):
+        self.pick_points.append(np.array([x, y]))
+        self.pick_points_number += 1
+
+        pen = QPen(style['color'])
+        pen.setWidth(style['width'])
+        pen.setCosmetic(True)
+
+        size = style['size']
+        line1 = self.viewerplus.scene.addLine(x - size, y - size, x + size, y + size, pen)
+        line2 = self.viewerplus.scene.addLine(x - size, y + size, x + size, y - size, pen)
+        self.pick_markers.append(line1)
+        self.pick_markers.append(line2)
+
+    def resetPickPoints(self):
+        self.pick_points_number = 0
+        self.pick_points.clear()
+        for marker in self.pick_markers:
+            self.viewerplus.scene.removeItem(marker)
+        self.pick_markers.clear()
+
     def drawRuler(self):
+        #warging! this might move the pick points to the centroids of the blobs, redraw!
+        measure = self.computeMeasure()
+        tmp = self.pick_points.copy()
+        self.resetPickPoints()
+        self.addPickPoint(tmp[0][0], tmp[0][1], self.ruler_pick_style)
+        self.addPickPoint(tmp[1][0], tmp[1][1], self.ruler_pick_style)
 
-        if self.ruler_points_number > 0:
+        #pick points number is now 2
+        pen = QPen(Qt.blue)
+        pen.setWidth(self.CROSS_LINE_WIDTH)
+        pen.setWidth(4)
+        start = self.pick_points[0]
+        end   = self.pick_points[1]
+        line = self.viewerplus.scene.addLine(start[0], start[1], end[0], end[1], pen)
+        self.pick_markers.append(line)
 
-            for line in self.ruler_lines:
-                self.viewerplus.scene.removeItem(line)
+        middle_x = (start[0] + end[0]) / 2.0
+        middle_y = (start[1] + end[1]) / 2.0
 
-            if self.ruler_text_gi:
-                self.viewerplus.scene.removeItem(self.ruler_text_gi)
+        ruler_text = self.viewerplus.scene.addText('%.4f' % measure)
+        ruler_text.setFont(QFont("Times", 18, QFont.Bold))
+        ruler_text.setDefaultTextColor(Qt.white)
+        ruler_text.setPos(middle_x, middle_y)
 
-            pen = QPen(Qt.blue)
-            pen.setWidth(self.CROSS_LINE_WIDTH)
-            brush = QBrush(Qt.SolidPattern)
-            brush.setColor(Qt.blue)
-
-            X_SIZE = 12
-
-            measure = 0.0
-            if self.ruler_points_number == 2:
-                measure = self.computeMeasure()
-
-            if self.ruler_points_number == 1:
-
-                x = self.ruler_points[0, 0]
-                y = self.ruler_points[0, 1]
-
-                line1 = self.viewerplus.scene.addLine(x - X_SIZE, y - X_SIZE, x + X_SIZE, y + X_SIZE, pen)
-                line2 = self.viewerplus.scene.addLine(x - X_SIZE, y + X_SIZE, x + X_SIZE, y - X_SIZE, pen)
-                self.ruler_lines.append(line1)
-                self.ruler_lines.append(line2)
-
-            if self.ruler_points_number == 2:
-
-                x = self.ruler_points[0, 0]
-                y = self.ruler_points[0, 1]
-
-                line1 = self.viewerplus.scene.addLine(x - X_SIZE, y - X_SIZE, x + X_SIZE, y + X_SIZE, pen)
-                line2 = self.viewerplus.scene.addLine(x - X_SIZE, y + X_SIZE, x + X_SIZE, y - X_SIZE, pen)
-                self.ruler_lines.append(line1)
-                self.ruler_lines.append(line2)
-
-                x = self.ruler_points[1, 0]
-                y = self.ruler_points[1, 1]
-
-                line3 = self.viewerplus.scene.addLine(x - X_SIZE, y - X_SIZE, x + X_SIZE, y + X_SIZE, pen)
-                line4 = self.viewerplus.scene.addLine(x - X_SIZE, y + X_SIZE, x + X_SIZE, y - X_SIZE, pen)
-                self.ruler_lines.append(line3)
-                self.ruler_lines.append(line4)
-
-                pen.setWidth(4)
-                line3 = self.viewerplus.scene.addLine(self.ruler_points[0, 0], self.ruler_points[0, 1],
-                                                      self.ruler_points[1, 0],
-                                                      self.ruler_points[1, 1], pen)
-                self.ruler_lines.append(line3)
-
-                posx = (self.ruler_points[1, 0] + self.ruler_points[0, 0]) / 2.0
-                posy = (self.ruler_points[1, 1] + self.ruler_points[0, 1]) / 2.0
-
-                myfont = QFont("Times", 18, QFont.Bold)
-                self.ruler_text_gi = self.viewerplus.scene.addText('%.4f' % measure)
-                self.ruler_text_gi.setFont(myfont)
-                self.ruler_text_gi.setDefaultTextColor(Qt.white)
-                self.ruler_text_gi.setPos(posx, posy)
-
-
-    # def drawSeeds(self):
-    #
-    #     if self.seeds_points_number > 0:
-    #
-    #         # for line in self.seeds_points_points_lined:
-    #         #     self.viewerplus.scene.removeItem(line)
-    #
-    #         pen = QPen(Qt.blue)
-    #         pen.setWidth(self.CROSS_LINE_WIDTH)
-    #         brush = QBrush(Qt.SolidPattern)
-    #         brush.setColor(Qt.blue)
-    #
-    #         X_SIZE = 12
-
-
+        self.pick_markers.append(ruler_text);
 
     def union(self):
         """
@@ -1764,14 +1579,14 @@ class TagLab(QWidget):
 
         self.updateVisibility()
 
-    def group(self):
+    def groupBlobs(self):
 
         if len(self.selected_blobs) > 0:
 
             group = self.annotations.addGroup(self.selected_blobs)
             self.drawGroup(group)
 
-    def ungroup(self):
+    def ungroupBlobs(self):
 
         if len(self.selected_blobs) > 0:
 
@@ -1814,47 +1629,11 @@ class TagLab(QWidget):
         self.viewerplus.setDragMode(QGraphicsView.NoDrag)
 
 
-    def resetRulerTool(self):
-
-        for line in self.ruler_lines:
-            self.viewerplus.scene.removeItem(line)
-
-        if self.ruler_text_gi:
-            self.viewerplus.scene.removeItem(self.ruler_text_gi)
-
-        self.ruler_points = np.zeros((2, 2))
-
-        self.ruler_points_number = 0
-        self.ruler_points = np.zeros((2, 2))
-
-
-    def resetDeepExtremeTool(self):
-
-        for line in self.extreme_points_lines:
-            self.viewerplus.scene.removeItem(line)
-
-        self.extreme_points_lines.clear()
-        self.extreme_points_number = 0
-        self.extreme_points = np.zeros((4, 2))
-
-
-    def resetSplitBlobTool(self):
-
-        for line in self.seeds_points_lines:
-            self.viewerplus.scene.removeItem(line)
-
-        self.seeds_points_lines.clear()
-        self.seeds_points_number = 0
-        self.seeds_points = []
-
-
     def resetTools(self):
 
         self.resetEditBorder()
         self.resetCrackTool()
-        self.resetRulerTool()
-        self.resetDeepExtremeTool()
-        self.resetSplitBlobTool()
+        self.resetPickPoints()
 
         self.viewerplus.showCrossair = False
         self.viewerplus.scene.invalidate(self.viewerplus.scene.sceneRect())
@@ -1927,71 +1706,48 @@ class TagLab(QWidget):
 
         elif self.tool_used == "RULER":
 
-            if self.ruler_points_number < 2:
+            #first point
+            if self.pick_points_number == 0:
+                self.addPickPoint(x, y, self.ruler_pick_style)
 
-                ind = self.ruler_points_number
-                self.ruler_points[ind, 0] = x
-                self.ruler_points[ind, 1] = y
-                self.ruler_points_number += 1
-
+            #sedcond point
+            elif self.pick_points_number == 1:
+                self.addPickPoint(x, y, self.ruler_pick_style)
                 self.drawRuler()
 
             else:
-
-                self.resetRulerTool()
+                self.resetPickPoints()
 
 
         elif self.tool_used == "SPLITBLOB":
 
-            condition = points_in_poly(np.array([[x, y]]), self.selected_blobs[0].contour)
+            #no selected blobs: select it!
+            if len(self.selected_blobs) == 0:
+                selected_blob = self.annotations.clickedBlob(x, y)
+                if selected_blob is None:
+                    self.infoWidget.setInfoMessage("Click on an area to split.")
+                    return
+                self.addToSelectedList(selected_blob)
 
-            if len(self.selected_blobs) == 1 and condition[0] == True:
-
-                clicked_point = np.array([x, y])
-                self.seeds_points.append(clicked_point)
-                self.seeds_points_number += 1
-
-                pen = QPen(Qt.cyan)
-                pen.setWidth(self.CROSS_LINE_WIDTH)
-                pen.setCosmetic(True)
-                brush = QBrush(Qt.SolidPattern)
-                brush.setColor(Qt.red)
-
-                X_SIZE = 12
-                line1 = self.viewerplus.scene.addLine(x - X_SIZE, y - X_SIZE, x + X_SIZE, y + X_SIZE, pen)
-                line2 = self.viewerplus.scene.addLine(x - X_SIZE, y + X_SIZE, x + X_SIZE, y - X_SIZE, pen)
-                self.seeds_points_lines.append(line1)
-                self.seeds_points_lines.append(line2)
-
-            elif len(self.selected_blobs) != 1:
+            if len(self.selected_blobs) != 1:
                 self.infoWidget.setInfoMessage("A single selected area is required.")
-                self.resetSplitBlobTool()
+                self.resetPickPoints()
+                return
+
+            condition = points_in_poly(np.array([[x, y]]), self.selected_blobs[0].contour)
+            if condition[0] != True:
+                self.infoWidget.setInfoMessage("Click on the selected area to split.")
+                return
+
+            self.addPickPoint(x, y, self.split_pick_style)
 
 
         elif self.tool_used == "DEEPEXTREME":
 
-            if self.extreme_points_number < 4:
-
-                ind = self.extreme_points_number
-                self.extreme_points[ind, 0] = x
-                self.extreme_points[ind, 1] = y
-                self.extreme_points_number += 1
-
-                pen = QPen(Qt.red)
-                pen.setWidth(self.CROSS_LINE_WIDTH)
-                pen.setCosmetic(True)
-                brush = QBrush(Qt.SolidPattern)
-                brush.setColor(Qt.red)
-
-                X_SIZE = 12
-                line1 = self.viewerplus.scene.addLine(x - X_SIZE, y - X_SIZE, x + X_SIZE, y + X_SIZE, pen)
-                line2 = self.viewerplus.scene.addLine(x - X_SIZE, y + X_SIZE, x + X_SIZE, y - X_SIZE, pen)
-                self.extreme_points_lines.append(line1)
-                self.extreme_points_lines.append(line2)
-
-            elif self.extreme_points_number > 3:
-
-                self.resetDeepExtremeTool()
+            if self.pick_points_number < 4:
+                self.addPickPoint(x, y, self.extreme_pick_style)
+            else:
+                self.resetPickPoints()
 
     @pyqtSlot(float, float)
     def toolsOpsLeftReleased(self, x, y):
@@ -2051,10 +1807,10 @@ class TagLab(QWidget):
         the distance between the centroids is computed.
         """
 
-        x1 = self.ruler_points[0, 0]
-        y1 = self.ruler_points[0, 1]
-        x2 = self.ruler_points[1, 0]
-        y2 = self.ruler_points[1, 1]
+        x1 = self.pick_points[0][0]
+        y1 = self.pick_points[0][1]
+        x2 = self.pick_points[1][0]
+        y2 = self.pick_points[1][1]
 
         blob1 = self.annotations.clickedBlob(x1, y1)
         blob2 = self.annotations.clickedBlob(x2, y2)
@@ -2066,10 +1822,10 @@ class TagLab(QWidget):
             x2 = blob2.centroid[0]
             y2 = blob2.centroid[1]
 
-            self.ruler_points[0, 0] = x1
-            self.ruler_points[0, 1] = y1
-            self.ruler_points[1, 0] = x2
-            self.ruler_points[1, 1] = y2
+            self.pick_points[0][0] = x1
+            self.pick_points[0][1] = y1
+            self.pick_points[1][0] = x2
+            self.pick_points[1][1] = y2
 
         measurepx = np.sqrt(((x2 - x1) ** 2) + ((y2 - y1) ** 2))
 
@@ -2630,7 +2386,7 @@ class TagLab(QWidget):
         device = torch.device("cuda:" + str(gpu_id) if torch.cuda.is_available() else "cpu")
         self.deepextreme_net.to(device)
 
-        extreme_points_to_use = self.extreme_points.astype(int)
+        extreme_points_to_use = np.asarray(self.pick_points).astype(int)
         pad_extreme = 100
         left_map_pos = extreme_points_to_use[:, 0].min() - pad_extreme
         top_map_pos = extreme_points_to_use[:, 1].min() - pad_extreme
