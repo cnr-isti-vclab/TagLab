@@ -31,8 +31,9 @@ from skimage.measure import points_in_poly
 from PyQt5.QtCore import Qt, QSize, QDir, QPoint, QPointF, QLineF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo
 from PyQt5.QtGui import QPainterPath, QFont, QColor, QPolygonF, QImage, QPixmap, QIcon, QKeySequence, \
     QPen, QBrush, qRgb, qRed, qGreen, qBlue
-from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QDialog, QMenuBar, QMenu, QSizePolicy, QScrollArea, QLabel, QToolButton, QPushButton, QSlider, \
-    QMessageBox, QGroupBox, QHBoxLayout, QVBoxLayout, QTextEdit, QLineEdit, QGraphicsView, QAction
+from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QDialog, QMenuBar, QMenu, QSizePolicy, QScrollArea, \
+    QLabel, QToolButton, QPushButton, QSlider, \
+    QMessageBox, QGroupBox, QHBoxLayout, QVBoxLayout, QTextEdit, QLineEdit, QGraphicsView, QAction, QGraphicsItem
 
 # PYTORCH
 try:
@@ -383,7 +384,7 @@ class TagLab(QWidget):
         self.border_pen_for_appended_blobs.setStyle(Qt.DotLine)
         self.border_pen_for_appended_blobs.setCosmetic(True)
 
-        self.CROSS_LINE_WIDTH = 6
+        self.CROSS_LINE_WIDTH = 2
 
         # DATA FOR THE SELECTION
         self.selected_blobs = []
@@ -401,9 +402,9 @@ class TagLab(QWidget):
         self.pick_points = []
         self.pick_markers = []
 
-        self.split_pick_style   = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.cyan, 'size': 12}
-        self.ruler_pick_style   = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.cyan, 'size': 12}
-        self.extreme_pick_style = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.red,  'size': 12}
+        self.split_pick_style   = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.cyan, 'size': 6}
+        self.ruler_pick_style   = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.cyan, 'size': 6}
+        self.extreme_pick_style = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.red,  'size': 6}
 
         # NETWORKS
         self.deepextreme_net = None
@@ -1313,10 +1314,21 @@ class TagLab(QWidget):
         pen.setCosmetic(True)
 
         size = style['size']
-        line1 = self.viewerplus.scene.addLine(x - size, y - size, x + size, y + size, pen)
-        line2 = self.viewerplus.scene.addLine(x - size, y + size, x + size, y - size, pen)
-        self.pick_markers.append(line1)
-        self.pick_markers.append(line2)
+        point = self.viewerplus.scene.addEllipse(x, y, 0, 0, pen)
+        point = self.viewerplus.scene.addEllipse(x, y, 0, 0, pen)
+        #line1 = self.viewerplus.scene.addLine(x - size, y - size, x + size, y + size, pen)
+        line1 = self.viewerplus.scene.addLine(- size, -size, +size, +size, pen)
+        line1.setPos(QPoint(x, y))
+        line1.setParentItem(point)  # self.viewerplus._pxmapitem)
+        line1.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+
+        line2 = self.viewerplus.scene.addLine(- size,  + size,  + size,  - size, pen)
+        line2.setPos(QPoint(x, y))
+        line2.setParentItem(point)  # self.viewerplus._pxmapitem)
+        line2.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+
+        #no need to add the lines to the pick_markers, the parent will take care of them
+        self.pick_markers.append(point)
 
     def resetPickPoints(self):
         self.pick_points_number = 0
@@ -1335,8 +1347,8 @@ class TagLab(QWidget):
 
         #pick points number is now 2
         pen = QPen(Qt.blue)
-        pen.setWidth(self.CROSS_LINE_WIDTH)
-        pen.setWidth(4)
+        pen.setWidth(2)
+        pen.setCosmetic(True)
         start = self.pick_points[0]
         end   = self.pick_points[1]
         line = self.viewerplus.scene.addLine(start[0], start[1], end[0], end[1], pen)
@@ -1345,12 +1357,16 @@ class TagLab(QWidget):
         middle_x = (start[0] + end[0]) / 2.0
         middle_y = (start[1] + end[1]) / 2.0
 
-        ruler_text = self.viewerplus.scene.addText('%.4f' % measure)
-        ruler_text.setFont(QFont("Times", 18, QFont.Bold))
+        middle = self.viewerplus.scene.addEllipse(middle_x, middle_y, 0, 0)
+
+        ruler_text = self.viewerplus.scene.addText('%.1f' % measure)
+        ruler_text.setFont(QFont("Times", 12, QFont.Bold))
         ruler_text.setDefaultTextColor(Qt.white)
         ruler_text.setPos(middle_x, middle_y)
+        ruler_text.setParentItem(middle)
+        ruler_text.setFlag(QGraphicsItem.ItemIgnoresTransformations)
 
-        self.pick_markers.append(ruler_text);
+        self.pick_markers.append(middle);
 
     def union(self):
         """
