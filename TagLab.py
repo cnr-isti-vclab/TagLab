@@ -457,12 +457,13 @@ class TagLab(QWidget):
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.autosave)
-        self.timer.start(1800000)  # save every 3 minute
+        #self.timer.start(1800000)  # save every 3 minute
+        self.timer.start(10000)  # save every 3 minute
 
     @pyqtSlot()
     def autosave(self):
-
-        self.save(self.project_name)
+        filename, file_extension = os.path.splitext(self.project_name)
+        self.save(filename + "_autosave.json")
 
     # call by pressing right button
     def openContextMenu(self, position):
@@ -1778,10 +1779,10 @@ class TagLab(QWidget):
     def toolsOpsLeftReleased(self, x, y):
         if self.dragSelectionStart:
             self.dragSelectBlobs(x, y)
-        self.dragSelectionStart = None
-        self.viewerplus.scene.removeItem(self.dragSelectionRect)
-        del self.dragSelectionRect
-        self.dragSelectionRect = None
+            self.dragSelectionStart = None
+            self.viewerplus.scene.removeItem(self.dragSelectionRect)
+            del self.dragSelectionRect
+            self.dragSelectionRect = None
         pass
 
     @pyqtSlot(float, float)
@@ -2011,7 +2012,9 @@ class TagLab(QWidget):
         filename, _ = QFileDialog.getSaveFileName(self, "Save the project", self.working_dir, filters)
 
         if filename:
-
+            dir = QDir(self.working_dir)
+            self.project_name = dir.relativeFilePath(filename)
+            self.setProjectTitle(self.project_name)
             self.save(filename)
 
     @pyqtSlot()
@@ -2282,8 +2285,7 @@ class TagLab(QWidget):
 
         # update project name
         dir = QDir(self.working_dir)
-        self.project_name = dir.relativeFilePath(filename)
-        self.setProjectTitle(self.project_name)
+
 
         dict_to_save["Project Name"] = self.project_name
         dict_to_save["Map File"] = dir.relativeFilePath(self.map_image_filename)
