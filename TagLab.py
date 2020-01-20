@@ -389,6 +389,11 @@ class TagLab(QWidget):
         # DATA FOR THE SELECTION
         self.selected_blobs = []
         self.MAX_SELECTED = 5 # maximum number of selected blobs
+        self.dragSelectionStart = None
+        self.dragSelectionRect = None
+        self.dragSelectionStyle = QPen(Qt.white, 1, Qt.DashLine)
+        self.dragSelectionStyle.setCosmetic(True)
+
 
         # DATA FOR THE EDITBORDER , CUT and FREEHAND TOOLS
         self.edit_points = []
@@ -992,7 +997,7 @@ class TagLab(QWidget):
         self.btnSplitBlob.setChecked(True)
         self.tool_used = self.tool_orig = "SPLITBLOB"
 
-        self.viewerplus.enablePan()
+        self.viewerplus.disablePan()
         self.viewerplus.enableZoom()
 
         self.infoWidget.setInfoMessage("Split Blob Tool is active")
@@ -1662,8 +1667,12 @@ class TagLab(QWidget):
         if modifiers & Qt.ControlModifier:
             return
 
-        if (modifiers & Qt.ShiftModifier) and self.tool_used == "FREEHAND":
-            self.tool_used = "EDITBORDER"
+        if modifiers & Qt.ShiftModifier:
+            if self.tool_used == "FREEHAND":
+                self.tool_used = "EDITBORDER"
+            else:
+                self.dragSelectionStart = [x, y]
+                return
 
         if self.tool_used == "ASSIGN":
 
@@ -1767,6 +1776,12 @@ class TagLab(QWidget):
 
     @pyqtSlot(float, float)
     def toolsOpsLeftReleased(self, x, y):
+        if self.dragSelectionStart:
+            self.dragSelectBlobs(x, y)
+        self.dragSelectionStart = None
+        self.viewerplus.scene.removeItem(self.dragSelectionRect)
+        del self.dragSelectionRect
+        self.dragSelectionRect = None
         pass
 
     @pyqtSlot(float, float)
@@ -1775,6 +1790,14 @@ class TagLab(QWidget):
 
     @pyqtSlot(float, float)
     def toolsOpsMouseMove(self, x, y):
+
+        if self.dragSelectionStart:
+            start = self.dragSelectionStart
+            if not self.dragSelectionRect:
+                self.dragSelectionRect = self.viewerplus.scene.addRect(start[0], start[1], x-start[0], y-start[1], self.dragSelectionStyle)
+            self.dragSelectionRect.setRect(start[0], start[1], x - start[0], y - start[1])
+            return
+
 
         modifiers = QApplication.queryKeyboardModifiers()
         if modifiers & Qt.ControlModifier:
@@ -1797,6 +1820,20 @@ class TagLab(QWidget):
 
             logfile.debug("Number of DRAWING points: %d", last.shape[0])
 
+    def dragSelectBlobs(self, x, y):
+        sx = self.dragSelectionStart[0]
+        sy = self.dragSelectionStart[1]
+        self.resetSelection()
+        for blob in self.annotations.seg_blobs:
+            visible = self.labels_widget.isClassVisible(blob.class_name)
+            if not visible:
+                continue
+            box = blob.bbox
+
+            if sx > box[1] or sy > box[0] or x < box[1] + box[2] or y < box[0] + box[3]:
+                continue
+            self.addToSelectedList(blob)
+        return
 
 
 
