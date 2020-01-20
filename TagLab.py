@@ -458,7 +458,7 @@ class TagLab(QWidget):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.autosave)
         #self.timer.start(1800000)  # save every 3 minute
-        self.timer.start(10000)  # save every 3 minute
+        self.timer.start(600000)  # save every 3 minute
 
     @pyqtSlot()
     def autosave(self):
