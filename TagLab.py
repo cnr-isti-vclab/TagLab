@@ -181,6 +181,7 @@ class TagLab(QWidget):
         self.refineAction       = self.newAction("Refine Border",           "R",   self.refineBorder)
         self.refineActionDilate = self.newAction("Refine Border Dilate",    "+",   self.refineBorderDilate)
         self.refineActionErode  = self.newAction("Refine Border Erode",     "-",   self.refineBorderErode)
+        self.fillAction       = self.newAction("Fill Label",                "F",   self.fillLabel)
 
         #       in case we want a refine all selected borders
         #        refineActionAll = QAction("Refine All Borders", self)
@@ -489,6 +490,11 @@ class TagLab(QWidget):
 
         menu.addSeparator()
         menu.addAction(self.refineAction)
+        menu.addAction(self.refineActionDilate)
+        menu.addAction(self.refineActionErode)
+
+        menu.addAction(self.fillAction)
+
 
         action = menu.exec_(self.viewerplus.mapToGlobal(position))
 
@@ -640,6 +646,10 @@ class TagLab(QWidget):
 
         editmenu.addSeparator()
         editmenu.addAction(self.refineAction)
+        editmenu.addAction(self.refineActionDilate)
+        editmenu.addAction(self.refineActionErode)
+
+        editmenu.addAction(self.fillAction)
 
         helpmenu = menubar.addMenu("&Help")
         helpmenu.setStyleSheet(styleMenu)
@@ -697,6 +707,9 @@ class TagLab(QWidget):
 
         elif event.key() == Qt.Key_Minus:
             self.refineBorderErode()
+
+        elif event.key() == Qt.Key_F:
+            self.fillBorder()
 
         elif event.key() == Qt.Key_G:
             self.groupBlobs()
@@ -1534,6 +1547,21 @@ class TagLab(QWidget):
         else:
             self.infoWidget.setInfoMessage("You need to select <em>one</em> blob for REFINE operation.")
 
+    def fillLabel(self, blob):
+        if len(self.selected_blobs) == 0:
+            return
+        count = 0
+        for blob in self.selected_blobs:
+            if len(blob.inner_contours) == 0:
+                continue
+            count += 1
+            filled = blob.copy()
+            self.removeBlob(blob)
+            filled.inner_contours.clear()
+            filled.createFromClosedCurve([filled.contour])
+            self.addBlob(filled, True)
+        if count:
+            self.saveUndo()
 
     def addBlob(self, blob, selected = False):
         """
