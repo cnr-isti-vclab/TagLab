@@ -1031,7 +1031,7 @@ class TagLab(QWidget):
         self.btnCreateCrack.setChecked(True)
         self.tool_used = self.tool_orig = "CREATECRACK"
 
-        self.viewerplus.enablePan()
+        self.viewerplus.disablePan()
         self.viewerplus.enableZoom()
 
         self.infoWidget.setInfoMessage("Crack Tool is active")
