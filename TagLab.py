@@ -189,8 +189,6 @@ class TagLab(QWidget):
         #        menu.addAction(refineActionAll)
         #            self.refineAllBorders()
 
-
-
         ###### LAYOUT MAIN VIEW
 
         layout_viewer = QVBoxLayout()
@@ -1201,10 +1199,12 @@ class TagLab(QWidget):
         self.editInstance.setText(blob.instance_name)
         self.lblClass.setText(blob.class_name)
 
-        text1 = "Perimeter {:8.2f}".format(blob.perimeter)
+        scaled_perimeter = blob.perimeter * self.map_px_to_mm_factor / 10
+        text1 = "Perimeter (cm):{:8.2f}".format(scaled_perimeter)
         self.lblP.setText(text1)
 
-        text2 = "Area: {:8.2f}".format(blob.area)
+        scaled_area = blob.area * (self.map_px_to_mm_factor) * (self.map_px_to_mm_factor) / 100
+        text2 = "Area (cm^2):{:8.2f}".format(scaled_area)
         self.lblA.setText(text2)
 
         self.editNote.setPlainText(blob.note)
@@ -1845,7 +1845,8 @@ class TagLab(QWidget):
 
         measurepx = np.sqrt(((x2 - x1) ** 2) + ((y2 - y1) ** 2))
 
-        measure = measurepx * self.map_px_to_mm_factor
+        # conversion to cm
+        measure = measurepx * self.map_px_to_mm_factor / 10
 
         return measure
 
@@ -2084,7 +2085,7 @@ class TagLab(QWidget):
     @pyqtSlot()
     def exportHistogramFromAnn(self):
 
-        histo_widget = QtHistogramWidget(self.annotations, self)
+        histo_widget = QtHistogramWidget(self.annotations, self.map_px_to_mm_factor, self.map_acquisition_date, self)
         histo_widget.setWindowModality(Qt.WindowModal)
         histo_widget.show()
 
