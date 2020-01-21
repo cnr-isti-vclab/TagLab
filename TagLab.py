@@ -1844,13 +1844,19 @@ class TagLab(QWidget):
 
     @pyqtSlot(float, float)
     def toolsOpsLeftReleased(self, x, y):
+        modifiers = QApplication.queryKeyboardModifiers()
+
         if self.dragSelectionStart:
-            self.dragSelectBlobs(x, y)
-            self.dragSelectionStart = None
-            self.viewerplus.scene.removeItem(self.dragSelectionRect)
-            del self.dragSelectionRect
-            self.dragSelectionRect = None
-        pass
+            if abs(x - self.dragSelectionStart[0]) < 5 and abs(y - self.dragSelectionStart[1]) < 5:
+                self.selectOp(x, y)
+            else:
+                self.dragSelectBlobs(x, y)
+                self.dragSelectionStart = None
+                if self.dragSelectionRect:
+                    self.viewerplus.scene.removeItem(self.dragSelectionRect)
+                    del self.dragSelectionRect
+                    self.dragSelectionRect = None
+
 
     @pyqtSlot(float, float)
     def toolsOpsRightPressed(self, x, y):
