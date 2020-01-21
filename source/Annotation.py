@@ -21,7 +21,7 @@ import numpy as np
 
 from skimage import measure
 from scipy import ndimage as ndi
-from PyQt5.QtGui import QImage, qRgb
+from PyQt5.QtGui import QPainter, QImage, QPen, QBrush, QColor, qRgb
 from PyQt5.QtCore import Qt
 
 from skimage.draw import polygon_perimeter
@@ -454,6 +454,12 @@ class Annotation(object):
         myPNG = QImage(w, h, QImage.Format_RGB32)
         myPNG.fill(qRgb(0, 0, 0))
 
+        painter = QPainter(myPNG)
+
+        pen = QPen(Qt.black)
+        pen.setWidth(1)
+        painter.setPen(pen)
+
         for i, blob in enumerate(self.seg_blobs):
 
             if blob.qpath_gitem.isVisible():
@@ -464,18 +470,11 @@ class Annotation(object):
                     class_color = self.labels_info[blob.class_name]
                     rgb = qRgb(class_color[0], class_color[1], class_color[2])
 
-                blob_mask = blob.getMask()
-                for x in range(blob_mask.shape[1]):
-                    for y in range(blob_mask.shape[0]):
+                painter.setBrush(QBrush(QColor(rgb)))
+                painter.drawPath(blob.qpath_gitem.path())
 
-                        if blob_mask[y, x] == 1:
-                            myPNG.setPixel(x + blob.bbox[1], y + blob.bbox[0], rgb)
 
-                # draw black border
-                [rr, cc] = polygon_perimeter(blob.contour[:, 1], blob.contour[:, 0])
-                if rr.size > 0:
-                    for i in range(len(rr)):
-                        myPNG.setPixel(cc[i], rr[i], qRgb(0, 0, 0))
+        painter.end()
 
         myPNG.save(filename)
 

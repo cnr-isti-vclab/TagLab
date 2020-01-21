@@ -56,6 +56,7 @@ from source.QtMapViewer import QtMapViewer
 from source.QtMapSettingsWidget import QtMapSettingsWidget
 from source.QtLabelsWidget import QtLabelsWidget
 from source.QtInfoWidget import QtInfoWidget
+from source.QtHelpWidget import QtHelpWidget
 from source.QtProgressBarCustom import QtProgressBarCustom
 from source.QtCrackWidget import QtCrackWidget
 from source.QtHistogramWidget import QtHistogramWidget
@@ -587,8 +588,8 @@ class TagLab(QWidget):
         undoAct.triggered.connect(self.undo)
 
         helpAct = QAction("Help", self)
-        #exportAct.setShortcut('Ctrl+Q')
-        #helpAct.setStatusTip("Help")
+        helpAct.setShortcut('Ctrl+H')
+        helpAct.setStatusTip("Help")
         helpAct.triggered.connect(self.help)
 
         aboutAct = QAction("About", self)
@@ -685,10 +686,19 @@ class TagLab(QWidget):
         elif event.key() == Qt.Key_S and modifiers == Qt.ControlModifier:
             self.save(self.project_name)
 
+        elif event.key() == Qt.Key_A:
+            # ASSIGN LABEL
+            for blob in self.selected_blobs:
+                self.setBlobClass(blob, self.labels_widget.getActiveLabelName())
+            self.saveUndo()
+            self.resetSelection()
+
         elif event.key() == Qt.Key_Delete:
+            # DELETE SELECTED BLOBS
             self.deleteSelectedBlobs()
 
         elif event.key() == Qt.Key_M:
+            # MERGE OVERLAPPED BLOBS
             self.union()
 
         elif event.key() == Qt.Key_S:
@@ -717,9 +727,42 @@ class TagLab(QWidget):
         elif event.key() == Qt.Key_U:
             self.ungroupBlobs()
 
-        elif event.key() == Qt.Key_A:
+        elif event.key() == Qt.Key_1:
+            # ACTIVATE "MOVE" TOOL
+            self.move()
+
+        elif event.key() == Qt.Key_2:
             # ACTIVATE "ASSIGN" TOOL
             self.assign()
+
+        elif event.key() == Qt.Key_3:
+            # ACTIVATE "FREEHAND" TOOL
+            self.freehandSegmentation()
+
+        elif event.key() == Qt.Key_4:
+            # ACTIVATE "EDIT BORDER" TOOL
+            self.editBorder()
+
+        elif event.key() == Qt.Key_5:
+            # ACTIVATE "CUT SEGMENTATION" TOOL
+            self.cut()
+
+        elif event.key() == Qt.Key_6:
+            # ACTIVATE "CREATE CRACK" TOOL
+            self.createCrack()
+
+        elif event.key() == Qt.Key_7:
+            # ACTIVATE "CREATE CRACK" TOOL
+            self.splitBlob()
+
+        elif event.key() == Qt.Key_8:
+            # ACTIVATE "RULER" TOOL
+            self.ruler()
+
+        elif event.key() == Qt.Key_9:
+            # ACTIVATE "4-CLICK" TOOL
+            self.deepExtreme()
+
 
         elif event.key() == Qt.Key_H:
             # ACTIVATE THE "HOLE" TOOL
@@ -734,9 +777,6 @@ class TagLab(QWidget):
 
         elif event.key() == Qt.Key_Y:
             self.refineAllBorders()
-
-        elif event.key() == Qt.Key_Z:
-            self.importLabelMap()
 
         elif event.key() == Qt.Key_Space:
 
@@ -1712,7 +1752,6 @@ class TagLab(QWidget):
                 for blob in self.selected_blobs:
                     self.setBlobClass(blob, self.labels_widget.getActiveLabelName())
                 self.saveUndo()
-
                 self.resetSelection()
 
         elif self.tool_used in ["EDITBORDER", "CUT", "FREEHAND"]:
@@ -2069,7 +2108,12 @@ class TagLab(QWidget):
 
     @pyqtSlot()
     def help(self):
-        pass
+
+        help_widget = QtHelpWidget(self)
+        help_widget.setWindowOpacity(0.9)
+        help_widget.setWindowModality(Qt.WindowModal)
+        help_widget.show()
+
 
     @pyqtSlot()
     def about(self):
