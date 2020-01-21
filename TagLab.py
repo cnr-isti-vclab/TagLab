@@ -56,6 +56,7 @@ from source.QtMapViewer import QtMapViewer
 from source.QtMapSettingsWidget import QtMapSettingsWidget
 from source.QtLabelsWidget import QtLabelsWidget
 from source.QtInfoWidget import QtInfoWidget
+from source.QtHelpWidget import QtHelpWidget
 from source.QtProgressBarCustom import QtProgressBarCustom
 from source.QtCrackWidget import QtCrackWidget
 from source.QtHistogramWidget import QtHistogramWidget
@@ -181,6 +182,7 @@ class TagLab(QWidget):
         self.refineAction       = self.newAction("Refine Border",           "R",   self.refineBorder)
         self.refineActionDilate = self.newAction("Refine Border Dilate",    "+",   self.refineBorderDilate)
         self.refineActionErode  = self.newAction("Refine Border Erode",     "-",   self.refineBorderErode)
+        self.fillAction       = self.newAction("Fill Label",                "F",   self.fillLabel)
 
         #       in case we want a refine all selected borders
         #        refineActionAll = QAction("Refine All Borders", self)
@@ -387,6 +389,11 @@ class TagLab(QWidget):
         # DATA FOR THE SELECTION
         self.selected_blobs = []
         self.MAX_SELECTED = 5 # maximum number of selected blobs
+        self.dragSelectionStart = None
+        self.dragSelectionRect = None
+        self.dragSelectionStyle = QPen(Qt.white, 1, Qt.DashLine)
+        self.dragSelectionStyle.setCosmetic(True)
+
 
         # DATA FOR THE EDITBORDER , CUT and FREEHAND TOOLS
         self.edit_points = []
@@ -450,12 +457,13 @@ class TagLab(QWidget):
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.autosave)
-        self.timer.start(1800000)  # save every 3 minute
+        #self.timer.start(1800000)  # save every 3 minute
+        self.timer.start(600000)  # save every 3 minute
 
     @pyqtSlot()
     def autosave(self):
-
-        self.save(self.project_name)
+        filename, file_extension = os.path.splitext(self.project_name)
+        self.save(filename + "_autosave.json")
 
     # call by pressing right button
     def openContextMenu(self, position):
@@ -481,6 +489,11 @@ class TagLab(QWidget):
 
         menu.addSeparator()
         menu.addAction(self.refineAction)
+        menu.addAction(self.refineActionDilate)
+        menu.addAction(self.refineActionErode)
+
+        menu.addAction(self.fillAction)
+
 
         action = menu.exec_(self.viewerplus.mapToGlobal(position))
 
@@ -573,8 +586,8 @@ class TagLab(QWidget):
         undoAct.triggered.connect(self.undo)
 
         helpAct = QAction("Help", self)
-        #exportAct.setShortcut('Ctrl+Q')
-        #helpAct.setStatusTip("Help")
+        helpAct.setShortcut('Ctrl+H')
+        helpAct.setStatusTip("Help")
         helpAct.triggered.connect(self.help)
 
         aboutAct = QAction("About", self)
@@ -632,6 +645,10 @@ class TagLab(QWidget):
 
         editmenu.addSeparator()
         editmenu.addAction(self.refineAction)
+        editmenu.addAction(self.refineActionDilate)
+        editmenu.addAction(self.refineActionErode)
+
+        editmenu.addAction(self.fillAction)
 
         helpmenu = menubar.addMenu("&Help")
         helpmenu.setStyleSheet(styleMenu)
@@ -667,10 +684,19 @@ class TagLab(QWidget):
         elif event.key() == Qt.Key_S and modifiers == Qt.ControlModifier:
             self.save(self.project_name)
 
+        elif event.key() == Qt.Key_A:
+            # ASSIGN LABEL
+            for blob in self.selected_blobs:
+                self.setBlobClass(blob, self.labels_widget.getActiveLabelName())
+            self.saveUndo()
+            self.resetSelection()
+
         elif event.key() == Qt.Key_Delete:
+            # DELETE SELECTED BLOBS
             self.deleteSelectedBlobs()
 
         elif event.key() == Qt.Key_M:
+            # MERGE OVERLAPPED BLOBS
             self.union()
 
         elif event.key() == Qt.Key_S:
@@ -690,15 +716,51 @@ class TagLab(QWidget):
         elif event.key() == Qt.Key_Minus:
             self.refineBorderErode()
 
+        elif event.key() == Qt.Key_F:
+            self.fillBorder()
+
         elif event.key() == Qt.Key_G:
             self.groupBlobs()
 
         elif event.key() == Qt.Key_U:
             self.ungroupBlobs()
 
-        elif event.key() == Qt.Key_A:
+        elif event.key() == Qt.Key_1:
+            # ACTIVATE "MOVE" TOOL
+            self.move()
+
+        elif event.key() == Qt.Key_2:
             # ACTIVATE "ASSIGN" TOOL
             self.assign()
+
+        elif event.key() == Qt.Key_3:
+            # ACTIVATE "FREEHAND" TOOL
+            self.freehandSegmentation()
+
+        elif event.key() == Qt.Key_4:
+            # ACTIVATE "EDIT BORDER" TOOL
+            self.editBorder()
+
+        elif event.key() == Qt.Key_5:
+            # ACTIVATE "CUT SEGMENTATION" TOOL
+            self.cut()
+
+        elif event.key() == Qt.Key_6:
+            # ACTIVATE "CREATE CRACK" TOOL
+            self.createCrack()
+
+        elif event.key() == Qt.Key_7:
+            # ACTIVATE "CREATE CRACK" TOOL
+            self.splitBlob()
+
+        elif event.key() == Qt.Key_8:
+            # ACTIVATE "RULER" TOOL
+            self.ruler()
+
+        elif event.key() == Qt.Key_9:
+            # ACTIVATE "4-CLICK" TOOL
+            self.deepExtreme()
+
 
         elif event.key() == Qt.Key_H:
             # ACTIVATE THE "HOLE" TOOL
@@ -713,9 +775,6 @@ class TagLab(QWidget):
 
         elif event.key() == Qt.Key_Y:
             self.refineAllBorders()
-
-        elif event.key() == Qt.Key_Z:
-            self.importLabelMap()
 
         elif event.key() == Qt.Key_Space:
 
@@ -990,7 +1049,7 @@ class TagLab(QWidget):
         self.btnSplitBlob.setChecked(True)
         self.tool_used = self.tool_orig = "SPLITBLOB"
 
-        self.viewerplus.enablePan()
+        self.viewerplus.disablePan()
         self.viewerplus.enableZoom()
 
         self.infoWidget.setInfoMessage("Split Blob Tool is active")
@@ -1528,6 +1587,21 @@ class TagLab(QWidget):
         else:
             self.infoWidget.setInfoMessage("You need to select <em>one</em> blob for REFINE operation.")
 
+    def fillLabel(self, blob):
+        if len(self.selected_blobs) == 0:
+            return
+        count = 0
+        for blob in self.selected_blobs:
+            if len(blob.inner_contours) == 0:
+                continue
+            count += 1
+            filled = blob.copy()
+            self.removeBlob(blob)
+            filled.inner_contours.clear()
+            filled.createFromClosedCurve([filled.contour])
+            self.addBlob(filled, True)
+        if count:
+            self.saveUndo()
 
     def addBlob(self, blob, selected = False):
         """
@@ -1662,8 +1736,12 @@ class TagLab(QWidget):
         if modifiers & Qt.ControlModifier:
             return
 
-        if (modifiers & Qt.ShiftModifier) and self.tool_used == "FREEHAND":
-            self.tool_used = "EDITBORDER"
+        if modifiers & Qt.ShiftModifier:
+            if self.tool_used == "FREEHAND":
+                self.tool_used = "EDITBORDER"
+            else:
+                self.dragSelectionStart = [x, y]
+                return
 
         if self.tool_used == "ASSIGN":
 
@@ -1674,7 +1752,6 @@ class TagLab(QWidget):
                 for blob in self.selected_blobs:
                     self.setBlobClass(blob, self.labels_widget.getActiveLabelName())
                 self.saveUndo()
-
                 self.resetSelection()
 
         elif self.tool_used in ["EDITBORDER", "CUT", "FREEHAND"]:
@@ -1767,6 +1844,12 @@ class TagLab(QWidget):
 
     @pyqtSlot(float, float)
     def toolsOpsLeftReleased(self, x, y):
+        if self.dragSelectionStart:
+            self.dragSelectBlobs(x, y)
+            self.dragSelectionStart = None
+            self.viewerplus.scene.removeItem(self.dragSelectionRect)
+            del self.dragSelectionRect
+            self.dragSelectionRect = None
         pass
 
     @pyqtSlot(float, float)
@@ -1775,6 +1858,14 @@ class TagLab(QWidget):
 
     @pyqtSlot(float, float)
     def toolsOpsMouseMove(self, x, y):
+
+        if self.dragSelectionStart:
+            start = self.dragSelectionStart
+            if not self.dragSelectionRect:
+                self.dragSelectionRect = self.viewerplus.scene.addRect(start[0], start[1], x-start[0], y-start[1], self.dragSelectionStyle)
+            self.dragSelectionRect.setRect(start[0], start[1], x - start[0], y - start[1])
+            return
+
 
         modifiers = QApplication.queryKeyboardModifiers()
         if modifiers & Qt.ControlModifier:
@@ -1797,6 +1888,20 @@ class TagLab(QWidget):
 
             logfile.debug("Number of DRAWING points: %d", last.shape[0])
 
+    def dragSelectBlobs(self, x, y):
+        sx = self.dragSelectionStart[0]
+        sy = self.dragSelectionStart[1]
+        self.resetSelection()
+        for blob in self.annotations.seg_blobs:
+            visible = self.labels_widget.isClassVisible(blob.class_name)
+            if not visible:
+                continue
+            box = blob.bbox
+
+            if sx > box[1] or sy > box[0] or x < box[1] + box[2] or y < box[0] + box[3]:
+                continue
+            self.addToSelectedList(blob)
+        return
 
 
 
@@ -1975,7 +2080,9 @@ class TagLab(QWidget):
         filename, _ = QFileDialog.getSaveFileName(self, "Save the project", self.working_dir, filters)
 
         if filename:
-
+            dir = QDir(self.working_dir)
+            self.project_name = dir.relativeFilePath(filename)
+            self.setProjectTitle(self.project_name)
             self.save(filename)
 
     @pyqtSlot()
@@ -2002,7 +2109,12 @@ class TagLab(QWidget):
 
     @pyqtSlot()
     def help(self):
-        pass
+
+        help_widget = QtHelpWidget(self)
+        help_widget.setWindowOpacity(0.9)
+        help_widget.setWindowModality(Qt.WindowModal)
+        help_widget.show()
+
 
     @pyqtSlot()
     def about(self):
@@ -2246,8 +2358,7 @@ class TagLab(QWidget):
 
         # update project name
         dir = QDir(self.working_dir)
-        self.project_name = dir.relativeFilePath(filename)
-        self.setProjectTitle(self.project_name)
+
 
         dict_to_save["Project Name"] = self.project_name
         dict_to_save["Map File"] = dir.relativeFilePath(self.map_image_filename)

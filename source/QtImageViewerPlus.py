@@ -263,11 +263,14 @@ class QtImageViewerPlus(QGraphicsView):
         scenePos = self.mapToScene(event.pos())
 
         if event.button() == Qt.LeftButton:
-            # if self.panEnabled:
-            if self.panEnabled or (event.modifiers() & Qt.ControlModifier):
-                self.setDragMode(QGraphicsView.ScrollHandDrag)
             clippedCoords = self.clipScenePos(scenePos)
-            self.leftMouseButtonPressed.emit(clippedCoords[0], clippedCoords[1])
+            mods = event.modifiers()
+            #used from area selection and pen drawing,
+            if (self.panEnabled and not (mods & Qt.ShiftModifier)) or (mods & Qt.ControlModifier):
+                self.setDragMode(QGraphicsView.ScrollHandDrag)
+            else:
+                self.leftMouseButtonPressed.emit(clippedCoords[0], clippedCoords[1])
+
 
         # PANNING IS ALWAYS POSSIBLE WITH WHEEL BUTTON PRESSED (!)
         # if event.button() == Qt.MiddleButton:
