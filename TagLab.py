@@ -2398,11 +2398,14 @@ class TagLab(QWidget):
     @pyqtSlot()
     def selectClassifier(self):
 
-        self.classifierWidget = QtClassifierWidget(self.available_classifiers, parent=self)
-        self.classifierWidget.setAttribute(Qt.WA_DeleteOnClose)
-        self.classifierWidget.btnApply.clicked.connect(self.applyClassifier)
-        self.classifierWidget.setWindowModality(Qt.WindowModal)
-        self.classifierWidget.show()
+        if self.available_classifiers == "None":
+            self.btnAutoClassification.setChecked(False)
+        else:
+            self.classifierWidget = QtClassifierWidget(self.available_classifiers, parent=self)
+            self.classifierWidget.setAttribute(Qt.WA_DeleteOnClose)
+            self.classifierWidget.btnApply.clicked.connect(self.applyClassifier)
+            self.classifierWidget.setWindowModality(Qt.WindowModal)
+            self.classifierWidget.show()
 
 
     @pyqtSlot()
@@ -2471,6 +2474,8 @@ class TagLab(QWidget):
 
             del self.classifierWidget
             self.classifierWidget = None
+
+            self.btnAutoClassification.setChecked(False)
 
     def loadingDeepExtremeNetwork(self):
 
