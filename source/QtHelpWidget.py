@@ -97,7 +97,7 @@ class QtHelpWidget(QWidget):
         self.gridlayout3.addWidget(QLabel("<b>-</b>"), 8, 1)
         self.groupbox_labels.setLayout(self.gridlayout3)
 
-        self.groupbox_labels = QGroupBox("Commands")
+        self.groupbox_commands = QGroupBox("Commands")
         self.gridlayout4 = QGridLayout()
         self.gridlayout4.setHorizontalSpacing(20)
         self.gridlayout4.addWidget(QLabel("Select label"), 0, 0)
@@ -110,14 +110,15 @@ class QtHelpWidget(QWidget):
         self.gridlayout4.addWidget(QLabel("<b>SPACE</b>"), 2, 1)
         self.gridlayout4.addWidget(QLabel("<b>ESC</b>"), 3, 1)
         self.gridlayout4.addWidget(QLabel("<b>Ctrl+Z</b>"), 4, 1)
-        self.groupbox_labels.setLayout(self.gridlayout4)
+        self.groupbox_commands.setLayout(self.gridlayout4)
 
-
-
+        layout_V1 = QVBoxLayout()
+        layout_V1.addWidget(self.groupbox_proj)
+        layout_V1.addWidget(self.groupbox_commands)
 
         main_layout = QHBoxLayout()
         main_layout.setAlignment(Qt.AlignRight)
-        main_layout.addWidget(self.groupbox_proj)
+        main_layout.addLayout(layout_V1)
         main_layout.addWidget(self.groupbox_tool)
         main_layout.addWidget(self.groupbox_labels)
 
