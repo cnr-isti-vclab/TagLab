@@ -174,13 +174,20 @@ class QtHistogramWidget(QWidget):
         plt.xlabel("Colonies area (cm^2)")
         plt.ylabel("Number of colonies")
         plt.title('%.4f' % (total_coverage/ 10000) + " m^2 of " + '+ '.join(list_selected)+ " classes in " + self.year)
-        plt.show()
-        fig.canvas.draw()
+        #plt.show()
 
-        # grab the pixel buffer and dump it into a numpy array
-        buf = fig.canvas.tostring_rgb()
-        ncols, nrows = fig.canvas.get_width_height()
-        im = np.fromstring(buf, dtype=np.uint8).reshape(nrows, ncols, 3)
+        import io
+        import cv2
+
+
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", dpi=180)
+        buf.seek(0)
+        img_arr = np.frombuffer(buf.getvalue(), dtype=np.uint8)
+        buf.close()
+        im = cv2.imdecode(img_arr, 1)
+        im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+
 
         # numpy array to QPixmap
         qimg = utils.rgbToQImage(im)
