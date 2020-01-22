@@ -19,7 +19,7 @@ def pointsBox(points, pad = 0):
            points[:, 1].max() + pad]
     box[2] -= box[1]
     box[3] -= box[0]
-    return box
+    return np.array(box).astype(int)
 
 def jointBox(boxes):
     box = boxes[0]
@@ -32,7 +32,7 @@ def jointBox(boxes):
         ])
         box[2] -= box[1]
         box[3] -= box[0]
-    return box
+    return box.astype(int)
 
 """
 returns (mask, bbox) where bbox is the union and mask is set to 0

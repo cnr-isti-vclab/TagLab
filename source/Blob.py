@@ -218,11 +218,12 @@ class Blob(object):
 
 
     def updateUsingMask(self, bbox, mask):
-        self.bbox = bbox
-        self.createContourFromMask(mask)
+        self.createContourFromMask(mask, bbox)
         self.calculatePerimeter()
-        self.calculateCentroid(mask)
+        self.calculateCentroid(mask, bbox)
         self.calculateArea(mask)
+        self.bbox = Mask.pointsBox(self.contour,1)
+
 
     def lineToPoints(self, lines, snap = False):
         points = np.empty(shape=(0, 2), dtype=int)
@@ -318,18 +319,35 @@ class Blob(object):
         # input_arr = segmentation.inverse_gaussian_gradient(input_arr, alpha=1, sigma=1)
 
         blob_mask = self.getMask()
+        box = self.bbox
 
         crack_mask = flood(input_arr, (int(y_crop), int(x_crop)), tolerance=tolerance).astype(int)
         cracked_blob = np.logical_and((blob_mask > 0), (crack_mask < 1))
         cracked_blob = cracked_blob.astype(int)
 
         if not preview:
-            self.updateUsingMask(self.bbox, cracked_blob)
+            regions = measure.regionprops(measure.label(cracked_blob))
+
+            if len(regions):
+                largest = regions[0]
+                for region in regions:
+                    if region.area > largest.area:
+                        largest = region
+
+                # adjust the image bounding box (relative to the region mask) to directly use area.image mask
+                # image box is standard (minx, miny, maxx, maxy)
+                box = np.array([box[0] + largest.bbox[0], box[1] + largest.bbox[1], largest.bbox[3], largest.bbox[2]])
+                try:
+                    self.updateUsingMask(box, largest.image.astype(int))
+                except:
+                    pass
+
+            #self.updateUsingMask(self.bbox, cracked_blob)
 
         return cracked_blob
 
 
-    def createContourFromMask(self, mask):
+    def createContourFromMask(self, mask, bbox):
         """
         It creates the contour (and the corrisponding polygon) from the blob mask.
         """
@@ -352,16 +370,16 @@ class Blob(object):
 
             # search the longest contour
             npoints_max = 0
-            index = 0
+            longest = 0
             for i, contour in enumerate(contours):
                 npoints = contour.shape[0]
                 if npoints > npoints_max:
                     npoints_max = npoints
-                    index = i
+                    longest = i
 
             # divide the contours in OUTER contour and INNER contours
             for i, contour in enumerate(contours):
-                if i == index:
+                if i == longest:
                     self.contour = np.array(contour)
                 else:
                     if contour.shape[0] > threshold:
@@ -373,16 +391,16 @@ class Blob(object):
             for i in range(self.contour.shape[0]):
                 ycoor = self.contour[i, 0]
                 xcoor = self.contour[i, 1]
-                self.contour[i, 0] = xcoor - PADDED_SIZE + self.bbox[1]
-                self.contour[i, 1] = ycoor - PADDED_SIZE + self.bbox[0]
+                self.contour[i, 0] = xcoor - PADDED_SIZE + bbox[1]
+                self.contour[i, 1] = ycoor - PADDED_SIZE + bbox[0]
 
             # adjust coordinates of the INNER contours
             for j, contour in enumerate(self.inner_contours):
                 for i in range(contour.shape[0]):
                     ycoor = contour[i, 0]
                     xcoor = contour[i, 1]
-                    self.inner_contours[j][i, 0] = xcoor - PADDED_SIZE + self.bbox[1]
-                    self.inner_contours[j][i, 1] = ycoor - PADDED_SIZE + self.bbox[0]
+                    self.inner_contours[j][i, 0] = xcoor - PADDED_SIZE + bbox[1]
+                    self.inner_contours[j][i, 1] = ycoor - PADDED_SIZE + bbox[0]
         elif number_of_contours == 1:
 
             coords = measure.approximate_polygon(contours[0], tolerance=1.2)
@@ -393,8 +411,8 @@ class Blob(object):
             for i in range(self.contour.shape[0]):
                 ycoor = self.contour[i, 0]
                 xcoor = self.contour[i, 1]
-                self.contour[i, 0] = xcoor - PADDED_SIZE + self.bbox[1]
-                self.contour[i, 1] = ycoor - PADDED_SIZE + self.bbox[0]
+                self.contour[i, 0] = xcoor - PADDED_SIZE + bbox[1]
+                self.contour[i, 1] = ycoor - PADDED_SIZE + bbox[0]
         else:
             raise Exception("Empty contour")
 
@@ -440,12 +458,13 @@ class Blob(object):
 
         self.pxmap_mask = QPixmap.fromImage(self.qimg_mask)
 
-    def calculateCentroid(self, mask):
+    #bbox is used to place the mask!
+    def calculateCentroid(self, mask, bbox):
         m = measure.moments(mask)
         c = np.array((m[0, 1] / m[0, 0], m[1, 0] / m[0, 0]))
 
         #centroid is (x, y) while measure returns (y,x and bbox is yx)
-        self.centroid  = np.array((c[1] + self.bbox[1], c[0]+ self.bbox[0]))
+        self.centroid  = np.array((c[0] + bbox[1], c[1]+ bbox[0]))
         self.blob_name = "coral-" + str(self.centroid[0]) + "-" + str(self.centroid[1])
 
     def calculateContourPerimeter(self, contour):

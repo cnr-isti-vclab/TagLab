@@ -260,7 +260,7 @@ class Annotation(object):
         if len(points) == 0:
             return
 
-        pointsbox = Mask.pointsBox(points, 3)
+        pointsbox = Mask.pointsBox(points, 4)
         blobmask = blob.getMask()
 
         #add to mask painting the points as 1 and filling the holes.
