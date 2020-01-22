@@ -395,10 +395,10 @@ class Annotation(object):
         return created_blobs
 
 
-    def export_data_table_for_Scripps(self, filename):
+    def export_data_table_for_Scripps(self, scale_factor, filename):
 
         # create a list of properties
-        properties = ['Class name', 'Centroid x', 'Centroid y', 'Coral area', 'Coral perimeter', 'Coral maximum diameter', 'Coral note']
+        properties = ['Class name', 'Centroid x', 'Centroid y', 'Coral area', 'Coral perimeter', 'Coral note']
 
         # create a list of instances
         name_list = []
@@ -422,10 +422,10 @@ class Annotation(object):
         for i, blob in enumerate(visible_blobs):
 
             class_name.append(blob.class_name)
-            centroid_x[i] = blob.centroid[0]
-            centroid_y[i] = blob.centroid[1]
-            coral_area[i] = blob.area
-            coral_perimeter[i] = blob.perimeter
+            centroid_x[i] = round(blob.centroid[0], 1)
+            centroid_y[i] = round(blob.centroid[1], 1)
+            coral_area[i] = round(blob.area * (scale_factor) * (scale_factor)/ 100,2)
+            coral_perimeter[i] = round(blob.perimeter*scale_factor / 10,1)
             #coral_maximum_diameter[i] = blob.major_axis_length
             coral_note.append(blob.note)
 

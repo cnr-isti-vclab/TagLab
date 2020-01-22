@@ -233,7 +233,7 @@ class TagLab(QWidget):
         scroll_area.setMinimumHeight(200)
         scroll_area.setWidget(self.labels_widget)
 
-        groupbox_labels = QGroupBox("Labels")
+        groupbox_labels = QGroupBox("Labels Panel")
 
         layout_groupbox = QVBoxLayout()
         layout_groupbox.addWidget(scroll_area)
@@ -248,14 +248,14 @@ class TagLab(QWidget):
         scroll_area2.setMinimumHeight(100)
         scroll_area2.setWidget(self.compare_panel)
 
-        groupbox_comparison = QGroupBox("Compare Panel")
+        groupbox_comparison = QGroupBox("Comparison Panel")
 
         layout_groupbox2 = QVBoxLayout()
         layout_groupbox2.addWidget(scroll_area2)
         groupbox_comparison.setLayout(layout_groupbox2)
 
         # BLOB INFO
-        groupbox_blobpanel = QGroupBox("Segmentation Info")
+        groupbox_blobpanel = QGroupBox("Segmentation Info Panel")
         lblInstance = QLabel("Instance Name: ")
         self.editInstance = QLineEdit()
         self.editInstance.setMinimumWidth(80)
@@ -2175,7 +2175,7 @@ class TagLab(QWidget):
 
         if filename:
 
-            self.annotations.export_data_table_for_Scripps(filename)
+            self.annotations.export_data_table_for_Scripps(self.map_px_to_mm_factor,filename)
 
             msgBox = QMessageBox(self)
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
