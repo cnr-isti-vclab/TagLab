@@ -2220,7 +2220,8 @@ class TagLab(QWidget):
 
         if folderName:
 
-            self.annotations.export_new_dataset(self.img_map, tile_size=1024, step=256, basename="tile")
+            filename = os.path.join(folderName, "tile")
+            self.annotations.export_new_dataset(self.img_map, tile_size=1024, step=256, basename=filename)
 
 
 
