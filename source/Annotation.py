@@ -30,7 +30,8 @@ from source import utils
 
 import pandas as pd
 from scipy import ndimage as ndi
-from skimage.morphology import watershed
+from skimage.morphology import watershed, flood
+from skimage.filters import gaussian
 from source.Blob import Blob
 import source.Mask as Mask
 
@@ -241,6 +242,62 @@ class Annotation(object):
 
         return created_blobs
 
+
+    def createCrack(self, blob, input_arr, x, y, tolerance, preview=True):
+
+        """
+        Given a inner blob point (x,y), the function use it as a seed for a paint butcket tool and create
+        a correspondent blob hole
+        """
+
+        box = blob.bbox
+
+        x_crop = x - box[1]
+        y_crop = y - box[0]
+
+        input_arr = gaussian(input_arr, 2)
+        # input_arr = segmentation.inverse_gaussian_gradient(input_arr, alpha=1, sigma=1)
+
+        blob_mask = blob.getMask()
+
+        crack_mask = flood(input_arr, (int(y_crop), int(x_crop)), tolerance=tolerance).astype(int)
+        cracked_blob = np.logical_and((blob_mask > 0), (crack_mask < 1))
+        cracked_blob = cracked_blob.astype(int)
+
+        if preview:
+            return cracked_blob
+
+        regions = measure.regionprops(measure.label(cracked_blob))
+
+        area_th = 1000
+        created_blobs = []
+
+        for region in regions:
+            if region.area > area_th:
+                id = len(self.seg_blobs)
+                b = Blob(region, box[1], box[0], id + 1)
+                b.class_color = blob.class_color
+                b.class_name = blob.class_name
+                created_blobs.append(b)
+
+        return created_blobs
+
+            # if len(regions):
+            #     largest = regions[0]
+            #     for region in regions:
+            #         if region.area > largest.area and region.area > 1000:
+            #             largest = region
+            #
+            #
+            #     # adjust the image bounding box (relative to the region mask) to directly use area.image mask
+            #     # image box is standard (minx, miny, maxx, maxy)
+            #     box = np.array([box[0] + largest.bbox[0], box[1] + largest.bbox[1], largest.bbox[3], largest.bbox[2]])
+            #     try:
+            #         self.updateUsingMask(box, largest.image.astype(int))
+            #     except:
+            #         pass
+
+            #self.updateUsingMask(self.bbox, cracked_blob)
 
 
 

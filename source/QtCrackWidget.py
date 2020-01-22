@@ -28,7 +28,7 @@ class QtCrackWidget(QWidget):
 
     closeCrackWidget = pyqtSignal()
 
-    def __init__(self, map, blob, x, y, parent=None):
+    def __init__(self, map, annotations, blob, x, y, parent=None):
         super(QtCrackWidget, self).__init__(parent)
 
         self.setStyleSheet("background-color: rgb(60,60,65); color: white")
@@ -37,6 +37,7 @@ class QtCrackWidget(QWidget):
         arr = utils.qimageToNumpyArray(self.qimg_cropped)
         self.input_arr = rgb2gray(arr) * 255
         self.tolerance = 20
+        self.annotations = annotations
         self.blob = blob
         self.xmap = x
         self.ymap = y
@@ -123,7 +124,7 @@ class QtCrackWidget(QWidget):
     def preview(self):
 
         arr = self.input_arr.copy()
-        mask_crack = self.blob.createCrack(arr, self.xmap, self.ymap, self.tolerance, preview=True)
+        mask_crack = self.annotations.createCrack(self.blob, arr, self.xmap, self.ymap, self.tolerance, preview=True)
         self.qimg_crack = utils.maskToQImage(mask_crack)
         self.viewerplus.setOpacity(0.5)
         self.viewerplus.setOverlayImage(self.qimg_crack)
@@ -131,4 +132,4 @@ class QtCrackWidget(QWidget):
 
     def apply(self):
 
-        mask_crack = self.blob.createCrack(self.input_arr, self.xmap, self.ymap, self.tolerance, preview=False)
+        return self.annotations.createCrack(self.blob, self.input_arr, self.xmap, self.ymap, self.tolerance, preview=False)

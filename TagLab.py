@@ -1790,7 +1790,7 @@ class TagLab(QWidget):
                     #copy blob, for undo reasons.
                     blob = selected_blob.copy()
 
-                    self.crackWidget = QtCrackWidget(self.img_map, blob, x, y, parent=self)
+                    self.crackWidget = QtCrackWidget(self.img_map, self.annotations, blob, x, y, parent=self)
                     self.crackWidget.setWindowModality(Qt.WindowModal)
                     self.crackWidget.btnCancel.clicked.connect(self.crackCancel)
                     self.crackWidget.btnApply.clicked.connect(self.crackApply)
@@ -1919,9 +1919,10 @@ class TagLab(QWidget):
     @pyqtSlot()
     def crackApply(self):
 
-        self.crackWidget.apply()
+        new_blobs = self.crackWidget.apply()
         self.removeBlob(self.selected_blobs[0])
-        self.addBlob(self.crackWidget.blob, selected=True)
+        for blob in new_blobs:
+            self.addBlob(blob, selected=True)
         self.saveUndo()
 
         logfile.info("CREATECRACK creates a crack.")
