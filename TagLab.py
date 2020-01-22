@@ -28,7 +28,7 @@ import numpy.ma as ma
 from skimage import measure
 from skimage.measure import points_in_poly
 
-from PyQt5.QtCore import Qt, QSize, QDir, QPoint, QPointF, QLineF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo
+from PyQt5.QtCore import Qt, QSettings, QSize, QDir, QPoint, QPointF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo
 from PyQt5.QtGui import QPainterPath, QFont, QColor, QPolygonF, QImage, QPixmap, QIcon, QKeySequence, \
     QPen, QBrush, qRgb, qRed, qGreen, qBlue
 from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QDialog, QMenuBar, QMenu, QSizePolicy, QScrollArea, \
@@ -112,6 +112,7 @@ class TagLab(QWidget):
 
         self.recentFileActs = []
         self.maxRecentFiles = 4
+        self.separatorRecentFilesAct = None
 
         # ANNOTATION DATA
         self.annotations = Annotation(self.labels)
@@ -503,6 +504,30 @@ class TagLab(QWidget):
         title = "TagLab - [Project: " + project_name + "]"
         self.setWindowTitle(title)
 
+        if project_name is not "NONE":
+
+            settings = QSettings('VCLAB', 'TagLab')
+            files = settings.value('recentFileList')
+
+            if files:
+
+                try:
+                    files.remove(project_name)
+                except ValueError:
+                    pass
+
+                files.insert(0, project_name)
+                del files[self.maxRecentFiles:]
+
+                settings.setValue('recentFileList', files)
+            else:
+                files = []
+                files.append(project_name)
+                settings.setValue('recentFileList', files)
+
+            self.updateRecentFileActions()
+
+
     def clampCoords(self, x, y):
 
         xc = max(0, min(int(x), self.img_map.width()))
@@ -510,6 +535,8 @@ class TagLab(QWidget):
         return (xc, yc)
 
     def createMenuBar(self):
+
+        ##### PROJECTS
 
         newAct = QAction("New Project", self)
         newAct.setShortcut('Ctrl+N')
@@ -525,6 +552,9 @@ class TagLab(QWidget):
         saveAct.setShortcut('Ctrl+Alt+S')
         saveAct.setStatusTip("Save current project")
         saveAct.triggered.connect(self.saveProject)
+
+        for i in range(self.maxRecentFiles):
+            self.recentFileActs.append(QAction(self, visible=False, triggered=self.openRecentProject))
 
         # THIS WILL BECOME "ADD MAP" TO ADD MULTIPLE MAPS (e.g. depth, different years)
         loadMapAct = QAction("Load Map", self)
@@ -548,12 +578,6 @@ class TagLab(QWidget):
 
 
         ### EXPORT
-
-        # la tabella
-        # la mappa
-        # shapefile(!) - gestione delle coordinate - geopy e pyhsp
-        # statistics - istogrammi, e...?
-        # training dataset
 
         exportDataTableAct = QAction("Export Annotations as Data Table", self)
         #exportDataTableAct.setShortcut('Ctrl+??')
@@ -618,6 +642,12 @@ class TagLab(QWidget):
         filemenu.addSeparator()
         filemenu.addAction(loadMapAct)
         filemenu.addSeparator()
+
+        for i in range(self.maxRecentFiles):
+            filemenu.addAction(self.recentFileActs[i])
+        self.separatorRecentFilesAct = filemenu.addSeparator()
+        self.updateRecentFileActions()
+
         submenuImport = filemenu.addMenu("Import")
         submenuImport.addAction(appendAct)
         submenuImport.addAction(compareAct)
@@ -656,6 +686,26 @@ class TagLab(QWidget):
         helpmenu.addAction(aboutAct)
 
         return menubar
+
+    def updateRecentFileActions(self):
+
+        settings = QSettings('VCLAB', 'TagLab')
+        files = settings.value('recentFileList')
+
+        if files:
+            numRecentFiles = min(len(files), self.maxRecentFiles)
+
+            for i in range(numRecentFiles):
+                text = "&%d. %s" % (i + 1, QFileInfo(files[i]).fileName())
+                self.recentFileActs[i].setText(text)
+                self.recentFileActs[i].setData(files[i])
+                self.recentFileActs[i].setVisible(True)
+
+            for j in range(numRecentFiles, self.maxRecentFiles):
+                self.recentFileActs[j].setVisible(False)
+
+            self.separatorRecentFilesAct.setVisible((numRecentFiles > 0))
+
 
     def keyPressEvent(self, event):
 
@@ -1260,11 +1310,11 @@ class TagLab(QWidget):
         self.lblClass.setText(blob.class_name)
 
         scaled_perimeter = blob.perimeter * self.map_px_to_mm_factor / 10
-        text1 = "Perimeter (cm):{:8.2f}".format(scaled_perimeter)
+        text1 = "Perimeter (cm): {:8.2f}".format(scaled_perimeter)
         self.lblP.setText(text1)
 
         scaled_area = blob.area * (self.map_px_to_mm_factor) * (self.map_px_to_mm_factor) / 100
-        text2 = "Area (cm^2):{:8.2f}".format(scaled_area)
+        text2 = "Area (cm<sup>2</sup>): {:8.2f}".format(scaled_area)
         self.lblA.setText(text2)
 
         self.editNote.setPlainText(blob.note)
@@ -1964,28 +2014,6 @@ class TagLab(QWidget):
         return measure
 
 
-    def updateRecentFileActions(self):
-
-        settings = QSettings('VCLab', 'TagLab')
-        files = settings.value('recentFileList')
-
-        numRecentFiles = min(len(files), self.maxRecentFiles)
-
-        for i in range(numRecentFiles):
-
-            text = "&%d %s" % (i + 1, self.strippedName(files[i]))
-            self.recentFileActs[i].setText(text)
-            self.recentFileActs[i].setData(files[i])
-            self.recentFileActs[i].setVisible(True)
-
-        for j in range(numRecentFiles, self.maxRecentFiles):
-            self.recentFileActs[j].setVisible(False)
-
-        self.separatorAct.setVisible((numRecentFiles > 0))
-
-    def strippedName(self, fullFileName):
-        return QFileInfo(fullFileName).fileName()
-
     @pyqtSlot()
     def newProject(self):
 
@@ -2079,7 +2107,10 @@ class TagLab(QWidget):
 
     @pyqtSlot()
     def openRecentProject(self):
-        pass
+
+        action = self.sender()
+        if action:
+            self.load(action.data())
 
     @pyqtSlot()
     def saveProject(self):
