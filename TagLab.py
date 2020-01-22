@@ -997,8 +997,9 @@ class TagLab(QWidget):
         self.btnRuler.setChecked(False)
         self.btnCreateCrack.setChecked(False)
         self.btnSplitBlob.setChecked(False)
-
         self.btnDeepExtreme.setChecked(False)
+
+        self.btnAutoClassification.setChecked(False)
 
     @pyqtSlot()
     def move(self):
@@ -2477,13 +2478,16 @@ class TagLab(QWidget):
                 for blob in created_blobs:
                     self.addBlob(blob, selected=False)
 
-            progress_bar.close()
-            del progress_bar
+            if progress_bar:
+                progress_bar.close()
+                del progress_bar
 
-            del self.classifierWidget
-            self.classifierWidget = None
+            if self.classifierWidget:
+                self.classifierWidget.close()
+                del self.classifierWidget
+                self.classifierWidget = None
 
-            self.btnAutoClassification.setChecked(False)
+            self.move()
 
     def loadingDeepExtremeNetwork(self):
 
