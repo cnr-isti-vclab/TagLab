@@ -26,6 +26,7 @@ import numpy as np
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 from source.Annotation import Annotation
+from source import utils
 
 class QtHistogramWidget(QWidget):
 
@@ -38,10 +39,10 @@ class QtHistogramWidget(QWidget):
         self.ann = annotations
         self.labels_info = annotations.labels_info
         self.checkBoxes = []  # list of QCheckBox
-        self.setStyleSheet("background-color: rgba(60,60,65,100); color: white")
+        self.setStyleSheet("background-color: rgba(60,60,65); color: white")
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        self.setMinimumWidth(400)
-        self.setMinimumHeight(200)
+        self.setMinimumWidth(800)
+        self.setMinimumHeight(500)
 
         # look for existing labels in annotations
         labels_set = set()
@@ -99,9 +100,14 @@ class QtHistogramWidget(QWidget):
         buttons_layout.addWidget(self.btnSaveAs)
 
 
-        self.lblPreview = QLabel("PREVIEW GOES HERE")
-        self.lblPreview.setFixedWidth(500)
-        self.lblPreview.setFixedHeight(300)
+        self.preview_W = 800
+        self.preview_H = 520
+        pxmap = QPixmap(self.preview_W, self.preview_H)
+        self.lblPreview = QLabel()
+        self.lblPreview.setFixedWidth(self.preview_W+4)
+        self.lblPreview.setFixedHeight(self.preview_H+4)
+        self.lblPreview.setPixmap(pxmap)
+        self.lblPreview.setUpdatesEnabled(True)
 
         layoutV = QVBoxLayout()
         layoutV.addWidget(self.lblPreview)
@@ -113,6 +119,7 @@ class QtHistogramWidget(QWidget):
         self.setWindowTitle("CREATE AND EXPORT HISTOGRAM")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
+        self.adjustSize()
 
     @pyqtSlot()
     def cancel(self):
@@ -159,13 +166,28 @@ class QtHistogramWidget(QWidget):
         colors = [tuple(np.asanyarray(list_color[i])/255)for i in range(0, len(list_selected))]
         areas = [np.asarray(class_area[i]) for i in range(0, len(list_selected))]
         patches = [mpatches.Patch(color=tuple(np.asanyarray(list_color[i]) / 255),   label='%.4f' % (sum_area[i] / 10000) + " m^2 " + list_selected[i]) for i in range(0, len(list_selected))]
+
+        fig = plt.figure()
+        fig.set_size_inches(10, 6.5)
         plt.legend(handles=patches)
         plt.hist(areas, bins, color=colors)
         plt.xlabel("Colonies area (cm^2)")
         plt.ylabel("Number of colonies")
         plt.title('%.4f' % (total_coverage/ 10000) + " m^2 of " + '+ '.join(list_selected)+ " classes in " + self.year)
         plt.show()
+        fig.canvas.draw()
 
+        # grab the pixel buffer and dump it into a numpy array
+        buf = fig.canvas.tostring_rgb()
+        ncols, nrows = fig.canvas.get_width_height()
+        im = np.fromstring(buf, dtype=np.uint8).reshape(nrows, ncols, 3)
+
+        # numpy array to QPixmap
+        qimg = utils.rgbToQImage(im)
+        qimg = qimg.scaled(self.preview_W, self.preview_H, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pxmap = QPixmap(qimg)
+
+        self.lblPreview.setPixmap(pxmap)
 
     @pyqtSlot()
     def saveas(self):
@@ -178,4 +200,6 @@ class QtHistogramWidget(QWidget):
 
         if filename:
 
-            pass
+            pxmap = self.lblPreview.pixmap()
+            qimg = pxmap.toImage()
+            qimg.save(filename)
