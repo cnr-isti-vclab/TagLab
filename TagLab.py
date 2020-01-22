@@ -2478,6 +2478,13 @@ class TagLab(QWidget):
                 for blob in created_blobs:
                     self.addBlob(blob, selected=False)
 
+            # free GPU memory
+            self.resetNetworks()
+
+            if self.corals_classifier:
+                del self.corals_classifier
+                self.corals_classifier = None
+
             if progress_bar:
                 progress_bar.close()
                 del progress_bar
