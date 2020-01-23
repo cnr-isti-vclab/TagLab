@@ -1679,7 +1679,11 @@ class TagLab(QWidget):
 
         self.undo_operation['class'].append((blob, blob.class_name))
         blob.class_name = class_name
-        blob.class_color = self.labels[blob.class_name]
+
+        if class_name == "Empty":
+            blob.class_color = [255, 255, 255]
+        else:
+            blob.class_color = self.labels[blob.class_name]
 
         brush = self.classBrushFromName(blob)
         blob.qpath_gitem.setBrush(brush)
