@@ -508,8 +508,8 @@ class Annotation(object):
         w = map.width()
         h = map.height()
 
-        myPNG = QImage(w, h, QImage.Format_RGB32)
-        myPNG.fill(qRgb(0, 0, 0))
+        labelimg = QImage(w, h, QImage.Format_RGB32)
+        labelimg.fill(qRgb(0, 0, 0))
 
         painter = QPainter(myPNG)
 
@@ -533,7 +533,7 @@ class Annotation(object):
 
         painter.end()
 
-        myPNG.save(filename)
+        labelimg.save(filename)
 
 
     def export_new_dataset(self, map, tile_size, step, basename):
@@ -545,22 +545,25 @@ class Annotation(object):
         labelimg = QImage(w, h, QImage.Format_RGB32)
         labelimg.fill(qRgb(0, 0, 0))
 
+        painter = QPainter(labelimg)
+
         # CREATE LABEL IMAGE
         for i, blob in enumerate(self.seg_blobs):
 
             if blob.qpath_gitem.isVisible():
 
-                if blob.class_color == "Empty":
-                    rgb = qRgb(255, 255, 255)
-                else:
-                    rgb = qRgb(blob.class_color[0], blob.class_color[1], blob.class_color[2])
+                if blob.qpath_gitem.isVisible():
 
-                blob_mask = blob.getMask()
-                for x in range(blob_mask.shape[1]):
-                    for y in range(blob_mask.shape[0]):
+                    if blob.class_name == "Empty":
+                        rgb = qRgb(255, 255, 255)
+                    else:
+                        class_color = self.labels_info[blob.class_name]
+                        rgb = qRgb(class_color[0], class_color[1], class_color[2])
 
-                        if blob_mask[y, x] == 1:
-                            labelimg.setPixel(x + blob.bbox[1], y + blob.bbox[0], rgb)
+                    painter.setBrush(QBrush(QColor(rgb)))
+                    painter.drawPath(blob.qpath_gitem.path())
+
+        painter.end()
 
         tile_cols = int((w - tile_size) / step)
         tile_rows = int((h - tile_size) / step)
@@ -578,6 +581,9 @@ class Annotation(object):
 
                 filenameRGB = basename + "_RGB_" + str.format("{0:02d}", (row)) + "_" + str.format("{0:02d}", (col)) + ".png"
                 filenameLabel = basename + "_L_" + str.format("{0:02d}", (row)) + "_" + str.format("{0:02d}", (col)) + ".png"
+
+                print(filenameRGB)
+                print(filenameLabel)
 
                 cropimg.save(filenameRGB)
                 croplabel.save(filenameLabel)
