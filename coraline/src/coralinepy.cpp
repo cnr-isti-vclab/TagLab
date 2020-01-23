@@ -8,7 +8,7 @@ using namespace std;
 #if defined(_WIN32)
   // MS Windows DLLs (*.dll)
 #define CORALINE_EXPORT_C __declspec(dllexport)
-#else 
+#else
   // Unix-like Shared Object (.so) operating systems and GCC.
 #define CORALINE_EXPORT_C __attribute__ ((visibility ("default")))
 #endif 
