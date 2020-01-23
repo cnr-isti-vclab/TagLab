@@ -126,8 +126,6 @@ class QtHistogramWidget(QWidget):
 
         self.close()
 
-
-
     @pyqtSlot()
     def preview(self):
         list_selected = []
@@ -137,17 +135,18 @@ class QtHistogramWidget(QWidget):
                list_selected.append(checkbox.text())
                list_color.append(self.labels_info[checkbox.text()])
 
-        self.create_histogram(list_selected,list_color)
+        if len(list_selected) > 0:
+            self.create_histogram(list_selected,list_color)
 
-    def create_histogram(self, list_selected,list_color):
+    def create_histogram(self, list_selected, list_color):
 
-        class_area =[]
+        class_area = []
 
         for my_class in list_selected:
             my_area = []
             for blob in self.ann.seg_blobs:
                 if blob.class_name == my_class:
-                   blob_area = blob.area * self.scale_factor * self.scale_factor/100
+                   blob_area = blob.area * self.scale_factor * self.scale_factor / 100
                    blob_area = np.around(blob_area, decimals=2)
                    my_area.append(blob_area)
             class_area.append(my_area)
