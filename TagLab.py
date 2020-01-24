@@ -120,7 +120,7 @@ class TagLab(QWidget):
         """Temporary variable to hold the added and removed of the last operation."""
         self.undo_operation =  { "remove":[], "add":[], "class":[] }
         """Max number  of undo operations"""
-        self.max_undo = 20
+        self.max_undo = 100
 
         ##### INTERFACE #####
         #####################
@@ -1576,7 +1576,7 @@ class TagLab(QWidget):
             self.infoWidget.setInfoMessage("You need to select <em>two</em> blobs for DIVIDE operation.")
 
     def refineBorderDilate(self):
-        self.refine_grow = 10
+        self.refine_grow = 15
         self.refineBorder()
         self.refine_grow = 0;
 
@@ -1596,7 +1596,7 @@ class TagLab(QWidget):
         logfile.debug("Number of selected blobs: %d", len(self.selected_blobs))
 
         # padding mask to allow moving boundary
-        padding = 30
+        padding = 35
         if len(self.selected_blobs) == 1:
 
             logfile.info("REFINE BORDER operation begins..")

@@ -222,7 +222,7 @@ class Blob(object):
         self.calculatePerimeter()
         self.calculateCentroid(mask, bbox)
         self.calculateArea(mask)
-        self.bbox = Mask.pointsBox(self.contour,1)
+        self.bbox = Mask.pointsBox(self.contour,2)
 
 
     def lineToPoints(self, lines, snap = False):
