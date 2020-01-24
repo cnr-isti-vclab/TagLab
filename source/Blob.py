@@ -105,7 +105,7 @@ class Blob(object):
             # a string with a number to identify the blob plus its centroid
             xc = int(self.centroid[0])
             yc = int(self.centroid[1])
-            self.blob_name = "blob" + str(id) + "-" + str(xc) + "-" + str(yc)
+            self.blob_name = "c-{:.1f}x-{:.1f}y".format(xc, yc)
             self.id = id
 
         # deep extreme points (for fine-tuning)
@@ -188,7 +188,7 @@ class Blob(object):
         # a string with a number to identify the blob plus its centroid
         xc = int(self.centroid[0])
         yc = int(self.centroid[1])
-        self.blob_name = "blob" + str(id) + "-" + str(xc) + "-" + str(yc)
+        self.blob_name = "c-{:.1f}x-{:.1f}y".format(xc, yc)
         self.id = id
 
     def getMask(self):
@@ -423,7 +423,7 @@ class Blob(object):
 
         #centroid is (x, y) while measure returns (y,x and bbox is yx)
         self.centroid  = np.array((c[0] + bbox[1], c[1]+ bbox[0]))
-        self.blob_name = "coral-" + str(self.centroid[0]) + "-" + str(self.centroid[1])
+        self.blob_name = "c-{:.1f}x-{:.1f}y".format(self.centroid[0], self.centroid[1])
 
     def calculateContourPerimeter(self, contour):
 
