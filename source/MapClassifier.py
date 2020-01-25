@@ -109,10 +109,11 @@ class MapClassifier(QObject):
         W = img_map.width()
         H = img_map.height()
 
-        DSZ = TILE_SIZE - AGGREGATION_WINDOW_SIZE
+        tile_cols = int(W / AGGREGATION_WINDOW_SIZE)
+        tile_rows = int(H / AGGREGATION_WINDOW_SIZE)
 
-        tile_cols = int((W-DSZ) / AGGREGATION_WINDOW_SIZE)
-        tile_rows = int((H-DSZ) / AGGREGATION_WINDOW_SIZE)
+        DELTA_W = W - AGGREGATION_WINDOW_SIZE * tile_cols
+        DELTA_H = H - AGGREGATION_WINDOW_SIZE * tile_rows
 
         if torch.cuda.is_available():
             device = torch.device("cuda")
@@ -143,8 +144,8 @@ class MapClassifier(QObject):
                 for i in range(-1,2):
                     for j in range(-1,2):
 
-                        top = row * STEP_SIZE + i * AGGREGATION_STEP
-                        left = col * STEP_SIZE + j * AGGREGATION_STEP
+                        top = DELTA_H + row * STEP_SIZE + i * AGGREGATION_STEP
+                        left = DELTA_W + col * STEP_SIZE + j * AGGREGATION_STEP
                         cropimg = utils.cropQImage(img_map, [top, left, TILE_SIZE, TILE_SIZE])
                         img_np = utils.qimageToNumpyArray(cropimg)
 
@@ -208,8 +209,8 @@ class MapClassifier(QObject):
         # put tiles together
         qimglabel = QImage(W, H, QImage.Format_RGB32)
 
-        DW = int(DSZ/2)
-        DH = int(DSZ/2)
+        DA = int((TILE_SIZE - AGGREGATION_WINDOW_SIZE) / 2)
+        DA = int((TILE_SIZE - AGGREGATION_WINDOW_SIZE) / 2)
 
         xoffset = 0
         yoffset = 0
@@ -224,8 +225,8 @@ class MapClassifier(QObject):
 
                 print(".")
 
-                xoffset = DW + c * AGGREGATION_WINDOW_SIZE
-                yoffset = DH + r * AGGREGATION_WINDOW_SIZE
+                xoffset = DELTA_W + DA + c * AGGREGATION_WINDOW_SIZE
+                yoffset = DELTA_H + DA + r * AGGREGATION_WINDOW_SIZE
 
                 painter.drawImage(xoffset, yoffset, qimg)
 

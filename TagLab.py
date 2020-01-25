@@ -2462,6 +2462,10 @@ class TagLab(QWidget):
             # free GPU memory
             self.resetNetworks()
 
+            self.classifierWidget.close()
+            del self.classifierWidget
+            self.classifierWidget = None
+
             self.tool_used = "AUTOCLASS"
 
             progress_bar = QtProgressBarCustom(parent=self)
@@ -2523,11 +2527,6 @@ class TagLab(QWidget):
             if progress_bar:
                 progress_bar.close()
                 del progress_bar
-
-            if self.classifierWidget:
-                self.classifierWidget.close()
-                del self.classifierWidget
-                self.classifierWidget = None
 
             self.move()
 
