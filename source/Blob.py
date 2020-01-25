@@ -30,7 +30,8 @@ from PyQt5.QtCore import QPointF
 from skimage.morphology import flood, flood_fill, binary_dilation, binary_erosion
 from skimage.measure import points_in_poly
 from skimage.draw import polygon_perimeter, polygon
-
+import cv2
+from cv2 import fillPoly
 
 import source.Mask as Mask
 from source import utils
@@ -198,21 +199,17 @@ class Blob(object):
 
         r = self.bbox[3]
         c = self.bbox[2]
+        origin = np.array([int(self.bbox[1]), int(self.bbox[0])])
 
-        mask = np.zeros((r, c), dtype=np.bool_)
-
-        # main polygon
-        [rr, cc] = polygon(self.contour[:, 1], self.contour[:, 0])
-        rr = rr - int(self.bbox[0])
-        cc = cc - int(self.bbox[1])
-        mask[rr, cc] = 1
+        mask = np.zeros((r, c), np.uint8)
+        fillPoly(mask, pts=[self.contour.astype(int) - origin], color=(1, 1, 1))
+#DEBUG
+#        cv2.imshow(" ", mask)
+#        cv2.waitKey()
 
         # holes
         for inner_contour in self.inner_contours:
-            [rr, cc] = polygon(inner_contour[:, 1], inner_contour[:, 0])
-            rr = rr - int(self.bbox[0])
-            cc = cc - int(self.bbox[1])
-            mask[rr, cc] = 0
+            fillPoly(mask, pts=[inner_contour.astype(int) - origin], color=(0, 0, 0))
 
         return mask
 
