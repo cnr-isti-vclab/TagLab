@@ -175,7 +175,7 @@ class TagLab(QWidget):
 
         #CONTEXT MENU ACTIONS
 
-        self.assignAction       = self.newAction("Assign Class",            "A",   self.assign)
+        self.assignAction       = self.newAction("Assign Class",            "A",   self.assignOperation)
         self.deleteAction       = self.newAction("Delete Labels",           "Del", self.deleteSelectedBlobs)
         self.mergeAction        = self.newAction("Merge Overlapped Labels", "M",   self.union)
         self.divideAction       = self.newAction("Divide Labels",           "D",   self.divide)
@@ -736,10 +736,7 @@ class TagLab(QWidget):
 
         elif event.key() == Qt.Key_A:
             # ASSIGN LABEL
-            for blob in self.selected_blobs:
-                self.setBlobClass(blob, self.labels_widget.getActiveLabelName())
-            self.saveUndo()
-            self.resetSelection()
+            self.assignOperation()
 
         elif event.key() == Qt.Key_Delete:
             # DELETE SELECTED BLOBS
@@ -1477,6 +1474,14 @@ class TagLab(QWidget):
         ruler_text.setFlag(QGraphicsItem.ItemIgnoresTransformations)
 
         self.pick_markers.append(middle);
+
+
+    def assignOperation(self):
+        for blob in self.selected_blobs:
+            self.setBlobClass(blob, self.labels_widget.getActiveLabelName())
+        self.saveUndo()
+        self.resetSelection()
+
 
     def union(self):
         """
