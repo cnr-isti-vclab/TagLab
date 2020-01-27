@@ -28,8 +28,8 @@ import numpy.ma as ma
 from skimage import measure
 from skimage.measure import points_in_poly
 
-from PyQt5.QtCore import Qt, QSettings, QSize, QDir, QPoint, QPointF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo
-from PyQt5.QtGui import QPainterPath, QFont, QColor, QPolygonF, QImage, QPixmap, QIcon, QKeySequence, \
+from PyQt5.QtCore import Qt, QSize, QDir, QPoint, QPointF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo
+from PyQt5.QtGui import QPainterPath, QFont, QColor, QPolygonF, QImageReader, QImage, QPixmap, QIcon, QKeySequence, \
     QPen, QBrush, qRgb, qRed, qGreen, qBlue
 from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QDialog, QMenuBar, QMenu, QSizePolicy, QScrollArea, \
     QLabel, QToolButton, QPushButton, QSlider, \
@@ -2075,28 +2075,45 @@ class TagLab(QWidget):
 
     def loadMap(self):
 
-        QApplication.setOverrideCursor(Qt.WaitCursor)
+        # retrieve image size
+        image_reader = QImageReader(self.map_image_filename)
+        sizeOfImage = image_reader.size()
+        height = sizeOfImage.height()
+        width = sizeOfImage.width()
 
-        # load map and set it
-        self.infoWidget.setInfoMessage("Map is loading..")
+        if width > 32767 or height > 32767:
 
-        self.img_map = QImage(self.map_image_filename)
+            self.infoWidget.setInfoMessage("Map is too big (!)")
 
-        if self.img_map.isNull():
             msgBox = QMessageBox()
-            msgBox.setText("Could not load or find the image: " + self.map_image_filename)
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("This map exceeds the image dimension handled by TagLab (the maximum size is 32767 x 32767).")
             msgBox.exec()
-            return
 
-        self.img_thumb_map = self.img_map.scaled(self.MAP_VIEWER_SIZE, self.MAP_VIEWER_SIZE, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        self.viewerplus.setImage(self.img_map)
-        self.mapviewer.setImage(self.img_thumb_map)
-        self.viewerplus.viewUpdated.connect(self.updateMapViewer)
-        self.mapviewer.setOpacity(0.5)
+        else:
 
-        QApplication.restoreOverrideCursor()
+            QApplication.setOverrideCursor(Qt.WaitCursor)
 
-        self.infoWidget.setInfoMessage("The map has been successfully loading.")
+            # load map and set it
+            self.infoWidget.setInfoMessage("Map is loading..")
+
+            self.img_map = QImage(self.map_image_filename)
+
+            if self.img_map.isNull():
+                msgBox = QMessageBox()
+                msgBox.setText("Could not load or find the image: " + self.map_image_filename)
+                msgBox.exec()
+                return
+
+            self.img_thumb_map = self.img_map.scaled(self.MAP_VIEWER_SIZE, self.MAP_VIEWER_SIZE, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            self.viewerplus.setImage(self.img_map)
+            self.mapviewer.setImage(self.img_thumb_map)
+            self.viewerplus.viewUpdated.connect(self.updateMapViewer)
+            self.mapviewer.setOpacity(0.5)
+
+            QApplication.restoreOverrideCursor()
+
+            self.infoWidget.setInfoMessage("The map has been successfully loading.")
 
     @pyqtSlot()
     def openProject(self):
