@@ -23,10 +23,14 @@ from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QImage, QPixmap, QIcon, qRgb, qRed, qGreen, qBlue
 from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QSizePolicy, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
 import numpy as np
+import matplotlib
+matplotlib.use('agg')
+
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 from source.Annotation import Annotation
 from source import utils
+
 
 class QtHistogramWidget(QWidget):
 

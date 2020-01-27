@@ -35,9 +35,6 @@ from skimage.filters import gaussian
 from source.Blob import Blob
 import source.Mask as Mask
 
-import time
-
-
 class Group(object):
 
     def __init__(self, blobs, id):
@@ -218,6 +215,7 @@ class Annotation(object):
         seeds = seeds.astype(int)
         mask = blob.getMask()
         box = blob.bbox
+
         # x,y
         seeds_matrix = np.zeros_like(mask)
         # it would be useful add a slider to regulate this size parameter?
@@ -232,6 +230,7 @@ class Annotation(object):
         seeds_matrix = seeds_matrix > 0.5
         markers = ndi.label(seeds_matrix)[0]
         labels = watershed(-distance, markers, mask=mask)
+
         created_blobs = []
         for region in measure.regionprops(labels):
                 idx = len(self.seg_blobs)
