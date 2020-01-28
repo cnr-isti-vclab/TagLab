@@ -36,6 +36,11 @@ from cv2 import fillPoly
 import source.Mask as Mask
 from source import utils
 
+import logging
+
+# get the global logger
+logfile = logging.getLogger("tool-logger")
+
 
 import time
 
@@ -104,8 +109,8 @@ class Blob(object):
             self.instance_name = "coral" + str(id)
 
             # a string with a number to identify the blob plus its centroid
-            xc = int(self.centroid[0])
-            yc = int(self.centroid[1])
+            xc = self.centroid[0]
+            yc = self.centroid[1]
             self.blob_name = "c-{:.1f}x-{:.1f}y".format(xc, yc)
             self.id = id
 
@@ -132,6 +137,8 @@ class Blob(object):
 
         # membership group (if any)
         self.group = None
+
+
     def copy(self):
         blob = Blob(None, 0, 0, 0)
 
@@ -187,8 +194,8 @@ class Blob(object):
 
     def setId(self, id):
         # a string with a number to identify the blob plus its centroid
-        xc = int(self.centroid[0])
-        yc = int(self.centroid[1])
+        xc = self.centroid[0]
+        yc = self.centroid[1]
         self.blob_name = "c-{:.1f}x-{:.1f}y".format(xc, yc)
         self.id = id
 

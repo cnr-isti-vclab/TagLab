@@ -35,6 +35,8 @@ from skimage.filters import gaussian
 from source.Blob import Blob
 import source.Mask as Mask
 
+
+
 class Group(object):
 
     def __init__(self, blobs, id):
@@ -92,6 +94,9 @@ class Annotation(object):
         # labels info
         self.labels_info = labels_info
 
+        # progressive id of the blobs
+        self.progressive_id = 0
+
     def addGroup(self, blobs):
 
         id = len(self.groups)
@@ -121,9 +126,8 @@ class Annotation(object):
 
             if region.area > area_th:
 
-                id = len(self.seg_blobs)
-                blob = Blob(region, map_pos_x, map_pos_y, id+1)
-                #self.seg_blobs.append(blob)
+                blob = Blob(region, map_pos_x, map_pos_y, self.progressive_id)
+                self.progressive_id += 1
 
                 last_blobs_added.append(blob)
 
@@ -200,8 +204,8 @@ class Annotation(object):
         for region in measure.regionprops(label_image):
 
             if region.area > area_th:
-                id = len(self.seg_blobs)
-                b = Blob(region, box[1], box[0], id + 1)
+                b = Blob(region, box[1], box[0], self.progressive_id)
+                self.progressive_id += 1
                 b.class_color = blob.class_color
                 b.class_name = blob.class_name
                 created_blobs.append(b)
@@ -233,8 +237,8 @@ class Annotation(object):
 
         created_blobs = []
         for region in measure.regionprops(labels):
-                idx = len(self.seg_blobs)
-                b = Blob(region, box[1], box[0], idx + 1)
+                b = Blob(region, box[1], box[0], self.progressive_id)
+                self.progressive_id += 1
                 b.class_color = blob.class_color
                 b.class_name = blob.class_name
                 created_blobs.append(b)
@@ -274,7 +278,8 @@ class Annotation(object):
         for region in regions:
             if region.area > area_th:
                 id = len(self.seg_blobs)
-                b = Blob(region, box[1], box[0], id + 1)
+                b = Blob(region, box[1], box[0], self.progressive_id)
+                self.progressive_id += 1
                 b.class_color = blob.class_color
                 b.class_name = blob.class_name
                 created_blobs.append(b)
@@ -432,7 +437,8 @@ class Annotation(object):
         for region in measure.regionprops(labels):
             if region.area > too_much_small_area:
                 id = len(self.seg_blobs)
-                blob = Blob(region, 0, 0, id+1)
+                blob = Blob(region, 0, 0, self.progressive_id)
+                self.progressive_id += 1
 
                 # assign class
                 row = region.coords[0, 0]
