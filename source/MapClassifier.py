@@ -21,8 +21,6 @@ import os
 import math
 import numpy as np
 
-import time
-
 # PYTORCH
 import torch
 
@@ -181,14 +179,8 @@ class MapClassifier(QObject):
                 if self.flagStopProcessing is True:
                     break
 
-                start = time.time()
-
                 preds_avg, preds_bayesian = self.aggregateScores(scores, tile_sz=TILE_SIZE,
                                                     center_window_size=AGGREGATION_WINDOW_SIZE, step=AGGREGATION_STEP)
-
-                end = time.time()
-
-                print(end-start)
 
                 values_t, predictions_t = torch.max(torch.from_numpy(preds_avg), 0)
                 preds = predictions_t.cpu().numpy()
@@ -222,8 +214,6 @@ class MapClassifier(QObject):
                 tilename = str(r) + "_" + str(c) + ".png"
                 filename = os.path.join(temp_dir, tilename)
                 qimg = QImage(filename)
-
-                print(".")
 
                 xoffset = DELTA_W + DA + c * AGGREGATION_WINDOW_SIZE
                 yoffset = DELTA_H + DA + r * AGGREGATION_WINDOW_SIZE
