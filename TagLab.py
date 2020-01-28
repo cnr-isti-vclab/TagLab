@@ -895,7 +895,7 @@ class TagLab(QWidget):
             # APPLY DEEP EXTREME (IF FOUR POINTS HAVE BEEN SELECTED)
             elif self.tool_used == "DEEPEXTREME" and self.pick_points_number == 4:
 
-                self.segmentWithDeepExtreme()
+                self.seg%mentWithDeepExtreme()
                 self.resetPickPoints()
 
             elif self.tool_used == "SPLITBLOB" and self.pick_points_number > 1 and len(self.selected_blobs) == 1:
@@ -1791,9 +1791,9 @@ class TagLab(QWidget):
 
         logfile.info(message1)
         logfile.info(message2)
-        loginfo.info(message3)
-        loginfo.info(message4)
-        loginfo.info(message5)
+        logfile.info(message3)
+        logfile.info(message4)
+        logfile.info(message5)
 
 
     def groupBlobs(self):
