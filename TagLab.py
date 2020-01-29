@@ -97,7 +97,7 @@ class TagLab(QWidget):
         self.available_classifiers = config_dict["Available Classifiers"]
         self.labels = config_dict["Labels"]
 
-        logfile.info("Initizialization begins..")
+        logfile.info("[INFO] Initizialization begins..")
 
         # MAP VIEWER preferred size (longest side)
         self.MAP_VIEWER_SIZE = 400
@@ -420,7 +420,7 @@ class TagLab(QWidget):
         self.showMinimized()
         self.showMaximized()
 
-        logfile.info("Inizialization finished!")
+        logfile.info("[INFO] Inizialization finished!")
 
         # autosave timer
         self.timer = None
@@ -710,7 +710,7 @@ class TagLab(QWidget):
     def keyPressEvent(self, event):
 
         key_pressed = event.text()
-        str = "Key '" + key_pressed + "' has been pressed."
+        str = "[KEYPRESS] Key '" + key_pressed + "' has been pressed."
         logfile.info(str)
 
         modifiers = QApplication.queryKeyboardModifiers()
@@ -731,7 +731,8 @@ class TagLab(QWidget):
 
             self.tool_used = self.tool_orig
 
-            logfile.info("Current operation has been canceled.")
+            message = "[TOOL][" + self.tool_used + "] Current operation has been canceled."
+            logfile.info(message)
 
         elif event.key() == Qt.Key_S and modifiers == Qt.ControlModifier:
             self.save(self.project_name)
@@ -840,7 +841,7 @@ class TagLab(QWidget):
                         flagValid = blob.createFromClosedCurve(self.edit_points)
                     except Exception:
                         self.infoWidget.setInfoMessage("Failed creating area.")
-                        logfile.info("FREEHAND operation not done (invalid snap).")
+                        logfile.info("[TOOL][FREEHAND] FREEHAND operation not done (invalid snap).")
                         return
 
                     if flagValid is True:
@@ -850,13 +851,13 @@ class TagLab(QWidget):
 
                         self.resetSelection()
                         self.addBlob(blob, selected=True)
-                        self.logBlobInfo(blob, "CREATED")
+                        self.logBlobInfo(blob, "[TOOL][FREEHAND][BLOB-CREATED]")
                         self.saveUndo()
 
-                        logfile.info("FREEHAND operation ends.")
+                        logfile.info("[TOOL][FREEHAND] Operation ends.")
 
                     else:
-                        logfile.info("FREEHAND operation not done (invalid snap).")
+                        logfile.info("[TOOL][FREEHAND] Operation not done (invalid snap).")
 
                 #editborder and cut require a selected area
                 if self.tool_used in ["EDITBORDER", "CUT"]:
@@ -871,8 +872,8 @@ class TagLab(QWidget):
 
                     self.annotations.editBorder(blob, self.edit_points)
 
-                    self.logBlobInfo(selected_blob, "EDITED(BEFORE)")
-                    self.logBlobInfo(blob, "EDITED(AFTER)")
+                    self.logBlobInfo(selected_blob, "[TOOL][EDITEDBORDER][BLOB-SELECTED]")
+                    self.logBlobInfo(blob, "[TOOL][EDITEDBORDER][BLOB-EDITED]")
 
                     self.removeBlob(selected_blob)
                     self.addBlob(blob, selected=True)
@@ -881,11 +882,11 @@ class TagLab(QWidget):
                 if self.tool_used == "CUT":
                     created_blobs = self.annotations.cut(selected_blob, self.edit_points)
 
-                    self.logBlobInfo(selected_blob, "REMOVED")
+                    self.logBlobInfo(selected_blob, "[TOOL][CUT][BLOB-SELECTED]")
 
                     for blob in created_blobs:
                         self.addBlob(blob, selected=True)
-                        self.logBlobInfo(blob, "CREATED")
+                        self.logBlobInfo(blob, "[TOOL][CUT][BLOB-CREATED]")
 
                     self.removeBlob(selected_blob)
                     self.saveUndo()
@@ -904,11 +905,11 @@ class TagLab(QWidget):
                 points = self.pick_points
                 created_blobs = self.annotations.splitBlob(selected_blob, points)
 
-                self.logBlobInfo(selected_blob, "REMOVED")
+                self.logBlobInfo(selected_blob, "[TOOL][SPLITBLOB][BLOB-SELECTED]")
 
                 for blob in created_blobs:
                     self.addBlob(blob, selected=True)
-                    self.logBlobInfo(blob, "CREATED")
+                    self.logBlobInfo(blob, "[TOOL][SPLITBLOB][BLOB-CREATED]")
 
                 self.removeBlob(selected_blob)
                 self.saveUndo()
@@ -1082,7 +1083,7 @@ class TagLab(QWidget):
         self.viewerplus.enableZoom()
 
         self.infoWidget.setInfoMessage("Move Tool is active")
-        logfile.info("MOVE tool is active")
+        logfile.info("[TOOL][MOVE] Tool activated")
 
 
     @pyqtSlot()
@@ -1101,7 +1102,7 @@ class TagLab(QWidget):
         self.viewerplus.enableZoom()
 
         self.infoWidget.setInfoMessage("Crack Tool is active")
-        logfile.info("CREATE-CRACK tool is active")
+        logfile.info("[TOOL][CREATECRACK] Tool activated")
 
     @pyqtSlot()
     def splitBlob(self):
@@ -1119,7 +1120,7 @@ class TagLab(QWidget):
         self.viewerplus.enableZoom()
 
         self.infoWidget.setInfoMessage("Split Blob Tool is active")
-        logfile.info("SPLIT-BLOB tool is active")
+        logfile.info("[TOOL][SPLITBLOB] Tool activated")
 
 
     @pyqtSlot(float, float)
@@ -1164,7 +1165,7 @@ class TagLab(QWidget):
         self.viewerplus.enableZoom()
 
         self.infoWidget.setInfoMessage("Assign Tool is active")
-        logfile.info("ASSIGN tool is active")
+        logfile.info("[TOOL][ASSIGN] Tool activated")
 
     @pyqtSlot()
     def editBorder(self):
@@ -1186,7 +1187,7 @@ class TagLab(QWidget):
         self.viewerplus.enableZoom()
 
         self.infoWidget.setInfoMessage("Edit Border Tool is active")
-        logfile.info("EDIT-BORDER tool is active")
+        logfile.info("[TOOL][EDITBORDER] Tool activated")
 
     @pyqtSlot()
     def cut(self):
@@ -1207,7 +1208,7 @@ class TagLab(QWidget):
         self.viewerplus.disablePan()
         self.viewerplus.enableZoom()
 
-        logfile.info("CUT tool is active")
+        logfile.info("[TOOL][CUT] Tool activated")
 
     @pyqtSlot()
     def freehandSegmentation(self):
@@ -1228,7 +1229,7 @@ class TagLab(QWidget):
         self.viewerplus.enableZoom()
 
         self.infoWidget.setInfoMessage("Freehand Tool is active")
-        logfile.info("FREEHAND tool is active")
+        logfile.info("[TOOL][FREEHAND] Tool activated")
 
     @pyqtSlot()
     def ruler(self):
@@ -1248,7 +1249,7 @@ class TagLab(QWidget):
         self.viewerplus.enableZoom()
 
         self.infoWidget.setInfoMessage("Ruler Tool is active")
-        logfile.info("RULER tool is active")
+        logfile.info("[TOOL][RULER] Tool activated")
 
     @pyqtSlot()
     def hole(self):
@@ -1279,7 +1280,7 @@ class TagLab(QWidget):
         self.viewerplus.enableZoom()
 
         self.infoWidget.setInfoMessage("4-click tool is active")
-        logfile.info("DEEPEXTREME tool is active")
+        logfile.info("[TOOL][DEEPEXTREME] Tool activated")
 
 
     def addToSelectedList(self, blob):
@@ -1288,10 +1289,10 @@ class TagLab(QWidget):
         """
 
         if blob in self.selected_blobs:
-            logfile.info("An already selected blob has been added to the current selection.")
+            logfile.info("[SELECTION] An already selected blob has been added to the current selection.")
         else:
             self.selected_blobs.append(blob)
-            str = "A new blob (" + blob.blob_name + ") has been selected."
+            str = "[SELECTION] A new blob (" + blob.blob_name + ") has been selected."
             logfile.info(str)
 
         if not blob.qpath_gitem is None:
@@ -1341,7 +1342,7 @@ class TagLab(QWidget):
             self.removeBlob(blob)
         self.saveUndo()
 
-        logfile.info("Selected blobs has been DELETED")
+        logfile.info("[OP-DELETE] Selected blobs has been DELETED")
 
     def isSelected(self, target_blob):
         """
@@ -1508,25 +1509,25 @@ class TagLab(QWidget):
 
         if len(self.selected_blobs) > 1:
 
-            message = "MERGE OVERLAPPED LABELS operation begins.. (number of selected blobs: " + str(len(self.selected_blobs)) + ")"
+            message = "[OP-MERGE] MERGE OVERLAPPED LABELS operation begins.. (number of selected blobs: " + str(len(self.selected_blobs)) + ")"
             logfile.info(message)
 
             #union returns a NEW blob
             union_blob = self.annotations.union(self.selected_blobs)
 
             if union_blob is None:
-                logfile.info("INVALID MERGE OVERLAPPED LABELS -> blobs are separated.")
+                logfile.info("[OP-MERGE] INVALID MERGE OVERLAPPED LABELS -> blobs are separated.")
             else:
                 for blob in self.selected_blobs:
                     self.removeBlob(blob)
-                    self.logBlobInfo(blob, "REMOVED")
+                    self.logBlobInfo(blob, "[OP-MERGE][BLOB-REMOVED]")
 
                 self.addBlob(union_blob, selected=True)
                 self.saveUndo()
 
-                self.logBlobInfo(union_blob, "CREATED")
+                self.logBlobInfo(union_blob, "[OP-MERGE][BLOB-CREATED]")
 
-            logfile.info("MERGE OVERLAPPED LABELS operation ends.")
+            logfile.info("[OP-MERGE] MERGE OVERLAPPED LABELS operation ends.")
 
         else:
             self.infoWidget.setWarningMessage("You need to select at least <em>two</em> blobs for MERGE OVERLAPPED LABELS operation.")
@@ -1539,7 +1540,7 @@ class TagLab(QWidget):
 
         if len(self.selected_blobs) == 2:
 
-            message = "SUBTRACT LABELS operation begins.. (number of selected blobs: " + str(len(self.selected_blobs)) + ")"
+            message = "[OP-SUBTRACT] SUBTRACT LABELS operation begins.. (number of selected blobs: " + str(len(self.selected_blobs)) + ")"
             logfile.info(message)
 
             selectedA = self.selected_blobs[0]
@@ -1552,16 +1553,16 @@ class TagLab(QWidget):
 
             if flag_intersection:
 
-                self.logBlobInfo(selectedA, "EDITED(BEFORE)")
-                self.logBlobInfo(blobA, "EDITED(AFTER)")
-                self.logBlobInfo(selectedB, "REMOVED")
+                self.logBlobInfo(selectedA, "[OP-SUBTRACT][BLOB-SELECTED]")
+                self.logBlobInfo(blobA, "[OP-SUBTRACT][BLOB-EDITED]")
+                self.logBlobInfo(selectedB, "[OP-SUBTRACT][BLOB-REMOVED]")
 
                 self.removeBlob(selectedA)
                 self.removeBlob(selectedB)
                 self.addBlob(blobA, selected=True)
                 self.saveUndo()
 
-            logfile.info("SUBTRACT LABELS operation ends.")
+            logfile.info("[OP-SUBTRACT] SUBTRACT LABELS operation ends.")
 
         else:
 
@@ -1575,7 +1576,7 @@ class TagLab(QWidget):
 
         if len(self.selected_blobs) == 2:
 
-            message = "DIVIDE LABELS operation begins.. (number of selected blobs: " + str(len(self.selected_blobs)) + ")"
+            message = "[OP-DIVIDE] DIVIDE LABELS operation begins.. (number of selected blobs: " + str(len(self.selected_blobs)) + ")"
             logfile.info(message)
 
             selectedA = self.selected_blobs[0]
@@ -1588,10 +1589,10 @@ class TagLab(QWidget):
             intersects = self.annotations.subtract(blobB, blobA, self.viewerplus.scene)
             if intersects:
 
-                self.logBlobInfo(selectedA, "EDITED(BEFORE)")
-                self.logBlobInfo(blobA, "EDITED(AFTER)")
-                self.logBlobInfo(selectedB, "EDITED(BEFORE)")
-                self.logBlobInfo(blobB, "EDITED(AFTER)")
+                self.logBlobInfo(selectedA, "[OP-DIVIDE][BLOB-SELECTED]")
+                self.logBlobInfo(blobA, "[OP-DIVIDE][BLOB-EDITED]")
+                self.logBlobInfo(selectedB, "[OP-DIVIDE][BLOB-SELECTED]")
+                self.logBlobInfo(blobB, "[OP-DIVIDE][BLOB-EDITED]")
 
                 self.removeBlob(selectedA)
                 self.removeBlob(selectedB)
@@ -1599,7 +1600,7 @@ class TagLab(QWidget):
                 self.addBlob(blobB, selected=False)
                 self.saveUndo()
 
-            logfile.info("DIVIDE LABELS operation ends.")
+            logfile.info("[OP-DIVIDE] DIVIDE LABELS operation ends.")
 
         else:
 
@@ -1607,32 +1608,32 @@ class TagLab(QWidget):
 
     def refineBorderDilate(self):
 
-        logfile.info("DILATE-BORDER operation starts..")
+        logfile.info("[OP-REFINE-BORDER-DILATE] DILATE-BORDER operation begins..")
 
         self.refine_grow = 15
         self.refineBorder()
         self.refine_grow = 0
 
-        logfile.info("DILATE-BORDER operation ends.")
+        logfile.info("[OP-REFINE-BORDER-DILATE] DILATE-BORDER operation ends.")
 
 
     def refineBorderErode(self):
 
-        logfile.info("ERODE-BORDER operation starts..")
+        logfile.info("[OP-REFINE-BORDER-ERODE] ERODE-BORDER operation begins..")
 
         self.refine_grow = -10
         self.refineBorder()
         self.refine_grow = 0
 
-        logfile.info("ERODE-BORDER operation ends.")
+        logfile.info("[OP-REFINE-BORDER-ERODE] ERODE-BORDER operation ends.")
 
     def refineBorderOperation(self):
 
-        logfile.info("REFINE-BORDER operation starts..")
+        logfile.info("[OP-REFINE-BORDER] REFINE-BORDER operation begins..")
 
         self.refineBorder()
 
-        logfile.info("REFINE-BORDER operation ends.")
+        logfile.info("[OP-REFINE-BORDER] REFINE-BORDER operation ends.")
 
     def refineBorder(self):
         """
@@ -1645,7 +1646,7 @@ class TagLab(QWidget):
 
             selected = self.selected_blobs[0]
             blob = selected.copy()
-            self.logBlobInfo(blob, "REFINED(BEFORE)")
+            self.logBlobInfo(blob, "[OP-REFINE-BORDER][BLOB-SELECTED]")
 
             mask = blob.getMask()
             mask = np.pad(mask, (padding, padding), mode='constant', constant_values=(0, 0)).astype(np.ubyte)
@@ -1673,7 +1674,7 @@ class TagLab(QWidget):
                 self.addBlob(blob, selected=True)
                 self.saveUndo()
 
-                self.logBlobInfo(blob, "REFINED(AFTER)")
+                self.logBlobInfo(blob, "[OP-REFINE-BORDER][BLOB-REFINED]")
 
 
             except:
@@ -1685,7 +1686,7 @@ class TagLab(QWidget):
 
     def fillLabel(self, blob):
 
-        logfile.info("FILL operation starts..")
+        logfile.info("[OP-FILL] FILL operation starts..")
 
         if len(self.selected_blobs) == 0:
             return
@@ -1696,19 +1697,19 @@ class TagLab(QWidget):
             count += 1
             filled = blob.copy()
 
-            self.logBlobInfo(filled, "FILLED(BEFORE)")
+            self.logBlobInfo(filled, "[OP-FILL][BLOB-SELECTED]")
 
             self.removeBlob(blob)
             filled.inner_contours.clear()
             filled.createFromClosedCurve([filled.contour])
             self.addBlob(filled, True)
 
-            self.logBlobInfo(filled, "FILLED(AFTER)")
+            self.logBlobInfo(filled, "[OP-FILL][BLOB-EDITED]")
 
         if count:
             self.saveUndo()
 
-        logfiule.info("FILL operation ends.")
+        logfile.info("[OP-FILL] FILL operation ends.")
 
     def addBlob(self, blob, selected = False):
         """
@@ -1781,19 +1782,17 @@ class TagLab(QWidget):
         self.updateVisibility()
 
 
-    def logBlobInfo(self, blob, operation):
+    def logBlobInfo(self, blob, tag):
 
-        message1 = "[BLOBINFO] BLOBID=" + str(blob.id) + " -> " + operation
-        message2 = "[BLOBINFO] name=" + blob.blob_name
-        message3 = "[BLOBINFO] top={:.1f} left={:.1f} width={:.1f} height={:.1f}".format(blob.bbox[0], blob.bbox[1], blob.bbox[2], blob.bbox[3])
-        message4 = "[BLOBINFO] cx={:.1f} cy={:.1f}".format(blob.centroid[0], blob.centroid[1])
-        message5 = "[BLOBINFO] A={:.1f} P={:.1f} ".format(blob.area, blob.perimeter)
+        message1 = tag + " BLOBID=" + str(blob.id) + " name=" + blob.blob_name
+        message2 = tag + " top={:.1f} left={:.1f} width={:.1f} height={:.1f}".format(blob.bbox[0], blob.bbox[1], blob.bbox[2], blob.bbox[3])
+        message3 = tag + " cx={:.1f} cy={:.1f}".format(blob.centroid[0], blob.centroid[1])
+        message4 = tag + " A={:.1f} P={:.1f} ".format(blob.area, blob.perimeter)
 
         logfile.info(message1)
         logfile.info(message2)
         logfile.info(message3)
         logfile.info(message4)
-        logfile.info(message5)
 
 
     def groupBlobs(self):
@@ -1868,7 +1867,7 @@ class TagLab(QWidget):
                 self.tool_used = "EDITBORDER"
             else:
                 self.dragSelectionStart = [x, y]
-                logfile.info("DRAG SELECTION starts..")
+                logfile.info("[SELECTION] DRAG SELECTION starts..")
                 return
 
         if self.tool_used == "ASSIGN":
@@ -1884,11 +1883,10 @@ class TagLab(QWidget):
 
         elif self.tool_used in ["EDITBORDER", "CUT", "FREEHAND"]:
 
-            logfile.info("DRAWING")
-
             if len(self.edit_points) == 0: #first point, initialize
                 self.edit_qpath_gitem = self.viewerplus.scene.addPath(QPainterPath(), self.border_pen)
-
+                message = "[TOOL][" + self.tool_used + "] DRAWING starts.."
+                logfile.info(message)
 
             self.edit_points.append(np.array([[x, y]]))
 
@@ -1911,10 +1909,9 @@ class TagLab(QWidget):
 
                 if self.crackWidget is None:
 
-                    logfile.info("CREATECRACK tool active")
-
                     #copy blob, for undo reasons.
                     blob = selected_blob.copy()
+                    self.logBlobInfo(blob, "[TOOL][CREATECRACK][BLOB-SELECTED]")
 
                     self.crackWidget = QtCrackWidget(self.img_map, self.annotations, blob, x, y, parent=self)
                     self.crackWidget.setWindowModality(Qt.WindowModal)
@@ -1965,8 +1962,12 @@ class TagLab(QWidget):
 
             if self.pick_points_number < 4:
                 self.addPickPoint(x, y, self.extreme_pick_style)
+                message = "[TOOL][DEEPEXTREME] New point picked (" + str(self.pick_points_number) + ")"
+                logfile.info(message)
             else:
                 self.resetPickPoints()
+                message = "[TOOL][DEEPEXTREME] Pick points resetted."
+                logfile.info(message)
 
     @pyqtSlot(float, float)
     def toolsOpsLeftReleased(self, x, y):
@@ -1983,7 +1984,7 @@ class TagLab(QWidget):
                     del self.dragSelectionRect
                     self.dragSelectionRect = None
 
-                logfile.info("DRAG SELECTION ends.")
+                logfile.info("[SELECTION] DRAG SELECTION ends.")
 
 
     @pyqtSlot(float, float)
@@ -2007,7 +2008,6 @@ class TagLab(QWidget):
 
         if self.tool_used in ["EDITBORDER", "CUT", "FREEHAND"]:
 
-            logfile.info("DRAWING")
             if len(self.edit_points) == 0:
                 return
             #check that a move didn't happen before a press
@@ -2048,8 +2048,10 @@ class TagLab(QWidget):
 
         new_blobs = self.crackWidget.apply()
         self.removeBlob(self.selected_blobs[0])
+        self.logBlobInfo(blob, "[TOOL][CREATECRACK][BLOB-SELECTED]")
         for blob in new_blobs:
             self.addBlob(blob, selected=True)
+            self.logBlobInfo(blob, "[TOOL][CREATECRACK][BLOB-EDITED]")
         self.saveUndo()
 
         self.resetCrackTool()
@@ -2569,7 +2571,7 @@ class TagLab(QWidget):
             progress_bar.setMessage("Setup automatic classification..", False)
             QApplication.processEvents()
 
-            message = "Automatic classification STARTS.. (classifier: )" + classifier_selected['Classifier Name']
+            message = "[AUTOCLASS] Automatic classification STARTS.. (classifier: )" + classifier_selected['Classifier Name']
             logfile.info(message)
 
             self.corals_classifier = MapClassifier(classifier_selected, self.labels)
@@ -2611,7 +2613,7 @@ class TagLab(QWidget):
             # free GPU memory
             self.resetNetworks()
 
-            logfile.info("Automatic classification ENDS.")
+            logfile.info("[AUTOCLASS] Automatic classification ENDS.")
 
             if self.corals_classifier:
                 del self.corals_classifier
@@ -2660,7 +2662,7 @@ class TagLab(QWidget):
 
         self.infoWidget.setInfoMessage("Segmentation is ongoing..")
 
-        logfile.info("Segmentation with Deep Extreme begins..")
+        logfile.info("[TOOL][DEEPEXTREME] Segmentation begins..")
 
         pad = 50
         thres = 0.8
@@ -2726,9 +2728,10 @@ class TagLab(QWidget):
             self.resetSelection()
             for blob in blobs:
                 self.addBlob(blob, selected=True)
+                self.logBlobInfo(blob, "[TOOL][DEEPEXTREME][BLOB-CREATED]")
             self.saveUndo()
 
-            logfile.info("Segmentation with Deep Extreme ends.")
+            logfile.info("[TOOL][DEEPEXTREME] Segmentation ends.")
 
             self.infoWidget.setInfoMessage("Segmentation done.")
 

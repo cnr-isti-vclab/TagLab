@@ -36,12 +36,6 @@ from cv2 import fillPoly
 import source.Mask as Mask
 from source import utils
 
-import logging
-
-# get the global logger
-logfile = logging.getLogger("tool-logger")
-
-
 import time
 
 class Blob(object):
@@ -52,6 +46,8 @@ class Blob(object):
     """
 
     def __init__(self, region, offset_x, offset_y, id):
+
+        self.id = id
 
         if region == None:     # AN EMPTY BLOB IS CREATED..
             self.area = 0.0
@@ -111,8 +107,7 @@ class Blob(object):
             # a string with a number to identify the blob plus its centroid
             xc = self.centroid[0]
             yc = self.centroid[1]
-            self.blob_name = "c-{:.1f}x-{:.1f}y".format(xc, yc)
-            self.id = id
+            self.blob_name = "c-{:d}-{:.1f}x-{:.1f}y".format(self.id, xc, yc)
 
         # deep extreme points (for fine-tuning)
         self.deep_extreme_points = np.zeros((4, 2))
@@ -196,7 +191,7 @@ class Blob(object):
         # a string with a number to identify the blob plus its centroid
         xc = self.centroid[0]
         yc = self.centroid[1]
-        self.blob_name = "c-{:.1f}x-{:.1f}y".format(xc, yc)
+        self.blob_name = "c-{:d}-{:.1f}x-{:.1f}y".format(self.id, xc, yc)
         self.id = id
 
     def getMask(self):
@@ -427,7 +422,7 @@ class Blob(object):
 
         #centroid is (x, y) while measure returns (y,x and bbox is yx)
         self.centroid  = np.array((c[0] + bbox[1], c[1]+ bbox[0]))
-        self.blob_name = "c-{:.1f}x-{:.1f}y".format(self.centroid[0], self.centroid[1])
+        self.blob_name = "c-{:d}-{:.1f}x-{:.1f}y".format(self.id, self.centroid[0], self.centroid[1])
 
     def calculateContourPerimeter(self, contour):
 
