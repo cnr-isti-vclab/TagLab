@@ -117,8 +117,9 @@ class TagLab(QWidget):
         # ANNOTATION DATA
         self.annotations = Annotation(self.labels)
         self.undo_operations = []
+        self.undo_position = -1
         """Temporary variable to hold the added and removed of the last operation."""
-        self.undo_operation =  { "remove":[], "add":[], "class":[] }
+        self.undo_operation = { 'remove':[], 'add':[], 'class':[], 'newclass':[] }
         """Max number  of undo operations"""
         self.max_undo = 100
 
@@ -609,6 +610,11 @@ class TagLab(QWidget):
         undoAct.setStatusTip("Undo")
         undoAct.triggered.connect(self.undo)
 
+        redoAct = QAction("Redo", self)
+        redoAct.setShortcut('Ctrl+Shift+Z')
+        redoAct.setStatusTip("Redo")
+        redoAct.triggered.connect(self.redo)
+
         helpAct = QAction("Help", self)
         helpAct.setShortcut('Ctrl+H')
         helpAct.setStatusTip("Help")
@@ -662,6 +668,7 @@ class TagLab(QWidget):
 
         editmenu = menubar.addMenu("&Edit")
         editmenu.addAction(undoAct)
+        editmenu.addAction(redoAct)
         editmenu.addSeparator()
 
         editmenu.addAction(self.assignAction)
@@ -1735,6 +1742,7 @@ class TagLab(QWidget):
             return
 
         self.undo_operation['class'].append((blob, blob.class_name))
+        self.undo_operation['newclass'].append((blob,class_name))
         blob.class_name = class_name
 
         if class_name == "Empty":
@@ -1748,6 +1756,8 @@ class TagLab(QWidget):
         self.viewerplus.scene.invalidate()
 
     def saveUndo(self):
+        #clip future redo, invalidated by a new change
+        self.undo_operations = self.undo_operations[:self.undo_position+1]
         """
         Will mark an undo step using the previosly added and removed blobs.
         """
@@ -1755,15 +1765,21 @@ class TagLab(QWidget):
             return
 
         self.undo_operations.append(self.undo_operation)
-        self.undo_operation = { 'remove':[], 'add':[], 'class':[] }
+        self.undo_operation = { 'remove':[], 'add':[], 'class':[], 'newclass':[] }
         if len(self.undo_operations) > self.max_undo:
             self.undo_operations.pop(0)
+        self.undo_position = len(self.undo_operations) -1;
 
     def undo(self):
         if len(self.undo_operations) is 0:
             return
+        if self.undo_position < 0:
+            return;
 
-        operation = self.undo_operations.pop(-1)
+        #operation = self.undo_operations.pop(-1)
+        operation = self.undo_operations[self.undo_position]
+        self.undo_position -= 1
+
         for blob in operation['remove']:
             self.removeFromSelectedList(blob)
             self.undrawBlob(blob)
@@ -1775,6 +1791,28 @@ class TagLab(QWidget):
             self.drawBlob(blob)
 
         for (blob, class_name) in operation['class']:
+            blob.class_name = class_name
+            brush = self.classBrushFromName(blob)
+            blob.qpath_gitem.setBrush(brush)
+
+        self.updateVisibility()
+
+    def redo(self):
+        if self.undo_position >= len(self.undo_operations) -1:
+            return;
+        self.undo_position += 1
+        operation = self.undo_operations[self.undo_position]
+        for blob in operation['add']:
+            self.removeFromSelectedList(blob)
+            self.undrawBlob(blob)
+            self.annotations.removeBlob(blob)
+
+        for blob in operation['remove']:
+            self.annotations.addBlob(blob)
+            self.selected_blobs.append(blob)
+            self.drawBlob(blob)
+
+        for (blob, class_name) in operation['newclass']:
             blob.class_name = class_name
             brush = self.classBrushFromName(blob)
             blob.qpath_gitem.setBrush(brush)
