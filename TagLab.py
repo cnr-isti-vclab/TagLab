@@ -1759,7 +1759,7 @@ class TagLab(QWidget):
         #clip future redo, invalidated by a new change
         self.undo_operations = self.undo_operations[:self.undo_position+1]
         """
-        Will mark an undo step using the previosly added and removed blobs.
+        Will mark an undo step using the previously added and removed blobs.
         """
         if len(self.undo_operation['add']) == 0 and len(self.undo_operation['remove']) == 0 and len(self.undo_operation['class']) == 0:
             return
@@ -1781,11 +1781,15 @@ class TagLab(QWidget):
         self.undo_position -= 1
 
         for blob in operation['remove']:
+            message = "[UNDO][REMOVE] BLOBID={:d} VERSION={:d}".format(blob.id, blob.version)
+            logfile.info(message)
             self.removeFromSelectedList(blob)
             self.undrawBlob(blob)
             self.annotations.removeBlob(blob)
 
         for blob in operation['add']:
+            message = "[UNDO][ADD] BLOBID={:d} VERSION={:d}".format(blob.id, blob.version)
+            logfile.info(message)
             self.annotations.addBlob(blob)
             self.selected_blobs.append(blob)
             self.drawBlob(blob)
@@ -1803,11 +1807,15 @@ class TagLab(QWidget):
         self.undo_position += 1
         operation = self.undo_operations[self.undo_position]
         for blob in operation['add']:
+            message = "[REDO][ADD] BLOBID={:d} VERSION={:d}".format(blob.id, blob.version)
+            logfile.info(message)
             self.removeFromSelectedList(blob)
             self.undrawBlob(blob)
             self.annotations.removeBlob(blob)
 
         for blob in operation['remove']:
+            message = "[REDO][REMOVE] BLOBID={:d} VERSION={:d}".format(blob.id, blob.version)
+            logfile.info(message)
             self.annotations.addBlob(blob)
             self.selected_blobs.append(blob)
             self.drawBlob(blob)
@@ -1822,7 +1830,7 @@ class TagLab(QWidget):
 
     def logBlobInfo(self, blob, tag):
 
-        message1 = tag + " BLOBID=" + str(blob.id) + " name=" + blob.blob_name
+        message1 = tag + " BLOBID=" + str(blob.id) + " VERSION=" + str(blob.version) + " name=" + blob.blob_name
         message2 = tag + " top={:.1f} left={:.1f} width={:.1f} height={:.1f}".format(blob.bbox[0], blob.bbox[1], blob.bbox[2], blob.bbox[3])
         message3 = tag + " cx={:.1f} cy={:.1f}".format(blob.centroid[0], blob.centroid[1])
         message4 = tag + " A={:.1f} P={:.1f} ".format(blob.area, blob.perimeter)

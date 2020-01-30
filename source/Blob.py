@@ -47,6 +47,7 @@ class Blob(object):
 
     def __init__(self, region, offset_x, offset_y, id):
 
+        self.version = 0
         self.id = id
 
         if region == None:     # AN EMPTY BLOB IS CREATED..
@@ -151,6 +152,7 @@ class Blob(object):
         blob.instance_name = blob.instance_name
         blob.blob_name = self.blob_name
         blob.id = self.id
+        blob.version = self.version + 1
 
         blob.class_name = self.class_name
 
@@ -160,6 +162,7 @@ class Blob(object):
         self.qimg_mask = None
         self.pxmap_mask = None
         self.pxmap_mask_gitem = None
+
         return blob
 
     def __deepcopy__(self, memo):
