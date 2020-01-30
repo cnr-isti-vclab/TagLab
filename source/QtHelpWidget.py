@@ -105,11 +105,14 @@ class QtHelpWidget(QWidget):
         self.gridlayout4.addWidget(QLabel("Confirm Operation"), 2, 0)
         self.gridlayout4.addWidget(QLabel("Reset Operation"), 3, 0)
         self.gridlayout4.addWidget(QLabel("Undo Operation"), 4, 0)
+        self.gridlayout4.addWidget(QLabel("Redo Operation"), 5, 0)
         self.gridlayout4.addWidget(QLabel("<b>Double-click</b>"), 0, 1)
         self.gridlayout4.addWidget(QLabel("<b>Double-click + Shift</b>"), 1, 1)
         self.gridlayout4.addWidget(QLabel("<b>SPACE</b>"), 2, 1)
         self.gridlayout4.addWidget(QLabel("<b>ESC</b>"), 3, 1)
         self.gridlayout4.addWidget(QLabel("<b>Ctrl+Z</b>"), 4, 1)
+        self.gridlayout4.addWidget(QLabel("<b>Ctrl+Shift+Z</b>"), 5, 1)
+
         self.groupbox_commands.setLayout(self.gridlayout4)
 
         layout_V1 = QVBoxLayout()
