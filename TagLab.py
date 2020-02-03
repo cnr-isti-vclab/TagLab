@@ -776,8 +776,8 @@ class TagLab(QWidget):
         elif event.key() == Qt.Key_F:
             self.fillBorder()
 
-        elif event.key() == Qt.Key_G:
-            self.groupBlobs()
+        # elif event.key() == Qt.Key_G:
+        #     self.groupBlobs()
 
         elif event.key() == Qt.Key_U:
             self.ungroupBlobs()
@@ -819,9 +819,9 @@ class TagLab(QWidget):
             self.deepExtreme()
 
 
-        elif event.key() == Qt.Key_H:
-            # ACTIVATE THE "HOLE" TOOL
-            self.hole()
+        # elif event.key() == Qt.Key_H:
+        #     # ACTIVATE THE "HOLE" TOOL
+        #     self.hole()
 
         elif event.key() == Qt.Key_4:
             # ACTIVATE "DEEP EXTREME" TOOL
@@ -829,9 +829,9 @@ class TagLab(QWidget):
 
         elif event.key() == Qt.Key_P:
             self.drawDeepExtremePoints()
-
-        elif event.key() == Qt.Key_Y:
-            self.refineAllBorders()
+        #
+        # elif event.key() == Qt.Key_Y:
+        #     self.refineAllBorders()
 
         elif event.key() == Qt.Key_Space:
 
@@ -903,14 +903,14 @@ class TagLab(QWidget):
             # APPLY DEEP EXTREME (IF FOUR POINTS HAVE BEEN SELECTED)
             elif self.tool_used == "DEEPEXTREME" and self.pick_points_number == 4:
 
-                self.seg%mentWithDeepExtreme()
+                self.segmentWithDeepExtreme()
                 self.resetPickPoints()
 
             elif self.tool_used == "SPLITBLOB" and self.pick_points_number > 1 and len(self.selected_blobs) == 1:
 
                 selected_blob = self.selected_blobs[0]
                 points = self.pick_points
-                created_blobs = self.annotations.splitBlob(selected_blob, points)
+                created_blobs = self.annotations.splitBlob(self.img_map,selected_blob, points)
 
                 self.logBlobInfo(selected_blob, "[TOOL][SPLITBLOB][BLOB-SELECTED]")
 
@@ -2093,8 +2093,8 @@ class TagLab(QWidget):
     def crackApply(self):
 
         new_blobs = self.crackWidget.apply()
+        self.logBlobInfo(self.selected_blobs[0], "[TOOL][CREATECRACK][BLOB-SELECTED]")
         self.removeBlob(self.selected_blobs[0])
-        self.logBlobInfo(blob, "[TOOL][CREATECRACK][BLOB-SELECTED]")
         for blob in new_blobs:
             self.addBlob(blob, selected=True)
             self.logBlobInfo(blob, "[TOOL][CREATECRACK][BLOB-EDITED]")

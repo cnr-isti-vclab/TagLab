@@ -3,21 +3,21 @@
 "Available Classifiers":
 [
   {
+    "Classifier Name": "Porite",
+    "Weights": "Porites.net",
+    "Num. Classes": 2,
+    "Classes": ["Porite", "Background"],
+	"Scale": 1.1111,
+    "Average Norm.": [0.4651,0.4765,0.4634]
+  },
+  
+    {
     "Classifier Name": "Pocillopora",
-    "Weights": "DEEPLAB_lr=5e-05_L2=0.0005_60_moorea_rescaled_pocillopora.net",
+    "Weights": "Pocillopora.net",
     "Num. Classes": 2,
     "Classes": ["Pocillopora", "Background"],
-	"Scale": 0.6666,
-    "Average Norm.": [0.3937, 0.3833, 0.3798]
-  },
-
-  {
-    "Classifier Name": "Pocillopora dead",
-    "Weights": "DEEPLAB_lr=5e-05_L2=0.0005_60_moorea_rescaled_pocillopora_dead.net",
-    "Num. Classes": 3,
-    "Classes": ["Pocillopora dead", "Background"],
-	"Scale": 0.6666,
-    "Average Norm.": [0.3937, 0.3833, 0.3798]
+	"Scale": 1.1111,
+    "Average Norm.": [0.4450,0.4441,0.4351]
   }
 ],
 
@@ -33,6 +33,7 @@
   "Sarcophyton": [96, 57, 19],
   "Cryptodendrum": [140, 98, 57],
   "Pocillopora": [240, 110, 170],
+  "Porite": [0, 162, 232],
   "Pocillopora_damicornis": [231, 70, 170],
   "Pocillopora_zelli": [240, 171, 203],
   "Pocillopora_eydouxi": [102, 45, 145],

@@ -20,10 +20,12 @@
 import numpy as np
 
 from skimage import measure
+
+from skimage.filters import sobel
 from scipy import ndimage as ndi
 from PyQt5.QtGui import QPainter, QImage, QPen, QBrush, QColor, qRgb
 from PyQt5.QtCore import Qt
-
+from skimage.color import rgb2gray
 from skimage.draw import polygon_perimeter
 
 from source import utils
@@ -213,16 +215,20 @@ class Annotation(object):
         return created_blobs
 
 
-    def splitBlob(self, blob, seeds):
+    def splitBlob(self,map, blob, seeds):
 
         seeds = np.asarray(seeds)
         seeds = seeds.astype(int)
         mask = blob.getMask()
         box = blob.bbox
+        cropimg = utils.cropQImage(map, box)
+        cropimgnp = rgb2gray(utils.qimageToNumpyArray(cropimg))
+
+        edges = sobel(cropimgnp)
 
         # x,y
         seeds_matrix = np.zeros_like(mask)
-        # it would be useful add a slider to regulate this size parameter?
+
         size = 40
         #
         for i in range(0, seeds.shape[0]):
@@ -231,10 +237,11 @@ class Annotation(object):
             seeds[i, 0] - box[1] - (size - 1): seeds[i, 0] - box[1] + (size - 1)] = 1
 
         distance = ndi.distance_transform_edt(mask)
+        # distance = ndi.distance_transform_edt(cropimg)
         seeds_matrix = seeds_matrix > 0.5
         markers = ndi.label(seeds_matrix)[0]
-        labels = watershed(-distance, markers, mask=mask)
-
+        # labels = watershed(-distance, markers, mask=mask)
+        labels = watershed((-distance+100*edges)/2, markers, mask=mask)
         created_blobs = []
         for region in measure.regionprops(labels):
                 b = Blob(region, box[1], box[0], self.progressive_id)
@@ -516,7 +523,7 @@ class Annotation(object):
         labelimg = QImage(w, h, QImage.Format_RGB32)
         labelimg.fill(qRgb(0, 0, 0))
 
-        painter = QPainter(myPNG)
+        painter = QPainter(labelimg)
 
         pen = QPen(Qt.black)
         pen.setWidth(1)
