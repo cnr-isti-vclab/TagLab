@@ -595,10 +595,10 @@ class TagLab(QWidget):
         exportHistogramAct.setStatusTip("Export histograms of current annotations")
         exportHistogramAct.triggered.connect(self.exportHistogramFromAnn)
 
-        exportShapefilesAct = QAction("Export as Shapefiles", self)
-        # exportShapefilesAct.setShortcut('Ctrl+??')
-        exportShapefilesAct.setStatusTip("Export current annotations as shapefiles")
-        exportShapefilesAct.triggered.connect(self.exportAnnAsShapefiles)
+        #exportShapefilesAct = QAction("Export as Shapefiles", self)
+        #exportShapefilesAct.setShortcut('Ctrl+??')
+        #exportShapefilesAct.setStatusTip("Export current annotations as shapefiles")
+        #exportShapefilesAct.triggered.connect(self.exportAnnAsShapefiles)
 
         exportTrainingDatasetAct = QAction("Export New Training Dataset", self)
         #exportTrainingDatasetAct.setShortcut('Ctrl+??')
@@ -662,7 +662,7 @@ class TagLab(QWidget):
         submenuExport = filemenu.addMenu("Export")
         submenuExport.addAction(exportDataTableAct)
         submenuExport.addAction(exportMapAct)
-        submenuExport.addAction(exportShapefilesAct)
+        #submenuExport.addAction(exportShapefilesAct)
         submenuExport.addAction(exportHistogramAct)
         submenuExport.addAction(exportTrainingDatasetAct)
 
@@ -2382,7 +2382,7 @@ class TagLab(QWidget):
     @pyqtSlot()
     def exportAnnAsShapefiles(self):
 
-        pass
+        pass  # not yet available
 
     @pyqtSlot()
     def exportAnnAsTrainingDataset(self):
