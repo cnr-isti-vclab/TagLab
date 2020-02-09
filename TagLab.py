@@ -2656,23 +2656,49 @@ class TagLab(QWidget):
                 for blob in created_blobs:
                     self.addBlob(blob, selected=False)
 
-            # free GPU memory
-            self.resetNetworks()
+                logfile.info("[AUTOCLASS] Automatic classification ENDS.")
 
-            logfile.info("[AUTOCLASS] Automatic classification ENDS.")
+                # free GPU memory
+                self.resetNetworks()
 
-            if self.corals_classifier:
-                del self.corals_classifier
-                self.corals_classifier = None
+                if self.corals_classifier:
+                    del self.corals_classifier
+                    self.corals_classifier = None
 
-            if progress_bar:
-                progress_bar.close()
-                del progress_bar
+                if progress_bar:
+                    progress_bar.close()
+                    del progress_bar
 
-            import gc
-            print(gc.collect())
+                # save and close
+                msgBox = QMessageBox()
+                msgBox.setWindowTitle(self.TAGLAB_VERSION)
+                msgBox.setText(
+                    "Automatic classification is finished. TagLab will be close. Please, click ok and save the project.")
+                msgBox.exec()
 
-            self.move()
+                self.saveProject()
+
+                QApplication.quit()
+
+            else:
+
+                logfile.info("[AUTOCLASS] Automatic classification STOP by the users.")
+
+                # free GPU memory
+                self.resetNetworks()
+
+                if self.corals_classifier:
+                    del self.corals_classifier
+                    self.corals_classifier = None
+
+                if progress_bar:
+                    progress_bar.close()
+                    del progress_bar
+
+                import gc
+                gc.collect()
+
+                self.move()
 
     def loadingDeepExtremeNetwork(self):
 
