@@ -250,7 +250,7 @@ class QtImageViewerPlus(QGraphicsView):
         if posy > self.imgheight:
             posy = self.imgheight
 
-        return [posx, posy]
+        return [round(posx), round(posy)]
 
     def resizeEvent(self, event):
         """ Maintain current zoom on resize.

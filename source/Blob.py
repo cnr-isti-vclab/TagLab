@@ -201,20 +201,23 @@ class Blob(object):
         """
         It creates the mask from the contour and returns it.
         """
+        self.bbox = Mask.pointsBox(self.contour, 4)
 
         r = self.bbox[3]
         c = self.bbox[2]
         origin = np.array([int(self.bbox[1]), int(self.bbox[0])])
 
         mask = np.zeros((r, c), np.uint8)
-        fillPoly(mask, pts=[self.contour.astype(int) - origin], color=(1, 1, 1))
+        points = self.contour.round().astype(int)
+        fillPoly(mask, pts=[points - origin], color=(1, 1, 1))
 #DEBUG
 #        cv2.imshow(" ", mask)
 #        cv2.waitKey()
 
         # holes
         for inner_contour in self.inner_contours:
-            fillPoly(mask, pts=[inner_contour.astype(int) - origin], color=(0, 0, 0))
+            points = inner_contour.round().astype(int)
+            fillPoly(mask, pts=[points - origin], color=(0, 0, 0))
 
         return mask
 
@@ -240,7 +243,6 @@ class Blob(object):
                 continue
             points = np.append(points, p, axis=0)
         return points
-
 
     def drawLine(self, line):
         (x, y) = utils.draw_open_polygon(line[:, 1], line[:, 0])
@@ -271,7 +273,7 @@ class Blob(object):
 
         snappoints = None
         if ind.shape[1] > 2:
-            first_el = ind[0, 0] + 1
+            first_el = ind[0, 0]
             last_el = ind[0, -1]
             snappoints = points[first_el:last_el, :].copy()
 
@@ -290,19 +292,14 @@ class Blob(object):
         It creates a blob starting from a closed curve. If the curve is not closed False is returned.
         If the curve intersect itself many times the first segmented region is created.
         """
-
         points = self.lineToPoints(lines)
-
         box = Mask.pointsBox(points, 4)
 
         (mask, box) = Mask.jointMask(box, box)
         Mask.paintPoints(mask, box, points, 1)
         mask = ndi.binary_fill_holes(mask)
-        mask = binary_erosion(mask)
-        mask = binary_erosion(mask)
-        mask = binary_erosion(mask)
-        mask = binary_dilation(mask)
-        mask = binary_dilation(mask)
+
+        #mask = binary_erosion(mask)
         self.updateUsingMask(box, mask)
         return True
 
@@ -317,11 +314,11 @@ class Blob(object):
         self.inner_contours.clear()
 
         # we need to pad the mask to avoid to break the contour that touches the borders
-        PADDED_SIZE = 2
+        PADDED_SIZE = 4
         img_padded = pad(mask, (PADDED_SIZE, PADDED_SIZE), mode="constant", constant_values=(0, 0))
 
-        contours = measure.find_contours(img_padded, 0.5)
-
+        contours = measure.find_contours(img_padded, 0.6)
+        inner_contours = measure.find_contours(img_padded, 0.4)
         number_of_contours = len(contours)
 
         threshold = 20 #min number of points in a small hole
@@ -337,11 +334,21 @@ class Blob(object):
                     npoints_max = npoints
                     longest = i
 
+            npoints_max = 0
+            inner_longest = 0
+            for i, contour in enumerate(inner_contours):
+                npoints = contour.shape[0]
+                if npoints > npoints_max:
+                    npoints_max = npoints
+                    inner_longest = i
+
             # divide the contours in OUTER contour and INNER contours
             for i, contour in enumerate(contours):
                 if i == longest:
                     self.contour = np.array(contour)
-                else:
+
+            for i, contour in enumerate(inner_contours):
+                if i != inner_longest:
                     if contour.shape[0] > threshold:
                         coordinates = np.array(contour)
                         self.inner_contours.append(coordinates)
@@ -363,7 +370,8 @@ class Blob(object):
                     self.inner_contours[j][i, 1] = ycoor - PADDED_SIZE + bbox[0]
         elif number_of_contours == 1:
 
-            coords = measure.approximate_polygon(contours[0], tolerance=1.2)
+            coords = measure.approximate_polygon(contours[0], tolerance=0.2)
+            #coords = contours[0]
             self.contour = np.array(coords)
 
             # adjust the coordinates of the outer contour

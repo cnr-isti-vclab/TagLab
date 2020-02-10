@@ -172,6 +172,7 @@ class Annotation(object):
             # measure is brutally slower with non int types (factor 4), while byte&bool would be faster by 25%, conversion is fast.
             blob = blobs[0].copy()
             blob.updateUsingMask(box, mask.astype(int))
+
             return blob
         return None
 
@@ -194,15 +195,19 @@ class Annotation(object):
         """
         Given a curve specified as a set of points and a selected blob, the operation cuts it in several separed new blobs
         """
-        points = blob.lineToPoints(lines)
+        points = blob.lineToPoints(lines, snap=False)
 
         mask = blob.getMask()
         box = blob.bbox
         Mask.paintPoints(mask, box, points, 0)
 
-        label_image = measure.label(mask)
+        image = utils.maskToQImage(mask)
+        image.save('test.png')
+
+        label_image = measure.label(mask, connectivity=1)
         area_th = 30
         created_blobs = []
+        first = True
         for region in measure.regionprops(label_image):
 
             if region.area > area_th:

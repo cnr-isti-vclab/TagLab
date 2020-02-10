@@ -40,7 +40,6 @@ def clampCoords(x, y, W, H):
 
 
 def draw_open_polygon(r, c):
-
     r = np.round(r).astype(int)
     c = np.round(c).astype(int)
 

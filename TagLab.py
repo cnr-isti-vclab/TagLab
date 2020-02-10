@@ -954,7 +954,8 @@ class TagLab(QWidget):
         for blob in self.annotations.seg_blobs:
 
             visibility = self.labels_widget.isClassVisible(blob.class_name)
-            blob.qpath_gitem.setVisible(visibility)
+            if blob.qpath_gitem is not None:
+                blob.qpath_gitem.setVisible(visibility)
 
 
     @pyqtSlot()
@@ -2057,14 +2058,16 @@ class TagLab(QWidget):
             if len(self.edit_points) == 0:
                 return
             #check that a move didn't happen before a press
-            last = self.edit_points[-1]
-            #if len(self.edit_points) > 0 and last.shape[0] > 0:
+            last_line = self.edit_points[-1]
 
-            self.edit_points[-1] = np.append(last, [[x, y]], axis=0)
-            path = self.edit_qpath_gitem.path()
-            path.lineTo(QPointF(x, y))
-            self.edit_qpath_gitem.setPath(path)
-            self.viewerplus.scene.invalidate()
+
+            last_point = self.edit_points[-1][-1]
+            if x != last_point[0] or y != last_point[1]:
+                self.edit_points[-1] = np.append(last_line, [[x, y]], axis=0)
+                path = self.edit_qpath_gitem.path()
+                path.lineTo(QPointF(x, y))
+                self.edit_qpath_gitem.setPath(path)
+                self.viewerplus.scene.invalidate()
 
 
     def dragSelectBlobs(self, x, y):
