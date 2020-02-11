@@ -102,7 +102,7 @@ class TagLab(QWidget):
         # MAP VIEWER preferred size (longest side)
         self.MAP_VIEWER_SIZE = 400
 
-        self.working_dir = os.getcwd()
+        self.taglab_dir = os.getcwd()
         self.project_name = "NONE"
         self.map_image_filename = "map.png"
         self.map_acquisition_date = "YYYY-MM-DD"
@@ -2241,7 +2241,7 @@ class TagLab(QWidget):
 
         filters = "ANNOTATION PROJECT (*.json)"
 
-        filename, _ = QFileDialog.getOpenFileName(self, "Open a project", self.working_dir, filters)
+        filename, _ = QFileDialog.getOpenFileName(self, "Open a project", self.taglab_dir, filters)
 
         if filename:
 
@@ -2258,10 +2258,10 @@ class TagLab(QWidget):
     def saveProject(self):
 
         filters = "ANNOTATION PROJECT (*.json)"
-        filename, _ = QFileDialog.getSaveFileName(self, "Save the project", self.working_dir, filters)
+        filename, _ = QFileDialog.getSaveFileName(self, "Save the project", self.taglab_dir, filters)
 
         if filename:
-            dir = QDir(self.working_dir)
+            dir = QDir(self.taglab_dir)
             self.project_name = dir.relativeFilePath(filename)
             self.setProjectTitle(self.project_name)
             self.save(filename)
@@ -2273,7 +2273,7 @@ class TagLab(QWidget):
         """
 
         filters = "ANNOTATION PROJECT (*.json)"
-        filename, _ = QFileDialog.getOpenFileName(self, "Open a project", self.working_dir, filters)
+        filename, _ = QFileDialog.getOpenFileName(self, "Open a project", self.taglab_dir, filters)
         if filename:
             self.append(filename, append_to_current=True)
 
@@ -2284,7 +2284,7 @@ class TagLab(QWidget):
         """
 
         filters = "ANNOTATION PROJECT (*.json)"
-        filename, _ = QFileDialog.getOpenFileName(self, "Open a project", self.working_dir, filters)
+        filename, _ = QFileDialog.getOpenFileName(self, "Open a project", self.taglab_dir, filters)
         if filename:
             self.append(filename, append_to_current=False)
 
@@ -2450,15 +2450,14 @@ class TagLab(QWidget):
 
         self.resetAll()
 
+        dir = QDir(self.taglab_dir)
+
         self.project_name = loaded_dict["Project Name"]
-        self.map_image_filename = loaded_dict["Map File"]
+        self.map_image_filename = dir.relativeFilePath(loaded_dict["Map File"])
         info = QFileInfo(self.map_image_filename)
         if not info.exists():
-            self.map_image_filename = QFileInfo(filename).dir().filePath(loaded_dict["Map File"])
-            info = QFileInfo(self.map_image_filename)
-
-            if not info.exists():
-                (self.map_image_filename, filter) = QFileDialog.getOpenFileName(self, "Couldn't find the map, please select it:", QFileInfo(filename).dir().path(), "Image Files (*.png *.jpg)")
+            (map_image_filename, filter) = QFileDialog.getOpenFileName(self, "Couldn't find the map, please select it:", QFileInfo(filename).dir().path(), "Image Files (*.png *.jpg)")
+            self.map_image_filename = dir.relativeFilePath(map_image_filename)
 
         self.map_acquisition_date = loaded_dict["Acquisition Date"]
         self.map_px_to_mm_factor = float(loaded_dict["Map Scale"])
@@ -2542,8 +2541,7 @@ class TagLab(QWidget):
         dict_to_save = {}
 
         # update project name
-        dir = QDir(self.working_dir)
-
+        dir = QDir(self.taglab_dir)
 
         dict_to_save["Project Name"] = self.project_name
         dict_to_save["Map File"] = dir.relativeFilePath(self.map_image_filename)
