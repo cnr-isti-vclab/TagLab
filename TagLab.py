@@ -716,11 +716,17 @@ class TagLab(QWidget):
 
     def keyPressEvent(self, event):
 
-        key_pressed = event.text()
-        str = "[KEYPRESS] Key '" + key_pressed + "' has been pressed."
-        logfile.info(str)
-
         modifiers = QApplication.queryKeyboardModifiers()
+
+        key_pressed = chr(event.key())
+        if modifiers == Qt.ControlModifier:
+            str = "[KEYPRESS] Key CTRL + '" + key_pressed + "' has been pressed."
+        elif modifiers == Qt.ShiftModifier:
+            str = "[KEYPRESS] Key SHIFT + '" + key_pressed + "' has been pressed."
+        else:
+            str = "[KEYPRESS] Key '" + key_pressed + "' has been pressed."
+
+        logfile.info(str)
 
         if event.key() == Qt.Key_Escape:
             # RESET CURRENT OPERATION
