@@ -2338,6 +2338,8 @@ class TagLab(QWidget):
 
         filters = "Image (*.png *.jpg)"
         filename, _ = QFileDialog.getOpenFileName(self, "Input Map File", "", filters)
+        if not filename:
+            return
         created_blobs = self.annotations.import_label_map(filename, self.img_map)
         for blob in created_blobs:
             self.addBlob(blob, selected=False)
