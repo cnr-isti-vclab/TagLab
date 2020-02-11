@@ -198,27 +198,27 @@ class Annotation(object):
         points = blob.lineToPoints(lines, snap=False)
 
         mask = blob.getMask()
+        original = mask.copy()
         box = blob.bbox
+        #box is y, x, w, h
         Mask.paintPoints(mask, box, points, 0)
 
-        image = utils.maskToQImage(mask)
-        image.save('test.png')
-
         label_image = measure.label(mask, connectivity=1)
-        # for point in points:
-        #     x = point[0]
-        #     y = point[1]
-        #     if x <= box[0] or y <= box[1] or x >= box[0] + box[2] -1 or y >= box[1] + box[3] -1:
-        #         continue
-        #     smallest = 1000
-        #     smallest = min(label_image[x+1][y], smallest)
-        #     smallest = min(label_image[x-1][y], smallest)
-        #     smallest = min(label_image[x][y+1], smallest)
-        #     smallest = min(label_image[x][y-1], smallest)
-        #     label_image[x][y] = smallest
+        for point in points:
+            x = point[0] - box[1]
+            y = point[1] - box[0]
 
-        #image = utils.maskToQImage(label_image)
-        #image.save("test.png")
+            if x <= 0 or y <= 0 or x >= box[2] -1 or y >= box[3] -1:
+                continue
+
+            if original[y][x] == 0:
+                continue
+            largest = 0
+            largest = max(label_image[y+1][x], largest)
+            largest = max(label_image[y-1][x], largest)
+            largest = max(label_image[y][x+1], largest)
+            largest = max(label_image[y][x-1], largest)
+            label_image[y][x] = largest
 
         area_th = 30
         created_blobs = []
