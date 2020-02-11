@@ -205,6 +205,21 @@ class Annotation(object):
         image.save('test.png')
 
         label_image = measure.label(mask, connectivity=1)
+        # for point in points:
+        #     x = point[0]
+        #     y = point[1]
+        #     if x <= box[0] or y <= box[1] or x >= box[0] + box[2] -1 or y >= box[1] + box[3] -1:
+        #         continue
+        #     smallest = 1000
+        #     smallest = min(label_image[x+1][y], smallest)
+        #     smallest = min(label_image[x-1][y], smallest)
+        #     smallest = min(label_image[x][y+1], smallest)
+        #     smallest = min(label_image[x][y-1], smallest)
+        #     label_image[x][y] = smallest
+
+        #image = utils.maskToQImage(label_image)
+        #image.save("test.png")
+
         area_th = 30
         created_blobs = []
         first = True
@@ -265,8 +280,8 @@ class Annotation(object):
         a correspondent blob hole
         """
 
-        box = blob.bbox
 
+        box = blob.bbox
         x_crop = x - box[1]
         y_crop = y - box[0]
 

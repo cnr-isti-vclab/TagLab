@@ -87,6 +87,20 @@ def maskToQImage(mask):
 
     return qimg
 
+def labelsToQImage(mask):
+
+    h = mask.shape[0]
+    w = mask.shape[1]
+    qimg = QImage(w, h, QImage.Format_RGB32)
+    qimg.fill(qRgb(0, 0, 0))
+
+    for y in range(h):
+        for x in range(w):
+            c = mask[y, x]
+            qimg.setPixel(x, y, qRgb(c*17, c*163, c*211))
+
+    return qimg
+
 def floatmapToQImage(floatmap):
 
     h = floatmap.shape[0]

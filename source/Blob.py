@@ -201,7 +201,6 @@ class Blob(object):
         """
         It creates the mask from the contour and returns it.
         """
-        self.bbox = Mask.pointsBox(self.contour, 4)
 
         r = self.bbox[3]
         c = self.bbox[2]
@@ -383,6 +382,8 @@ class Blob(object):
                 self.contour[i, 1] = ycoor - PADDED_SIZE + bbox[0]
         else:
             raise Exception("Empty contour")
+
+        self.bbox = Mask.pointsBox(self.contour, 4)
 
     def setupForDrawing(self):
         """
