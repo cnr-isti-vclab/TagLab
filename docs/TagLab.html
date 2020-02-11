@@ -206,21 +206,31 @@ Annotations from multi-temporal surveys can be loaded from File, Compare annotat
 <li>TagLab only  supports .jpg and .png RGB images of the maximum size of 32767x32767 pixels.</li>
 <li>TagLab doesn't support images having a transparency channel.</li>
 </ul> 
-If TagLab crushes after the map loading the image format is probably not supported. Fill all the fields in the <em>map settings</em> menu, the px-to-mm conversion allows to measure areas and lengths in cm^2 and cm. IF this value is settled to 1 you are measuring pixels.</p>
+If TagLab crushes after the map loading the image format is probably not supported.
+Fill all the fields in the <em>map settings</em> menu, the px-to-mm conversion allows to measure areas
+and lengths in cm^2 and cm.
+If this value is settled to 1.0 you are measuring pixels.</p>
 
 
-<h3> File &gt; Save Project  </h3>
+<h3>File &gt; New Project </h3>
 
-<p>saves a .json file. The .json file contains a reference to the loaded map, the map settings, 
-your annotations (list of points), and all additional information such as areas, perimeter, centroids, and classes. </p>
-
+<p>This option discard the current project and re-initializes the interface. </p>
 
 
 <h3>File &gt; Open Project </h3>
 
-<p>allows loading an existing .json file. This command loads both maps and annotations.
- If the map has been moved into another folder, Taglab asks you to load the map again. Recents open projects are directly visible in the File menu. </p>
+<p>allows loading an existing project. This command loads both maps and annotations.
+If the map has been moved into another folder, Taglab asks you to load it again.
+The project file can be moved anywhere.
+Recents open projects are directly visible in the File menu. </p>
 
+
+<h3> File &gt; Save Project  </h3>
+
+<p>saves the current project.
+The project is saved as a JSON file. The project file contains a reference to the loaded map, the map settings,
+your annotations (list of points), and all additional information such as the assigned classes,
+areas, perimeter, centroids. </p>
 
 
 
