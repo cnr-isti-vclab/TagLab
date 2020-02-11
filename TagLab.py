@@ -2343,6 +2343,7 @@ class TagLab(QWidget):
         created_blobs = self.annotations.import_label_map(filename, self.img_map)
         for blob in created_blobs:
             self.addBlob(blob, selected=False)
+        self.saveUndo()
 
     @pyqtSlot()
     def exportAnnAsDataTable(self):
