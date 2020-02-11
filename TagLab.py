@@ -1910,12 +1910,12 @@ class TagLab(QWidget):
             return
 
         if modifiers & Qt.ShiftModifier:
-            if self.tool_used == "FREEHAND":
-                self.tool_used = "EDITBORDER"
-            else:
-                self.dragSelectionStart = [x, y]
-                logfile.info("[SELECTION] DRAG SELECTION starts..")
-                return
+            #if self.tool_orig == "FREEHAND":
+            #    self.tool_used = "EDITBORDER"
+            #else:
+            self.dragSelectionStart = [x, y]
+            logfile.info("[SELECTION] DRAG SELECTION starts..")
+            return
 
         if self.tool_used == "ASSIGN":
 
