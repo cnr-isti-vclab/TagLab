@@ -870,7 +870,7 @@ class TagLab(QWidget):
                         logfile.info("[TOOL][FREEHAND] Operation ends.")
 
                     else:
-                        logfile.info("[TOOL][FREEHAND] Operation not done (invalid snap).")
+                        logfile.info("[TOOL][FREEHAND] Operation ends (INVALID SNAP!).")
 
                 #editborder and cut require a selected area
                 if self.tool_used in ["EDITBORDER", "CUT"]:
@@ -888,6 +888,8 @@ class TagLab(QWidget):
                     self.logBlobInfo(selected_blob, "[TOOL][EDITEDBORDER][BLOB-SELECTED]")
                     self.logBlobInfo(blob, "[TOOL][EDITEDBORDER][BLOB-EDITED]")
 
+                    logfile.info("[TOOL][EDITBORDER] Operation ends.")
+
                     self.removeBlob(selected_blob)
                     self.addBlob(blob, selected=True)
                     self.saveUndo()
@@ -900,6 +902,8 @@ class TagLab(QWidget):
                     for blob in created_blobs:
                         self.addBlob(blob, selected=True)
                         self.logBlobInfo(blob, "[TOOL][CUT][BLOB-CREATED]")
+
+                    logfile.info("[TOOL][CUT] Operation ends.")
 
                     self.removeBlob(selected_blob)
                     self.saveUndo()
@@ -923,6 +927,8 @@ class TagLab(QWidget):
                 for blob in created_blobs:
                     self.addBlob(blob, selected=True)
                     self.logBlobInfo(blob, "[TOOL][SPLITBLOB][BLOB-CREATED]")
+
+                logfile.info("[TOOL][SPLITBLOB] Operation ends.")
 
                 self.removeBlob(selected_blob)
                 self.saveUndo()
@@ -1145,6 +1151,8 @@ class TagLab(QWidget):
 
         # NOTE: double click selection is disabled with RULER and DEEPEXTREME tools
 
+        logfile.info("[SELECTION][DOUBLE-CLICK] Selection starts..")
+
         if self.tool_used == "RULER" or self.tool_used == "DEEPEXTREME":
             return
 
@@ -1161,6 +1169,8 @@ class TagLab(QWidget):
             else:
                 self.addToSelectedList(selected_blob)
                 self.updatePanelInfo(selected_blob)
+
+        logfile.info("[SELECTION][DOUBLE-CLICK] Selection ends.")
 
 
     @pyqtSlot()
@@ -1505,6 +1515,8 @@ class TagLab(QWidget):
         ruler_text.setPos(middle_x, middle_y)
         ruler_text.setParentItem(middle)
         ruler_text.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+
+        logfile.info("[TOOL][RULER] Measure taken.")
 
         self.pick_markers.append(middle);
 
@@ -1920,7 +1932,7 @@ class TagLab(QWidget):
             #    self.tool_used = "EDITBORDER"
             #else:
             self.dragSelectionStart = [x, y]
-            logfile.info("[SELECTION] DRAG SELECTION starts..")
+            logfile.info("[SELECTION][DRAG] Selection starts..")
             return
 
         if self.tool_used == "ASSIGN":
@@ -1931,6 +1943,10 @@ class TagLab(QWidget):
                 self.addToSelectedList(selected_blob)
                 for blob in self.selected_blobs:
                     self.setBlobClass(blob, self.labels_widget.getActiveLabelName())
+
+                message ="[TOOL][ASSIGN] Blob(s) assigned ({:d}).".format(len(selected_blob))
+                logfile.info(message)
+
                 self.saveUndo()
                 self.resetSelection()
 
@@ -2037,7 +2053,7 @@ class TagLab(QWidget):
                     del self.dragSelectionRect
                     self.dragSelectionRect = None
 
-                logfile.info("[SELECTION] DRAG SELECTION ends.")
+                logfile.info("[SELECTION][DRAG] Selection ends.")
 
 
     @pyqtSlot(float, float)
@@ -2107,6 +2123,7 @@ class TagLab(QWidget):
         for blob in new_blobs:
             self.addBlob(blob, selected=True)
             self.logBlobInfo(blob, "[TOOL][CREATECRACK][BLOB-EDITED]")
+
         self.saveUndo()
 
         self.resetCrackTool()
