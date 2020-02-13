@@ -827,7 +827,11 @@ class TagLab(QWidget):
 
         # elif event.key() == Qt.Key_H:
         #     # ACTIVATE THE "HOLE" TOOL
-        #     self.hole()
+        #     self.hole()            # APPLY DEEP EXTREME (IF FOUR POINTS HAVE BEEN SELECTED)
+        #             elif self.tool_used == "DEEPEXTREME" and self.pick_points_number == 4:
+        #
+        #                 self.segmentWithDeepExtreme()
+        #                 self.resetPickPoints()
 
         elif event.key() == Qt.Key_4:
             # ACTIVATE "DEEP EXTREME" TOOL
@@ -909,12 +913,6 @@ class TagLab(QWidget):
                     self.saveUndo()
 
                 self.resetEditBorder()
-
-            # APPLY DEEP EXTREME (IF FOUR POINTS HAVE BEEN SELECTED)
-            elif self.tool_used == "DEEPEXTREME" and self.pick_points_number == 4:
-
-                self.segmentWithDeepExtreme()
-                self.resetPickPoints()
 
             elif self.tool_used == "SPLITBLOB" and self.pick_points_number > 1 and len(self.selected_blobs) == 1:
 
@@ -2033,10 +2031,16 @@ class TagLab(QWidget):
                 self.addPickPoint(x, y, self.extreme_pick_style)
                 message = "[TOOL][DEEPEXTREME] New point picked (" + str(self.pick_points_number) + ")"
                 logfile.info(message)
+
+                # APPLY DEEP EXTREME
+                if self.pick_points_number == 4:
+                    self.segmentWithDeepExtreme()
+                    self.resetPickPoints()
+
             else:
+
+                # it should never been happen to go here..
                 self.resetPickPoints()
-                message = "[TOOL][DEEPEXTREME] Pick points resetted."
-                logfile.info(message)
 
     @pyqtSlot(float, float)
     def toolsOpsLeftReleased(self, x, y):
@@ -2830,9 +2834,9 @@ class TagLab(QWidget):
                 self.logBlobInfo(blob, "[TOOL][DEEPEXTREME][BLOB-CREATED]")
             self.saveUndo()
 
-            logfile.info("[TOOL][DEEPEXTREME] Segmentation ends.")
-
             self.infoWidget.setInfoMessage("Segmentation done.")
+
+        logfile.info("[TOOL][DEEPEXTREME] Segmentation ends.")
 
         QApplication.restoreOverrideCursor()
 
