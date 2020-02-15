@@ -255,7 +255,6 @@ class Blob(object):
     def snapToBorder(self, points):
         return self.snapToContour(points, self.contour)
 
-
     def snapToContour(self, points, contour):
         """
         Given a curve specified as a set of points, snap the curve on the blob mask:
@@ -274,7 +273,7 @@ class Blob(object):
         if ind.shape[1] > 2:
             first_el = ind[0, 0]
             last_el = ind[0, -1]
-            snappoints = points[first_el:last_el, :].copy()
+            snappoints = points[first_el:last_el + 1, :].copy()
 
         return snappoints
 

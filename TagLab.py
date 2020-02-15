@@ -718,7 +718,11 @@ class TagLab(QWidget):
 
         modifiers = QApplication.queryKeyboardModifiers()
 
-        key_pressed = chr(event.key())
+        if event.key() == Qt.Key_Escape:
+            key_pressed = 'ESC'
+        else:
+            key_pressed = event.text()
+
         if modifiers == Qt.ControlModifier:
             str = "[KEYPRESS] Key CTRL + '" + key_pressed + "' has been pressed."
         elif modifiers == Qt.ShiftModifier:
@@ -1942,7 +1946,7 @@ class TagLab(QWidget):
                 for blob in self.selected_blobs:
                     self.setBlobClass(blob, self.labels_widget.getActiveLabelName())
 
-                message ="[TOOL][ASSIGN] Blob(s) assigned ({:d}).".format(len(selected_blob))
+                message ="[TOOL][ASSIGN] Blob(s) assigned ({:d}).".format(len(self.selected_blobs))
                 logfile.info(message)
 
                 self.saveUndo()

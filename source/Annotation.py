@@ -18,6 +18,7 @@
 # for more details.                                               
 
 import numpy as np
+from cv2 import fillPoly
 
 from skimage import measure
 
@@ -330,62 +331,59 @@ class Annotation(object):
 
             #self.updateUsingMask(self.bbox, cracked_blob)
 
-
-
-
-
     def editBorder(self, blob, lines):
-        #need padding
 
-        #would be lovely to be able do edit holes too.
-        #the main problem is snapping to the external contour
+        points = blob.lineToPoints(lines, snap=False)
 
-        points = blob.lineToPoints(lines, snap = True)
-
-        if points is None:
-            return
-        
-        if len(points) == 0:
+        if points is None or len(points) == 0:
             return
 
-        pointsbox = Mask.pointsBox(points, 4)
-        blobmask = blob.getMask()
+        # compute the box for the outer contour
+        (mask, box) = self.editBorderContour(blob, blob.contour, points)
 
-        #add to mask painting the points as 1 and filling the holes.
-        (mask, box) = Mask.jointMask(blob.bbox, pointsbox)
-        Mask.paintMask(mask, box, blobmask, blob.bbox, 1)
+        for contour in blob.inner_contours:
+            (inner_mask, inner_box) = self.editBorderContour(blob, contour, points)
+            Mask.paintMask(mask, box, inner_mask, inner_box, 0)
 
-        #save holes
-        full = ndi.binary_fill_holes(mask.astype(int))
-        holes = full & ~mask
+        blob.updateUsingMask(box, mask)
+        return
 
-        #cut from mask
+    def editBorderContour(self, blob, contour, points):
+        points = blob.snapToContour(points, contour)
+
+        contour_box = Mask.pointsBox(contour, 4)
+
+        if points is None or len(points) == 0:
+            # not very elegant repeated code...
+            (mask, box) = Mask.jointMask(contour_box, contour_box)
+            origin = np.array([box[1], box[0]])
+            contour_points = contour.round().astype(int)
+            fillPoly(mask, pts=[contour_points - origin], color=(1, 1, 1))
+            return (mask, box)
+
+        points_box = Mask.pointsBox(points, 4)
+
+        # create a mask large enough to accomodate the points and the contour and paint.
+        (mask, box) = Mask.jointMask(contour_box, points_box)
+        origin = np.array([box[1], box[0]])
+        contour_points = contour.round().astype(int)
+        fillPoly(mask, pts=[contour_points - origin], color=(1, 1, 1))
+
         Mask.paintPoints(mask, box, points, 1)
-        mask = ndi.binary_fill_holes(mask.astype(int))
+        mask = ndi.binary_fill_holes(mask)
 
-        #erase the points to carve to remove the internal parts.
+        # now draw in black the part of the points inside the contour
         Mask.paintPoints(mask, box, points, 0)
 
-        #add back holes
-        mask = mask & ~holes
+        # now we label all the parts and keep the larges only
+        regions = measure.regionprops(measure.label(mask, connectivity=1))
 
-        regions = measure.regionprops(measure.label(mask))
+        largest = max(regions, key=lambda region: region.area)
 
-        if len(regions):
-            largest = regions[0]
-            for region in regions:
-                if region.area > largest.area:
-                    largest = region
-
-            #adjust the image bounding box (relative to the region mask) to directly use area.image mask
-            #image box is standard (minx, miny, maxx, maxy)
-            box = np.array([ box[0] + largest.bbox[0], box[1] + largest.bbox[1], largest.bbox[3], largest.bbox[2] ])
-            try:
-                blob.updateUsingMask(box, largest.image.astype(int))
-            except:
-                pass
-
-
+        # adjust the image bounding box (relative to the region mask) to directly use area.image mask
+        box = np.array([box[0] + largest.bbox[0], box[1] + largest.bbox[1], largest.bbox[3] - largest.bbox[1],
+                        largest.bbox[2] - largest.bbox[0]])
+        return (largest.image, box)
 
     def statistics(self):
         """
