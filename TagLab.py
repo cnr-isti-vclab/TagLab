@@ -720,6 +720,8 @@ class TagLab(QWidget):
 
         if event.key() == Qt.Key_Escape:
             key_pressed = 'ESC'
+        elif event.key() == Qt.Key_Enter or event.key() == Qt.Key_Return:
+            key_pressed = 'ENTER'
         else:
             if event.key() < 0xfffff:
                 key_pressed = chr(event.key())
