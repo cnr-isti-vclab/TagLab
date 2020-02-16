@@ -230,6 +230,7 @@ class Blob(object):
 
 
     def lineToPoints(self, lines, snap = False):
+        print(lines)
         points = np.empty(shape=(0, 2), dtype=int)
 
         for line in lines:

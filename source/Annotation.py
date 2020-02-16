@@ -332,8 +332,7 @@ class Annotation(object):
             #self.updateUsingMask(self.bbox, cracked_blob)
 
     def editBorder(self, blob, lines):
-
-        points = blob.lineToPoints(lines, snap=False)
+        points = [blob.drawLine(line) for line in lines]
 
         if points is None or len(points) == 0:
             return
@@ -349,11 +348,15 @@ class Annotation(object):
         return
 
     def editBorderContour(self, blob, contour, points):
-        points = blob.snapToContour(points, contour)
+        snapped_points = np.empty(shape=(0, 2), dtype=int)
+        for arc in points:
+            snapped = blob.snapToContour(arc, contour)
+            if snapped is not None:
+                snapped_points = np.append(snapped_points, snapped, axis = 0)
 
         contour_box = Mask.pointsBox(contour, 4)
 
-        if points is None or len(points) == 0:
+        if snapped_points is None or len(snapped_points) == 0:
             # not very elegant repeated code...
             (mask, box) = Mask.jointMask(contour_box, contour_box)
             origin = np.array([box[1], box[0]])
@@ -361,7 +364,7 @@ class Annotation(object):
             fillPoly(mask, pts=[contour_points - origin], color=(1, 1, 1))
             return (mask, box)
 
-        points_box = Mask.pointsBox(points, 4)
+        points_box = Mask.pointsBox(snapped_points, 4)
 
         # create a mask large enough to accomodate the points and the contour and paint.
         (mask, box) = Mask.jointMask(contour_box, points_box)
@@ -369,11 +372,14 @@ class Annotation(object):
         contour_points = contour.round().astype(int)
         fillPoly(mask, pts=[contour_points - origin], color=(1, 1, 1))
 
-        Mask.paintPoints(mask, box, points, 1)
+        Mask.paintPoints(mask, box, snapped_points, 1)
         mask = ndi.binary_fill_holes(mask)
 
         # now draw in black the part of the points inside the contour
-        Mask.paintPoints(mask, box, points, 0)
+        Mask.paintPoints(mask, box, snapped_points, 0)
+
+        image = utils.maskToQImage(mask)
+        image.save("test.png")
 
         # now we label all the parts and keep the larges only
         regions = measure.regionprops(measure.label(mask, connectivity=1))
