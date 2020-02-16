@@ -230,7 +230,6 @@ class Blob(object):
 
 
     def lineToPoints(self, lines, snap = False):
-        print(lines)
         points = np.empty(shape=(0, 2), dtype=int)
 
         for line in lines:
@@ -298,7 +297,8 @@ class Blob(object):
         Mask.paintPoints(mask, box, points, 1)
         mask = ndi.binary_fill_holes(mask)
 
-        #mask = binary_erosion(mask)
+        mask = binary_erosion(mask)
+        mask = binary_dilation(mask)
         self.updateUsingMask(box, mask)
         return True
 

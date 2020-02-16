@@ -378,9 +378,6 @@ class Annotation(object):
         # now draw in black the part of the points inside the contour
         Mask.paintPoints(mask, box, snapped_points, 0)
 
-        image = utils.maskToQImage(mask)
-        image.save("test.png")
-
         # now we label all the parts and keep the larges only
         regions = measure.regionprops(measure.label(mask, connectivity=1))
 
