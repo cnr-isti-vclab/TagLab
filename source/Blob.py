@@ -208,7 +208,7 @@ class Blob(object):
 
         mask = np.zeros((r, c), np.uint8)
         points = self.contour.round().astype(int)
-        fillPoly(mask, pts=[points - origin], color=(1, 1, 1))
+        fillPoly(mask, pts=[points - origin], color=(1))
 #DEBUG
 #        cv2.imshow(" ", mask)
 #        cv2.waitKey()
@@ -297,7 +297,8 @@ class Blob(object):
         Mask.paintPoints(mask, box, points, 1)
         mask = ndi.binary_fill_holes(mask)
 
-        #mask = binary_erosion(mask)
+        mask = binary_erosion(mask)
+        mask = binary_dilation(mask)
         self.updateUsingMask(box, mask)
         return True
 

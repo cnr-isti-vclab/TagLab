@@ -720,12 +720,19 @@ class TagLab(QWidget):
 
         if event.key() == Qt.Key_Escape:
             key_pressed = 'ESC'
+        elif event.key() == Qt.Key_Enter or event.key() == Qt.Key_Return:
+            key_pressed = 'ENTER'
         else:
-            key_pressed = event.text()
+            if event.key() < 0xfffff:
+                key_pressed = chr(event.key())
+            else:
+                key_pressed = event.text()
 
         if modifiers == Qt.ControlModifier:
             str = "[KEYPRESS] Key CTRL + '" + key_pressed + "' has been pressed."
         elif modifiers == Qt.ShiftModifier:
+            str = "[KEYPRESS] Key ALT + '" + key_pressed + "' has been pressed."
+        elif modifiers == Qt.AltModifier:
             str = "[KEYPRESS] Key SHIFT + '" + key_pressed + "' has been pressed."
         else:
             str = "[KEYPRESS] Key '" + key_pressed + "' has been pressed."
@@ -2178,6 +2185,7 @@ class TagLab(QWidget):
         self.setProjectTitle("NONE")
 
         self.infoWidget.setInfoMessage("TagLab has been reset. To continue open an existing project or load a map.")
+        logfile.info("[PROJECT] A new project has been setup.")
 
     @pyqtSlot()
     def setMapToLoad(self):
@@ -2277,6 +2285,7 @@ class TagLab(QWidget):
         if filename:
 
             self.load(filename)
+
 
     @pyqtSlot()
     def openRecentProject(self):
@@ -2515,6 +2524,9 @@ class TagLab(QWidget):
 
         self.infoWidget.setInfoMessage("The given project has been successfully open.")
 
+        message = "[PROJECT] The project " + self.project_name + " has been loaded."
+        logfile.info(message)
+
         self.compare_panel.setProject(self.project_name)
 
     def append(self, filename, append_to_current):
@@ -2596,6 +2608,10 @@ class TagLab(QWidget):
             self.activateAutosave()
 
         self.infoWidget.setInfoMessage("Current project has been successfully saved.")
+
+        message = "[PROJECT] The project " + self.project_name + " has been saved."
+        logfile.info(message)
+
 
     def resetNetworks(self):
 
