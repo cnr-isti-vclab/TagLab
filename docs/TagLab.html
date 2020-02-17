@@ -147,20 +147,20 @@ em {
  
  <h3> The Tool Bar </h3>
 
-     <p>The toolbar is located on the left side of the interface. It currently contains the following operation buttons, individually activable:</p>
+     <p>The toolbar is located on the left side of the interface. It contains the following operation buttons, individually activable:</p>
     
     
     <ul>
-    <li><a href="#move">Move</a> tool enables Pan/Zoom operations. 
-    <li><a href="#assigntool">Assign</a> tool assigns a semantic class.
-    <li><a href="#freehand">Freehand drawing</a> tool allows manually drawing of corals borders. 
-    <li><a href="#editborder">Edit Border</a> tool (coral alike icon) allows quick contour editing.
-    <li><a href="#cut">Cut</a> Segmentation tool (scissors icon) provides a fast guided separation of colonies. 
-    <li><a href="#crack">Crack</a> tool interactively places cracks.
-    <li><a href="#split">Split</a> Blob tool automatically separates colonies.
-    <li><a href="#ruler">Ruler</a> tool takes linear measures, between a pair of points or objects centroids.
-    <li><a href="#4clicks">4-clicks</a> tool implementsCNN-assisted agnostic segmentation.
-    <li><a href="#fully">Fully automatic classification</a> tool allows to select a pre-trained semantic segmentation network from the ones available, and apply it to the map.
+    <li><a href="#move">Move</a>  enables Pan/Zoom operations. 
+    <li><a href="#assigntool">Assign</a> assigns a semantic class.
+    <li><a href="#freehand">Freehand drawing</a>  allows manually drawing corals borders. 
+    <li><a href="#editborder">Edit Border</a> (coral alike icon) allows quick contour editing.
+    <li><a href="#cut">Cut</a> segmentation (scissors icon) provides a fast guided separation of labels. 
+    <li><a href="#crack">Crack</a> interactively places cracks.
+    <li><a href="#split">Split</a> blob  automatically separates label masks.
+    <li><a href="#ruler">Ruler</a>  takes linear measures, between a pair of points or objects centroids.
+    <li><a href="#4clicks">4-clicks</a> implementsCNN-assisted agnostic segmentation.
+    <li><a href="#fully">Fully automatic classification</a>  allows to select a pre-trained semantic segmentation network from the ones available, and apply it to the map.
     </ul>
 	
 	
@@ -330,7 +330,7 @@ Additional segments, inside or outside the polygon are automatically removed too
 Areas included or excluded from the edit curves are automatically added or removed from the selected blob. Information in the info panel is automatically updated.
 If no blob is selected or multiple blobs are selected, the edit operation cannot be applyed and the edit curves will be deleted.
 Curves don't need to be continue and can be concave or covex. Curves must crossing the coral borders <em>twice</em>
-to be effective, otherwise they will be automatically removed. The snapping option is always active and the resulting polygon cleaned from unwanted scratch.
+to be effective, otherwise they will be automatically removed. Any inner labels contours can be edited following the same criterion. The snapping option is always active and the resulting polygon cleaned from unwanted scratch.
 By pressing <key>Esc</key> before confirming al the editing curves eill be removed. 
 Undo and Redo operation are always allowed.
  </p> 
@@ -366,15 +366,18 @@ points or the distance between blob's centroids. In this last case, the user has
 <h3>4-clicks</h3>
 
 <p>This tool quickly traces the edges of an object. The user, helped by the cross cursor,
- must place four points at the object's extremes (extreme top, extreme bottom, extreme left, extreme right). There is no need to follow a specific order, but it's necessary to position them as accurately as possible near the extremes. The operation is confirmed by pressing <key>Space bar</key>. The contours of the object are 
-automatically delimited through a neural network called <em>deep extreme cut</em> [CIT]. 
+ must place four points at the object's extremes (extreme top, extreme bottom, extreme left, extreme right).
+ There is no need to follow a specific order, but it's necessary to position them as accurately as possible near the extremes. After placing the fourth point, the contours of the object are 
+automatically delimited through a neural network called <a href="https://github.com/scaelles/DEXTR-PyTorch/"> Deep Extreme Cut</a> . 
 This tool works only if you have the network's weights properly placed in TagLab's 'models' folder. </p>
+
+
 
 
 <a name="fully"></a>
 <h3>Fully automatic segmentation </h3>
 
-<p>This tool applies the fully automatic semantic segmentation networks DeepLab V3+. 
+<p>This tool loads and apply pre-trained binary classifiers based on the fully automatic semantic segmentation network <a href="https://github.com/jfzhang95/pytorch-deeplab-xception/"> DeepLab V3+ </a> . 
 When activated, it opens a window and demands the selection of compatible classifiers among 
 those available in the 'models' folder. The following fields are not editable; they are read directly from the config.json file. The segmentation operation begins when the user press Apply. The progress of processing is declared by the progress bar at the top left. As soon as the classification starts, in the TagLab folder, a 'temp' subfolder is created, and the annotations are saved into separate tiles, and then recomposed in a single mosaic map. At the end of the operation, the user must save
  the project and close TagLab. If the process ends before displaying the labels, 
