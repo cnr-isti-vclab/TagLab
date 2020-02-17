@@ -162,16 +162,16 @@ em {
     <li><a href="#4clicks">4-clicks</a> implementsCNN-assisted agnostic segmentation.
     <li><a href="#fully">Fully automatic classification</a>  allows to select a pre-trained semantic segmentation network from the ones available, and apply it to the map.
     </ul>
-	
-	
+
+
      <h3> Working View </h3>
 <p>The Working View covers the central part of the interface and contains the orthomosaic map.
  Navigation is straightforward: zoom (wheel to zoom in and out) is always allowed, but the pan 
- is enabled only with the Move Tool is active or by pressing the <key>Ctrl</key>+mouse left button (when one of the other tools is active).
+ is enabled only when the Move Tool is active or by pressing the <key>Ctrl</key>+mouse left button (when one of the other tools is active).
  Above the Working View, a slider allows adjusting masks transparency.</p>
- 
+
+
  <h3> The Right Panel </h3>
-    
 <p>This section is partitioned into different subpanels.
  From the top: the Warnings message box, the Labels panel, the Comparison panel, the Segmentation info box, and the Map viewer.  
  The Labels Panel displays a list of colors and class names.
@@ -180,8 +180,7 @@ em {
 <p>The visibility of each class in the working view can be switch using the eye icon, singularly or in groups (by pressing <key>Ctrl</key> or <key>Shift</key>).
  This supports the visualization of the distribution of a specific species and the export of targeted maps, tabs, or statistics (only visible tags are processed).</p>
 
-<p>The Comparison Panel displays the current editable annotations plus overlapping annotations from others projects, in a non-editable mode, and a dashing appearance.
-Annotations from multi-temporal surveys can be loaded from File, Compare annotation}.</p>
+<p>The Comparison Panel displays the current editable annotations plus overlapping annotations from others projects, in a non-editable mode, and a dashing appearance. Annotations from multi-temporal surveys can be loaded from File &gt; Compare annotation.</p>
 
 <p>The Segmentation Info box shows properties related to the selected label.
  More precisely: coordinates, class, perimeter, area, and an editable note field. This information are updated simultaneously after every operation.</p>
@@ -199,17 +198,17 @@ Annotations from multi-temporal surveys can be loaded from File, Compare annotat
 <h2>Create an manage a project</h2>
 <h3> File &gt; Load Map </h3>
 
-<p>Browse  an image map from your PC, with the current settings: 
+<p>Browse an image map from your PC, with the current settings: </p>
 
 
 <ul>
-<li>TagLab only  supports .jpg and .png RGB images of the maximum size of 32767x32767 pixels.</li>
+<li>TagLab only supports <b>.jpg</b> and <b>.png</b> RGB images with a maximum size of 32767x32767 pixels.</li>
 <li>TagLab doesn't support images having a transparency channel.</li>
 </ul> 
-If TagLab crushes after the map loading the image format is probably not supported.
-Fill all the fields in the <em>map settings</em> menu, the px-to-mm conversion allows to measure areas
-and lengths in cm^2 and cm.
-If this value is settled to 1.0 you are measuring pixels.</p>
+
+<p>If TagLab crashes after the map loading the image format is probably not supported.
+Fill all the fields in the <em>map settings</em> menu, the px-to-mm conversion allows to measure areas in cm<sup>2</sup>
+and lengths in cm. If this value is settled to 2.0 a pixel is 2mm long.</p>
 
 
 <h3>File &gt; New Project </h3>
@@ -219,18 +218,16 @@ If this value is settled to 1.0 you are measuring pixels.</p>
 
 <h3>File &gt; Open Project </h3>
 
-<p>allows loading an existing project. This command loads both maps and annotations.
+<p>It allows loading an existing project. This command loads both maps and annotations.
 If the map has been moved into another folder, Taglab asks you to load it again.
-The project file can be moved anywhere.
-Recents open projects are directly visible in the File menu. </p>
+The project file can be moved anywhere. Recents open projects are directly visible in the File menu. </p>
 
 
 <h3> File &gt; Save Project  </h3>
 
-<p>saves the current project.
-The project is saved as a JSON file. The project file contains a reference to the loaded map, the map settings,
+<p>It saves the current project. The project file contains a reference to the loaded map, the map settings,
 your annotations (list of points), and all additional information such as the assigned classes,
-areas, perimeter, centroids. </p>
+areas, perimeter, centroids. The project is saved as a JSON file. </p>
 
 
 
@@ -238,18 +235,15 @@ areas, perimeter, centroids. </p>
 
 <h3>File &gt; Import Options &gt; Append Annotation to Current</h3>
 
-<p> Allows appending a set of polygons (saved in a .json file) to the current project. This is useful when you have a set of polygons belonging to class A and yo would like to add
-the previously segmented class B on the same map. Warnings: previously created annotation must be created on the same map or a map of the same size. </p> 
+<p>Appends a set of polygons (saved in a .json file) to the current project. This is useful when you have a set of polygons belonging to class A and you would like to add the previously segmented class B on the same map. Warnings: previously created annotation must be created on the same map or a map of the same size. </p> 
 
 <h3>File &gt; Import Options &gt; Compare Annotations</h3>
 
-<p> Allows to import a new set of annotation in a separate layer. Multiple annotationo are visible in the Comparison panel on the right. New annotations exhibit dashed contours and are not
-editable. This option is extremely useful to visually compare 2D changes in multi-temporal maps. Visibility might be switch on and of using the eye icon. We planned to add operations between different layers. </p> 
+<p>Imports a set of annotations in a separate layer. Multiple annotations are visible in the Comparison panel on the right. New annotations exhibit dashed contours and are not editable. This option is extremely useful to visually compare 2D changes in multi-temporal maps. Visibility might be switched on and of using the eye icon. We planned to add boolean operations between different layers. </p> 
 
 <h3>File &gt; Import Options> Import Label map.</h3>
 
-<p> Allows you to load a segmented .jpg or .png map on existing projects. This import option polygonizes an label map, and new polygons are appended to the existing ones. The map must have a black (RGB(0,0,0)) 
-background, and foreground classes must be present in your .config file. It may be helpful to use Taglab edit options on a previous segmentation. </p>
+<p>Loads a segmented .jpg or .png map in an existing projects. This option polygonizes a label map, and new polygons are appended to the existing ones. The map must have a black (RGB(0,0,0)) background, and foreground classes must be present in your .config file. It may be useful to use Taglab edit options on a previous segmentation.</p>
 
 
 <h2>Export options</h2>
@@ -276,30 +270,27 @@ switch on and off using the eye icon </p>
 
 
 <h2>Commands</h2>
-
 <p> Undo and Redo operations work with <key>Ctrl + z</key>, <key>Crtl + Shift + z</key> </p>
 
-<h3>Select</h3>
 
-<p> The selection is essential; operations can only be applied on selected labels. For the single label selection, double click inside a label. Polygon outlines of the selected labels changes from black to white.
-Almost all operations work with a single selected label, except delete, merge overlapping annotations, assign class, that allows the multiple selections. Multiple selections can be additive  (<key>Shift</key> + left click) 
-or performed by dragging a rectangular window (<key>Shift</key> + left click+drag). To select labels in this way, be sure to include them entirely in the window.</p> 
+<h3>Select</h3>
+<p>Operations can only be applied on selected labels. For the single label selection, double click inside a label. Polygon outline of the selected labels changes from black to white.
+Almost all operations work with a single selected label, except delete, boolean operations (merge, divide, subtract), assign class, that allows multiple selections. Labels can be added to the selection using <key>Shift</key> + left click)
+or a group of label can be selected by dragging a rectangular window (<key>Shift</key> + left click+drag). To select labels in this way, be sure to include them entirely in the rectangle.</p> 
+
 
 <h3>Confirm operation</h3>
+<p> To carry out an operation, select a tool, select a polygon if required by the process, perform edits, and then press <key>Space bar</key> to apply it.</p>
 
-<p> To carry out an operation, select the corresponding tool, select a polygon if required by the process, perform edits, and then press <key>Space bar</key> to apply it.</p>
 
 <h3>Reset tool </h3>
+<p>Any operation not carried out adequately can be canceled by pressing <key>Esc</key> before confirmation.</p> 
 
-<p>Any operation not carried out adequately can be canceled by pressing <key>Esc</key> before confirmation.
- </p> 
 
- 
- 
- 
+
 <h2>Tools</h2>
 <a name="zoom"></a>
-<p>The zoom tool is always active by using the scroll. Tools are activable only singulary. Taglab has two smart tools, the 4-click tools and the Fully automatic segmentation tools, all the other implements
+<p>The zoom tool is always active by using the scroll. Tools are activable only singularly. Taglab has two smart tools, the 4-click tools and the Fully automatic segmentation tools, all the other implements
 classical image processing algorithms. For each operation computed on labels the information contained in the Info Panel are automatically adjusted. </p>
 
 
@@ -312,42 +303,39 @@ displays the current position inside an highlighted window.  </p>
 <a name="assigntool"></a>
 <h3>Assign</h3>
 
-<p> When the assing (buket icon )tool active all the clicked blobs assumes the class property and the correspondig color values of the selected class in the labels panel. Multiple selection is allowed by pressing <key>Shift</key> (same options as below). If multiple blobs are selected and the bucket tool is active, all blobs are simultanously assigned to the same class </p>
+<p> When the assing (buket icon) tool is active, all the clicked blobs assumes the class property and the correspondig color values of the selected class in the labels panel. Multiple selection is allowed by pressing <key>Shift</key> (same options as below). If multiple blobs are selected and the bucket tool is active, all blobs are simultanously assigned to the same class </p>
 
 <a name="freehand"></a>
 <h3>Freehand drawing</h3>
 
-<p> When the Freehand drawing is active users can draw a pixel-wise curve of a fixed thickness of 1px. The curves doesn't need to be draw continuosly but can be draw in different overlapping segments. 
-By pressing <key>Space bar</key> the operation is applied and the curve became a polygon. Only closed curve can became polygons, unclosed curves are automatically removed. Curves might intersect themselves several times
-but they always ptoduced a unique closed polygon without holes.  The snapping option is always active. 
-Additional segments, inside or outside the polygon are automatically removed too. Operation can be discarded in every moment (before confirming) by pressing <key>Esc</key>. Drawing is always allowed also internaly to another blob</p>
+<p> When the Freehand drawing is active users can draw a pixel-wise curve of a fixed thickness of 1px. The curves doesn't need to be draw continuosly but can be drawn in different overlapping segments. 
+By pressing <key>Space bar</key> the operation is applied and the curve became a polygon. Only closed curve can became polygons, unclosed curves are automatically removed. Curves might intersect themselves several times but they always produced a unique closed polygon without holes.</p>
+
+<p>There is no need to exactly match the start and the end of the line. Additional segments, inside or outside the polygon are automatically removed too. Operation can be discarded in every moment (before confirming) by pressing <key>Esc</key>. Drawing is always allowed also internally to another blob</p>
 
 
 <a name="editborder"></a>
 <h3>Edit Border</h3>
 
 <p>When this tool is selected, the user can arbitrary draw some segment on a <em>single selected</em> blob. 
-Areas included or excluded from the edit curves are automatically added or removed from the selected blob. Information in the info panel is automatically updated.
-If no blob is selected or multiple blobs are selected, the edit operation cannot be applyed and the edit curves will be deleted.
-Curves don't need to be continue and can be concave or covex. Curves must crossing the coral borders <em>twice</em>
-to be effective, otherwise they will be automatically removed. Any inner labels contours can be edited following the same criterion. The snapping option is always active and the resulting polygon cleaned from unwanted scratch.
-By pressing <key>Esc</key> before confirming al the editing curves eill be removed. 
-Undo and Redo operation are always allowed.
+Areas included or excluded from the edit curves are automatically added or removed from the selected blob. Information in the info panel is automatically updated. If no blob is selected or multiple blobs are selected, the edit operation cannot be applyed; select a single area and press <key>Spacebar</key> again.
+<p>Curves don't need to be continue and can be concave or covex. Curves must crossing the coral borders at least <em>twice</em>
+to be effective, otherwise they will be automatically removed. Any inner labels contours can be edited following the same criterion. The snapping option is always active and the resulting polygon cleaned from unwanted scratches.
+By pressing <key>Esc</key> before confirming all the editing curves eill be removed. Undo and Redo operation are always allowed.
  </p> 
 
 <a name="cut"></a>
 <h3>Cut</h3>
 
 <p> This tool works exactly like the Edit border tool except that the regions subtended by the edit curves are not removed but separated from the current blob.
- After the confirmation (<key>Space bar</key>) of the Cut operation, they become blobs. The class assigned by default is the same as the starting blob.  </p>
+ After confirmation (<key>Space bar</key>) of the Cut operation, they become blobs. The class assigned by default is the same as the starting blob.  </p>
 
 <a name="crack"></a>
 <h3>Crack</h3>
 
 <p> The Crack Tool is useful to quickly select cracks inside a blob and remove them, creating inners blob contours.
  When the Crack Tool is active, clicking on a crack point opens the Crack window. The window has a slider that allows 
-adjusting the selected area. The result of the selection is visible through the preview (which is zoomable). T
-he operation is confirmed by pressing the Apply button.</p>
+adjusting the selected area. The result of the selection is visible through the preview (which is zoomable). The operation is confirmed by pressing the Apply button.</p>
 
 <a name="split"></a>
 <h3>Split</h3>
@@ -415,9 +403,8 @@ The second blob can also be entirely contained in the first. In that case, a hol
 
 <a name="refine"></a>
 <h3>Refine</h3>
-<p><key>R</key> The tool works when a single blob is selected. By pressing R blob, contours will be adjusted following RGB information.
- The refinement tool can be used to improve the precision of the contours of the specimen without straying too far from the existing ones. The tool implements 
-a slightly modified version of the graph-cut segmentation algorithm. Pressing  - or + the tool, the refinement is applied in an erode or dilate modality.</p>
+<p><key>R</key> The tool works when a single blob is selected. By pressing R blob, contours will be adjusted to follow the edges (the gradient) of the image.
+ The refinement tool can be used to improve the precision of the contours of the specimen without straying too far from the existing ones.  Pressing  - or + the tool, the refinement is applied in an erode or dilate modality.</p>
 
 </div>
 
