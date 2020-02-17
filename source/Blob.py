@@ -208,7 +208,7 @@ class Blob(object):
 
         mask = np.zeros((r, c), np.uint8)
         points = self.contour.round().astype(int)
-        fillPoly(mask, pts=[points - origin], color=(1, 1, 1))
+        fillPoly(mask, pts=[points - origin], color=(1))
 #DEBUG
 #        cv2.imshow(" ", mask)
 #        cv2.waitKey()

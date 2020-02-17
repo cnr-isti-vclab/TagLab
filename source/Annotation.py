@@ -361,18 +361,20 @@ class Annotation(object):
             (mask, box) = Mask.jointMask(contour_box, contour_box)
             origin = np.array([box[1], box[0]])
             contour_points = contour.round().astype(int)
-            fillPoly(mask, pts=[contour_points - origin], color=(1, 1, 1))
+            fillPoly(mask, pts=[contour_points - origin], color=(1))
             return (mask, box)
 
         points_box = Mask.pointsBox(snapped_points, 4)
 
         # create a mask large enough to accomodate the points and the contour and paint.
         (mask, box) = Mask.jointMask(contour_box, points_box)
+
         origin = np.array([box[1], box[0]])
         contour_points = contour.round().astype(int)
         fillPoly(mask, pts=[contour_points - origin], color=(1, 1, 1))
 
         Mask.paintPoints(mask, box, snapped_points, 1)
+
         mask = ndi.binary_fill_holes(mask)
 
         # now draw in black the part of the points inside the contour

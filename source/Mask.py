@@ -39,7 +39,7 @@ returns (mask, bbox) where bbox is the union and mask is set to 0
 """
 def jointMask(box0, box1):
     box = jointBox([box0, box1])
-    mask = np.zeros((box[3], box[2])).astype(int)
+    mask = np.zeros((box[3], box[2])).astype(np.uint8)
     return (mask, box)
 
 
