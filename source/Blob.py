@@ -440,6 +440,7 @@ class Blob(object):
 
         #self.perimeter = measure.perimeter(mask) instead?
 
+
         # perimeter of the outer contour
         px1 = contour[0, 0]
         py1 = contour[0, 1]
@@ -460,11 +461,13 @@ class Blob(object):
         return perim
 
     def calculatePerimeter(self):
-
+        #tole = 2
+        #simplified = measure.approximate_polygon(self.contour, tolerance=tole)
         self.perimeter = self.calculateContourPerimeter(self.contour)
 
         for contour in self.inner_contours:
-            self.perimeter += self.calculateContourPerimeter(self.contour)
+            #simplified = measure.approximate_polygon(contour, tolerance=tole)
+            self.perimeter += self.calculateContourPerimeter(contour)
 
     def calculateArea(self, mask):
         self.area = mask.sum().astype(float)

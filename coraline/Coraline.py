@@ -1,6 +1,10 @@
 import ctypes as C
 from ctypes import cdll
 import sys
+import source.utils as utils
+from skimage.filters import gaussian
+from skimage.restoration import denoise_bilateral
+import numpy as np
 
 try:
 	if sys.platform == "linux" or sys.platform == "linux2":
@@ -16,6 +20,12 @@ except:
 def segment(img, mask, l = 0, conservative = 0.1, grow = 0, radius = 30):
 	if lib is None:
 		raise Exception("Coraline library (libcoraline.so, coraline.dll) not found.")
+
+	img = gaussian(img, sigma = 1.5, multichannel=False)
+	img = img*255;
+	img = img.astype(np.uint8)
+	qimg = utils.rgbToQImage(img)
+	qimg.save("Smoothed.jpg")
 
 	w = img.shape[1]
 	h = img.shape[0]

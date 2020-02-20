@@ -1645,9 +1645,9 @@ class TagLab(QWidget):
 
         logfile.info("[OP-REFINE-BORDER-DILATE] DILATE-BORDER operation begins..")
 
-        self.refine_grow = 15
+        self.refine_grow += 2
         self.refineBorder()
-        self.refine_grow = 0
+        #self.refine_grow = 0
 
         logfile.info("[OP-REFINE-BORDER-DILATE] DILATE-BORDER operation ends.")
 
@@ -1656,9 +1656,9 @@ class TagLab(QWidget):
 
         logfile.info("[OP-REFINE-BORDER-ERODE] ERODE-BORDER operation begins..")
 
-        self.refine_grow = -10
+        self.refine_grow -= 2
         self.refineBorder()
-        self.refine_grow = 0
+        #self.refine_grow = 0
 
         logfile.info("[OP-REFINE-BORDER-ERODE] ERODE-BORDER operation ends.")
 
@@ -1666,6 +1666,7 @@ class TagLab(QWidget):
 
         logfile.info("[OP-REFINE-BORDER] REFINE-BORDER operation begins..")
 
+        self.refine_grow = 0
         self.refineBorder()
 
         logfile.info("[OP-REFINE-BORDER] REFINE-BORDER operation ends.")
@@ -1675,6 +1676,10 @@ class TagLab(QWidget):
         Refine blob border
         """
 
+        if self.refine_grow != 0 and self.refine_original_mask is None:
+            return
+
+
         # padding mask to allow moving boundary
         padding = 35
         if len(self.selected_blobs) == 1:
@@ -1683,10 +1688,17 @@ class TagLab(QWidget):
             blob = selected.copy()
             self.logBlobInfo(blob, "[OP-REFINE-BORDER][BLOB-SELECTED]")
 
-            mask = blob.getMask()
-            mask = np.pad(mask, (padding, padding), mode='constant', constant_values=(0, 0)).astype(np.ubyte)
+            if self.refine_grow == 0:
+                mask = blob.getMask()
+                mask = np.pad(mask, (padding, padding), mode='constant', constant_values=(0, 0)).astype(np.ubyte)
+                self.refine_original_mask = mask.copy()
+                self.refine_original_bbox = blob.bbox.copy()
+                bbox = blob.bbox.copy()
+            else:
+                mask = self.refine_original_mask.copy()
+                bbox = self.refine_original_bbox.copy()
 
-            bbox = blob.bbox.copy()
+
             bbox[0] -= padding; #top
             bbox[1] -= padding; #left
             bbox[2] += 2*padding; #width
@@ -1695,7 +1707,7 @@ class TagLab(QWidget):
             img = utils.cropQImage(self.img_map, bbox);
             try:
                 from coraline.Coraline import segment
-                segment(utils.qimageToNumpyArray(img), mask, 0.0, conservative=0.05, grow=self.refine_grow, radius=30)
+                segment(utils.qimageToNumpyArray(img), mask, 0.0, conservative=0.07, grow=self.refine_grow, radius=30)
 
             except Exception as e:
                 msgBox = QMessageBox()
