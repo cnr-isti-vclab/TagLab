@@ -179,8 +179,11 @@ class MapClassifier(QObject):
                 if self.flagStopProcessing is True:
                     break
 
-                preds_avg, preds_bayesian = self.aggregateScores(scores, tile_sz=TILE_SIZE,
-                                                    center_window_size=AGGREGATION_WINDOW_SIZE, step=AGGREGATION_STEP)
+                # preds_avg, preds_bayesian = self.aggregateScores(scores, tile_sz=TILE_SIZE,
+                #                                     center_window_size=AGGREGATION_WINDOW_SIZE, step=AGGREGATION_STEP)
+
+                preds_avg = self.aggregateScores(scores, tile_sz=TILE_SIZE,
+                                                     center_window_size=AGGREGATION_WINDOW_SIZE, step=AGGREGATION_STEP)
 
                 values_t, predictions_t = torch.max(torch.from_numpy(preds_avg), 0)
                 preds = predictions_t.cpu().numpy()
@@ -317,21 +320,21 @@ class MapClassifier(QObject):
         #
         # THIS AVOID NUMERICAL PROBLEMS FOR PRODUCTS WITH MANY TERMS.
 
-        # bayesian aggregation
-        classification_scores_bayes = np.zeros((nclasses, center_window_size, center_window_size))
+        # # bayesian aggregation
+        # classification_scores_bayes = np.zeros((nclasses, center_window_size, center_window_size))
+        #
+        # for i in range(nscores):
+        #     classification_scores_bayes = classification_scores_bayes + classification_scores[i]
+        #
+        # classification_scores_bayesian = np.zeros((nclasses, center_window_size, center_window_size))
+        #
+        # res = softmax(torch.from_numpy(classification_scores_bayes))
+        #
+        # # PRIOR probabilities
+        # prior = [0.7, 0.1, 0.1, 0.1]
+        #
+        # for i in range(nclasses):
+        #     classification_scores_bayesian[i] = prior[i] * res[i].numpy()
 
-        for i in range(nscores):
-            classification_scores_bayes = classification_scores_bayes + classification_scores[i]
-
-        classification_scores_bayesian = np.zeros((nclasses, center_window_size, center_window_size))
-
-        res = softmax(torch.from_numpy(classification_scores_bayes))
-
-        # PRIOR probabilities
-        prior = [0.7, 0.1, 0.1, 0.1]
-
-        for i in range(nclasses):
-            classification_scores_bayesian[i] = prior[i] * res[i].numpy()
-
-        return classification_scores_avg, classification_scores_bayesian
+        return classification_scores_avg
 

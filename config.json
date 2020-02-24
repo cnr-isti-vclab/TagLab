@@ -18,6 +18,23 @@
     "Classes": ["Pocillopora", "Background"],
 	"Scale": 1.1111,
     "Average Norm.": [0.4450,0.4441,0.4351]
+  },
+    {
+    "Classifier Name": "Pocillopora_Porite_Montipora",
+    "Weights": "Pocillopora_Porite_Montipora.net",
+    "Num. Classes": 4,
+    "Classes": ["Porite","Pocillopora","Montipora","Background"],
+	"Scale": 1.1111,
+    "Average Norm.": [0.4433,0.4499,0.4408]
+  },
+  
+      {
+    "Classifier Name": "Pocillopora_Porite_Montipora3",
+    "Weights": "Pocillopora_Porite_Montipora3.net",
+    "Num. Classes": 6,
+    "Classes": ["Porite","Montipora_plate/flabellata","Montipora_crust/patula","Montipora_capitata","Pocillopora","Background"],
+	"Scale": 1.1111,
+    "Average Norm.": [0.4433,0.4499,0.4408]
   }
 ],
 
@@ -45,6 +62,7 @@
   "Porites_branching": [0, 169, 157],
   "Favites_crust": [255, 247, 153],
   "Montipora_crust/patula": [171, 160, 0],
+  "Montipora": [0, 128, 0],
   "Pavona_varians": [255, 255, 0],
   "Porites_superfusa": [251, 175, 93],
   "Hydnophora_pilosa": [253, 198, 137],
