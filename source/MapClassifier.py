@@ -107,11 +107,28 @@ class MapClassifier(QObject):
         W = img_map.width()
         H = img_map.height()
 
-        tile_cols = int(W / AGGREGATION_WINDOW_SIZE)
-        tile_rows = int(H / AGGREGATION_WINDOW_SIZE)
+        # top, left, width, height
+        working_area = [0, 0, W, H]
 
-        DELTA_W = W - AGGREGATION_WINDOW_SIZE * tile_cols
-        DELTA_H = H - AGGREGATION_WINDOW_SIZE * tile_rows
+        wa_top = working_area[0]
+        wa_left = working_area[1]
+        wa_width = working_area[2]
+        wa_height = working_area[3]
+
+        if wa_top < AGGREGATION_STEP:
+            wa_top = AGGREGATION_STEP
+
+        if wa_left < AGGREGATION_STEP:
+            wa_left = AGGREGATION_STEP
+
+        if wa_left + wa_width >= W - AGGREGATION_STEP:
+            wa_width = W - AGGREGATION_STEP - wa_left - 1
+
+        if wa_top + wa_height >= H - AGGREGATION_STEP:
+            wa_height = H - AGGREGATION_STEP - wa_top - 1
+
+        tile_cols = int(wa_width / AGGREGATION_WINDOW_SIZE) + 1
+        tile_rows = int(wa_height / AGGREGATION_WINDOW_SIZE) + 1
 
         if torch.cuda.is_available():
             device = torch.device("cuda")
@@ -142,8 +159,8 @@ class MapClassifier(QObject):
                 for i in range(-1,2):
                     for j in range(-1,2):
 
-                        top = DELTA_H + row * STEP_SIZE + i * AGGREGATION_STEP
-                        left = DELTA_W + col * STEP_SIZE + j * AGGREGATION_STEP
+                        top = wa_top - AGGREGATION_STEP + row * STEP_SIZE + i * AGGREGATION_STEP
+                        left = wa_left - AGGREGATION_STEP + col * STEP_SIZE + j * AGGREGATION_STEP
                         cropimg = utils.cropQImage(img_map, [top, left, TILE_SIZE, TILE_SIZE])
                         img_np = utils.qimageToNumpyArray(cropimg)
 
@@ -204,9 +221,6 @@ class MapClassifier(QObject):
         # put tiles together
         qimglabel = QImage(W, H, QImage.Format_RGB32)
 
-        DA = int((TILE_SIZE - AGGREGATION_WINDOW_SIZE) / 2)
-        DA = int((TILE_SIZE - AGGREGATION_WINDOW_SIZE) / 2)
-
         xoffset = 0
         yoffset = 0
 
@@ -218,10 +232,26 @@ class MapClassifier(QObject):
                 filename = os.path.join(temp_dir, tilename)
                 qimg = QImage(filename)
 
-                xoffset = DELTA_W + DA + c * AGGREGATION_WINDOW_SIZE
-                yoffset = DELTA_H + DA + r * AGGREGATION_WINDOW_SIZE
+                xoffset = wa_left + c * AGGREGATION_WINDOW_SIZE
+                yoffset = wa_top + r * AGGREGATION_WINDOW_SIZE
 
-                painter.drawImage(xoffset, yoffset, qimg)
+                cut = False
+                W_prime = wa_width
+                H_prime = wa_height
+
+                if xoffset + AGGREGATION_WINDOW_SIZE > wa_left + wa_width - 1:
+                    W_prime = wa_width + wa_left - xoffset - 1
+                    cut = True
+
+                if yoffset + AGGREGATION_WINDOW_SIZE > wa_top + wa_height - 1:
+                    H_prime = wa_height + wa_top - yoffset - 1
+                    cut = True
+
+                if cut is True:
+                    qimg2 = qimg.copy(xoffset, yoffset, W_prime, H_prime)
+                    painter.drawImage(xoffset, yoffset, qimg2)
+                else:
+                    painter.drawImage(xoffset, yoffset, qimg)
 
         # detach the qimglabel otherwise the Qt EXPLODES when memory is free
         painter.end()
