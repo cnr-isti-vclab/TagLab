@@ -16,9 +16,9 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License (http://www.gnu.org/licenses/gpl.txt)
 # for more details.
-from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QApplication, QWidget, QSizePolicy, QLabel, QToolButton, QPushButton, QHBoxLayout, \
+from PyQt5.QtCore import Qt, QSize, QEvent, pyqtSlot, pyqtSignal
+from PyQt5.QtGui import QIcon, QColor
+from PyQt5.QtWidgets import QApplication, QLineEdit, QWidget, QColorDialog, QSizePolicy, QLabel, QToolButton, QPushButton, QHBoxLayout, \
     QVBoxLayout
 from pathlib import Path
 import os
@@ -26,21 +26,6 @@ import os
 path = Path(__file__).parent.absolute()
 imdir = str(path)
 imdir = imdir.replace('source', '')
-
-
-class ClickableLabel(QLabel):
-
-    # signals
-    clicked = pyqtSignal()
-
-    def __init__(self, label_text, parent=None):
-        super(QLabel, self).__init__(parent)
-
-        # identify the label clicked
-        self.label_text = label_text  # store the label text without decoration
-
-    def mousePressEvent(self, event):
-        self.clicked.emit()
 
 
 class QtLabelsWidget(QWidget):
@@ -55,7 +40,7 @@ class QtLabelsWidget(QWidget):
         self.btnVisible = []
         self.visibility_flags = []
         self.btnClass = []
-        self.lblClass = []
+        self.lineeditClass = []
 
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
 
@@ -86,18 +71,19 @@ class QtLabelsWidget(QWidget):
         btnC.setFixedWidth(CLASS_LABELS_HEIGHT)
         btnC.setFixedHeight(CLASS_LABELS_HEIGHT)
 
-        lbl = ClickableLabel("Empty")
-        lbl.setStyleSheet("QLabel {color : lightgray;}")
-        lbl.setText("Empty")
+        lbl = QLineEdit("Empty")
+        lbl.setStyleSheet("QLineEdit { border: none; color : lightgray;}")
         lbl.setFixedHeight(CLASS_LABELS_HEIGHT)
+        lbl.setReadOnly(True)
+        lbl.installEventFilter(self)
 
         self.btnVisible.append(btnV)
         self.visibility_flags.append(True)
         self.btnClass.append(btnC)
-        self.lblClass.append(lbl)
+        self.lineeditClass.append(lbl)
 
         btnV.clicked.connect(self.toggleVisibility)
-        lbl.clicked.connect(self.highlightSelectedLabel)
+        lbl.editingFinished.connect(self.editingFinished)
 
         layout = QHBoxLayout()
         layout.addWidget(btnV)
@@ -129,18 +115,20 @@ class QtLabelsWidget(QWidget):
             btnC.setFixedWidth(CLASS_LABELS_HEIGHT)
             btnC.setFixedHeight(CLASS_LABELS_HEIGHT)
 
-            lbl = ClickableLabel(label_name)
-            lbl.setStyleSheet("QLabel {color : lightgray;}")
-            lbl.setText(label_name)
+            lbl = QLineEdit(label_name)
+            lbl.setStyleSheet("QLineEdit { border: none; color : lightgray;}")
             lbl.setFixedHeight(CLASS_LABELS_HEIGHT)
+            lbl.setReadOnly(True)
+            lbl.installEventFilter(self)
 
             self.btnVisible.append(btnV)
             self.visibility_flags.append(True)
             self.btnClass.append(btnC)
-            self.lblClass.append(lbl)
+            self.lineeditClass.append(lbl)
 
+            btnC.clicked.connect(self.editColor)
             btnV.clicked.connect(self.toggleVisibility)
-            lbl.clicked.connect(self.highlightSelectedLabel)
+            lbl.editingFinished.connect(self.editingFinished)
 
             layout = QHBoxLayout()
             layout.addWidget(btnV)
@@ -151,11 +139,26 @@ class QtLabelsWidget(QWidget):
         labels_layout.setSpacing(2)
 
         ### FURTHER INITIALIZATION
-        txt = "<b>" + self.lblClass[0].label_text + "</b>"
-        self.lblClass[0].setText(txt)
-        self.lblClass[0].setStyleSheet("QLabel { color : white; background : light gray}")
+        txt = self.lineeditClass[0].text()
+        self.lineeditClass[0].setText(txt)
+        self.lineeditClass[0].setStyleSheet("QLineEdit { border: 1px; font-weight: bold; color : white;}")
 
-        self.active_label_name = self.lblClass[0].label_text
+        self.active_label_name = self.lineeditClass[0].text()
+
+
+    def eventFilter(self, object, event):
+
+        if type(object) == QLineEdit and event.type() == QEvent.FocusIn :
+
+            self.highlightSelectedLabel(object)
+
+            return False
+
+        if type(object) == QLineEdit and event.type() == QEvent.MouseButtonDblClick :
+
+            self.renameSelectedLabel(object)
+
+        return False
 
     def setAllVisible(self):
 
@@ -169,6 +172,38 @@ class QtLabelsWidget(QWidget):
             self.btnVisible[i].setIcon(self.icon_eyeclosed)
             self.visibility_flags[i] = False
 
+    @pyqtSlot()
+    def editingFinished(self):
+
+        lineedit = self.sender()
+        lineedit.setReadOnly(True)
+
+    @pyqtSlot()
+    def editColor(self):
+
+        button_clicked = self.sender()
+
+        index = self.btnClass.index(button_clicked)
+        label_name = self.lblClass[index].text()
+
+        color_dlg = QColorDialog(self)
+
+        color = self.labels[label_name]
+        r = color[0]
+        g = color[1]
+        b = color[2]
+        current_color = QColor(r, g, b, 255)
+        color_dlg.setCustomColor(0, current_color)
+
+        selected_color = color_dlg.getColor()
+        r = selected_color.red()
+        g = selected_color.green()
+        b = selected_color.blue()
+
+        self.labels[label_name] = [r, g, b]
+
+        style_text = "QPushButton:flat {background-color: rgb(" + str(r) + "," + str(g) + "," + str(b) + "); border: none ;}"
+        button_clicked.setStyleSheet(style_text)
 
     @pyqtSlot()
     def toggleVisibility(self):
@@ -200,21 +235,35 @@ class QtLabelsWidget(QWidget):
 
         self.visibilityChanged.emit()
 
-    @pyqtSlot()
-    def highlightSelectedLabel(self):
+    def highlightSelectedLabel(self, lbl_clicked):
 
         # reset the text of all the clickable labels
-        for lbl in self.lblClass:
-            lbl.setText(lbl.label_text)
-            lbl.setStyleSheet("QLabel { color : lightgray; }")
+        for lbl in self.lineeditClass:
+            lbl.setText(lbl.text())
+            lbl.setStyleSheet("QLineEdit { border: none; font-weight: normal; color : lightgray;}")
+            lbl.setReadOnly(True)
 
-        lbl_clicked = self.sender()
-
-        txt = "<b>" + lbl_clicked.label_text + "</b>"
+        txt = lbl_clicked.text()
         lbl_clicked.setText(txt)
-        lbl_clicked.setStyleSheet("QLabel { color : white; background : light gray}")
+        lbl_clicked.setReadOnly(True)
+        lbl_clicked.setStyleSheet("QLineEdit { border: 1 px; font-weight: bold; color : white;}")
 
-        self.active_label_name = lbl_clicked.label_text
+        self.active_label_name = lbl_clicked.text()
+
+    def renameSelectedLabel(self, lbl_clicked):
+
+        # reset the text of all the clickable labels
+        for lbl in self.lineeditClass:
+            lbl.setText(lbl.text())
+            lbl.setStyleSheet("QLineEdit { border: none; font-weight: normal; color : lightgray;}")
+            lbl.setReadOnly(True)
+
+        txt = lbl_clicked.text()
+        lbl_clicked.setText(txt)
+        lbl_clicked.setReadOnly(False)
+        lbl_clicked.setStyleSheet("QLineEdit { border: 1 px; font-weight: bold; color : white;}")
+        lbl_clicked.setFocusPolicy(Qt.StrongFocus)
+        lbl_clicked.setFocus()
 
     def isClassVisible(self, class_name):
 
