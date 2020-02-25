@@ -184,7 +184,7 @@ class QtLabelsWidget(QWidget):
         button_clicked = self.sender()
 
         index = self.btnClass.index(button_clicked)
-        label_name = self.lblClass[index].text()
+        label_name = self.lineeditClass[index].text()
 
         color_dlg = QColorDialog(self)
 
@@ -268,8 +268,8 @@ class QtLabelsWidget(QWidget):
 
     def isClassVisible(self, class_name):
 
-        for i in range(len(self.lblClass)):
-            if self.lblClass[i].label_text == class_name:
+        for i in range(len(self.lineeditClass)):
+            if self.lineeditClass[i].text() == class_name:
                 return self.visibility_flags[i]
 
         return False

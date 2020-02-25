@@ -11,3 +11,4 @@ models/Pocillopora_Porite_Montipora3.net
 models/Pocillopora_Porite_Montipora.net
 models/DEEPLAB_lr=5e-05_L2=0.0005_100_rescaled_6classes.net
 models/DEEPLAB_lr=5e-05_L2=0.0005_100_rescaled_4classes.net
+coraline/src/getopt.h
