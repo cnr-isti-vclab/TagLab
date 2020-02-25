@@ -248,7 +248,7 @@ class MapClassifier(QObject):
                     cut = True
 
                 if cut is True:
-                    qimg2 = qimg.copy(xoffset, yoffset, W_prime, H_prime)
+                    qimg2 = qimg.copy(0, 0, W_prime, H_prime)
                     painter.drawImage(xoffset, yoffset, qimg2)
                 else:
                     painter.drawImage(xoffset, yoffset, qimg)
