@@ -126,7 +126,7 @@ class QtLabelsWidget(QWidget):
             self.btnClass.append(btnC)
             self.lineeditClass.append(lbl)
 
-            btnC.clicked.connect(self.editColor)
+            #btnC.clicked.connect(self.editColor)
             btnV.clicked.connect(self.toggleVisibility)
             lbl.editingFinished.connect(self.editingFinished)
 
@@ -260,7 +260,8 @@ class QtLabelsWidget(QWidget):
 
         txt = lbl_clicked.text()
         lbl_clicked.setText(txt)
-        lbl_clicked.setReadOnly(False)
+        #lbl_clicked.setReadOnly(False)
+        lbl.setReadOnly(False)
         lbl_clicked.setStyleSheet("QLineEdit { border: 1 px; font-weight: bold; color : white;}")
         lbl_clicked.setFocusPolicy(Qt.StrongFocus)
         lbl_clicked.setFocus()
