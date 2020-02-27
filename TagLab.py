@@ -550,9 +550,14 @@ class TagLab(QWidget):
         openAct.triggered.connect(self.openProject)
 
         saveAct = QAction("Save Project", self)
-        saveAct.setShortcut('Ctrl+Alt+S')
+        saveAct.setShortcut('Ctrl+S')
         saveAct.setStatusTip("Save current project")
         saveAct.triggered.connect(self.saveProject)
+
+        saveAsAct = QAction("Save As..", self)
+        saveAsAct.setShortcut('Ctrl+Alt+S')
+        saveAsAct.setStatusTip("Save current project")
+        saveAsAct.triggered.connect(self.saveAsProject)
 
         for i in range(self.maxRecentFiles):
             self.recentFileActs.append(QAction(self, visible=False, triggered=self.openRecentProject))
@@ -645,6 +650,7 @@ class TagLab(QWidget):
         filemenu.addAction(newAct)
         filemenu.addAction(openAct)
         filemenu.addAction(saveAct)
+        filemenu.addAction(saveAsAct)
         filemenu.addSeparator()
         filemenu.addAction(loadMapAct)
         filemenu.addSeparator()
@@ -758,7 +764,7 @@ class TagLab(QWidget):
             message = "[TOOL][" + self.tool_used + "] Current operation has been canceled."
             logfile.info(message)
 
-        elif event.key() == Qt.Key_S and modifiers == Qt.ControlModifier:
+        elif event.key() == Qt.Key_S and modifiers & Qt.ControlModifier:
             self.save(self.project_name)
 
         elif event.key() == Qt.Key_A:
@@ -2309,6 +2315,11 @@ class TagLab(QWidget):
     @pyqtSlot()
     def saveProject(self):
 
+        self.save(self.project_name)
+
+    @pyqtSlot()
+    def saveAsProject(self):
+
         filters = "ANNOTATION PROJECT (*.json)"
         filename, _ = QFileDialog.getSaveFileName(self, "Save the project", self.taglab_dir, filters)
 
@@ -2316,7 +2327,7 @@ class TagLab(QWidget):
             dir = QDir(self.taglab_dir)
             self.project_name = dir.relativeFilePath(filename)
             self.setProjectTitle(self.project_name)
-            self.save(filename)
+            self.save(self.project_name)
 
     @pyqtSlot()
     def appendAnnotations(self):
@@ -2739,7 +2750,7 @@ class TagLab(QWidget):
                     "Automatic classification is finished. TagLab will be close. Please, click ok and save the project.")
                 msgBox.exec()
 
-                self.saveProject()
+                self.saveAsProject()
 
                 QApplication.quit()
 
