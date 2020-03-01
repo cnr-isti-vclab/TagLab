@@ -1331,7 +1331,7 @@ class TagLab(QWidget):
             logfile.info("[SELECTION] An already selected blob has been added to the current selection.")
         else:
             self.selected_blobs.append(blob)
-            str = "[SELECTION] A new blob (" + blob.blob_name + ") has been selected."
+            str = "[SELECTION] A new blob (" + blob.blob_name + ";" + blob.class_name + ") has been selected."
             logfile.info(str)
 
         if not blob.qpath_gitem is None:
@@ -1876,7 +1876,7 @@ class TagLab(QWidget):
 
     def logBlobInfo(self, blob, tag):
 
-        message1 = tag + " BLOBID=" + str(blob.id) + " VERSION=" + str(blob.version) + " name=" + blob.blob_name
+        message1 = tag + " BLOBID=" + str(blob.id) + " VERSION=" + str(blob.version) + " NAME=" + blob.blob_name + " CLASS=" + blob.class_name
         message2 = tag + " top={:.1f} left={:.1f} width={:.1f} height={:.1f}".format(blob.bbox[0], blob.bbox[1], blob.bbox[2], blob.bbox[3])
         message3 = tag + " cx={:.1f} cy={:.1f}".format(blob.centroid[0], blob.centroid[1])
         message4 = tag + " A={:.1f} P={:.1f} ".format(blob.area, blob.perimeter)
@@ -1971,7 +1971,8 @@ class TagLab(QWidget):
                 for blob in self.selected_blobs:
                     self.setBlobClass(blob, self.labels_widget.getActiveLabelName())
 
-                message ="[TOOL][ASSIGN] Blob(s) assigned ({:d}).".format(len(self.selected_blobs))
+                message ="[TOOL][ASSIGN] Blob(s) assigned ({:d}) (CLASS={:s}).".format(len(self.selected_blobs),
+                                                                                       self.labels_widget.getActiveLabelName())
                 logfile.info(message)
 
                 self.saveUndo()
