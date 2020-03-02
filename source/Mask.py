@@ -67,12 +67,16 @@ def paintPoints(mask, box, points, value):
 paints the foreground of the mask as 'value' on the mask. dmask is the destination larger and contains smask
 """
 def paintMask(dmask, dbox, smask, sbox, value):
+
     # range is [minx, miny, maxx, maxy], absolute ranges
     drange = [dbox[0], dbox[1], dbox[0] + dbox[3], dbox[1] + dbox[2]]
     srange = [sbox[0], sbox[1], sbox[0] + sbox[3], sbox[1] + sbox[2]]
 
     #intersection
     range = [ max(drange[0], srange[0]), max(drange[1], srange[1]), min(drange[2], srange[2]),  min(drange[3], srange[3])]
+    #check for intersection
+    if range[2] <= range[0] or range[3] <= range[1]:
+        return
 
     #compute local ranges
     d = dmask[range[0] - dbox[0]:range[2] - dbox[0], range[1] - dbox[1]:range[3] - dbox[1]]
