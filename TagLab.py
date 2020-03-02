@@ -531,8 +531,13 @@ class TagLab(QWidget):
 
     def clampCoords(self, x, y):
 
-        xc = max(0, min(int(x), self.img_map.width()))
-        yc = max(0, min(int(y), self.img_map.height()))
+        if self.img_map is not None:
+            xc = max(0, min(int(x), self.img_map.width()))
+            yc = max(0, min(int(y), self.img_map.height()))
+        else:
+            xc = 0
+            yc = 0
+
         return (xc, yc)
 
     def createMenuBar(self):
