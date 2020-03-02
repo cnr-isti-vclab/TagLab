@@ -1341,6 +1341,8 @@ class TagLab(QWidget):
 
         if not blob.qpath_gitem is None:
             blob.qpath_gitem.setPen(self.border_selected_pen)
+        else:
+            print("blob qpath_qitem is None!")
         self.viewerplus.scene.invalidate()
 
 
@@ -1351,7 +1353,8 @@ class TagLab(QWidget):
             if not blob.qpath_gitem is None:
                 blob.qpath_gitem.setPen(self.border_pen)
             self.viewerplus.scene.invalidate()
-        except:
+        except Exception as e:
+            print("Exception: e", e)
             pass
 
 
@@ -1696,15 +1699,15 @@ class TagLab(QWidget):
         if len(self.selected_blobs) == 1:
 
             selected = self.selected_blobs[0]
-            blob = selected.copy()
-            self.logBlobInfo(blob, "[OP-REFINE-BORDER][BLOB-SELECTED]")
+            #blob = selected.copy()
+            self.logBlobInfo(selected, "[OP-REFINE-BORDER][BLOB-SELECTED]")
 
             if self.refine_grow == 0:
-                mask = blob.getMask()
+                mask = selected.getMask()
                 mask = np.pad(mask, (padding, padding), mode='constant', constant_values=(0, 0)).astype(np.ubyte)
                 self.refine_original_mask = mask.copy()
-                self.refine_original_bbox = blob.bbox.copy()
-                bbox = blob.bbox.copy()
+                self.refine_original_bbox = selected.bbox.copy()
+                bbox = selected.bbox.copy()
             else:
                 mask = self.refine_original_mask.copy()
                 bbox = self.refine_original_bbox.copy()
@@ -1715,28 +1718,35 @@ class TagLab(QWidget):
             bbox[2] += 2*padding; #width
             bbox[3] += 2*padding; #height
 
-            img = utils.cropQImage(self.img_map, bbox);
-            try:
-                from coraline.Coraline import segment
-                segment(utils.qimageToNumpyArray(img), mask, 0.0, conservative=0.07, grow=self.refine_grow, radius=30)
+            img = utils.cropQImage(self.img_map, bbox)
+            img = utils.qimageToNumpyArray(img)
 
-            except Exception as e:
-                msgBox = QMessageBox()
-                msgBox.setText(str(e))
-                msgBox.exec()
-                return
+            #try:
+            #    from coraline.Coraline import segment
+            #    segment(utils.qimageToNumpyArray(img), mask, 0.0, conservative=0.07, grow=self.refine_grow, radius=30)
+
+            #except Exception as e:
+            #    msgBox = QMessageBox()
+            #    msgBox.setText(str(e))
+            #    msgBox.exec()
+            #    return
 
             try:
-                blob.updateUsingMask(bbox, mask.astype(np.int))
+                #    blob.updateUsingMask(bbox, mask.astype(np.int))
+                created_blobs = self.annotations.refineBorder(bbox, selected, img, mask, self.refine_grow)
+
                 self.removeBlob(selected)
-                self.addBlob(blob, selected=True)
+
+                for blob in created_blobs:
+                    self.addBlob(blob, selected=True)
+                    self.logBlobInfo(blob, "[OP-REFINE-BORDER][BLOB-CREATED]")
+
                 self.saveUndo()
 
                 self.logBlobInfo(blob, "[OP-REFINE-BORDER][BLOB-REFINED]")
 
-
-            except:
-                print("FAILED!")
+            except Exception as e:
+                print("FAILED!", e)
                 pass
 
         else:
@@ -1915,9 +1925,11 @@ class TagLab(QWidget):
                 self.annotations.removeGroup(blob_s.group)
 
     def resetSelection(self):
-
         for blob in self.selected_blobs:
-            blob.qpath_gitem.setPen(self.border_pen)
+            if blob.qpath_gitem is None:
+                print("Selected item with no path!")
+            else:
+                blob.qpath_gitem.setPen(self.border_pen)
 
         self.selected_blobs.clear()
         self.viewerplus.scene.invalidate(self.viewerplus.scene.sceneRect())

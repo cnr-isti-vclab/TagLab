@@ -25,6 +25,7 @@ from skimage import measure
 from skimage.filters import sobel
 from scipy import ndimage as ndi
 from PyQt5.QtGui import QPainter, QImage, QPen, QBrush, QColor, qRgb
+from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtCore import Qt
 from skimage.color import rgb2gray
 from skimage.draw import polygon_perimeter
@@ -234,7 +235,32 @@ class Annotation(object):
                 created_blobs.append(b)
 
         return created_blobs
+    #expect numpu img and mask
+    def refineBorder(self, box, blob, img, mask, grow):
+        try:
+            from coraline.Coraline import segment
+            segment(img, mask, 0.0, conservative=0.07, grow=grow, radius=30)
 
+        except Exception as e:
+            msgBox = QMessageBox()
+            msgBox.setText(str(e))
+            msgBox.exec()
+            return
+
+        #TODO this should be moved to a function!
+        area_th = 30
+        created_blobs = []
+        first = True
+        label_image = measure.label(mask, connectivity=1)
+        for region in measure.regionprops(label_image):
+            if region.area > area_th:
+                b = Blob(region, box[1], box[0], self.progressive_id)
+                self.progressive_id += 1
+                b.class_color = blob.class_color
+                b.class_name = blob.class_name
+                created_blobs.append(b)
+
+        return created_blobs
 
     def splitBlob(self,map, blob, seeds):
 
