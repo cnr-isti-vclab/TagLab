@@ -276,7 +276,6 @@ class MapClassifier(QObject):
         nclasses = scores.shape[1]
 
         classification_scores = np.zeros((nscores, nclasses, center_window_size, center_window_size))
-        scores_counter = np.zeros((center_window_size, center_window_size), dtype=np.int8)
 
         # aggregation limits
         top = int((tile_sz - center_window_size) / 2)
@@ -286,33 +285,18 @@ class MapClassifier(QObject):
         for i in range(-1,2):
             for j in range(-1,2):
 
-                x1dest = j * step - left
-                y1dest = i * step - top
+                x1src = left - j * step
+                y1src = top - i * step
 
-                x2dest = x1dest + tile_sz-1
-                y2dest = y1dest + tile_sz-1
+                x2src = x1src + center_window_size
+                y2src = y1src + center_window_size
 
-                x1src = 0
-                if x1dest < 0:
-                    x1src = -x1dest
-                    x1dest = 0
-
-                y1src = 0
-                if y1dest < 0:
-                    y1src = -y1dest
-                    y1dest = 0
-
-                if x2dest > center_window_size:
-                    x2dest = center_window_size
-
-                if y2dest > center_window_size:
-                    y2dest = center_window_size
-
-                x2src = x1src + x2dest - x1dest
-                y2src = y1src + y2dest - y1dest
+                x1dest = 0
+                x2dest = center_window_size
+                y1dest = 0
+                y2dest = center_window_size
 
                 classification_scores[k, :, y1dest:y2dest, x1dest:x2dest] = scores[k, :, y1src:y2src, x1src:x2src]
-                scores_counter[y1dest:y2dest, x1dest:x2dest] += 1
 
                 k = k + 1
 
