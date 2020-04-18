@@ -65,6 +65,7 @@ from source.QtComparePanel import QtComparePanel
 from source.Blob import Blob
 from source.Annotation import Annotation
 from source.MapClassifier import MapClassifier
+#from source.MapClassifierScores import MapClassifier
 from source import utils
 
 # LOGGING
@@ -2532,8 +2533,7 @@ class TagLab(QWidget):
         self.resetAll()
 
         dir = QDir(self.taglab_dir)
-
-        self.project_name = loaded_dict["Project Name"]
+        self.project_name = filename
         self.map_image_filename = dir.relativeFilePath(loaded_dict["Map File"])
         info = QFileInfo(self.map_image_filename)
         if not info.exists():
@@ -2627,7 +2627,6 @@ class TagLab(QWidget):
         # update project name
         dir = QDir(self.taglab_dir)
 
-        dict_to_save["Project Name"] = self.project_name
         dict_to_save["Map File"] = dir.relativeFilePath(self.map_image_filename)
         dict_to_save["Acquisition Date"] = self.map_acquisition_date
         dict_to_save["Map Scale"] = self.map_px_to_mm_factor
