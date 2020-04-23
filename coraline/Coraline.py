@@ -17,15 +17,16 @@ except:
 
 #import numpy as np
 
-def segment(img, mask, l = 0, conservative = 0.1, grow = 0, radius = 30):
+def segment(img, depth, mask, clippoints, l = 0, conservative = 0.1, grow = 0, radius = 30, depth_weight = 0.0):
 	if lib is None:
 		raise Exception("Coraline library (libcoraline.so, coraline.dll) not found.")
 
 	img = gaussian(img, sigma = 1.5, multichannel=False)
 	img = img*255;
 	img = img.astype(np.uint8)
-	qimg = utils.rgbToQImage(img)
-	qimg.save("Smoothed.jpg")
+
+	#qimg = utils.rgbToQImage(img)
+	#qimg.save("Smoothed.jpg")
 
 	w = img.shape[1]
 	h = img.shape[0]
@@ -35,9 +36,25 @@ def segment(img, mask, l = 0, conservative = 0.1, grow = 0, radius = 30):
 		print(w, h, W, H)
 		exit(0)
 
+	depthPtr = None
+	if depth is not None:
+		depth = depth * 255;
+		depth = depth.astype(np.uint8)
+		depthPtr = depth.ctypes.data
+	#qimg = utils.rgbToQImage(depth)
+	#qimg.save("Depth.png")
+
+	clippointsPtr = None
+	nclips = 0
+	if clippoints is not None:
+		clippoints = clippoints.astype(np.int)
+		clippointsPtr = clippoints.ctypes.data
+		nclips = clippoints.shape[0]
+
 	#print(C.c_float(l), l)
-	lib.Coraline_segment(C.c_void_p(img.ctypes.data), C.c_void_p(mask.ctypes.data), C.c_int(w), C.c_int(h),
-						 C.c_float(l), C.c_float(conservative), C.c_float(grow), C.c_float(radius))
+	lib.Coraline_segment(C.c_void_p(img.ctypes.data), C.c_void_p( depthPtr), C.c_void_p(mask.ctypes.data), C.c_int(w), C.c_int(h),
+						 C.c_void_p(clippointsPtr), C.c_int(nclips),
+                         C.c_float(l), C.c_float(conservative), C.c_float(grow), C.c_float(radius), C.c_float(depth_weight))
 
 #
 # class Coraline(object):

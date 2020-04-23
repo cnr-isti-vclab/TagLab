@@ -13,7 +13,7 @@
 using namespace std;
 
 
-bool savePPM(unsigned char *rgb, int w, int h, const string &filename) {
+bool savePPM(unsigned char *rgb, int w, int h, const string &filename, int channels = 3) {
 	
 	ofstream fos(filename.c_str(), ios_base::binary);
 	ostringstream ost;
@@ -22,19 +22,21 @@ bool savePPM(unsigned char *rgb, int w, int h, const string &filename) {
 	if (!fos)
 		return false;
 	
-	fos << "P6" << endl;
+	if(channels == 3)
+		fos << "P6\n";
+	else
+		fos << "P5\n";
 	
-	ost << w << " " << h << endl;
+	ost << w << " " << h << "\n";
 	
 	fos << ost.str();
-	fos << "255" << endl;
-	
-	fos.write((const char*)rgb, w*h*3);
-	
+	fos << "255\n";
+
+	fos.write((const char*)rgb, w*h*channels);
+
 	fos.close();
 	
 	return true;
-	
 }
 
 uchar *Coraline::rgbToMask(uchar *rgbmask, int w, int h) {
@@ -67,6 +69,14 @@ void Coraline::setMask(unsigned char *_mask, int _w, int _h) {
 	h = _h;
 }
 
+void Coraline::setDepth(unsigned char *_depth) {
+	depth = _depth;
+}
+
+void Coraline::setClippoints(int *_clips, int _nclips) {
+	clips = _clips;
+	nclips = _nclips;
+}
 
 
 void Coraline::setPred(double *_pred, int _w, int _h) {
@@ -143,6 +153,13 @@ uchar *Coraline::geodesic() {
 
 uchar *Coraline::graphCut() {
 	//thisis the graphcut
+
+	vector<uchar> dist(distance.size());
+	for(int i = 0; i < distance.size(); i++)
+		dist[i] = (int)255*(distance[i]/(radius-1));
+	savePPM(dist.data(), w, h, "distance.ppm", 1);
+	savePPM(depth, w, h, "depth.ppm");
+	savePPM(img, w, h, "img.ppm");
 	
 	typedef maxflow::Graph<double,double,double> GraphType;
 	GraphType graph(/*estimated # of nodes*/ (int)sqrt(w*h), /*estimated # of edges*/ 6*(int)sqrt(w*h));
@@ -166,16 +183,18 @@ uchar *Coraline::graphCut() {
 			}
 			float signeddistance = distance[i];
 			
-			if(mask[i] == 1)
+			if(mask[i] != 1)
 				signeddistance *= -1;
 			
-			double d = signeddistance - grow;
-			
-			float distance_penalty = conservative*(fabs(d)/(radius-1));
-			if(d < 0)
+			double d = signeddistance + grow;
+			float distance_penalty = conservative*(d/(radius-1));
+			wfore += distance_penalty;
+			wback -= distance_penalty;
+			/*if(d < 0)
+
 				wback -= distance_penalty;
 			else
-				wfore -= distance_penalty;
+				wfore -= distance_penalty; */
 			
 			
 			if(pred) {
@@ -225,33 +244,61 @@ double Coraline::gradient(int a, int b) { //}, double color1[3], double color2[3
 	
 	for(int i = 0; i < 3; i++)
 		diff += pow(((double)img[a*3+ i] - (double)img[b*3+i])/255.0, 2);
+	diff = img_weight*sqrt(diff);
 	//if(diff < 0.0000001) return EPSILON;
-	diff = sqrt(diff);
-	double weight = std::max(EPSILON, exp(-diff*25));
+
+	double depth_diff = 0.0;
+	if(depth) {
+		depth_diff += depth_weight*3*fabs(((double)depth[a*3] - (double)depth[b*3])/255.0);
+	}
+
+	//cout << "depth_weight " << depth_weight << " diff: " << depth_diff << "\n";
+
+	double weight = std::max(EPSILON, exp(-(diff + depth_diff)*25));
 	//double weight = std::max(EPSILON, exp(-sqrt(diff)*10));
-	
+
 	return weight;
 }
 
 
+void Coraline::seedBorder(vector<int> &stack) {
+	for(int y = 1; y < h-1; y++) {
+		for(int x = 1; x < w-1; x++) {
+			int i = x + y*w;
+			if(isBorder(i)) {
+				cout << "x: " << x << "  y: " << y << endl;
+				distance[i] = 0.0f;
+				stack.push_back(i);
+			}
+		}
+	}
+}
+void Coraline::seedClips(vector<int> &stack) {
+	for(int i = 0; i < nclips; i+= 2) {
+		int x = clips[i*2];
+		int y = clips[i*2+2];
+		int a = x + y*w;
+		cout << "x: " << x << "  y: " << y << endl;
+		if(distance[a] == 0.0f)
+			continue;
+		distance[a] =  0;
+		stack.push_back(a);
+	}
+}
 
 vector<int> Coraline::distanceField() {
-	
+
 	distance.resize(w*h, 1e20f);
 	
 	int kernel[8] = {-1-w, -w, +1-w,  -1, 1,  -1+w,  w, 1+w};
 	float filter[8] = {1.41f, 1.0f, 1.41f,  1.0f, 1.0f,  1.41f, 1.0f, 1.41f };
 	
 	vector<int> stack;
-	for(int y = 1; y < h-1; y++) {
-		for(int x = 1; x < w-1; x++) {
-			int i = x + y*w;			
-			if(isBorder(i)) {
-				distance[i] = 0.0f;
-				stack.push_back(i);
-			}
-		}
-	}
+	if(clips)
+		seedClips(stack);
+	else
+		seedBorder(stack);
+
 	//#define HEAP
 #ifdef HEAP
 	while(stack.size()) {
@@ -294,7 +341,7 @@ vector<int> Coraline::distanceField() {
 			for(int k = 0; k < 8; k++) {
 				int target = i + kernel[k];
 				
-				int x = target %h;
+				int x = target %w;
 				int y = (target - x)/w;
 				if(x == 0 || y == 0 || x == w-1 || y == h-1)
 					continue;

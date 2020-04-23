@@ -49,6 +49,7 @@ from collections import OrderedDict
 # DEEP EXTREME
 import models.deeplab_resnet as resnet
 from models.dataloaders import helpers as helpers
+import cv2
 
 # CUSTOM
 from source.QtImageViewerPlus import QtImageViewerPlus
@@ -400,6 +401,7 @@ class TagLab(QWidget):
         # DATA FOR THE EDITBORDER , CUT and FREEHAND TOOLS
         self.edit_points = []
         self.edit_qpath_gitem = None
+        self.last_editborder_points = []      #last editing operation stored here for local refinement
 
         # DATA FOR THE CREATECRACK TOOL
         self.crackWidget = None
@@ -740,15 +742,15 @@ class TagLab(QWidget):
                 key_pressed = event.text()
 
         if modifiers == Qt.ControlModifier:
-            str = "[KEYPRESS] Key CTRL + '" + key_pressed + "' has been pressed."
+            msg = "[KEYPRESS] Key CTRL + '" + key_pressed + "' has been pressed."
         elif modifiers == Qt.ShiftModifier:
-            str = "[KEYPRESS] Key ALT + '" + key_pressed + "' has been pressed."
+            msg = "[KEYPRESS] Key ALT + '" + key_pressed + "' has been pressed."
         elif modifiers == Qt.AltModifier:
-            str = "[KEYPRESS] Key SHIFT + '" + key_pressed + "' has been pressed."
+            msg = "[KEYPRESS] Key SHIFT + '" + key_pressed + "' has been pressed."
         else:
-            str = "[KEYPRESS] Key '" + key_pressed + "' has been pressed."
+            msg = "[KEYPRESS] Key '" + key_pressed + "' has been pressed."
 
-        logfile.info(str)
+        logfile.info(msg)
 
         if event.key() == Qt.Key_Escape:
             # RESET CURRENT OPERATION
@@ -846,7 +848,6 @@ class TagLab(QWidget):
             # ACTIVATE "4-CLICK" TOOL
             self.deepExtreme()
 
-
         # elif event.key() == Qt.Key_H:
         #     # ACTIVATE THE "HOLE" TOOL
         #     self.hole()            # APPLY DEEP EXTREME (IF FOUR POINTS HAVE BEEN SELECTED)
@@ -864,6 +865,30 @@ class TagLab(QWidget):
         #
         # elif event.key() == Qt.Key_Y:
         #     self.refineAllBorders()
+
+        elif event.key() == Qt.Key_Home:
+            # ASSIGN LABEL
+            self.annotations.refine_depth_weight += 0.1;
+            if self.annotations.refine_depth_weight > 1.0:
+                self.annotations.refine_depth_weight = 1.0;
+            print("Depth weight: " + str(self.annotations.refine_depth_weight))
+
+        elif event.key() == Qt.Key_End:
+            # ASSIGN LABEL
+            self.annotations.refine_depth_weight -= 0.1;
+            if self.annotations.refine_depth_weight < 0.0:
+                self.annotations.refine_depth_weight = 0.0;
+            print("Depth weight: " + str(self.annotations.refine_depth_weight))
+
+
+        elif event.key() == Qt.Key_BracketLeft:
+            self.annotations.refine_conservative *= 0.9
+            print("Conservative: " + str(self.annotations.refine_conservative))
+
+        elif event.key() == Qt.Key_BracketRight:
+            self.annotations.refine_conservative *= 1.1
+            print("Conservative: " + str(self.annotations.refine_conservative))
+
 
         elif event.key() == Qt.Key_Space:
 
@@ -908,7 +933,7 @@ class TagLab(QWidget):
 
                 if self.tool_used == "EDITBORDER":
                     blob = selected_blob.copy()
-
+                    self.last_editborder_points = self.edit_points
                     self.annotations.editBorder(blob, self.edit_points)
 
                     self.logBlobInfo(selected_blob, "[TOOL][EDITEDBORDER][BLOB-SELECTED]")
@@ -1721,6 +1746,11 @@ class TagLab(QWidget):
             img = utils.cropQImage(self.img_map, bbox)
             img = utils.qimageToNumpyArray(img)
 
+            if self.depth_map is not None:
+                depth = utils.cropQImage(self.depth_map, bbox)
+                depth = utils.qimageToNumpyArray(depth)
+            else:
+                depth = None
             #try:
             #    from coraline.Coraline import segment
             #    segment(utils.qimageToNumpyArray(img), mask, 0.0, conservative=0.07, grow=self.refine_grow, radius=30)
@@ -1730,10 +1760,13 @@ class TagLab(QWidget):
             #    msgBox.setText(str(e))
             #    msgBox.exec()
             #    return
+            if self.tool_used != 'EDITBORDER':
+                self.last_editborder_points = None
+
 
             try:
                 #    blob.updateUsingMask(bbox, mask.astype(np.int))
-                created_blobs = self.annotations.refineBorder(bbox, selected, img, mask, self.refine_grow)
+                created_blobs = self.annotations.refineBorder(bbox, selected, img, depth, mask, self.refine_grow, self.last_editborder_points)
 
                 self.removeBlob(selected)
 
@@ -1935,12 +1968,10 @@ class TagLab(QWidget):
         self.viewerplus.scene.invalidate(self.viewerplus.scene.sceneRect())
 
     def resetEditBorder(self):
-
         if self.edit_qpath_gitem is not None:
             self.edit_qpath_gitem.setPath(QPainterPath())
         else:
             self.edit_qpath = None
-
         self.edit_points = []
 
     def resetCrackTool(self):
@@ -2294,6 +2325,10 @@ class TagLab(QWidget):
             self.infoWidget.setInfoMessage("Map is loading..")
 
             self.img_map = QImage(self.map_image_filename)
+            basename, ext = os.path.splitext(self.map_image_filename)
+            self.depth_map = im = QImage(basename + "_3d.png") #cv2.imread(basename + "_3d.png", -1)
+            if self.depth_map.isNull():
+                self.depth_map = None
 
             if self.img_map.isNull():
                 msgBox = QMessageBox()
@@ -2879,6 +2914,8 @@ class TagLab(QWidget):
             pred = np.transpose(outputs.data.numpy()[0, ...], (1, 2, 0))
             pred = 1 / (1 + np.exp(-pred))
             pred = np.squeeze(pred)
+            img_test = utils.floatmapToQImage(pred*255.0)
+            img_test.save("prediction.png")
             result = helpers.crop2fullmask(pred, bbox, im_size=img.shape[:2], zero_pad=True, relax=pad) > thres
 
 

@@ -101,6 +101,10 @@ class Annotation(object):
         # progressive id of the blobs
         self.progressive_id = 0
 
+        #relative weight of depth map for refine borders
+        self.refine_depth_weight = 0.0
+        self.refine_conservative = 0.1
+
     def addGroup(self, blobs):
 
         id = len(self.groups)
@@ -236,11 +240,21 @@ class Annotation(object):
 
         return created_blobs
     #expect numpu img and mask
-    def refineBorder(self, box, blob, img, mask, grow):
+    def refineBorder(self, box, blob, img, depth, mask, grow, lastedit):
+        clippoints = None
+
+        if lastedit is not None:
+            points = [blob.drawLine(line) for line in lastedit]
+            if points is not None and len(points) > 0:
+                clippoints = np.empty(shape=(0, 2), dtype=int)
+                for arc in points:
+                    clippoints = np.append(clippoints, arc, axis=0)
+                origin = np.array([box[1], box[0]])
+                clippoints = clippoints - origin
+                print(clippoints)
         try:
             from coraline.Coraline import segment
-            segment(img, mask, 0.0, conservative=0.07, grow=grow, radius=30)
-
+            segment(img, depth, mask, clippoints, 0.0, conservative=self.refine_conservative, grow=grow, radius=30, depth_weight = self.refine_depth_weight)
         except Exception as e:
             msgBox = QMessageBox()
             msgBox.setText(str(e))
