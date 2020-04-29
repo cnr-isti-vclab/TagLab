@@ -33,14 +33,13 @@ def segment(img, depth, mask, clippoints, l = 0, conservative = 0.1, grow = 0, r
 	W = mask.shape[1]
 	H = mask.shape[0]
 	if (w != W) or (h != H):
-		print(w, h, W, H)
+		print("Mask and img have different size: ", w, h, W, H)
 		exit(0)
 
 	depthPtr = None
 	if depth is not None:
-		depth = depth * 255;
-		depth = depth.astype(np.uint8)
-		depthPtr = depth.ctypes.data
+		d = depth.copy()
+		depthPtr = d.ctypes.data
 	#qimg = utils.rgbToQImage(depth)
 	#qimg.save("Depth.png")
 

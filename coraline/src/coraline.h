@@ -19,7 +19,7 @@ public:
 
 	uchar *img = nullptr;
 	uchar *mask = nullptr;
-	uchar *depth = nullptr;
+	float *depth = nullptr;
 	int *clips = nullptr; //clip points: only alter contour of points within radius of these clippoints
 	double *pred = nullptr;
 	std::vector<float> distance;
@@ -55,7 +55,7 @@ public:
 	~Coraline();
 	void set(unsigned char *img, int w, int h);
 	void setMask(unsigned char *mask, int w, int h);
-	void setDepth(unsigned char *depth);
+	void setDepth(float *depth);
 	void setClippoints(int *_clips, int _nclips);
 
 	void setPred(double *pred, int w, int h);

@@ -251,7 +251,6 @@ class Annotation(object):
                     clippoints = np.append(clippoints, arc, axis=0)
                 origin = np.array([box[1], box[0]])
                 clippoints = clippoints - origin
-                print(clippoints)
         try:
             from coraline.Coraline import segment
             segment(img, depth, mask, clippoints, 0.0, conservative=self.refine_conservative, grow=grow, radius=30, depth_weight = self.refine_depth_weight)

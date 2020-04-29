@@ -15,7 +15,7 @@ using namespace std;
 
 extern "C" {
 
-	CORALINE_EXPORT_C void Coraline_segment(uchar* img, uchar *depth, uchar* mask, int w, int h, int *clippoints, int nclips, float lambda = 0.0, float conservative = 1.0, float grow = 0.0, float radius = 30, float depth_weight = 0.0f) {
+	CORALINE_EXPORT_C void Coraline_segment(uchar* img, float *depth, uchar* mask, int w, int h, int *clippoints, int nclips, float lambda = 0.0, float conservative = 1.0, float grow = 0.0, float radius = 30, float depth_weight = 0.0f) {
 		Coraline* coraline = new Coraline(img, mask, w, h);
 		if(depth)
 			coraline->setDepth(depth);

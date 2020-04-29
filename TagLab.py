@@ -28,6 +28,8 @@ import numpy.ma as ma
 from skimage import measure
 from skimage.measure import points_in_poly
 
+import rasterio as rio
+
 from PyQt5.QtCore import Qt, QSize, QDir, QPoint, QPointF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo
 from PyQt5.QtGui import QPainterPath, QFont, QColor, QPolygonF, QImageReader, QImage, QPixmap, QIcon, QKeySequence, \
     QPen, QBrush, qRgb, qRed, qGreen, qBlue
@@ -104,19 +106,17 @@ class TagLab(QWidget):
         self.MAP_VIEWER_SIZE = 400
 
         self.taglab_dir = os.getcwd()
-        self.project_name = "NONE"
-        self.map_image_filename = "map.png"
+        self.project_name = "NONE" #REFACTOR to project.name
+        self.map_image_filename = "map.png"  #REFACTOR to project.map_filename
         self.map_acquisition_date = "YYYY-MM-DD"
         self.map_px_to_mm_factor = 1.0
-
-        self.project_to_save = ""
 
         self.recentFileActs = []
         self.maxRecentFiles = 4
         self.separatorRecentFilesAct = None
 
         # ANNOTATION DATA
-        self.annotations = Annotation(self.labels)
+        self.annotations = Annotation(self.labels)  #REFACTOR we might want to move under project (or not?)
         self.undo_operations = []
         self.undo_position = -1
         """Temporary variable to hold the added and removed of the last operation."""
@@ -342,7 +342,7 @@ class TagLab(QWidget):
         ##### FURTHER INITIALIZAION #####
         #################################
 
-        self.map_top = 0
+        self.map_top = 0   #REFACTOR to project.map_top
         self.map_left = 0
         self.map_bottom = 0
         self.map_right = 0
@@ -530,17 +530,6 @@ class TagLab(QWidget):
 
             self.updateRecentFileActions()
 
-
-    def clampCoords(self, x, y):
-
-        if self.img_map is not None:
-            xc = max(0, min(int(x), self.img_map.width()))
-            yc = max(0, min(int(y), self.img_map.height()))
-        else:
-            xc = 0
-            yc = 0
-
-        return (xc, yc)
 
     def createMenuBar(self):
 
@@ -1013,6 +1002,18 @@ class TagLab(QWidget):
             visibility = self.labels_widget.isClassVisible(blob.class_name)
             if blob.qpath_gitem is not None:
                 blob.qpath_gitem.setVisible(visibility)
+
+#used only in the function below
+    def clampCoords(self, x, y):
+
+        if self.img_map is not None:
+            xc = max(0, min(int(x), self.img_map.width()))
+            yc = max(0, min(int(y), self.img_map.height()))
+        else:
+            xc = 0
+            yc = 0
+
+        return (xc, yc)
 
 
     @pyqtSlot()
@@ -1747,8 +1748,12 @@ class TagLab(QWidget):
             img = utils.qimageToNumpyArray(img)
 
             if self.depth_map is not None:
-                depth = utils.cropQImage(self.depth_map, bbox)
-                depth = utils.qimageToNumpyArray(depth)
+                depth = self.depth_map[bbox[0] : bbox[0]+bbox[3], bbox[1] : bbox[1] + bbox[2]]
+#                imgg = utils.floatmapToQImage((depth - 4)*255)
+#                imgg.save("test.png")
+
+                # #utils.cropQImage(self.depth_map, bbox)
+                #depth = utils.qimageToNumpyArray(depth)
             else:
                 depth = None
             #try:
@@ -2243,6 +2248,7 @@ class TagLab(QWidget):
 
         return measure
 
+#REFACTOR call create a new project and treplace the old one.
 
     @pyqtSlot()
     def newProject(self):
@@ -2254,6 +2260,7 @@ class TagLab(QWidget):
         self.infoWidget.setInfoMessage("TagLab has been reset. To continue open an existing project or load a map.")
         logfile.info("[PROJECT] A new project has been setup.")
 
+ # REFACTOR load project properties
     @pyqtSlot()
     def setMapToLoad(self):
 
@@ -2277,6 +2284,7 @@ class TagLab(QWidget):
                 self.mapWidget.show()
 
 
+#REFACTOR
     @pyqtSlot()
     def setMapProperties(self):
 
@@ -2291,6 +2299,7 @@ class TagLab(QWidget):
 
             # transfer settings
             self.map_image_filename = self.mapWidget.editMapFile.text()
+            self.map_3D_filename = self.mapWidget.edit3DMapFile.text()
             self.map_acquisition_date = self.mapWidget.editAcquisitionDate.text()
             self.map_px_to_mm_factor = float(self.mapWidget.editScaleFactor.text())
 
@@ -2300,6 +2309,7 @@ class TagLab(QWidget):
 
             self.loadMap()
 
+ # REFACTOR
     def loadMap(self):
 
         # retrieve image size
@@ -2316,35 +2326,51 @@ class TagLab(QWidget):
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
             msgBox.setText("This map exceeds the image dimension handled by TagLab (the maximum size is 32767 x 32767).")
             msgBox.exec()
+            return
 
+
+
+
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+
+        # load map and set it
+        self.infoWidget.setInfoMessage("Map is loading..")
+
+        self.img_map = QImage(self.map_image_filename)
+        if self.img_map.isNull():
+            msgBox = QMessageBox()
+            msgBox.setText("Could not load or find the image: " + self.map_image_filename)
+            msgBox.exec()
+            return
+
+        if self.map_3D_filename:
+            with rio.open(self.map_3D_filename) as map3D:
+                if map3D.width != width or map3D.height != height:
+                    self.infoWidget.setInfoMessage("3D Map and Map have different dimensions")
+
+                    msgBox = QMessageBox()
+                    msgBox.setWindowTitle(self.TAGLAB_VERSION)
+                    msgBox.setText(
+                        "The 3D map and the color image have different dimensions...")
+                    msgBox.exec()
+                    return
+
+                self.depth_map = map3D.read(1).astype(np.float32)
+                #TODO check resolution with src.res and compare to what specified!
+                #we can also read the bounds from src.bounds
+                #and units from src.units[0]
         else:
+            self.depth_map = None
 
-            QApplication.setOverrideCursor(Qt.WaitCursor)
+        self.img_thumb_map = self.img_map.scaled(self.MAP_VIEWER_SIZE, self.MAP_VIEWER_SIZE, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.viewerplus.setImage(self.img_map)
+        self.mapviewer.setImage(self.img_thumb_map)
+        self.viewerplus.viewUpdated.connect(self.updateMapViewer)
+        self.mapviewer.setOpacity(0.5)
 
-            # load map and set it
-            self.infoWidget.setInfoMessage("Map is loading..")
+        QApplication.restoreOverrideCursor()
 
-            self.img_map = QImage(self.map_image_filename)
-            basename, ext = os.path.splitext(self.map_image_filename)
-            self.depth_map = im = QImage(basename + "_3d.png") #cv2.imread(basename + "_3d.png", -1)
-            if self.depth_map.isNull():
-                self.depth_map = None
-
-            if self.img_map.isNull():
-                msgBox = QMessageBox()
-                msgBox.setText("Could not load or find the image: " + self.map_image_filename)
-                msgBox.exec()
-                return
-
-            self.img_thumb_map = self.img_map.scaled(self.MAP_VIEWER_SIZE, self.MAP_VIEWER_SIZE, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-            self.viewerplus.setImage(self.img_map)
-            self.mapviewer.setImage(self.img_thumb_map)
-            self.viewerplus.viewUpdated.connect(self.updateMapViewer)
-            self.mapviewer.setOpacity(0.5)
-
-            QApplication.restoreOverrideCursor()
-
-            self.infoWidget.setInfoMessage("The map has been successfully loading.")
+        self.infoWidget.setInfoMessage("The map has been successfully loading.")
 
     @pyqtSlot()
     def openProject(self):
@@ -2365,11 +2391,13 @@ class TagLab(QWidget):
         if action:
             self.load(action.data())
 
+    # REFACTOR use project methods
     @pyqtSlot()
     def saveProject(self):
 
         self.save(self.project_name)
 
+    # REFACTOR use project methods
     @pyqtSlot()
     def saveAsProject(self):
 
@@ -2548,6 +2576,8 @@ class TagLab(QWidget):
         for blob in blob_list:
             blob.qpath_gitem.setVisible(True)
 
+    # REFACTOR use project methods
+
     def load(self, filename):
         """
         Load a previously saved projects.
@@ -2649,7 +2679,7 @@ class TagLab(QWidget):
 
         self.infoWidget.setInfoMessage("The annotations of the given project has been successfully loaded.")
 
-
+    # REFACTOR move to a project method
     def save(self, filename):
         """
         Save the current project.
@@ -2689,6 +2719,7 @@ class TagLab(QWidget):
         logfile.info(message)
 
 
+    #REFACTOR networks should be moved to a new class
     def resetNetworks(self):
 
         torch.cuda.empty_cache()

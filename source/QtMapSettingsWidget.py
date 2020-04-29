@@ -39,6 +39,8 @@ class QtMapSettingsWidget(QWidget):
 
         TEXT_SPACE = 100
 
+
+
         ###########################################################
 
         layoutH0 = QHBoxLayout()
@@ -46,6 +48,8 @@ class QtMapSettingsWidget(QWidget):
         self.lblMapFile = QLabel("Map File: ")
         self.lblMapFile.setFixedWidth(TEXT_SPACE)
         self.lblMapFile.setAlignment(Qt.AlignRight)
+        self.lblMapFile.setMinimumWidth(150)
+
         self.editMapFile = QLineEdit("map.png")
         self.editMapFile.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editMapFile.setMinimumWidth(300)
@@ -61,11 +65,35 @@ class QtMapSettingsWidget(QWidget):
 
         ###########################################################
 
+        layoutH03D = QHBoxLayout()
+
+        self.lbl3DMapFile = QLabel("3D Map File: ")
+        self.lbl3DMapFile.setFixedWidth(TEXT_SPACE)
+        self.lbl3DMapFile.setAlignment(Qt.AlignRight)
+        self.lbl3DMapFile.setMinimumWidth(150)
+
+        self.edit3DMapFile = QLineEdit()
+        self.edit3DMapFile.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        self.edit3DMapFile.setMinimumWidth(300)
+        self.btnChoose3DMapFile = QPushButton("...")
+        self.btnChoose3DMapFile.setMaximumWidth(20)
+        self.btnChoose3DMapFile.clicked.connect(self.choose3DMapFile)
+
+        layoutH03D.setAlignment(Qt.AlignLeft)
+        layoutH03D.addWidget(self.lbl3DMapFile)
+        layoutH03D.addWidget(self.edit3DMapFile)
+        layoutH03D.addWidget(self.btnChoose3DMapFile)
+        layoutH03D.addStretch()
+
+        ###########################################################
+
         layoutH1 = QHBoxLayout()
 
         self.lblAcquisitionDate = QLabel("Acquisition Date: ")
         self.lblAcquisitionDate.setFixedWidth(TEXT_SPACE)
         self.lblAcquisitionDate.setAlignment(Qt.AlignRight)
+        self.lblAcquisitionDate.setMinimumWidth(150)
+
         self.editAcquisitionDate = QLineEdit("YYYY-MM-DD")
         self.editAcquisitionDate.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editAcquisitionDate.setMinimumWidth(150)
@@ -82,6 +110,8 @@ class QtMapSettingsWidget(QWidget):
         self.lblScaleFactor = QLabel("Px-to-mm: ")
         self.lblScaleFactor.setFixedWidth(TEXT_SPACE)
         self.lblScaleFactor.setAlignment(Qt.AlignRight)
+        self.lblScaleFactor.setMinimumWidth(150)
+
         self.editScaleFactor = QLineEdit("1.0")
         self.editScaleFactor.setMinimumWidth(150)
         self.editScaleFactor.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
@@ -108,6 +138,7 @@ class QtMapSettingsWidget(QWidget):
 
         layoutV = QVBoxLayout()
         layoutV.addLayout(layoutH0)
+        layoutV.addLayout(layoutH03D)
         layoutV.addLayout(layoutH1)
         layoutV.addLayout(layoutH2)
         layoutV.addLayout(layoutH3)
@@ -125,4 +156,13 @@ class QtMapSettingsWidget(QWidget):
         fileName, _ = QFileDialog.getOpenFileName(self, "Input Map File", "", filters)
         if fileName:
             self.editMapFile.setText(fileName)
+
+    @pyqtSlot()
+    def choose3DMapFile(self):
+
+        filters = "Image (*.png *.tif *.tiff)"
+        fileName, _ = QFileDialog.getOpenFileName(self, "Input 3D Map File", "", filters)
+        if fileName:
+            self.edit3DMapFile.setText(fileName)
+
 

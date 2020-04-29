@@ -69,7 +69,7 @@ void Coraline::setMask(unsigned char *_mask, int _w, int _h) {
 	h = _h;
 }
 
-void Coraline::setDepth(unsigned char *_depth) {
+void Coraline::setDepth(float *_depth) {
 	depth = _depth;
 }
 
@@ -158,12 +158,30 @@ uchar *Coraline::graphCut() {
 	for(int i = 0; i < distance.size(); i++)
 		dist[i] = (int)255*(distance[i]/(radius-1));
 	savePPM(dist.data(), w, h, "distance.ppm", 1);
-	savePPM(depth, w, h, "depth.ppm");
+	//convert to 0.255
+	if(depth) {
+		vector<unsigned char> d(w*h);
+		float min = 1e20f;
+		float max = -1e20f;
+		for(int i = 0; i < w*h; i++) {
+			if(depth[i] < 0) continue;
+			min = std::min(min, depth[i]);
+			max = std::max(max, depth[i]);
+		}
+		for(int i = 0; i < w*h; i++) {
+			if(depth[i] < 0)
+				d[i] = 0;
+			else
+				d[i] = (int)(255.f*(depth[i] - min)/(max - min));
+		}
+		savePPM(d.data(), w, h, "depth.ppm", 1);
+	}
 	savePPM(img, w, h, "img.ppm");
 	
 	typedef maxflow::Graph<double,double,double> GraphType;
 	GraphType graph(/*estimated # of nodes*/ (int)sqrt(w*h), /*estimated # of edges*/ 6*(int)sqrt(w*h));
 	
+
 	for(int k = 0; k < pixels.size(); k++)
 		graph.add_node();
 	
@@ -249,7 +267,7 @@ double Coraline::gradient(int a, int b) { //}, double color1[3], double color2[3
 
 	double depth_diff = 0.0;
 	if(depth) {
-		depth_diff += depth_weight*3*fabs(((double)depth[a*3] - (double)depth[b*3])/255.0);
+		depth_diff += depth_weight*3*fabs((double)depth[a] - (double)depth[b]);
 	}
 
 	//cout << "depth_weight " << depth_weight << " diff: " << depth_diff << "\n";
@@ -266,7 +284,6 @@ void Coraline::seedBorder(vector<int> &stack) {
 		for(int x = 1; x < w-1; x++) {
 			int i = x + y*w;
 			if(isBorder(i)) {
-				cout << "x: " << x << "  y: " << y << endl;
 				distance[i] = 0.0f;
 				stack.push_back(i);
 			}
@@ -278,7 +295,6 @@ void Coraline::seedClips(vector<int> &stack) {
 		int x = clips[i*2];
 		int y = clips[i*2+2];
 		int a = x + y*w;
-		cout << "x: " << x << "  y: " << y << endl;
 		if(distance[a] == 0.0f)
 			continue;
 		distance[a] =  0;
@@ -601,7 +617,6 @@ void Coraline::setColorDistribution() {
 		//else
 			//color[i] = 1.0/(1.0 + exp(-color[i]*25));
 	}
-	cout << endl;
 }
 
 

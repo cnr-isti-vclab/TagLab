@@ -111,7 +111,7 @@ def floatmapToQImage(floatmap):
 
     for y in range(h):
         for x in range(w):
-            gray = int(floatmap[x,y])
+            gray = int(floatmap[y,x])
             qimg.setPixel(x,y,qRgb(gray,gray,gray))
 
     return qimg
