@@ -43,6 +43,10 @@ class CoralsDataset(Dataset):
         self.labels_dir = input_labels_dir
         self.images_names = [os.path.basename(x) for x in glob.glob(os.path.join(input_images_dir, '*.png'))]
         self.dict_colors = dictionary
+
+        # if background does not exists it is added
+        self.dict_colors["Background"] = [0, 0, 0]
+
         self.dict_target = target_class
         self.num_classes = num_classes
 

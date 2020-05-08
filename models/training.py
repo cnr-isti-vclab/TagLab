@@ -45,6 +45,9 @@ def createTargetClasses(annotations):
         if blob.qpath_gitem.isVisible():
             labels_set.add(blob.class_name)
 
+    # Background class must be present
+    labels_set.add("Background")
+
     target_dict = {}
     for i, label in enumerate(labels_set):
         target_dict[label] = i
