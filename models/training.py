@@ -13,6 +13,8 @@ from sklearn.metrics import jaccard_score
 from sklearn.metrics import confusion_matrix
 from models.deeplab import DeepLab
 from models.coral_dataset import CoralsDataset
+from source.Annotation import Annotation
+
 
 import time
 import json
@@ -37,7 +39,17 @@ def createTargetClasses(annotations):
     """
     Create the label name - label code correspondences for the classifier.
     """
-    pass
+
+    labels_set = set()
+    for blob in annotations.seg_blobs:
+        if blob.qpath_gitem.isVisible():
+            labels_set.add(blob.class_name)
+
+    target_dict = {}
+    for i, label in enumerate(labels_set):
+        target_dict[label] = i
+
+    return target_dict
 
 
 def saveMetrics(metrics, filename):

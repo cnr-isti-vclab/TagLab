@@ -17,6 +17,7 @@
 #GNU General Public License (http://www.gnu.org/licenses/gpl.txt)          
 # for more details.                                               
 
+import os
 import numpy as np
 from cv2 import fillPoly
 
@@ -597,7 +598,48 @@ class Annotation(object):
         labelimg.save(filename)
 
 
-    def export_new_dataset(self, map, tile_size, step, basename):
+    def export_new_dataset(self, map, tile_size, step, output_folder):
+
+        # training folders
+        output_folder_train = os.path.join(output_folder, "train")
+        if not os.path.exists(output_folder_train):
+            os.mkdir(output_folder_train)
+
+        output_images_train = os.path.join(output_folder_train, "img")
+        if not os.path.exists(output_images_train):
+            os.mkdir(output_images_train)
+
+        output_labels_train = os.path.join(output_folder_train, "label")
+        if not os.path.exists(output_labels_train):
+            os.mkdir(output_labels_train)
+
+        # validation folders
+        output_folder_val = os.path.join(output_folder, "validation")
+        if not os.path.exists(output_folder_val):
+            os.mkdir(output_folder_val)
+
+        output_images_val = os.path.join(output_folder_val, "img")
+        if not os.path.exists(output_images_val):
+            os.mkdir(output_images_val)
+
+        output_labels_val = os.path.join(output_folder_val, "label")
+        if not os.path.exists(output_labels_val):
+            os.mkdir(output_labels_val)
+
+        # test folders
+        output_folder_test = os.path.join(output_folder, "test")
+        if not os.path.exists(output_folder_test):
+            os.mkdir(output_folder_test)
+
+        output_images_test = os.path.join(output_folder_test, "img")
+        if not os.path.exists(output_images_test):
+            os.mkdir(output_images_test)
+
+        output_labels_test = os.path.join(output_folder_test, "label")
+        if not os.path.exists(output_labels_test):
+            os.mkdir(output_labels_test)
+
+        ##### CREATE LABEL IMAGE
 
         # create a black canvas of the same size of your map
         w = map.width()
@@ -608,13 +650,9 @@ class Annotation(object):
 
         painter = QPainter(labelimg)
 
-        # CREATE LABEL IMAGE
         for i, blob in enumerate(self.seg_blobs):
-
             if blob.qpath_gitem.isVisible():
-
                 if blob.qpath_gitem.isVisible():
-
                     if blob.class_name == "Empty":
                         rgb = qRgb(255, 255, 255)
                     else:
@@ -626,8 +664,18 @@ class Annotation(object):
 
         painter.end()
 
-        tile_cols = int((w - tile_size) / step)
-        tile_rows = int((h - tile_size) / step)
+
+        ##### TILING
+
+        h1 = h * 0.65
+        h2 = h * 0.85
+
+        # tiles within the height [0..h1] are used for the training
+        # tiles within the height [h1..h2] are used for the validation
+        # the other tiles are used for the test
+
+        tile_cols = int((w + tile_size) / step)
+        tile_rows = int((h + tile_size) / step)
 
         deltaW = int(tile_size / 2) + 1
         deltaH = int(tile_size / 2) + 1
@@ -635,16 +683,33 @@ class Annotation(object):
         for row in range(tile_rows):
             for col in range(tile_cols):
 
-                top = deltaH + row * step
-                left = deltaW + col * step
+                top = row * step - deltaH
+                left = col * step - deltaW
                 cropimg = utils.cropQImage(map, [top, left, tile_size, tile_size])
                 croplabel = utils.cropQImage(labelimg, [top, left, tile_size, tile_size])
 
-                filenameRGB = basename + "_RGB_" + str.format("{0:02d}", (row)) + "_" + str.format("{0:02d}", (col)) + ".png"
-                filenameLabel = basename + "_L_" + str.format("{0:02d}", (row)) + "_" + str.format("{0:02d}", (col)) + ".png"
+                filenameRGB = ""
+
+                if top + tile_size < h1 - step:
+
+                    filenameRGB = os.path.join(output_images_train, "tile_" + str.format("{0:02d}", (row)) + "_" + str.format("{0:02d}", (col)) + ".png")
+                    filenameLabel = os.path.join(output_labels_train, "tile_" + str.format("{0:02d}", (row)) + "_" + str.format("{0:02d}", (col)) + ".png")
+
+                elif top > h2 + step:
+
+                    filenameRGB = os.path.join(output_images_test, "tile_" + str.format("{0:02d}", (row)) + "_" + str.format("{0:02d}", (col)) + ".png")
+                    filenameLabel = os.path.join(output_labels_test, "tile_" + str.format("{0:02d}", (row)) + "_" + str.format("{0:02d}", (col)) + ".png")
+
+                elif top + tile_size >= h1 + step and top <= h2 - step:
+
+                    filenameRGB = os.path.join(output_images_val, "tile_" + str.format("{0:02d}", (row)) + "_" + str.format("{0:02d}", (col)) + ".png")
+                    filenameLabel = os.path.join(output_labels_val, "tile_" + str.format("{0:02d}", (row)) + "_" + str.format("{0:02d}", (col)) + ".png")
 
                 print(filenameRGB)
                 print(filenameLabel)
 
-                cropimg.save(filenameRGB)
-                croplabel.save(filenameLabel)
+                if filenameRGB != "":
+                    cropimg.save(filenameRGB)
+                    croplabel.save(filenameLabel)
+
+

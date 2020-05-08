@@ -2499,7 +2499,8 @@ class TagLab(QWidget):
         training.checkDataset(dataset_folder)
 
         # CLASSES TO RECOGNIZE (label name - label code)
-        target_classes = training.createTargetClasses()
+        target_classes = training.createTargetClasses(annotations=self.annotations)
+        num_classes = len(target_classes)
 
         # go training go..
 
@@ -2508,10 +2509,19 @@ class TagLab(QWidget):
         L2 = self.trainYourNetworkWidget.getWeightDecay()
 
         classifier_name = self.trainYourNetworkWidget.editClassifierName.text()
-        network_name = self.trainYourNetwork.editNetworkName.text()
+        network_name = self.trainYourNetworkWidget.editNetworkName.text()
+
+        # training folders
+        train_folder = os.path.join(dataset_folder, "train")
+        images_dir_train = os.path.join(train_folder, "img")
+        labels_dir_train = os.path.join(train_folder, "label")
+
+        val_folder = os.path.join(dataset_folder, "validation")
+        images_dir_val = os.path.join(val_folder, "img")
+        labels_dir_val = os.path.join(val_folder, "label")
 
         training.trainingNetwork(images_dir_train, labels_dir_train, images_dir_val, labels_dir_val,
-                        self.labels, target_classes, num_classes=3, save_network_as=network_name,
+                        self.labels, target_classes, num_classes=num_classes, save_network_as=network_name,
                         current_classifiers=self.available_classifiers, classifier_name=classifier_name,
                         epochs=nepochs, batch_sz=4, batch_mult=8, validation_frequency=2,
                         learning_rate=lr, L2_penalty=L2, flagShuffle=True, experiment_name="_EXPERIMENT")
