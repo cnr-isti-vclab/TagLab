@@ -50,6 +50,9 @@ from collections import OrderedDict
 import models.deeplab_resnet as resnet
 from models.dataloaders import helpers as helpers
 
+import models.training as training
+
+
 # CUSTOM
 from source.QtImageViewerPlus import QtImageViewerPlus
 from source.QtMapViewer import QtMapViewer
@@ -61,6 +64,7 @@ from source.QtProgressBarCustom import QtProgressBarCustom
 from source.QtCrackWidget import QtCrackWidget
 from source.QtHistogramWidget import QtHistogramWidget
 from source.QtClassifierWidget import QtClassifierWidget
+from source.QtTYNWidget import QtTYNWidget
 from source.QtComparePanel import QtComparePanel
 from source.Blob import Blob
 from source.Annotation import Annotation
@@ -129,6 +133,7 @@ class TagLab(QWidget):
 
         self.mapWidget = None
         self.classifierWidget = None
+        self.trainYourNetworkWidget = None
 
         self.tool_used = "MOVE"        # tool currently used
         self.tool_orig = "MOVE"        # tool originally used when a shift key changes the current tool
@@ -616,6 +621,11 @@ class TagLab(QWidget):
         exportTrainingDatasetAct.setStatusTip("Export a new training dataset based on the current annotations")
         exportTrainingDatasetAct.triggered.connect(self.exportAnnAsTrainingDataset)
 
+        trainYourNetworkAct = QAction("Train Your Network", self)
+        #exportTrainingDatasetAct.setShortcut('Ctrl+??')
+        trainYourNetworkAct.setStatusTip("Export a new training dataset and, eventually, train your network on it")
+        trainYourNetworkAct.triggered.connect(self.trainYourNetwork)
+
         undoAct = QAction("Undo", self)
         undoAct.setShortcut('Ctrl+Z')
         undoAct.setStatusTip("Undo")
@@ -678,6 +688,9 @@ class TagLab(QWidget):
         submenuExport.addAction(exportHistogramAct)
         submenuExport.addAction(exportTrainingDatasetAct)
 
+        filemenu.addSeparator()
+        filemenu.addAction(trainYourNetworkAct)
+
         editmenu = menubar.addMenu("&Edit")
         editmenu.addAction(undoAct)
         editmenu.addAction(redoAct)
@@ -696,8 +709,6 @@ class TagLab(QWidget):
         editmenu.addAction(self.refineAction)
         editmenu.addAction(self.refineActionDilate)
         editmenu.addAction(self.refineActionErode)
-
-        editmenu.addAction(self.fillAction)
 
         helpmenu = menubar.addMenu("&Help")
         helpmenu.setStyleSheet(styleMenu)
@@ -2476,12 +2487,53 @@ class TagLab(QWidget):
     def exportAnnAsTrainingDataset(self):
 
         folderName = QFileDialog.getExistingDirectory(self, "Choose Export Folder", "")
-
         if folderName:
+            self.annotations.export_new_dataset(self.img_map, tile_size=1026, step=256, output_folder=folderName)
 
-            filename = os.path.join(folderName, "tile")
-            self.annotations.export_new_dataset(self.img_map, tile_size=1024, step=256, basename=filename)
+    @pyqtSlot()
+    def trainNewNetwork(self):
 
+        dataset_folder = self.trainYourNetworkWidget.getDatasetFolder()
+
+        # check dataset
+        training.checkDataset(dataset_folder)
+
+        # CLASSES TO RECOGNIZE (label name - label code)
+        target_classes = training.createTargetClasses()
+
+        # go training go..
+
+        nepochs = self.trainYourNetworkWidget.getEpochs()
+        lr = self.trainYourNetworkWidget.getLR()
+        L2 = self.trainYourNetworkWidget.getWeightDecay()
+
+        classifier_name = self.trainYourNetworkWidget.editClassifierName.text()
+        network_name = self.trainYourNetwork.editNetworkName.text()
+
+        training.trainingNetwork(images_dir_train, labels_dir_train, images_dir_val, labels_dir_val,
+                        self.labels, target_classes, num_classes=3, save_network_as=network_name,
+                        current_classifiers=self.available_classifiers, classifier_name=classifier_name,
+                        epochs=nepochs, batch_sz=4, batch_mult=8, validation_frequency=2,
+                        learning_rate=lr, L2_penalty=L2, flagShuffle=True, experiment_name="_EXPERIMENT")
+
+        ##### TEST
+
+        # output_folder = "D:\\MOOREA\\test_Plot_16_2018_dataset\\output"
+        #
+        # nclasses, weights, average, classes,
+        # training.testNetwork(images_dir, labels_dir, self.labels, self.available_classifiers output_folder)
+
+
+    @pyqtSlot()
+    def trainYourNetwork(self):
+
+        if self.trainYourNetworkWidget is None:
+
+            self.trainYourNetworkWidget = QtTYNWidget(self.annotations, parent=self)
+            self.trainYourNetworkWidget.setWindowModality(Qt.WindowModal)
+            self.trainYourNetworkWidget.btnTrain.clicked.connect(self.trainNewNetwork)
+
+            self.trainYourNetworkWidget.show()
 
 
     @pyqtSlot(int)
