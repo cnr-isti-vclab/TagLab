@@ -2576,8 +2576,15 @@ class TagLab(QWidget):
             new_classifier["Classes"] = list(dataset_train.dict_target)
             new_classifier["Scale"] = self.map_px_to_mm_factor
             self.available_classifiers.append(new_classifier)
-            self.save(self.project_name)
-
+            newconfig = dict()
+            newconfig["Available Classifiers"] = self.available_classifiers
+            newconfig["Labels"] = self.labels
+            str = json.dumps(newconfig)
+            classifier_filename = network_name.replace(".net", ".json")
+            classifier_filename = os.path.join(self.taglab_dir, classifier_name)
+            f = open(classifier_filename, "w")
+            f.write(str)
+            f.close()
 
     @pyqtSlot()
     def trainYourNetwork(self):
