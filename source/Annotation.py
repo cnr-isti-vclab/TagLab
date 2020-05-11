@@ -18,6 +18,7 @@
 # for more details.                                               
 
 import os
+import shutil
 import numpy as np
 from cv2 import fillPoly
 
@@ -600,44 +601,38 @@ class Annotation(object):
 
     def export_new_dataset(self, map, tile_size, step, output_folder):
 
-        # training folders
-        output_folder_train = os.path.join(output_folder, "train")
-        if not os.path.exists(output_folder_train):
-            os.mkdir(output_folder_train)
+        # if the dataset folder already had DL subfolder than delete them
 
-        output_images_train = os.path.join(output_folder_train, "img")
-        if not os.path.exists(output_images_train):
-            os.mkdir(output_images_train)
-
-        output_labels_train = os.path.join(output_folder_train, "label")
-        if not os.path.exists(output_labels_train):
-            os.mkdir(output_labels_train)
-
-        # validation folders
-        output_folder_val = os.path.join(output_folder, "validation")
-        if not os.path.exists(output_folder_val):
-            os.mkdir(output_folder_val)
-
-        output_images_val = os.path.join(output_folder_val, "img")
-        if not os.path.exists(output_images_val):
-            os.mkdir(output_images_val)
-
-        output_labels_val = os.path.join(output_folder_val, "label")
-        if not os.path.exists(output_labels_val):
-            os.mkdir(output_labels_val)
-
-        # test folders
+        output_folder_training = os.path.join(output_folder, "training")
+        output_folder_validation = os.path.join(output_folder, "validation")
         output_folder_test = os.path.join(output_folder, "test")
-        if not os.path.exists(output_folder_test):
-            os.mkdir(output_folder_test)
 
-        output_images_test = os.path.join(output_folder_test, "img")
-        if not os.path.exists(output_images_test):
-            os.mkdir(output_images_test)
+        if os.path.exists(output_folder_training):
+            shutil.rmtree(output_folder_training, ignore_errors=True)
+        if os.path.exists(output_folder_validation):
+            shutil.rmtree(output_folder_validation, ignore_errors=True)
+        if os.path.exists(output_folder_test):
+            shutil.rmtree(output_folder_test, ignore_errors=True)
 
-        output_labels_test = os.path.join(output_folder_test, "label")
-        if not os.path.exists(output_labels_test):
-            os.mkdir(output_labels_test)
+        # create DL folders
+
+        os.mkdir(output_folder_training)
+        output_images_training = os.path.join(output_folder_training, "images")
+        output_labels_training = os.path.join(output_folder_training, "labels")
+        os.mkdir(output_images_training)
+        os.mkdir(output_labels_training)
+
+        os.mkdir(output_folder_validation)
+        output_images_validation = os.path.join(output_folder_validation, "images")
+        output_labels_validation = os.path.join(output_folder_validation, "labels")
+        os.mkdir(output_images_validation)
+        os.mkdir(output_labels_validation)
+
+        os.mkdir(output_folder_test)
+        output_images_test = os.path.join(output_folder_test, "images")
+        output_labels_test = os.path.join(output_folder_test, "labels")
+        os.mkdir(output_images_test)
+        os.mkdir(output_labels_test)
 
         ##### CREATE LABEL IMAGE
 
@@ -692,8 +687,8 @@ class Annotation(object):
 
                 if top + tile_size < h1 - step:
 
-                    filenameRGB = os.path.join(output_images_train, "tile_" + str.format("{0:02d}", (row)) + "_" + str.format("{0:02d}", (col)) + ".png")
-                    filenameLabel = os.path.join(output_labels_train, "tile_" + str.format("{0:02d}", (row)) + "_" + str.format("{0:02d}", (col)) + ".png")
+                    filenameRGB = os.path.join(output_images_training, "tile_" + str.format("{0:02d}", (row)) + "_" + str.format("{0:02d}", (col)) + ".png")
+                    filenameLabel = os.path.join(output_labels_training, "tile_" + str.format("{0:02d}", (row)) + "_" + str.format("{0:02d}", (col)) + ".png")
 
                 elif top > h2 + step:
 
@@ -702,8 +697,8 @@ class Annotation(object):
 
                 elif top + tile_size >= h1 + step and top <= h2 - step:
 
-                    filenameRGB = os.path.join(output_images_val, "tile_" + str.format("{0:02d}", (row)) + "_" + str.format("{0:02d}", (col)) + ".png")
-                    filenameLabel = os.path.join(output_labels_val, "tile_" + str.format("{0:02d}", (row)) + "_" + str.format("{0:02d}", (col)) + ".png")
+                    filenameRGB = os.path.join(output_images_validation, "tile_" + str.format("{0:02d}", (row)) + "_" + str.format("{0:02d}", (col)) + ".png")
+                    filenameLabel = os.path.join(output_labels_validation, "tile_" + str.format("{0:02d}", (row)) + "_" + str.format("{0:02d}", (col)) + ".png")
 
                 print(filenameRGB)
                 print(filenameLabel)

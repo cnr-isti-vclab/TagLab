@@ -32,8 +32,18 @@ def checkDataset(dataset_folder):
     """
     Check if the training, validation and test folders exist and contain the corresponding images and labels.
     """
+    flag = 0
+    if os.path.exists(dataset_folder) and os.listdir(dataset_folder) == ['test', 'training', 'validation']:
+       for sub in os.listdir(dataset_folder):
+           subfolder = os.path.join(dataset_folder, sub)
+           if os.listdir(subfolder) == ['images', 'labels'] and len(set(os.listdir(os.path.join(subfolder, os.listdir(subfolder)[0]))) - set(os.listdir(os.path.join(subfolder, os.listdir(subfolder)[1]))))==0:
+               flag = 0 # Your training dataset is valid
+           else:
+               return 1 # A subfolder is missing or a files mismatch in subfolder
+    else:
+        return 1 # This dataset contains mismatching files
 
-    pass
+    return flag
 
 def createTargetClasses(annotations):
     """
@@ -181,19 +191,8 @@ def evaluateNetwork(dataloader, weights, nclasses, net, flagTrainingDataset=Fals
     return metrics, mean_loss
 
 
-def updateAvailableClassifiers(current_classifiers, classifier_name, dataset):
-
-    dict = {}
-
-    dict["Classifier Name"] = classifier_name
-    dict["Weights"] = list(dataset.weights)
-    dict["Average"] = list(dataset.dataset_average)
-    dict["Num. Classes"] = dataset.num_classes
-    dict["Classes"] = dataset.dict_target
-
-
 def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val, labels_folder_val,
-                    dictionary, target_classes, num_classes, save_network_as, current_classifiers, classifier_name,
+                    dictionary, target_classes, num_classes, save_network_as, classifier_name,
                     epochs, batch_sz, batch_mult, learning_rate, L2_penalty, validation_frequency, flagShuffle, experiment_name):
 
     ##### DATA #####
@@ -204,9 +203,8 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
     print("Dataset setup..", end='')
     datasetTrain.computeAverage()
     datasetTrain.computeWeights()
+    target_classes = datasetTrain.dict_target
     print("done.")
-
-    updateAvailableClassifiers(current_classifiers, classifier_name, datasetTrain)
 
     datasetTrain.enableAugumentation()
 
@@ -230,7 +228,9 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
 
     ###### SETUP THE NETWORK #####
     net = DeepLab(backbone='resnet', output_stride=16, num_classes=datasetTrain.num_classes)
-    state = torch.load("deeplab-resnet.pth.tar")
+    models_dir = "models/"
+    network_name = os.path.join(models_dir, "deeplab-resnet.pth.tar")
+    state = torch.load(network_name)
     # RE-INIZIALIZE THE CLASSIFICATION LAYER WITH THE RIGHT NUMBER OF CLASSES, DON'T LOAD WEIGHTS OF THE CLASSIFICATION LAYER
     new_dictionary = state['state_dict']
     del new_dictionary['decoder.last_conv.8.weight']
@@ -299,6 +299,7 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
 
             print("RUNNING VALIDATION.. ", end='')
 
+            # datasetVal.weights are the same of datasetTrain
             metrics_val, mean_loss_val = evaluateNetwork(dataloaderVal, datasetVal.weights, datasetVal.num_classes, net, flagTrainingDataset=False)
             accuracy = metrics_val['Accuracy']
             jaccard_score = metrics_val['JaccardScore']
@@ -323,10 +324,17 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
             print("-> CURRENT BEST ACCURACY ", best_accuracy)
 
     print("***** TRAINING FINISHED *****")
-    print("BEST ACCURACY REACHED ON THE VALIDATION SET: %.3f " % best_accuracy)
+
+    new_classifier = {}
+    new_classifier["Classifier Name"] = classifier_name
+    new_classifier["Average Norm."] = list(datasetTrain.dataset_average)
+    new_classifier["Num. Classes"] = datasetTrain.num_classes
+    new_classifier["Classes"] = list(datasetTrain.dict_target)
+
+    return new_classifier
 
 
-def testNetwork(images_folder, labels_folder, dictionary, nclasses, weights, average, classes, network_filename, output_folder):
+def testNetwork(images_folder, labels_folder, dictionary, classifier, network_filename, output_folder):
     """
     Load a network and test it on the test dataset.g
     :param network_filename: Full name of the network to load (PATH+name)
@@ -336,14 +344,15 @@ def testNetwork(images_folder, labels_folder, dictionary, nclasses, weights, ave
     datasetTest = CoralsDataset(images_folder, labels_folder, dictionary, None, 0)
     datasetTest.disableAugumentation()
 
-    dataset.num_classes = loaded_dict["Num. Classes"]
-    dataset.weights = np.array(loaded_dict["Weights"])
-    dataset.dataset_average = np.array(loaded_dict["Average"])
-    dataset.dict_target = loaded_dict["Classes"]
+    dataset.num_classes = classifier["Num. Classes"]
+    dataset.weights = np.array(classifier["Weights"])
+    dataset.dataset_average = np.array(classifier["Average"])
+    dataset.dict_target = classifier["Classes"]
 
     batchSize = 4
     dataloaderTest = DataLoader(datasetTest, batch_size=batchSize, shuffle=False, num_workers=0, drop_last=True,
-                            pin_memory=True)
+                                pin_memory=True)
+
     # DEEPLAB V3+
     net = DeepLab(backbone='resnet', output_stride=16, num_classes=datasetTest.num_classes)
     net.load_state_dict(torch.load(network_filename))

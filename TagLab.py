@@ -2496,7 +2496,13 @@ class TagLab(QWidget):
         dataset_folder = self.trainYourNetworkWidget.getDatasetFolder()
 
         # check dataset
-        training.checkDataset(dataset_folder)
+        check = training.checkDataset(dataset_folder)
+        if check == 1:
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("An error occured with your dataset, there might be a mismatching between files. Please, export a new dataset.")
+            msgBox.exec()
+            return
 
         # CLASSES TO RECOGNIZE (label name - label code)
         target_classes = training.createTargetClasses(annotations=self.annotations)
@@ -2512,26 +2518,34 @@ class TagLab(QWidget):
         network_name = self.trainYourNetworkWidget.editNetworkName.text()
 
         # training folders
-        train_folder = os.path.join(dataset_folder, "train")
-        images_dir_train = os.path.join(train_folder, "img")
-        labels_dir_train = os.path.join(train_folder, "label")
+        train_folder = os.path.join(dataset_folder, "training")
+        images_dir_train = os.path.join(train_folder, "images")
+        labels_dir_train = os.path.join(train_folder, "labels")
 
         val_folder = os.path.join(dataset_folder, "validation")
-        images_dir_val = os.path.join(val_folder, "img")
-        labels_dir_val = os.path.join(val_folder, "label")
+        images_dir_val = os.path.join(val_folder, "images")
+        labels_dir_val = os.path.join(val_folder, "labels")
 
-        training.trainingNetwork(images_dir_train, labels_dir_train, images_dir_val, labels_dir_val,
-                        self.labels, target_classes, num_classes=num_classes, save_network_as=network_name,
-                        current_classifiers=self.available_classifiers, classifier_name=classifier_name,
+        new_classifier = training.trainingNetwork(images_dir_train, labels_dir_train, images_dir_val, labels_dir_val,
+                        self.labels, target_classes, num_classes=num_classes,
+                        save_network_as=network_name, classifier_name=classifier_name,
                         epochs=nepochs, batch_sz=4, batch_mult=8, validation_frequency=2,
                         learning_rate=lr, L2_penalty=L2, flagShuffle=True, experiment_name="_EXPERIMENT")
 
         ##### TEST
 
-        # output_folder = "D:\\MOOREA\\test_Plot_16_2018_dataset\\output"
-        #
-        # nclasses, weights, average, classes,
-        # training.testNetwork(images_dir, labels_dir, self.labels, self.available_classifiers output_folder)
+        test_folder = os.path.join(dataset_folder, "test")
+        images_dir_test = os.path.join(test_folder, "img")
+        labels_dir_test = os.path.join(test_folder, "label")
+
+        # training.testNetwork(images_dir_test, labels_dir_test, self.labels, new_classifier, save_network_as, output_folder)
+
+        training_is_ok = False
+
+        if training_is_ok:
+            new_classifier["Scale"] = self.map_px_to_mm_factor
+            self.available_classifiers.append(new_classifier)
+            self.save(self.project_name)
 
 
     @pyqtSlot()
