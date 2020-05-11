@@ -19,6 +19,7 @@
 
 import sys
 import os
+import shutil
 import time
 import datetime
 
@@ -2508,14 +2509,26 @@ class TagLab(QWidget):
         target_classes = training.createTargetClasses(annotations=self.annotations)
         num_classes = len(target_classes)
 
-        # go training go..
+        # GO TRAINING GO...
 
         nepochs = self.trainYourNetworkWidget.getEpochs()
         lr = self.trainYourNetworkWidget.getLR()
         L2 = self.trainYourNetworkWidget.getWeightDecay()
 
         classifier_name = self.trainYourNetworkWidget.editClassifierName.text()
-        network_name = self.trainYourNetworkWidget.editNetworkName.text()
+        network_name = self.trainYourNetworkWidget.editNetworkName.text() + ".net"
+        network_filename = os.path.join(os.path.join(self.taglab_dir, "models"), network_name)
+
+        progress_bar = QtProgressBarCustom(parent=self)
+        progress_bar.setWindowFlags(Qt.ToolTip | Qt.CustomizeWindowHint)
+        progress_bar.setWindowModality(Qt.NonModal)
+        pos = self.viewerplus.pos()
+        progress_bar.move(pos.x() + 15, pos.y() + 30)
+        progress_bar.show()
+
+        progress_bar.hidePerc()
+        progress_bar.setMessage("Dataset setup..")
+        QApplication.processEvents()
 
         # training folders
         train_folder = os.path.join(dataset_folder, "training")
@@ -2526,23 +2539,41 @@ class TagLab(QWidget):
         images_dir_val = os.path.join(val_folder, "images")
         labels_dir_val = os.path.join(val_folder, "labels")
 
-        new_classifier = training.trainingNetwork(images_dir_train, labels_dir_train, images_dir_val, labels_dir_val,
+        dataset_train = training.trainingNetwork(images_dir_train, labels_dir_train, images_dir_val, labels_dir_val,
                         self.labels, target_classes, num_classes=num_classes,
-                        save_network_as=network_name, classifier_name=classifier_name,
+                        save_network_as=network_filename, classifier_name=classifier_name,
                         epochs=nepochs, batch_sz=4, batch_mult=8, validation_frequency=2,
-                        learning_rate=lr, L2_penalty=L2, flagShuffle=True, experiment_name="_EXPERIMENT")
+                        learning_rate=lr, L2_penalty=L2, flagShuffle=True, experiment_name="_EXPERIMENT",
+                        progress=progress_bar)
 
         ##### TEST
 
         test_folder = os.path.join(dataset_folder, "test")
-        images_dir_test = os.path.join(test_folder, "img")
-        labels_dir_test = os.path.join(test_folder, "label")
+        images_dir_test = os.path.join(test_folder, "images")
+        labels_dir_test = os.path.join(test_folder, "labels")
 
-        # training.testNetwork(images_dir_test, labels_dir_test, self.labels, new_classifier, save_network_as, output_folder)
+        output_folder = os.path.join(self.taglab_dir, "temp")
+        if os.path.exists(output_folder):
+            shutil.rmtree(output_folder, ignore_errors=True)
 
-        training_is_ok = False
+        os.mkdir(output_folder)
 
-        if training_is_ok:
+        metrics = training.testNetwork(images_dir_test, labels_dir_test, self.labels, dataset_train,
+                             network_filename=network_filename, output_folder=output_folder)
+
+        if progress_bar:
+            progress_bar.close()
+            del progress_bar
+
+        txt = "Accuracy: " + str(metrics['Accuracy']) + "mIoU: " + str(metrics['JaccardScore']) + "Do you want to save this new classifier?"
+        confirm_training = QMessageBox.question(self, self.TAGLAB_VERSION, txt, QMessageBox.Yes | QMessageBox.No)
+
+        if confirm_training == QMessageBox.Yes:
+            new_classifier = dict()
+            new_classifier["Classifier Name"] = classifier_name
+            new_classifier["Average Norm."] = list(dataset_train.dataset_average)
+            new_classifier["Num. Classes"] = dataset_train.num_classes
+            new_classifier["Classes"] = list(dataset_train.dict_target)
             new_classifier["Scale"] = self.map_px_to_mm_factor
             self.available_classifiers.append(new_classifier)
             self.save(self.project_name)
@@ -2781,18 +2812,21 @@ class TagLab(QWidget):
 
             self.infoWidget.setInfoMessage("Setup automatic classification..")
 
-            progress_bar.setMessage("Setup automatic classification..", False)
+            progress_bar.hidePerc()
+            progress_bar.setMessage("Setup automatic classification..")
             QApplication.processEvents()
 
             message = "[AUTOCLASS] Automatic classification STARTS.. (classifier: )" + classifier_selected['Classifier Name']
             logfile.info(message)
 
+            progress_bar.showPerc()
             self.corals_classifier = MapClassifier(classifier_selected, self.labels)
             self.corals_classifier.updateProgress.connect(progress_bar.setProgress)
 
             # rescaling the map to fit the target scale of the network
 
-            progress_bar.setMessage("Map rescaling..", False)
+            progress_bar.hidePerc()
+            progress_bar.setMessage("Map rescaling..")
             QApplication.processEvents()
 
             target_scale_factor = classifier_selected['Scale']
@@ -2803,7 +2837,8 @@ class TagLab(QWidget):
 
             input_img_map = self.img_map.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
 
-            progress_bar.setMessage("Classification: ", True)
+            progress_bar.showPerc()
+            progress_bar.setMessage("Classification: ")
             progress_bar.setProgress(0.0)
             QApplication.processEvents()
 
@@ -2815,7 +2850,8 @@ class TagLab(QWidget):
             if self.corals_classifier.flagStopProcessing is False:
 
                 # import generated label map
-                progress_bar.setMessage("Finalizing classification results..", False)
+                progress_bar.hidePerc()
+                progress_bar.setMessage("Finalizing classification results..")
                 QApplication.processEvents()
 
                 filename = os.path.join("temp", "labelmap.png")
@@ -2925,7 +2961,7 @@ class TagLab(QWidget):
             extreme_points_ori = extreme_points_new.astype(int)
 
             #  Crop image to the bounding box from the extreme points and resize
-            bbox = helpers.get_bbox(img, points=extreme_points_ori, pad=pad, zero_pad=True)
+            bbox = helpers.get_bbox(img, points=extgreme_points_ori, pad=pad, zero_pad=True)
             crop_image = helpers.crop_from_bbox(img, bbox, zero_pad=True)
             resize_image = helpers.fixed_resize(crop_image, (512, 512)).astype(np.float32)
 

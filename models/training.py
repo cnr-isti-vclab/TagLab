@@ -14,7 +14,9 @@ from sklearn.metrics import confusion_matrix
 from models.deeplab import DeepLab
 from models.coral_dataset import CoralsDataset
 from source.Annotation import Annotation
+from source.QtProgressBarCustom import QtProgressBarCustom
 
+from PyQt5.QtWidgets import QApplication
 
 import time
 import json
@@ -193,7 +195,8 @@ def evaluateNetwork(dataloader, weights, nclasses, net, flagTrainingDataset=Fals
 
 def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val, labels_folder_val,
                     dictionary, target_classes, num_classes, save_network_as, classifier_name,
-                    epochs, batch_sz, batch_mult, learning_rate, L2_penalty, validation_frequency, flagShuffle, experiment_name):
+                    epochs, batch_sz, batch_mult, learning_rate, L2_penalty, validation_frequency, flagShuffle,
+                    experiment_name, progress):
 
     ##### DATA #####
 
@@ -266,6 +269,11 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
     print("Training Network")
     for epoch in range(epochs):  # loop over the dataset multiple times
 
+        txt = "Epoch " + str(epoch+1) + "/" + str(epochs)
+        progress.setMessage(txt)
+        progress.setProgress((100.0 * epoch) / epochs)
+        QApplication.processEvents()
+
         net.train()
         optimizer.zero_grad()
         running_loss = 0.0
@@ -331,10 +339,10 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
     new_classifier["Num. Classes"] = datasetTrain.num_classes
     new_classifier["Classes"] = list(datasetTrain.dict_target)
 
-    return new_classifier
+    return datasetTrain
 
 
-def testNetwork(images_folder, labels_folder, dictionary, classifier, network_filename, output_folder):
+def testNetwork(images_folder, labels_folder, dictionary, dataset_train, network_filename, output_folder):
     """
     Load a network and test it on the test dataset.g
     :param network_filename: Full name of the network to load (PATH+name)
@@ -344,10 +352,10 @@ def testNetwork(images_folder, labels_folder, dictionary, classifier, network_fi
     datasetTest = CoralsDataset(images_folder, labels_folder, dictionary, None, 0)
     datasetTest.disableAugumentation()
 
-    dataset.num_classes = classifier["Num. Classes"]
-    dataset.weights = np.array(classifier["Weights"])
-    dataset.dataset_average = np.array(classifier["Average"])
-    dataset.dict_target = classifier["Classes"]
+    datasetTest.num_classes = dataset_train.num_classes
+    datasetTest.weights = dataset_train.weights
+    datasetTest.dataset_average = dataset_train.dataset_average
+    datasetTest.dict_target = dataset_train.dict_target
 
     batchSize = 4
     dataloaderTest = DataLoader(datasetTest, batch_size=batchSize, shuffle=False, num_workers=0, drop_last=True,
@@ -358,7 +366,10 @@ def testNetwork(images_folder, labels_folder, dictionary, classifier, network_fi
     net.load_state_dict(torch.load(network_filename))
     print("Weights loaded.")
 
-    metrics_test, loss = evaluateNetwork(dataloaderTest, datasetTest.weights, datasetTest.num_classes, net, False, output_folder)
-    metrics_filename = network_filename[:len(network_filename) - 4] + "-test-metrics.txt"
-    saveMetrics(metrics_test, metrics_filename)
+    metrics_test, loss = evaluateNetwork(dataloaderTest, datasetTest.weights, datasetTest.num_classes, net,
+                                         flagTrainingDataset=False, savefolder=output_folder)
+    # metrics_filename = network_filename[:len(network_filename) - 4] + "-test-metrics.txt"
+    # saveMetrics(metrics_test, metrics_filename)
     print("***** TEST FINISHED *****")
+
+    return metrics_test

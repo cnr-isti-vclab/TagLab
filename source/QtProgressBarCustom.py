@@ -30,21 +30,29 @@ class QtProgressBarCustom(QWidget):
 
         self.current_progress = 0.0
         self.message = "Classification"
+        self.flag_perc = True
 
 
-    def setMessage(self, text, visualize_progress):
+    def showPerc(self):
+
+        self.flag_perc = True
+
+
+    def hidePerc(self):
+
+        self.flag_perc = False
+
+
+    def setMessage(self, text):
         """
         Update the message displayed by the progress bar. The current progress can be displayed together with the message, or not.
         """
 
         self.message = text
 
-        if visualize_progress is True:
-
+        if self.flag_perc is True:
             txt = self.message + "{:.2f} %".format(self.current_progress)
-
         else:
-
             txt = self.message
 
         self.drawBar(txt)
@@ -57,6 +65,11 @@ class QtProgressBarCustom(QWidget):
         """
 
         txt = self.message + "{:.2f} %".format(progress)
+
+        if self.flag_perc is True:
+            txt = self.message + "{:.2f} %".format(self.current_progress)
+        else:
+            txt = self.message
 
         self.current_progress = progress
 
