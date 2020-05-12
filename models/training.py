@@ -333,12 +333,6 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
 
     print("***** TRAINING FINISHED *****")
 
-    new_classifier = {}
-    new_classifier["Classifier Name"] = classifier_name
-    new_classifier["Average Norm."] = list(datasetTrain.dataset_average)
-    new_classifier["Num. Classes"] = datasetTrain.num_classes
-    new_classifier["Classes"] = list(datasetTrain.dict_target)
-
     return datasetTrain
 
 

@@ -2489,7 +2489,7 @@ class TagLab(QWidget):
 
         folderName = QFileDialog.getExistingDirectory(self, "Choose Export Folder", "")
         if folderName:
-            self.annotations.export_new_dataset(self.img_map, tile_size=1026, step=256, output_folder=folderName)
+            self.annotations.export_new_dataset(self.img_map, tile_size=1026, step=513, output_folder=folderName)
 
     @pyqtSlot()
     def trainNewNetwork(self):

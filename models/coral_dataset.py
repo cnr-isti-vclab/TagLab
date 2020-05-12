@@ -272,9 +272,23 @@ class CoralsDataset(Dataset):
             for i in range(len(existing_labels)):
                 class_sample_count[existing_labels[i]] += counts[i]
 
-        frequencies = class_sample_count / np.sum(class_sample_count)
-        self.weights = 1.0 / frequencies
+        true_dict_target = dict()
+        tot = np.sum(class_sample_count)
+        temp_weights = []
 
+        i = 0
+        for key in self.dict_target.keys():
+            index = self.dict_target[key]
+            if class_sample_count[index] > 0:
+                true_dict_target[key] = i
+                i = i + 1
+                temp_weights.append(tot / class_sample_count[index])
+
+        self.num_classes = len(temp_weights)
+        self.weights = np.array(temp_weights)
+        self.dict_target = true_dict_target
+        
+        
     def computeAverage(self):
 
         sum = np.zeros((self.CROP_SIZE, self.CROP_SIZE, 3), dtype=np.float)
