@@ -111,9 +111,9 @@ class TagLab(QWidget):
         self.map_acquisition_date = "YYYY-MM-DD"
         self.map_px_to_mm_factor = 1.0
 
-        self.recentFileActs = []
-        self.maxRecentFiles = 4
-        self.separatorRecentFilesAct = None
+        self.recentFileActs = []  #refactor to self.maxRecentProjects
+        self.maxRecentFiles = 4   #refactor to maxRecentProjects
+        self.separatorRecentFilesAct = None    #refactor to separatorRecentFiles
 
         # ANNOTATION DATA
         self.annotations = Annotation(self.labels)  #REFACTOR we might want to move under project (or not?)
@@ -123,6 +123,7 @@ class TagLab(QWidget):
         self.undo_operation = { 'remove':[], 'add':[], 'class':[], 'newclass':[] }
         """Max number  of undo operations"""
         self.max_undo = 100
+
 
         ##### INTERFACE #####
         #####################

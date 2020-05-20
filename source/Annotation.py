@@ -40,7 +40,7 @@ from source.Blob import Blob
 import source.Mask as Mask
 
 
-
+#refactor: remove groups
 class Group(object):
 
     def __init__(self, blobs, id):
@@ -79,6 +79,7 @@ class Group(object):
             blob.instace_name = "coral-group-" + str(id)
 
 
+#refactor: change name to annotationS
 class Annotation(object):
     """
         Annotation object contains all the annotations as a list of blobs.
@@ -86,25 +87,31 @@ class Annotation(object):
 
     def __init__(self, labels_info):
 
+        #refactor: rename this to blobs.
         # list of all blobs
         self.seg_blobs = []
 
         # annotations coming from previous years (for comparison, no editing is possible)
+        #refactor: nope. use another annotation class.
         self.prev_blobs = []
 
         # list of all groups
         self.groups = []
 
-        # labels info
+        # labels info #refactor: this should not be here!
         self.labels_info = labels_info
 
         # progressive id of the blobs
         self.progressive_id = 0
 
         #relative weight of depth map for refine borders
+        #refactor: this is to be saved and loaded in qsettings
         self.refine_depth_weight = 0.0
         self.refine_conservative = 0.1
 
+        self.undo = Undo()                       #not saved
+
+    #refactor: remove this
     def addGroup(self, blobs):
 
         id = len(self.groups)
@@ -154,7 +161,7 @@ class Annotation(object):
 
 
 
-
+    #refactor: move this function to Blob class!
     def as_dict(self, i):
 
         blob = self.seg_blobs[i]
