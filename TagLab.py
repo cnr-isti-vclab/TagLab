@@ -22,13 +22,15 @@ import os
 import time
 import datetime
 
+
+
 import json
 import numpy as np
 import numpy.ma as ma
 from skimage import measure
 from skimage.measure import points_in_poly
 
-import rasterio as rio
+#import rasterio as rio
 
 from PyQt5.QtCore import Qt, QSize, QDir, QPoint, QPointF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo
 from PyQt5.QtGui import QPainterPath, QFont, QColor, QPolygonF, QImageReader, QImage, QPixmap, QIcon, QKeySequence, \
@@ -67,6 +69,7 @@ from source.QtClassifierWidget import QtClassifierWidget
 from source.QtComparePanel import QtComparePanel
 from source.Blob import Blob
 from source.Annotation import Annotation
+from source.Project import *
 from source.MapClassifier import MapClassifier
 from source import utils
 
@@ -116,7 +119,7 @@ class TagLab(QWidget):
         self.separatorRecentFilesAct = None    #refactor to separatorRecentFiles
 
         # ANNOTATION DATA
-        self.annotations = Annotation(self.labels)  #REFACTOR we might want to move under project (or not?)
+        self.annotations = Annotation()  #REFACTOR we might want to move under project (or not?)
         self.undo_operations = []
         self.undo_position = -1
         """Temporary variable to hold the added and removed of the last operation."""
@@ -1111,7 +1114,7 @@ class TagLab(QWidget):
 
         # RE-INITIALIZATION
 
-        self.annotations = Annotation(self.labels)
+        self.annotations = Annotation()
 
         self.mapWidget = None
         self.project_name = "NONE"
@@ -2485,7 +2488,7 @@ class TagLab(QWidget):
         filename, _ = QFileDialog.getOpenFileName(self, "Input Map File", "", filters)
         if not filename:
             return
-        created_blobs = self.annotations.import_label_map(filename, self.img_map)
+        created_blobs = self.annotations.import_label_map(filename, self.img_map, self.labels)
         for blob in created_blobs:
             self.addBlob(blob, selected=False)
         self.saveUndo()
@@ -2514,7 +2517,7 @@ class TagLab(QWidget):
 
         if filename:
 
-            self.annotations.export_image_data_for_Scripps(self.img_map, filename)
+            self.annotations.export_image_data_for_Scripps(self.img_map, filename, self.labels)
 
             msgBox = QMessageBox(self)
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
@@ -2543,7 +2546,7 @@ class TagLab(QWidget):
         if folderName:
 
             filename = os.path.join(folderName, "tile")
-            self.annotations.export_new_dataset(self.img_map, tile_size=1024, step=256, basename=filename)
+            self.annotations.export_new_dataset(self.img_map, tile_size=1024, step=256, basename=filename, labels_info = self.labels)
 
 
 
@@ -2586,16 +2589,34 @@ class TagLab(QWidget):
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
 
-        f = open(filename, "r")
         try:
-            loaded_dict = json.load(f)
-        except json.JSONDecodeError as e:
+            self.project = loadProject(filename)
+            print(self.project.name)
+        except Exception as e:
             msgBox = QMessageBox()
             msgBox.setText("The json project contains an error:\n {0}\n\nPlease contact us.".format(str(e)))
             msgBox.exec()
             return
 
+        QApplication.restoreOverrideCursor()
+        self.setProjectTitle(self.project.name)
+
+        #load the first map if present in project
+        if len(self.project.images):
+            self.loadMap(self.project.images[0])
+
+        if self.timer is None:
+            self.activateAutosave()
+
+        self.infoWidget.setInfoMessage("The project: " + self.project.name + " has been successfully open.")
+
+        message = "[PROJECT] The project " + self.project.name + " has been loaded."
+        logfile.info(message)
+
         self.resetAll()
+
+        return
+
 
         dir = QDir(self.taglab_dir)
 

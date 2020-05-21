@@ -85,7 +85,7 @@ class Annotation(object):
         Annotation object contains all the annotations as a list of blobs.
     """
 
-    def __init__(self, labels_info):
+    def __init__(self):
 
         #refactor: rename this to blobs.
         # list of all blobs
@@ -98,9 +98,6 @@ class Annotation(object):
         # list of all groups
         self.groups = []
 
-        # labels info #refactor: this should not be here!
-        self.labels_info = labels_info
-
         # progressive id of the blobs
         self.progressive_id = 0
 
@@ -109,7 +106,7 @@ class Annotation(object):
         self.refine_depth_weight = 0.0
         self.refine_conservative = 0.1
 
-        self.undo = Undo()                       #not saved
+#        self.undo = Undo()                       #not saved
 
     #refactor: remove this
     def addGroup(self, blobs):
@@ -485,7 +482,7 @@ class Annotation(object):
     ###########################################################################
     ### IMPORT / EXPORT
 
-    def import_label_map(self, filename, reference_map):
+    def import_label_map(self, filename, reference_map, labels_info):
         """
         It imports a label map and create the corresponding blobs.
         The label map is rescaled such that it coincides with the reference map.
@@ -521,8 +518,8 @@ class Annotation(object):
                 col = region.coords[0, 1]
                 color = label_map[row, col]
 
-                for label_name in self.labels_info.keys():
-                    c = self.labels_info[label_name]
+                for label_name in labels_info.keys():
+                    c = labels_info[label_name]
                     if c[0] == color[0] and c[1] == color[1] and c[2] == color[2]:
                         blob.class_name = label_name
                         blob.class_color = c
@@ -583,7 +580,7 @@ class Annotation(object):
         df.to_csv(filename, sep='\t')
 
 
-    def export_image_data_for_Scripps(self, map, filename):
+    def export_image_data_for_Scripps(self, map, filename, labels_info):
 
         # create a black canvas of the same size of your map
         w = map.width()
@@ -605,7 +602,7 @@ class Annotation(object):
                 if blob.class_name == "Empty":
                     rgb = qRgb(255, 255, 255)
                 else:
-                    class_color = self.labels_info[blob.class_name]
+                    class_color = labels_info[blob.class_name]
                     rgb = qRgb(class_color[0], class_color[1], class_color[2])
 
                 painter.setBrush(QBrush(QColor(rgb)))
@@ -617,7 +614,7 @@ class Annotation(object):
         labelimg.save(filename)
 
 
-    def export_new_dataset(self, map, tile_size, step, basename):
+    def export_new_dataset(self, map, tile_size, step, basename, labels_info):
 
         # create a black canvas of the same size of your map
         w = map.width()
@@ -638,7 +635,7 @@ class Annotation(object):
                     if blob.class_name == "Empty":
                         rgb = qRgb(255, 255, 255)
                     else:
-                        class_color = self.labels_info[blob.class_name]
+                        class_color = labels_info[blob.class_name]
                         rgb = qRgb(class_color[0], class_color[1], class_color[2])
 
                     painter.setBrush(QBrush(QColor(rgb)))
