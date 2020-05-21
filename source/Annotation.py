@@ -123,6 +123,11 @@ class Annotation(object):
         index = self.seg_blobs.index(blob)
         del self.seg_blobs[index]
 
+    def save(self):
+        data = []
+        for blob in self.seg_blobs:
+            data.append(blob.toDict())
+        return data
 
     def blobsFromMask(self, seg_mask, map_pos_x, map_pos_y, area_mask):
         # create the blobs from the segmentation mask

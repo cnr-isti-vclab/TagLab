@@ -69,7 +69,7 @@ from source.QtClassifierWidget import QtClassifierWidget
 from source.QtComparePanel import QtComparePanel
 from source.Blob import Blob
 from source.Annotation import Annotation
-from source.Project import *
+from source.Project import Project, loadProject
 from source.MapClassifier import MapClassifier
 from source import utils
 
@@ -109,7 +109,11 @@ class TagLab(QWidget):
         self.MAP_VIEWER_SIZE = 400
 
         self.taglab_dir = os.getcwd()
-        self.project_name = "NONE" #REFACTOR to project.name
+        self.project = Project()        #current project
+        self.image = None               #current image
+        self.annotations = Annotation()  #REFACTOR we might want to move under project (or not?)
+
+        self.map_3D_filename = None    #refactor THIS!
         self.map_image_filename = "map.png"  #REFACTOR to project.map_filename
         self.map_acquisition_date = "YYYY-MM-DD"
         self.map_px_to_mm_factor = 1.0
@@ -119,7 +123,6 @@ class TagLab(QWidget):
         self.separatorRecentFilesAct = None    #refactor to separatorRecentFiles
 
         # ANNOTATION DATA
-        self.annotations = Annotation()  #REFACTOR we might want to move under project (or not?)
         self.undo_operations = []
         self.undo_position = -1
         """Temporary variable to hold the added and removed of the last operation."""
@@ -470,7 +473,7 @@ class TagLab(QWidget):
 
     @pyqtSlot()
     def autosave(self):
-        filename, file_extension = os.path.splitext(self.project_name)
+        filename, file_extension = os.path.splitext(self.project.filename)
         self.save(filename + "_autosave.json")
 
     # call by pressing right button
@@ -765,7 +768,7 @@ class TagLab(QWidget):
             logfile.info(message)
 
         elif event.key() == Qt.Key_S and modifiers & Qt.ControlModifier:
-            self.save(self.project_name)
+            self.save()
 
         elif event.key() == Qt.Key_A:
             # ASSIGN LABEL
@@ -1117,7 +1120,7 @@ class TagLab(QWidget):
         self.annotations = Annotation()
 
         self.mapWidget = None
-        self.project_name = "NONE"
+        self.project = Project()
         self.map_image_filename = "map.png"
         self.map_acquisition_date = "YYYY-MM-DD"
         self.map_px_to_mm_factor = 1.0
@@ -2314,13 +2317,17 @@ class TagLab(QWidget):
             self.loadMap()
 
  # REFACTOR
-    def loadMap(self):
+    def loadMap(self, image):
+
+        self.image = image
+        self.annotations = image.annotations
+        self.channel = image.channels[0]
 
         # retrieve image size
-        image_reader = QImageReader(self.map_image_filename)
+        image_reader = QImageReader(self.channel.filename)
         sizeOfImage = image_reader.size()
-        height = sizeOfImage.height()
-        width = sizeOfImage.width()
+        image.height = height = sizeOfImage.height()
+        image.width = width = sizeOfImage.width()
 
         if width > 32767 or height > 32767:
 
@@ -2340,7 +2347,7 @@ class TagLab(QWidget):
         # load map and set it
         self.infoWidget.setInfoMessage("Map is loading..")
 
-        self.img_map = QImage(self.map_image_filename)
+        self.img_map = QImage(self.channel.filename)
         if self.img_map.isNull():
             msgBox = QMessageBox()
             msgBox.setText("Could not load or find the image: " + self.map_image_filename)
@@ -2372,6 +2379,9 @@ class TagLab(QWidget):
         self.viewerplus.viewUpdated.connect(self.updateMapViewer)
         self.mapviewer.setOpacity(0.5)
 
+        for blob in self.annotations.seg_blobs:
+            self.drawBlob(blob)
+
         QApplication.restoreOverrideCursor()
 
         self.infoWidget.setInfoMessage("The map has been successfully loading.")
@@ -2380,11 +2390,9 @@ class TagLab(QWidget):
     def openProject(self):
 
         filters = "ANNOTATION PROJECT (*.json)"
-
         filename, _ = QFileDialog.getOpenFileName(self, "Open a project", self.taglab_dir, filters)
 
         if filename:
-
             self.load(filename)
 
 
@@ -2398,8 +2406,7 @@ class TagLab(QWidget):
     # REFACTOR use project methods
     @pyqtSlot()
     def saveProject(self):
-
-        self.save(self.project_name)
+        self.save()
 
     # REFACTOR use project methods
     @pyqtSlot()
@@ -2410,9 +2417,9 @@ class TagLab(QWidget):
 
         if filename:
             dir = QDir(self.taglab_dir)
-            self.project_name = dir.relativeFilePath(filename)
-            self.setProjectTitle(self.project_name)
-            self.save(self.project_name)
+            self.project.filename = dir.relativeFilePath(filename)
+            self.setProjectTitle(self.project.filename)
+            self.save()
 
     @pyqtSlot()
     def appendAnnotations(self):
@@ -2588,10 +2595,10 @@ class TagLab(QWidget):
         """
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
+        self.resetAll()
 
         try:
             self.project = loadProject(filename)
-            print(self.project.name)
         except Exception as e:
             msgBox = QMessageBox()
             msgBox.setText("The json project contains an error:\n {0}\n\nPlease contact us.".format(str(e)))
@@ -2599,7 +2606,7 @@ class TagLab(QWidget):
             return
 
         QApplication.restoreOverrideCursor()
-        self.setProjectTitle(self.project.name)
+        self.setProjectTitle(self.project.filename)
 
         #load the first map if present in project
         if len(self.project.images):
@@ -2608,54 +2615,53 @@ class TagLab(QWidget):
         if self.timer is None:
             self.activateAutosave()
 
-        self.infoWidget.setInfoMessage("The project: " + self.project.name + " has been successfully open.")
+        self.infoWidget.setInfoMessage("The project: " + self.project.filename + " has been successfully open.")
 
-        message = "[PROJECT] The project " + self.project.name + " has been loaded."
+        message = "[PROJECT] The project " + self.project.filename + " has been loaded."
         logfile.info(message)
 
-        self.resetAll()
 
         return
 
 
-        dir = QDir(self.taglab_dir)
-
-        self.project_name = loaded_dict["Project Name"]
-        self.map_image_filename = dir.relativeFilePath(loaded_dict["Map File"])
-        info = QFileInfo(self.map_image_filename)
-        if not info.exists():
-            (map_image_filename, filter) = QFileDialog.getOpenFileName(self, "Couldn't find the map, please select it:", QFileInfo(filename).dir().path(), "Image Files (*.png *.jpg)")
-            self.map_image_filename = dir.relativeFilePath(map_image_filename)
-
-        self.map_acquisition_date = loaded_dict["Acquisition Date"]
-        self.map_px_to_mm_factor = float(loaded_dict["Map Scale"])
-
-        f.close()
-
-        for blob_dict in loaded_dict["Segmentation Data"]:
-
-            blob = Blob(None, 0, 0, 0)
-            blob.fromDict(blob_dict)
-            self.annotations.seg_blobs.append(blob)
-
-        QApplication.restoreOverrideCursor()
-
-        self.loadMap()
-
-        self.setProjectTitle(self.project_name)
-
-        for blob in self.annotations.seg_blobs:
-            self.drawBlob(blob)
-
-        if self.timer is None:
-            self.activateAutosave()
-
-        self.infoWidget.setInfoMessage("The given project has been successfully open.")
-
-        message = "[PROJECT] The project " + self.project_name + " has been loaded."
-        logfile.info(message)
-
-        self.compare_panel.setProject(self.project_name)
+        # dir = QDir(self.taglab_dir)
+        #
+        # self.project_name = loaded_dict["Project Name"]
+        # self.map_image_filename = dir.relativeFilePath(loaded_dict["Map File"])
+        # info = QFileInfo(self.map_image_filename)
+        # if not info.exists():
+        #     (map_image_filename, filter) = QFileDialog.getOpenFileName(self, "Couldn't find the map, please select it:", QFileInfo(filename).dir().path(), "Image Files (*.png *.jpg)")
+        #     self.map_image_filename = dir.relativeFilePath(map_image_filename)
+        #
+        # self.map_acquisition_date = loaded_dict["Acquisition Date"]
+        # self.map_px_to_mm_factor = float(loaded_dict["Map Scale"])
+        #
+        # f.close()
+        #
+        # for blob_dict in loaded_dict["Segmentation Data"]:
+        #
+        #     blob = Blob(None, 0, 0, 0)
+        #     blob.fromDict(blob_dict)
+        #     self.annotations.seg_blobs.append(blob)
+        #
+        # QApplication.restoreOverrideCursor()
+        #
+        # self.loadMap()
+        #
+        # self.setProjectTitle(self.project_name)
+        #
+        # for blob in self.annotations.seg_blobs:
+        #     self.drawBlob(blob)
+        #
+        # if self.timer is None:
+        #     self.activateAutosave()
+        #
+        # self.infoWidget.setInfoMessage("The given project has been successfully open.")
+        #
+        # message = "[PROJECT] The project " + self.project_name + " has been loaded."
+        # logfile.info(message)
+        #
+        # self.compare_panel.setProject(self.project_name)
 
     def append(self, filename, append_to_current):
         """
@@ -2702,33 +2708,34 @@ class TagLab(QWidget):
         self.infoWidget.setInfoMessage("The annotations of the given project has been successfully loaded.")
 
     # REFACTOR move to a project method
-    def save(self, filename):
+    def save(self):
         """
         Save the current project.
         """
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
+        self.project.save()
 
-        dict_to_save = {}
-
-        # update project name
-        dir = QDir(self.taglab_dir)
-
-        dict_to_save["Project Name"] = self.project_name
-        dict_to_save["Map File"] = dir.relativeFilePath(self.map_image_filename)
-        dict_to_save["Acquisition Date"] = self.map_acquisition_date
-        dict_to_save["Map Scale"] = self.map_px_to_mm_factor
-        dict_to_save["Segmentation Data"] = [] # a list of blobs, each blob is a dictionary
-
-        for blob in self.annotations.seg_blobs:
-            dict = blob.toDict()
-            dict_to_save["Segmentation Data"].append(dict)
-
-        str = json.dumps(dict_to_save)
-
-        f = open(filename, "w")
-        f.write(str)
-        f.close()
+        # dict_to_save = {}
+        #
+        # # update project name
+        # dir = QDir(self.taglab_dir)
+        #
+        # dict_to_save["Project Name"] = self.project_name
+        # dict_to_save["Map File"] = dir.relativeFilePath(self.map_image_filename)
+        # dict_to_save["Acquisition Date"] = self.map_acquisition_date
+        # dict_to_save["Map Scale"] = self.map_px_to_mm_factor
+        # dict_to_save["Segmentation Data"] = [] # a list of blobs, each blob is a dictionary
+        #
+        # for blob in self.annotations.seg_blobs:
+        #     dict = blob.toDict()
+        #     dict_to_save["Segmentation Data"].append(dict)
+        #
+        # str = json.dumps(dict_to_save)
+        #
+        # f = open(filename, "w")
+        # f.write(str)
+        # f.close()
 
         QApplication.restoreOverrideCursor()
 
@@ -2737,7 +2744,7 @@ class TagLab(QWidget):
 
         self.infoWidget.setInfoMessage("Current project has been successfully saved.")
 
-        message = "[PROJECT] The project " + self.project_name + " has been saved."
+        message = "[PROJECT] The project " + self.project.filename + " has been saved."
         logfile.info(message)
 
 

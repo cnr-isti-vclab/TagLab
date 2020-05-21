@@ -20,7 +20,7 @@ def loadProject(filename):
     return project
 
 def loadOldProject(data):
-    project = Project(name = data["Project Name"])
+    project = Project(filename = data["Project Name"])
     map_filename = data["Map File"]
     image = Image()
     image.map_px_to_mm_factor = data["Map Scale"]
@@ -37,15 +37,11 @@ def loadOldProject(data):
 
 
 class Project(object):
-    def __init__(self, name = None, labels = [], images = [], correspondences = [],
+    def __init__(self, filename = None, labels = [], images = [], correspondences = [],
                  spatial_reference_system = None, metadata = {}, image_metadata_template = {}):
         self.filename = None        #filename with path of the project json
-        self.name = name            #label of the project (not the filename)
-
         self.labels = labels        #list of labels used in this project
-        self.images = []        #list of annotated images
-        for img in images:
-            self.images.appen(Image(**img))
+        self.images = list(map(lambda img: Image(**img), images))       #list of annotated images
         self.correspondences = correspondences   #list of correspondences betweeen labels in images
                                     #[ [source_img: , target_img:, [[23, 12, [grow, shrink, split, join] ... ] }
         self.spatial_reference_system = spatial_reference_system   #if None we assume coordinates in pixels (but Y is up or down?!)
@@ -53,4 +49,10 @@ class Project(object):
         self.image_metadata_template = image_metadata_template  # description of metadata keywords expected in images
                                            # name: { type: (integer, date, string), mandatory: (true|false), default: ... }
 
+    def save(self):
+        data = self.__dict__
+        data["images"] = list(map(lambda img: img.save(), self.images))
 
+        f = open(self.filename, "w")
+        f.write(json.dumps(data))
+        f.close()

@@ -8,5 +8,5 @@ class Channel(object):
     def load(self):
         pass
 
-    def unload(self):
-        pass
+    def save(self):
+        return { "filename": self.filename, "type": self.type }
