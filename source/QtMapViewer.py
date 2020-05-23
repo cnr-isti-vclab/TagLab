@@ -59,8 +59,7 @@ class QtMapViewer(QGraphicsView):
         self.scene = QGraphicsScene()
         self.setScene(self.scene)
 
-        # Store a local handle to the scene's current image pixmap.
-        self._pxmapitem = None
+
 
         # Image aspect ratio mode.
         self.aspectRatioMode = Qt.KeepAspectRatio
@@ -88,20 +87,55 @@ class QtMapViewer(QGraphicsView):
         self.setFixedHeight(self.THUMB_SIZE)
 
         self.pixmap = QPixmap(self.THUMB_SIZE, self.THUMB_SIZE)
-        self.imgwidth = 0
-        self.imgheight = 0
+        self.imgwidth = self.pixmap.width()
+        self.imgheight = self.pixmap.height()
 
-    def image(self):
-        """ Returns the scene's current image as a QImage.
-        """
-        if self.hasImage():
-            return self._pxmapitem.pixmap().toImage()
-        return None
+        # Store a local handle to the scene's current image pixmap.
+        self._pxmapitem = self.scene.addPixmap(self.pixmap)
 
-    def hasImage(self):
-        """ Returns whether or not the scene contains an image pixmap.
-        """
-        return self._pxmapitem is not None
+    # def image(self):
+    #     """ Returns the scene's current image as a QImage.
+    #     """
+    #     if self.hasImage():
+    #         return self._pxmapitem.pixmap().toImage()
+    #     return None
+
+    # def hasImage(self):
+    #     """ Returns whether or not the scene contains an image pixmap.
+    #     """
+    #     return self._pxmapitem is not None
+
+    def setPixmap(self, pixmap):
+        if pixmap is None:
+            qimg = QImage(self.THUMB_SIZE, self.THUMB_SIZE, QImage.Format_ARGB32)
+            qimg.fill(qRgba(40, 40, 40, 255))
+            self.pixmap = QPixmap.fromImage(qimg)
+        else:
+            self.pixmap = pixmap
+
+        self.imgwidth = self.pixmap.width()
+        self.imgheight = self.pixmap.height()
+        self._pxmapitem.setPixmap(self.pixmap)
+        self.setSceneRect(QRectF(self.pixmap.rect()))
+
+        if self.imgwidth > self.imgheight:
+
+            aspectratio = self.imgheight / self.imgwidth
+            h = (int)(aspectratio * self.width())
+            self.setFixedHeight(h)
+
+        # calculate zoom factor
+        pixels_of_border = 10
+        zf1 = (self.geometry().width() - pixels_of_border) / self.imgwidth
+        zf2 = (self.geometry().height() - pixels_of_border) / self.imgheight
+
+        zf = min(zf1, zf2)
+        if zf > 1.0:
+            zf = 1.0
+
+        self.zoom_factor = zf
+
+        self.updateViewer()
 
     def setImage(self, image):
         """ Set the scene's current image (input image must be a QImage)
@@ -153,11 +187,12 @@ class QtMapViewer(QGraphicsView):
     def setOpacity(self, opacity):
         self.opacity = opacity
 
-    def loadImageFromFile(self, fileName=""):
-        """ Load an image from file.
-        """
-        image = QImage(fileName)
-        self.setImage(image)
+    #UNUSED
+    # def loadImageFromFile(self, fileName=""):
+    #     """ Load an image from file.
+    #     """
+    #     image = QImage(fileName)
+    #     self.setImage(image)
 
     def drawOverlayImage(self, top, left, bottom, right):
 
@@ -184,9 +219,6 @@ class QtMapViewer(QGraphicsView):
     def updateViewer(self):
         """ Show current zoom (if showing entire image, apply current aspect ratio mode).
         """
-        if not self.hasImage():
-            return
-
         self.resetTransform()
         self.setTransformationAnchor(self.AnchorViewCenter)
         self.scale(self.zoom_factor, self.zoom_factor)

@@ -1,0 +1,63 @@
+open problems:
+who manages the undo:
+    if it's viewerplus, when we change image, we lose the undo.
+    it needs to draw and undraw
+    if it's global (not per image), how do we deal with ctrlz on a non visible image?
+
+who managas the selected blobs:
+    select is global, so it's the taglab.py to manage selection
+    we should both use the list AND a flag on the item.
+
+TagLab.py
+
+applyTransparency         ==> should be moved to viewerplus
+
+updateVisibility          => connected from labels_widget.visibilityChanged. used in undo and redo
+                           actually sets Visibilty, blob.qpath_gitem should never be None
+
+clampCoords                => ne esiste una copia in utils.js, usare quella
+
+updateViewInfo           => dovrebbe controllare se c'e' image (con width e height), non scrivere garbage
+
+updateMainView          => dovrebbe stare in viewerplus
+updateMapViewer         => the visible area should be returned by a function in viewerplus (in % also)
+
+resetAll                => usato in new project o load project viewerplus should take care of cleaning the blob graphcis
+
+assign, editBorder.. etc => parametrize; it's the same code allover.
+
+deleteSelectedBlobs     => undo commands should go to each image
+
+drawBlob                => move to viewerplus (used in load, undo and redo)
+undrawBlob              => same as above
+classBrushFromName      => move to class Project
+addPickPoint,           => to viewerplus
+resetPickPoints         => same
+drawRuler               => same
+
+Undo stuff:
+ addBlob
+ removeBlob
+ setBlobClass
+ saveUndo
+ undo                  => needs access to: selected_blobs, vieweplus scene, project and annotations
+ redo
+
+Edit points stuff:          => move to vierplus
+resetEditBorder
+resetTools
+toolsOpsLeftPressed
+toolsOpsLeftReleased
+toolsOpsRightPressed         => not doing anythin?
+toolsOpsMouseMove
+dragSelectBlobs
+
+
+
+setMapToLoad                => update to new classes
+setMapProperties            => same
+
+
+QtMapViewer.py
+
+drawOverlayImage        => Usare un QGraphicsRectItem, non la porcata della qimage semitrasparente!

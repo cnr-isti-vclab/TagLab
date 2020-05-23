@@ -1,7 +1,13 @@
+import os
 import json
+
+from PyQt5.QtCore import QDir
+from PyQt5.QtGui import QBrush, QColor
+
 from source.Image import Image
 from source.Channel import Channel
 from source.Blob import Blob
+
 
 def loadProject(filename):
     f = open(filename, "r")
@@ -22,9 +28,14 @@ def loadProject(filename):
 def loadOldProject(data):
     project = Project(filename = data["Project Name"])
     map_filename = data["Map File"]
+
+    #convert to relative paths in case:
+    dir = QDir(os.getcwd())
+    map_filename = dir.relativeFilePath(map_filename)
+
     image = Image()
     image.map_px_to_mm_factor = data["Map Scale"]
-    channel = Channel(filename=data["Map File"], type="rgb")
+    channel = Channel(filename=map_filename, type="rgb")
     image.channels.append(channel)
 
     for blobs in data["Segmentation Data"]:
@@ -56,3 +67,11 @@ class Project(object):
         f = open(self.filename, "w")
         f.write(json.dumps(data))
         f.close()
+
+    def classBrushFromName(self, blob):
+        brush = QBrush()
+
+        if not blob.class_name == "Empty":
+            color = self.labels[blob.class_name]
+            brush = QBrush(QColor(color[0], color[1], color[2], 200))
+        return brush

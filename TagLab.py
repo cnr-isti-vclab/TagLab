@@ -122,13 +122,13 @@ class TagLab(QWidget):
         self.maxRecentFiles = 4   #refactor to maxRecentProjects
         self.separatorRecentFilesAct = None    #refactor to separatorRecentFiles
 
-        # ANNOTATION DATA
-        self.undo_operations = []
-        self.undo_position = -1
-        """Temporary variable to hold the added and removed of the last operation."""
-        self.undo_operation = { 'remove':[], 'add':[], 'class':[], 'newclass':[] }
-        """Max number  of undo operations"""
-        self.max_undo = 100
+        # # ANNOTATION DATA
+        # self.undo_operations = []
+        # self.undo_position = -1
+        # """Temporary variable to hold the added and removed of the last operation."""
+        # self.undo_operation = { 'remove':[], 'add':[], 'class':[], 'newclass':[] }
+        # """Max number  of undo operations"""
+        # self.max_undo = 100
 
 
         ##### INTERFACE #####
@@ -201,6 +201,10 @@ class TagLab(QWidget):
         #        menu.addAction(refineActionAll)
         #            self.refineAllBorders()
 
+        self.viewerplus = QtImageViewerPlus()
+        self.viewerplus.logfile = logfile
+        self.viewerplus.viewUpdated.connect(self.updateViewInfo)
+
         ###### LAYOUT MAIN VIEW
 
         layout_viewer = QVBoxLayout()
@@ -215,7 +219,7 @@ class TagLab(QWidget):
         self.sliderTrasparency.setMaximum(100)
         self.sliderTrasparency.setValue(0)
         self.sliderTrasparency.setTickInterval(10)
-        self.sliderTrasparency.valueChanged.connect(self.sliderTrasparencyChanged)
+        self.sliderTrasparency.valueChanged[int].connect(self.sliderTrasparencyChanged)
 
         self.labelViewInfo = QLabel("100% | top:0 left:0 right:0 bottom:0         ")
 
@@ -224,8 +228,7 @@ class TagLab(QWidget):
         layout_slider.addWidget(self.sliderTrasparency)
         layout_slider.addWidget(self.labelViewInfo)
 
-        self.viewerplus = QtImageViewerPlus()
-        self.viewerplus.viewUpdated.connect(self.updateViewInfo)
+
 
         layout_viewer.setSpacing(1)
         layout_viewer.addLayout(layout_slider)
@@ -313,7 +316,7 @@ class TagLab(QWidget):
 
         # MAP VIEWER
         self.mapviewer = QtMapViewer(self.MAP_VIEWER_SIZE)
-        self.mapviewer.setImage(None)
+        self.mapviewer.setPixmap(None)
 
         layout_labels = QVBoxLayout()
         self.mapviewer.setStyleSheet("background-color: rgb(40,40,40); border:none")
@@ -382,19 +385,19 @@ class TagLab(QWidget):
 
         self.current_selection = None
 
-        # DRAWING SETTINGS
-        self.border_pen = QPen(Qt.black, 3)
-#        pen.setJoinStyle(Qt.MiterJoin)
-#        pen.setCapStyle(Qt.RoundCap)
-        self.border_pen.setCosmetic(True)
-        self.border_selected_pen = QPen(Qt.white, 3)
-        self.border_selected_pen.setCosmetic(True)
+#         # DRAWING SETTINGS
+#         self.border_pen = QPen(Qt.black, 3)
+# #        pen.setJoinStyle(Qt.MiterJoin)
+# #        pen.setCapStyle(Qt.RoundCap)
+#         self.border_pen.setCosmetic(True)
+#         self.border_selected_pen = QPen(Qt.white, 3)
+#         self.border_selected_pen.setCosmetic(True)
+#
+#         self.border_pen_for_appended_blobs = QPen(Qt.black, 3)
+#         self.border_pen_for_appended_blobs.setStyle(Qt.DotLine)
+#         self.border_pen_for_appended_blobs.setCosmetic(True)
 
-        self.border_pen_for_appended_blobs = QPen(Qt.black, 3)
-        self.border_pen_for_appended_blobs.setStyle(Qt.DotLine)
-        self.border_pen_for_appended_blobs.setCosmetic(True)
-
-        self.CROSS_LINE_WIDTH = 2
+        # self.CROSS_LINE_WIDTH = 2
 
         # DATA FOR THE SELECTION
         self.selected_blobs = []
@@ -405,22 +408,22 @@ class TagLab(QWidget):
         self.dragSelectionStyle.setCosmetic(True)
 
 
-        # DATA FOR THE EDITBORDER , CUT and FREEHAND TOOLS
-        self.edit_points = []
-        self.edit_qpath_gitem = None
-        self.last_editborder_points = []      #last editing operation stored here for local refinement
+        # # DATA FOR THE EDITBORDER , CUT and FREEHAND TOOLS
+        # self.edit_points = []
+        # self.edit_qpath_gitem = None
+        # self.last_editborder_points = []      #last editing operation stored here for local refinement
 
-        # DATA FOR THE CREATECRACK TOOL
-        self.crackWidget = None
+        # # DATA FOR THE CREATECRACK TOOL
+        # self.crackWidget = None
 
-        # DATA FOR THE RULER, DEEP EXTREME and SPLIT TOOLS
-        self.pick_points_number = 0
-        self.pick_points = []
-        self.pick_markers = []
-
-        self.split_pick_style   = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.cyan, 'size': 6}
-        self.ruler_pick_style   = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.cyan, 'size': 6}
-        self.extreme_pick_style = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.red,  'size': 6}
+        # # DATA FOR THE RULER, DEEP EXTREME and SPLIT TOOLS
+        # self.pick_points_number = 0
+        # self.pick_points = []
+        # self.pick_markers = []
+        #
+        # self.split_pick_style   = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.cyan, 'size': 6}
+        # self.ruler_pick_style   = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.cyan, 'size': 6}
+        # self.extreme_pick_style = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.red,  'size': 6}
 
         # NETWORKS
         self.deepextreme_net = None
@@ -762,8 +765,6 @@ class TagLab(QWidget):
             elif self.tool_used == "AUTOCLASS":
                 self.corals_classifier.stopProcessing()
 
-            self.tool_used = self.tool_orig
-
             message = "[TOOL][" + self.tool_used + "] Current operation has been canceled."
             logfile.info(message)
 
@@ -975,35 +976,19 @@ class TagLab(QWidget):
                 self.saveUndo()
                 self.resetPickPoints()
 
-            self.tool_used = self.tool_orig
-
-
     @pyqtSlot()
     def sliderTrasparencyChanged(self):
-
+        #TODO should be (self, value) as the signal is supposed to send a value!
+        value = self.sender().value()
         # update transparency value
-        newvalue = self.sliderTrasparency.value()
-        str1 = "Transparency {}%".format(newvalue)
+        str1 = "Transparency {}%".format(value)
         self.lblSlider.setText(str1)
-        self.transparency_value = self.sliderTrasparency.value() / 100.0
-
-        # update transparency of all the blobs
-        self.applyTransparency()
-
-    def applyTransparency(self):
-
-        # current annotations
-        for blob in self.annotations.seg_blobs:
-            blob.qpath_gitem.setOpacity(self.transparency_value)
-
-        # annnotations coming from previous years
-        for blob_list in self.annotations.prev_blobs:
-            for blob in blob_list:
-                blob.qpath_gitem.setOpacity(self.transparency_value)
+        self.viewerplus.applyTransparency(value)
 
     @pyqtSlot()
     def updateVisibility(self):
 
+        self.viewerplus.updateVisibility()
         for blob in self.annotations.seg_blobs:
 
             visibility = self.labels_widget.isClassVisible(blob.class_name)
@@ -1076,19 +1061,8 @@ class TagLab(QWidget):
 
     @pyqtSlot()
     def updateMapViewer(self):
-
-        topleft = self.viewerplus.mapToScene(QPoint(0, 0))
-        bottomright = self.viewerplus.mapToScene(self.viewerplus.viewport().rect().bottomRight())
-
-        W = float(self.img_map.width())
-        H = float(self.img_map.height())
-
-        top = float(topleft.y()) / H
-        left = float(topleft.x()) / W
-        bottom = float(bottomright.y()) / H
-        right = float(bottomright.x()) / W
-
-        self.mapviewer.drawOverlayImage(top, left, bottom, right)
+        view = self.viewerplus.viewportToScenePercent()
+        self.mapviewer.drawOverlayImage(view.top(), view.left(), view.bottom(), view.right())
 
     def resetAll(self):
 
@@ -1150,7 +1124,7 @@ class TagLab(QWidget):
         self.resetTools()
 
         self.btnMove.setChecked(True)
-        self.tool_used = self.tool_orig = "MOVE"
+        self.tool_used = "MOVE"
 
         self.viewerplus.enablePan()
         self.viewerplus.enableZoom()
@@ -1169,7 +1143,7 @@ class TagLab(QWidget):
         self.resetTools()
 
         self.btnCreateCrack.setChecked(True)
-        self.tool_used = self.tool_orig = "CREATECRACK"
+        self.tool_used = "CREATECRACK"
 
         self.viewerplus.disablePan()
         self.viewerplus.enableZoom()
@@ -1187,7 +1161,7 @@ class TagLab(QWidget):
         self.resetTools()
 
         self.btnSplitBlob.setChecked(True)
-        self.tool_used = self.tool_orig = "SPLITBLOB"
+        self.tool_used = "SPLITBLOB"
 
         self.viewerplus.disablePan()
         self.viewerplus.enableZoom()
@@ -1233,13 +1207,15 @@ class TagLab(QWidget):
         """
 
         self.resetToolbar()
-        self.resetTools()
+        #self.resetTools()
 
         self.btnAssign.setChecked(True)
-        self.tool_used = self.tool_orig = "ASSIGN"
+        self.viewerplus.setTool("ASSIGN")
 
-        self.viewerplus.disablePan()
-        self.viewerplus.enableZoom()
+        #self.tool_used = "ASSIGN"
+
+        #self.viewerplus.disablePan()
+        #self.viewerplus.enableZoom()
 
         self.infoWidget.setInfoMessage("Assign Tool is active")
         logfile.info("[TOOL][ASSIGN] Tool activated")
@@ -1252,16 +1228,17 @@ class TagLab(QWidget):
         """
 
         self.resetToolbar()
-        self.resetTools()
+#        self.resetTools()
 
-        if len(self.selected_blobs) > 1:
-            self.resetSelection()
+        #if len(self.selected_blobs) > 1:
+        #    self.resetSelection()
 
         self.btnEditBorder.setChecked(True)
-        self.tool_used = self.tool_orig = "EDITBORDER"
+        self.viewerplus.setTool("EDITBORDER")
+        #self.tool_used = "EDITBORDER"
 
-        self.viewerplus.disablePan()
-        self.viewerplus.enableZoom()
+        #self.viewerplus.disablePan()
+        #self.viewerplus.enableZoom()
 
         self.infoWidget.setInfoMessage("Edit Border Tool is active")
         logfile.info("[TOOL][EDITBORDER] Tool activated")
@@ -1272,18 +1249,19 @@ class TagLab(QWidget):
         CUT
         """
         self.resetToolbar()
-        self.resetTools()
+        #self.resetTools()
 
-        if len(self.selected_blobs) > 1:
-            self.resetSelection()
+        #if len(self.selected_blobs) > 1:
+        #    self.resetSelection()
 
         self.btnCut.setChecked(True)
-        self.tool_used = self.tool_orig = "CUT"
+        self.viewerplus.setTool("CUT")
+        #self.tool_used = "CUT"
 
-        self.edit_qpath_gitem = self.viewerplus.scene.addPath(QPainterPath(), self.border_pen)
+        #self.edit_qpath_gitem = self.viewerplus.scene.addPath(QPainterPath(), self.border_pen)
 
-        self.viewerplus.disablePan()
-        self.viewerplus.enableZoom()
+        #self.viewerplus.disablePan()
+        #self.viewerplus.enableZoom()
 
         logfile.info("[TOOL][CUT] Tool activated")
 
@@ -1294,16 +1272,19 @@ class TagLab(QWidget):
         """
 
         self.resetToolbar()
-        self.resetTools()
-        self.resetSelection()
+
+        #self.resetTools()
+        #self.resetSelection()
 
         self.btnFreehand.setChecked(True)
-        self.tool_used = self.tool_orig = "FREEHAND"
+        self.viewerplus.setTool("FREEHAND")
 
-        self.edit_qpath_gitem = self.viewerplus.scene.addPath(QPainterPath(), self.border_pen)
+        #self.tool_used = "FREEHAND"
 
-        self.viewerplus.disablePan()
-        self.viewerplus.enableZoom()
+#        self.edit_qpath_gitem = self.viewerplus.scene.addPath(QPainterPath(), self.border_pen)
+
+ #       self.viewerplus.disablePan()
+ #       self.viewerplus.enableZoom()
 
         self.infoWidget.setInfoMessage("Freehand Tool is active")
         logfile.info("[TOOL][FREEHAND] Tool activated")
@@ -1315,22 +1296,19 @@ class TagLab(QWidget):
         """
 
         self.resetToolbar()
-        self.resetTools()
+        #self.resetTools()
 
-        self.resetSelection()
+        #self.resetSelection()
 
         self.btnRuler.setChecked(True)
-        self.tool_used = self.tool_orig = "RULER"
+        self.viewerplus.setTool("RULER")
+        #self.tool_used = "RULER"
 
-        self.viewerplus.disablePan()
-        self.viewerplus.enableZoom()
+        #self.viewerplus.disablePan()
+        #self.viewerplus.enableZoom()
 
         self.infoWidget.setInfoMessage("Ruler Tool is active")
         logfile.info("[TOOL][RULER] Tool activated")
-
-    @pyqtSlot()
-    def hole(self):
-        pass
 
     @pyqtSlot()
     def deepExtreme(self):
@@ -1340,8 +1318,8 @@ class TagLab(QWidget):
         """
 
         self.resetToolbar()
-        self.resetTools()
-        self.resetSelection()
+        #self.resetTools()
+        #self.resetSelection()
 
         if self.deepextreme_net is None:
             self.resetNetworks()
@@ -1349,46 +1327,47 @@ class TagLab(QWidget):
             self.loadingDeepExtremeNetwork()
 
         self.btnDeepExtreme.setChecked(True)
-        self.tool_used = self.tool_orig = "DEEPEXTREME"
+        self.viewerplus.setTool("DEEPEXTREME")
+       # self.tool_used = "DEEPEXTREME"
 
-        self.viewerplus.showCrossair = True
+        #self.viewerplus.showCrossair = True
 
-        self.viewerplus.disablePan()
-        self.viewerplus.enableZoom()
+        #self.viewerplus.disablePan()
+        #self.viewerplus.enableZoom()
 
         self.infoWidget.setInfoMessage("4-click tool is active")
         logfile.info("[TOOL][DEEPEXTREME] Tool activated")
 
 
-    def addToSelectedList(self, blob):
-        """
-        Add the given blob to the list of selected blob.
-        """
-
-        if blob in self.selected_blobs:
-            logfile.info("[SELECTION] An already selected blob has been added to the current selection.")
-        else:
-            self.selected_blobs.append(blob)
-            str = "[SELECTION] A new blob (" + blob.blob_name + ";" + blob.class_name + ") has been selected."
-            logfile.info(str)
-
-        if not blob.qpath_gitem is None:
-            blob.qpath_gitem.setPen(self.border_selected_pen)
-        else:
-            print("blob qpath_qitem is None!")
-        self.viewerplus.scene.invalidate()
-
-
-    def removeFromSelectedList(self, blob):
-        try:
-            #safer if iterting over selected_blobs and calling this function.
-            self.selected_blobs = [x for x in self.selected_blobs if not x == blob]
-            if not blob.qpath_gitem is None:
-                blob.qpath_gitem.setPen(self.border_pen)
-            self.viewerplus.scene.invalidate()
-        except Exception as e:
-            print("Exception: e", e)
-            pass
+    # def addToSelectedList(self, blob):
+    #     """
+    #     Add the given blob to the list of selected blob.
+    #     """
+    #
+    #     if blob in self.selected_blobs:
+    #         logfile.info("[SELECTION] An already selected blob has been added to the current selection.")
+    #     else:
+    #         self.selected_blobs.append(blob)
+    #         str = "[SELECTION] A new blob (" + blob.blob_name + ";" + blob.class_name + ") has been selected."
+    #         logfile.info(str)
+    #
+    #     if not blob.qpath_gitem is None:
+    #         blob.qpath_gitem.setPen(self.border_selected_pen)
+    #     else:
+    #         print("blob qpath_qitem is None!")
+    #     self.viewerplus.scene.invalidate()
+    #
+    #
+    # def removeFromSelectedList(self, blob):
+    #     try:
+    #         #safer if iterting over selected_blobs and calling this function.
+    #         self.selected_blobs = [x for x in self.selected_blobs if not x == blob]
+    #         if not blob.qpath_gitem is None:
+    #             blob.qpath_gitem.setPen(self.border_pen)
+    #         self.viewerplus.scene.invalidate()
+    #     except Exception as e:
+    #         print("Exception: e", e)
+    #         pass
 
 
     @pyqtSlot()
@@ -1423,49 +1402,6 @@ class TagLab(QWidget):
         self.saveUndo()
 
         logfile.info("[OP-DELETE] Selected blobs has been DELETED")
-
-    def isSelected(self, target_blob):
-        """
-        Check if a blob belongs to the selected blobs.
-        """
-
-        blobs_to_check = set()
-        for blob in self.selected_blobs:
-            if blob.group:
-                for blobg in blob.group.blobs:
-                    blobs_to_check.add(blobg)
-            else:
-                blobs_to_check.add(blob)
-
-        for blob in blobs_to_check:
-            if blob == target_blob:
-                return True
-
-        return False
-
-
-
-    def drawGroup(self, group):
-        raise Exception('SHOULD NEVER BE CALLED!')
-        """
-        Draw all the blobs of the group with a darkGray border.
-        """
-        for blob in group.blobs:
-            self.drawBlob(blob, selected=False, group_mode=True)
-
-    def drawSelectedBlobs(self):
-        raise Exception('SHOLD NEVER BE CALLED!')
-        """
-        Draw all the selected blobs with a white border.
-        If a selected blob belongs to a group, the group is highlight using darkGray.
-        """
-
-        for blob in self.selected_blobs:
-            if blob.group is not None:
-                self.drawGroup(blob.group)
-
-        for blob in self.selected_blobs:
-            self.drawBlob(blob, selected=True)
 
     def drawBlob(self, blob, prev=False):
         """
@@ -1825,6 +1761,7 @@ class TagLab(QWidget):
         logfile.info("[OP-FILL] FILL operation ends.")
 
     def addBlob(self, blob, selected = False):
+        self.viewerplus.addBlob(blob, selected)
         """
         The only function to add annotations. will take care of undo and QGraphicItems.
         """
@@ -1970,14 +1907,7 @@ class TagLab(QWidget):
                 self.annotations.removeGroup(blob_s.group)
 
     def resetSelection(self):
-        for blob in self.selected_blobs:
-            if blob.qpath_gitem is None:
-                print("Selected item with no path!")
-            else:
-                blob.qpath_gitem.setPen(self.border_pen)
-
-        self.selected_blobs.clear()
-        self.viewerplus.scene.invalidate(self.viewerplus.scene.sceneRect())
+        self.viewerplus.resetSelection()
 
     def resetEditBorder(self):
         if self.edit_qpath_gitem is not None:
@@ -1998,13 +1928,14 @@ class TagLab(QWidget):
 
 
     def resetTools(self):
+        self.viewerplus.resetTools()
 
-        self.resetEditBorder()
-        self.resetCrackTool()
-        self.resetPickPoints()
-
-        self.viewerplus.showCrossair = False
-        self.viewerplus.scene.invalidate(self.viewerplus.scene.sceneRect())
+        # #self.resetEditBorder()
+        # self.resetCrackTool()
+        # self.resetPickPoints()
+        #
+        # self.viewerplus.showCrossair = False
+        # self.viewerplus.scene.invalidate(self.viewerplus.scene.sceneRect())
 
 
     @pyqtSlot(float, float)
@@ -2323,68 +2254,31 @@ class TagLab(QWidget):
         self.annotations = image.annotations
         self.channel = image.channels[0]
 
-        # retrieve image size
-        image_reader = QImageReader(self.channel.filename)
-        sizeOfImage = image_reader.size()
-        image.height = height = sizeOfImage.height()
-        image.width = width = sizeOfImage.width()
+        try:
+            QApplication.setOverrideCursor(Qt.WaitCursor)
+            self.infoWidget.setInfoMessage("Map is loading..")
+            self.viewerplus.setProject(self.project)
+            self.viewerplus.setImage(self.image)
+            self.viewerplus.setChannel(self.channel)
 
-        if width > 32767 or height > 32767:
+            self.img_thumb_map = self.viewerplus.pixmap.scaled(self.MAP_VIEWER_SIZE, self.MAP_VIEWER_SIZE, Qt.KeepAspectRatio,
+                                                 Qt.SmoothTransformation)
+            self.mapviewer.setPixmap(self.img_thumb_map)
+            self.mapviewer.setOpacity(0.5)
 
-            self.infoWidget.setInfoMessage("Map is too big (!)")
+            # TODO: why don;t we do it when creating viewerplus and mapviewer?
+            self.viewerplus.viewUpdated.connect(self.updateMapViewer)
 
+            self.infoWidget.setInfoMessage("The map has been successfully loading.")
+
+        except Exception as e:
             msgBox = QMessageBox()
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
-            msgBox.setText("This map exceeds the image dimension handled by TagLab (the maximum size is 32767 x 32767).")
+            msgBox.setText(str(e))
             msgBox.exec()
-            return
-
-
-
-
-        QApplication.setOverrideCursor(Qt.WaitCursor)
-
-        # load map and set it
-        self.infoWidget.setInfoMessage("Map is loading..")
-
-        self.img_map = QImage(self.channel.filename)
-        if self.img_map.isNull():
-            msgBox = QMessageBox()
-            msgBox.setText("Could not load or find the image: " + self.map_image_filename)
-            msgBox.exec()
-            return
-
-        if self.map_3D_filename:
-            with rio.open(self.map_3D_filename) as map3D:
-                if map3D.width != width or map3D.height != height:
-                    self.infoWidget.setInfoMessage("3D Map and Map have different dimensions")
-
-                    msgBox = QMessageBox()
-                    msgBox.setWindowTitle(self.TAGLAB_VERSION)
-                    msgBox.setText(
-                        "The 3D map and the color image have different dimensions...")
-                    msgBox.exec()
-                    return
-
-                self.depth_map = map3D.read(1).astype(np.float32)
-                #TODO check resolution with src.res and compare to what specified!
-                #we can also read the bounds from src.bounds
-                #and units from src.units[0]
-        else:
-            self.depth_map = None
-
-        self.img_thumb_map = self.img_map.scaled(self.MAP_VIEWER_SIZE, self.MAP_VIEWER_SIZE, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        self.viewerplus.setImage(self.img_map)
-        self.mapviewer.setImage(self.img_thumb_map)
-        self.viewerplus.viewUpdated.connect(self.updateMapViewer)
-        self.mapviewer.setOpacity(0.5)
-
-        for blob in self.annotations.seg_blobs:
-            self.drawBlob(blob)
 
         QApplication.restoreOverrideCursor()
 
-        self.infoWidget.setInfoMessage("The map has been successfully loading.")
 
     @pyqtSlot()
     def openProject(self):
@@ -2603,6 +2497,7 @@ class TagLab(QWidget):
             msgBox = QMessageBox()
             msgBox.setText("The json project contains an error:\n {0}\n\nPlease contact us.".format(str(e)))
             msgBox.exec()
+            print(self.project)
             return
 
         QApplication.restoreOverrideCursor()

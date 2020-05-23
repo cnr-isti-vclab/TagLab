@@ -22,10 +22,13 @@
 """
 
 import os.path
-from PyQt5.QtCore import Qt, QPointF, QRectF, pyqtSignal, QT_VERSION_STR
-from PyQt5.QtGui import QImage, QPixmap, QPainter, QPainterPath, QPen
-from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QFileDialog
+from PyQt5.QtCore import Qt,  QRect, QPoint, QPointF, QRectF, pyqtSignal, QT_VERSION_STR
+from PyQt5.QtGui import QImage, QPixmap, QPainter, QPainterPath, QPen, QImageReader
+from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
 
+from source.Project import Project
+from source.Image import Image
+from source.Annotation import Annotation
 
 class QtImageViewerPlus(QGraphicsView):
     """
@@ -61,6 +64,54 @@ class QtImageViewerPlus(QGraphicsView):
         # current image size
         self.imgwidth = 0
         self.imgheight = 0
+
+        self.project = Project()
+        self.image = Image()
+        self.annotations = Annotation()
+        self.selected_blobs = []
+
+        # DRAWING SETTINGS
+        self.border_pen = QPen(Qt.black, 3)
+        #        pen.setJoinStyle(Qt.MiterJoin)
+        #        pen.setCapStyle(Qt.RoundCap)
+        self.border_pen.setCosmetic(True)
+        self.border_selected_pen = QPen(Qt.white, 3)
+        self.border_selected_pen.setCosmetic(True)
+
+        self.border_pen_for_appended_blobs = QPen(Qt.black, 3)
+        self.border_pen_for_appended_blobs.setStyle(Qt.DotLine)
+        self.border_pen_for_appended_blobs.setCosmetic(True)
+
+
+        # DATA FOR THE EDITBORDER , CUT and FREEHAND TOOLS
+        self.edit_points = []
+        self.edit_qpath_gitem = self.scene.addPath(QPainterPath(), self.border_pen)
+        self.last_editborder_points = []      #last editing operation stored here for local refinement
+
+        # DATA FOR THE RULER, DEEP EXTREME and SPLIT TOOLS
+        self.pick_points_number = 0
+        self.pick_points = []
+        self.pick_markers = []
+
+        self.CROSS_LINE_WIDTH = 2
+        self.split_pick_style   = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.cyan, 'size': 6}
+        self.ruler_pick_style   = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.cyan, 'size': 6}
+        self.extreme_pick_style = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.red,  'size': 6}
+
+
+        # DATA FOR THE CREATECRACK TOOL
+        self.crackWidget = None
+
+        self.tool = None
+
+        # UNDO DATA
+        self.undo_operations = []
+        self.undo_position = -1
+        """Temporary variable to hold the added and removed of the last operation."""
+        self.undo_operation = { 'remove':[], 'add':[], 'class':[], 'newclass':[] }
+        """Max number  of undo operations"""
+        self.max_undo = 100
+
 
         # Image aspect ratio mode.
         self.aspectRatioMode = Qt.KeepAspectRatio
@@ -105,6 +156,68 @@ class QtImageViewerPlus(QGraphicsView):
         self.setContextMenuPolicy(Qt.CustomContextMenu)
 
 
+    def setProject(self, project):
+        self.project = project
+
+    def setImage(self, image):
+        self.image = image
+        self.annotations = image.annotations
+        self.selected_blobs = []
+
+        for blob in self.annotations.seg_blobs:
+            self.drawBlob(blob)
+
+    def setChannel(self, channel):
+        self.channel = channel
+
+        # retrieve image size
+        image_reader = QImageReader(channel.filename)
+        size = image_reader.size()
+        if self.image.width is None:
+            self.image.width = size.width()
+            self.image.height = size.height()
+
+        if size.width() != self.image.width or size.height() != self.image.height:
+            raise Exception("Size of the image changed! Should have been: " + str(self.image.width) + "x" + str(self.image.height))
+
+        if size.width() > 32767 or size.height() > 32767:
+            raise Exception(
+                "This map exceeds the image dimension handled by TagLab (the maximum size is 32767 x 32767).")
+
+        img = QImage(channel.filename)
+        if img.isNull():
+            raise Exception("Could not load or find the image: " + channel.filename)
+        self.setChannelImg(img)
+
+    def drawBlob(self, blob, prev=False):
+
+        # if it has just been created remove the current graphics item in order to set it again
+        if blob.qpath_gitem is not None:
+            self.viewerplus.scene.removeItem(blob.qpath_gitem)
+            del blob.qpath_gitem
+            blob.qpath_gitem = None
+
+        blob.setupForDrawing()
+
+        if prev is True:
+            pen = self.border_pen_for_appended_blobs
+        else:
+            pen = self.border_selected_pen if blob in self.selected_blobs else self.border_pen
+
+        brush = self.project.classBrushFromName(blob)
+
+        blob.qpath_gitem = self.scene.addPath(blob.qpath, pen, brush)
+        blob.qpath_gitem.setOpacity(self.transparency_value)
+
+
+
+    def applyTransparency(self, value):
+        self.transparency_value = value / 100.0
+        # current annotations
+        for blob in self.annotations.seg_blobs:
+            blob.qpath_gitem.setOpacity(self.transparency_value)
+
+
     def disableScrollBars(self):
 
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -134,16 +247,16 @@ class QtImageViewerPlus(QGraphicsView):
     def disableZoom(self):
         self.zoomEnabled = False
 
-    def setImage(self, image, zoomf=0.0):
+    def setChannelImg(self, channel_img, zoomf=0.0):
         """
         Set the scene's current image (input image must be a QImage)
         For calculating the zoom factor automatically set it to 0.0.
         """
-        if type(image) is QImage:
-            imageARGB32 = image.convertToFormat(QImage.Format_ARGB32)
+        if type(channel_img) is QImage:
+            imageARGB32 = channel_img.convertToFormat(QImage.Format_ARGB32)
             self.pixmap = QPixmap.fromImage(imageARGB32)
-            self.imgwidth = image.width()
-            self.imgheight = image.height()
+            self.imgwidth = channel_img.width()
+            self.imgheight = channel_img.height()
         else:
             raise RuntimeError("Argument must be a QImage.")
 
@@ -165,32 +278,24 @@ class QtImageViewerPlus(QGraphicsView):
 
         self.updateViewer()
 
-    def updateImage(self, image):
+    def viewportToScene(self):
+        #check
+        topleft = self.mapToScene(self.viewport().rect().topLeft())
+        bottomright = self.mapToScene(self.viewport().rect().bottomRight())
+        return QRectF(topleft, bottomright)
 
-        if type(image) is QImage:
-            imageARGB32 = image.convertToFormat(QImage.Format_ARGB32)
-            self.pixmap = QPixmap.fromImage(imageARGB32)
-            self.imgwidth = image.width()
-            self.imgheight = image.height()
-        else:
-            raise RuntimeError("Argument must be a QImage.")
+    def viewportToScenePercent(self):
+        view = self.viewportToScene()
+        view.setCoords(view.left()/self.imgwidth, view.top()/self.imgheight,
+                    view.right()/self.imgwidth, view.bottom()/self.imgheight)
+        return view
 
-        self._pxmapitem.setPixmap(self.pixmap)
 
-        # if an overlay exists it must be drawn
-        if self.overlay_image.width() > 1:
-            self.drawOverlayImage()
 
-        self.updateViewer()
 
+    #UNUSED
     def setOpacity(self, opacity):
         self.opacity = opacity
-
-    def loadImageFromFile(self, fileName=""):
-        """ Load an image from file.
-        """
-        image = QImage(fileName)
-        self.setImage(image)
 
     def setOverlayImage(self, image):
         self.overlay_image = image.convertToFormat(QImage.Format_ARGB32)
@@ -256,6 +361,46 @@ class QtImageViewerPlus(QGraphicsView):
         """ Maintain current zoom on resize.
         """
         self.updateViewer()
+
+#TOOLS and SELECTIONS
+
+    def setTool(self, tool):
+        self.resetTools()
+        if tool in ["FREEHAND", "RULER", "DEEPEXTREME"] or (tool in ["CUT", "EDITBORDER"] and len(self.selected_blobs) > 1):
+            self.resetSelection()
+        self.tool = tool
+        self.disablePan()
+        self.enableZoom()
+
+    def resetSelection(self):
+        for blob in self.selected_blobs:
+            if blob.qpath_gitem is None:
+                print("Selected item with no path!")
+            else:
+                blob.qpath_gitem.setPen(self.border_pen)
+        self.selected_blobs.clear()
+        self.scene.invalidate(self.scene.sceneRect())
+
+    def resetTools(self):
+        self.edit_qpath_gitem.setPath(QPainterPath())
+        self.edit_points = []
+
+        self.showCrossair = False
+        self.scene.invalidate(self.scene.sceneRect())
+
+        if self.crackWidget is not None:
+            self.crackWidget.close()
+        self.crackWidget = None
+        self.setDragMode(QGraphicsView.NoDrag)
+
+    def resetPickPoints(self):
+        self.pick_points_number = 0
+        self.pick_points.clear()
+        for marker in self.pick_markers:
+            self.scene.removeItem(marker)
+        self.pick_markers.clear()
+
+
 
     def mousePressEvent(self, event):
         """ Start mouse pan or zoom mode.
@@ -344,4 +489,150 @@ class QtImageViewerPlus(QGraphicsView):
         # PAY ATTENTION; THE WHEEL INTERACT ALSO WITH THE SCROLL BAR (!!)
         #QGraphicsView.wheelEvent(self, event)
 
+
+#UNFDO AND OTHER THINGS
+    def updateVisibility(self):
+        for blob in self.annotations.seg_blobs:
+
+            visibility = self.labels_widget.isClassVisible(blob.class_name)
+            if blob.qpath_gitem is not None:
+                blob.qpath_gitem.setVisible(visibility)
+
+    def addToSelectedList(self, blob):
+        """
+        Add the given blob to the list of selected blob.
+        """
+
+        if blob in self.selected_blobs:
+            self.logfile.info("[SELECTION] An already selected blob has been added to the current selection.")
+        else:
+            self.selected_blobs.append(blob)
+            str = "[SELECTION] A new blob (" + blob.blob_name + ";" + blob.class_name + ") has been selected."
+            self.logfile.info(str)
+
+        if not blob.qpath_gitem is None:
+            blob.qpath_gitem.setPen(self.border_selected_pen)
+        else:
+            print("blob qpath_qitem is None!")
+        self.scene.invalidate()
+
+    def removeFromSelectedList(self, blob):
+        try:
+            # safer if iterating over selected_blobs and calling this function.
+            self.selected_blobs = [x for x in self.selected_blobs if not x == blob]
+            if not blob.qpath_gitem is None:
+                blob.qpath_gitem.setPen(self.border_pen)
+            self.scene.invalidate()
+        except Exception as e:
+            print("Exception: e", e)
+            pass
+
+    def addBlob(self, blob, selected = False):
+        """
+        The only function to add annotations. will take care of undo and QGraphicItems.
+        """
+        self.undo_operation['remove'].append(blob)
+        self.annotations.addBlob(blob)
+        self.drawBlob(blob)
+        if selected:
+            self.addToSelectedList(blob)
+
+    def removeBlob(self, blob):
+        """
+        The only function to remove annotations.
+        """
+        self.removeFromSelectedList(blob)
+        self.undrawBlob(blob)
+        self.undo_operation['add'].append(blob)
+        self.annotations.removeBlob(blob)
+
+    def setBlobClass(self, blob, class_name):
+        if blob.class_name == class_name:
+            return
+
+        self.undo_operation['class'].append((blob, blob.class_name))
+        self.undo_operation['newclass'].append((blob,class_name))
+        blob.class_name = class_name
+
+        if class_name == "Empty":
+            blob.class_color = [255, 255, 255]
+        else:
+            blob.class_color = self.labels[blob.class_name]
+
+        brush = self.classBrushFromName(blob)
+        blob.qpath_gitem.setBrush(brush)
+
+        self.scene.invalidate()
+
+    def saveUndo(self):
+        #clip future redo, invalidated by a new change
+        self.undo_operations = self.undo_operations[:self.undo_position+1]
+        """
+        Will mark an undo step using the previously added and removed blobs.
+        """
+        if len(self.undo_operation['add']) == 0 and len(self.undo_operation['remove']) == 0 and len(self.undo_operation['class']) == 0:
+            return
+
+        self.undo_operations.append(self.undo_operation)
+        self.undo_operation = { 'remove':[], 'add':[], 'class':[], 'newclass':[] }
+        if len(self.undo_operations) > self.max_undo:
+            self.undo_operations.pop(0)
+        self.undo_position = len(self.undo_operations) -1;
+
+    def undo(self):
+        if len(self.undo_operations) is 0:
+            return
+        if self.undo_position < 0:
+            return;
+
+        #operation = self.undo_operations.pop(-1)
+        operation = self.undo_operations[self.undo_position]
+        self.undo_position -= 1
+
+        for blob in operation['remove']:
+            message = "[UNDO][REMOVE] BLOBID={:d} VERSION={:d}".format(blob.id, blob.version)
+            self.logfile.info(message)
+            self.removeFromSelectedList(blob)
+            self.undrawBlob(blob)
+            self.annotations.removeBlob(blob)
+
+        for blob in operation['add']:
+            message = "[UNDO][ADD] BLOBID={:d} VERSION={:d}".format(blob.id, blob.version)
+            self.logfile.info(message)
+            self.annotations.addBlob(blob)
+            self.selected_blobs.append(blob)
+            self.drawBlob(blob)
+
+        for (blob, class_name) in operation['class']:
+            blob.class_name = class_name
+            brush = self.classBrushFromName(blob)
+            blob.qpath_gitem.setBrush(brush)
+
+        self.updateVisibility()
+
+    def redo(self):
+        if self.undo_position >= len(self.undo_operations) -1:
+            return;
+        self.undo_position += 1
+        operation = self.undo_operations[self.undo_position]
+        for blob in operation['add']:
+            message = "[REDO][ADD] BLOBID={:d} VERSION={:d}".format(blob.id, blob.version)
+            logfile.info(message)
+            self.removeFromSelectedList(blob)
+            self.undrawBlob(blob)
+            self.annotations.removeBlob(blob)
+
+        for blob in operation['remove']:
+            message = "[REDO][REMOVE] BLOBID={:d} VERSION={:d}".format(blob.id, blob.version)
+            logfile.info(message)
+            self.annotations.addBlob(blob)
+            self.selected_blobs.append(blob)
+            self.drawBlob(blob)
+
+        for (blob, class_name) in operation['newclass']:
+            blob.class_name = class_name
+            brush = self.classBrushFromName(blob)
+            blob.qpath_gitem.setBrush(brush)
+
+        self.updateVisibility()
 

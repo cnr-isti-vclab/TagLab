@@ -92,7 +92,7 @@ class QtCrackWidget(QWidget):
         layoutV.setSpacing(10)
         self.setLayout(layoutV)
 
-        self.viewerplus.setImage(self.qimg_cropped)
+        self.viewerplus.setChannelImg(self.qimg_cropped)
         self.preview()
 
         self.setAutoFillBackground(True)
