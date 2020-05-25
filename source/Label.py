@@ -4,10 +4,10 @@
 # fill, and border are colors [r,g,b]
 
 class Label(object):
-    def __init__(self):
-        self.id = None                         #unique, can't change ever. eg. 'porcillopora'
-        self.name = None                       #human friendly label for a label eg. Porcillopora Putrescenses
-        self.description = ""
-        self.fill = None
-        self.border = None
+    def __init__(self, id, name, description = None, fill = [255, 255, 255], border = [200, 200, 200]):
+        self.id = id                         #unique, can't change ever. eg. 'porcillopora'
+        self.name = name                       #human friendly label for a label eg. Porcillopora Putrescenses
+        self.description = None
+        self.fill = fill
+        self.border = border
 

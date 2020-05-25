@@ -22,9 +22,9 @@
 """
 
 import os.path
-from PyQt5.QtCore import Qt,  QRect, QPoint, QPointF, QRectF, pyqtSignal, QT_VERSION_STR
+from PyQt5.QtCore import Qt,  QRect, QPoint, QPointF, QRectF, QFileInfo, QDir, pyqtSignal, QT_VERSION_STR
 from PyQt5.QtGui import QImage, QPixmap, QPainter, QPainterPath, QPen, QImageReader
-from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
+from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QFileDialog, QGraphicsPixmapItem
 
 from source.Project import Project
 from source.Image import Image
@@ -59,7 +59,9 @@ class QtImageViewerPlus(QGraphicsView):
         self.setScene(self.scene)
 
         # Store a local handle to the scene's current image pixmap.
-        self._pxmapitem = None
+        self.pixmapitem = QGraphicsPixmapItem()
+        self.pixmapitem.setZValue(0)
+        self.scene.addItem(self.pixmapitem)
 
         # current image size
         self.imgwidth = 0
@@ -167,6 +169,8 @@ class QtImageViewerPlus(QGraphicsView):
         for blob in self.annotations.seg_blobs:
             self.drawBlob(blob)
 
+        self.scene.invalidate()
+
     def setChannel(self, channel):
         self.channel = channel
 
@@ -186,7 +190,14 @@ class QtImageViewerPlus(QGraphicsView):
 
         img = QImage(channel.filename)
         if img.isNull():
-            raise Exception("Could not load or find the image: " + channel.filename)
+            (channel.filename, filter) = QFileDialog.getOpenFileName(self, "Couldn't find the map, please select it:",
+                                                                       QFileInfo(channel.filename).dir().path(),
+                                                                       "Image Files (*.png *.jpg)")
+            dir = QDir(os.getcwd())
+            self.map_image_filename = dir.relativeFilePath(channel.filename)
+            img = QImage(channel.filename)
+            if img.isNull():
+                raise Exception("Could not load or find the image: " + channel.filename)
         self.setChannelImg(img)
 
     def drawBlob(self, blob, prev=False):
@@ -203,11 +214,11 @@ class QtImageViewerPlus(QGraphicsView):
             pen = self.border_pen_for_appended_blobs
         else:
             pen = self.border_selected_pen if blob in self.selected_blobs else self.border_pen
-
         brush = self.project.classBrushFromName(blob)
 
         blob.qpath_gitem = self.scene.addPath(blob.qpath, pen, brush)
-        blob.qpath_gitem.setOpacity(self.transparency_value)
+        blob.qpath_gitem.setZValue(1)
+        #blob.qpath_gitem.setOpacity(self.transparency_value)
 
 
 
@@ -222,18 +233,6 @@ class QtImageViewerPlus(QGraphicsView):
 
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-
-    def hasImage(self):
-        """ Returns whether or not the scene contains an image pixmap.
-        """
-        return self._pxmapitem is not None
-
-    def image(self):
-        """ Returns the scene's current image as a QImage.
-        """
-        if self.hasImage():
-            return self._pxmapitem.pixmap().toImage()
-        return None
 
     def enablePan(self):
         self.panEnabled = True
@@ -260,10 +259,7 @@ class QtImageViewerPlus(QGraphicsView):
         else:
             raise RuntimeError("Argument must be a QImage.")
 
-        if self.hasImage():
-            self._pxmapitem.setPixmap(self.pixmap)
-        else:
-            self._pxmapitem = self.scene.addPixmap(self.pixmap)
+        self.pixmapitem.setPixmap(self.pixmap)
 
         # Set scene size to image size (!)
         self.setSceneRect(QRectF(self.pixmap.rect()))
@@ -311,7 +307,7 @@ class QtImageViewerPlus(QGraphicsView):
             p.drawImage(0, 0, self.overlay_image)
             p.end()
 
-            self._pxmapitem.setPixmap(pxmap)
+            self.pixmapitem.setPixmap(pxmap)
 
     #used for crossair cursor
     def drawForeground(self, painter, rect):
@@ -324,8 +320,6 @@ class QtImageViewerPlus(QGraphicsView):
     def updateViewer(self):
         """ Show current zoom (if showing entire image, apply current aspect ratio mode).
         """
-        if not self.hasImage():
-            return
 
         self.resetTransform()
         self.scale(self.zoom_factor, self.zoom_factor)

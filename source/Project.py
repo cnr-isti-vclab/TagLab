@@ -7,6 +7,7 @@ from PyQt5.QtGui import QBrush, QColor
 from source.Image import Image
 from source.Channel import Channel
 from source.Blob import Blob
+from source.Label import Label
 
 
 def loadProject(filename):
@@ -38,9 +39,9 @@ def loadOldProject(data):
     channel = Channel(filename=map_filename, type="rgb")
     image.channels.append(channel)
 
-    for blobs in data["Segmentation Data"]:
+    for blob_data in data["Segmentation Data"]:
         blob = Blob(None, 0, 0, 0)
-        blob.fromDict(blobs)
+        blob.fromDict(blob_data)
         image.annotations.addBlob(blob)
 
     project.images.append(image)
@@ -48,7 +49,7 @@ def loadOldProject(data):
 
 
 class Project(object):
-    def __init__(self, filename = None, labels = [], images = [], correspondences = [],
+    def __init__(self, filename = None, labels = {}, images = [], correspondences = [],
                  spatial_reference_system = None, metadata = {}, image_metadata_template = {}):
         self.filename = None        #filename with path of the project json
         self.labels = labels        #list of labels used in this project
@@ -70,8 +71,13 @@ class Project(object):
 
     def classBrushFromName(self, blob):
         brush = QBrush()
+        if blob.class_name == "Empty":
+            return brush
 
-        if not blob.class_name == "Empty":
-            color = self.labels[blob.class_name]
-            brush = QBrush(QColor(color[0], color[1], color[2], 200))
+        if not blob.class_name in self.labels:
+            print("Missing label for " + blob.class_name + ". Creating one.")
+            self.labels[blob.class_name] = Label(blob.class_name, blob.class_name, fill = [255, 0, 0])
+
+        color = self.labels[blob.class_name].fill
+        brush = QBrush(QColor(color[0], color[1], color[2], 200))
         return brush

@@ -2259,6 +2259,7 @@ class TagLab(QWidget):
             self.infoWidget.setInfoMessage("Map is loading..")
             self.viewerplus.setProject(self.project)
             self.viewerplus.setImage(self.image)
+
             self.viewerplus.setChannel(self.channel)
 
             self.img_thumb_map = self.viewerplus.pixmap.scaled(self.MAP_VIEWER_SIZE, self.MAP_VIEWER_SIZE, Qt.KeepAspectRatio,
@@ -2274,7 +2275,7 @@ class TagLab(QWidget):
         except Exception as e:
             msgBox = QMessageBox()
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
-            msgBox.setText(str(e))
+            msgBox.setText("Error loading map:" + str(e))
             msgBox.exec()
 
         QApplication.restoreOverrideCursor()
