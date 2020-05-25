@@ -129,6 +129,7 @@ class Annotation(object):
             data.append(blob.toDict())
         return data
 
+    #move to BLOB!
     def blobsFromMask(self, seg_mask, map_pos_x, map_pos_y, area_mask):
         # create the blobs from the segmentation mask
 

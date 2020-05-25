@@ -61,11 +61,13 @@ class Project(object):
         self.image_metadata_template = image_metadata_template  # description of metadata keywords expected in images
                                            # name: { type: (integer, date, string), mandatory: (true|false), default: ... }
 
-    def save(self):
+    def save(self, filename = None):
         data = self.__dict__
         data["images"] = list(map(lambda img: img.save(), self.images))
 
-        f = open(self.filename, "w")
+        if filename is not None:
+            filename = self.filename
+        f = open(filename, "w")
         f.write(json.dumps(data))
         f.close()
 

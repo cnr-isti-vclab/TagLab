@@ -17,8 +17,8 @@ class Undo(object):
         self.operation['add'].append(blob)
 
     def setBlobClass(self, blob, class_name):
-        self.undo_operation['class'].append((blob, blob.class_name))
-        self.undo_operation['newclass'].append((blob, class_name))
+        self.operation['class'].append((blob, blob.class_name))
+        self.operation['newclass'].append((blob, class_name))
 
     def saveUndo(self):
         #clip future redo, invalidated by a new change
@@ -34,3 +34,22 @@ class Undo(object):
         if len(self.operations) > self.max_undo:
             self.operations.pop(0)
         self.position = len(self.operations) -1;
+
+    def undo(self):
+        if len(self.operations) is 0:
+            return None
+        if self.position < 0:
+            return None
+
+        # operation = self.undo_operations.pop(-1)
+        operation = self.operations[self.position]
+        self.position -= 1
+        return operation
+
+
+    def redo(self):
+        if self.undo_position >= len(self.operations) - 1:
+            return None
+        self.undo_position += 1
+        operation = self.undo_operations[self.undo_position]
+        return operation

@@ -20,7 +20,7 @@
 from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QImage, QPixmap, QIcon, qRgb, qRed, qGreen, qBlue
 from PyQt5.QtWidgets import QWidget, QDialog, QSizePolicy, QSlider, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
-from source.QtImageViewerPlus import QtImageViewerPlus
+from source.QtImageViewer import QtImageViewer
 from skimage.color import rgb2gray
 from source import utils
 
@@ -70,10 +70,10 @@ class QtCrackWidget(QWidget):
         layoutTolerance.addWidget(self.lblTolerance)
         layoutTolerance.addWidget(self.sliderTolerance)
 
-        self.viewerplus = QtImageViewerPlus()
-        self.viewerplus.disableScrollBars()
-        self.viewerplus.setFixedWidth(IMAGEVIEWER_SIZE)
-        self.viewerplus.setFixedHeight(IMAGEVIEWER_SIZE)
+        self.viewer = QtImageViewer()
+        self.viewer.disableScrollBars()
+        self.viewer.setFixedWidth(IMAGEVIEWER_SIZE)
+        self.viewer.setFixedHeight(IMAGEVIEWER_SIZE)
 
         self.btnCancel = QPushButton("Cancel")
         self.btnCancel.setAutoFillBackground(True)
@@ -87,12 +87,12 @@ class QtCrackWidget(QWidget):
 
         layoutV = QVBoxLayout()
         layoutV.addLayout(layoutTolerance)
-        layoutV.addWidget(self.viewerplus)
+        layoutV.addWidget(self.viewer)
         layoutV.addLayout(layoutButtons)
         layoutV.setSpacing(10)
         self.setLayout(layoutV)
 
-        self.viewerplus.setChannelImg(self.qimg_cropped)
+        self.viewer.setImg(self.qimg_cropped)
         self.preview()
 
         self.setAutoFillBackground(True)
@@ -126,8 +126,8 @@ class QtCrackWidget(QWidget):
         arr = self.input_arr.copy()
         mask_crack = self.annotations.createCrack(self.blob, arr, self.xmap, self.ymap, self.tolerance, preview=True)
         self.qimg_crack = utils.maskToQImage(mask_crack)
-        self.viewerplus.setOpacity(0.5)
-        self.viewerplus.setOverlayImage(self.qimg_crack)
+        self.viewer.setOpacity(0.5)
+        self.viewer.setOverlayImage(self.qimg_crack)
 
 
     def apply(self):

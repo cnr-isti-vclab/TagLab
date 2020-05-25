@@ -22,15 +22,22 @@
 """
 
 import os.path
-from PyQt5.QtCore import Qt,  QRect, QPoint, QPointF, QRectF, QFileInfo, QDir, pyqtSignal, QT_VERSION_STR
+from PyQt5.QtCore import Qt, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
 from PyQt5.QtGui import QImage, QPixmap, QPainter, QPainterPath, QPen, QImageReader
-from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QFileDialog, QGraphicsPixmapItem
+from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QFileDialog, QGraphicsPixmapItem
 
+from source.Undo import Undo
 from source.Project import Project
 from source.Image import Image
 from source.Annotation import Annotation
+from source.Annotation import Blob
+from source.Tools import Tools
 
-class QtImageViewerPlus(QGraphicsView):
+from source.QtImageViewer import QtImageViewer
+
+#TODO: crackwidget uses qimageviewerplus to draw an image.
+#circular dependency. create a viewer and a derived class which also deals with the rest.
+class QtImageViewerPlus(QtImageViewer):
     """
     PyQt image viewer widget with annotation capabilities.
     QGraphicsView handles a scene composed by an image plus shapes (rectangles, polygons, blobs).
@@ -42,35 +49,33 @@ class QtImageViewerPlus(QGraphicsView):
     rightMouseButtonPressed = pyqtSignal(float, float)
     leftMouseButtonReleased = pyqtSignal(float, float)
     rightMouseButtonReleased = pyqtSignal(float, float)
-    leftMouseButtonDoubleClicked = pyqtSignal(float, float)
+    #leftMouseButtonDoubleClicked = pyqtSignal(float, float)
     rightMouseButtonDoubleClicked = pyqtSignal(float, float)
     mouseMoveLeftPressed = pyqtSignal(float, float)
 
     # custom signal
-    viewUpdated = pyqtSignal()
+    updateInfoPanel = pyqtSignal(Blob)
+
 
     def __init__(self):
-        QGraphicsView.__init__(self)
+        QtImageViewer.__init__(self)
 
-        self.setStyleSheet("background-color: rgb(40,40,40)")
-
-        # Image is displayed as a QPixmap in a QGraphicsScene attached to this QGraphicsView.
-        self.scene = QGraphicsScene()
-        self.setScene(self.scene)
-
-        # Store a local handle to the scene's current image pixmap.
-        self.pixmapitem = QGraphicsPixmapItem()
-        self.pixmapitem.setZValue(0)
-        self.scene.addItem(self.pixmapitem)
-
-        # current image size
-        self.imgwidth = 0
-        self.imgheight = 0
-
+        self.logfile = None #MUST be inited in Taglab.py
         self.project = Project()
         self.image = Image()
         self.annotations = Annotation()
         self.selected_blobs = []
+
+        self.tools = Tools(self)
+        self.tools.createTools()
+
+        self.undo = Undo()
+
+        self.dragSelectionStart = None
+        self.dragSelectionRect = None
+        self.dragSelectionStyle = QPen(Qt.white, 1, Qt.DashLine)
+        self.dragSelectionStyle.setCosmetic(True)
+
 
         # DRAWING SETTINGS
         self.border_pen = QPen(Qt.black, 3)
@@ -80,80 +85,9 @@ class QtImageViewerPlus(QGraphicsView):
         self.border_selected_pen = QPen(Qt.white, 3)
         self.border_selected_pen.setCosmetic(True)
 
-        self.border_pen_for_appended_blobs = QPen(Qt.black, 3)
-        self.border_pen_for_appended_blobs.setStyle(Qt.DotLine)
-        self.border_pen_for_appended_blobs.setCosmetic(True)
 
-
-        # DATA FOR THE EDITBORDER , CUT and FREEHAND TOOLS
-        self.edit_points = []
-        self.edit_qpath_gitem = self.scene.addPath(QPainterPath(), self.border_pen)
-        self.last_editborder_points = []      #last editing operation stored here for local refinement
-
-        # DATA FOR THE RULER, DEEP EXTREME and SPLIT TOOLS
-        self.pick_points_number = 0
-        self.pick_points = []
-        self.pick_markers = []
-
-        self.CROSS_LINE_WIDTH = 2
-        self.split_pick_style   = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.cyan, 'size': 6}
-        self.ruler_pick_style   = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.cyan, 'size': 6}
-        self.extreme_pick_style = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.red,  'size': 6}
-
-
-        # DATA FOR THE CREATECRACK TOOL
-        self.crackWidget = None
-
-        self.tool = None
-
-        # UNDO DATA
-        self.undo_operations = []
-        self.undo_position = -1
-        """Temporary variable to hold the added and removed of the last operation."""
-        self.undo_operation = { 'remove':[], 'add':[], 'class':[], 'newclass':[] }
-        """Max number  of undo operations"""
-        self.max_undo = 100
-
-
-        # Image aspect ratio mode.
-        self.aspectRatioMode = Qt.KeepAspectRatio
-
-        # Set scrollbar
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-
-        self.verticalScrollBar().valueChanged.connect(self.viewUpdated)
-        self.horizontalScrollBar().valueChanged.connect(self.viewUpdated)
-
-
-
-        # Panning is enabled if and only if the image is greater than the viewport.
-        self.panEnabled = True
-        self.zoomEnabled = True
         self.showCrossair = False
         self.mouseCoords = QPointF(0, 0)
-
-        self.clicked_x = 0
-        self.clicked_y = 0
-
-        # zoom is always active
-        self.zoom_factor = 1.0
-        self.ZOOM_FACTOR_MIN = 0.02
-        self.ZOOM_FACTOR_MAX = 10.0
-
-        # transparency
-        self.opacity = 1.0
-
-        MIN_SIZE = 250
-        self.pixmap = QPixmap(MIN_SIZE, MIN_SIZE)
-        self.overlay_image = QImage(1, 1, QImage.Format_ARGB32)
-
-        self.viewport().setMinimumWidth(MIN_SIZE)
-        self.viewport().setMinimumHeight(MIN_SIZE)
-
-        self.resetTransform()
-        self.setMouseTracking(True)
-        self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
 
         self.setContextMenuPolicy(Qt.CustomContextMenu)
 
@@ -200,6 +134,27 @@ class QtImageViewerPlus(QGraphicsView):
                 raise Exception("Could not load or find the image: " + channel.filename)
         self.setChannelImg(img)
 
+    def setChannelImg(self, channel_img, zoomf=0.0):
+        """
+        Set the scene's current image (input image must be a QImage)
+        For calculating the zoom factor automatically set it to 0.0.
+        """
+        self.setImg(channel_img, zoomf)
+
+    def clear(self):
+        QtImageViewer.clear(self)
+        self.selected_blobs = []
+        self.undo = Undo()
+
+        for blob in self.annotations.seg_blobs:
+            self.undrawBlob(blob)
+            del blob
+
+        self.annotations = Annotation()
+
+
+
+
     def drawBlob(self, blob, prev=False):
 
         # if it has just been created remove the current graphics item in order to set it again
@@ -220,6 +175,11 @@ class QtImageViewerPlus(QGraphicsView):
         blob.qpath_gitem.setZValue(1)
         #blob.qpath_gitem.setOpacity(self.transparency_value)
 
+    def undrawBlob(self, blob):
+        self.scene.removeItem(blob.qpath_gitem)
+        blob.qpath = None
+        blob.qpath_gitem = None
+        self.viewerplus.scene.invalidate()
 
 
     def applyTransparency(self, value):
@@ -227,87 +187,6 @@ class QtImageViewerPlus(QGraphicsView):
         # current annotations
         for blob in self.annotations.seg_blobs:
             blob.qpath_gitem.setOpacity(self.transparency_value)
-
-
-    def disableScrollBars(self):
-
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-
-    def enablePan(self):
-        self.panEnabled = True
-
-    def disablePan(self):
-        self.panEnabled = False
-
-    def enableZoom(self):
-        self.zoomEnabled = True
-
-    def disableZoom(self):
-        self.zoomEnabled = False
-
-    def setChannelImg(self, channel_img, zoomf=0.0):
-        """
-        Set the scene's current image (input image must be a QImage)
-        For calculating the zoom factor automatically set it to 0.0.
-        """
-        if type(channel_img) is QImage:
-            imageARGB32 = channel_img.convertToFormat(QImage.Format_ARGB32)
-            self.pixmap = QPixmap.fromImage(imageARGB32)
-            self.imgwidth = channel_img.width()
-            self.imgheight = channel_img.height()
-        else:
-            raise RuntimeError("Argument must be a QImage.")
-
-        self.pixmapitem.setPixmap(self.pixmap)
-
-        # Set scene size to image size (!)
-        self.setSceneRect(QRectF(self.pixmap.rect()))
-
-        # calculate zoom factor
-        pixels_of_border = 10
-        zf1 = (self.viewport().width() - pixels_of_border) / self.imgwidth
-        zf2 = (self.viewport().height() - pixels_of_border) / self.imgheight
-
-        zf = min(zf1, zf2)
-        self.zoom_factor = zf
-
-        self.updateViewer()
-
-    def viewportToScene(self):
-        #check
-        topleft = self.mapToScene(self.viewport().rect().topLeft())
-        bottomright = self.mapToScene(self.viewport().rect().bottomRight())
-        return QRectF(topleft, bottomright)
-
-    def viewportToScenePercent(self):
-        view = self.viewportToScene()
-        view.setCoords(view.left()/self.imgwidth, view.top()/self.imgheight,
-                    view.right()/self.imgwidth, view.bottom()/self.imgheight)
-        return view
-
-
-
-
-    #UNUSED
-    def setOpacity(self, opacity):
-        self.opacity = opacity
-
-    def setOverlayImage(self, image):
-        self.overlay_image = image.convertToFormat(QImage.Format_ARGB32)
-        self.drawOverlayImage()
-
-    def drawOverlayImage(self):
-
-        if self.overlay_image.width() > 1:
-            pxmap = self.pixmap.copy()
-            p = QPainter()
-            p.begin(pxmap)
-            p.setOpacity(self.opacity)
-            p.drawImage(0, 0, self.overlay_image)
-            p.end()
-
-            self.pixmapitem.setPixmap(pxmap)
 
     #used for crossair cursor
     def drawForeground(self, painter, rect):
@@ -317,98 +196,74 @@ class QtImageViewerPlus(QGraphicsView):
             painter.drawLine(self.mouseCoords.x(), rect.top(), self.mouseCoords.x(), rect.bottom())
             painter.drawLine(rect.left(), self.mouseCoords.y(), rect.right(), self.mouseCoords.y())
 
-    def updateViewer(self):
-        """ Show current zoom (if showing entire image, apply current aspect ratio mode).
-        """
-
-        self.resetTransform()
-        self.scale(self.zoom_factor, self.zoom_factor)
-
-        self.invalidateScene()
-        #painter = QPainter(self)
-        #self.scene.render(painter)
-
-        # notify that the view has been updated
-        #self.viewUpdated.emit()
-
-    def setViewParameters(self, posx, posy, zoomfactor):
-        self.horizontalScrollBar().setValue(posx)
-        self.verticalScrollBar().setValue(posy)
-        self.zoom_factor = zoomfactor
-        self.updateViewer()
-
-    def clipScenePos(self, scenePosition):
-        posx = scenePosition.x()
-        posy = scenePosition.y()
-        if posx < 0:
-            posx = 0
-        if posy < 0:
-            posy = 0
-        if posx > self.imgwidth:
-            posx = self.imgwidth
-        if posy > self.imgheight:
-            posy = self.imgheight
-
-        return [round(posx), round(posy)]
-
-    def resizeEvent(self, event):
-        """ Maintain current zoom on resize.
-        """
-        self.updateViewer()
 
 #TOOLS and SELECTIONS
 
     def setTool(self, tool):
-        self.resetTools()
+        self.tools.setTool(tool)
         if tool in ["FREEHAND", "RULER", "DEEPEXTREME"] or (tool in ["CUT", "EDITBORDER"] and len(self.selected_blobs) > 1):
             self.resetSelection()
-        self.tool = tool
-        self.disablePan()
-        self.enableZoom()
 
-    def resetSelection(self):
-        for blob in self.selected_blobs:
-            if blob.qpath_gitem is None:
-                print("Selected item with no path!")
-            else:
-                blob.qpath_gitem.setPen(self.border_pen)
-        self.selected_blobs.clear()
-        self.scene.invalidate(self.scene.sceneRect())
+        if tool == "MOVE":
+            self.enablePan()
+        else:
+            self.disablePan()
 
     def resetTools(self):
-        self.edit_qpath_gitem.setPath(QPainterPath())
-        self.edit_points = []
-
+        self.tools.resetTools()
         self.showCrossair = False
         self.scene.invalidate(self.scene.sceneRect())
-
-        if self.crackWidget is not None:
-            self.crackWidget.close()
-        self.crackWidget = None
         self.setDragMode(QGraphicsView.NoDrag)
 
-    def resetPickPoints(self):
-        self.pick_points_number = 0
-        self.pick_points.clear()
-        for marker in self.pick_markers:
-            self.scene.removeItem(marker)
-        self.pick_markers.clear()
 
+#TODO not necessarily a slot
+    @pyqtSlot(float, float)
+    def selectOp(self, x, y):
+        """
+        Selection operation.
+        """
 
+        self.logfile.info("[SELECTION][DOUBLE-CLICK] Selection starts..")
+
+        if self.tools.tool in ["RULER", "DEEPEXTREME"]:
+            return
+
+        if not (Qt.ShiftModifier & QApplication.queryKeyboardModifiers()):
+            self.resetSelection()
+
+        selected_blob = self.annotations.clickedBlob(x, y)
+
+        if selected_blob:
+            if selected_blob in self.selected_blobs:
+                self.removeFromSelectedList(selected_blob)
+            else:
+                self.addToSelectedList(selected_blob)
+                self.updateInfoPanel.emit(selected_blob)
+
+        self.logfile.info("[SELECTION][DOUBLE-CLICK] Selection ends.")
+
+#MOUSE EVENTS
 
     def mousePressEvent(self, event):
         """ Start mouse pan or zoom mode.
         """
         scenePos = self.mapToScene(event.pos())
 
+        mods = event.modifiers()
+
         if event.button() == Qt.LeftButton:
-            clippedCoords = self.clipScenePos(scenePos)
-            mods = event.modifiers()
+            (x, y) = self.clipScenePos(scenePos)
             #used from area selection and pen drawing,
             if (self.panEnabled and not (mods & Qt.ShiftModifier)) or (mods & Qt.ControlModifier):
                 self.setDragMode(QGraphicsView.ScrollHandDrag)
+
+            elif mods & Qt.ShiftModifier:
+                self.dragSelectionStart = [x, y]
+                self.logfile.info("[SELECTION][DRAG] Selection starts..")
+
             else:
-                self.leftMouseButtonPressed.emit(clippedCoords[0], clippedCoords[1])
+                self.tools.leftPressed(x, y)
+                #self.leftMouseButtonPressed.emit(clippedCoords[0], clippedCoords[1])
 
 
         # PANNING IS ALWAYS POSSIBLE WITH WHEEL BUTTON PRESSED (!)
@@ -418,9 +273,6 @@ class QtImageViewerPlus(QGraphicsView):
         if event.button() == Qt.RightButton:
             clippedCoords = self.clipScenePos(scenePos)
             self.rightMouseButtonPressed.emit(clippedCoords[0], clippedCoords[1])
-
-        self.clicked_x = event.pos().x()
-        self.clicked_y = event.pos().y()
 
         QGraphicsView.mousePressEvent(self, event)
 
@@ -433,8 +285,21 @@ class QtImageViewerPlus(QGraphicsView):
 
         if event.button() == Qt.LeftButton:
             self.setDragMode(QGraphicsView.NoDrag)
-            clippedCoords = self.clipScenePos(scenePos)
-            self.leftMouseButtonReleased.emit(clippedCoords[0], clippedCoords[1])
+            (x, y) = self.clipScenePos(scenePos)
+
+            if self.dragSelectionStart:
+                if abs(x - self.dragSelectionStart[0]) < 5 and abs(y - self.dragSelectionStart[1]) < 5:
+                    self.selectOp(x, y)
+                else:
+                    self.dragSelectBlobs(x, y)
+                    self.dragSelectionStart = None
+                    if self.dragSelectionRect:
+                        self.viewerplus.scene.removeItem(self.dragSelectionRect)
+                        del self.dragSelectionRect
+                        self.dragSelectionRect = None
+
+                    self.logfile.info("[SELECTION][DRAG] Selection ends.")
+           # self.leftMouseButtonReleased.emit(clippedCoords[0], clippedCoords[1])
 
 
     def mouseMoveEvent(self, event):
@@ -443,13 +308,25 @@ class QtImageViewerPlus(QGraphicsView):
 
         scenePos = self.mapToScene(event.pos())
 
-        if event.buttons() == Qt.LeftButton:
-            clippedCoords = self.clipScenePos(scenePos)
-            self.mouseMoveLeftPressed.emit(clippedCoords[0], clippedCoords[1])
-
         if self.showCrossair == True:
             self.mouseCoords = scenePos
             self.scene.invalidate(self.sceneRect(), QGraphicsScene.ForegroundLayer)
+
+        if event.buttons() == Qt.LeftButton:
+            (x, y) = self.clipScenePos(scenePos)
+
+            if self.dragSelectionStart:
+                start = self.dragSelectionStart
+                if not self.dragSelectionRect:
+                    self.dragSelectionRect = self.scene.addRect(start[0], start[1], x - start[0],
+                                                                           y - start[1], self.dragSelectionStyle)
+                self.dragSelectionRect.setRect(start[0], start[1], x - start[0], y - start[1])
+                return
+
+            if Qt.ControlModifier & QApplication.queryKeyboardModifiers():
+                return
+
+#            self.tools.mouseMove(x, y)
 
 
     def mouseDoubleClickEvent(self, event):
@@ -457,7 +334,8 @@ class QtImageViewerPlus(QGraphicsView):
         scenePos = self.mapToScene(event.pos())
 
         if event.button() == Qt.LeftButton:
-            self.leftMouseButtonDoubleClicked.emit(scenePos.x(), scenePos.y())
+            self.selectOp(scenePos.x(), scenePos.y())
+            #self.leftMouseButtonDoubleClicked.emit(scenePos.x(), scenePos.y())
 
         # QGraphicsView.mouseDoubleClickEvent(self, event)
 
@@ -482,15 +360,33 @@ class QtImageViewerPlus(QGraphicsView):
 
         # PAY ATTENTION; THE WHEEL INTERACT ALSO WITH THE SCROLL BAR (!!)
         #QGraphicsView.wheelEvent(self, event)
+#VISIBILITY AND SELECTION
+
+    def dragSelectBlobs(self, x, y):
+        sx = self.dragSelectionStart[0]
+        sy = self.dragSelectionStart[1]
+        self.resetSelection()
+        for blob in self.annotations.seg_blobs:
+            visible = self.labels_widget.isClassVisible(blob.class_name)
+            if not visible:
+                continue
+            box = blob.bbox
+
+            if sx > box[1] or sy > box[0] or x < box[1] + box[2] or y < box[0] + box[3]:
+                continue
+            self.addToSelectedList(blob)
 
 
-#UNFDO AND OTHER THINGS
     def updateVisibility(self):
         for blob in self.annotations.seg_blobs:
 
             visibility = self.labels_widget.isClassVisible(blob.class_name)
             if blob.qpath_gitem is not None:
                 blob.qpath_gitem.setVisible(visibility)
+
+
+
+#SELECTED BLOBS MANAGEMENT
 
     def addToSelectedList(self, blob):
         """
@@ -521,10 +417,23 @@ class QtImageViewerPlus(QGraphicsView):
             print("Exception: e", e)
             pass
 
+    def resetSelection(self):
+        for blob in self.selected_blobs:
+            if blob.qpath_gitem is None:
+                print("Selected item with no path!")
+            else:
+                blob.qpath_gitem.setPen(self.border_pen)
+        self.selected_blobs.clear()
+        self.scene.invalidate(self.scene.sceneRect())
+
+
+
+#CREATION and DESTRUCTION of BLOBS
     def addBlob(self, blob, selected = False):
         """
         The only function to add annotations. will take care of undo and QGraphicItems.
         """
+        self.undo.addBlob(blob)
         self.undo_operation['remove'].append(blob)
         self.annotations.addBlob(blob)
         self.drawBlob(blob)
@@ -537,17 +446,21 @@ class QtImageViewerPlus(QGraphicsView):
         """
         self.removeFromSelectedList(blob)
         self.undrawBlob(blob)
-        self.undo_operation['add'].append(blob)
+        self.undo.removeBlob(blob)
         self.annotations.removeBlob(blob)
+
+    def deleteSelectedBlobs(self):
+        for blob in self.selected_blobs:
+            self.removeBlob(blob)
+        self.saveUndo()
 
     def setBlobClass(self, blob, class_name):
         if blob.class_name == class_name:
             return
 
-        self.undo_operation['class'].append((blob, blob.class_name))
-        self.undo_operation['newclass'].append((blob,class_name))
-        blob.class_name = class_name
+        self.undo.setBlobClass(blob, class_name)
 
+        blob.class_name = class_name
         if class_name == "Empty":
             blob.class_color = [255, 255, 255]
         else:
@@ -558,30 +471,17 @@ class QtImageViewerPlus(QGraphicsView):
 
         self.scene.invalidate()
 
-    def saveUndo(self):
-        #clip future redo, invalidated by a new change
-        self.undo_operations = self.undo_operations[:self.undo_position+1]
-        """
-        Will mark an undo step using the previously added and removed blobs.
-        """
-        if len(self.undo_operation['add']) == 0 and len(self.undo_operation['remove']) == 0 and len(self.undo_operation['class']) == 0:
-            return
 
-        self.undo_operations.append(self.undo_operation)
-        self.undo_operation = { 'remove':[], 'add':[], 'class':[], 'newclass':[] }
-        if len(self.undo_operations) > self.max_undo:
-            self.undo_operations.pop(0)
-        self.undo_position = len(self.undo_operations) -1;
+#UNDO STUFF
+#UNDO STUFF
+
+    def saveUndo(self):
+        self.undo.saveUndo()
 
     def undo(self):
-        if len(self.undo_operations) is 0:
+        operation = self.undo.undo()
+        if operation is None:
             return
-        if self.undo_position < 0:
-            return;
-
-        #operation = self.undo_operations.pop(-1)
-        operation = self.undo_operations[self.undo_position]
-        self.undo_position -= 1
 
         for blob in operation['remove']:
             message = "[UNDO][REMOVE] BLOBID={:d} VERSION={:d}".format(blob.id, blob.version)
@@ -605,20 +505,20 @@ class QtImageViewerPlus(QGraphicsView):
         self.updateVisibility()
 
     def redo(self):
-        if self.undo_position >= len(self.undo_operations) -1:
-            return;
-        self.undo_position += 1
-        operation = self.undo_operations[self.undo_position]
+        operation = self.undo.redo()
+        if operation is None:
+            return
+
         for blob in operation['add']:
             message = "[REDO][ADD] BLOBID={:d} VERSION={:d}".format(blob.id, blob.version)
-            logfile.info(message)
+            self.logfile.info(message)
             self.removeFromSelectedList(blob)
             self.undrawBlob(blob)
             self.annotations.removeBlob(blob)
 
         for blob in operation['remove']:
             message = "[REDO][REMOVE] BLOBID={:d} VERSION={:d}".format(blob.id, blob.version)
-            logfile.info(message)
+            self.logfile.info(message)
             self.annotations.addBlob(blob)
             self.selected_blobs.append(blob)
             self.drawBlob(blob)
