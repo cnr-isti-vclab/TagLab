@@ -382,41 +382,6 @@ class TagLab(QWidget):
         self.viewerplus.customContextMenuRequested.connect(self.openContextMenu)
 
 
-#         # DRAWING SETTINGS
-#         self.border_pen = QPen(Qt.black, 3)
-# #        pen.setJoinStyle(Qt.MiterJoin)
-# #        pen.setCapStyle(Qt.RoundCap)
-#         self.border_pen.setCosmetic(True)
-#         self.border_selected_pen = QPen(Qt.white, 3)
-#         self.border_selected_pen.setCosmetic(True)
-#
-#         self.border_pen_for_appended_blobs = QPen(Qt.black, 3)
-#         self.border_pen_for_appended_blobs.setStyle(Qt.DotLine)
-#         self.border_pen_for_appended_blobs.setCosmetic(True)
-
-        # self.CROSS_LINE_WIDTH = 2
-
-        # DATA FOR THE SELECTION
-        #self.selected_blobs = []
-
-
-
-        # # DATA FOR THE EDITBORDER , CUT and FREEHAND TOOLS
-        # self.edit_points = []
-        # self.edit_qpath_gitem = None
-        # self.last_editborder_points = []      #last editing operation stored here for local refinement
-
-        # # DATA FOR THE CREATECRACK TOOL
-        # self.crackWidget = None
-
-        # # DATA FOR THE RULER, DEEP EXTREME and SPLIT TOOLS
-        # self.pick_points_number = 0
-        # self.pick_points = []
-        # self.pick_markers = []
-        #
-        # self.split_pick_style   = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.cyan, 'size': 6}
-        # self.ruler_pick_style   = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.cyan, 'size': 6}
-        # self.extreme_pick_style = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.red,  'size': 6}
 
         # NETWORKS
         self.corals_classifier = None
@@ -611,12 +576,12 @@ class TagLab(QWidget):
         undoAct = QAction("Undo", self)
         undoAct.setShortcut('Ctrl+Z')
         undoAct.setStatusTip("Undo")
-        undoAct.triggered.connect(self.undo)
+        undoAct.triggered.connect(self.viewerplus.undo)
 
         redoAct = QAction("Redo", self)
         redoAct.setShortcut('Ctrl+Shift+Z')
         redoAct.setStatusTip("Redo")
-        redoAct.triggered.connect(self.redo)
+        redoAct.triggered.connect(self.viewerplus.redo)
 
         helpAct = QAction("Help", self)
         helpAct.setShortcut('Ctrl+H')
@@ -748,17 +713,6 @@ class TagLab(QWidget):
             self.viewerplus.resetSelection()
             self.viewerplus.resetTools()
 
-            # if self.tool_used in ["EDITBORDER", "CUT", "FREEHAND"]:
-            #     self.resetEditBorder()
-            # elif self.tool_used == "RULER":
-            #     self.resetPickPoints()
-            # elif self.tool_used == "SPLITBLOB":
-            #     self.resetPickPoints()
-            # elif self.tool_used == "DEEPEXTREME":
-            #     self.resetPickPoints()
-            # elif self.tool_used == "AUTOCLASS":
-            #     self.corals_classifier.stopProcessing()
-
             message = "[TOOL][" + self.viewerplus.tools.tool + "] Current operation has been canceled."
             logfile.info(message)
 
@@ -880,93 +834,8 @@ class TagLab(QWidget):
 
 
         elif event.key() == Qt.Key_Space:
-
-            #drawing operations are grouped
-            if self.tool_used in ["EDITBORDER", "CUT", "FREEHAND"]:
-                if len(self.edit_points) == 0:
-                    self.infoWidget.setInfoMessage("You need to draw something for this operation.")
-                    return
-
-                if self.tool_used == "FREEHAND":
-                    blob = Blob(None, 0, 0, 0)
-
-                    try:
-                        flagValid = blob.createFromClosedCurve(self.edit_points)
-                    except Exception:
-                        self.infoWidget.setInfoMessage("Failed creating area.")
-                        logfile.info("[TOOL][FREEHAND] FREEHAND operation not done (invalid snap).")
-                        return
-
-                    if flagValid is True:
-
-                        blob.setId(self.annotations.progressive_id)
-                        self.annotations.progressive_id += 1
-
-                        self.resetSelection()
-                        self.addBlob(blob, selected=True)
-                        self.logBlobInfo(blob, "[TOOL][FREEHAND][BLOB-CREATED]")
-                        self.saveUndo()
-
-                        logfile.info("[TOOL][FREEHAND] Operation ends.")
-
-                    else:
-                        logfile.info("[TOOL][FREEHAND] Operation ends (INVALID SNAP!).")
-
-                #editborder and cut require a selected area
-                if self.tool_used in ["EDITBORDER", "CUT"]:
-                    if len(self.selected_blobs) != 1:
-                        self.infoWidget.setInfoMessage("A single selected area is required.")
-                        return
-
-                    selected_blob = self.selected_blobs[0]
-
-                if self.tool_used == "EDITBORDER":
-                    blob = selected_blob.copy()
-                    self.last_editborder_points = self.edit_points
-                    self.annotations.editBorder(blob, self.edit_points)
-
-                    self.logBlobInfo(selected_blob, "[TOOL][EDITEDBORDER][BLOB-SELECTED]")
-                    self.logBlobInfo(blob, "[TOOL][EDITEDBORDER][BLOB-EDITED]")
-
-                    logfile.info("[TOOL][EDITBORDER] Operation ends.")
-
-                    self.removeBlob(selected_blob)
-                    self.addBlob(blob, selected=True)
-                    self.saveUndo()
-
-                if self.tool_used == "CUT":
-                    created_blobs = self.annotations.cut(selected_blob, self.edit_points)
-
-                    self.logBlobInfo(selected_blob, "[TOOL][CUT][BLOB-SELECTED]")
-
-                    for blob in created_blobs:
-                        self.addBlob(blob, selected=True)
-                        self.logBlobInfo(blob, "[TOOL][CUT][BLOB-CREATED]")
-
-                    logfile.info("[TOOL][CUT] Operation ends.")
-
-                    self.removeBlob(selected_blob)
-                    self.saveUndo()
-
-                self.resetEditBorder()
-
-            elif self.tool_used == "SPLITBLOB" and self.pick_points_number > 1 and len(self.selected_blobs) == 1:
-
-                selected_blob = self.selected_blobs[0]
-                points = self.pick_points
-                created_blobs = self.annotations.splitBlob(self.img_map,selected_blob, points)
-
-                self.logBlobInfo(selected_blob, "[TOOL][SPLITBLOB][BLOB-SELECTED]")
-
-                for blob in created_blobs:
-                    self.addBlob(blob, selected=True)
-                    self.logBlobInfo(blob, "[TOOL][SPLITBLOB][BLOB-CREATED]")
-
-                logfile.info("[TOOL][SPLITBLOB] Operation ends.")
-
-                self.removeBlob(selected_blob)
-                self.saveUndo()
-                self.resetPickPoints()
+            print("apply!")
+            self.viewerplus.tools.applyTool()
 
     @pyqtSlot()
     def sliderTrasparencyChanged(self):
@@ -979,26 +848,7 @@ class TagLab(QWidget):
 
     @pyqtSlot()
     def updateVisibility(self):
-
         self.viewerplus.updateVisibility()
-        #
-        # for blob in self.annotations.seg_blobs:
-        #
-        #     visibility = self.labels_widget.isClassVisible(blob.class_name)
-        #     if blob.qpath_gitem is not None:
-        #         blob.qpath_gitem.setVisible(visibility)
-
-#used only in the function below
-    # def clampCoords(self, x, y):
-    #
-    #     if self.img_map is not None:
-    #         xc = max(0, min(int(x), self.img_map.width()))
-    #         yc = max(0, min(int(y), self.img_map.height()))
-    #     else:
-    #         xc = 0
-    #         yc = 0
-    #
-    #     return (xc, yc)
 
 
     @pyqtSlot()
@@ -1060,38 +910,13 @@ class TagLab(QWidget):
     def resetAll(self):
         self.viewerplus.clear()
 
-        # if self.img_map is not None:
-        #     del self.img_map
-        #     self.img_map = None
-        #
-        # if self.img_thumb_map is not None:
-        #     del self.img_thumb_map
-        #     self.img_thumb_map = None
-        #
-        # self.resetSelection()
-        #
-        # if self.annotations:
-        #
-        #     for blob in self.annotations.seg_blobs:
-        #         self.undrawBlob(blob)
-        #         del blob
-        #
-        #     for blob_list in self.annotations.prev_blobs:
-        #         for blob in blob_list:
-        #             self.undrawBlob(blob)
-        #             del blob
-        #
-        #     del self.annotations
-
         # RE-INITIALIZATION
-
-        self.annotations = Annotation()
 
         self.mapWidget = None
         self.project = Project()
-        self.map_image_filename = "map.png"
-        self.map_acquisition_date = "YYYY-MM-DD"
-        self.map_px_to_mm_factor = 1.0
+        #self.map_image_filename = "map.png"
+        #self.map_acquisition_date = "YYYY-MM-DD"
+        #self.map_px_to_mm_factor = 1.0
 
 
     def resetToolbar(self):
@@ -1197,9 +1022,9 @@ class TagLab(QWidget):
 
     @pyqtSlot()
     def noteChanged(self):
-        if len(self.selected_blobs) > 0:
+        if len(self.viewerplus.selected_blobs) > 0:
 
-            for blob in self.selected_blobs:
+            for blob in self.viewerplus.selected_blobs:
                 blob.note = self.editNote.toPlainText()
 
     def updatePanelInfo(self, blob):
@@ -1223,149 +1048,40 @@ class TagLab(QWidget):
         self.viewerplus.deleteSelectedBlobs()
         logfile.info("[OP-DELETE] Selected blobs has been DELETED")
 
-    def drawBlob(self, blob, prev=False):
-        raise Exception("Moved to viewerplus")
-        """
-        Draw a blob according to the class color. If the blob is selected a white border is used.
-        Note that if group_mode == True the blob is drawn in darkGray
-        and the selection flag is ignored.
-        """
-
-        # if it has just been created remove the current graphics item in order to set it again
-        if blob.qpath_gitem is not None:
-            self.viewerplus.scene.removeItem(blob.qpath_gitem)
-            del blob.qpath_gitem
-            blob.qpath_gitem = None
-
-        blob.setupForDrawing()
-
-        if prev is True:
-            pen = self.border_pen_for_appended_blobs
-        else:
-            pen = self.border_selected_pen if blob in self.selected_blobs else self.border_pen
-
-        brush = self.classBrushFromName(blob)
-
-        blob.qpath_gitem = self.viewerplus.scene.addPath(blob.qpath, pen, brush)
-        blob.qpath_gitem.setOpacity(self.transparency_value)
-
-    def classBrushFromName(self, blob):
-        raise Exception("Moved to project")
-
-        brush = QBrush()
-
-        if not blob.class_name == "Empty":
-            color = self.labels[blob.class_name]
-            brush = QBrush(QColor(color[0], color[1], color[2], 200))
-        return brush
 
 
-
-    def undrawBlob(self, blob):
-        raise Exception("Moved to viewerplus")
-
-        self.viewerplus.scene.removeItem(blob.qpath_gitem)
-        del blob.qpath
-        blob.qpath = None
-        del blob.qpath_gitem  # QGraphicsScene does not delete the item
-        blob.qpath_gitem = None
-        self.viewerplus.scene.invalidate()
-
-    # def addPickPoint(self, x, y, style):
-    #     self.pick_points.append(np.array([x, y]))
-    #     self.pick_points_number += 1
-    #
-    #     pen = QPen(style['color'])
-    #     pen.setWidth(style['width'])
-    #     pen.setCosmetic(True)
-    #
-    #     size = style['size']
-    #     point = self.viewerplus.scene.addEllipse(x, y, 0, 0, pen)
-    #     point = self.viewerplus.scene.addEllipse(x, y, 0, 0, pen)
-    #     #line1 = self.viewerplus.scene.addLine(x - size, y - size, x + size, y + size, pen)
-    #     line1 = self.viewerplus.scene.addLine(- size, -size, +size, +size, pen)
-    #     line1.setPos(QPoint(x, y))
-    #     line1.setParentItem(point)  # self.viewerplus._pxmapitem)
-    #     line1.setFlag(QGraphicsItem.ItemIgnoresTransformations)
-    #
-    #     line2 = self.viewerplus.scene.addLine(- size,  + size,  + size,  - size, pen)
-    #     line2.setPos(QPoint(x, y))
-    #     line2.setParentItem(point)  # self.viewerplus._pxmapitem)
-    #     line2.setFlag(QGraphicsItem.ItemIgnoresTransformations)
-    #
-    #     #no need to add the lines to the pick_markers, the parent will take care of them
-    #     self.pick_markers.append(point)
-
-    # def resetPickPoints(self):
-    #     self.pick_points_number = 0
-    #     self.pick_points.clear()
-    #     for marker in self.pick_markers:
-    #         self.viewerplus.scene.removeItem(marker)
-    #     self.pick_markers.clear()
-    #
-    # def drawRuler(self):
-    #     #warging! this might move the pick points to the centroids of the blobs, redraw!
-    #     measure = self.computeMeasure()
-    #     tmp = self.pick_points.copy()
-    #     self.resetPickPoints()
-    #     self.addPickPoint(tmp[0][0], tmp[0][1], self.ruler_pick_style)
-    #     self.addPickPoint(tmp[1][0], tmp[1][1], self.ruler_pick_style)
-    #
-    #     #pick points number is now 2
-    #     pen = QPen(Qt.blue)
-    #     pen.setWidth(2)
-    #     pen.setCosmetic(True)
-    #     start = self.pick_points[0]
-    #     end   = self.pick_points[1]
-    #     line = self.viewerplus.scene.addLine(start[0], start[1], end[0], end[1], pen)
-    #     self.pick_markers.append(line)
-    #
-    #     middle_x = (start[0] + end[0]) / 2.0
-    #     middle_y = (start[1] + end[1]) / 2.0
-    #
-    #     middle = self.viewerplus.scene.addEllipse(middle_x, middle_y, 0, 0)
-    #
-    #     ruler_text = self.viewerplus.scene.addText('%.1f' % measure)
-    #     ruler_text.setFont(QFont("Times", 12, QFont.Bold))
-    #     ruler_text.setDefaultTextColor(Qt.white)
-    #     ruler_text.setPos(middle_x, middle_y)
-    #     ruler_text.setParentItem(middle)
-    #     ruler_text.setFlag(QGraphicsItem.ItemIgnoresTransformations)
-    #
-    #     logfile.info("[TOOL][RULER] Measure taken.")
-    #
-    #     self.pick_markers.append(middle);
-
+#OPERATIONS
 
     def assignOperation(self):
-        for blob in self.selected_blobs:
-            self.setBlobClass(blob, self.labels_widget.getActiveLabelName())
-        self.saveUndo()
-        self.resetSelection()
+        view = self.viewerplus
+        for blob in view.selected_blobs:
+            view.setBlobClass(blob, self.labels_widget.getActiveLabelName())
+        view.saveUndo()
+        view.resetSelection()
 
 
     def union(self):
         """
         blob A = blob A U blob B
         """
+        view = self.viewerplus
+        if len(view.selected_blobs) > 1:
 
-        if len(self.selected_blobs) > 1:
-
-            message = "[OP-MERGE] MERGE OVERLAPPED LABELS operation begins.. (number of selected blobs: " + str(len(self.selected_blobs)) + ")"
+            message = "[OP-MERGE] MERGE OVERLAPPED LABELS operation begins.. (number of selected blobs: " + str(len(view.selected_blobs)) + ")"
             logfile.info(message)
 
             #union returns a NEW blob
-            union_blob = self.annotations.union(self.selected_blobs)
+            union_blob = view.annotations.union(view.selected_blobs)
 
             if union_blob is None:
                 logfile.info("[OP-MERGE] INVALID MERGE OVERLAPPED LABELS -> blobs are separated.")
             else:
-                for blob in self.selected_blobs:
-                    self.removeBlob(blob)
+                for blob in view.selected_blobs:
+                    view.removeBlob(blob)
                     self.logBlobInfo(blob, "[OP-MERGE][BLOB-REMOVED]")
 
-                self.addBlob(union_blob, selected=True)
-                self.saveUndo()
+                view.addBlob(union_blob, selected=True)
+                view.saveUndo()
 
                 self.logBlobInfo(union_blob, "[OP-MERGE][BLOB-CREATED]")
 
@@ -1379,19 +1095,20 @@ class TagLab(QWidget):
         """
         blob A = blob A / blob B
         """
+        view = self.viewerplus
 
-        if len(self.selected_blobs) == 2:
+        if len(view.selected_blobs) == 2:
 
-            message = "[OP-SUBTRACT] SUBTRACT LABELS operation begins.. (number of selected blobs: " + str(len(self.selected_blobs)) + ")"
+            message = "[OP-SUBTRACT] SUBTRACT LABELS operation begins.. (number of selected blobs: " + str(len(view.selected_blobs)) + ")"
             logfile.info(message)
 
-            selectedA = self.selected_blobs[0]
-            selectedB = self.selected_blobs[1]
+            selectedA = view.selected_blobs[0]
+            selectedB = view.selected_blobs[1]
 
             #blobA and will be modified, make a copy!
             blobA = selectedA.copy()
 
-            flag_intersection = self.annotations.subtract(blobA, selectedB, self.viewerplus.scene)
+            flag_intersection = view.annotations.subtract(blobA, selectedB, view.scene)
 
             if flag_intersection:
 
@@ -1399,10 +1116,10 @@ class TagLab(QWidget):
                 self.logBlobInfo(blobA, "[OP-SUBTRACT][BLOB-EDITED]")
                 self.logBlobInfo(selectedB, "[OP-SUBTRACT][BLOB-REMOVED]")
 
-                self.removeBlob(selectedA)
-                self.removeBlob(selectedB)
-                self.addBlob(blobA, selected=True)
-                self.saveUndo()
+                view.removeBlob(selectedA)
+                view.removeBlob(selectedB)
+                view.addBlob(blobA, selected=True)
+                view.saveUndo()
 
             logfile.info("[OP-SUBTRACT] SUBTRACT LABELS operation ends.")
 
@@ -1415,20 +1132,20 @@ class TagLab(QWidget):
         """
         Separe intersecting blob
         """
+        view = self.viewerplus
+        if len(view.selected_blobs) == 2:
 
-        if len(self.selected_blobs) == 2:
-
-            message = "[OP-DIVIDE] DIVIDE LABELS operation begins.. (number of selected blobs: " + str(len(self.selected_blobs)) + ")"
+            message = "[OP-DIVIDE] DIVIDE LABELS operation begins.. (number of selected blobs: " + str(len(view.selected_blobs)) + ")"
             logfile.info(message)
 
-            selectedA = self.selected_blobs[0]
-            selectedB = self.selected_blobs[1]
+            selectedA = view.selected_blobs[0]
+            selectedB = view.selected_blobs[1]
 
             #blobA and blobB and will be modified, make a copy!
             blobA = selectedA.copy()
             blobB = selectedB.copy()
 
-            intersects = self.annotations.subtract(blobB, blobA, self.viewerplus.scene)
+            intersects = view.annotations.subtract(blobB, blobA, view.scene)
             if intersects:
 
                 self.logBlobInfo(selectedA, "[OP-DIVIDE][BLOB-SELECTED]")
@@ -1436,11 +1153,11 @@ class TagLab(QWidget):
                 self.logBlobInfo(selectedB, "[OP-DIVIDE][BLOB-SELECTED]")
                 self.logBlobInfo(blobB, "[OP-DIVIDE][BLOB-EDITED]")
 
-                self.removeBlob(selectedA)
-                self.removeBlob(selectedB)
-                self.addBlob(blobA, selected=False)
-                self.addBlob(blobB, selected=False)
-                self.saveUndo()
+                view.removeBlob(selectedA)
+                view.removeBlob(selectedB)
+                view.addBlob(blobA, selected=False)
+                view.addBlob(blobB, selected=False)
+                view.saveUndo()
 
             logfile.info("[OP-DIVIDE] DIVIDE LABELS operation ends.")
 
@@ -1449,10 +1166,11 @@ class TagLab(QWidget):
             self.infoWidget.setInfoMessage("You need to select <em>two</em> blobs for DIVIDE operation.")
 
     def refineBorderDilate(self):
+        view = self.viewerplus
 
         logfile.info("[OP-REFINE-BORDER-DILATE] DILATE-BORDER operation begins..")
 
-        self.refine_grow += 2
+        view.refine_grow += 2
         self.refineBorder()
         #self.refine_grow = 0
 
@@ -1462,8 +1180,9 @@ class TagLab(QWidget):
     def refineBorderErode(self):
 
         logfile.info("[OP-REFINE-BORDER-ERODE] ERODE-BORDER operation begins..")
+        view = self.viewerplus
 
-        self.refine_grow -= 2
+        view.refine_grow -= 2
         self.refineBorder()
         #self.refine_grow = 0
 
@@ -1472,8 +1191,9 @@ class TagLab(QWidget):
     def refineBorderOperation(self):
 
         logfile.info("[OP-REFINE-BORDER] REFINE-BORDER operation begins..")
+        view = self.viewerplus
 
-        self.refine_grow = 0
+        view.refine_grow = 0
         self.refineBorder()
 
         logfile.info("[OP-REFINE-BORDER] REFINE-BORDER operation ends.")
@@ -1482,28 +1202,29 @@ class TagLab(QWidget):
         """
         Refine blob border
         """
+        view = self.viewerplus
 
-        if self.refine_grow != 0 and self.refine_original_mask is None:
+        if view.refine_grow != 0 and view.refine_original_mask is None:
             return
 
 
         # padding mask to allow moving boundary
         padding = 35
-        if len(self.selected_blobs) == 1:
+        if len(view.selected_blobs) == 1:
 
-            selected = self.selected_blobs[0]
+            selected = view.selected_blobs[0]
             #blob = selected.copy()
             self.logBlobInfo(selected, "[OP-REFINE-BORDER][BLOB-SELECTED]")
 
-            if self.refine_grow == 0:
+            if view.refine_grow == 0:
                 mask = selected.getMask()
                 mask = np.pad(mask, (padding, padding), mode='constant', constant_values=(0, 0)).astype(np.ubyte)
-                self.refine_original_mask = mask.copy()
-                self.refine_original_bbox = selected.bbox.copy()
+                view.refine_original_mask = mask.copy()
+                view.refine_original_bbox = selected.bbox.copy()
                 bbox = selected.bbox.copy()
             else:
-                mask = self.refine_original_mask.copy()
-                bbox = self.refine_original_bbox.copy()
+                mask = view.refine_original_mask.copy()
+                bbox = view.refine_original_bbox.copy()
 
 
             bbox[0] -= padding; #top
@@ -1511,11 +1232,11 @@ class TagLab(QWidget):
             bbox[2] += 2*padding; #width
             bbox[3] += 2*padding; #height
 
-            img = utils.cropQImage(self.img_map, bbox)
+            img = utils.cropQImage(view.img_map, bbox)
             img = utils.qimageToNumpyArray(img)
 
-            if self.depth_map is not None:
-                depth = self.depth_map[bbox[0] : bbox[0]+bbox[3], bbox[1] : bbox[1] + bbox[2]]
+            if view.depth_map is not None:
+                depth = view.depth_map[bbox[0] : bbox[0]+bbox[3], bbox[1] : bbox[1] + bbox[2]]
 #                imgg = utils.floatmapToQImage((depth - 4)*255)
 #                imgg.save("test.png")
 
@@ -1532,21 +1253,21 @@ class TagLab(QWidget):
             #    msgBox.setText(str(e))
             #    msgBox.exec()
             #    return
-            if self.tool_used != 'EDITBORDER':
-                self.last_editborder_points = None
+            if view.tools.tool != 'EDITBORDER':
+                view.tools.edit_points.last_editborder_points = None
 
 
             try:
                 #    blob.updateUsingMask(bbox, mask.astype(np.int))
-                created_blobs = self.annotations.refineBorder(bbox, selected, img, depth, mask, self.refine_grow, self.last_editborder_points)
+                created_blobs = view.annotations.refineBorder(bbox, selected, img, depth, mask, view.refine_grow, view.tools.edit_points.last_editborder_points)
 
-                self.removeBlob(selected)
+                view.removeBlob(selected)
 
                 for blob in created_blobs:
-                    self.addBlob(blob, selected=True)
+                    view.addBlob(blob, selected=True)
                     self.logBlobInfo(blob, "[OP-REFINE-BORDER][BLOB-CREATED]")
 
-                self.saveUndo()
+                view.saveUndo()
 
                 self.logBlobInfo(blob, "[OP-REFINE-BORDER][BLOB-REFINED]")
 
@@ -1558,12 +1279,14 @@ class TagLab(QWidget):
             self.infoWidget.setInfoMessage("You need to select <em>one</em> blob for REFINE operation.")
 
     def fillLabel(self, blob):
+        view = self.viewerplus
+
         logfile.info("[OP-FILL] FILL operation starts..")
 
-        if len(self.selected_blobs) == 0:
+        if len(view.selected_blobs) == 0:
             return
         count = 0
-        for blob in self.selected_blobs:
+        for blob in view.selected_blobs:
             if len(blob.inner_contours) == 0:
                 continue
             count += 1
@@ -1571,50 +1294,19 @@ class TagLab(QWidget):
 
             self.logBlobInfo(filled, "[OP-FILL][BLOB-SELECTED]")
 
-            self.removeBlob(blob)
+            view.removeBlob(blob)
             filled.inner_contours.clear()
             filled.createFromClosedCurve([filled.contour])
-            self.addBlob(filled, True)
+            view.addBlob(filled, True)
 
             self.logBlobInfo(filled, "[OP-FILL][BLOB-EDITED]")
 
         if count:
-            self.saveUndo()
+            view.saveUndo()
 
         logfile.info("[OP-FILL] FILL operation ends.")
 
-    def addBlob(self, blob, selected = False):
-        raise Exception("viewerplus needs to be calledd directly")
 
-    def removeBlob(self, blob):
-        raise Exception("viewerplus needs to be calledd directly")
-
-    def setBlobClass(self, blob, class_name):
-        raise Exception("viewerplus needs to be called instead ")
-
-    def saveUndo(self):
-        raise Exception("saveundo moved to qtvuewerplus")
-
-        #clip future redo, invalidated by a new change
-        self.undo_operations = self.undo_operations[:self.undo_position+1]
-        """
-        Will mark an undo step using the previously added and removed blobs.
-        """
-        if len(self.undo_operation['add']) == 0 and len(self.undo_operation['remove']) == 0 and len(self.undo_operation['class']) == 0:
-            return
-
-        self.undo_operations.append(self.undo_operation)
-        self.undo_operation = { 'remove':[], 'add':[], 'class':[], 'newclass':[] }
-        if len(self.undo_operations) > self.max_undo:
-            self.undo_operations.pop(0)
-        self.undo_position = len(self.undo_operations) -1;
-
-    #we still have to define which viewer need to do an undo and redo
-    def undo(self):
-        self.viewerplus.undo()
-
-    def redo(self):
-        self.viewerplus.redo()
 
 
     def logBlobInfo(self, blob, tag):
@@ -1630,293 +1322,7 @@ class TagLab(QWidget):
         logfile.info(message4)
 
 
-    def groupBlobs(self):
-        raise Exception("groupBlobsUNUSED!")
-        if len(self.selected_blobs) > 0:
 
-            group = self.annotations.addGroup(self.selected_blobs)
-            self.drawGroup(group)
-
-    def ungroupBlobs(self):
-        raise Exception("ungroupBlobs UNUSED!")
-
-        if len(self.selected_blobs) > 0:
-
-            blob_s = self.selected_blobs[0]
-
-            if blob_s.group != None:
-
-                # de-selection
-                for blob in self.selected_blobs:
-                    self.drawBlob(blob, selected=False)
-                self.selected_blobs.clear()
-
-                self.annotations.removeGroup(blob_s.group)
-
-    def resetSelection(self):
-        self.viewerplus.resetSelection()
-
-    def resetEditBorder(self):
-        raise Exception("resetEditBorder UNUSED!")
-
-        if self.edit_qpath_gitem is not None:
-            self.edit_qpath_gitem.setPath(QPainterPath())
-        else:
-            self.edit_qpath = None
-        self.edit_points = []
-
-    def resetCrackTool(self):
-        raise Exception("resetCrackTool UNUSED!")
-
-        if self.crackWidget is not None:
-            self.crackWidget.close()
-
-        self.crackWidget = None
-
-        # panning of the crack preview cause some problems..
-        self.viewerplus.setDragMode(QGraphicsView.NoDrag)
-
-
-
-    def resetTools(self):
-        self.viewerplus.resetTools()
-
-        # #self.resetEditBorder()
-        # self.resetCrackTool()
-        # self.resetPickPoints()
-        #
-        # self.viewerplus.showCrossair = False
-        # self.viewerplus.scene.invalidate(self.viewerplus.scene.sceneRect())
-
-
-    @pyqtSlot(float, float)
-    def toolsOpsLeftPressed(self, x, y):
-
-        modifiers = QApplication.queryKeyboardModifiers()
-        if modifiers & Qt.ControlModifier:
-            return
-
-        if modifiers & Qt.ShiftModifier:
-            #if self.tool_orig == "FREEHAND":
-            #    self.tool_used = "EDITBORDER"
-            #else:
-            self.dragSelectionStart = [x, y]
-            logfile.info("[SELECTION][DRAG] Selection starts..")
-            return
-
-        if self.tool_used == "ASSIGN":
-
-            selected_blob = self.annotations.clickedBlob(x, y)
-
-            if selected_blob is not None:
-                self.addToSelectedList(selected_blob)
-                for blob in self.selected_blobs:
-                    self.setBlobClass(blob, self.labels_widget.getActiveLabelName())
-
-                message ="[TOOL][ASSIGN] Blob(s) assigned ({:d}) (CLASS={:s}).".format(len(self.selected_blobs),
-                                                                                       self.labels_widget.getActiveLabelName())
-                logfile.info(message)
-
-                self.saveUndo()
-                self.resetSelection()
-
-        elif self.tool_used in ["EDITBORDER", "CUT", "FREEHAND"]:
-
-            if len(self.edit_points) == 0: #first point, initialize
-                self.edit_qpath_gitem = self.viewerplus.scene.addPath(QPainterPath(), self.border_pen)
-                message = "[TOOL][" + self.tool_used + "] DRAWING starts.."
-                logfile.info(message)
-
-            self.edit_points.append(np.array([[x, y]]))
-
-            path = self.edit_qpath_gitem.path()
-            path.moveTo(QPointF(x, y))
-            self.edit_qpath_gitem.setPath(path)
-            self.viewerplus.scene.invalidate()
-
-        elif self.tool_used == "CREATECRACK":
-
-            selected_blob = self.annotations.clickedBlob(x, y)
-
-            if selected_blob is not None:
-
-                self.resetSelection()
-                self.addToSelectedList(selected_blob)
-
-
-
-                if self.crackWidget is None:
-
-                    #copy blob, for undo reasons.
-                    blob = selected_blob.copy()
-                    self.logBlobInfo(blob, "[TOOL][CREATECRACK][BLOB-SELECTED]")
-
-                    self.crackWidget = QtCrackWidget(self.img_map, self.annotations, blob, x, y, parent=self)
-                    self.crackWidget.setWindowModality(Qt.WindowModal)
-                    self.crackWidget.btnCancel.clicked.connect(self.crackCancel)
-                    self.crackWidget.btnApply.clicked.connect(self.crackApply)
-                    self.crackWidget.closeCrackWidget.connect(self.crackCancel)
-                    self.crackWidget.show()
-
-        elif self.tool_used == "RULER":
-
-            #first point
-            if self.pick_points_number == 0:
-                self.addPickPoint(x, y, self.ruler_pick_style)
-
-            #sedcond point
-            elif self.pick_points_number == 1:
-                self.addPickPoint(x, y, self.ruler_pick_style)
-                self.drawRuler()
-
-            else:
-                self.resetPickPoints()
-
-
-        elif self.tool_used == "SPLITBLOB":
-
-            #no selected blobs: select it!
-            if len(self.selected_blobs) == 0:
-                selected_blob = self.annotations.clickedBlob(x, y)
-                if selected_blob is None:
-                    self.infoWidget.setInfoMessage("Click on an area to split.")
-                    return
-                self.addToSelectedList(selected_blob)
-
-            if len(self.selected_blobs) != 1:
-                self.infoWidget.setInfoMessage("A single selected area is required.")
-                self.resetPickPoints()
-                return
-
-            condition = points_in_poly(np.array([[x, y]]), self.selected_blobs[0].contour)
-            if condition[0] != True:
-                self.infoWidget.setInfoMessage("Click on the selected area to split.")
-                return
-
-            self.addPickPoint(x, y, self.split_pick_style)
-
-
-        elif self.tool_used == "DEEPEXTREME":
-
-            if self.pick_points_number < 4:
-                self.addPickPoint(x, y, self.extreme_pick_style)
-                message = "[TOOL][DEEPEXTREME] New point picked (" + str(self.pick_points_number) + ")"
-                logfile.info(message)
-
-                # APPLY DEEP EXTREME
-                if self.pick_points_number == 4:
-                    self.segmentWithDeepExtreme()
-                    self.resetPickPoints()
-
-            else:
-
-                # it should never been happen to go here..
-                self.resetPickPoints()
-
-    @pyqtSlot(float, float)
-    def toolsOpsLeftReleased(self, x, y):
-        modifiers = QApplication.queryKeyboardModifiers()
-
-        if self.dragSelectionStart:
-            if abs(x - self.dragSelectionStart[0]) < 5 and abs(y - self.dragSelectionStart[1]) < 5:
-                self.selectOp(x, y)
-            else:
-                self.dragSelectBlobs(x, y)
-                self.dragSelectionStart = None
-                if self.dragSelectionRect:
-                    self.viewerplus.scene.removeItem(self.dragSelectionRect)
-                    del self.dragSelectionRect
-                    self.dragSelectionRect = None
-
-                logfile.info("[SELECTION][DRAG] Selection ends.")
-
-
-    # @pyqtSlot(float, float)
-    # def toolsOpsRightPressed(self, x, y):
-    #     pass
-    #
-    # @pyqtSlot(float, float)
-    # def toolsOpsMouseMove(self, x, y):
-    #
-    #     if self.dragSelectionStart:
-    #         start = self.dragSelectionStart
-    #         if not self.dragSelectionRect:
-    #             self.dragSelectionRect = self.viewerplus.scene.addRect(start[0], start[1], x-start[0], y-start[1], self.dragSelectionStyle)
-    #         self.dragSelectionRect.setRect(start[0], start[1], x - start[0], y - start[1])
-    #         return
-    #
-    #
-    #     modifiers = QApplication.queryKeyboardModifiers()
-    #     if modifiers & Qt.ControlModifier:
-    #         return
-    #
-    #     if self.tool_used in ["EDITBORDER", "CUT", "FREEHAND"]:
-    #
-    #         if len(self.edit_points) == 0:
-    #             return
-    #         #check that a move didn't happen before a press
-    #         last_line = self.edit_points[-1]
-    #
-    #
-    #         last_point = self.edit_points[-1][-1]
-    #         if x != last_point[0] or y != last_point[1]:
-    #             self.edit_points[-1] = np.append(last_line, [[x, y]], axis=0)
-    #             path = self.edit_qpath_gitem.path()
-    #             path.lineTo(QPointF(x, y))
-    #             self.edit_qpath_gitem.setPath(path)
-    #             self.viewerplus.scene.invalidate()
-
-
-    # def dragSelectBlobs(self, x, y):
-    #     sx = self.dragSelectionStart[0]
-    #     sy = self.dragSelectionStart[1]
-    #     self.resetSelection()
-    #     for blob in self.annotations.seg_blobs:
-    #         visible = self.labels_widget.isClassVisible(blob.class_name)
-    #         if not visible:
-    #             continue
-    #         box = blob.bbox
-    #
-    #         if sx > box[1] or sy > box[0] or x < box[1] + box[2] or y < box[0] + box[3]:
-    #             continue
-    #         self.addToSelectedList(blob)
-    #     return
-
-
-
-
-    # def computeMeasure(self):
-    #     """
-    #     It computes the measure between two points. If this point lies inside two blobs
-    #     the distance between the centroids is computed.
-    #     """
-    #
-    #     x1 = self.pick_points[0][0]
-    #     y1 = self.pick_points[0][1]
-    #     x2 = self.pick_points[1][0]
-    #     y2 = self.pick_points[1][1]
-    #
-    #     blob1 = self.annotations.clickedBlob(x1, y1)
-    #     blob2 = self.annotations.clickedBlob(x2, y2)
-    #
-    #     if blob1 is not None and blob2 is not None and blob1 != blob2:
-    #
-    #         x1 = blob1.centroid[0]
-    #         y1 = blob1.centroid[1]
-    #         x2 = blob2.centroid[0]
-    #         y2 = blob2.centroid[1]
-    #
-    #         self.pick_points[0][0] = x1
-    #         self.pick_points[0][1] = y1
-    #         self.pick_points[1][0] = x2
-    #         self.pick_points[1][1] = y2
-    #
-    #     measurepx = np.sqrt(((x2 - x1) ** 2) + ((y2 - y1) ** 2))
-    #
-    #     # conversion to cm
-    #     measure = measurepx * self.map_px_to_mm_factor / 10
-    #
-    #     return measure
 
 #REFACTOR call create a new project and treplace the old one.
 
@@ -1991,7 +1397,6 @@ class TagLab(QWidget):
             self.infoWidget.setInfoMessage("Map is loading..")
             self.viewerplus.setProject(self.project)
             self.viewerplus.setImage(self.image)
-
             self.viewerplus.setChannel(self.channel)
 
             self.img_thumb_map = self.viewerplus.pixmap.scaled(self.MAP_VIEWER_SIZE, self.MAP_VIEWER_SIZE, Qt.KeepAspectRatio,
@@ -2016,9 +1421,11 @@ class TagLab(QWidget):
     @pyqtSlot()
     def openProject(self):
 
-        filters = "ANNOTATION PROJECT (*.json)"
-        filename, _ = QFileDialog.getOpenFileName(self, "Open a project", self.taglab_dir, filters)
 
+        filters = "ANNOTATION PROJECT (*.json)"
+        dir = '/home/ponchio/devel/TagLab/map'
+        #filename, _ = QFileDialog.getOpenFileName(self, "Open a project", self.taglab_dir, filters)
+        filename = dir + '/test.json'
         if filename:
             self.load(filename)
 

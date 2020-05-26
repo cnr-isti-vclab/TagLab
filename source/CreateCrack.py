@@ -5,7 +5,7 @@ from source.Tool import Tool
 
 class CreateCrack(Tool):
     def __init__(self, viewerplus):
-        Tool.__init__(self, viewerplus)
+        super(CreateCrack, self).__init__(viewerplus)
 
     def leftPressed(self, x, y):
         selected_blob = self.viewerplus.annotations.clickedBlob(x, y)
@@ -16,13 +16,14 @@ class CreateCrack(Tool):
         self.viewerplus.resetSelection()
         self.viewerplus.addToSelectedList(selected_blob)
 
+        #cracWidget needs to be in Viewerplus for resetTools()
         crackWidget = self.viewerplus.crackWidget
         if crackWidget is None:
             # copy blob, for undo reasons.
             blob = selected_blob.copy()
-            self.logBlobInfo(blob, "[TOOL][CREATECRACK][BLOB-SELECTED]")
+            self.blobInfo.emit(blob, "[TOOL][CREATECRACK][BLOB-SELECTED]")
 
-            crackWidget = QtCrackWidget(self.viewerplus.img_map, self.viewerplus.annotations, blob, x, y, parent=self)
+            crackWidget = QtCrackWidget(self.viewerplus.img_map, self.viewerplus.annotations, blob, x, y, parent=self.viewerplus)
             crackWidget.setWindowModality(Qt.WindowModal)
             crackWidget.btnCancel.clicked.connect(self.crackCancel)
             crackWidget.btnApply.clicked.connect(self.crackApply)
@@ -39,11 +40,11 @@ class CreateCrack(Tool):
     def crackApply(self):
 
         new_blobs = self.viewerplus.crackWidget.apply()
-        self.logBlobInfo(self.viewerplus.selected_blobs[0], "[TOOL][CREATECRACK][BLOB-SELECTED]")
+        self.blobInfo.emit(self.viewerplus.selected_blobs[0], "[TOOL][CREATECRACK][BLOB-SELECTED]")
         self.viewerplus.removeBlob(self.viewerplus.selected_blobs[0])
         for blob in new_blobs:
             self.viewerplus.addBlob(blob, selected=True)
-            self.logBlobInfo(blob, "[TOOL][CREATECRACK][BLOB-EDITED]")
+            self.blobInfo.emit(blob, "[TOOL][CREATECRACK][BLOB-EDITED]")
 
         self.viewerplus.saveUndo()
         self.crackCancel()

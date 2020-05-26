@@ -69,7 +69,7 @@ class QtImageViewerPlus(QtImageViewer):
         self.tools = Tools(self)
         self.tools.createTools()
 
-        self.undo = Undo()
+        self.undo_data = Undo()
 
         self.dragSelectionStart = None
         self.dragSelectionRect = None
@@ -88,6 +88,7 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.showCrossair = False
         self.mouseCoords = QPointF(0, 0)
+        self.crackWidget = None
 
         self.setContextMenuPolicy(Qt.CustomContextMenu)
 
@@ -144,7 +145,7 @@ class QtImageViewerPlus(QtImageViewer):
     def clear(self):
         QtImageViewer.clear(self)
         self.selected_blobs = []
-        self.undo = Undo()
+        self.undo_data = Undo()
 
         for blob in self.annotations.seg_blobs:
             self.undrawBlob(blob)
@@ -179,7 +180,7 @@ class QtImageViewerPlus(QtImageViewer):
         self.scene.removeItem(blob.qpath_gitem)
         blob.qpath = None
         blob.qpath_gitem = None
-        self.viewerplus.scene.invalidate()
+        self.scene.invalidate()
 
 
     def applyTransparency(self, value):
@@ -294,11 +295,14 @@ class QtImageViewerPlus(QtImageViewer):
                     self.dragSelectBlobs(x, y)
                     self.dragSelectionStart = None
                     if self.dragSelectionRect:
-                        self.viewerplus.scene.removeItem(self.dragSelectionRect)
+                        self.scene.removeItem(self.dragSelectionRect)
                         del self.dragSelectionRect
                         self.dragSelectionRect = None
 
                     self.logfile.info("[SELECTION][DRAG] Selection ends.")
+            else:
+                self.tools.leftReleased(x, y)
+
            # self.leftMouseButtonReleased.emit(clippedCoords[0], clippedCoords[1])
 
 
@@ -326,7 +330,7 @@ class QtImageViewerPlus(QtImageViewer):
             if Qt.ControlModifier & QApplication.queryKeyboardModifiers():
                 return
 
-#            self.tools.mouseMove(x, y)
+            self.tools.mouseMove(x, y)
 
 
     def mouseDoubleClickEvent(self, event):
@@ -367,7 +371,7 @@ class QtImageViewerPlus(QtImageViewer):
         sy = self.dragSelectionStart[1]
         self.resetSelection()
         for blob in self.annotations.seg_blobs:
-            visible = self.labels_widget.isClassVisible(blob.class_name)
+            visible = self.project.isLabelVisible(blob.class_name)
             if not visible:
                 continue
             box = blob.bbox
@@ -380,7 +384,7 @@ class QtImageViewerPlus(QtImageViewer):
     def updateVisibility(self):
         for blob in self.annotations.seg_blobs:
 
-            visibility = self.labels_widget.isClassVisible(blob.class_name)
+            visibility = self.project.isLabelVisible(blob.class_name)
             if blob.qpath_gitem is not None:
                 blob.qpath_gitem.setVisible(visibility)
 
@@ -433,8 +437,9 @@ class QtImageViewerPlus(QtImageViewer):
         """
         The only function to add annotations. will take care of undo and QGraphicItems.
         """
-        self.undo.addBlob(blob)
-        self.undo_operation['remove'].append(blob)
+        print("adding blob")
+        self.undo_data.addBlob(blob)
+        #self.undo_data_operation['remove'].append(blob)
         self.annotations.addBlob(blob)
         self.drawBlob(blob)
         if selected:
@@ -446,7 +451,7 @@ class QtImageViewerPlus(QtImageViewer):
         """
         self.removeFromSelectedList(blob)
         self.undrawBlob(blob)
-        self.undo.removeBlob(blob)
+        self.undo_data.removeBlob(blob)
         self.annotations.removeBlob(blob)
 
     def deleteSelectedBlobs(self):
@@ -458,7 +463,7 @@ class QtImageViewerPlus(QtImageViewer):
         if blob.class_name == class_name:
             return
 
-        self.undo.setBlobClass(blob, class_name)
+        self.undo_data.setBlobClass(blob, class_name)
 
         blob.class_name = class_name
         if class_name == "Empty":
@@ -476,12 +481,15 @@ class QtImageViewerPlus(QtImageViewer):
 #UNDO STUFF
 
     def saveUndo(self):
-        self.undo.saveUndo()
+        self.undo_data.saveUndo()
 
     def undo(self):
-        operation = self.undo.undo()
+        print("undoing")
+        operation = self.undo_data.undo()
         if operation is None:
             return
+
+        print("operation")
 
         for blob in operation['remove']:
             message = "[UNDO][REMOVE] BLOBID={:d} VERSION={:d}".format(blob.id, blob.version)
@@ -505,7 +513,7 @@ class QtImageViewerPlus(QtImageViewer):
         self.updateVisibility()
 
     def redo(self):
-        operation = self.undo.redo()
+        operation = self.undo_data.redo()
         if operation is None:
             return
 

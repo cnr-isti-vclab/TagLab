@@ -502,6 +502,8 @@ class Blob(object):
         # finalize blob
         #self.setupForDrawing()
 
+    def save(self):
+        return self.toDict()
 
     def toDict(self):
         """

@@ -4,7 +4,7 @@ from source.Tool import Tool
 
 class EditBorder(Tool):
     def __init__(self, viewerplus, edit_points):
-        Tool.__init__(self, viewerplus)
+        super(EditBorder, self).__init__(viewerplus)
         self.edit_points = edit_points
 
     def leftPressed(self, x, y):
@@ -13,3 +13,30 @@ class EditBorder(Tool):
 
     def mouseMove(self, x, y):
         self.edit_points.move(x, y)
+
+    def apply(self):
+        points = self.edit_points.points
+        if len(points) == 0:
+            self.infoMessage.emit("You need to draw something for this operation.")
+            return
+
+        if len(self.viewerplus.selected_blobs) != 1:
+            self.infoMessage("A single selected area is required.")
+            return
+
+        selected_blob = self.viewerplus.selected_blobs[0]
+
+        blob = selected_blob.copy()
+        self.edit_points.last_editborder_points = points
+        self.viewerplus.annotations.editBorder(blob, points)
+
+        self.blobInfo.emit(selected_blob, "[TOOL][EDITEDBORDER][BLOB-SELECTED]")
+        self.blobInfo.emit(blob, "[TOOL][EDITEDBORDER][BLOB-EDITED]")
+
+        self.log.emit("[TOOL][EDITBORDER] Operation ends.")
+
+        self.viewerplus.removeBlob(selected_blob)
+        self.viewerplus.addBlob(blob, selected=True)
+        self.viewerplus.saveUndo()
+
+        self.viewerplus.resetTools()

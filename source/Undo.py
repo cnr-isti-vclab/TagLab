@@ -48,8 +48,8 @@ class Undo(object):
 
 
     def redo(self):
-        if self.undo_position >= len(self.operations) - 1:
+        if self.position >= len(self.operations) - 1:
             return None
-        self.undo_position += 1
-        operation = self.undo_operations[self.undo_position]
+        self.position += 1
+        operation = self.operations[self.position]
         return operation

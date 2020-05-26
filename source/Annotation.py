@@ -124,10 +124,11 @@ class Annotation(object):
         del self.seg_blobs[index]
 
     def save(self):
-        data = []
-        for blob in self.seg_blobs:
-            data.append(blob.toDict())
-        return data
+        return self.seg_blobs
+        #data = []
+        #for blob in self.seg_blobs:
+        #    data.append(blob.toDict())
+        #return data
 
     #move to BLOB!
     def blobsFromMask(self, seg_mask, map_pos_x, map_pos_y, area_mask):

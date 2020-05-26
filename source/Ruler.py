@@ -6,7 +6,7 @@ from source.Tool import Tool
 
 class Ruler(Tool):
     def __init__(self, viewerplus, pick_points ):
-        Tool.__init__(self, viewerplus)
+        super(Ruler, self).__init__(viewerplus)
         self.pick_points = pick_points
         self.scene = viewerplus.scene
 
@@ -18,14 +18,15 @@ class Ruler(Tool):
         self.map_px_to_mm_factor = factor
 
     def leftPressed(self, x, y):
+        points = self.pick_points.points
         # first point
-        if self.pick_points.points_number == 0:
+        if len(points) == 0:
             self.pick_points.addPoint(x, y, self.pick_style)
 
         # sedcond point
-        elif self.pick_points.points_number == 1:
+        elif len(points) == 1:
             self.pick_points.addPoint(x, y, self.pick_style)
-            self.drawRuler()
+            self.drawRuler(self.viewerplus.annotations)
 
         else:
             self.pick_points.reset()
@@ -86,9 +87,10 @@ class Ruler(Tool):
             x2 = blob2.centroid[0]
             y2 = blob2.centroid[1]
 
-            self.points[0][0] = x1
-            self.points[1][0] = x2
-            self.points[1][1] = y2
+            points[0][0] = x1
+            points[1][0] = x2
+            points[1][0] = y1
+            points[1][1] = y2
 
         measurepx = np.sqrt(((x2 - x1) ** 2) + ((y2 - y1) ** 2))
 

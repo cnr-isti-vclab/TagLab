@@ -6,16 +6,20 @@ from PyQt5.QtGui import QBrush, QColor
 
 from source.Image import Image
 from source.Channel import Channel
+from source.Annotation import Annotation
 from source.Blob import Blob
 from source.Label import Label
 
 
 def loadProject(filename):
+    dir = QDir(os.getcwd())
+    filename = dir.relativeFilePath(filename)
     f = open(filename, "r")
     try:
         data = json.load(f)
     except json.JSONDecodeError as e:
         raise Exception(str(e))
+
 
     if "Map File" in data:
         project =  loadOldProject(data)
@@ -47,12 +51,28 @@ def loadOldProject(data):
     project.images.append(image)
     return project
 
+class ProjectEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Image):
+            return obj.save()
+        elif isinstance(obj, Channel):
+            return obj.save()
+        elif isinstance(obj, Label):
+            return obj.save()
+        elif isinstance(obj, Annotation):
+            return obj.save()
+        elif isinstance(obj, Blob):
+            return obj.save()
+
+        return json.JSONEncoder.default(self, obj)
+
+
 
 class Project(object):
     def __init__(self, filename = None, labels = {}, images = [], correspondences = [],
                  spatial_reference_system = None, metadata = {}, image_metadata_template = {}):
         self.filename = None        #filename with path of the project json
-        self.labels = labels        #list of labels used in this project
+        self.labels = { key: Label(**value) for key, value in labels.items() }
         self.images = list(map(lambda img: Image(**img), images))       #list of annotated images
         self.correspondences = correspondences   #list of correspondences betweeen labels in images
                                     #[ [source_img: , target_img:, [[23, 12, [grow, shrink, split, join] ... ] }
@@ -62,14 +82,20 @@ class Project(object):
                                            # name: { type: (integer, date, string), mandatory: (true|false), default: ... }
 
     def save(self, filename = None):
+        #try:
         data = self.__dict__
-        data["images"] = list(map(lambda img: img.save(), self.images))
+        for img in self.images:
+            print(img)
+        #data["images"] = list(map(lambda img: img.save(), self.images))
+        str = json.dumps(data, cls=ProjectEncoder)
 
-        if filename is not None:
+        if filename is None:
             filename = self.filename
         f = open(filename, "w")
-        f.write(json.dumps(data))
+        f.write(str)
         f.close()
+        #except Exception as a:
+        #    print(str(a))
 
     def classBrushFromName(self, blob):
         brush = QBrush()
@@ -80,6 +106,15 @@ class Project(object):
             print("Missing label for " + blob.class_name + ". Creating one.")
             self.labels[blob.class_name] = Label(blob.class_name, blob.class_name, fill = [255, 0, 0])
 
+
+        print(self.labels[blob.class_name])
         color = self.labels[blob.class_name].fill
         brush = QBrush(QColor(color[0], color[1], color[2], 200))
         return brush
+
+    def isLabelVisible(self, id):
+        if id == "Empty":
+            return True
+        if not id in self.labels:
+            raise Exception("Unknown label: " + id)
+        return self.labels[id].visible

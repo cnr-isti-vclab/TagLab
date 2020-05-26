@@ -4,7 +4,7 @@ from source.Tool import Tool
 
 class Assign(Tool):
     def __init__(self, viewerplus):
-        Tool.__init__(self, viewerplus)
+        super(Assign, self).__init__(viewerplus)
         self.active_label = None
 
     def setActiveLabel(self, label):

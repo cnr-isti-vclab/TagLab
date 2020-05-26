@@ -1,14 +1,15 @@
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import QObject, pyqtSignal
 
 from source.Blob import Blob
 
-class Tool(object):
-    def __init__(self, viewerplus):
-        self.viewerplus = viewerplus
+class Tool(QObject):
+    infoMessage = pyqtSignal(str)
+    log = pyqtSignal(str)
+    blobInfo = pyqtSignal(Blob, str)
 
-        infoMessage = pyqtSignal(str)
-        log = pyqtSignal(str)
-        blobInfo = pyqtSignal(Blob, str)
+    def __init__(self, viewerplus):
+        super(Tool, self).__init__()
+        self.viewerplus = viewerplus
 
     def leftPressed(self, x, y):
         pass
@@ -17,4 +18,7 @@ class Tool(object):
         pass
 
     def leftReleased(self, x, y):
+        pass
+
+    def apply(self):
         pass

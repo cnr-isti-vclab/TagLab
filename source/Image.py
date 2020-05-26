@@ -35,6 +35,4 @@ class Image(object):
 
     def save(self):
         data = self.__dict__
-        data["annotations"] = self.annotations.save()
-        data["channels"] = list(map(lambda m: m.save(), self.channels))
         return data

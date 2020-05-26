@@ -65,9 +65,9 @@ class Tools(object):
         self.showCrossair = False
         self.scene.invalidate(self.scene.sceneRect())
 
-        if self.crackWidget is not None:
-            self.crackWidget.close()
-        self.crackWidget = None
+        if self.viewerplus.crackWidget is not None:
+            self.viewerplus.crackWidget.close()
+        self.viewerplus.crackWidget = None
 
         if self.tool == "AUTOCLASS":
             self.corals_classifier.stopProcessing()
@@ -89,8 +89,11 @@ class Tools(object):
             return
         self.tools[self.tool].leftReleased(x, y)
 
-
-
+    def applyTool(self):
+        print("self.tool: " + self.tool)
+        if self.tool == "MOVE":
+            return
+        self.tools[self.tool].apply()
 
 
 

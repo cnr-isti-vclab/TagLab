@@ -1,11 +1,15 @@
 import numpy as np
 
-from PyQt5.QtCore import Qt, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
+from PyQt5.QtCore import Qt, QObject, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
 from PyQt5.QtGui import QImage, QPixmap, QPainter, QPainterPath, QPen, QImageReader, QFont
 from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsItem, QGraphicsScene, QFileDialog, QGraphicsPixmapItem
 
-class EditPoints(object):
+class EditPoints(QObject):
+
+    log = pyqtSignal(str)
+
     def __init__(self, scene):
+        super(EditPoints, self).__init__()
 
         self.scene = scene
         self.points = []
@@ -16,6 +20,7 @@ class EditPoints(object):
         self.border_pen.setCosmetic(True)
 
         self.qpath_gitem = self.scene.addPath(QPainterPath(), self.border_pen)
+        self.qpath_gitem.setZValue(2)
         self.last_editborder_points = []
 
     def reset(self):
@@ -28,11 +33,11 @@ class EditPoints(object):
 
         first_start = False
         if len(self.points) == 0:  # first point, initialize
-            self.qpath_gitem = self.scene.addPath(QPainterPath(), self.border_pen)
+            self.qpath_gitem.setPath(QPainterPath())
             first_start = True
 
-#            message = "[TOOL][" + self.tool + "] DRAWING starts.."
-#            logfile.info(message)
+            message = "[TOOL] DRAWING starts.."
+            self.log.emit(message)
 
         self.points.append(np.array([[x, y]]))
 
@@ -45,8 +50,9 @@ class EditPoints(object):
 
     def move(self, x, y):
 
-        if len(self.edit_points) == 0:
+        if len(self.points) == 0:
             return
+
         # check that a move didn't happen before a press
         last_line = self.points[-1]
 

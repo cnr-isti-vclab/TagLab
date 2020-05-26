@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import QApplication
 from source.Tool import Tool
 from source import utils
 
+import os
 import numpy as np
 
 try:
@@ -20,7 +21,7 @@ from collections import OrderedDict
 
 class DeepExtreme(Tool):
     def __init__(self, viewerplus, pick_points):
-        Tool.__init__(self, viewerplus)
+        super(DeepExtreme, self).__init__(viewerplus)
         self.pick_points = pick_points
 
         self.CROSS_LINE_WIDTH = 2
@@ -28,26 +29,25 @@ class DeepExtreme(Tool):
         self.deepextreme_net = None
 
     def leftPressed(self, x, y):
-        if self.pick_points.points_number < 4:
+        points = self.pick_points.points
+
+        if len(points) < 4:
             self.pick_points.addPoint(x, y, self.pick_style)
-            message = "[TOOL][DEEPEXTREME] New point picked (" + str(self.pick_points.points_number) + ")"
+            message = "[TOOL][DEEPEXTREME] New point picked (" + str(len(points)) + ")"
             self.log.emit(message)
-            return
 
         # APPLY DEEP EXTREME
-        if self.pick_points.points_number == 4:
+        if len(points) == 4:
             self.segmentWithDeepExtreme()
-
-        self.pick_points.reset()
+            self.pick_points.reset()
 
 
     def segmentWithDeepExtreme(self):
-
         QApplication.setOverrideCursor(Qt.WaitCursor)
-        self.infomessage.emit("Segmentation is ongoing..")
+        self.infoMessage.emit("Segmentation is ongoing..")
         self.log.emit("[TOOL][DEEPEXTREME] Segmentation begins..")
 
-
+        self.loadNetwork()
 
         pad = 50
         thres = 0.8
@@ -55,7 +55,7 @@ class DeepExtreme(Tool):
         device = torch.device("cuda:" + str(gpu_id) if torch.cuda.is_available() else "cpu")
         self.deepextreme_net.to(device)
 
-        extreme_points_to_use = np.asarray(self.pick_points).astype(int)
+        extreme_points_to_use = np.asarray(self.pick_points.points).astype(int)
         pad_extreme = 100
         left_map_pos = extreme_points_to_use[:, 0].min() - pad_extreme
         top_map_pos = extreme_points_to_use[:, 1].min() - pad_extreme
