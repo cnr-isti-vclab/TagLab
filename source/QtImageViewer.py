@@ -9,7 +9,7 @@ class QtImageViewer(QGraphicsView):
     QGraphicsView handles a scene composed by an image plus shapes (rectangles, polygons, blobs).
     The input image (it must be a QImage) is internally converted into a QPixmap.
     """
-    viewUpdated = pyqtSignal()
+    viewUpdated = pyqtSignal(QRectF)       #region visible in percentage
 
     def __init__(self):
         QGraphicsView.__init__(self)
@@ -35,8 +35,8 @@ class QtImageViewer(QGraphicsView):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
 
-        self.verticalScrollBar().valueChanged.connect(self.viewUpdated)
-        self.horizontalScrollBar().valueChanged.connect(self.viewUpdated)
+        self.verticalScrollBar().valueChanged.connect(self.viewChanged)
+        self.horizontalScrollBar().valueChanged.connect(self.viewChanged)
 
         # Panning is enabled if and only if the image is greater than the viewport.
         self.panEnabled = True
@@ -91,6 +91,10 @@ class QtImageViewer(QGraphicsView):
         self.zoom_factor = zf
 
         self.updateViewer()
+    @pyqtSlot()
+    def viewChanged(self):
+        rect = self.viewportToScenePercent()
+        self.viewUpdated.emit(rect)
 
     def updateViewer(self):
         """ Show current zoom (if showing entire image, apply current aspect ratio mode).
@@ -101,6 +105,7 @@ class QtImageViewer(QGraphicsView):
         self.invalidateScene()
 
     def clear(self):
+        self.pixmapitem.setPixmap(QPixmap())
         self.img_map = None
 
     def disableScrollBars(self):
@@ -191,3 +196,23 @@ class QtImageViewer(QGraphicsView):
         """ Maintain current zoom on resize.
         """
         self.updateViewer()
+
+    @pyqtSlot(float, float)
+    def center(self, x, y):
+
+        zf = self.zoom_factor
+
+        xmap = float(self.img_map.width()) * x
+        ymap = float(self.img_map.height()) * y
+
+        view = self.viewportToScene()
+        (w, h) = (view.width(), view.height())
+
+        posx = max(0, xmap - w / 2)
+        posy = max(0, ymap - h / 2)
+
+        posx = min(posx, self.img_map.width() - w / 2)
+        posy = min(posy, self.img_map.height() - h / 2)
+
+        self.horizontalScrollBar().setValue(posx * zf)
+        self.verticalScrollBar().setValue(posy * zf)

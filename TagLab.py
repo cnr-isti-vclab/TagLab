@@ -32,7 +32,7 @@ from skimage.measure import points_in_poly
 
 #import rasterio as rio
 
-from PyQt5.QtCore import Qt, QSize, QDir, QPoint, QPointF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo
+from PyQt5.QtCore import Qt, QSize, QDir, QPoint, QPointF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo
 from PyQt5.QtGui import QPainterPath, QFont, QColor, QPolygonF, QImageReader, QImage, QPixmap, QIcon, QKeySequence, \
     QPen, QBrush, qRgb, qRed, qGreen, qBlue
 from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QDialog, QMenuBar, QMenu, QSizePolicy, QScrollArea, \
@@ -113,21 +113,13 @@ class TagLab(QWidget):
         self.annotations = Annotation()  #REFACTOR we might want to move under project (or not?)
 
         self.map_3D_filename = None    #refactor THIS!
-        self.map_image_filename = "map.png"  #REFACTOR to project.map_filename
-        self.map_acquisition_date = "YYYY-MM-DD"
+        self.map_image_filename = None #"map.png"  #REFACTOR to project.map_filename
+        self.map_acquisition_date = None #"YYYY-MM-DD"
         self.map_px_to_mm_factor = 1.0
 
         self.recentFileActs = []  #refactor to self.maxRecentProjects
         self.maxRecentFiles = 4   #refactor to maxRecentProjects
         self.separatorRecentFilesAct = None    #refactor to separatorRecentFiles
-
-        # # ANNOTATION DATA
-        # self.undo_operations = []
-        # self.undo_position = -1
-        # """Temporary variable to hold the added and removed of the last operation."""
-        # self.undo_operation = { 'remove':[], 'add':[], 'class':[], 'newclass':[] }
-        # """Max number  of undo operations"""
-        # self.max_undo = 100
 
 
         ##### INTERFACE #####
@@ -192,17 +184,20 @@ class TagLab(QWidget):
         self.refineActionErode  = self.newAction("Refine Border Erode",     "-",   self.refineBorderErode)
         self.fillAction         = self.newAction("Fill Label",              "F",   self.fillLabel)
 
-        #       in case we want a refine all selected borders
-        #        refineActionAll = QAction("Refine All Borders", self)
-        #        refineActionAll.setShortcut(QKeySequence("^"))
-        #        refineActionAll.setShortcutVisibleInContextMenu(True)
-        #        menu.addAction(refineActionAll)
-        #            self.refineAllBorders()
 
+        #VIEWERPLUS
         self.viewerplus = QtImageViewerPlus()
         self.viewerplus.logfile = logfile
         self.viewerplus.viewUpdated.connect(self.updateViewInfo)
         self.viewerplus.updateInfoPanel.connect(self.updatePanelInfo)
+
+        # MAP VIEWER
+        self.mapviewer = QtMapViewer(self.MAP_VIEWER_SIZE)
+        self.mapviewer.setPixmap(None)
+
+        self.viewerplus.viewUpdated[QRectF].connect(self.mapviewer.drawOverlayImage)
+        self.mapviewer.leftMouseButtonPressed[float, float].connect(self.viewerplus.center)
+        self.mapviewer.mouseMoveLeftPressed[float, float].connect(self.viewerplus.center)
 
         ###### LAYOUT MAIN VIEW
 
@@ -313,9 +308,6 @@ class TagLab(QWidget):
         # INFO WIDGET
         self.infoWidget = QtInfoWidget(self)
 
-        # MAP VIEWER
-        self.mapviewer = QtMapViewer(self.MAP_VIEWER_SIZE)
-        self.mapviewer.setPixmap(None)
 
         layout_labels = QVBoxLayout()
         self.mapviewer.setStyleSheet("background-color: rgb(40,40,40); border:none")
@@ -370,8 +362,6 @@ class TagLab(QWidget):
         self.compare_panel.hideAnnotations.connect(self.hidePrevBlobs)
         self.compare_panel.showAnnotations.connect(self.showPrevBlobs)
 
-        self.mapviewer.leftMouseButtonPressed.connect(self.updateMainView)
-        self.mapviewer.mouseMoveLeftPressed.connect(self.updateMainView)
 
         #self.viewerplus.leftMouseButtonPressed.connect(self.toolsOpsLeftPressed)
         #self.viewerplus.leftMouseButtonReleased.connect(self.toolsOpsLeftReleased)
@@ -526,10 +516,10 @@ class TagLab(QWidget):
             self.recentFileActs.append(QAction(self, visible=False, triggered=self.openRecentProject))
 
         # THIS WILL BECOME "ADD MAP" TO ADD MULTIPLE MAPS (e.g. depth, different years)
-        loadMapAct = QAction("Load Map", self)
-        loadMapAct.setShortcut('Ctrl+L')
-        loadMapAct.setStatusTip("Set and load a map")
-        loadMapAct.triggered.connect(self.setMapToLoad)
+        newMapAct = QAction("New Map..", self)
+        newMapAct.setShortcut('Ctrl+L')
+        newMapAct.setStatusTip("Add a new map to the project and load it")
+        newMapAct.triggered.connect(self.setMapToLoad)
 
         ### IMPORT
 
@@ -615,7 +605,7 @@ class TagLab(QWidget):
         filemenu.addAction(saveAct)
         filemenu.addAction(saveAsAct)
         filemenu.addSeparator()
-        filemenu.addAction(loadMapAct)
+        filemenu.addAction(newMapAct)
         filemenu.addSeparator()
 
         for i in range(self.maxRecentFiles):
@@ -871,52 +861,46 @@ class TagLab(QWidget):
 
         self.labelViewInfo.setText(text)
 
-    @pyqtSlot(float, float)
-    def updateMainView(self, x, y):
+    # @pyqtSlot(float, float)
+    # def updateMainView(self, x, y):
+    #
+    #     zf = self.viewerplus.zoom_factor
+    #
+    #     xmap = float(self.img_map.width()) * x
+    #     ymap = float(self.img_map.height()) * y
+    #
+    #     h = self.map_bottom - self.map_top
+    #     w = self.map_right - self.map_left
+    #
+    #     posx = xmap - w / 2
+    #     posy = ymap - h / 2
+    #
+    #     if posx < 0:
+    #         posx = 0
+    #     if posy < 0:
+    #         posy = 0
+    #
+    #     if posx + w/2 > self.img_map.width():
+    #         posx = self.img_map.width() - w / 2 - 1
+    #
+    #     if posy + h/2 > self.img_map.height():
+    #         posy = self.img_map.height() - h / 2 - 1
+    #
+    #     posx = posx * zf;
+    #     posy = posy * zf;
+    #
+    #     self.viewerplus.horizontalScrollBar().setValue(posx)
+    #     self.viewerplus.verticalScrollBar().setValue(posy)
 
-        zf = self.viewerplus.zoom_factor
 
-        xmap = float(self.img_map.width()) * x
-        ymap = float(self.img_map.height()) * y
-
-        h = self.map_bottom - self.map_top
-        w = self.map_right - self.map_left
-
-        posx = xmap - w / 2
-        posy = ymap - h / 2
-
-        if posx < 0:
-            posx = 0
-        if posy < 0:
-            posy = 0
-
-        if posx + w/2 > self.img_map.width():
-            posx = self.img_map.width() - w / 2 - 1
-
-        if posy + h/2 > self.img_map.height():
-            posy = self.img_map.height() - h / 2 - 1
-
-        posx = posx * zf;
-        posy = posy * zf;
-
-        self.viewerplus.horizontalScrollBar().setValue(posx)
-        self.viewerplus.verticalScrollBar().setValue(posy)
-
-    @pyqtSlot()
-    def updateMapViewer(self):
-        view = self.viewerplus.viewportToScenePercent()
-        self.mapviewer.drawOverlayImage(view.top(), view.left(), view.bottom(), view.right())
 
     def resetAll(self):
         self.viewerplus.clear()
-
+        self.mapviewer.clear()
         # RE-INITIALIZATION
 
         self.mapWidget = None
         self.project = Project()
-        #self.map_image_filename = "map.png"
-        #self.map_acquisition_date = "YYYY-MM-DD"
-        #self.map_px_to_mm_factor = 1.0
 
 
     def resetToolbar(self):
@@ -1347,7 +1331,9 @@ class TagLab(QWidget):
             self.mapWidget.btnApply.clicked.connect(self.setMapProperties)
 
             # transfer current data to widget
+
             self.mapWidget.editMapFile.setText(self.map_image_filename)
+
             self.mapWidget.editAcquisitionDate.setText(self.map_acquisition_date)
             self.mapWidget.editScaleFactor.setText(str(self.map_px_to_mm_factor))
 
@@ -1396,16 +1382,13 @@ class TagLab(QWidget):
             QApplication.setOverrideCursor(Qt.WaitCursor)
             self.infoWidget.setInfoMessage("Map is loading..")
             self.viewerplus.setProject(self.project)
-            self.viewerplus.setImage(self.image)
+            self.viewerplus.setImage(image)
             self.viewerplus.setChannel(self.channel)
 
             self.img_thumb_map = self.viewerplus.pixmap.scaled(self.MAP_VIEWER_SIZE, self.MAP_VIEWER_SIZE, Qt.KeepAspectRatio,
                                                  Qt.SmoothTransformation)
             self.mapviewer.setPixmap(self.img_thumb_map)
             self.mapviewer.setOpacity(0.5)
-
-            # TODO: why don;t we do it when creating viewerplus and mapviewer?
-            self.viewerplus.viewUpdated.connect(self.updateMapViewer)
 
             self.infoWidget.setInfoMessage("The map has been successfully loading.")
 
@@ -1423,9 +1406,10 @@ class TagLab(QWidget):
 
 
         filters = "ANNOTATION PROJECT (*.json)"
-        dir = '/home/ponchio/devel/TagLab/map'
-        #filename, _ = QFileDialog.getOpenFileName(self, "Open a project", self.taglab_dir, filters)
-        filename = dir + '/test.json'
+        #dir = '/home/ponchio/devel/TagLab/map'
+        #filename = dir + '/test.json'
+        filename, _ = QFileDialog.getOpenFileName(self, "Open a project", self.taglab_dir, filters)
+
         if filename:
             self.load(filename)
 
@@ -1656,48 +1640,6 @@ class TagLab(QWidget):
         logfile.info(message)
 
 
-        return
-
-
-        # dir = QDir(self.taglab_dir)
-        #
-        # self.project_name = loaded_dict["Project Name"]
-        # self.map_image_filename = dir.relativeFilePath(loaded_dict["Map File"])
-        # info = QFileInfo(self.map_image_filename)
-        # if not info.exists():
-        #     (map_image_filename, filter) = QFileDialog.getOpenFileName(self, "Couldn't find the map, please select it:", QFileInfo(filename).dir().path(), "Image Files (*.png *.jpg)")
-        #     self.map_image_filename = dir.relativeFilePath(map_image_filename)
-        #
-        # self.map_acquisition_date = loaded_dict["Acquisition Date"]
-        # self.map_px_to_mm_factor = float(loaded_dict["Map Scale"])
-        #
-        # f.close()
-        #
-        # for blob_dict in loaded_dict["Segmentation Data"]:
-        #
-        #     blob = Blob(None, 0, 0, 0)
-        #     blob.fromDict(blob_dict)
-        #     self.annotations.seg_blobs.append(blob)
-        #
-        # QApplication.restoreOverrideCursor()
-        #
-        # self.loadMap()
-        #
-        # self.setProjectTitle(self.project_name)
-        #
-        # for blob in self.annotations.seg_blobs:
-        #     self.drawBlob(blob)
-        #
-        # if self.timer is None:
-        #     self.activateAutosave()
-        #
-        # self.infoWidget.setInfoMessage("The given project has been successfully open.")
-        #
-        # message = "[PROJECT] The project " + self.project_name + " has been loaded."
-        # logfile.info(message)
-        #
-        # self.compare_panel.setProject(self.project_name)
-
     def append(self, filename, append_to_current):
         """
         Append the annotations of a previously saved projects.
@@ -1747,30 +1689,8 @@ class TagLab(QWidget):
         """
         Save the current project.
         """
-
         QApplication.setOverrideCursor(Qt.WaitCursor)
         self.project.save()
-
-        # dict_to_save = {}
-        #
-        # # update project name
-        # dir = QDir(self.taglab_dir)
-        #
-        # dict_to_save["Project Name"] = self.project_name
-        # dict_to_save["Map File"] = dir.relativeFilePath(self.map_image_filename)
-        # dict_to_save["Acquisition Date"] = self.map_acquisition_date
-        # dict_to_save["Map Scale"] = self.map_px_to_mm_factor
-        # dict_to_save["Segmentation Data"] = [] # a list of blobs, each blob is a dictionary
-        #
-        # for blob in self.annotations.seg_blobs:
-        #     dict = blob.toDict()
-        #     dict_to_save["Segmentation Data"].append(dict)
-        #
-        # str = json.dumps(dict_to_save)
-        #
-        # f = open(filename, "w")
-        # f.write(str)
-        # f.close()
 
         QApplication.restoreOverrideCursor()
 
@@ -1921,117 +1841,6 @@ class TagLab(QWidget):
                 gc.collect()
 
                 self.move()
-
-    # def loadingDeepExtremeNetwork(self):
-    #
-    #     # Initialization
-    #     modelName = 'dextr_corals'
-    #
-    #     #  Create the network and load the weights
-    #     self.deepextreme_net = resnet.resnet101(1, nInputChannels=4, classifier='psp')
-    #
-    #     models_dir = "models/"
-    #
-    #     # dictionary layers' names - weights
-    #     state_dict_checkpoint = torch.load(os.path.join(models_dir, modelName + '.pth'),
-    #                                        map_location=lambda storage, loc: storage)
-    #
-    #     # Remove the prefix .module from the model when it is trained using DataParallel
-    #     if 'module.' in list(state_dict_checkpoint.keys())[0]:
-    #         new_state_dict = OrderedDict()
-    #         for k, v in state_dict_checkpoint.items():
-    #             name = k[7:]  # remove `module.` from multi-gpu training
-    #             new_state_dict[name] = v
-    #     else:
-    #         new_state_dict = state_dict_checkpoint
-    #
-    #     self.deepextreme_net.load_state_dict(new_state_dict)
-    #     self.deepextreme_net.eval()
-    #     if not torch.cuda.is_available():
-    #         print("CUDA NOT AVAILABLE!")
-
-    # def segmentWithDeepExtreme(self):
-    #
-    #     QApplication.setOverrideCursor(Qt.WaitCursor)
-    #
-    #     self.infoWidget.setInfoMessage("Segmentation is ongoing..")
-    #
-    #     logfile.info("[TOOL][DEEPEXTREME] Segmentation begins..")
-    #
-    #     pad = 50
-    #     thres = 0.8
-    #     gpu_id = 0
-    #     device = torch.device("cuda:" + str(gpu_id) if torch.cuda.is_available() else "cpu")
-    #     self.deepextreme_net.to(device)
-    #
-    #     extreme_points_to_use = np.asarray(self.pick_points).astype(int)
-    #     pad_extreme = 100
-    #     left_map_pos = extreme_points_to_use[:, 0].min() - pad_extreme
-    #     top_map_pos = extreme_points_to_use[:, 1].min() - pad_extreme
-    #
-    #     width_extreme_points = extreme_points_to_use[:, 0].max() - extreme_points_to_use[:, 0].min()
-    #     height_extreme_points = extreme_points_to_use[:, 1].max() - extreme_points_to_use[:, 1].min()
-    #     area_extreme_points = width_extreme_points * height_extreme_points
-    #
-    #     (img, extreme_points_new) = utils.prepareForDeepExtreme(self.img_map, extreme_points_to_use, pad_extreme)
-    #
-    #     with torch.no_grad():
-    #
-    #         extreme_points_ori = extreme_points_new.astype(int)
-    #
-    #         #  Crop image to the bounding box from the extreme points and resize
-    #         bbox = helpers.get_bbox(img, points=extreme_points_ori, pad=pad, zero_pad=True)
-    #         crop_image = helpers.crop_from_bbox(img, bbox, zero_pad=True)
-    #         resize_image = helpers.fixed_resize(crop_image, (512, 512)).astype(np.float32)
-    #
-    #         #  Generate extreme point heat map normalized to image values
-    #         extreme_points = extreme_points_ori - [np.min(extreme_points_ori[:, 0]),
-    #                                                np.min(extreme_points_ori[:, 1])] + [pad, pad]
-    #
-    #         # remap the input points inside the 512 x 512 cropped box
-    #         extreme_points = (512 * extreme_points * [1 / crop_image.shape[1], 1 / crop_image.shape[0]]).astype(
-    #             np.int)
-    #
-    #         # create the heatmap
-    #         extreme_heatmap = helpers.make_gt(resize_image, extreme_points, sigma=10)
-    #         extreme_heatmap = helpers.cstm_normalize(extreme_heatmap, 255)
-    #
-    #         #  Concatenate inputs and convert to tensor
-    #         input_dextr = np.concatenate((resize_image, extreme_heatmap[:, :, np.newaxis]), axis=2)
-    #         inputs = torch.from_numpy(input_dextr.transpose((2, 0, 1))[np.newaxis, ...])
-    #
-    #         # Run a forward pass
-    #         inputs = inputs.to(device)
-    #         outputs = self.deepextreme_net.forward(inputs)
-    #         outputs = upsample(outputs, size=(512, 512), mode='bilinear', align_corners=True)
-    #         outputs = outputs.to(torch.device('cpu'))
-    #
-    #         pred = np.transpose(outputs.data.numpy()[0, ...], (1, 2, 0))
-    #         pred = 1 / (1 + np.exp(-pred))
-    #         pred = np.squeeze(pred)
-    #         img_test = utils.floatmapToQImage(pred*255.0)
-    #         img_test.save("prediction.png")
-    #         result = helpers.crop2fullmask(pred, bbox, im_size=img.shape[:2], zero_pad=True, relax=pad) > thres
-    #
-    #
-    #         segm_mask = result.astype(int)
-    #
-    #         blobs = self.annotations.blobsFromMask(segm_mask, left_map_pos, top_map_pos, area_extreme_points)
-    #
-    #         for blob in blobs:
-    #             blob.deep_extreme_points = extreme_points_to_use
-    #
-    #         self.resetSelection()
-    #         for blob in blobs:
-    #             self.addBlob(blob, selected=True)
-    #             self.logBlobInfo(blob, "[TOOL][DEEPEXTREME][BLOB-CREATED]")
-    #         self.saveUndo()
-    #
-    #         self.infoWidget.setInfoMessage("Segmentation done.")
-    #
-    #     logfile.info("[TOOL][DEEPEXTREME] Segmentation ends.")
-    #
-    #     QApplication.restoreOverrideCursor()
 
     def automaticSegmentation(self):
 

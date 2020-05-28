@@ -53,6 +53,7 @@ class QtMapSettingsWidget(QWidget):
         self.editMapFile = QLineEdit("map.png")
         self.editMapFile.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editMapFile.setMinimumWidth(300)
+        self.editMapFile.setPlaceholderText("map.png")
         self.btnChooseMapFile = QPushButton("...")
         self.btnChooseMapFile.setMaximumWidth(20)
         self.btnChooseMapFile.clicked.connect(self.chooseMapFile)
@@ -94,7 +95,8 @@ class QtMapSettingsWidget(QWidget):
         self.lblAcquisitionDate.setAlignment(Qt.AlignRight)
         self.lblAcquisitionDate.setMinimumWidth(150)
 
-        self.editAcquisitionDate = QLineEdit("YYYY-MM-DD")
+        self.editAcquisitionDate = QLineEdit()
+        self.editAcquisitionDate.setPlaceholderText("YYYY-MM-DD")
         self.editAcquisitionDate.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editAcquisitionDate.setMinimumWidth(150)
 

@@ -20,7 +20,7 @@
 """ PyQt map viewer widget.
 """
 
-from PyQt5.QtCore import Qt, QRectF, pyqtSignal
+from PyQt5.QtCore import Qt, QRectF, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QImage, QPixmap, QPainter, QBrush, QPen, QColor, qRgb, qRgba, qRed, qGreen, qBlue
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
 
@@ -86,24 +86,19 @@ class QtMapViewer(QGraphicsView):
         self.setFixedWidth(self.THUMB_SIZE)
         self.setFixedHeight(self.THUMB_SIZE)
 
+        self.initPixmapItem()
+
+    def initPixmapItem(self):
         self.pixmap = QPixmap(self.THUMB_SIZE, self.THUMB_SIZE)
+        self.pixmap.fill(QColor(40, 40, 40))
         self.imgwidth = self.pixmap.width()
         self.imgheight = self.pixmap.height()
 
         # Store a local handle to the scene's current image pixmap.
-        self._pxmapitem = self.scene.addPixmap(self.pixmap)
+        self.pixmapitem = self.scene.addPixmap(self.pixmap)
 
-    # def image(self):
-    #     """ Returns the scene's current image as a QImage.
-    #     """
-    #     if self.hasImage():
-    #         return self._pxmapitem.pixmap().toImage()
-    #     return None
-
-    # def hasImage(self):
-    #     """ Returns whether or not the scene contains an image pixmap.
-    #     """
-    #     return self._pxmapitem is not None
+    def clear(self):
+        self.initPixmapItem()
 
     def setPixmap(self, pixmap):
         if pixmap is None:
@@ -115,7 +110,7 @@ class QtMapViewer(QGraphicsView):
 
         self.imgwidth = self.pixmap.width()
         self.imgheight = self.pixmap.height()
-        self._pxmapitem.setPixmap(self.pixmap)
+        self.pixmapitem.setPixmap(self.pixmap)
         self.setSceneRect(QRectF(self.pixmap.rect()))
 
         if self.imgwidth > self.imgheight:
@@ -158,9 +153,9 @@ class QtMapViewer(QGraphicsView):
             raise RuntimeError("Argument must be a QImage.")
 
         if self.hasImage():
-            self._pxmapitem.setPixmap(self.pixmap)
+            self.pixmapitem.setPixmap(self.pixmap)
         else:
-            self._pxmapitem = self.scene.addPixmap(self.pixmap)
+            self.pixmapitem = self.scene.addPixmap(self.pixmap)
 
         # Set scene size to image size (!)
         self.setSceneRect(QRectF(self.pixmap.rect()))
@@ -193,16 +188,16 @@ class QtMapViewer(QGraphicsView):
     #     """
     #     image = QImage(fileName)
     #     self.setImage(image)
-
-    def drawOverlayImage(self, top, left, bottom, right):
+    @pyqtSlot(QRectF)
+    def drawOverlayImage(self, rect):
 
         W = self.pixmap.width()
         H = self.pixmap.height()
 
-        self.HIGHLIGHT_RECT_WIDTH = (right-left) * W
-        self.HIGHLIGHT_RECT_HEIGHT = (bottom-top) * H
-        self.HIGHLIGHT_RECT_POSX = left * W
-        self.HIGHLIGHT_RECT_POSY = top * H
+        self.HIGHLIGHT_RECT_WIDTH = rect.width() * W
+        self.HIGHLIGHT_RECT_HEIGHT = rect.height() * H
+        self.HIGHLIGHT_RECT_POSX = rect.left() * W
+        self.HIGHLIGHT_RECT_POSY = rect.top() * H
         self.overlay_image = QImage(self.HIGHLIGHT_RECT_WIDTH, self.HIGHLIGHT_RECT_HEIGHT, QImage.Format_ARGB32)
         self.overlay_image.fill(self.HIGHLIGHT_COLOR)
 
@@ -214,7 +209,7 @@ class QtMapViewer(QGraphicsView):
             p.drawImage(self.HIGHLIGHT_RECT_POSX, self.HIGHLIGHT_RECT_POSY, self.overlay_image)
             p.end()
 
-            self._pxmapitem.setPixmap(pxmap)
+            self.pixmapitem.setPixmap(pxmap)
 
     def updateViewer(self):
         """ Show current zoom (if showing entire image, apply current aspect ratio mode).
