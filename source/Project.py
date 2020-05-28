@@ -86,7 +86,6 @@ class Project(object):
         data = self.__dict__
         for img in self.images:
             print(img)
-        #data["images"] = list(map(lambda img: img.save(), self.images))
         str = json.dumps(data, cls=ProjectEncoder)
 
         if filename is None:

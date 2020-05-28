@@ -1,21 +1,17 @@
-import numpy as np
+from PyQt5.QtCore import Qt
 
-from PyQt5.QtCore import Qt, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
-from PyQt5.QtGui import QImage, QPixmap, QPainter, QPainterPath, QPen, QImageReader, QFont
-from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsItem, QGraphicsScene, QFileDialog, QGraphicsPixmapItem
-
-from source.PickPoints import PickPoints
-from source.EditPoints import EditPoints
+from source.tools.PickPoints import PickPoints
+from source.tools.EditPoints import EditPoints
 
 
-from source.CreateCrack import CreateCrack
-from source.SplitBlob import SplitBlob
-from source.Assign import Assign
-from source.EditBorder import EditBorder
-from source.Cut import Cut
-from source.Freehand import Freehand
-from source.Ruler import Ruler
-from source.DeepExtreme import DeepExtreme
+from source.tools.CreateCrack import CreateCrack
+from source.tools.SplitBlob import SplitBlob
+from source.tools.Assign import Assign
+from source.tools.EditBorder import EditBorder
+from source.tools.Cut import Cut
+from source.tools.Freehand import Freehand
+from source.tools.Ruler import Ruler
+from source.tools.DeepExtreme import DeepExtreme
 
 
 class Tools(object):

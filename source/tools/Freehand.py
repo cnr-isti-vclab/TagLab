@@ -1,6 +1,4 @@
-from PyQt5.QtCore import Qt, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
-
-from source.Tool import Tool
+from source.tools.Tool import Tool
 from source.Blob import Blob
 
 class Freehand(Tool):

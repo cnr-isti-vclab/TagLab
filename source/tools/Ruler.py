@@ -1,8 +1,8 @@
 import numpy as np
-from PyQt5.QtCore import Qt, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
-from PyQt5.QtGui import QImage, QPixmap, QPainter, QPainterPath, QPen, QImageReader, QFont
-from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsItem, QGraphicsScene, QFileDialog, QGraphicsPixmapItem
-from source.Tool import Tool
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPen, QFont
+from PyQt5.QtWidgets import QGraphicsItem
+from source.tools.Tool import Tool
 
 class Ruler(Tool):
     def __init__(self, viewerplus, pick_points ):
