@@ -20,14 +20,15 @@
 import os
 
 from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal
-from PyQt5.QtGui import QImage, QPixmap, QIcon, qRgb, qRed, qGreen, qBlue
-from PyQt5.QtWidgets import QWidget, QDialog, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
+from PyQt5.QtGui import QImage, QImageReader, QPixmap, QIcon, qRgb, qRed, qGreen, qBlue
+from PyQt5.QtWidgets import QWidget, QMessageBox, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
 from source.Annotation import Annotation
 
 from source import utils
 
 class QtMapSettingsWidget(QWidget):
 
+    accepted = pyqtSignal()
     def __init__(self, parent=None):
         super(QtMapSettingsWidget, self).__init__(parent)
 
@@ -37,114 +38,63 @@ class QtMapSettingsWidget(QWidget):
         self.setMinimumWidth(300)
         self.setMinimumHeight(100)
 
+
         TEXT_SPACE = 100
 
+        self.fields = {
+            "name"            : {"name": "Map name:"        , "value": "", "place": "Name of the map"        , "width": 300, "action": None },
+            "rgb_filename"    : {"name": "RGB Image:"       , "value": "", "place": "Path of the rgb image"  , "width": 300, "action": self.chooseMapFile },
+            "depth_filename"  : {"name": "Depth Image:"     , "value": "", "place": "Path of the depth image", "width": 300, "action": self.choose3DMapFile },
+            "acquisition_date": {"name": "Acquisition Date:", "value": "", "place": "YYYY-MM-DD"             , "width": 150, "action": None },
+            "px_to_mm"        : {"name": "Px-to-mm:"        , "value": "1.0", "place": ""                    , "width": 150, "action": None }
+        }
+        self.data = {}
 
+        layoutV = QVBoxLayout()
 
-        ###########################################################
+        for key, field in self.fields.items():
+            label = QLabel(field["name"])
+            label.setFixedWidth(TEXT_SPACE)
+            label.setAlignment(Qt.AlignRight)
+            label.setMinimumWidth(150)
 
-        layoutH0 = QHBoxLayout()
+            edit = QLineEdit(field["value"])
+            edit.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+            edit.setMinimumWidth(field["width"])
+            edit.setPlaceholderText(field["place"])
+            edit.setMaximumWidth(20)
+            field["edit"] = edit
 
-        self.lblMapFile = QLabel("Map File: ")
-        self.lblMapFile.setFixedWidth(TEXT_SPACE)
-        self.lblMapFile.setAlignment(Qt.AlignRight)
-        self.lblMapFile.setMinimumWidth(150)
+            button = None
+            if field["action"] is not None:
+                button = QPushButton("...")
+                button.setMaximumWidth(20)
+                button.clicked.connect(field["action"])
 
-        self.editMapFile = QLineEdit("map.png")
-        self.editMapFile.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        self.editMapFile.setMinimumWidth(300)
-        self.editMapFile.setPlaceholderText("map.png")
-        self.btnChooseMapFile = QPushButton("...")
-        self.btnChooseMapFile.setMaximumWidth(20)
-        self.btnChooseMapFile.clicked.connect(self.chooseMapFile)
+            layout = QHBoxLayout()
+            layout.setAlignment(Qt.AlignLeft)
+            layout.addWidget(label)
+            layout.addWidget(edit)
+            if button is not None:
+                layout.addWidget(button)
+            layout.addStretch()
+            layoutV.addLayout(layout)
 
-        layoutH0.setAlignment(Qt.AlignLeft)
-        layoutH0.addWidget(self.lblMapFile)
-        layoutH0.addWidget(self.editMapFile)
-        layoutH0.addWidget(self.btnChooseMapFile)
-        layoutH0.addStretch()
-
-        ###########################################################
-
-        layoutH03D = QHBoxLayout()
-
-        self.lbl3DMapFile = QLabel("3D Map File: ")
-        self.lbl3DMapFile.setFixedWidth(TEXT_SPACE)
-        self.lbl3DMapFile.setAlignment(Qt.AlignRight)
-        self.lbl3DMapFile.setMinimumWidth(150)
-
-        self.edit3DMapFile = QLineEdit()
-        self.edit3DMapFile.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        self.edit3DMapFile.setMinimumWidth(300)
-        self.btnChoose3DMapFile = QPushButton("...")
-        self.btnChoose3DMapFile.setMaximumWidth(20)
-        self.btnChoose3DMapFile.clicked.connect(self.choose3DMapFile)
-
-        layoutH03D.setAlignment(Qt.AlignLeft)
-        layoutH03D.addWidget(self.lbl3DMapFile)
-        layoutH03D.addWidget(self.edit3DMapFile)
-        layoutH03D.addWidget(self.btnChoose3DMapFile)
-        layoutH03D.addStretch()
-
-        ###########################################################
-
-        layoutH1 = QHBoxLayout()
-
-        self.lblAcquisitionDate = QLabel("Acquisition Date: ")
-        self.lblAcquisitionDate.setFixedWidth(TEXT_SPACE)
-        self.lblAcquisitionDate.setAlignment(Qt.AlignRight)
-        self.lblAcquisitionDate.setMinimumWidth(150)
-
-        self.editAcquisitionDate = QLineEdit()
-        self.editAcquisitionDate.setPlaceholderText("YYYY-MM-DD")
-        self.editAcquisitionDate.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        self.editAcquisitionDate.setMinimumWidth(150)
-
-        layoutH1.setAlignment(Qt.AlignLeft)
-        layoutH1.addWidget(self.lblAcquisitionDate)
-        layoutH1.addWidget(self.editAcquisitionDate)
-        layoutH1.addStretch()
-
-        ###########################################################
-
-        layoutH2 = QHBoxLayout()
-
-        self.lblScaleFactor = QLabel("Px-to-mm: ")
-        self.lblScaleFactor.setFixedWidth(TEXT_SPACE)
-        self.lblScaleFactor.setAlignment(Qt.AlignRight)
-        self.lblScaleFactor.setMinimumWidth(150)
-
-        self.editScaleFactor = QLineEdit("1.0")
-        self.editScaleFactor.setMinimumWidth(150)
-        self.editScaleFactor.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-
-        layoutH2.setAlignment(Qt.AlignLeft)
-        layoutH2.addWidget(self.lblScaleFactor)
-        layoutH2.addWidget(self.editScaleFactor)
-        layoutH2.addStretch()
-
-        ###########################################################
-
-        layoutH3 = QHBoxLayout()
+        buttons_layout = QHBoxLayout()
 
         self.btnCancel = QPushButton("Cancel")
         self.btnCancel.clicked.connect(self.close)
         self.btnApply = QPushButton("Apply")
+        self.btnApply.clicked.connect(self.accept)
 
-        layoutH3.setAlignment(Qt.AlignRight)
-        layoutH3.addStretch()
-        layoutH3.addWidget(self.btnCancel)
-        layoutH3.addWidget(self.btnApply)
+        buttons_layout.setAlignment(Qt.AlignRight)
+        buttons_layout.addStretch()
+        buttons_layout.addWidget(self.btnCancel)
+        buttons_layout.addWidget(self.btnApply)
 
         ###########################################################
 
-        layoutV = QVBoxLayout()
-        layoutV.addLayout(layoutH0)
-        layoutV.addLayout(layoutH03D)
-        layoutV.addLayout(layoutH1)
-        layoutV.addLayout(layoutH2)
-        layoutV.addLayout(layoutH3)
-        # layoutV.setSpacing(3)
+        layoutV.addLayout(buttons_layout)
         self.setLayout(layoutV)
 
         self.setWindowTitle("MAP SETTINGS")
@@ -157,7 +107,7 @@ class QtMapSettingsWidget(QWidget):
         filters = "Image (*.png *.jpg)"
         fileName, _ = QFileDialog.getOpenFileName(self, "Input Map File", "", filters)
         if fileName:
-            self.editMapFile.setText(fileName)
+            self.fields["rgb_filename"]["edit"].setText(fileName)
 
     @pyqtSlot()
     def choose3DMapFile(self):
@@ -165,6 +115,37 @@ class QtMapSettingsWidget(QWidget):
         filters = "Image (*.png *.tif *.tiff)"
         fileName, _ = QFileDialog.getOpenFileName(self, "Input 3D Map File", "", filters)
         if fileName:
-            self.edit3DMapFile.setText(fileName)
+            self.fields["depth_filename"]["edit"].setText(fileName)
 
+    @pyqtSlot()
+    def accept(self):
+
+        #TODO validate date
+        for key, field in self.fields.items():
+            self.data[key] = field["edit"].text()
+
+        if self.data["name"] == "":
+            msgBox = QMessageBox()
+            msgBox.setText("Please give this map a name.")
+            msgBox.exec()
+            return
+
+        rgb_filename = self.data['rgb_filename']
+        # check if the map file exists
+        if not os.path.exists(rgb_filename):
+            msgBox = QMessageBox()
+            msgBox.setText("The file does not seems to exist.")
+            msgBox.exec()
+            return
+
+        image_reader = QImageReader(rgb_filename)
+        size = image_reader.size()
+        if size.width() > 32767 or size.height() > 32767:
+            msgBox = QMessageBox()
+            msgBox.setText("The mage is too big. TagLab is limited to 32767x32767 pixels.")
+            msgBox.exec()
+            return
+
+        self.accepted.emit()
+        self.close()
 

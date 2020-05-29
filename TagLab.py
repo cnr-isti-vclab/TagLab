@@ -68,7 +68,11 @@ from source.QtClassifierWidget import QtClassifierWidget
 from source.QtComparePanel import QtComparePanel
 from source.Blob import Blob
 from source.Annotation import Annotation
+
 from source.Project import Project, loadProject
+from source.Image import Image
+from source.Channel import Channel
+
 from source.MapClassifier import MapClassifier
 from source import utils
 
@@ -1328,14 +1332,14 @@ class TagLab(QWidget):
 
             self.mapWidget = QtMapSettingsWidget(parent=self)
             self.mapWidget.setWindowModality(Qt.WindowModal)
-            self.mapWidget.btnApply.clicked.connect(self.setMapProperties)
+            self.mapWidget.accepted.connect(self.setMapProperties)
 
             # transfer current data to widget
 
-            self.mapWidget.editMapFile.setText(self.map_image_filename)
+            #self.mapWidget.editMapFile.setText(self.map_image_filename)
 
-            self.mapWidget.editAcquisitionDate.setText(self.map_acquisition_date)
-            self.mapWidget.editScaleFactor.setText(str(self.map_px_to_mm_factor))
+            #self.mapWidget.editAcquisitionDate.setText(self.map_acquisition_date)
+            #self.mapWidget.editScaleFactor.setText(str(self.map_px_to_mm_factor))
 
             self.mapWidget.show()
 
@@ -1350,26 +1354,37 @@ class TagLab(QWidget):
     @pyqtSlot()
     def setMapProperties(self):
 
-        map_filename = self.mapWidget.editMapFile.text()
+        rgb_filename = self.mapWidget.data['rgb_filename']
 
-        # check if the map file exists
-        if not os.path.exists(map_filename):
+        channel_rgb = Channel(rgb_filename, type="rgb")
+        #TODO validate date, and do it in the map_widget!
+        #TODO implement coordinate system
 
-            self.infoWidget.setWarningMessage("Map file does not exist.")
+        image_reader = QImageReader(rgb_filename)
+        size = image_reader.size()
 
-        else:
+        image = Image(
+                        map_px_to_mm_factor = float(self.mapWidget.data['px_to_mm']),
+                        name = self.mapWidget.data['name'],
+                        width = size.width(),
+                        height = size.height(),
+                        metadata = { 'acquisition_date':  self.mapWidget.data['acquisition_date'] }
+                      )
+        image.channels = [channel_rgb]
 
-            # transfer settings
-            self.map_image_filename = self.mapWidget.editMapFile.text()
-            self.map_3D_filename = self.mapWidget.edit3DMapFile.text()
-            self.map_acquisition_date = self.mapWidget.editAcquisitionDate.text()
-            self.map_px_to_mm_factor = float(self.mapWidget.editScaleFactor.text())
+        self.project.images.append(image)
 
-            # close map settings
-            self.mapWidget.close()
-            self.mapWidget = None
+        # transfer settings
+        #self.map_image_filename = self.mapWidget.editMapFile.text()
+        #self.map_3D_filename = self.mapWidget.edit3DMapFile.text()
+        #self.map_acquisition_date = self.mapWidget.editAcquisitionDate.text()
+        #self.map_px_to_mm_factor = float(self.mapWidget.editScaleFactor.text())
 
-            self.loadMap()
+        # close map settings
+        self.mapWidget.close()
+        self.mapWidget = None
+
+        self.loadMap(image)
 
  # REFACTOR
     def loadMap(self, image):
