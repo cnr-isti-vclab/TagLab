@@ -489,7 +489,7 @@ class Annotation(object):
     ###########################################################################
     ### IMPORT / EXPORT
 
-    def import_label_map(self, filename, reference_map, labels_info):
+    def import_label_map(self, filename, size, labels_info):
         """
         It imports a label map and create the corresponding blobs.
         The label map is rescaled such that it coincides with the reference map.
@@ -498,8 +498,8 @@ class Annotation(object):
         qimg_label_map = QImage(filename)
         qimg_label_map = qimg_label_map.convertToFormat(QImage.Format_RGB32)
 
-        w = reference_map.width()
-        h = reference_map.height()
+        w = size.width()
+        h = size.height()
         qimg_label_map = qimg_label_map.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
 
         label_map = utils.qimageToNumpyArray(qimg_label_map)
@@ -587,11 +587,11 @@ class Annotation(object):
         df.to_csv(filename, sep='\t')
 
 
-    def export_image_data_for_Scripps(self, map, filename, labels_info):
+    def export_image_data_for_Scripps(self, size, filename, labels_info):
 
         # create a black canvas of the same size of your map
-        w = map.width()
-        h = map.height()
+        w = size.width()
+        h = size.height()
 
         labelimg = QImage(w, h, QImage.Format_RGB32)
         labelimg.fill(qRgb(0, 0, 0))

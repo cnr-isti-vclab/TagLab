@@ -62,7 +62,7 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.logfile = None #MUST be inited in Taglab.py
         self.project = Project()
-        self.image = Image()
+        self.image = None
         self.annotations = Annotation()
         self.selected_blobs = []
 
@@ -108,6 +108,9 @@ class QtImageViewerPlus(QtImageViewer):
 
     def setChannel(self, channel):
         self.channel = channel
+
+        if self.image is None:
+            raise("Image has not been previously set in ViewerPlus")
 
         # retrieve image size
         image_reader = QImageReader(channel.filename)

@@ -905,6 +905,8 @@ class TagLab(QWidget):
 
         self.mapWidget = None
         self.project = Project()
+        self.image = None
+        self.annotations = []
 
 
     def resetToolbar(self):
@@ -1354,7 +1356,8 @@ class TagLab(QWidget):
     @pyqtSlot()
     def setMapProperties(self):
 
-        rgb_filename = self.mapWidget.data['rgb_filename']
+        dir = QDir(os.getcwd())
+        rgb_filename = dir.relativeFilePath(self.mapWidget.data['rgb_filename'])
 
         channel_rgb = Channel(rgb_filename, type="rgb")
         #TODO validate date, and do it in the map_widget!
@@ -1374,15 +1377,8 @@ class TagLab(QWidget):
 
         self.project.images.append(image)
 
-        # transfer settings
-        #self.map_image_filename = self.mapWidget.editMapFile.text()
-        #self.map_3D_filename = self.mapWidget.edit3DMapFile.text()
-        #self.map_acquisition_date = self.mapWidget.editAcquisitionDate.text()
-        #self.map_px_to_mm_factor = float(self.mapWidget.editScaleFactor.text())
-
-        # close map settings
         self.mapWidget.close()
-        self.mapWidget = None
+        #self.mapWidget = None
 
         self.loadMap(image)
 
@@ -1400,9 +1396,10 @@ class TagLab(QWidget):
             self.viewerplus.setImage(image)
             self.viewerplus.setChannel(self.channel)
 
-            self.img_thumb_map = self.viewerplus.pixmap.scaled(self.MAP_VIEWER_SIZE, self.MAP_VIEWER_SIZE, Qt.KeepAspectRatio,
+
+            thumb = self.viewerplus.pixmap.scaled(self.MAP_VIEWER_SIZE, self.MAP_VIEWER_SIZE, Qt.KeepAspectRatio,
                                                  Qt.SmoothTransformation)
-            self.mapviewer.setPixmap(self.img_thumb_map)
+            self.mapviewer.setPixmap(thumb)
             self.mapviewer.setOpacity(0.5)
 
             self.infoWidget.setInfoMessage("The map has been successfully loading.")
@@ -1421,9 +1418,9 @@ class TagLab(QWidget):
 
 
         filters = "ANNOTATION PROJECT (*.json)"
-        #dir = '/home/ponchio/devel/TagLab/map'
-        #filename = dir + '/test.json'
-        filename, _ = QFileDialog.getOpenFileName(self, "Open a project", self.taglab_dir, filters)
+        dir = '/home/ponchio/devel/TagLab/map'
+        filename = dir + '/test.json'
+        #filename, _ = QFileDialog.getOpenFileName(self, "Open a project", self.taglab_dir, filters)
 
         if filename:
             self.load(filename)
@@ -1439,7 +1436,10 @@ class TagLab(QWidget):
     # REFACTOR use project methods
     @pyqtSlot()
     def saveProject(self):
-        self.save()
+        if self.project.filename is None:
+            self.saveAsProject()
+        else:
+            self.save()
 
     # REFACTOR use project methods
     @pyqtSlot()
@@ -1453,6 +1453,8 @@ class TagLab(QWidget):
             self.project.filename = dir.relativeFilePath(filename)
             self.setProjectTitle(self.project.filename)
             self.save()
+
+
 
     @pyqtSlot()
     def appendAnnotations(self):
@@ -1523,25 +1525,37 @@ class TagLab(QWidget):
         """
         Import a label map
         """
+        if self.image is None:
+            box = QMessageBox()
+            box.setText("A map is needed to import labels. Load a map or a project.")
+            box.exec()
+            return
 
         filters = "Image (*.png *.jpg)"
         filename, _ = QFileDialog.getOpenFileName(self, "Input Map File", "", filters)
         if not filename:
             return
-        created_blobs = self.annotations.import_label_map(filename, self.img_map, self.labels)
+        size = QSize(self.image.width, self.image.height)
+        created_blobs = self.annotations.import_label_map(filename, size, self.labels)
         for blob in created_blobs:
-            self.addBlob(blob, selected=False)
-        self.saveUndo()
+            self.viewerplus.addBlob(blob, selected=False)
+        self.viewerplus.saveUndo()
 
     @pyqtSlot()
     def exportAnnAsDataTable(self):
+
+        if self.image is None:
+            box = QMessageBox()
+            box.setText("A map is needed to export labels. Load a map or a project.")
+            box.exec()
+            return
 
         filters = "CSV (*.csv) ;; All Files (*)"
         filename, _ = QFileDialog.getSaveFileName(self, "Output file", "", filters)
 
         if filename:
 
-            self.annotations.export_data_table_for_Scripps(self.map_px_to_mm_factor,filename)
+            self.annotations.export_data_table_for_Scripps(self.image.map_px_to_mm_factor,filename)
 
             msgBox = QMessageBox(self)
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
@@ -1552,12 +1566,18 @@ class TagLab(QWidget):
     @pyqtSlot()
     def exportAnnAsMap(self):
 
+        if self.image is None:
+            box = QMessageBox()
+            box.setText("A map is needed to export labels. Load a map or a project.")
+            box.exec()
+            return
+
         filters = "PNG (*.png) ;; All Files (*)"
         filename, _ = QFileDialog.getSaveFileName(self, "Output file", "", filters)
 
         if filename:
-
-            self.annotations.export_image_data_for_Scripps(self.img_map, filename, self.labels)
+            size = QSize(self.image.width, self.image.height)
+            self.annotations.export_image_data_for_Scripps(size, filename, self.labels)
 
             msgBox = QMessageBox(self)
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
@@ -1568,6 +1588,12 @@ class TagLab(QWidget):
 
     @pyqtSlot()
     def exportHistogramFromAnn(self):
+
+        if self.image is None:
+            box = QMessageBox()
+            box.setText("A map is needed to export labels. Load a map or a project.")
+            box.exec()
+            return
 
         histo_widget = QtHistogramWidget(self.annotations, self.map_px_to_mm_factor, self.map_acquisition_date, self)
         histo_widget.setWindowModality(Qt.WindowModal)
@@ -1586,7 +1612,11 @@ class TagLab(QWidget):
         if folderName:
 
             filename = os.path.join(folderName, "tile")
-            self.annotations.export_new_dataset(self.img_map, tile_size=1024, step=256, basename=filename, labels_info = self.labels)
+            self.annotations.export_new_dataset(self.viewerplus.img_map, tile_size=1024, step=256, basename=filename, labels_info = self.labels)
+
+
+
+
 
 
 
@@ -1679,7 +1709,7 @@ class TagLab(QWidget):
                 blob = Blob(None, 0, 0, 0)
                 blob.fromDict(blob_dict)
                 self.annotations.seg_blobs.append(blob)
-                self.drawBlob(blob)
+                self.viewerplus.drawBlob(blob)
         else:
 
             self.compare_panel.addProject(filename)
@@ -1693,7 +1723,7 @@ class TagLab(QWidget):
             self.annotations.prev_blobs.append(blob_list)
 
             for blob in blob_list:
-                self.drawBlob(blob, prev=True)
+                self.viewerplus.drawBlob(blob, prev=True)
 
         QApplication.restoreOverrideCursor()
 
