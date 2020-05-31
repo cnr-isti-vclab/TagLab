@@ -94,9 +94,12 @@ class QtImageViewerPlus(QtImageViewer):
 
 
     def setProject(self, project):
+
         self.project = project
 
+
     def setImage(self, image):
+
         self.image = image
         self.annotations = image.annotations
         self.selected_blobs = []
@@ -106,7 +109,9 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.scene.invalidate()
 
+
     def setChannel(self, channel):
+
         self.channel = channel
 
         if self.image is None:
@@ -157,8 +162,6 @@ class QtImageViewerPlus(QtImageViewer):
         self.annotations = Annotation()
 
 
-
-
     def drawBlob(self, blob, prev=False):
 
         # if it has just been created remove the current graphics item in order to set it again
@@ -178,6 +181,7 @@ class QtImageViewerPlus(QtImageViewer):
         blob.qpath_gitem = self.scene.addPath(blob.qpath, pen, brush)
         blob.qpath_gitem.setZValue(1)
         #blob.qpath_gitem.setOpacity(self.transparency_value)
+
 
     def undrawBlob(self, blob):
         self.scene.removeItem(blob.qpath_gitem)
@@ -204,7 +208,9 @@ class QtImageViewerPlus(QtImageViewer):
 #TOOLS and SELECTIONS
 
     def setTool(self, tool):
+
         self.tools.setTool(tool)
+
         if tool in ["FREEHAND", "RULER", "DEEPEXTREME"] or (tool in ["CUT", "EDITBORDER"] and len(self.selected_blobs) > 1):
             self.resetSelection()
 
@@ -246,6 +252,7 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.logfile.info("[SELECTION][DOUBLE-CLICK] Selection ends.")
 
+
 #MOUSE EVENTS
 
     def mousePressEvent(self, event):
@@ -279,6 +286,7 @@ class QtImageViewerPlus(QtImageViewer):
             self.rightMouseButtonPressed.emit(clippedCoords[0], clippedCoords[1])
 
         QGraphicsView.mousePressEvent(self, event)
+
 
     def mouseReleaseEvent(self, event):
         """ Stop mouse pan or zoom mode (apply zoom if valid).
@@ -346,6 +354,7 @@ class QtImageViewerPlus(QtImageViewer):
 
         # QGraphicsView.mouseDoubleClickEvent(self, event)
 
+
     def wheelEvent(self, event):
         """ Zoom in/zoom out.
         """
@@ -364,9 +373,9 @@ class QtImageViewerPlus(QtImageViewer):
 
             self.updateViewer()
 
-
-        # PAY ATTENTION; THE WHEEL INTERACT ALSO WITH THE SCROLL BAR (!!)
+        # PAY ATTENTION !! THE WHEEL INTERACT ALSO WITH THE SCROLL BAR !!
         #QGraphicsView.wheelEvent(self, event)
+
 #VISIBILITY AND SELECTION
 
     def dragSelectBlobs(self, x, y):
@@ -383,10 +392,15 @@ class QtImageViewerPlus(QtImageViewer):
                 continue
             self.addToSelectedList(blob)
 
+    @pyqtSlot(str)
+    def setActiveLabel(self, label):
+
+        self.tools.tools["ASSIGN"].setActiveLabel(label)
+
 
     def updateVisibility(self):
-        for blob in self.annotations.seg_blobs:
 
+        for blob in self.annotations.seg_blobs:
             visibility = self.project.isLabelVisible(blob.class_name)
             if blob.qpath_gitem is not None:
                 blob.qpath_gitem.setVisible(visibility)
@@ -412,6 +426,7 @@ class QtImageViewerPlus(QtImageViewer):
         else:
             print("blob qpath_qitem is None!")
         self.scene.invalidate()
+
 
     def removeFromSelectedList(self, blob):
         try:
@@ -448,6 +463,7 @@ class QtImageViewerPlus(QtImageViewer):
         if selected:
             self.addToSelectedList(blob)
 
+
     def removeBlob(self, blob):
         """
         The only function to remove annotations.
@@ -457,12 +473,16 @@ class QtImageViewerPlus(QtImageViewer):
         self.undo_data.removeBlob(blob)
         self.annotations.removeBlob(blob)
 
+
     def deleteSelectedBlobs(self):
+
         for blob in self.selected_blobs:
             self.removeBlob(blob)
         self.saveUndo()
 
+
     def setBlobClass(self, blob, class_name):
+
         if blob.class_name == class_name:
             return
 
@@ -472,9 +492,9 @@ class QtImageViewerPlus(QtImageViewer):
         if class_name == "Empty":
             blob.class_color = [255, 255, 255]
         else:
-            blob.class_color = self.labels[blob.class_name]
+            blob.class_color = self.project.labels[blob.class_name].fill
 
-        brush = self.classBrushFromName(blob)
+        brush = self.project.classBrushFromName(blob)
         blob.qpath_gitem.setBrush(brush)
 
         self.scene.invalidate()

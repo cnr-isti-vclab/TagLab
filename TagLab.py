@@ -104,7 +104,7 @@ class TagLab(QWidget):
         f = open("config.json", "r")
         config_dict = json.load(f)
         self.available_classifiers = config_dict["Available Classifiers"]
-        self.labels = config_dict["Labels"]
+        self.labels_dictionary = config_dict["Labels"]
 
         logfile.info("[INFO] Initizialization begins..")
 
@@ -112,9 +112,9 @@ class TagLab(QWidget):
         self.MAP_VIEWER_SIZE = 400
 
         self.taglab_dir = os.getcwd()
-        self.project = Project()        #current project
-        self.image = None               #current image
-        self.annotations = Annotation()  #REFACTOR we might want to move under project (or not?)
+        self.project = Project()         # current project
+        self.image = None                # current image
+        self.annotations = Annotation()  # REFACTOR -> we want to move under Image
 
         self.map_3D_filename = None    #refactor THIS!
         self.map_image_filename = None #"map.png"  #REFACTOR to project.map_filename
@@ -236,18 +236,24 @@ class TagLab(QWidget):
         ##### LAYOUT - labels + blob info + navigation map
 
         # LABELS
-        self.labels_widget = QtLabelsWidget(self.labels)
+        self.labels_widget = QtLabelsWidget()
 
-        scroll_area = QScrollArea()
-        scroll_area.setStyleSheet("background-color: rgb(40,40,40); border:none")
-        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        scroll_area.setMinimumHeight(200)
-        scroll_area.setWidget(self.labels_widget)
+        #FIXME: QtLabelsWidget does not resize properly inside the scroll area
+        self.project.importLabelsFromConfiguration(self.labels_dictionary)
+        self.labels_widget.setLabels(self.project)
+
+        self.scroll_area_labels_panel = QScrollArea()
+        self.scroll_area_labels_panel.setStyleSheet("background-color: rgb(40,40,40); border:none")
+        self.scroll_area_labels_panel.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.scroll_area_labels_panel.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.scroll_area_labels_panel.setMinimumHeight(200)
+        #self.scroll_area_labels_panel.setWidgetResizable(True)
+        self.scroll_area_labels_panel.setWidget(self.labels_widget)
 
         groupbox_labels = QGroupBox("Labels Panel")
 
         layout_groupbox = QVBoxLayout()
-        layout_groupbox.addWidget(scroll_area)
+        layout_groupbox.addWidget(self.scroll_area_labels_panel)
         groupbox_labels.setLayout(layout_groupbox)
 
         # COMPARE PANEL
@@ -361,7 +367,8 @@ class TagLab(QWidget):
 #        self.img_overlay = QImage(16, 16, QImage.Format_RGB32)
 
         # EVENTS
-        self.labels_widget.visibilityChanged.connect(self.updateVisibility)
+        self.labels_widget.activeLabelChanged.connect(self.viewerplus.setActiveLabel)
+        self.labels_widget.visibilityChanged.connect(self.viewerplus.updateVisibility)
 
         self.compare_panel.hideAnnotations.connect(self.hidePrevBlobs)
         self.compare_panel.showAnnotations.connect(self.showPrevBlobs)
@@ -840,10 +847,6 @@ class TagLab(QWidget):
         self.lblSlider.setText(str1)
         self.viewerplus.applyTransparency(value)
 
-    @pyqtSlot()
-    def updateVisibility(self):
-        self.viewerplus.updateVisibility()
-
 
     @pyqtSlot()
     def updateViewInfo(self):
@@ -899,6 +902,7 @@ class TagLab(QWidget):
 
 
     def resetAll(self):
+
         self.viewerplus.clear()
         self.mapviewer.clear()
         # RE-INITIALIZATION
@@ -1416,15 +1420,12 @@ class TagLab(QWidget):
     @pyqtSlot()
     def openProject(self):
 
-
         filters = "ANNOTATION PROJECT (*.json)"
-        dir = '/home/ponchio/devel/TagLab/map'
-        filename = dir + '/test.json'
+        filename = 'projects/sample_project.json'
         #filename, _ = QFileDialog.getOpenFileName(self, "Open a project", self.taglab_dir, filters)
 
         if filename:
             self.load(filename)
-
 
     @pyqtSlot()
     def openRecentProject(self):
@@ -1536,7 +1537,7 @@ class TagLab(QWidget):
         if not filename:
             return
         size = QSize(self.image.width, self.image.height)
-        created_blobs = self.annotations.import_label_map(filename, size, self.labels)
+        created_blobs = self.annotations.import_label_map(filename, size, self.labels_dictionary)
         for blob in created_blobs:
             self.viewerplus.addBlob(blob, selected=False)
         self.viewerplus.saveUndo()
@@ -1577,7 +1578,7 @@ class TagLab(QWidget):
 
         if filename:
             size = QSize(self.image.width, self.image.height)
-            self.annotations.export_image_data_for_Scripps(size, filename, self.labels)
+            self.annotations.export_image_data_for_Scripps(size, filename, self.labels_dictionary)
 
             msgBox = QMessageBox(self)
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
@@ -1612,12 +1613,7 @@ class TagLab(QWidget):
         if folderName:
 
             filename = os.path.join(folderName, "tile")
-            self.annotations.export_new_dataset(self.viewerplus.img_map, tile_size=1024, step=256, basename=filename, labels_info = self.labels)
-
-
-
-
-
+            self.annotations.export_new_dataset(self.viewerplus.img_map, tile_size=1024, step=256, basename=filename, labels_info = self.labels_dictionary)
 
 
     @pyqtSlot(int)
@@ -1675,6 +1671,9 @@ class TagLab(QWidget):
         #load the first map if present in project
         if len(self.project.images):
             self.loadMap(self.project.images[0])
+
+        self.project.importLabelsFromConfiguration(self.labels_dictionary)
+        self.labels_widget.setLabels(self.project)
 
         if self.timer is None:
             self.activateAutosave()
@@ -1807,7 +1806,7 @@ class TagLab(QWidget):
             message = "[AUTOCLASS] Automatic classification STARTS.. (classifier: )" + classifier_selected['Classifier Name']
             logfile.info(message)
 
-            self.corals_classifier = MapClassifier(classifier_selected, self.labels)
+            self.corals_classifier = MapClassifier(classifier_selected, self.labels_dictionary)
             self.corals_classifier.updateProgress.connect(progress_bar.setProgress)
 
             # rescaling the map to fit the target scale of the network

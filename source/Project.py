@@ -12,6 +12,7 @@ from source.Label import Label
 
 
 def loadProject(filename):
+
     dir = QDir(os.getcwd())
     filename = dir.relativeFilePath(filename)
     f = open(filename, "r")
@@ -30,7 +31,9 @@ def loadProject(filename):
     f.close()
     return project
 
+
 def loadOldProject(data):
+
     project = Project(filename = data["Project Name"])
     map_filename = data["Map File"]
 
@@ -70,10 +73,12 @@ class ProjectEncoder(json.JSONEncoder):
 
 
 class Project(object):
+
     def __init__(self, filename = None, labels = {}, images = [], correspondences = [],
                  spatial_reference_system = None, metadata = {}, image_metadata_template = {}):
         self.filename = None        #filename with path of the project json
         self.labels = { key: Label(**value) for key, value in labels.items() }
+
         self.images = list(map(lambda img: Image(**img), images))       #list of annotated images
         self.correspondences = correspondences   #list of correspondences betweeen labels in images
                                     #[ [source_img: , target_img:, [[23, 12, [grow, shrink, split, join] ... ] }
@@ -81,6 +86,17 @@ class Project(object):
         self.metadata = metadata    # project metadata => keyword -> value
         self.image_metadata_template = image_metadata_template  # description of metadata keywords expected in images
                                            # name: { type: (integer, date, string), mandatory: (true|false), default: ... }
+
+
+    def importLabelsFromConfiguration(self, dictionary):
+        """
+        This function should be removed when the Labels Panel will be finished.
+        """
+        self.labels = {}
+        for key in dictionary.keys():
+            color = dictionary[key]
+            self.labels[key] = Label(id=key, name=key, description=None, fill=color, border=[200, 200, 200], visible=True)
+
 
     def save(self, filename = None):
         #try:
@@ -96,6 +112,7 @@ class Project(object):
         f.close()
         #except Exception as a:
         #    print(str(a))
+
 
     def classBrushFromName(self, blob):
         brush = QBrush()
@@ -113,8 +130,11 @@ class Project(object):
         return brush
 
     def isLabelVisible(self, id):
+
         if id == "Empty":
             return True
+
         if not id in self.labels:
             raise Exception("Unknown label: " + id)
+
         return self.labels[id].visible
