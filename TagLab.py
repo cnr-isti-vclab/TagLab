@@ -158,6 +158,7 @@ class TagLab(QWidget):
         self.btnCreateCrack = self.newButton("crack.png",    "Create crack",          flatbuttonstyle1, self.createCrack)
         self.btnSplitBlob   = self.newButton("split.png",    "Split Blob",            flatbuttonstyle1, self.splitBlob)
         self.btnRuler       = self.newButton("ruler.png",    "Measure tool",          flatbuttonstyle1, self.ruler)
+        self.btnConnect     = self.newButton("connect.png",  "Connect tool",          flatbuttonstyle1, self.connectTool)
         self.btnDeepExtreme = self.newButton("dexter.png",   "4-click segmentation",  flatbuttonstyle2, self.deepExtreme)
         self.btnAutoClassification = self.newButton("auto.png", "Fully automatic classification", flatbuttonstyle2, self.selectClassifier)
 
@@ -189,11 +190,20 @@ class TagLab(QWidget):
         self.fillAction         = self.newAction("Fill Label",              "F",   self.fillLabel)
 
 
-        #VIEWERPLUS
+        # VIEWERPLUS
+
+
+        # main viewer
         self.viewerplus = QtImageViewerPlus()
         self.viewerplus.logfile = logfile
         self.viewerplus.viewUpdated.connect(self.updateViewInfo)
         self.viewerplus.updateInfoPanel.connect(self.updatePanelInfo)
+
+        # secondary viewer in SPLIT MODE
+        self.viewerplus2 = QtImageViewerPlus()
+        self.viewerplus2.logfile = logfile
+        self.viewerplus2.viewUpdated.connect(self.updateViewInfo)
+        self.viewerplus2.updateInfoPanel.connect(self.updatePanelInfo)
 
         # MAP VIEWER
         self.mapviewer = QtMapViewer(self.MAP_VIEWER_SIZE)
@@ -226,12 +236,17 @@ class TagLab(QWidget):
         layout_slider.addWidget(self.sliderTrasparency)
         layout_slider.addWidget(self.labelViewInfo)
 
+        layout_viewers = QHBoxLayout()
+        layout_viewers.addWidget(self.viewerplus)
+        layout_viewers.addWidget(self.viewerplus2)
 
+        self.viewerplus2.hide()
+        self.comparison_mode = False
 
-        layout_viewer.setSpacing(1)
-        layout_viewer.addLayout(layout_slider)
-        layout_viewer.addWidget(self.viewerplus)
-
+        layout_main_view = QVBoxLayout()
+        layout_main_view.setSpacing(1)
+        layout_main_view.addLayout(layout_slider)
+        layout_main_view.addLayout(layout_viewers)
 
         ##### LAYOUT - labels + blob info + navigation map
 
@@ -259,17 +274,17 @@ class TagLab(QWidget):
         # COMPARE PANEL
         self.compare_panel = QtComparePanel()
 
-        scroll_area2 = QScrollArea()
-        scroll_area2.setStyleSheet("background-color: rgb(40,40,40); border:none")
-        scroll_area2.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        scroll_area2.setMinimumHeight(100)
-        scroll_area2.setWidget(self.compare_panel)
+        self.scroll_area_comparison_panel = QScrollArea()
+        self.scroll_area_comparison_panel.setStyleSheet("background-color: rgb(40,40,40); border:none")
+        self.scroll_area_comparison_panel.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.scroll_area_comparison_panel.setMinimumHeight(100)
+        self.scroll_area_comparison_panel.setWidget(self.compare_panel)
 
-        groupbox_comparison = QGroupBox("Comparison Panel")
+        self.groupbox_comparison = QGroupBox("Comparison Panel")
 
         layout_groupbox2 = QVBoxLayout()
-        layout_groupbox2.addWidget(scroll_area2)
-        groupbox_comparison.setLayout(layout_groupbox2)
+        layout_groupbox2.addWidget(self.scroll_area_comparison_panel)
+        self.groupbox_comparison.setLayout(layout_groupbox2)
 
         # BLOB INFO
         groupbox_blobpanel = QGroupBox("Segmentation Info Panel")
@@ -323,7 +338,7 @@ class TagLab(QWidget):
         self.mapviewer.setStyleSheet("background-color: rgb(40,40,40); border:none")
         layout_labels.addWidget(self.infoWidget)
         layout_labels.addWidget(groupbox_labels)
-        layout_labels.addWidget(groupbox_comparison)
+        layout_labels.addWidget(self.groupbox_comparison)
         layout_labels.addWidget(groupbox_blobpanel)
         layout_labels.addStretch()
         layout_labels.addWidget(self.mapviewer)
@@ -334,10 +349,10 @@ class TagLab(QWidget):
 
         main_view_layout = QHBoxLayout()
         main_view_layout.addLayout(layout_tools)
-        main_view_layout.addLayout(layout_viewer)
+        main_view_layout.addLayout(layout_main_view)
         main_view_layout.addLayout(layout_labels)
 
-        main_view_layout.setStretchFactor(layout_viewer, 10)
+        main_view_layout.setStretchFactor(layout_main_view, 10)
         main_view_layout.setStretchFactor(layout_labels, 1)
 
         self.menubar = self.createMenuBar()
@@ -382,7 +397,8 @@ class TagLab(QWidget):
 
         self.viewerplus.customContextMenuRequested.connect(self.openContextMenu)
 
-
+        # SWITCH IMAGES
+        self.current_image_index = 0
 
         # NETWORKS
         self.corals_classifier = None
@@ -717,6 +733,13 @@ class TagLab(QWidget):
         elif event.key() == Qt.Key_S and modifiers & Qt.ControlModifier:
             self.save()
 
+        elif event.key() == Qt.Key_C and modifiers & Qt.AltModifier:
+
+            if self.comparison_mode is True:
+                self.disableComparisonMode()
+            else:
+                self.enableComparisonMode()
+
         elif event.key() == Qt.Key_A:
             self.assignOperation()
 
@@ -746,6 +769,15 @@ class TagLab(QWidget):
 
         elif event.key() == Qt.Key_F:
             self.fillBorder()
+
+        elif event.key() == Qt.Key_PageUp:
+            self.viewerplus.setImage(self.project.images[0])
+            self.viewerplus.setChannel(self.project.images[0].channels[0])
+
+        elif event.key() == Qt.Key_PageDown:
+            self.viewerplus2.setProject(self.project)
+            self.viewerplus2.setImage(self.project.images[1])
+            self.viewerplus2.setChannel(self.project.images[1].channels[0])
 
         elif event.key() == Qt.Key_1:
             # ACTIVATE "MOVE" TOOL
@@ -824,10 +856,38 @@ class TagLab(QWidget):
             self.annotations.refine_conservative *= 1.1
             print("Conservative: " + str(self.annotations.refine_conservative))
 
-
         elif event.key() == Qt.Key_Space:
             print("apply!")
             self.viewerplus.tools.applyTool()
+
+
+    def disableComparisonMode(self):
+
+        self.viewerplus.viewHasChanged.disconnect()
+        self.viewerplus2.viewHasChanged.disconnect()
+
+        self.viewerplus2.hide()
+        self.groupbox_comparison.hide()
+
+        self.comparison_mode = False
+
+    def enableComparisonMode(self):
+
+        self.viewerplus.viewHasChanged.connect(self.synchronizeRight)
+        self.viewerplus2.viewHasChanged.connect(self.synchronizeLeft)
+
+        if len(self.project.images) > 1:
+            self.viewerplus2.setProject(self.project)
+            self.viewerplus2.setImage(self.project.images[1])
+            self.viewerplus2.setChannel(self.project.images[1].channels[0])
+
+        self.viewerplus2.show()
+        self.groupbox_comparison.show()
+
+        #self.synchronizeRight()
+
+        self.comparison_mode = True
+
 
     @pyqtSlot()
     def sliderTrasparencyChanged(self):
@@ -998,6 +1058,13 @@ class TagLab(QWidget):
         self.setTool("RULER")
 
     @pyqtSlot()
+    def connectTool(self):
+        """
+        Activate the "connect" tool. The tool allows to connect a group of blobs with another group of blobs.
+        """
+        pass
+
+    @pyqtSlot()
     def deepExtreme(self):
         """
         Activate the "Deep Extreme" tool. The segmentation is performed by selecting four points at the
@@ -1032,6 +1099,23 @@ class TagLab(QWidget):
     def deleteSelectedBlobs(self):
         self.viewerplus.deleteSelectedBlobs()
         logfile.info("[OP-DELETE] Selected blobs has been DELETED")
+
+
+    @pyqtSlot()
+    def synchronizeLeft(self):
+
+        posx = self.viewerplus2.horizontalScrollBar().value()
+        posy = self.viewerplus2.verticalScrollBar().value()
+        zf = self.viewerplus2.zoom_factor
+        self.viewerplus.setViewParameters(posx, posy, zf)
+
+    @pyqtSlot()
+    def synchronizeRight(self):
+
+        posx = self.viewerplus.horizontalScrollBar().value()
+        posy = self.viewerplus.verticalScrollBar().value()
+        zf = self.viewerplus.zoom_factor
+        self.viewerplus2.setViewParameters(posx, posy, zf)
 
 
 
@@ -1455,7 +1539,11 @@ class TagLab(QWidget):
         filters = "ANNOTATION PROJECT (*.json)"
         filename, _ = QFileDialog.getOpenFileName(self, "Open a project", self.taglab_dir, filters)
         if filename:
-            self.append(filename, append_to_current=True)
+            self.append(filename)
+
+        self.viewerplus2.setProject(self.project)
+        self.viewerplus2.setImage(self.project.images[1])
+        self.viewerplus2.setChannel(self.project.images[1].channels[0])
 
 
     @pyqtSlot()
@@ -1678,8 +1766,6 @@ class TagLab(QWidget):
             msgBox.exec()
             print(self.project)
             return
-
-        f.close()
 
         # append the annotated images to the current ones
         for annotated_image in project_to_append.images:

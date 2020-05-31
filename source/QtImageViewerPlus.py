@@ -56,6 +56,8 @@ class QtImageViewerPlus(QtImageViewer):
     # custom signal
     updateInfoPanel = pyqtSignal(Blob)
 
+    viewHasChanged = pyqtSignal()
+
 
     def __init__(self):
         QtImageViewer.__init__(self)
@@ -76,6 +78,10 @@ class QtImageViewerPlus(QtImageViewer):
         self.dragSelectionStyle = QPen(Qt.white, 1, Qt.DashLine)
         self.dragSelectionStyle.setCosmetic(True)
 
+        # Set scrollbar
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+
 
         # DRAWING SETTINGS
         self.border_pen = QPen(Qt.black, 3)
@@ -84,7 +90,6 @@ class QtImageViewerPlus(QtImageViewer):
         self.border_pen.setCosmetic(True)
         self.border_selected_pen = QPen(Qt.white, 3)
         self.border_selected_pen.setCosmetic(True)
-
 
         self.showCrossair = False
         self.mouseCoords = QPointF(0, 0)
@@ -99,6 +104,8 @@ class QtImageViewerPlus(QtImageViewer):
 
 
     def setImage(self, image):
+
+        self.clear()
 
         self.image = image
         self.annotations = image.annotations
@@ -141,6 +148,7 @@ class QtImageViewerPlus(QtImageViewer):
             img = QImage(channel.filename)
             if img.isNull():
                 raise Exception("Could not load or find the image: " + channel.filename)
+
         self.setChannelImg(img)
 
     def setChannelImg(self, channel_img, zoomf=0.0):
@@ -151,6 +159,7 @@ class QtImageViewerPlus(QtImageViewer):
         self.setImg(channel_img, zoomf)
 
     def clear(self):
+
         QtImageViewer.clear(self)
         self.selected_blobs = []
         self.undo_data = Undo()
@@ -166,7 +175,7 @@ class QtImageViewerPlus(QtImageViewer):
 
         # if it has just been created remove the current graphics item in order to set it again
         if blob.qpath_gitem is not None:
-            self.viewerplus.scene.removeItem(blob.qpath_gitem)
+            self.scene.removeItem(blob.qpath_gitem)
             del blob.qpath_gitem
             blob.qpath_gitem = None
 
@@ -204,6 +213,14 @@ class QtImageViewerPlus(QtImageViewer):
             painter.drawLine(self.mouseCoords.x(), rect.top(), self.mouseCoords.x(), rect.bottom())
             painter.drawLine(rect.left(), self.mouseCoords.y(), rect.right(), self.mouseCoords.y())
 
+
+    def setViewParameters(self, posx, posy, zoomfactor):
+
+        self.horizontalScrollBar().setValue(posx)
+        self.verticalScrollBar().setValue(posy)
+        self.zoom_factor = zoomfactor
+
+        self.updateViewer()
 
 #TOOLS and SELECTIONS
 
@@ -314,6 +331,8 @@ class QtImageViewerPlus(QtImageViewer):
             else:
                 self.tools.leftReleased(x, y)
 
+            self.viewHasChanged.emit()
+
            # self.leftMouseButtonReleased.emit(clippedCoords[0], clippedCoords[1])
 
 
@@ -372,6 +391,8 @@ class QtImageViewerPlus(QtImageViewer):
                 self.zoom_factor = self.ZOOM_FACTOR_MAX
 
             self.updateViewer()
+
+            self.viewHasChanged.emit()
 
         # PAY ATTENTION !! THE WHEEL INTERACT ALSO WITH THE SCROLL BAR !!
         #QGraphicsView.wheelEvent(self, event)

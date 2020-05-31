@@ -11,7 +11,7 @@ from source.Blob import Blob
 from source.Label import Label
 
 
-def loadProject(filename):
+def loadProject(filename, labels_dict):
 
     dir = QDir(os.getcwd())
     filename = dir.relativeFilePath(filename)
@@ -23,7 +23,7 @@ def loadProject(filename):
 
 
     if "Map File" in data:
-        project =  loadOldProject(data)
+        project = loadOldProject(data, labels_dict)
     else:
         project = Project(**data)
 
@@ -32,9 +32,11 @@ def loadProject(filename):
     return project
 
 
-def loadOldProject(data):
+# NOTE: old project NEEDS a pre-defined label dictionary
+def loadOldProject(data, labels_dict):
 
-    project = Project(filename = data["Project Name"])
+    project = Project()
+    project.importLabelsFromConfiguration(labels_dict)
     map_filename = data["Map File"]
 
     #convert to relative paths in case:
