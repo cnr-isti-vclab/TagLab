@@ -175,6 +175,8 @@ class TagLab(QWidget):
         layout_tools.addSpacing(10)
         layout_tools.addWidget(self.btnDeepExtreme)
         layout_tools.addWidget(self.btnAutoClassification)
+        layout_tools.addSpacing(10)
+        layout_tools.addWidget(self.btnConnect)
         layout_tools.addStretch()
 
         #CONTEXT MENU ACTIONS
