@@ -5,10 +5,14 @@ class Assign(Tool):
         super(Assign, self).__init__(viewerplus)
         self.active_label = None
 
+
     def setActiveLabel(self, label):
+
         self.active_label = label
 
+
     def leftPressed(self, x, y):
+
         if self.active_label is None:
             raise Exception("Active label is not set in tools!")
 

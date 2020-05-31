@@ -427,10 +427,12 @@ class TagLab(QWidget):
 
     def activateAutosave(self):
 
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.autosave)
-        #self.timer.start(1800000)  # save every 3 minute
-        self.timer.start(600000)  # save every 3 minute
+        pass
+
+        # self.timer = QTimer(self)
+        # self.timer.timeout.connect(self.autosave)
+        # #self.timer.start(1800000)  # save every 3 minute
+        # self.timer.start(600000)  # save every 3 minute
 
     @pyqtSlot()
     def autosave(self):
@@ -527,20 +529,16 @@ class TagLab(QWidget):
             self.recentFileActs.append(QAction(self, visible=False, triggered=self.openRecentProject))
 
         # THIS WILL BECOME "ADD MAP" TO ADD MULTIPLE MAPS (e.g. depth, different years)
-        newMapAct = QAction("New Map..", self)
+        newMapAct = QAction("Add a New Map..", self)
         newMapAct.setShortcut('Ctrl+L')
         newMapAct.setStatusTip("Add a new map to the project and load it")
         newMapAct.triggered.connect(self.setMapToLoad)
 
         ### IMPORT
 
-        appendAct = QAction("Append Annotations to Current", self)
-        appendAct.setStatusTip("Append to this project the annotations of another project")
-        appendAct.triggered.connect(self.appendAnnotations)
-
-        compareAct = QAction("Compare Annotations", self)
-        compareAct.setStatusTip("Compare the current annotations with the one of another project")
-        compareAct.triggered.connect(self.compareAnnotations)
+        appendAct = QAction("Add Annotations from Another Project", self)
+        appendAct.setStatusTip("Add to the current project the annotated images of another project")
+        appendAct.triggered.connect(self.importAnnotations)
 
         importAct = QAction("Import Label Map", self)
         importAct.setStatusTip("Import a label map")
@@ -626,7 +624,6 @@ class TagLab(QWidget):
 
         submenuImport = filemenu.addMenu("Import")
         submenuImport.addAction(appendAct)
-        submenuImport.addAction(compareAct)
         submenuImport.addAction(importAct)
         filemenu.addSeparator()
         submenuExport = filemenu.addMenu("Export")
@@ -749,12 +746,6 @@ class TagLab(QWidget):
 
         elif event.key() == Qt.Key_F:
             self.fillBorder()
-
-        # elif event.key() == Qt.Key_G:
-        #     self.groupBlobs()
-
-        elif event.key() == Qt.Key_U:
-            self.ungroupBlobs()
 
         elif event.key() == Qt.Key_1:
             # ACTIVATE "MOVE" TOOL
@@ -1421,8 +1412,7 @@ class TagLab(QWidget):
     def openProject(self):
 
         filters = "ANNOTATION PROJECT (*.json)"
-        filename = 'projects/sample_project.json'
-        #filename, _ = QFileDialog.getOpenFileName(self, "Open a project", self.taglab_dir, filters)
+        filename, _ = QFileDialog.getOpenFileName(self, "Open a project", self.taglab_dir, filters)
 
         if filename:
             self.load(filename)
@@ -1456,11 +1446,10 @@ class TagLab(QWidget):
             self.save()
 
 
-
     @pyqtSlot()
-    def appendAnnotations(self):
+    def importAnnotations(self):
         """
-        Opens a previously saved project and append the annotations to the current ones.
+        Opens a previously saved project and append the annotated images to the current ones.
         """
 
         filters = "ANNOTATION PROJECT (*.json)"
@@ -1468,16 +1457,6 @@ class TagLab(QWidget):
         if filename:
             self.append(filename, append_to_current=True)
 
-    @pyqtSlot()
-    def compareAnnotations(self):
-        """
-        Opens a previously saved project and put the annotations into a different layer for comparison purposes.
-        """
-
-        filters = "ANNOTATION PROJECT (*.json)"
-        filename, _ = QFileDialog.getOpenFileName(self, "Open a project", self.taglab_dir, filters)
-        if filename:
-            self.append(filename, append_to_current=False)
 
     @pyqtSlot()
     def help(self):
@@ -1657,7 +1636,7 @@ class TagLab(QWidget):
         self.resetAll()
 
         try:
-            self.project = loadProject(filename)
+            self.project = loadProject(filename, self.labels_dictionary)
         except Exception as e:
             msgBox = QMessageBox()
             msgBox.setText("The json project contains an error:\n {0}\n\nPlease contact us.".format(str(e)))
@@ -1684,45 +1663,27 @@ class TagLab(QWidget):
         logfile.info(message)
 
 
-    def append(self, filename, append_to_current):
+    def append(self, filename):
         """
-        Append the annotations of a previously saved projects.
+        Append the annotated images of a previously saved project to the current one.
         """
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
 
-        f = open(filename, "r")
         try:
-            loaded_dict = json.load(f)
-        except json.JSONDecodeError as e:
+            project_to_append = loadProject(filename, self.labels_dictionary)
+        except Exception as e:
             msgBox = QMessageBox()
             msgBox.setText("The json project contains an error:\n {0}\n\nPlease contact us.".format(str(e)))
             msgBox.exec()
+            print(self.project)
             return
 
         f.close()
 
-        if append_to_current:
-
-            for blob_dict in loaded_dict["Segmentation Data"]:
-                blob = Blob(None, 0, 0, 0)
-                blob.fromDict(blob_dict)
-                self.annotations.seg_blobs.append(blob)
-                self.viewerplus.drawBlob(blob)
-        else:
-
-            self.compare_panel.addProject(filename)
-
-            blob_list = []
-            for blob_dict in loaded_dict["Segmentation Data"]:
-                blob = Blob(None, 0, 0, 0)
-                blob.fromDict(blob_dict)
-                blob_list.append(blob)
-
-            self.annotations.prev_blobs.append(blob_list)
-
-            for blob in blob_list:
-                self.viewerplus.drawBlob(blob, prev=True)
+        # append the annotated images to the current ones
+        for annotated_image in project_to_append.images:
+            self.project.images.append(annotated_image)
 
         QApplication.restoreOverrideCursor()
 
