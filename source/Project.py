@@ -43,8 +43,10 @@ def loadOldProject(data, labels_dict):
     #convert to relative paths in case:
     dir = QDir(os.getcwd())
     map_filename = dir.relativeFilePath(map_filename)
-
-    image = Image()
+    image_name = os.path.basename(map_filename)
+    image_name = image_name[:-4]
+    image = Image(id=image_name)
+    print(image_name)
     image.map_px_to_mm_factor = data["Map Scale"]
     image.metadata['acquisition_date'] = data["Acquisition Date"]
     channel = Channel(filename=map_filename, type="rgb")
@@ -169,17 +171,17 @@ class Project(object):
         blobs1 = self.images[0].annotations.seg_blobs
         blobs2 = self.images[1].annotations.seg_blobs
 
-        corr = Correspondences()
+        self.correspondances = Correspondences()
 
-        self.correspondences = corr.autoMatch(blobs1, blobs2)
+        self.correspondences.autoMatch(blobs1, blobs2)
 
-        corr.findSplit()
-        corr.findFuse()
+        self.correspondances.findSplit()
+        self.correspondances.findFuse()
 
         # ma non li deve mettere in corrispondenze o si ?
 
-        corr.findDead(blobs1)
-        corr.findBorn(blobs2)
+        self.correspondances.findDead(blobs1)
+        self.correspondances.findBorn(blobs2)
 
         print(corr.correspondences)
         print(corr.dead)
