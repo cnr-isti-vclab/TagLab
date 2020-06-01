@@ -772,15 +772,6 @@ class TagLab(QWidget):
         elif event.key() == Qt.Key_F:
             self.fillBorder()
 
-        elif event.key() == Qt.Key_PageUp:
-            self.viewerplus.setImage(self.project.images[0])
-            self.viewerplus.setChannel(self.project.images[0].channels[0])
-
-        elif event.key() == Qt.Key_PageDown:
-            self.viewerplus2.setProject(self.project)
-            self.viewerplus2.setImage(self.project.images[1])
-            self.viewerplus2.setChannel(self.project.images[1].channels[0])
-
         elif event.key() == Qt.Key_1:
             # ACTIVATE "MOVE" TOOL
             self.move()
@@ -1064,7 +1055,7 @@ class TagLab(QWidget):
         """
         Activate the "connect" tool. The tool allows to connect a group of blobs with another group of blobs.
         """
-        pass
+        self.project.computeCorrespondances()
 
     @pyqtSlot()
     def deepExtreme(self):

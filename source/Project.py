@@ -9,6 +9,7 @@ from source.Channel import Channel
 from source.Annotation import Annotation
 from source.Blob import Blob
 from source.Label import Label
+from source.Correspondances import Correspondances
 
 
 def loadProject(filename, labels_dict):
@@ -140,3 +141,20 @@ class Project(object):
             raise Exception("Unknown label: " + id)
 
         return self.labels[id].visible
+
+
+    def computeCorrespondances(self):
+
+        blobs1 = self.images[0].annotations.seg_blobs
+        blobs2 = self.images[1].annotations.seg_blobs
+
+        corr = Correspondances()
+
+        self.correspondances = corr.autoMatch(blobs1, blobs2)
+
+        corr.findSplit(self.correspondences)
+        corr.findFuse(self.correspondences)
+
+        deads = corr.findDead(self.correspondences, blobs1)
+        borns = corr.findBorn(self.correspondences, blobs2)
+
