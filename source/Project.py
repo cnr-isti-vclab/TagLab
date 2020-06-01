@@ -9,7 +9,7 @@ from source.Channel import Channel
 from source.Annotation import Annotation
 from source.Blob import Blob
 from source.Label import Label
-from source.Correspondances import Correspondances
+from source.Correspondences import Correspondences
 
 
 def loadProject(filename, labels_dict):
@@ -132,6 +132,27 @@ class Project(object):
         brush = QBrush(QColor(color[0], color[1], color[2], 200))
         return brush
 
+    # def classBrushFromCorrespondence(self):
+    #     brush = QBrush()
+    #
+    #
+    #     blobs1 = self.images[0].annotations.seg_blobs
+    #     blobs2 = self.images[1].annotations.seg_blobs
+    #     corr = Correspondences()
+
+        # for correspondence in corr.correspondences:
+        #     for blob1 in blobs1:
+        #         for blob2 in blobs2:
+        #             blob1.class_name = correspondence[0]
+        #             blob2.class_name = correspondence[0]
+        #             blob1.id = correspondence[1]
+        #             blob2.id = correspondence[2]
+        #
+        #             color = self.labels[blob1.class_name].fill
+        #             brush = QBrush(QColor(color[0], color[1], color[2], 200))
+        #             # return brush
+
+
     def isLabelVisible(self, id):
 
         if id == "Empty":
@@ -148,13 +169,19 @@ class Project(object):
         blobs1 = self.images[0].annotations.seg_blobs
         blobs2 = self.images[1].annotations.seg_blobs
 
-        corr = Correspondances()
+        corr = Correspondences()
 
-        self.correspondances = corr.autoMatch(blobs1, blobs2)
+        self.correspondences = corr.autoMatch(blobs1, blobs2)
 
-        corr.findSplit(self.correspondences)
-        corr.findFuse(self.correspondences)
+        corr.findSplit()
+        corr.findFuse()
 
-        deads = corr.findDead(self.correspondences, blobs1)
-        borns = corr.findBorn(self.correspondences, blobs2)
+        # ma non li deve mettere in corrispondenze o si ?
+
+        corr.findDead(blobs1)
+        corr.findBorn(blobs2)
+
+        print(corr.correspondences)
+        print(corr.dead)
+        print(corr.born)
 
