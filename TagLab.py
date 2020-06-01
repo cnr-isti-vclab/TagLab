@@ -158,7 +158,7 @@ class TagLab(QWidget):
         self.btnCreateCrack = self.newButton("crack.png",    "Create crack",          flatbuttonstyle1, self.createCrack)
         self.btnSplitBlob   = self.newButton("split.png",    "Split Blob",            flatbuttonstyle1, self.splitBlob)
         self.btnRuler       = self.newButton("ruler.png",    "Measure tool",          flatbuttonstyle1, self.ruler)
-        self.btnConnect     = self.newButton("connect.png",  "Connect tool",          flatbuttonstyle1, self.connectTool)
+        self.btnMatch       = self.newButton("connect.png",  "Match tool",            flatbuttonstyle1, self.matchTool)
         self.btnDeepExtreme = self.newButton("dexter.png",   "4-click segmentation",  flatbuttonstyle2, self.deepExtreme)
         self.btnAutoClassification = self.newButton("auto.png", "Fully automatic classification", flatbuttonstyle2, self.selectClassifier)
 
@@ -176,7 +176,7 @@ class TagLab(QWidget):
         layout_tools.addWidget(self.btnDeepExtreme)
         layout_tools.addWidget(self.btnAutoClassification)
         layout_tools.addSpacing(10)
-        layout_tools.addWidget(self.btnConnect)
+        layout_tools.addWidget(self.btnMatch)
         layout_tools.addStretch()
 
         #CONTEXT MENU ACTIONS
@@ -199,13 +199,22 @@ class TagLab(QWidget):
         self.viewerplus = QtImageViewerPlus()
         self.viewerplus.logfile = logfile
         self.viewerplus.viewUpdated.connect(self.updateViewInfo)
+        self.viewerplus.activated.connect(self.setActiveViewer)
         self.viewerplus.updateInfoPanel.connect(self.updatePanelInfo)
 
         # secondary viewer in SPLIT MODE
         self.viewerplus2 = QtImageViewerPlus()
         self.viewerplus2.logfile = logfile
         self.viewerplus2.viewUpdated.connect(self.updateViewInfo)
+        self.viewerplus2.activated.connect(self.setActiveViewer)
         self.viewerplus2.updateInfoPanel.connect(self.updatePanelInfo)
+
+        self.viewerplus.newSelection.connect(self.showMatches)
+        self.viewerplus2.newSelection.connect(self.showMatches)
+
+        #last activated viewerplus: redirect here context menu commands and keyboard commands
+        self.activeviewer = None
+        self.inactiveviewer = None
 
         # MAP VIEWER
         self.mapviewer = QtMapViewer(self.MAP_VIEWER_SIZE)
@@ -392,23 +401,20 @@ class TagLab(QWidget):
 
         # EVENTS
         self.labels_widget.activeLabelChanged.connect(self.viewerplus.setActiveLabel)
+        self.labels_widget.activeLabelChanged.connect(self.viewerplus2.setActiveLabel)
+
         self.labels_widget.visibilityChanged.connect(self.viewerplus.updateVisibility)
+        self.labels_widget.visibilityChanged.connect(self.viewerplus2.updateVisibility)
 
         self.compare_panel.hideAnnotations.connect(self.hidePrevBlobs)
         self.compare_panel.showAnnotations.connect(self.showPrevBlobs)
-
-
-        #self.viewerplus.leftMouseButtonPressed.connect(self.toolsOpsLeftPressed)
-        #self.viewerplus.leftMouseButtonReleased.connect(self.toolsOpsLeftReleased)
-        #self.viewerplus.rightMouseButtonPressed.connect(self.toolsOpsRightPressed)
-        #self.viewerplus.mouseMoveLeftPressed.connect(self.toolsOpsMouseMove)
-        #self.viewerplus.leftMouseButtonDoubleClicked.connect(self.selectOp)
 
         self.viewerplus.viewHasChanged[float, float, float].connect(self.viewerplus2.setViewParameters)
         self.viewerplus2.viewHasChanged[float, float, float].connect(self.viewerplus.setViewParameters)
         self.disableComparisonMode()
 
         self.viewerplus.customContextMenuRequested.connect(self.openContextMenu)
+        self.viewerplus2.customContextMenuRequested.connect(self.openContextMenu)
 
         # SWITCH IMAGES
         self.current_image_index = 0
@@ -497,8 +503,8 @@ class TagLab(QWidget):
 
         menu.addAction(self.fillAction)
 
-
-        action = menu.exec_(self.viewerplus.mapToGlobal(position))
+        viewer = self.sender()
+        action = menu.exec_(viewer.mapToGlobal(position))
 
 
     def setProjectTitle(self, project_name):
@@ -604,12 +610,12 @@ class TagLab(QWidget):
         undoAct = QAction("Undo", self)
         undoAct.setShortcut('Ctrl+Z')
         undoAct.setStatusTip("Undo")
-        undoAct.triggered.connect(self.viewerplus.undo)
+        undoAct.triggered.connect(self.undo)
 
         redoAct = QAction("Redo", self)
         redoAct.setShortcut('Ctrl+Shift+Z')
         redoAct.setStatusTip("Redo")
-        redoAct.triggered.connect(self.viewerplus.redo)
+        redoAct.triggered.connect(self.redo)
 
         helpAct = QAction("Help", self)
         helpAct.setShortcut('Ctrl+H')
@@ -736,12 +742,13 @@ class TagLab(QWidget):
         logfile.info(msg)
 
         if event.key() == Qt.Key_Escape:
+            if self.activeviewer is not None:
             # RESET CURRENT OPERATION
-            self.viewerplus.resetSelection()
-            self.viewerplus.resetTools()
+                self.activeviewer.resetSelection()
+                self.activeviewer.resetTools()
 
-            message = "[TOOL][" + self.viewerplus.tools.tool + "] Current operation has been canceled."
-            logfile.info(message)
+                message = "[TOOL][" + self.activeviewer.tools.tool + "] Current operation has been canceled."
+                logfile.info(message)
 
         elif event.key() == Qt.Key_S and modifiers & Qt.ControlModifier:
             self.save()
@@ -862,13 +869,10 @@ class TagLab(QWidget):
 
         elif event.key() == Qt.Key_Space:
             print("apply!")
-            self.viewerplus.tools.applyTool()
+            self.activeviewer.tools.applyTool()
 
 
     def disableComparisonMode(self):
-
-        self.viewerplus.viewHasChanged.disconnect()
-        self.viewerplus2.viewHasChanged.disconnect()
 
         self.viewerplus2.hide()
         self.groupbox_comparison.hide()
@@ -878,10 +882,7 @@ class TagLab(QWidget):
 
     def enableComparisonMode(self):
 
-        self.viewerplus.viewHasChanged[float, float, float].connect(self.viewerplus2.setViewParameters)
-        self.viewerplus2.viewHasChanged[float, float, float].connect(self.viewerplus.setViewParameters)
-
-#        self.viewerplus2.viewHasChanged.connect(self.synchronizeLeft)
+        self.viewerplus.viewChanged()
 
         if len(self.project.images) > 1:
             self.viewerplus2.setProject(self.project)
@@ -896,6 +897,25 @@ class TagLab(QWidget):
 
         self.comparison_mode = True
 
+    @pyqtSlot()
+    def undo(self):
+        if self.activeviewer:
+            self.activeviewer.undo()
+
+    @pyqtSlot()
+    def redo(self):
+        if self.activeviewer:
+            self.activeviewer.redo()
+
+    @pyqtSlot()
+    def setActiveViewer(self):
+        self.activeviewer = self.sender()
+        if self.activeviewer != self.viewerplus:
+            self.inactiveviewer = self.viewerplus
+        else:
+            self.inactiveviewer = self.viewerplus2
+
+        self.inactiveviewer.resetTools()
 
     @pyqtSlot(int)
     def mainImageChanged(self, index):
@@ -944,42 +964,10 @@ class TagLab(QWidget):
 
         self.labelViewInfo.setText(text)
 
-    # @pyqtSlot(float, float)
-    # def updateMainView(self, x, y):
-    #
-    #     zf = self.viewerplus.zoom_factor
-    #
-    #     xmap = float(self.img_map.width()) * x
-    #     ymap = float(self.img_map.height()) * y
-    #
-    #     h = self.map_bottom - self.map_top
-    #     w = self.map_right - self.map_left
-    #
-    #     posx = xmap - w / 2
-    #     posy = ymap - h / 2
-    #
-    #     if posx < 0:
-    #         posx = 0
-    #     if posy < 0:
-    #         posy = 0
-    #
-    #     if posx + w/2 > self.img_map.width():
-    #         posx = self.img_map.width() - w / 2 - 1
-    #
-    #     if posy + h/2 > self.img_map.height():
-    #         posy = self.img_map.height() - h / 2 - 1
-    #
-    #     posx = posx * zf;
-    #     posy = posy * zf;
-    #
-    #     self.viewerplus.horizontalScrollBar().setValue(posx)
-    #     self.viewerplus.verticalScrollBar().setValue(posy)
-
-
-
     def resetAll(self):
 
         self.viewerplus.clear()
+        self.viewerplus2.clear()
         self.mapviewer.clear()
         # RE-INITIALIZATION
 
@@ -987,6 +975,7 @@ class TagLab(QWidget):
         self.project = Project()
         self.image = None
         self.annotations = []
+        self.activeviewer = None
 
 
     def resetToolbar(self):
@@ -1000,6 +989,7 @@ class TagLab(QWidget):
         self.btnCreateCrack.setChecked(False)
         self.btnSplitBlob.setChecked(False)
         self.btnDeepExtreme.setChecked(False)
+        self.btnMatch.setChecked(False)
 
         self.btnAutoClassification.setChecked(False)
 
@@ -1013,14 +1003,22 @@ class TagLab(QWidget):
             "CUT"        : ["Cut"        , self.btnCut],
             "FREEHAND"   : ["Freehand"   , self.btnFreehand],
             "RULER"      : ["Ruler"      , self.btnRuler],
-            "DEEPEXTREME": ["4-click"    , self.btnDeepExtreme]
+            "DEEPEXTREME": ["4-click"    , self.btnDeepExtreme],
+            "MATCH"      : ["Match"      , self.btnMatch]
         }
         newtool = tools[tool]
         self.resetToolbar()
         self.viewerplus.setTool(tool)
+        self.viewerplus2.setTool(tool)
         newtool[1].setChecked(True)
         logfile.info("[TOOL][" + tool + "] Tool activated")
         self.infoWidget.setInfoMessage(newtool[0] + " Tool is active")
+        self.comboboxMainImage.setEnabled(True)
+        self.comboboxComparisonImage.setEnabled(True)
+
+        if tool == "MATCH":
+            self.comboboxMainImage.setEnabled(False)
+            self.comboboxComparisonImage.setEnabled(False)
 
 
     @pyqtSlot()
@@ -1087,8 +1085,8 @@ class TagLab(QWidget):
         """
         Activate the "connect" tool. The tool allows to connect a group of blobs with another group of blobs.
         """
-
-        self.project.computeCorrespondences()
+        self.setTool("CONNECT")
+        #self.project.computeCorrespondences()
         #self.compare_panel.setProject(self.project)
 
     @pyqtSlot()
@@ -1098,6 +1096,30 @@ class TagLab(QWidget):
         extreme of the corals and confirm the points by pressing SPACE.
         """
         self.setTool("DEEPEXTREME")
+
+    @pyqtSlot()
+    def matchTool(self):
+        """
+        Activate the "Match" too
+        """
+        self.setTool("MATCH")
+
+    @pyqtSlot()
+    def showMatches(self):
+        if self.activeviewer is None:
+            return
+
+        selected = self.activeviewer.selected_blobs
+        if len(selected) == 0:
+            self.inactiveviewer.resetSelection()
+            return
+        if len(selected) > 1:
+            box = QMessageBox()
+            box.setText("Huston we have a problem!")
+            box.exec()
+            return
+
+        #look in correspondeces for blobs.
 
     @pyqtSlot()
     def noteChanged(self):
@@ -1124,14 +1146,16 @@ class TagLab(QWidget):
 
 
     def deleteSelectedBlobs(self):
-        self.viewerplus.deleteSelectedBlobs()
+        self.activeviewer.deleteSelectedBlobs()
         logfile.info("[OP-DELETE] Selected blobs has been DELETED")
 
 
 #OPERATIONS
 
     def assignOperation(self):
-        view = self.viewerplus
+        view = self.activeviewer
+        if view is None:
+            return
         for blob in view.selected_blobs:
             view.setBlobClass(blob, self.labels_widget.getActiveLabelName())
         view.saveUndo()
@@ -1142,7 +1166,10 @@ class TagLab(QWidget):
         """
         blob A = blob A U blob B
         """
-        view = self.viewerplus
+        view = self.activeviewer
+        if view is None:
+            return
+
         if len(view.selected_blobs) > 1:
 
             message = "[OP-MERGE] MERGE OVERLAPPED LABELS operation begins.. (number of selected blobs: " + str(len(view.selected_blobs)) + ")"
@@ -1173,7 +1200,10 @@ class TagLab(QWidget):
         """
         blob A = blob A / blob B
         """
-        view = self.viewerplus
+        view = self.activeviewer
+        if view is None:
+            return
+
 
         if len(view.selected_blobs) == 2:
 
@@ -1210,7 +1240,10 @@ class TagLab(QWidget):
         """
         Separe intersecting blob
         """
-        view = self.viewerplus
+        view = self.activeviewer
+        if view is None:
+            return
+
         if len(view.selected_blobs) == 2:
 
             message = "[OP-DIVIDE] DIVIDE LABELS operation begins.. (number of selected blobs: " + str(len(view.selected_blobs)) + ")"
@@ -1244,7 +1277,10 @@ class TagLab(QWidget):
             self.infoWidget.setInfoMessage("You need to select <em>two</em> blobs for DIVIDE operation.")
 
     def refineBorderDilate(self):
-        view = self.viewerplus
+        view = self.activeviewer
+        if view is None:
+            return
+
 
         logfile.info("[OP-REFINE-BORDER-DILATE] DILATE-BORDER operation begins..")
 
@@ -1258,7 +1294,10 @@ class TagLab(QWidget):
     def refineBorderErode(self):
 
         logfile.info("[OP-REFINE-BORDER-ERODE] ERODE-BORDER operation begins..")
-        view = self.viewerplus
+        view = self.activeviewer
+        if view is None:
+            return
+
 
         view.refine_grow -= 2
         self.refineBorder()
@@ -1269,7 +1308,10 @@ class TagLab(QWidget):
     def refineBorderOperation(self):
 
         logfile.info("[OP-REFINE-BORDER] REFINE-BORDER operation begins..")
-        view = self.viewerplus
+        view = self.activeviewer
+        if view is None:
+            return
+
 
         view.refine_grow = 0
         self.refineBorder()
@@ -1280,7 +1322,9 @@ class TagLab(QWidget):
         """
         Refine blob border
         """
-        view = self.viewerplus
+        view = self.activeviewer
+        if view is None:
+            return
 
         if view.refine_grow != 0 and view.refine_original_mask is None:
             return
@@ -1357,7 +1401,9 @@ class TagLab(QWidget):
             self.infoWidget.setInfoMessage("You need to select <em>one</em> blob for REFINE operation.")
 
     def fillLabel(self, blob):
-        view = self.viewerplus
+        view = self.activeviewer
+        if view is None:
+            return
 
         logfile.info("[OP-FILL] FILL operation starts..")
 
@@ -1952,7 +1998,6 @@ class TagLab(QWidget):
                 self.move()
 
     def automaticSegmentation(self):
-
         self.img_overlay = QImage(self.segmentation_map_filename)
         self.viewerplus.setOverlayImage(self.img_overlay)
 
