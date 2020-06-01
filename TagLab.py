@@ -820,8 +820,8 @@ class TagLab(QWidget):
             # ACTIVATE "DEEP EXTREME" TOOL
             self.deepExtreme()
 
-        elif event.key() == Qt.Key_P:
-            self.drawDeepExtremePoints()
+        #elif event.key() == Qt.Key_P:
+        #    self.drawDeepExtremePoints()
         #
         # elif event.key() == Qt.Key_Y:
         #     self.refineAllBorders()
@@ -866,8 +866,10 @@ class TagLab(QWidget):
 
     def enableComparisonMode(self):
 
-        self.viewerplus.viewHasChanged.connect(self.synchronizeRight)
-        self.viewerplus2.viewHasChanged.connect(self.synchronizeLeft)
+        self.viewerplus.viewHasChanged[float, float, float].connect(self.viewerplus2.setViewParameters)
+        self.viewerplus2.viewHasChanged[float, float, float].connect(self.viewerplus.setViewParameters)
+
+#        self.viewerplus2.viewHasChanged.connect(self.synchronizeLeft)
 
         if len(self.project.images) > 1:
             self.viewerplus2.setProject(self.project)
@@ -1096,24 +1098,6 @@ class TagLab(QWidget):
     def deleteSelectedBlobs(self):
         self.viewerplus.deleteSelectedBlobs()
         logfile.info("[OP-DELETE] Selected blobs has been DELETED")
-
-
-    @pyqtSlot()
-    def synchronizeLeft(self):
-
-        posx = self.viewerplus2.horizontalScrollBar().value()
-        posy = self.viewerplus2.verticalScrollBar().value()
-        zf = self.viewerplus2.zoom_factor
-        self.viewerplus.setViewParameters(posx, posy, zf)
-
-    @pyqtSlot()
-    def synchronizeRight(self):
-
-        posx = self.viewerplus.horizontalScrollBar().value()
-        posy = self.viewerplus.verticalScrollBar().value()
-        zf = self.viewerplus.zoom_factor
-        self.viewerplus2.setViewParameters(posx, posy, zf)
-
 
 
 #OPERATIONS
