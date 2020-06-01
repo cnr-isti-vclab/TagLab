@@ -35,7 +35,7 @@ from skimage.measure import points_in_poly
 from PyQt5.QtCore import Qt, QSize, QDir, QPoint, QPointF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo
 from PyQt5.QtGui import QPainterPath, QFont, QColor, QPolygonF, QImageReader, QImage, QPixmap, QIcon, QKeySequence, \
     QPen, QBrush, qRgb, qRed, qGreen, qBlue
-from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QDialog, QMenuBar, QMenu, QSizePolicy, QScrollArea, \
+from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QComboBox, QMenuBar, QMenu, QSizePolicy, QScrollArea, \
     QLabel, QToolButton, QPushButton, QSlider, \
     QMessageBox, QGroupBox, QHBoxLayout, QVBoxLayout, QTextEdit, QLineEdit, QGraphicsView, QAction, QGraphicsItem
 
@@ -219,6 +219,14 @@ class TagLab(QWidget):
 
         layout_viewer = QVBoxLayout()
 
+        self.comboboxMainImage = QComboBox()
+        self.comboboxMainImage.setMinimumWidth(180)
+        self.comboboxComparisonImage = QComboBox()
+        self.comboboxComparisonImage.setMinimumWidth(180)
+
+        self.comboboxMainImage.currentIndexChanged.connect(self.mainImageChanged)
+        self.comboboxComparisonImage.currentIndexChanged.connect(self.comparisonImageChanged)
+
         self.lblSlider = QLabel("Transparency: 0%")
 
         self.sliderTrasparency = QSlider(Qt.Horizontal)
@@ -234,6 +242,8 @@ class TagLab(QWidget):
         self.labelViewInfo = QLabel("100% | top:0 left:0 right:0 bottom:0         ")
 
         layout_slider = QHBoxLayout()
+        layout_slider.addWidget(self.comboboxMainImage)
+        layout_slider.addWidget(self.comboboxComparisonImage)
         layout_slider.addWidget(self.lblSlider)
         layout_slider.addWidget(self.sliderTrasparency)
         layout_slider.addWidget(self.labelViewInfo)
@@ -241,9 +251,6 @@ class TagLab(QWidget):
         layout_viewers = QHBoxLayout()
         layout_viewers.addWidget(self.viewerplus)
         layout_viewers.addWidget(self.viewerplus2)
-
-        self.viewerplus2.hide()
-        self.comparison_mode = False
 
         layout_main_view = QVBoxLayout()
         layout_main_view.setSpacing(1)
@@ -396,6 +403,10 @@ class TagLab(QWidget):
         #self.viewerplus.rightMouseButtonPressed.connect(self.toolsOpsRightPressed)
         #self.viewerplus.mouseMoveLeftPressed.connect(self.toolsOpsMouseMove)
         #self.viewerplus.leftMouseButtonDoubleClicked.connect(self.selectOp)
+
+        self.viewerplus.viewHasChanged[float, float, float].connect(self.viewerplus2.setViewParameters)
+        self.viewerplus2.viewHasChanged[float, float, float].connect(self.viewerplus.setViewParameters)
+        self.disableComparisonMode()
 
         self.viewerplus.customContextMenuRequested.connect(self.openContextMenu)
 
@@ -820,8 +831,8 @@ class TagLab(QWidget):
             # ACTIVATE "DEEP EXTREME" TOOL
             self.deepExtreme()
 
-        elif event.key() == Qt.Key_P:
-            self.drawDeepExtremePoints()
+        #elif event.key() == Qt.Key_P:
+        #    self.drawDeepExtremePoints()
         #
         # elif event.key() == Qt.Key_Y:
         #     self.refineAllBorders()
@@ -861,13 +872,16 @@ class TagLab(QWidget):
 
         self.viewerplus2.hide()
         self.groupbox_comparison.hide()
+        self.comboboxComparisonImage.hide()
 
         self.comparison_mode = False
 
     def enableComparisonMode(self):
 
-        self.viewerplus.viewHasChanged.connect(self.synchronizeRight)
-        self.viewerplus2.viewHasChanged.connect(self.synchronizeLeft)
+        self.viewerplus.viewHasChanged[float, float, float].connect(self.viewerplus2.setViewParameters)
+        self.viewerplus2.viewHasChanged[float, float, float].connect(self.viewerplus.setViewParameters)
+
+#        self.viewerplus2.viewHasChanged.connect(self.synchronizeLeft)
 
         if len(self.project.images) > 1:
             self.viewerplus2.setProject(self.project)
@@ -876,11 +890,26 @@ class TagLab(QWidget):
 
         self.viewerplus2.show()
         self.groupbox_comparison.show()
+        self.comboboxComparisonImage.show()
 
         #self.synchronizeRight()
 
         self.comparison_mode = True
 
+
+    @pyqtSlot(int)
+    def mainImageChanged(self, index):
+
+        self.viewerplus.setProject(self.project)
+        self.viewerplus.setImage(self.project.images[index])
+        self.viewerplus.setChannel(self.project.images[index].channels[0])
+
+    @pyqtSlot(int)
+    def comparisonImageChanged(self, index):
+
+        self.viewerplus2.setProject(self.project)
+        self.viewerplus2.setImage(self.project.images[index])
+        self.viewerplus2.setChannel(self.project.images[index].channels[0])
 
     @pyqtSlot()
     def sliderTrasparencyChanged(self):
@@ -890,6 +919,9 @@ class TagLab(QWidget):
         str1 = "Transparency {}%".format(value)
         self.lblSlider.setText(str1)
         self.viewerplus.applyTransparency(value)
+
+        if self.viewerplus2.isVisible():
+            self.viewerplus2.applyTransparency(value)
 
 
     @pyqtSlot()
@@ -1056,6 +1088,7 @@ class TagLab(QWidget):
         Activate the "connect" tool. The tool allows to connect a group of blobs with another group of blobs.
         """
         self.project.computeCorrespondances()
+        #self.compare_panel.setProject(self.project)
 
     @pyqtSlot()
     def deepExtreme(self):
@@ -1092,24 +1125,6 @@ class TagLab(QWidget):
     def deleteSelectedBlobs(self):
         self.viewerplus.deleteSelectedBlobs()
         logfile.info("[OP-DELETE] Selected blobs has been DELETED")
-
-
-    @pyqtSlot()
-    def synchronizeLeft(self):
-
-        posx = self.viewerplus2.horizontalScrollBar().value()
-        posy = self.viewerplus2.verticalScrollBar().value()
-        zf = self.viewerplus2.zoom_factor
-        self.viewerplus.setViewParameters(posx, posy, zf)
-
-    @pyqtSlot()
-    def synchronizeRight(self):
-
-        posx = self.viewerplus.horizontalScrollBar().value()
-        posy = self.viewerplus.verticalScrollBar().value()
-        zf = self.viewerplus.zoom_factor
-        self.viewerplus2.setViewParameters(posx, posy, zf)
-
 
 
 #OPERATIONS
@@ -1468,7 +1483,6 @@ class TagLab(QWidget):
             self.viewerplus.setImage(image)
             self.viewerplus.setChannel(self.channel)
 
-
             thumb = self.viewerplus.pixmap.scaled(self.MAP_VIEWER_SIZE, self.MAP_VIEWER_SIZE, Qt.KeepAspectRatio,
                                                  Qt.SmoothTransformation)
             self.mapviewer.setPixmap(thumb)
@@ -1734,6 +1748,16 @@ class TagLab(QWidget):
 
         self.project.importLabelsFromConfiguration(self.labels_dictionary)
         self.labels_widget.setLabels(self.project)
+
+        self.comboboxMainImage.currentIndexChanged.disconnect()
+        self.comboboxComparisonImage.currentIndexChanged.disconnect()
+
+        for image in self.project.images:
+            self.comboboxMainImage.addItem(image.id)
+            self.comboboxComparisonImage.addItem(image.id)
+
+        self.comboboxMainImage.currentIndexChanged.connect(self.mainImageChanged)
+        self.comboboxComparisonImage.currentIndexChanged.connect(self.comparisonImageChanged)
 
         if self.timer is None:
             self.activateAutosave()
