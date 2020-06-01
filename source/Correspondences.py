@@ -48,8 +48,6 @@ class Correspondences(object):
                                                     int(sizeblob1 + sizeblob1 * 0.05))):
                         self.correspondences.append([blob1.class_name, str(blob1.id), str(blob2.id), 'same'])
 
-        return self.correspondences
-
 
     def findSplit(self):
 
@@ -62,8 +60,6 @@ class Correspondences(object):
             if int(self.correspondences[i][1]) in splitted:
                 self.correspondences[i].append('split')
 
-        return (self.correspondences)
-
 
     def findFuse(self):
 
@@ -75,8 +71,6 @@ class Correspondences(object):
         for i in range(0, len(self.correspondences)):
             if int(self.correspondences[i][1]) in fused:
                 self.correspondences[i].append('fuse')
-
-        return (self.correspondences)
 
 
     def findDead(self, blobs1):
@@ -92,14 +86,13 @@ class Correspondences(object):
             all_blobs.append(blobs1[i].id)
 
         for j in range(0, len(self.correspondences)):
-            existing.append(int(self.correspondences[j][1]))
+            existing.append(self.correspondences[j][1])
             missing = [i for i in all_blobs if i not in existing]
 
-        for k in range(0, len(missing)):
-            if blobs1[missing[k] - 1].class_name != 'Empty':
-                self.dead.append([blobs1[missing[k] - 1].class_name, missing[k], 'none', 'dead'])
-
-        return self.dead
+        for id in missing:
+            index = all_blobs.index(id)
+            if blobs1[index].class_name != 'Empty':
+                self.dead.append([blobs1[index].class_name, id, 'none', 'dead'])
 
 
     def findBorn(self, blobs2):
@@ -109,7 +102,6 @@ class Correspondences(object):
         # MAYBE NOW MOVED MIGHT BE EXCHANGED FOR NEW BORN
         # """
 
-
         all_blobs = []
         existing = []
         missing = []
@@ -118,13 +110,11 @@ class Correspondences(object):
             all_blobs.append(blobs2[i].id)
 
         for j in range(0, len(self.correspondences)):
-            existing.append(int(self.correspondences[j][2]))
-            # missing = [i for i in range(0, len(self.correspondences)) if i not in existing]
+            existing.append(self.correspondences[j][2])
             missing = [i for i in all_blobs if i not in existing]
 
-        for k in range(0, len(missing)):
-            if blobs2[missing[k] - 1].class_name != 'Empty':
-                self.born.append([blobs2[missing[k] - 1].class_name, 'none', missing[k], 'born'])
-
-        return self.born
+        for id in missing:
+            index = all_blobs.index(id)
+            if blobs2[index].class_name != 'Empty':
+                self.born.append([blobs2[index].class_name, 'none', id, 'born'])
 
