@@ -498,10 +498,6 @@ class Annotation(object):
         qimg_label_map = QImage(filename)
         qimg_label_map = qimg_label_map.convertToFormat(QImage.Format_RGB32)
 
-        w = size.width()
-        h = size.height()
-        qimg_label_map = qimg_label_map.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
-
         label_map = utils.qimageToNumpyArray(qimg_label_map)
         label_map = label_map.astype(np.int32)
 
@@ -510,7 +506,7 @@ class Annotation(object):
 
         labels = measure.label(label_coded, connectivity=1)
 
-        too_much_small_area = 1000
+        too_much_small_area = 50
         region_big = None
 
         created_blobs = []
