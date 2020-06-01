@@ -91,10 +91,6 @@ class Annotation(object):
         # list of all blobs
         self.seg_blobs = []
 
-        # annotations coming from previous years (for comparison, no editing is possible)
-        #refactor: nope. use another annotation class.
-        self.prev_blobs = []
-
         # list of all groups
         self.groups = []
 

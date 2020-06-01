@@ -406,9 +406,6 @@ class TagLab(QWidget):
         self.labels_widget.visibilityChanged.connect(self.viewerplus.updateVisibility)
         self.labels_widget.visibilityChanged.connect(self.viewerplus2.updateVisibility)
 
-        self.compare_panel.hideAnnotations.connect(self.hidePrevBlobs)
-        self.compare_panel.showAnnotations.connect(self.showPrevBlobs)
-
         self.viewerplus.viewHasChanged[float, float, float].connect(self.viewerplus2.setViewParameters)
         self.viewerplus2.viewHasChanged[float, float, float].connect(self.viewerplus.setViewParameters)
         self.disableComparisonMode()
@@ -1098,7 +1095,7 @@ class TagLab(QWidget):
         """
         Activate the "connect" tool. The tool allows to connect a group of blobs with another group of blobs.
         """
-        self.setTool("CONNECT")
+        pass
         #self.project.computeCorrespondences()
         #self.compare_panel.setProject(self.project)
 
@@ -1747,36 +1744,6 @@ class TagLab(QWidget):
             filename = os.path.join(folderName, "tile")
             self.annotations.export_new_dataset(self.viewerplus.img_map, tile_size=1024, step=256, basename=filename, labels_info = self.labels_dictionary)
 
-
-    @pyqtSlot(int)
-    def hidePrevBlobs(self, index):
-        """
-        Hide blobs coming from previous years.
-        """
-
-        if index > 0:
-            blob_list = self.annotations.prev_blobs[index-1]
-        else:
-            blob_list = self.annotations.seg_blobs
-
-        for blob in blob_list:
-            blob.qpath_gitem.setVisible(False)
-
-
-
-    @pyqtSlot(int)
-    def showPrevBlobs(self, index):
-        """
-        Show blobs coming from previous years.
-        """
-
-        if index > 0:
-            blob_list = self.annotations.prev_blobs[index-1]
-        else:
-            blob_list = self.annotations.seg_blobs
-
-        for blob in blob_list:
-            blob.qpath_gitem.setVisible(True)
 
     # REFACTOR use project methods
 

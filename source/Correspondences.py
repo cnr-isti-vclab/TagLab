@@ -5,10 +5,10 @@ from source.Mask import intersectMask
 
 class Correspondences(object):
 
-    def __init__(self):
+    def __init__(self, img_source, img_target):
 
-        self.source = None
-        self.target = None
+        self.source = img_source
+        self.target = img_target
         self.correspondences = []
         self.dead = []
         self.born = []

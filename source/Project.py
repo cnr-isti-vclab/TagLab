@@ -177,7 +177,7 @@ class Project(object):
         blobs1 = self.images[0].annotations.seg_blobs
         blobs2 = self.images[1].annotations.seg_blobs
 
-        self.correspondences = Correspondences()
+        self.correspondences = Correspondences(self.images[0].id, self.images[1].id)
 
         self.correspondences.autoMatch(blobs1, blobs2)
 
