@@ -891,6 +891,9 @@ class TagLab(QWidget):
         self.lblSlider.setText(str1)
         self.viewerplus.applyTransparency(value)
 
+        if self.viewerplus2.isVisible():
+            self.viewerplus2.applyTransparency(value)
+
 
     @pyqtSlot()
     def updateViewInfo(self):
@@ -1056,6 +1059,7 @@ class TagLab(QWidget):
         Activate the "connect" tool. The tool allows to connect a group of blobs with another group of blobs.
         """
         self.project.computeCorrespondances()
+        #self.compare_panel.setProject(self.project)
 
     @pyqtSlot()
     def deepExtreme(self):
