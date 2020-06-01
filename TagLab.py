@@ -897,6 +897,19 @@ class TagLab(QWidget):
         self.comparison_mode = True
 
 
+    def updateImageSelectionMenu(self):
+
+        self.comboboxMainImage.currentIndexChanged.disconnect()
+        self.comboboxComparisonImage.currentIndexChanged.disconnect()
+
+        for image in self.project.images:
+            self.comboboxMainImage.addItem(image.id)
+            self.comboboxComparisonImage.addItem(image.id)
+
+        self.comboboxMainImage.currentIndexChanged.connect(self.mainImageChanged)
+        self.comboboxComparisonImage.currentIndexChanged.connect(self.comparisonImageChanged)
+
+
     @pyqtSlot(int)
     def mainImageChanged(self, index):
 
@@ -1549,9 +1562,7 @@ class TagLab(QWidget):
         if filename:
             self.append(filename)
 
-        self.viewerplus2.setProject(self.project)
-        self.viewerplus2.setImage(self.project.images[1])
-        self.viewerplus2.setChannel(self.project.images[1].channels[0])
+        self.updateImageSelectionMenu()
 
 
     @pyqtSlot()
@@ -1750,15 +1761,7 @@ class TagLab(QWidget):
         self.project.importLabelsFromConfiguration(self.labels_dictionary)
         self.labels_widget.setLabels(self.project)
 
-        self.comboboxMainImage.currentIndexChanged.disconnect()
-        self.comboboxComparisonImage.currentIndexChanged.disconnect()
-
-        for image in self.project.images:
-            self.comboboxMainImage.addItem(image.id)
-            self.comboboxComparisonImage.addItem(image.id)
-
-        self.comboboxMainImage.currentIndexChanged.connect(self.mainImageChanged)
-        self.comboboxComparisonImage.currentIndexChanged.connect(self.comparisonImageChanged)
+        self.updateImageSelectionMenu()
 
         if self.timer is None:
             self.activateAutosave()
