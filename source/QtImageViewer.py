@@ -10,6 +10,7 @@ class QtImageViewer(QGraphicsView):
     The input image (it must be a QImage) is internally converted into a QPixmap.
     """
     viewUpdated = pyqtSignal(QRectF)       #region visible in percentage
+    viewHasChanged = pyqtSignal(float, float, float) #posx, posy, posz
 
     def __init__(self):
         QGraphicsView.__init__(self)
@@ -91,10 +92,14 @@ class QtImageViewer(QGraphicsView):
         self.zoom_factor = zf
 
         self.updateViewer()
+
     @pyqtSlot()
     def viewChanged(self):
         rect = self.viewportToScenePercent()
         self.viewUpdated.emit(rect)
+        posx = self.horizontalScrollBar().value()
+        posy = self.verticalScrollBar().value()
+        self.viewHasChanged.emit(posx, posy, self.zoom_factor)
 
     def updateViewer(self):
         """ Show current zoom (if showing entire image, apply current aspect ratio mode).
@@ -173,10 +178,12 @@ class QtImageViewer(QGraphicsView):
 
 
     def setViewParameters(self, posx, posy, zoomfactor):
+        self.blockSignals(True)
         self.horizontalScrollBar().setValue(posx)
         self.verticalScrollBar().setValue(posy)
         self.zoom_factor = zoomfactor
         self.updateViewer()
+        self.blockSignals(False)
 
     def clipScenePos(self, scenePosition):
         posx = scenePosition.x()

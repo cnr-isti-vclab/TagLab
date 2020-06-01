@@ -56,9 +56,6 @@ class QtImageViewerPlus(QtImageViewer):
     # custom signal
     updateInfoPanel = pyqtSignal(Blob)
 
-    viewHasChanged = pyqtSignal()
-
-
     def __init__(self):
         QtImageViewer.__init__(self)
 
@@ -214,14 +211,6 @@ class QtImageViewerPlus(QtImageViewer):
             painter.drawLine(rect.left(), self.mouseCoords.y(), rect.right(), self.mouseCoords.y())
 
 
-    def setViewParameters(self, posx, posy, zoomfactor):
-
-        self.horizontalScrollBar().setValue(posx)
-        self.verticalScrollBar().setValue(posy)
-        self.zoom_factor = zoomfactor
-
-        self.updateViewer()
-
 #TOOLS and SELECTIONS
 
     def setTool(self, tool):
@@ -331,11 +320,6 @@ class QtImageViewerPlus(QtImageViewer):
             else:
                 self.tools.leftReleased(x, y)
 
-            self.viewHasChanged.emit()
-
-           # self.leftMouseButtonReleased.emit(clippedCoords[0], clippedCoords[1])
-
-
     def mouseMoveEvent(self, event):
 
         QGraphicsView.mouseMoveEvent(self, event)
@@ -369,9 +353,6 @@ class QtImageViewerPlus(QtImageViewer):
 
         if event.button() == Qt.LeftButton:
             self.selectOp(scenePos.x(), scenePos.y())
-            #self.leftMouseButtonDoubleClicked.emit(scenePos.x(), scenePos.y())
-
-        # QGraphicsView.mouseDoubleClickEvent(self, event)
 
 
     def wheelEvent(self, event):
@@ -391,8 +372,6 @@ class QtImageViewerPlus(QtImageViewer):
                 self.zoom_factor = self.ZOOM_FACTOR_MAX
 
             self.updateViewer()
-
-            self.viewHasChanged.emit()
 
         # PAY ATTENTION !! THE WHEEL INTERACT ALSO WITH THE SCROLL BAR !!
         #QGraphicsView.wheelEvent(self, event)
