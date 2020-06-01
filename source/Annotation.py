@@ -510,7 +510,7 @@ class Annotation(object):
 
         labels = measure.label(label_coded, connectivity=1)
 
-        too_much_small_area = 1000
+        too_much_small_area = 50
         region_big = None
 
         created_blobs = []
