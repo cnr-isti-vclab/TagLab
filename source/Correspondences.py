@@ -7,6 +7,8 @@ class Correspondences(object):
 
     def __init__(self):
 
+        self.source = None
+        self.target = None
         self.correspondences = []
         self.dead = []
         self.born = []

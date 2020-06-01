@@ -1087,7 +1087,8 @@ class TagLab(QWidget):
         """
         Activate the "connect" tool. The tool allows to connect a group of blobs with another group of blobs.
         """
-        self.project.computeCorrespondances()
+
+        self.project.computeCorrespondences()
         #self.compare_panel.setProject(self.project)
 
     @pyqtSlot()
