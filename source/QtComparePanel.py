@@ -18,7 +18,7 @@
 # for more details.                                               
 from PyQt5.QtCore import Qt, QAbstractTableModel, QModelIndex, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QWidget, QSizePolicy, QComboBox, QLabel, QTableView, QHBoxLayout, QVBoxLayout
+from PyQt5.QtWidgets import QWidget, QSizePolicy, QHeaderView, QComboBox, QLabel, QTableView, QHBoxLayout, QVBoxLayout
 from pathlib import Path
 import pandas as pd
 import os
@@ -38,7 +38,14 @@ class TableModel(QAbstractTableModel):
 
         if role == Qt.DisplayRole:
             value = self._data.iloc[index.row(), index.column()]
-            return value
+
+            # format floating point values
+            if index.column() == 2 or index.column() == 3:
+                txt = "{:.2f}".format(value)
+            else:
+                txt = str(value)
+
+            return txt
 
         #if role == Qt.BackgroundRole:
             #return QColor(40, 40, 40)
@@ -97,6 +104,7 @@ class QtComparePanel(QWidget):
         self.setLayout(layout)
 
         self.project = None
+        self.data = None
 
         self.comboboxFilter.currentTextChanged.connect(self.changeFilter)
         self.data_table.doubleClicked.connect(self.getData)
@@ -110,8 +118,10 @@ class QtComparePanel(QWidget):
         dead = self.project.correspondences.dead
         born = self.project.correspondences.born
 
-        factor1 = self.prject.correspondences.source.map_px_to_mm_factor * self.prject.correspondences.source.map_px_to_mm_factor /100
-        factor2 = self.prject.correspondences.target.map_px_to_mm_factor * self.prject.correspondences.target.map_px_to_mm_factor /100
+        factor1 = self.project.correspondences.source.map_px_to_mm_factor * \
+                  self.project.correspondences.source.map_px_to_mm_factor / 100.0
+        factor2 = self.project.correspondences.target.map_px_to_mm_factor * \
+                  self.project.correspondences.target.map_px_to_mm_factor / 100.0
 
         for elem in dead:
             elem.append('none')
@@ -122,18 +132,27 @@ class QtComparePanel(QWidget):
         data_list = correspondences + born + dead
 
         for elem in data_list:
-            elem[3] = float(elem[3])*factor1
+            elem[3] = float(elem[3]) * factor1
             elem[4] = float(elem[4]) * factor2
 
-        self.data = pd.DataFrame(data_list, columns=['Class', 'Blob 1', 'Blob 2', 'Area1', 'Area2', 'Action', 'Split\Fuse\ None'])
+        self.data = pd.DataFrame(data_list, columns=['Class', 'Blob 1', 'Blob 2', 'Area1', 'Area2', 'Action', 'Split\Fuse'])
 
-        columns_titles = ['Blob 1', 'Blob 2', 'Area1', 'Area2', 'Class', 'Action','Split\Fuse\ None']
+        columns_titles = ['Blob 1', 'Blob 2', 'Area1', 'Area2', 'Class', 'Action','Split\Fuse']
         self.data = self.data.reindex(columns=columns_titles)
 
         self.model = TableModel(self.data)
         self.data_table.setModel(self.model)
-        self.data_table.resizeColumnsToContents()
+
+        self.data_table.setVisible(False)
         self.data_table.verticalHeader().hide()
+
+        #self.data_table.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+
+        #self.data_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        #self.data_table.setMinimumWidth(600)
+        self.data_table.resizeColumnsToContents()
+        self.data_table.setVisible(True)
+
         self.data_table.setStyleSheet("QHeaderView::section { background-color: rgb(40,40,40) }")
 
 
@@ -148,6 +167,9 @@ class QtComparePanel(QWidget):
 
     @pyqtSlot(str)
     def changeFilter(self, txt):
+
+        if self.data is None:
+            return
 
         if txt == 'All':
             data = self.data

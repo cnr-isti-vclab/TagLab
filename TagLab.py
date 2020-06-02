@@ -268,7 +268,7 @@ class TagLab(QWidget):
 
         ##### LAYOUT - labels + blob info + navigation map
 
-        # LABELS
+        # LABELS PANEL
         self.labels_widget = QtLabelsWidget()
 
         #FIXME: QtLabelsWidget does not resize properly inside the scroll area
@@ -283,11 +283,11 @@ class TagLab(QWidget):
         #self.scroll_area_labels_panel.setWidgetResizable(True)
         self.scroll_area_labels_panel.setWidget(self.labels_widget)
 
-        groupbox_labels = QGroupBox("Labels Panel")
+        self.groupbox_labels = QGroupBox("Labels Panel")
 
         layout_groupbox = QVBoxLayout()
         layout_groupbox.addWidget(self.scroll_area_labels_panel)
-        groupbox_labels.setLayout(layout_groupbox)
+        self.groupbox_labels.setLayout(layout_groupbox)
 
         # COMPARE PANEL
         self.compare_panel = QtComparePanel()
@@ -295,7 +295,7 @@ class TagLab(QWidget):
         self.scroll_area_comparison_panel = QScrollArea()
         self.scroll_area_comparison_panel.setStyleSheet("background-color: rgb(40,40,40); border:none")
         self.scroll_area_comparison_panel.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.scroll_area_comparison_panel.setMinimumHeight(100)
+        self.scroll_area_comparison_panel.setMinimumHeight(200)
         self.scroll_area_comparison_panel.setWidget(self.compare_panel)
 
         self.groupbox_comparison = QGroupBox("Comparison Panel")
@@ -355,13 +355,15 @@ class TagLab(QWidget):
         layout_labels = QVBoxLayout()
         self.mapviewer.setStyleSheet("background-color: rgb(40,40,40); border:none")
         layout_labels.addWidget(self.infoWidget)
-        layout_labels.addWidget(groupbox_labels)
+        layout_labels.addWidget(self.groupbox_labels)
         layout_labels.addWidget(self.groupbox_comparison)
         layout_labels.addWidget(groupbox_blobpanel)
         layout_labels.addStretch()
         layout_labels.addWidget(self.mapviewer)
 
         layout_labels.setAlignment(self.mapviewer, Qt.AlignHCenter)
+
+        self.groupbox_comparison.hide()
 
         ##### MAIN LAYOUT
 
@@ -370,8 +372,8 @@ class TagLab(QWidget):
         main_view_layout.addLayout(layout_main_view)
         main_view_layout.addLayout(layout_labels)
 
-        main_view_layout.setStretchFactor(layout_main_view, 10)
-        main_view_layout.setStretchFactor(layout_labels, 1)
+        main_view_layout.setStretchFactor(layout_main_view, 8)
+        main_view_layout.setStretchFactor(layout_labels, 2)
 
         self.menubar = self.createMenuBar()
 
@@ -874,7 +876,6 @@ class TagLab(QWidget):
     def disableComparisonMode(self):
 
         self.viewerplus2.hide()
-        self.groupbox_comparison.hide()
         self.comboboxComparisonImage.hide()
 
         self.comparison_mode = False
@@ -889,7 +890,6 @@ class TagLab(QWidget):
             self.viewerplus2.setChannel(self.project.images[1].channels[0])
 
         self.viewerplus2.show()
-        self.groupbox_comparison.show()
         self.comboboxComparisonImage.show()
 
         #self.synchronizeRight()
@@ -1060,8 +1060,22 @@ class TagLab(QWidget):
         self.comboboxComparisonImage.setEnabled(True)
 
         if tool == "MATCH":
+
+            # settings when MATCH tool is active
             self.comboboxMainImage.setEnabled(False)
             self.comboboxComparisonImage.setEnabled(False)
+
+            self.groupbox_labels.hide()
+            self.mapviewer.hide()
+            self.groupbox_comparison.show()
+
+        else:
+
+            # settings when MATCH tool is disactive
+
+            self.groupbox_comparison.hide()
+            self.groupbox_labels.show()
+            self.mapviewer.show()
 
 
     @pyqtSlot()
@@ -1145,7 +1159,12 @@ class TagLab(QWidget):
         """
         Activate the "Match" too
         """
+
         self.setTool("MATCH")
+        self.project.computeCorrespondences()
+        self.compare_panel.setProject(self.project)
+
+
 
     @pyqtSlot()
     def noteChanged(self):
