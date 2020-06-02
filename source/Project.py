@@ -29,6 +29,12 @@ def loadProject(filename, labels_dict):
         project = Project(**data)
 
     project.filename = filename
+    #ensure all maps have an ID:
+    count = 1
+    for im in project.images:
+        if im.id is None:
+            im.id = "Map " + str(count)
+        count += 1
     f.close()
     return project
 
@@ -166,12 +172,15 @@ class Project(object):
         return self.labels[id].visible
 
 
-    def computeCorrespondances(self):
+    def computeCorrespondences(self):
 
         blobs1 = self.images[0].annotations.seg_blobs
         blobs2 = self.images[1].annotations.seg_blobs
 
+
         self.correspondences = Correspondences()
+
+        self.correspondences = Correspondences(self.images[0].id, self.images[1].id)
 
         self.correspondences.autoMatch(blobs1, blobs2)
 
@@ -182,4 +191,3 @@ class Project(object):
 
         self.correspondences.findDead(blobs1)
         self.correspondences.findBorn(blobs2)
-

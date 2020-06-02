@@ -95,6 +95,8 @@ class QtImageViewer(QGraphicsView):
 
     @pyqtSlot()
     def viewChanged(self):
+        if not self.imgwidth:
+            return
         rect = self.viewportToScenePercent()
         self.viewUpdated.emit(rect)
         posx = self.horizontalScrollBar().value()
@@ -178,6 +180,8 @@ class QtImageViewer(QGraphicsView):
 
 
     def setViewParameters(self, posx, posy, zoomfactor):
+        if not self.isVisible():
+            return
         self.blockSignals(True)
         self.horizontalScrollBar().setValue(posx)
         self.verticalScrollBar().setValue(posy)

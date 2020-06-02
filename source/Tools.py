@@ -12,6 +12,8 @@ from source.tools.Cut import Cut
 from source.tools.Freehand import Freehand
 from source.tools.Ruler import Ruler
 from source.tools.DeepExtreme import DeepExtreme
+from source.tools.Match import Match
+
 
 
 class Tools(object):
@@ -45,7 +47,8 @@ class Tools(object):
             "CUT": Cut(self.viewerplus, self.edit_points),
             "FREEHAND": Freehand(self.viewerplus, self.edit_points),
             "RULER": Ruler(self.viewerplus, self.pick_points),
-            "DEEPEXTREME": DeepExtreme(self.viewerplus, self.pick_points)
+            "DEEPEXTREME": DeepExtreme(self.viewerplus, self.pick_points),
+            "MATCH": Match(self.viewerplus)
         }
         # connect infomessage, log, blobinfo for   all tools with self.infoWidget.setInfoMessage(
 

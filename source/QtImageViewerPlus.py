@@ -56,6 +56,9 @@ class QtImageViewerPlus(QtImageViewer):
     # custom signal
     updateInfoPanel = pyqtSignal(Blob)
 
+    activated = pyqtSignal()
+    newSelection = pyqtSignal()
+
     def __init__(self):
         QtImageViewer.__init__(self)
 
@@ -292,7 +295,7 @@ class QtImageViewerPlus(QtImageViewer):
             self.rightMouseButtonPressed.emit(clippedCoords[0], clippedCoords[1])
 
         QGraphicsView.mousePressEvent(self, event)
-
+        self.activated.emit()
 
     def mouseReleaseEvent(self, event):
         """ Stop mouse pan or zoom mode (apply zoom if valid).
