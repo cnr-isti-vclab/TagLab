@@ -140,26 +140,6 @@ class Project(object):
         brush = QBrush(QColor(color[0], color[1], color[2], 200))
         return brush
 
-    # def classBrushFromCorrespondence(self):
-    #     brush = QBrush()
-    #
-    #
-    #     blobs1 = self.images[0].annotations.seg_blobs
-    #     blobs2 = self.images[1].annotations.seg_blobs
-    #     corr = Correspondences()
-
-        # for correspondence in corr.correspondences:
-        #     for blob1 in blobs1:
-        #         for blob2 in blobs2:
-        #             blob1.class_name = correspondence[0]
-        #             blob2.class_name = correspondence[0]
-        #             blob1.id = correspondence[1]
-        #             blob2.id = correspondence[2]
-        #
-        #             color = self.labels[blob1.class_name].fill
-        #             brush = QBrush(QColor(color[0], color[1], color[2], 200))
-        #             # return brush
-
 
     def isLabelVisible(self, id):
 
@@ -177,14 +157,13 @@ class Project(object):
         blobs1 = self.images[0].annotations.seg_blobs
         blobs2 = self.images[1].annotations.seg_blobs
 
-
-        self.correspondences = Correspondences()
-
-        self.correspondences = Correspondences(self.images[0].id, self.images[1].id)
+        self.correspondences = Correspondences(self.images[0], self.images[1])
 
         self.correspondences.autoMatch(blobs1, blobs2)
 
         self.correspondences.findSplit()
         self.correspondences.findFuse()
+
         self.correspondences.findDead(blobs1)
         self.correspondences.findBorn(blobs2)
+
