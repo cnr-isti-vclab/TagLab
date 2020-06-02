@@ -865,8 +865,10 @@ class TagLab(QWidget):
             print("Conservative: " + str(self.annotations.refine_conservative))
 
         elif event.key() == Qt.Key_Space:
-            print("apply!")
-            self.activeviewer.tools.applyTool()
+            if self.activeviewer.tools.tool == "MATCH":
+                self.createMatch()
+            else:
+                self.activeviewer.tools.applyTool()
 
 
     def disableComparisonMode(self):
@@ -893,6 +895,37 @@ class TagLab(QWidget):
         #self.synchronizeRight()
 
         self.comparison_mode = True
+
+    def createMatch(self):
+        sel1 = self.viewerplus.selected_blobs
+        sel2 = self.viewerplus2.selected_blobs
+
+        #this should not happen at all
+        if len(sel1) > 1 and len(sel2) > 1:
+            return
+
+        if len(sel1) == 0 or len(sel2) == 0:
+            print("SHould we remove this corr?")
+            return
+
+        self.project.correspondences.set(sel1, sel2)
+
+    @pyqtSlot()
+    def showMatches(self):
+        if self.activeviewer is None:
+            return
+
+        selected = self.activeviewer.selected_blobs
+        if len(selected) == 0:
+            self.inactiveviewer.resetSelection()
+            return
+        if len(selected) > 1:
+            box = QMessageBox()
+            box.setText("Huston we have a problem!")
+            box.exec()
+            return
+
+        # look in correspondeces for blobs.
 
     @pyqtSlot()
     def undo(self):
@@ -1113,23 +1146,6 @@ class TagLab(QWidget):
         Activate the "Match" too
         """
         self.setTool("MATCH")
-
-    @pyqtSlot()
-    def showMatches(self):
-        if self.activeviewer is None:
-            return
-
-        selected = self.activeviewer.selected_blobs
-        if len(selected) == 0:
-            self.inactiveviewer.resetSelection()
-            return
-        if len(selected) > 1:
-            box = QMessageBox()
-            box.setText("Huston we have a problem!")
-            box.exec()
-            return
-
-        #look in correspondeces for blobs.
 
     @pyqtSlot()
     def noteChanged(self):

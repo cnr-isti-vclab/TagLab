@@ -19,7 +19,7 @@ class EditBorder(Tool):
             return
 
         if len(self.viewerplus.selected_blobs) != 1:
-            self.infoMessage("A single selected area is required.")
+            self.infoMessage.emit("A single selected area is required.")
             return
 
         selected_blob = self.viewerplus.selected_blobs[0]

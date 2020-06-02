@@ -209,6 +209,7 @@ class Blob(object):
         mask = np.zeros((r, c), np.uint8)
         points = self.contour.round().astype(int)
         fillPoly(mask, pts=[points - origin], color=(1))
+
 #DEBUG
 #        cv2.imshow(" ", mask)
 #        cv2.waitKey()
@@ -226,64 +227,7 @@ class Blob(object):
         self.calculatePerimeter()
         self.calculateCentroid(mask, bbox)
         self.calculateArea(mask)
-        self.bbox = Mask.pointsBox(self.contour,2)
-
-
-    def lineToPoints(self, lines, snap = False):
-        points = np.empty(shape=(0, 2), dtype=int)
-
-        for line in lines:
-            p = self.drawLine(line)
-            if p.shape[0] == 0:
-                continue
-            if snap:
-                p = self.snapToBorder(p)
-            if p is None:
-                continue
-            points = np.append(points, p, axis=0)
-        return points
-
-    def drawLine(self, line):
-        (x, y) = utils.draw_open_polygon(line[:, 1], line[:, 0])
-        points = np.asarray([x, y]).astype(int)
-        points = points.transpose()
-        points[:, [1, 0]] = points[:, [0, 1]]
-        return points
-
-
-
-    def snapToBorder(self, points):
-        return self.snapToContour(points, self.contour)
-
-    def snapToContour(self, points, contour):
-        """
-        Given a curve specified as a set of points, snap the curve on the blob mask:
-          1) the initial segments of the curve are removed until they snap
-          2) the end segments of the curve are removed until they snap
-
-        """
-        test = points_in_poly(points, contour)
-        if test is None or test.shape[0] <= 3:
-            return None
-        jump = np.gradient(test.astype(int))
-        ind = np.nonzero(jump)
-        ind = np.asarray(ind)
-
-        snappoints = None
-        if ind.shape[1] > 2:
-            first_el = ind[0, 0]
-            last_el = ind[0, -1]
-            snappoints = points[first_el:last_el + 1, :].copy()
-
-        return snappoints
-
-    def snapToInternalBorders(self, points):
-        if not self.inner_contours:
-            return None
-        snappoints = np.zeros(shape=(0, 2))
-        for contour in self.inner_contours:
-            snappoints = np.append(snappoints, self.snapToContour(points, contour))
-        return snappoints
+        self.bbox = Mask.pointsBox(self.contour,4)
 
     def createFromClosedCurve(self, lines):
         """
@@ -297,8 +241,9 @@ class Blob(object):
         Mask.paintPoints(mask, box, points, 1)
         mask = ndi.binary_fill_holes(mask)
 
-        mask = binary_erosion(mask)
-        mask = binary_dilation(mask)
+        selem = np.array([[0, 0, 0], [0, 0, 1], [0, 1, 0]])
+        mask = binary_erosion(mask, selem)
+        #mask = binary_dilation(mask)
         self.updateUsingMask(box, mask)
         return True
 
@@ -370,7 +315,6 @@ class Blob(object):
         elif number_of_contours == 1:
 
             coords = measure.approximate_polygon(contours[0], tolerance=0.2)
-            #coords = contours[0]
             self.contour = np.array(coords)
 
             # adjust the coordinates of the outer contour
@@ -382,8 +326,66 @@ class Blob(object):
                 self.contour[i, 1] = ycoor - PADDED_SIZE + bbox[0]
         else:
             raise Exception("Empty contour")
+        #TODO optimize the bbox
+        self.bbox = bbox
 
-        self.bbox = Mask.pointsBox(self.contour, 4)
+    def lineToPoints(self, lines, snap = False):
+        points = np.empty(shape=(0, 2), dtype=int)
+
+        for line in lines:
+            p = self.drawLine(line)
+            if p.shape[0] == 0:
+                continue
+            if snap:
+                p = self.snapToBorder(p)
+            if p is None:
+                continue
+            points = np.append(points, p, axis=0)
+        return points
+
+    def drawLine(self, line):
+        (x, y) = utils.draw_open_polygon(line[:, 1], line[:, 0])
+        points = np.asarray([x, y]).astype(int)
+        points = points.transpose()
+        points[:, [1, 0]] = points[:, [0, 1]]
+        return points
+
+
+
+    def snapToBorder(self, points):
+        return self.snapToContour(points, self.contour)
+
+    def snapToContour(self, points, contour):
+        """
+        Given a curve specified as a set of points, snap the curve on the blob mask:
+          1) the initial segments of the curve are removed until they snap
+          2) the end segments of the curve are removed until they snap
+
+        """
+        test = points_in_poly(points, contour)
+        if test is None or test.shape[0] <= 3:
+            return None
+        jump = np.gradient(test.astype(int))
+        ind = np.nonzero(jump)
+        ind = np.asarray(ind)
+
+        snappoints = None
+        if ind.shape[1] > 2:
+            first_el = ind[0, 0]
+            last_el = ind[0, -1]
+            snappoints = points[first_el:last_el + 1, :].copy()
+
+        return snappoints
+
+    def snapToInternalBorders(self, points):
+        if not self.inner_contours:
+            return None
+        snappoints = np.zeros(shape=(0, 2))
+        for contour in self.inner_contours:
+            snappoints = np.append(snappoints, self.snapToContour(points, contour))
+        return snappoints
+
+
 
     def setupForDrawing(self):
         """
@@ -391,9 +393,11 @@ class Blob(object):
         """
 
         # QPolygon to draw the blob
+        #working with mask the center of the pixels is in 0, 0
+        #if drawing the center of the pixel is 0.5, 0.5
         qpolygon = QPolygonF()
         for i in range(self.contour.shape[0]):
-            qpolygon << QPointF(self.contour[i, 0], self.contour[i, 1])
+            qpolygon << QPointF(self.contour[i, 0] + 0.5, self.contour[i, 1] + 0.5)
 
         self.qpath = QPainterPath()
         self.qpath.addPolygon(qpolygon)
