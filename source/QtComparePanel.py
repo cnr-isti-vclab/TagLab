@@ -110,30 +110,30 @@ class QtComparePanel(QWidget):
         dead = self.project.correspondences.dead
         born = self.project.correspondences.born
 
-        for elem in correspondences:
-            if len(elem) == 4:
-                elem.append('No')
-            else:
-                elem[4] = 'Yes'
+        factor1 = self.prject.correspondences.source.map_px_to_mm_factor * self.prject.correspondences.source.map_px_to_mm_factor /100
+        factor2 = self.prject.correspondences.target.map_px_to_mm_factor * self.prject.correspondences.target.map_px_to_mm_factor /100
 
         for elem in dead:
-            elem.append('No')
+            elem.append('none')
 
         for elem in born:
-            elem.append('No')
+            elem.append('none')
 
         data_list = correspondences + born + dead
 
-        self.data = pd.DataFrame(data_list, columns = ['Class', 'Blob 1', 'Blob 2', 'Type', 'Split'])
+        for elem in data_list:
+            elem[3] = float(elem[3])*factor1
+            elem[4] = float(elem[4]) * factor2
 
-        columns_titles = ['Blob 1', 'Blob 2', 'Class', 'Type', 'Split']
+        self.data = pd.DataFrame(data_list, columns=['Class', 'Blob 1', 'Blob 2', 'Area1', 'Area2', 'Action', 'Split\Fuse\ None'])
+
+        columns_titles = ['Blob 1', 'Blob 2', 'Area1', 'Area2', 'Class', 'Action','Split\Fuse\ None']
         self.data = self.data.reindex(columns=columns_titles)
 
         self.model = TableModel(self.data)
         self.data_table.setModel(self.model)
         self.data_table.resizeColumnsToContents()
         self.data_table.verticalHeader().hide()
-
         self.data_table.setStyleSheet("QHeaderView::section { background-color: rgb(40,40,40) }")
 
 
@@ -152,16 +152,16 @@ class QtComparePanel(QWidget):
         if txt == 'All':
             data = self.data
         elif txt == 'Grow':
-            grow_rows = self.data['Type'] == 'grow'
+            grow_rows = self.data['Action'] == 'grow'
             data = self.data[grow_rows]
         elif txt == 'Shrink':
-            shrink_rows = self.data['Type'] == 'shrink'
+            shrink_rows = self.data['Action'] == 'shrink'
             data = self.data[shrink_rows]
         elif txt == 'Dead':
-            dead_rows = self.data['Type'] == 'dead'
+            dead_rows = self.data['Action'] == 'dead'
             data = self.data[dead_rows]
         elif txt == 'Born':
-            born_rows = self.data['Type'] == 'born'
+            born_rows = self.data['Action'] == 'born'
             data = self.data[born_rows]
 
         self.model = TableModel(data)
