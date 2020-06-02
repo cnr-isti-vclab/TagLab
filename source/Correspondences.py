@@ -117,7 +117,6 @@ class Correspondences(object):
 
         for j in range(0, len(self.correspondences)):
             existing.append(int(self.correspondences[j][2]))
-            # missing = [i for i in range(0, len(self.correspondences)) if i not in existing]
             missing = [i for i in all_blobs if i not in existing]
 
         for k in range(0, len(missing)):

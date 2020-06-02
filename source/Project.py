@@ -171,19 +171,15 @@ class Project(object):
         blobs1 = self.images[0].annotations.seg_blobs
         blobs2 = self.images[1].annotations.seg_blobs
 
-        self.correspondances = Correspondences()
+        self.correspondences = Correspondences()
 
         self.correspondences.autoMatch(blobs1, blobs2)
 
-        self.correspondances.findSplit()
-        self.correspondances.findFuse()
+        self.correspondences.findSplit()
+        self.correspondences.findFuse()
 
         # ma non li deve mettere in corrispondenze o si ?
 
-        self.correspondances.findDead(blobs1)
-        self.correspondances.findBorn(blobs2)
-
-        print(corr.correspondences)
-        print(corr.dead)
-        print(corr.born)
+        self.correspondences.findDead(blobs1)
+        self.correspondences.findBorn(blobs2)
 
