@@ -183,8 +183,5 @@ class Project(object):
 
         self.correspondences.findSplit()
         self.correspondences.findFuse()
-
-        # ma non li deve mettere in corrispondenze o si ?
-
         self.correspondences.findDead(blobs1)
         self.correspondences.findBorn(blobs2)

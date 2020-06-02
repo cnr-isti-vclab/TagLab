@@ -659,8 +659,8 @@ class Annotation(object):
                 filenameRGB = basename + "_RGB_" + str.format("{0:02d}", (row)) + "_" + str.format("{0:02d}", (col)) + ".png"
                 filenameLabel = basename + "_L_" + str.format("{0:02d}", (row)) + "_" + str.format("{0:02d}", (col)) + ".png"
 
-                print(filenameRGB)
-                print(filenameLabel)
+                #print(filenameRGB)
+                #print(filenameLabel)
 
                 cropimg.save(filenameRGB)
                 croplabel.save(filenameLabel)
