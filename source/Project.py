@@ -79,6 +79,8 @@ class ProjectEncoder(json.JSONEncoder):
             return obj.save()
         elif isinstance(obj, Blob):
             return obj.save()
+        elif isinstance(obj, Correspondences):
+            return obj.save()
 
         return json.JSONEncoder.default(self, obj)
 
@@ -86,13 +88,17 @@ class ProjectEncoder(json.JSONEncoder):
 
 class Project(object):
 
-    def __init__(self, filename = None, labels = {}, images = [], correspondences = [],
+    def __init__(self, filename = None, labels = {}, images = [], correspondences = None,
                  spatial_reference_system = None, metadata = {}, image_metadata_template = {}):
         self.filename = None        #filename with path of the project json
         self.labels = { key: Label(**value) for key, value in labels.items() }
 
         self.images = list(map(lambda img: Image(**img), images))       #list of annotated images
-        self.correspondences = correspondences   #list of correspondences betweeen labels in images
+        self.correspondences = None
+        corr = None if correspondences is None else correspondences['correspondences']
+        print(correspondences)
+        if len(self.images) > 1:
+            self.correspondences = Correspondences(self.images[0], self.images[1], corr)   #list of correspondences betweeen labels in images
                                     #[ [source_img: , target_img:, [[23, 12, [grow, shrink, split, join] ... ] }
         self.spatial_reference_system = spatial_reference_system   #if None we assume coordinates in pixels (but Y is up or down?!)
         self.metadata = metadata    # project metadata => keyword -> value
@@ -154,6 +160,11 @@ class Project(object):
 
 
     def computeCorrespondences(self):
+        #if self.correspondences is None:
+         #   return
+
+        print(self.correspondences.data)
+        return
 
         blobs1 = self.images[0].annotations.seg_blobs
         blobs2 = self.images[1].annotations.seg_blobs

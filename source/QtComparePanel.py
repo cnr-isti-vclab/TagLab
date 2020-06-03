@@ -19,6 +19,7 @@
 from PyQt5.QtCore import Qt, QAbstractTableModel, QSortFilterProxyModel, QRegExp, QModelIndex, pyqtSlot, pyqtSignal
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QHeaderView, QComboBox, QLabel, QTableView, QHBoxLayout, QVBoxLayout
 from pathlib import Path
+import math
 
 path = Path(__file__).parent.absolute()
 imdir = str(path)
@@ -34,7 +35,8 @@ class TableModel(QAbstractTableModel):
 
         if role == Qt.DisplayRole:
             value = self._data.iloc[index.row(), index.column()]
-
+            if index.column() == 0 or index.column() == 1:
+                return "" if math.isnan(value) else str(value)
             # format floating point values
             if index.column() == 2 or index.column() == 3:
                 txt = "{:.2f}".format(value/100.0) #convert to cm^2
@@ -174,7 +176,7 @@ class QtComparePanel(QWidget):
             self.sortfilter.setFilterRegExp(txt.lower())
             self.sortfilter.setFilterRole(Qt.DisplayRole)
 
-        self.showMatches.emit(txt)
+        self.showMatches.emit(txt.lower())
 
 
 

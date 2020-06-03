@@ -209,8 +209,8 @@ class TagLab(QWidget):
         self.viewerplus2.activated.connect(self.setActiveViewer)
         self.viewerplus2.updateInfoPanel.connect(self.updatePanelInfo)
 
-        self.viewerplus.newSelection.connect(self.showMatches)
-        self.viewerplus2.newSelection.connect(self.showMatches)
+        self.viewerplus.newSelection.connect(self.showMatch)
+        self.viewerplus2.newSelection.connect(self.showMatch)
 
         #last activated viewerplus: redirect here context menu commands and keyboard commands
         self.activeviewer = None
@@ -291,6 +291,7 @@ class TagLab(QWidget):
 
         # COMPARE PANEL
         self.compare_panel = QtComparePanel()
+        self.compare_panel.showMatches[str].connect(self.showMatches)
 
         self.scroll_area_comparison_panel = QScrollArea()
         self.scroll_area_comparison_panel.setStyleSheet("background-color: rgb(40,40,40); border:none")
@@ -911,7 +912,7 @@ class TagLab(QWidget):
         self.project.correspondences.set(sel1, sel2)
 
     @pyqtSlot()
-    def showMatches(self):
+    def showMatch(self):
         if self.activeviewer is None:
             return
 
@@ -927,6 +928,27 @@ class TagLab(QWidget):
 
         # look in correspondeces for blobs.
         print(self.compare_panel.data)
+
+    def showMatches(self, type):
+        if type == 'all':
+            for b in self.viewerplus.annotations.seg_blobs:
+                if b.qpath_gitem is not None:
+                    b.qpath_gitem.setVisible(True)
+            for b in self.viewerplus2.annotations.seg_blobs:
+                if b.qpath_gitem is not None:
+                    b.qpath_gitem.setVisible(True)
+            return
+        data = self.project.correspondences.data
+        selection = data.loc[data["Action"] == type]
+        print(selection)
+        sourceblobs = selection['Blob 1'].tolist()
+        targetblobs = selection['Blob 2'].tolist()
+        for b in self.viewerplus.annotations.seg_blobs:
+            if b.qpath_gitem is not None:
+                b.qpath_gitem.setVisible(b.id in sourceblobs)
+        for b in self.viewerplus2.annotations.seg_blobs:
+            if b.qpath_gitem is not None:
+                b.qpath_gitem.setVisible(b.id in targetblobs)
 
     @pyqtSlot()
     def undo(self):

@@ -7,17 +7,19 @@ import pandas as pd
 
 class Correspondences(object):
 
-    def __init__(self, img_source, img_target):
+    def __init__(self, img_source, img_target, correspondences = None):
 
         self.source = img_source
         self.target = img_target
         self.correspondences = []
         self.dead = []
         self.born = []
-        self.data = pd.DataFrame(data = None, columns=['Blob 1', 'Blob 2', 'Area1', 'Area2', 'Class', 'Action','Split\Fuse'])
+
+        self.data = pd.DataFrame(data = correspondences, columns=['Blob 1', 'Blob 2', 'Area1', 'Area2', 'Class', 'Action','Split\Fuse'])
 
     def save(self):
-        data = { "source": self.source, "target": self.target, "correspondences": self.data.to_json }
+        print("saving correespos!")
+        return { "source": self.source.id, "target": self.target.id, "correspondences": self.data.values.tolist() }
 
     def autoMatch(self, blobs1, blobs2):
 
