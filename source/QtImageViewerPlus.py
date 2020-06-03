@@ -259,6 +259,8 @@ class QtImageViewerPlus(QtImageViewer):
                 self.addToSelectedList(selected_blob)
                 self.updateInfoPanel.emit(selected_blob)
 
+        if len(self.selected_blobs) == 1:
+            self.newSelection.emit()
         self.logfile.info("[SELECTION][DOUBLE-CLICK] Selection ends.")
 
 

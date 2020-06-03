@@ -10,6 +10,7 @@ from source.Annotation import Annotation
 from source.Blob import Blob
 from source.Label import Label
 from source.Correspondences import Correspondences
+import pandas as pd
 
 
 def loadProject(filename, labels_dict):
@@ -157,13 +158,19 @@ class Project(object):
         blobs1 = self.images[0].annotations.seg_blobs
         blobs2 = self.images[1].annotations.seg_blobs
 
-        self.correspondences = Correspondences(self.images[0], self.images[1])
+        corr = Correspondences(self.images[0], self.images[1])
 
-        self.correspondences.autoMatch(blobs1, blobs2)
+        corr.autoMatch(blobs1, blobs2)
 
-        self.correspondences.findSplit()
-        self.correspondences.findFuse()
+        corr.findSplit()
+        corr.findFuse()
 
-        self.correspondences.findDead(blobs1)
-        self.correspondences.findBorn(blobs2)
+        corr.findDead(blobs1)
+        corr.findBorn(blobs2)
+
+        lines = corr.correspondences + corr.dead + corr.born
+        for row in lines:
+            corr.data = pd.concat([pd.DataFrame([row], columns=corr.data.columns), corr.data])
+
+        self.correspondences = corr
 

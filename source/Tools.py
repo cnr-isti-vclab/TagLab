@@ -89,7 +89,6 @@ class Tools(object):
         self.tools[self.tool].leftReleased(x, y)
 
     def applyTool(self):
-        print("self.tool: " + self.tool)
         if self.tool == "MOVE":
             return
         self.tools[self.tool].apply()

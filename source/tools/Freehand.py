@@ -15,7 +15,6 @@ class Freehand(Tool):
         self.edit_points.move(x, y)
 
     def apply(self):
-        print("Apply!")
         if len(self.edit_points.points) == 0:
             self.infoMessage.emit("You need to draw something for this operation.")
             return
@@ -28,9 +27,8 @@ class Freehand(Tool):
             self.infoMessage.emit("Failed creating area.")
             self.log.emit("[TOOL][FREEHAND] FREEHAND operation not done (invalid snap).")
             return
-        print("invalid")
+
         if flagValid is True:
-            print("valid")
             blob.setId(self.viewerplus.annotations.progressive_id)
             self.viewerplus.annotations.progressive_id += 1
 

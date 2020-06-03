@@ -926,6 +926,7 @@ class TagLab(QWidget):
             return
 
         # look in correspondeces for blobs.
+        print(self.compare_panel.data)
 
     @pyqtSlot()
     def undo(self):
@@ -1136,15 +1137,6 @@ class TagLab(QWidget):
         Activate the "ruler" tool. The tool allows to measure the distance between two points or between two blob centroids.
         """
         self.setTool("RULER")
-
-    @pyqtSlot()
-    def connectTool(self):
-        """
-        Activate the "connect" tool. The tool allows to connect a group of blobs with another group of blobs.
-        """
-        pass
-        #self.project.computeCorrespondences()
-        #self.compare_panel.setProject(self.project)
 
     @pyqtSlot()
     def deepExtreme(self):

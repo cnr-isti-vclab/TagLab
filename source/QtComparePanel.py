@@ -16,17 +16,13 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the             
 #GNU General Public License (http://www.gnu.org/licenses/gpl.txt)          
 # for more details.                                               
-from PyQt5.QtCore import Qt, QAbstractTableModel, QModelIndex, pyqtSlot, pyqtSignal
-from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import Qt, QAbstractTableModel, QSortFilterProxyModel, QRegExp, QModelIndex, pyqtSlot, pyqtSignal
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QHeaderView, QComboBox, QLabel, QTableView, QHBoxLayout, QVBoxLayout
 from pathlib import Path
-import pandas as pd
-import os
 
 path = Path(__file__).parent.absolute()
 imdir = str(path)
 imdir =imdir.replace('source', '')
-
 
 class TableModel(QAbstractTableModel):
 
@@ -41,7 +37,7 @@ class TableModel(QAbstractTableModel):
 
             # format floating point values
             if index.column() == 2 or index.column() == 3:
-                txt = "{:.2f}".format(value)
+                txt = "{:.2f}".format(value/100.0) #convert to cm^2
             else:
                 txt = str(value)
 
@@ -88,6 +84,7 @@ class QtComparePanel(QWidget):
         self.comboboxFilter = QComboBox()
         self.comboboxFilter.setMinimumWidth(80)
         self.comboboxFilter.addItem("All")
+        self.comboboxFilter.addItem("Same")
         self.comboboxFilter.addItem("Born")
         self.comboboxFilter.addItem("Dead")
         self.comboboxFilter.addItem("Grow")
@@ -132,16 +129,15 @@ class QtComparePanel(QWidget):
         data_list = correspondences + born + dead
 
         for elem in data_list:
-            elem[3] = float(elem[3]) * factor1
-            elem[4] = float(elem[4]) * factor2
+            elem[2] = float(elem[2]) * factor1
+            elem[3] = float(elem[3]) * factor2
 
-        self.data = pd.DataFrame(data_list, columns=['Class', 'Blob 1', 'Blob 2', 'Area1', 'Area2', 'Action', 'Split\Fuse'])
-
-        columns_titles = ['Blob 1', 'Blob 2', 'Area1', 'Area2', 'Class', 'Action','Split\Fuse']
-        self.data = self.data.reindex(columns=columns_titles)
+        self.data = project.correspondences.data #pd.DataFrame(data_list, columns=['Class', 'Blob 1', 'Blob 2', 'Area1', 'Area2', 'Action', 'Split\Fuse'])
 
         self.model = TableModel(self.data)
-        self.data_table.setModel(self.model)
+        self.sortfilter = QSortFilterProxyModel(self)
+        self.sortfilter.setSourceModel(self.model)
+        self.data_table.setModel(self.sortfilter)
 
         self.data_table.setVisible(False)
         self.data_table.verticalHeader().hide()
@@ -172,22 +168,11 @@ class QtComparePanel(QWidget):
             return
 
         if txt == 'All':
-            data = self.data
-        elif txt == 'Grow':
-            grow_rows = self.data['Action'] == 'grow'
-            data = self.data[grow_rows]
-        elif txt == 'Shrink':
-            shrink_rows = self.data['Action'] == 'shrink'
-            data = self.data[shrink_rows]
-        elif txt == 'Dead':
-            dead_rows = self.data['Action'] == 'dead'
-            data = self.data[dead_rows]
-        elif txt == 'Born':
-            born_rows = self.data['Action'] == 'born'
-            data = self.data[born_rows]
-
-        self.model = TableModel(data)
-        self.data_table.setModel(self.model)
+            self.sortfilter.setFilterRegExp(QRegExp())
+        else:
+            self.sortfilter.setFilterKeyColumn(5)
+            self.sortfilter.setFilterRegExp(txt.lower())
+            self.sortfilter.setFilterRole(Qt.DisplayRole)
 
         self.showMatches.emit(txt)
 

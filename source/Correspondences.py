@@ -2,6 +2,8 @@ from source.Blob import Blob
 import numpy as np
 from source.Blob import Blob
 from source.Mask import intersectMask
+import pandas as pd
+
 
 class Correspondences(object):
 
@@ -12,7 +14,10 @@ class Correspondences(object):
         self.correspondences = []
         self.dead = []
         self.born = []
+        self.data = pd.DataFrame(data = None, columns=['Blob 1', 'Blob 2', 'Area1', 'Area2', 'Class', 'Action','Split\Fuse'])
 
+    def save(self):
+        data = { "source": self.source, "target": self.target, "correspondences": self.data.to_json }
 
     def autoMatch(self, blobs1, blobs2):
 
@@ -38,15 +43,15 @@ class Correspondences(object):
                     intersectionArea = np.count_nonzero(intersectMask(mask1, blob1.bbox, mask2, blob2.bbox))
 
                     if (intersectionArea > (0.6 * minblob)) and (sizeblob2 > sizeblob1 + sizeblob1 * 0.05):
-                        self.correspondences.append([blob1.class_name, str(blob1.id), str(blob2.id), str(sizeblob1), str(sizeblob2), 'grow', 'none'])
+                        self.correspondences.append([blob1.id, blob2.id, sizeblob1, sizeblob2, blob1.class_name, 'grow', 'none'])
 
                     elif (intersectionArea > (0.6 * minblob)) and (sizeblob2 < sizeblob1 - sizeblob1 * 0.05):
-                        self.correspondences.append([blob1.class_name, str(blob1.id), str(blob2.id), str(sizeblob1), str(sizeblob2),'shrink', 'none'])
+                        self.correspondences.append([blob1.id, blob2.id, sizeblob1, sizeblob2, blob1.class_name, 'shrink', 'none'])
 
                     elif (intersectionArea > (0.6 * minblob)) and (
                             int(sizeblob2) in range(int(sizeblob1 - sizeblob1 * 0.05),
                                                     int(sizeblob1 + sizeblob1 * 0.05))):
-                        self.correspondences.append([blob1.class_name, str(blob1.id), str(blob2.id), str(sizeblob1), str(sizeblob2), 'same', 'none'])
+                        self.correspondences.append([blob1.id, blob2.id, sizeblob1, sizeblob2, blob1.class_name, 'same', 'none'])
 
 
     def findSplit(self):
@@ -94,7 +99,7 @@ class Correspondences(object):
         for id in missing:
             index = all_blobs.index(id)
             if blobs1[index].class_name != 'Empty':
-                self.dead.append([blobs1[index].class_name, id, 'none',  blobs1[index].area, '0.0', 'dead'])
+                self.dead.append([id, None,  blobs1[index].area, 0.0, blobs1[index].class_name, 'dead', 'none'])
 
 
     def findBorn(self, blobs2):
@@ -118,5 +123,4 @@ class Correspondences(object):
         for id in missing:
             index = all_blobs.index(id)
             if blobs2[index].class_name != 'Empty':
-                self.born.append([blobs2[index].class_name, 'none', id, '0.0', blobs2[index].area, 'born'])
-
+                self.born.append([None, id, 0.0, blobs2[index].area, blobs2[index].class_name, 'born', 'none'])
