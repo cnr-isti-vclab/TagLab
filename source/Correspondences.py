@@ -38,9 +38,9 @@ class Correspondences(object):
                 if interArea != 0 and blob2.class_name == blob1.class_name and blob1.class_name != 'Empty':
                     # this is the get mask function for the outer contours, I put it here using two different if conditions so getMask just runs just on intersections
                     mask1 = Blob.getMask(blob1)
-                    sizeblob1 = np.count_nonzero(mask1)
+                    sizeblob1 = blob1.area
                     mask2 = Blob.getMask(blob2)
-                    sizeblob2 = np.count_nonzero(mask2)
+                    sizeblob2 = blob2.area
                     minblob = min(sizeblob1, sizeblob2)
                     intersectionArea = np.count_nonzero(intersectMask(mask1, blob1.bbox, mask2, blob2.bbox))
 

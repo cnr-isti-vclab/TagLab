@@ -159,20 +159,32 @@ class Project(object):
         return self.labels[id].visible
 
 
+
     def computeCorrespondences(self):
-        #if self.correspondences is None:
-         #   return
 
-        print(self.correspondences.data)
-        return
+        conversion1 = self.images[0].map_px_to_mm_factor
+        conversion2 = self.images[1].map_px_to_mm_factor
 
-        blobs1 = self.images[0].annotations.seg_blobs
-        blobs2 = self.images[1].annotations.seg_blobs
+        # switch form px to mm just for calculation (except areas that are in cm)
+
+        blobs1 = []
+        for blob in self.images[0].annotations.seg_blobs:
+            blob_c = blob.copy()
+            blob_c.bbox = (blob_c.bbox*conversion1).round().astype(int)
+            blob_c.contour = blob_c.contour*conversion1
+            blob_c.area = blob_c.area*conversion1*conversion1/100
+            blobs1.append(blob_c)
+
+        blobs2 = []
+        for blob in self.images[1].annotations.seg_blobs:
+            blob_c = blob.copy()
+            blob_c.bbox = (blob_c.bbox * conversion2).round().astype(int)
+            blob_c.contour = blob_c.contour * conversion2
+            blob_c.area = blob_c.area * conversion2 * conversion2 / 100
+            blobs2.append(blob_c)
 
         corr = Correspondences(self.images[0], self.images[1])
-
         corr.autoMatch(blobs1, blobs2)
-
         corr.findSplit()
         corr.findFuse()
 

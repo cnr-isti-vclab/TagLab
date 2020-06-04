@@ -35,11 +35,11 @@ class TableModel(QAbstractTableModel):
 
         if role == Qt.DisplayRole:
             value = self._data.iloc[index.row(), index.column()]
-            if index.column() == 0 or index.column() == 1:
-                return "" if math.isnan(value) else str(value)
+            # if index.column() == 0 or index.column() == 1:
+            #     return "" if math.isnan(value) else str(value)
             # format floating point values
             if index.column() == 2 or index.column() == 3:
-                txt = "{:.2f}".format(value/100.0) #convert to cm^2
+                txt = "{:.2f}".format(value)
             else:
                 txt = str(value)
 
@@ -117,10 +117,6 @@ class QtComparePanel(QWidget):
         dead = self.project.correspondences.dead
         born = self.project.correspondences.born
 
-        factor1 = self.project.correspondences.source.map_px_to_mm_factor * \
-                  self.project.correspondences.source.map_px_to_mm_factor / 100.0
-        factor2 = self.project.correspondences.target.map_px_to_mm_factor * \
-                  self.project.correspondences.target.map_px_to_mm_factor / 100.0
 
         for elem in dead:
             elem.append('none')
@@ -130,9 +126,6 @@ class QtComparePanel(QWidget):
 
         data_list = correspondences + born + dead
 
-        for elem in data_list:
-            elem[2] = float(elem[2]) * factor1
-            elem[3] = float(elem[3]) * factor2
 
         self.data = project.correspondences.data #pd.DataFrame(data_list, columns=['Class', 'Blob 1', 'Blob 2', 'Area1', 'Area2', 'Action', 'Split\Fuse'])
 
