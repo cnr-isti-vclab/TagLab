@@ -1193,11 +1193,13 @@ class TagLab(QWidget):
         self.editInstance.setText(blob.instance_name)
         self.lblClass.setText(blob.class_name)
 
-        scaled_perimeter = blob.perimeter * self.map_px_to_mm_factor / 10
+        factor = self.activeviewer.image.map_px_to_mm_factor
+
+        scaled_perimeter = blob.perimeter * factor / 10
         text1 = "Perimeter (cm): {:8.2f}".format(scaled_perimeter)
         self.lblP.setText(text1)
 
-        scaled_area = blob.area * (self.map_px_to_mm_factor) * (self.map_px_to_mm_factor) / 100
+        scaled_area = blob.area * factor * factor / 100
         text2 = "Area (cm<sup>2</sup>): {:8.2f}".format(scaled_area)
         self.lblA.setText(text2)
 

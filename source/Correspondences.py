@@ -26,7 +26,6 @@ class Correspondences(object):
         for blob1 in blobs1:
             for blob2 in blobs2:
                 # use bb to quickly calculate intersection
-                # if (blob1.class_name == 'Pocillopora'):
                 x1 = max(blob1.bbox[0], blob2.bbox[0])
                 y1 = max(blob1.bbox[1], blob2.bbox[1])
                 x2 = min(blob1.bbox[0] + blob1.bbox[3], blob2.bbox[0] + blob2.bbox[3])
@@ -34,26 +33,27 @@ class Correspondences(object):
                 # compute the area of intersection rectangle
                 interArea = abs(max((x2 - x1, 0)) * max((y2 - y1), 0))
 
-                # if interArea != 0 and blob2.class_name == blob1.class_name:
                 if interArea != 0 and blob2.class_name == blob1.class_name and blob1.class_name != 'Empty':
                     # this is the get mask function for the outer contours, I put it here using two different if conditions so getMask just runs just on intersections
                     mask1 = Blob.getMask(blob1)
-                    sizeblob1 = blob1.area
+                    sizeblob1 = np.count_nonzero(mask1)
                     mask2 = Blob.getMask(blob2)
-                    sizeblob2 = blob2.area
+                    sizeblob2 = np.count_nonzero(mask2)
                     minblob = min(sizeblob1, sizeblob2)
                     intersectionArea = np.count_nonzero(intersectMask(mask1, blob1.bbox, mask2, blob2.bbox))
 
-                    if (intersectionArea > (0.6 * minblob)) and (sizeblob2 > sizeblob1 + sizeblob1 * 0.05):
-                        self.correspondences.append([blob1.id, blob2.id, sizeblob1, sizeblob2, blob1.class_name, 'grow', 'none'])
+                    print(sizeblob1,sizeblob2,intersectionArea)
 
-                    elif (intersectionArea > (0.6 * minblob)) and (sizeblob2 < sizeblob1 - sizeblob1 * 0.05):
-                        self.correspondences.append([blob1.id, blob2.id, sizeblob1, sizeblob2, blob1.class_name, 'shrink', 'none'])
+                    if (intersectionArea < (0.6 * minblob)):
+                        continue
+                    if (sizeblob2 > sizeblob1 + sizeblob1 * 0.05):
+                        self.correspondences.append([blob1.id, blob2.id, blob1.area, blob2.area, blob1.class_name, 'grow', 'none'])
 
-                    elif (intersectionArea > (0.6 * minblob)) and (
-                            int(sizeblob2) in range(int(sizeblob1 - sizeblob1 * 0.05),
-                                                    int(sizeblob1 + sizeblob1 * 0.05))):
-                        self.correspondences.append([blob1.id, blob2.id, sizeblob1, sizeblob2, blob1.class_name, 'same', 'none'])
+                    elif (sizeblob2 < sizeblob1 - sizeblob1 * 0.05):
+                        self.correspondences.append([blob1.id, blob2.id, blob1.area, blob2.area, blob1.class_name, 'shrink', 'none'])
+
+                    else:
+                        self.correspondences.append([blob1.id, blob2.id, blob1.area, blob2.area, blob1.class_name, 'same', 'none'])
 
 
     def findSplit(self):
@@ -95,7 +95,7 @@ class Correspondences(object):
             all_blobs.append(blobs1[i].id)
 
         for j in range(0, len(self.correspondences)):
-            existing.append(int(self.correspondences[j][1]))
+            existing.append(int(self.correspondences[j][0]))
             missing = [i for i in all_blobs if i not in existing]
 
         for id in missing:
@@ -119,7 +119,7 @@ class Correspondences(object):
             all_blobs.append(blobs2[i].id)
 
         for j in range(0, len(self.correspondences)):
-            existing.append(int(self.correspondences[j][2]))
+            existing.append(int(self.correspondences[j][1]))
             missing = [i for i in all_blobs if i not in existing]
 
         for id in missing:
