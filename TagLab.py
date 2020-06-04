@@ -113,8 +113,7 @@ class TagLab(QWidget):
 
         self.taglab_dir = os.getcwd()
         self.project = Project()         # current project
-        self.image = None                # current image
-        self.annotations = Annotation()  # REFACTOR -> we want to move under Image
+        self.last_image_loaded = None
 
         self.map_3D_filename = None    #refactor THIS!
         self.map_image_filename = None #"map.png"  #REFACTOR to project.map_filename
@@ -720,6 +719,8 @@ class TagLab(QWidget):
 
         modifiers = QApplication.queryKeyboardModifiers()
 
+        active_annotations = self.activeviewer.annotations
+
         if event.key() == Qt.Key_Escape:
             key_pressed = 'ESC'
         elif event.key() == Qt.Key_Enter or event.key() == Qt.Key_Return:
@@ -846,26 +847,26 @@ class TagLab(QWidget):
 
         elif event.key() == Qt.Key_Home:
             # ASSIGN LABEL
-            self.annotations.refine_depth_weight += 0.1;
-            if self.annotations.refine_depth_weight > 1.0:
-                self.annotations.refine_depth_weight = 1.0;
-            print("Depth weight: " + str(self.annotations.refine_depth_weight))
+            active_annotations.refine_depth_weight += 0.1;
+            if active_annotations.refine_depth_weight > 1.0:
+                active_annotations.refine_depth_weight = 1.0;
+            print("Depth weight: " + str(active_annotations.refine_depth_weight))
 
         elif event.key() == Qt.Key_End:
             # ASSIGN LABEL
-            self.annotations.refine_depth_weight -= 0.1;
-            if self.annotations.refine_depth_weight < 0.0:
-                self.annotations.refine_depth_weight = 0.0;
-            print("Depth weight: " + str(self.annotations.refine_depth_weight))
+            active_annotations.refine_depth_weight -= 0.1;
+            if active_annotations.refine_depth_weight < 0.0:
+                active_annotations.refine_depth_weight = 0.0;
+            print("Depth weight: " + str(active_annotations.refine_depth_weight))
 
 
         elif event.key() == Qt.Key_BracketLeft:
-            self.annotations.refine_conservative *= 0.9
-            print("Conservative: " + str(self.annotations.refine_conservative))
+            active_annotations.refine_conservative *= 0.9
+            print("Conservative: " + str(active_annotations.refine_conservative))
 
         elif event.key() == Qt.Key_BracketRight:
-            self.annotations.refine_conservative *= 1.1
-            print("Conservative: " + str(self.annotations.refine_conservative))
+            active_annotations.refine_conservative *= 1.1
+            print("Conservative: " + str(active_annotations.refine_conservative))
 
         elif event.key() == Qt.Key_Space:
             if self.activeviewer.tools.tool == "MATCH":
@@ -886,14 +887,33 @@ class TagLab(QWidget):
         self.viewerplus.viewChanged()
 
         if len(self.project.images) > 1:
+
+            QApplication.setOverrideCursor(Qt.WaitCursor)
+
+            index = self.comboboxMainImage.currentIndex()
+            index_to_set = min(index, len(self.project.images) - 2)
+
+            self.comboboxMainImage.currentIndexChanged.disconnect()
+            self.comboboxComparisonImage.currentIndexChanged.disconnect()
+
+            self.comboboxMainImage.setCurrentIndex(index_to_set)
+            self.comboboxComparisonImage.setCurrentIndex(index_to_set + 1)
+
+            self.viewerplus.setProject(self.project)
+            self.viewerplus.setImage(self.project.images[index_to_set])
+            self.viewerplus.setChannel(self.project.images[index_to_set].channels[0])
+
             self.viewerplus2.setProject(self.project)
-            self.viewerplus2.setImage(self.project.images[1])
-            self.viewerplus2.setChannel(self.project.images[1].channels[0])
+            self.viewerplus2.setImage(self.project.images[index_to_set + 1])
+            self.viewerplus2.setChannel(self.project.images[index_to_set + 1].channels[0])
+
+            self.comboboxMainImage.currentIndexChanged.connect(self.mainImageChanged)
+            self.comboboxComparisonImage.currentIndexChanged.connect(self.comparisonImageChanged)
+
+            QApplication.restoreOverrideCursor()
 
         self.viewerplus2.show()
         self.comboboxComparisonImage.show()
-
-        #self.synchronizeRight()
 
         self.comparison_mode = True
 
@@ -963,17 +983,22 @@ class TagLab(QWidget):
     @pyqtSlot()
     def setActiveViewer(self):
         self.activeviewer = self.sender()
-        if self.activeviewer != self.viewerplus:
+        if self.activeviewer is not self.viewerplus:
             self.inactiveviewer = self.viewerplus
         else:
             self.inactiveviewer = self.viewerplus2
 
         self.inactiveviewer.resetTools()
 
+        print(self.activeviewer.channel.filename)
+
     def updateImageSelectionMenu(self):
 
         self.comboboxMainImage.currentIndexChanged.disconnect()
         self.comboboxComparisonImage.currentIndexChanged.disconnect()
+
+        self.comboboxMainImage.clear()
+        self.comboboxComparisonImage.clear()
 
         for image in self.project.images:
             self.comboboxMainImage.addItem(image.id)
@@ -986,6 +1011,7 @@ class TagLab(QWidget):
     @pyqtSlot(int)
     def mainImageChanged(self, index):
 
+        print(index)
         self.viewerplus.setProject(self.project)
         self.viewerplus.setImage(self.project.images[index])
         self.viewerplus.setChannel(self.project.images[index].channels[0])
@@ -1039,10 +1065,11 @@ class TagLab(QWidget):
 
         self.mapWidget = None
         self.project = Project()
-        self.image = None
-        self.annotations = []
+        self.last_image_loaded = None
         self.activeviewer = None
 
+        self.comboboxMainImage.clear()
+        self.comboboxComparisonImage.clear()
 
     def resetToolbar(self):
 
@@ -1573,23 +1600,30 @@ class TagLab(QWidget):
         self.project.images.append(image)
 
         self.mapWidget.close()
-        #self.mapWidget = None
 
-        self.loadMap(image)
+        self.showImage(image)
 
- # REFACTOR
-    def loadMap(self, image):
 
-        self.image = image
-        self.annotations = image.annotations
-        self.channel = image.channels[0]
+    def showImage(self, image):
+
+        """
+        Show the image into the main view and update the map viewer accordingly.
+        """
 
         try:
             QApplication.setOverrideCursor(Qt.WaitCursor)
+
             self.infoWidget.setInfoMessage("Map is loading..")
             self.viewerplus.setProject(self.project)
             self.viewerplus.setImage(image)
-            self.viewerplus.setChannel(self.channel)
+            self.viewerplus.setChannel(image.channels[0])
+            self.last_image_loaded = image
+
+            index = self.project.images.index(image)
+
+            self.comboboxMainImage.disconnect()
+            self.comboboxMainImage.setCurrentIndex(index)
+            self.comboboxMainImage.currentIndexChanged.connect(self.mainImageChanged)
 
             thumb = self.viewerplus.pixmap.scaled(self.MAP_VIEWER_SIZE, self.MAP_VIEWER_SIZE, Qt.KeepAspectRatio,
                                                  Qt.SmoothTransformation)
@@ -1658,6 +1692,7 @@ class TagLab(QWidget):
 
         self.updateImageSelectionMenu()
 
+        self.showImage(self.project.images[-1])
 
     @pyqtSlot()
     def help(self):
@@ -1706,7 +1741,7 @@ class TagLab(QWidget):
         """
         Import a label map
         """
-        if self.image is None:
+        if self.last_image_loaded is None:
             box = QMessageBox()
             box.setText("A map is needed to import labels. Load a map or a project.")
             box.exec()
@@ -1716,8 +1751,9 @@ class TagLab(QWidget):
         filename, _ = QFileDialog.getOpenFileName(self, "Input Map File", "", filters)
         if not filename:
             return
-        size = QSize(self.image.width, self.image.height)
-        created_blobs = self.annotations.import_label_map(filename, size, self.labels_dictionary)
+
+        size = QSize(self.activeviewer.image.width, self.activeviewer.image.height)
+        created_blobs = self.activeviewer.annotations.import_label_map(filename, size, self.labels_dictionary)
         for blob in created_blobs:
             self.viewerplus.addBlob(blob, selected=False)
         self.viewerplus.saveUndo()
@@ -1725,7 +1761,7 @@ class TagLab(QWidget):
     @pyqtSlot()
     def exportAnnAsDataTable(self):
 
-        if self.image is None:
+        if self.last_image_loaded is None:
             box = QMessageBox()
             box.setText("A map is needed to export labels. Load a map or a project.")
             box.exec()
@@ -1736,7 +1772,7 @@ class TagLab(QWidget):
 
         if filename:
 
-            self.annotations.export_data_table_for_Scripps(self.image.map_px_to_mm_factor,filename)
+            self.activeviewer.annotations.export_data_table_for_Scripps(self.image.map_px_to_mm_factor,filename)
 
             msgBox = QMessageBox(self)
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
@@ -1758,7 +1794,7 @@ class TagLab(QWidget):
 
         if filename:
             size = QSize(self.image.width, self.image.height)
-            self.annotations.export_image_data_for_Scripps(size, filename, self.labels_dictionary)
+            self.activeviewer.annotations.export_image_data_for_Scripps(size, filename, self.labels_dictionary)
 
             msgBox = QMessageBox(self)
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
@@ -1776,7 +1812,7 @@ class TagLab(QWidget):
             box.exec()
             return
 
-        histo_widget = QtHistogramWidget(self.annotations, self.map_px_to_mm_factor, self.map_acquisition_date, self)
+        histo_widget = QtHistogramWidget(self.activeviewer.annotations, self.map_px_to_mm_factor, self.map_acquisition_date, self)
         histo_widget.setWindowModality(Qt.WindowModal)
         histo_widget.show()
 
@@ -1793,7 +1829,7 @@ class TagLab(QWidget):
         if folderName:
 
             filename = os.path.join(folderName, "tile")
-            self.annotations.export_new_dataset(self.viewerplus.img_map, tile_size=1024, step=256, basename=filename, labels_info = self.labels_dictionary)
+            self.activeviewer.annotations.export_new_dataset(self.viewerplus.img_map, tile_size=1024, step=256, basename=filename, labels_info = self.labels_dictionary)
 
 
     # REFACTOR use project methods
@@ -1818,9 +1854,9 @@ class TagLab(QWidget):
         QApplication.restoreOverrideCursor()
         self.setProjectTitle(self.project.filename)
 
-        #load the first map if present in project
-        if len(self.project.images):
-            self.loadMap(self.project.images[0])
+        # show the first map present in project
+        if len(self.project.images) > 0:
+            self.showImage(self.project.images[0])
 
         self.project.importLabelsFromConfiguration(self.labels_dictionary)
         self.labels_widget.setLabels(self.project)
@@ -1970,7 +2006,7 @@ class TagLab(QWidget):
                 QApplication.processEvents()
 
                 filename = os.path.join("temp", "labelmap.png")
-                created_blobs = self.annotations.import_label_map(filename, self.img_map)
+                created_blobs = self.activeviewer.annotations.import_label_map(filename, self.img_map)
                 for blob in created_blobs:
                     self.addBlob(blob, selected=False)
 
