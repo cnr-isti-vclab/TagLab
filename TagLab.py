@@ -724,7 +724,11 @@ class TagLab(QWidget):
             return
 
         self.setTool("MATCH")
-        self.project.computeCorrespondences()
+
+        index1 = self.comboboxMainImage.currentIndex()
+        index2 = self.comboboxComparisonImage.currentIndex()
+
+        self.project.computeCorrespondences(index1, index2)
         self.compare_panel.setProject(self.project)
 
 
@@ -1276,7 +1280,6 @@ class TagLab(QWidget):
 
         self.setTool("MATCH")
         self.compare_panel.setProject(self.project)
-
 
 
     @pyqtSlot()
