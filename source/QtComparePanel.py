@@ -16,8 +16,9 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the             
 #GNU General Public License (http://www.gnu.org/licenses/gpl.txt)          
 # for more details.                                               
-from PyQt5.QtCore import Qt, QAbstractTableModel, QSortFilterProxyModel, QRegExp, QModelIndex, pyqtSlot, pyqtSignal
-from PyQt5.QtWidgets import QWidget, QSizePolicy, QHeaderView, QComboBox, QLabel, QTableView, QHBoxLayout, QVBoxLayout
+from PyQt5.QtCore import Qt, QAbstractTableModel, QAbstractItemModel, QSortFilterProxyModel, QRegExp, QModelIndex, pyqtSlot, pyqtSignal
+from PyQt5.QtWidgets import QWidget, QSizePolicy, QHeaderView, QComboBox, QLabel, QTableView, \
+    QHBoxLayout, QVBoxLayout, QAbstractItemView, QStyleOptionViewItem, QStyledItemDelegate
 from pathlib import Path
 import math
 
@@ -63,6 +64,43 @@ class TableModel(QAbstractTableModel):
             if orientation == Qt.Vertical:
                 return str(self._data.index[section])
 
+
+class ComboBoxItemDelegate(QStyledItemDelegate):
+
+    def __init__(self, parent = None):
+        super(ComboBoxItemDelegate, self).__init__(parent)
+
+        pass
+
+    def createEditor(self, parent, option, index):
+
+        cb = QComboBox(parent)
+        row = index.row()
+        cb.addItem(QString("Split").arg(row))
+        cb.addItem(QString("Grow").arg(row))
+        cb.addItem(QString("Shrink").arg(row))
+        return cb
+
+    def setEditorData(self, editor, index):
+
+        # cb = qobject_cast < QComboBox * > (editor);
+        cb = editor
+
+        # get the index of the text in the combobox that matches the current
+        # value of the item const
+
+        currentText = index.data(Qt.EditRole).toString()
+        cbIndex = cb.findText(currentText);
+        # if it is valid, adjust the combobox
+        if cbIndex >= 0:
+            cb.setCurrentIndex(cbIndex)
+
+    def setModelData(self, editor, model, index):
+
+        cb = editor
+        model.setData(index, cb.currentText(), Qt.EditRole)
+
+
 class QtComparePanel(QWidget):
 
     highlightBlob = pyqtSignal(int)
@@ -81,6 +119,8 @@ class QtComparePanel(QWidget):
 
         self.data_table = QTableView()
         self.model = None
+
+        self.combodelegate = ComboBoxItemDelegate(self.data_table)
 
         lblFilter = QLabel("Filter: ")
         self.comboboxFilter = QComboBox()
@@ -141,6 +181,9 @@ class QtComparePanel(QWidget):
         self.data_table.resizeColumnsToContents()
         self.data_table.setVisible(True)
 
+        self.data_table.setItemDelegateForColumn(5, self.combodelegate)
+        self.data_table.setEditTriggers(QAbstractItemView.DoubleClicked)
+
         self.data_table.setStyleSheet("QHeaderView::section { background-color: rgb(40,40,40) }")
 
 
@@ -150,7 +193,12 @@ class QtComparePanel(QWidget):
         row = index.row()
         if column == 0:
             blobid = self.data_table.model().index(row, column).data()
-            self.highlightBlob.emit(int(blobid))
+
+            try:
+                id = int(blobid)
+                self.highlightBlob.emit(int(blobid))
+            except ValueError:
+                print("No valid id")
 
 
     @pyqtSlot(str)
