@@ -1445,15 +1445,15 @@ class TagLab(QWidget):
             img = utils.cropQImage(view.img_map, bbox)
             img = utils.qimageToNumpyArray(img)
 
-            if view.depth_map is not None:
-                depth = view.depth_map[bbox[0] : bbox[0]+bbox[3], bbox[1] : bbox[1] + bbox[2]]
+            #if view.depth_map is not None:
+            #    depth = view.depth_map[bbox[0] : bbox[0]+bbox[3], bbox[1] : bbox[1] + bbox[2]]
 #                imgg = utils.floatmapToQImage((depth - 4)*255)
 #                imgg.save("test.png")
 
                 # #utils.cropQImage(self.depth_map, bbox)
                 #depth = utils.qimageToNumpyArray(depth)
-            else:
-                depth = None
+            #else:
+            depth = None
             #try:
             #    from coraline.Coraline import segment
             #    segment(utils.qimageToNumpyArray(img), mask, 0.0, conservative=0.07, grow=self.refine_grow, radius=30)

@@ -48,23 +48,28 @@ class Ruler(Tool):
         start = self.pick_points.points[0]
         end = self.pick_points.points[1]
         line = self.scene.addLine(start[0], start[1], end[0], end[1], pen)
-        self.pick_markers.append(line)
+        line.setZValue(3)
+        self.pick_points.markers.append(line)
 
         middle_x = (start[0] + end[0]) / 2.0
         middle_y = (start[1] + end[1]) / 2.0
 
         middle = self.scene.addEllipse(middle_x, middle_y, 0, 0)
+        middle.setZValue(3)
 
-        ruler_text = self.scene.addText('%.1f' % measure)
+        ruler_text = self.scene.addText('%.1f cm' % measure)
         ruler_text.setFont(QFont("Times", 12, QFont.Bold))
         ruler_text.setDefaultTextColor(Qt.white)
         ruler_text.setPos(middle_x, middle_y)
         ruler_text.setParentItem(middle)
         ruler_text.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+        ruler_text.setZValue(3)
+        self.pick_points.markers.append(ruler_text);
+        self.pick_points.markers.append(middle);
 
-        self.logfile.info("[TOOL][RULER] Measure taken.")
 
-        self.pick_markers.append(middle);
+        self.log.emit("[TOOL][RULER] Measure taken.")
+
 
     def computeMeasure(self, annotations):
         """
