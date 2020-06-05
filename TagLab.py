@@ -977,7 +977,7 @@ class TagLab(QWidget):
     @pyqtSlot()
     def showMatch(self):
 
-        if self.tool_used == "MATCH":
+        if self.activeviewer.tools.tool == "MATCH":
 
             print("Show match", self.project.correspondences.data)
             if self.activeviewer is None:
@@ -1016,8 +1016,8 @@ class TagLab(QWidget):
 
     def showMatches(self, type):
 
-        if self.tool_used == "MATCH":
-            
+        if self.activeviewer.tools.tool == "MATCH":
+
             if type == 'all':
                 for b in self.viewerplus.annotations.seg_blobs:
                     if b.qpath_gitem is not None:
