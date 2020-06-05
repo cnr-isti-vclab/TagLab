@@ -209,9 +209,7 @@ class QtImageViewerPlus(QtImageViewer):
 
     #used for crossair cursor
     def drawForeground(self, painter, rect):
-        print(self.showCrossair)
         if self.showCrossair:
-            print("drawing cross: " + str(self.mouseCoords.x()))
             painter.setClipRect(rect)
             painter.setPen(QPen(Qt.white, 1))
             painter.drawLine(self.mouseCoords.x(), rect.top(), self.mouseCoords.x(), rect.bottom())
