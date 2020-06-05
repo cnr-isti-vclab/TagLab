@@ -124,9 +124,6 @@ class QtComparePanel(QWidget):
         for elem in born:
             elem.append('none')
 
-        data_list = correspondences + born + dead
-
-
         self.data = project.correspondences.data #pd.DataFrame(data_list, columns=['Class', 'Blob 1', 'Blob 2', 'Area1', 'Area2', 'Action', 'Split\Fuse'])
 
         self.model = TableModel(self.data)

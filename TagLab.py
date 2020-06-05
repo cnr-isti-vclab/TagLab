@@ -722,7 +722,7 @@ class TagLab(QWidget):
         if len(self.project.images) < 2:
             return
         self.setTool("MATCH")
-        self.computeCorrespondences()
+        self.project.computeCorrespondences()
         self.compare_panel.setProject(self.project)
 
 
@@ -986,8 +986,27 @@ class TagLab(QWidget):
             box.exec()
             return
 
+        data = self.project.correspondences.data
+        source = "Blob 1"
+        target = "Blob 2"
+        sourceindex = 0
+        targetindex = 1
+        sourceviewer = self.viewerplus
+        targetviewer = self.viewerplus2
+        if self.activeviewer == self.viewerplus2:
+            source, target = target, source
+            sourceviewer, targetviewer = targetviewer, sourceviewer
+            sourceindex, targetindex = targetindex, sourceindex
+        blob = selected[0]
+        rows = data.loc[data[source] == blob.id]
+        targetviewer.resetSelection()
+        for index, row in rows.iterrows():
+            targetblob = targetviewer.annotations.blobById(row[target])
+            if targetblob is None:
+                continue
+            targetviewer.addToSelectedList(targetblob)
         # look in correspondeces for blobs.
-        print(self.compare_panel.data)
+#        print(self.compare_panel.data)
 
     def showMatches(self, type):
         if type == 'all':
