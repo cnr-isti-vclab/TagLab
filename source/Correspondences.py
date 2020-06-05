@@ -14,11 +14,58 @@ class Correspondences(object):
         self.correspondences = []
         self.dead = []
         self.born = []
-
+        self.threshold = 1.05
         self.data = pd.DataFrame(data = correspondences, columns=['Blob 1', 'Blob 2', 'Area1', 'Area2', 'Class', 'Action','Split\Fuse'])
 
     def save(self):
         return { "source": self.source.id, "target": self.target.id, "correspondences": self.data.values.tolist() }
+
+    def set(self, sourceblobs, targetblobs):
+        #assumes one oth the two list has 1 blob only.
+        type = ""
+        action = "none"
+        if len(sourceblobs) == 0:
+            action = "born"
+
+        elif len(targetblobs) == 0:
+            action = "gone"
+
+        elif len(sourceblobs) > 1:
+            action = "join"
+        elif len(targetblobs) > 1:
+            action = "split"
+        elif sourceblobs[0].area > targetblobs[0].area*self.threshold:
+            type = "shrink"
+        elif sourceblobs[0].area < targetblobs[0].area/self.threshold:
+            type = "grow"
+        else:
+            type = "same"
+            #TODO consider morph!
+
+        #remove all correspondences where these are involved
+        self.data = self.data[self.data['Blob 1'].isin([b.id for b in sourceblobs]) == False]
+        self.data = self.data[self.data['Blob 2'].isin([b.id for b in sourceblobs]) == False]
+
+        if len(sourceblobs) == 0:
+            target = targetblobs[0]
+            row = [None, target.id, 0.0, target.area, target.class_name, type, action]
+            self.data = pd.concat([pd.DataFrame([row], columns=self.data.columns), self.data])
+
+        elif len(targetblobs) == 0:
+            source = sourceblobs[0]
+            row = [source.id, None, source.area, 0, source.class_name, type, action]
+            self.data = pd.concat([pd.DataFrame([row], columns=self.data.columns), self.data])
+
+        else:
+        #place new correspondences
+
+            for source in sourceblobs:
+                for target in targetblobs:
+                    row = [source.id, target.id, source.area if source.id is not None else 0, target.area if target.id is not None else 0,
+                           source.class_name if source.id is not None else target.class_name, type, action]
+                    self.data = pd.concat([pd.DataFrame([row], columns=self.data.columns), self.data])
+
+        print(self.data)
 
     def autoMatch(self, blobs1, blobs2):
 
@@ -45,10 +92,10 @@ class Correspondences(object):
 
                     if (intersectionArea < (0.6 * minblob)):
                         continue
-                    if (sizeblob2 > sizeblob1 + sizeblob1 * 0.05):
+                    if (sizeblob2 > sizeblob1 * self.threshold):
                         self.correspondences.append([blob1.id, blob2.id, blob1.area, blob2.area, blob1.class_name, 'grow', 'none'])
 
-                    elif (sizeblob2 < sizeblob1 - sizeblob1 * 0.05):
+                    elif (sizeblob2 < sizeblob1 / self.threshold):
                         self.correspondences.append([blob1.id, blob2.id, blob1.area, blob2.area, blob1.class_name, 'shrink', 'none'])
 
                     else:

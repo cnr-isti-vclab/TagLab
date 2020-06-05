@@ -32,7 +32,7 @@ from skimage.measure import points_in_poly
 
 #import rasterio as rio
 
-from PyQt5.QtCore import Qt, QSize, QDir, QPoint, QPointF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo
+from PyQt5.QtCore import Qt, QSize, QDir, QPoint, QPointF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo, QModelIndex
 from PyQt5.QtGui import QPainterPath, QFont, QColor, QPolygonF, QImageReader, QImage, QPixmap, QIcon, QKeySequence, \
     QPen, QBrush, qRgb, qRed, qGreen, qBlue
 from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QComboBox, QMenuBar, QMenu, QSizePolicy, QScrollArea, \
@@ -965,14 +965,17 @@ class TagLab(QWidget):
         if len(sel1) > 1 and len(sel2) > 1:
             return
 
-        if len(sel1) == 0 or len(sel2) == 0:
+        if len(sel1) == 0 and len(sel2) == 0:
             print("SHould we remove this corr?")
             return
 
         self.project.correspondences.set(sel1, sel2)
+        self.compare_panel.model.dataChanged.emit(QModelIndex(), QModelIndex())
 
     @pyqtSlot()
     def showMatch(self):
+
+        print("Show match", self.project.correspondences.data)
         if self.activeviewer is None:
             return
 
@@ -986,18 +989,16 @@ class TagLab(QWidget):
             box.exec()
             return
 
+        blob = selected[0]
         data = self.project.correspondences.data
         source = "Blob 1"
         target = "Blob 2"
-        sourceindex = 0
-        targetindex = 1
         sourceviewer = self.viewerplus
         targetviewer = self.viewerplus2
         if self.activeviewer == self.viewerplus2:
             source, target = target, source
             sourceviewer, targetviewer = targetviewer, sourceviewer
-            sourceindex, targetindex = targetindex, sourceindex
-        blob = selected[0]
+
         rows = data.loc[data[source] == blob.id]
         targetviewer.resetSelection()
         for index, row in rows.iterrows():
@@ -1261,7 +1262,6 @@ class TagLab(QWidget):
             return
 
         self.setTool("MATCH")
-        self.project.computeCorrespondences()
         self.compare_panel.setProject(self.project)
 
 

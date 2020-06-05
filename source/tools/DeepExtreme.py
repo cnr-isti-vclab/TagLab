@@ -28,7 +28,7 @@ class DeepExtreme(Tool):
         self.pick_style = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.red,  'size': 6}
         self.deepextreme_net = None
 
-    def leftPressed(self, x, y):
+    def leftPressed(self, x, y, mods):
         points = self.pick_points.points
 
         if len(points) < 4:

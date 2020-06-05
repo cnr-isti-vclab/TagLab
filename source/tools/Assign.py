@@ -11,7 +11,7 @@ class Assign(Tool):
         self.active_label = label
 
 
-    def leftPressed(self, x, y):
+    def leftPressed(self, x, y, mods):
 
         if self.active_label is None:
             raise Exception("Active label is not set in tools!")

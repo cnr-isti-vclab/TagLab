@@ -284,7 +284,9 @@ class QtImageViewerPlus(QtImageViewer):
         if event.button() == Qt.LeftButton:
             (x, y) = self.clipScenePos(scenePos)
             #used from area selection and pen drawing,
-            if (self.panEnabled and not (mods & Qt.ShiftModifier)) or (mods & Qt.ControlModifier):
+            if self.tools.tool == "MATCH":
+                self.tools.leftPressed(x, y, mods)
+            elif (self.panEnabled and not (mods & Qt.ShiftModifier)) or (mods & Qt.ControlModifier):
                 self.setDragMode(QGraphicsView.ScrollHandDrag)
 
             elif mods & Qt.ShiftModifier:

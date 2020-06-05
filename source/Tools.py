@@ -71,10 +71,10 @@ class Tools(object):
 
 
     #logfile, annotations, selecttion, activelabelbname, undo
-    def leftPressed(self, x, y):
+    def leftPressed(self, x, y, mods = None):
         if self.tool == "MOVE":
             return
-        self.tools[self.tool].leftPressed(x, y)
+        self.tools[self.tool].leftPressed(x, y, mods)
 
     def mouseMove(self, x, y):
         if self.tool == "MOVE":

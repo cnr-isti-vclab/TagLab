@@ -124,7 +124,7 @@ class QtComparePanel(QWidget):
         for elem in born:
             elem.append('none')
 
-        self.data = project.correspondences.data #pd.DataFrame(data_list, columns=['Class', 'Blob 1', 'Blob 2', 'Area1', 'Area2', 'Action', 'Split\Fuse'])
+        self.data = project.correspondences.data
 
         self.model = TableModel(self.data)
         self.sortfilter = QSortFilterProxyModel(self)

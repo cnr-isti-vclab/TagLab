@@ -7,7 +7,7 @@ class CreateCrack(Tool):
     def __init__(self, viewerplus):
         super(CreateCrack, self).__init__(viewerplus)
 
-    def leftPressed(self, x, y):
+    def leftPressed(self, x, y, mods):
         selected_blob = self.viewerplus.annotations.clickedBlob(x, y)
 
         if selected_blob is None:

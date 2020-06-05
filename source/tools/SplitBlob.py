@@ -16,7 +16,7 @@ class SplitBlob(Tool):
 
         infoMessage = pyqtSignal(str)
 
-    def leftPressed(self, x, y):
+    def leftPressed(self, x, y, mods):
         selected_blobs = self.viewerplus.selected_blobs
         # no selected blobs: select it!
         if len(selected_blobs) == 0:

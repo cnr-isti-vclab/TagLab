@@ -17,7 +17,7 @@ class Ruler(Tool):
     def setPxToMM(self, factor):
         self.map_px_to_mm_factor = factor
 
-    def leftPressed(self, x, y):
+    def leftPressed(self, x, y, mods):
         points = self.pick_points.points
         # first point
         if len(points) == 0:

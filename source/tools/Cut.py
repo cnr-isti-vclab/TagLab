@@ -6,7 +6,7 @@ class Cut(Tool):
 
         self.edit_points = edit_points
 
-    def leftPressed(self, x, y):
+    def leftPressed(self, x, y, mods):
         if self.edit_points.startDrawing(x, y):
             self.log.emit("[TOOL][EDITBORDER] DRAWING starts..")
 

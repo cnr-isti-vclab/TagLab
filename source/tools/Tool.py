@@ -11,7 +11,7 @@ class Tool(QObject):
         super(Tool, self).__init__()
         self.viewerplus = viewerplus
 
-    def leftPressed(self, x, y):
+    def leftPressed(self, x, y, mods = None):
         pass
 
     def mouseMove(self, x, y):
