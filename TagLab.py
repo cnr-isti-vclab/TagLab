@@ -160,6 +160,8 @@ class TagLab(QWidget):
         self.btnMatch       = self.newButton("connect.png",  "Match tool",            flatbuttonstyle1, self.matchTool)
         self.btnDeepExtreme = self.newButton("dexter.png",   "4-click segmentation",  flatbuttonstyle2, self.deepExtreme)
         self.btnAutoClassification = self.newButton("auto.png", "Fully automatic classification", flatbuttonstyle2, self.selectClassifier)
+        self.btnSplitScreen = self.newButton("splitscreen.png", "Toggle comparison mode", flatbuttonstyle2, self.toggleComparison)
+
 
         layout_tools = QVBoxLayout()
         layout_tools.setSpacing(0)
@@ -176,6 +178,8 @@ class TagLab(QWidget):
         layout_tools.addWidget(self.btnAutoClassification)
         layout_tools.addSpacing(10)
         layout_tools.addWidget(self.btnMatch)
+        layout_tools.addWidget(self.btnSplitScreen)
+
         layout_tools.addStretch()
 
         #CONTEXT MENU ACTIONS
@@ -688,12 +692,30 @@ class TagLab(QWidget):
 
         editmenu.addAction(self.fillAction)
 
+        splitScreenAction = QAction("Split Screen", self)
+        splitScreenAction.setShortcut('Alt+C')
+        splitScreenAction.setStatusTip("Split screen")
+        splitScreenAction.triggered.connect(self.toggleComparison)
+
+        comparemenu = menubar.addMenu("&Comparison")
+        comparemenu.setStyleSheet(styleMenu)
+        comparemenu.addAction(splitScreenAction)
+
         helpmenu = menubar.addMenu("&Help")
         helpmenu.setStyleSheet(styleMenu)
         helpmenu.addAction(helpAct)
         helpmenu.addAction(aboutAct)
 
+
+
         return menubar
+
+    @pyqtSlot()
+    def toggleComparison(self):
+        if self.comparison_mode is True:
+            self.disableComparisonMode()
+        else:
+            self.enableComparisonMode()
 
     def updateRecentFileActions(self):
 
@@ -1202,6 +1224,11 @@ class TagLab(QWidget):
         """
         Activate the "Match" too
         """
+        if len(self.project.images) < 2:
+            box = QMessageBox()
+            box.setText("This project has only a single map.")
+            box.exec()
+            return
 
         self.setTool("MATCH")
         self.project.computeCorrespondences()

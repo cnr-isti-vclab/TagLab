@@ -227,6 +227,8 @@ class QtImageViewerPlus(QtImageViewer):
             self.resetSelection()
         if tool == "DEEPEXTREME":
             self.showCrossair = True
+        else:
+            self.showCrossair = False
 
         if tool == "MOVE":
             self.enablePan()
