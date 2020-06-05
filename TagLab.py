@@ -175,10 +175,10 @@ class TagLab(QWidget):
         layout_tools.addWidget(self.btnRuler)
         layout_tools.addSpacing(10)
         layout_tools.addWidget(self.btnDeepExtreme)
-        layout_tools.addWidget(self.btnAutoClassification)
+        # layout_tools.addWidget(self.btnAutoClassification)
         layout_tools.addSpacing(10)
-        layout_tools.addWidget(self.btnMatch)
         layout_tools.addWidget(self.btnSplitScreen)
+        layout_tools.addWidget(self.btnMatch)
 
         layout_tools.addStretch()
 
@@ -661,8 +661,8 @@ class TagLab(QWidget):
         self.updateRecentFileActions()
 
         submenuImport = filemenu.addMenu("Import")
-        submenuImport.addAction(appendAct)
         submenuImport.addAction(importAct)
+        submenuImport.addAction(appendAct)
         filemenu.addSeparator()
         submenuExport = filemenu.addMenu("Export")
         submenuExport.addAction(exportDataTableAct)
