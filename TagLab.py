@@ -1628,9 +1628,13 @@ class TagLab(QWidget):
         image_reader = QImageReader(rgb_filename)
         size = image_reader.size()
 
+        image_name = os.path.basename(rgb_filename)
+        image_name = image_name[:-4]
+
         image = Image(
                         map_px_to_mm_factor = float(self.mapWidget.data['px_to_mm']),
-                        name = self.mapWidget.data['name'],
+                        id = image_name,
+                        name = image_name,
                         width = size.width(),
                         height = size.height(),
                         metadata = { 'acquisition_date':  self.mapWidget.data['acquisition_date'] }
@@ -1638,6 +1642,8 @@ class TagLab(QWidget):
         image.channels = [channel_rgb]
 
         self.project.images.append(image)
+
+        self.updateImageSelectionMenu()
 
         self.mapWidget.close()
 
