@@ -153,17 +153,6 @@ class QtComparePanel(QWidget):
 
         self.project = project
 
-        correspondences = self.project.correspondences.correspondences
-        dead = self.project.correspondences.dead
-        born = self.project.correspondences.born
-
-
-        for elem in dead:
-            elem.append('none')
-
-        for elem in born:
-            elem.append('none')
-
         self.data = project.correspondences.data
 
         self.model = TableModel(self.data)
