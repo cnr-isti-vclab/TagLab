@@ -119,6 +119,7 @@ class QtComparePanel(QWidget):
 
         self.data_table = QTableView()
         self.model = None
+        self.data = None
 
         self.combodelegate = ComboBoxItemDelegate(self.data_table)
 
@@ -153,27 +154,29 @@ class QtComparePanel(QWidget):
 
         self.project = project
 
-        self.data = project.correspondences.data
+        if project.correspondences is None:
 
-        self.model = TableModel(self.data)
-        self.sortfilter = QSortFilterProxyModel(self)
-        self.sortfilter.setSourceModel(self.model)
-        self.data_table.setModel(self.sortfilter)
+            self.data = project.correspondences.data
 
-        self.data_table.setVisible(False)
-        self.data_table.verticalHeader().hide()
+            self.model = TableModel(self.data)
+            self.sortfilter = QSortFilterProxyModel(self)
+            self.sortfilter.setSourceModel(self.model)
+            self.data_table.setModel(self.sortfilter)
 
-        #self.data_table.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+            self.data_table.setVisible(False)
+            self.data_table.verticalHeader().hide()
 
-        #self.data_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        #self.data_table.setMinimumWidth(600)
-        self.data_table.resizeColumnsToContents()
-        self.data_table.setVisible(True)
+            #self.data_table.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
 
-        self.data_table.setItemDelegateForColumn(5, self.combodelegate)
-        self.data_table.setEditTriggers(QAbstractItemView.DoubleClicked)
+            #self.data_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+            #self.data_table.setMinimumWidth(600)
+            self.data_table.resizeColumnsToContents()
+            self.data_table.setVisible(True)
 
-        self.data_table.setStyleSheet("QHeaderView::section { background-color: rgb(40,40,40) }")
+            self.data_table.setItemDelegateForColumn(5, self.combodelegate)
+            self.data_table.setEditTriggers(QAbstractItemView.DoubleClicked)
+
+            self.data_table.setStyleSheet("QHeaderView::section { background-color: rgb(40,40,40) }")
 
 
     @pyqtSlot(QModelIndex)
