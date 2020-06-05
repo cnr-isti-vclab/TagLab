@@ -1014,8 +1014,6 @@ class TagLab(QWidget):
 
         self.inactiveviewer.resetTools()
 
-        print(self.activeviewer.channel.filename)
-
     def updateImageSelectionMenu(self):
 
         self.comboboxMainImage.currentIndexChanged.disconnect()
