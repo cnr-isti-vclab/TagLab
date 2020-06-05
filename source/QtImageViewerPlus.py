@@ -208,7 +208,9 @@ class QtImageViewerPlus(QtImageViewer):
 
     #used for crossair cursor
     def drawForeground(self, painter, rect):
+        print(self.showCrossair)
         if self.showCrossair:
+            print("drawing cross: " + str(self.mouseCoords.x()))
             painter.setClipRect(rect)
             painter.setPen(QPen(Qt.white, 1))
             painter.drawLine(self.mouseCoords.x(), rect.top(), self.mouseCoords.x(), rect.bottom())
@@ -223,6 +225,8 @@ class QtImageViewerPlus(QtImageViewer):
 
         if tool in ["FREEHAND", "RULER", "DEEPEXTREME"] or (tool in ["CUT", "EDITBORDER"] and len(self.selected_blobs) > 1):
             self.resetSelection()
+        if tool == "DEEPEXTREME":
+            self.showCrossair = True
 
         if tool == "MOVE":
             self.enablePan()

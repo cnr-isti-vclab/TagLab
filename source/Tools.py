@@ -60,8 +60,6 @@ class Tools(object):
         self.pick_points.reset()
         self.edit_points.reset()
 
-
-        self.showCrossair = False
         self.scene.invalidate(self.scene.sceneRect())
 
         if self.viewerplus.crackWidget is not None:

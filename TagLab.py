@@ -718,8 +718,10 @@ class TagLab(QWidget):
     def keyPressEvent(self, event):
 
         modifiers = QApplication.queryKeyboardModifiers()
-
-        active_annotations = self.activeviewer.annotations
+        if self.activeviewer:
+            active_annotations = self.activeviewer.annotations
+        else:
+            active_annotations = self.viewerplus.annotations
 
         if event.key() == Qt.Key_Escape:
             key_pressed = 'ESC'
