@@ -697,9 +697,16 @@ class TagLab(QWidget):
         splitScreenAction.setStatusTip("Split screen")
         splitScreenAction.triggered.connect(self.toggleComparison)
 
+        autoMatchLabels = QAction("Match labels", self)
+        autoMatchLabels.setStatusTip("Match labels between two maps")
+        autoMatchLabels.triggered.connect(self.autoCorrespondences)
+
+
         comparemenu = menubar.addMenu("&Comparison")
         comparemenu.setStyleSheet(styleMenu)
         comparemenu.addAction(splitScreenAction)
+        comparemenu.addAction(autoMatchLabels)
+
 
         helpmenu = menubar.addMenu("&Help")
         helpmenu.setStyleSheet(styleMenu)
@@ -709,6 +716,15 @@ class TagLab(QWidget):
 
 
         return menubar
+
+    @pyqtSlot()
+    def autoCorrespondences(self):
+        if len(self.project.images) < 2:
+            return
+        self.setTool("MATCH")
+        self.computeCorrespondences()
+        self.compare_panel.setProject(self.project)
+
 
     @pyqtSlot()
     def toggleComparison(self):
@@ -984,7 +1000,6 @@ class TagLab(QWidget):
             return
         data = self.project.correspondences.data
         selection = data.loc[data["Action"] == type]
-        print(selection)
         sourceblobs = selection['Blob 1'].tolist()
         targetblobs = selection['Blob 2'].tolist()
         for b in self.viewerplus.annotations.seg_blobs:
@@ -1032,8 +1047,6 @@ class TagLab(QWidget):
 
     @pyqtSlot(int)
     def mainImageChanged(self, index):
-
-        print(index)
         self.viewerplus.setProject(self.project)
         self.viewerplus.setImage(self.project.images[index])
         self.viewerplus.setChannel(self.project.images[index].channels[0])
@@ -1875,7 +1888,6 @@ class TagLab(QWidget):
             msgBox = QMessageBox()
             msgBox.setText("The json project contains an error:\n {0}\n\nPlease contact us.".format(str(e)))
             msgBox.exec()
-            print(self.project)
             return
 
         QApplication.restoreOverrideCursor()
@@ -1912,7 +1924,6 @@ class TagLab(QWidget):
             msgBox = QMessageBox()
             msgBox.setText("The json project contains an error:\n {0}\n\nPlease contact us.".format(str(e)))
             msgBox.exec()
-            print(self.project)
             return
 
         # append the annotated images to the current ones

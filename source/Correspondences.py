@@ -18,7 +18,6 @@ class Correspondences(object):
         self.data = pd.DataFrame(data = correspondences, columns=['Blob 1', 'Blob 2', 'Area1', 'Area2', 'Class', 'Action','Split\Fuse'])
 
     def save(self):
-        print("saving correespos!")
         return { "source": self.source.id, "target": self.target.id, "correspondences": self.data.values.tolist() }
 
     def autoMatch(self, blobs1, blobs2):
