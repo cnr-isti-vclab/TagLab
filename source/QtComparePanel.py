@@ -154,7 +154,7 @@ class QtComparePanel(QWidget):
 
         self.project = project
 
-        if project.correspondences is None:
+        if project.correspondences is not None:
 
             self.data = project.correspondences.data
 
