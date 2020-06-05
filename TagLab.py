@@ -1013,28 +1013,29 @@ class TagLab(QWidget):
                     # look in correspondeces for blobs.
                      #print(self.compare_panel.data)
 
+
     def showMatches(self, type):
 
-
-
-        if type == 'all':
+        if self.tool_used == "MATCH":
+            
+            if type == 'all':
+                for b in self.viewerplus.annotations.seg_blobs:
+                    if b.qpath_gitem is not None:
+                        b.qpath_gitem.setVisible(True)
+                for b in self.viewerplus2.annotations.seg_blobs:
+                    if b.qpath_gitem is not None:
+                        b.qpath_gitem.setVisible(True)
+                return
+            data = self.project.correspondences.data
+            selection = data.loc[data["Action"] == type]
+            sourceblobs = selection['Blob 1'].tolist()
+            targetblobs = selection['Blob 2'].tolist()
             for b in self.viewerplus.annotations.seg_blobs:
                 if b.qpath_gitem is not None:
-                    b.qpath_gitem.setVisible(True)
+                    b.qpath_gitem.setVisible(b.id in sourceblobs)
             for b in self.viewerplus2.annotations.seg_blobs:
                 if b.qpath_gitem is not None:
-                    b.qpath_gitem.setVisible(True)
-            return
-        data = self.project.correspondences.data
-        selection = data.loc[data["Action"] == type]
-        sourceblobs = selection['Blob 1'].tolist()
-        targetblobs = selection['Blob 2'].tolist()
-        for b in self.viewerplus.annotations.seg_blobs:
-            if b.qpath_gitem is not None:
-                b.qpath_gitem.setVisible(b.id in sourceblobs)
-        for b in self.viewerplus2.annotations.seg_blobs:
-            if b.qpath_gitem is not None:
-                b.qpath_gitem.setVisible(b.id in targetblobs)
+                    b.qpath_gitem.setVisible(b.id in targetblobs)
 
     @pyqtSlot()
     def undo(self):
