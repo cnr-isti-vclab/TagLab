@@ -719,8 +719,10 @@ class TagLab(QWidget):
 
     @pyqtSlot()
     def autoCorrespondences(self):
+
         if len(self.project.images) < 2:
             return
+
         self.setTool("MATCH")
         self.project.computeCorrespondences()
         self.compare_panel.setProject(self.project)
@@ -975,41 +977,46 @@ class TagLab(QWidget):
     @pyqtSlot()
     def showMatch(self):
 
-        print("Show match", self.project.correspondences.data)
-        if self.activeviewer is None:
-            return
+        if self.tool_used == "MATCH":
 
-        selected = self.activeviewer.selected_blobs
-        if len(selected) == 0:
-            self.inactiveviewer.resetSelection()
-            return
-        if len(selected) > 1:
-            box = QMessageBox()
-            box.setText("Huston we have a problem!")
-            box.exec()
-            return
+            print("Show match", self.project.correspondences.data)
+            if self.activeviewer is None:
+                return
 
-        blob = selected[0]
-        data = self.project.correspondences.data
-        source = "Blob 1"
-        target = "Blob 2"
-        sourceviewer = self.viewerplus
-        targetviewer = self.viewerplus2
-        if self.activeviewer == self.viewerplus2:
-            source, target = target, source
-            sourceviewer, targetviewer = targetviewer, sourceviewer
+            selected = self.activeviewer.selected_blobs
+            if len(selected) == 0:
+                self.inactiveviewer.resetSelection()
+                return
+            if len(selected) > 1:
+                box = QMessageBox()
+                box.setText("Huston we have a problem!")
+                box.exec()
+                return
 
-        rows = data.loc[data[source] == blob.id]
-        targetviewer.resetSelection()
-        for index, row in rows.iterrows():
-            targetblob = targetviewer.annotations.blobById(row[target])
-            if targetblob is None:
-                continue
-            targetviewer.addToSelectedList(targetblob)
-        # look in correspondeces for blobs.
-#        print(self.compare_panel.data)
+            blob = selected[0]
+            data = self.project.correspondences.data
+            source = "Blob 1"
+            target = "Blob 2"
+            sourceviewer = self.viewerplus
+            targetviewer = self.viewerplus2
+            if self.activeviewer == self.viewerplus2:
+                source, target = target, source
+                sourceviewer, targetviewer = targetviewer, sourceviewer
+
+            rows = data.loc[data[source] == blob.id]
+            targetviewer.resetSelection()
+            for index, row in rows.iterrows():
+                targetblob = targetviewer.annotations.blobById(row[target])
+                if targetblob is None:
+                    continue
+                targetviewer.addToSelectedList(targetblob)
+                    # look in correspondeces for blobs.
+                     #print(self.compare_panel.data)
 
     def showMatches(self, type):
+
+
+
         if type == 'all':
             for b in self.viewerplus.annotations.seg_blobs:
                 if b.qpath_gitem is not None:
