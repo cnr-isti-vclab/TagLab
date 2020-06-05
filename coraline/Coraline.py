@@ -51,9 +51,14 @@ def segment(img, depth, mask, clippoints, l = 0, conservative = 0.1, grow = 0, r
 		nclips = clippoints.shape[0]
 
 	#print(C.c_float(l), l)
-	lib.Coraline_segment(C.c_void_p(img.ctypes.data), C.c_void_p( depthPtr), C.c_void_p(mask.ctypes.data), C.c_int(w), C.c_int(h),
+#	lib.Coraline_segment(C.c_void_p(img.ctypes.data), C.c_void_p( depthPtr), C.c_void_p(mask.ctypes.data), C.c_int(w), C.c_int(h),
+#						 C.c_void_p(clippointsPtr), C.c_int(nclips),
+#                         C.c_float(l), C.c_float(conservative), C.c_float(grow), C.c_float(radius), C.c_float(depth_weight))
+
+
+	lib.Coraline_segment(C.c_void_p(img.ctypes.data), C.c_void_p(mask.ctypes.data), C.c_int(w), C.c_int(h),
 						 C.c_void_p(clippointsPtr), C.c_int(nclips),
-                         C.c_float(l), C.c_float(conservative), C.c_float(grow), C.c_float(radius), C.c_float(depth_weight))
+                         C.c_float(l), C.c_float(conservative), C.c_float(grow), C.c_float(radius))
 
 #
 # class Coraline(object):
