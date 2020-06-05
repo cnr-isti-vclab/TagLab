@@ -1067,16 +1067,21 @@ class TagLab(QWidget):
 
     @pyqtSlot(int)
     def mainImageChanged(self, index):
-        self.viewerplus.setProject(self.project)
-        self.viewerplus.setImage(self.project.images[index])
-        self.viewerplus.setChannel(self.project.images[index].channels[0])
+
+        if index < len(self.project.images):
+            self.viewerplus.setProject(self.project)
+            self.viewerplus.setImage(self.project.images[index])
+            self.viewerplus.setChannel(self.project.images[index].channels[0])
+
 
     @pyqtSlot(int)
     def comparisonImageChanged(self, index):
 
-        self.viewerplus2.setProject(self.project)
-        self.viewerplus2.setImage(self.project.images[index])
-        self.viewerplus2.setChannel(self.project.images[index].channels[0])
+        if index < len(self.project.images):
+            self.viewerplus2.setProject(self.project)
+            self.viewerplus2.setImage(self.project.images[index])
+            self.viewerplus2.setChannel(self.project.images[index].channels[0])
+
 
     @pyqtSlot()
     def sliderTrasparencyChanged(self):
