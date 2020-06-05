@@ -65,6 +65,7 @@ class QtImageViewerPlus(QtImageViewer):
         self.logfile = None #MUST be inited in Taglab.py
         self.project = Project()
         self.image = None
+        self.channel = None
         self.annotations = Annotation()
         self.selected_blobs = []
 
