@@ -19,6 +19,7 @@
 from PyQt5.QtCore import Qt, QAbstractTableModel, QAbstractItemModel, QSortFilterProxyModel, QRegExp, QModelIndex, pyqtSlot, pyqtSignal
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QHeaderView, QComboBox, QLabel, QTableView, \
     QHBoxLayout, QVBoxLayout, QAbstractItemView, QStyleOptionViewItem, QStyledItemDelegate
+from PyQt5.QtGui import QColor
 from pathlib import Path
 import math
 
@@ -46,8 +47,20 @@ class TableModel(QAbstractTableModel):
 
             return txt
 
-        #if role == Qt.BackgroundRole:
-            #return QColor(40, 40, 40)
+        if role == Qt.BackgroundRole:
+            return QColor(40, 40, 40)
+
+    def setData(self, index, value, role):
+
+        if index.isValid() and role == Qt.EditRole:
+
+            self._data.iloc[index.row(), index.column()] = value
+        else:
+            return False
+
+        # self.dataChanged.emit(index, index)
+
+        return True
 
     def rowCount(self, index):
         return self._data.shape[0]
@@ -64,6 +77,13 @@ class TableModel(QAbstractTableModel):
             if orientation == Qt.Vertical:
                 return str(self._data.index[section])
 
+    def flags(self, index):
+
+        if index.column() == 5:
+            return QAbstractTableModel.flags(self, index) | Qt.ItemIsEditable
+        else:
+            return QAbstractTableModel.flags(self, index)
+
 
 class ComboBoxItemDelegate(QStyledItemDelegate):
 
@@ -76,20 +96,20 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
 
         cb = QComboBox(parent)
         row = index.row()
-        cb.addItem(QString("Split").arg(row))
-        cb.addItem(QString("Grow").arg(row))
-        cb.addItem(QString("Shrink").arg(row))
+        cb.addItem("born")
+        cb.addItem("dead")
+        cb.addItem("grow")
+        cb.addItem("split")
+        cb.addItem("shrink")
         return cb
 
     def setEditorData(self, editor, index):
 
-        # cb = qobject_cast < QComboBox * > (editor);
         cb = editor
 
         # get the index of the text in the combobox that matches the current
         # value of the item const
-
-        currentText = index.data(Qt.EditRole).toString()
+        currentText = index.data()
         cbIndex = cb.findText(currentText);
         # if it is valid, adjust the combobox
         if cbIndex >= 0:
@@ -118,6 +138,8 @@ class QtComparePanel(QWidget):
         self.setMinimumHeight(100)
 
         self.data_table = QTableView()
+        self.data_table.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+
         self.model = None
         self.data = None
 
@@ -147,7 +169,7 @@ class QtComparePanel(QWidget):
         self.data = None
 
         self.comboboxFilter.currentTextChanged.connect(self.changeFilter)
-        self.data_table.doubleClicked.connect(self.getData)
+        #self.data_table.doubleClicked.connect(self.getData)
 
 
     def setProject(self, project):
@@ -164,9 +186,8 @@ class QtComparePanel(QWidget):
             self.data_table.setModel(self.sortfilter)
 
             self.data_table.setVisible(False)
+            #self.data_table.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
             self.data_table.verticalHeader().hide()
-
-            #self.data_table.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
 
             #self.data_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
             #self.data_table.setMinimumWidth(600)
@@ -175,6 +196,8 @@ class QtComparePanel(QWidget):
 
             self.data_table.setItemDelegateForColumn(5, self.combodelegate)
             self.data_table.setEditTriggers(QAbstractItemView.DoubleClicked)
+
+            self.data_table.update()
 
             self.data_table.setStyleSheet("QHeaderView::section { background-color: rgb(40,40,40) }")
 
