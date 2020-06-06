@@ -296,16 +296,10 @@ class TagLab(QWidget):
         self.compare_panel = QtComparePanel()
         self.compare_panel.showMatches[str].connect(self.showMatches)
 
-        self.scroll_area_comparison_panel = QScrollArea()
-        self.scroll_area_comparison_panel.setStyleSheet("background-color: rgb(40,40,40); border:none")
-        self.scroll_area_comparison_panel.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.scroll_area_comparison_panel.setMinimumHeight(200)
-        self.scroll_area_comparison_panel.setWidget(self.compare_panel)
-
         self.groupbox_comparison = QGroupBox("Comparison Panel")
 
         layout_groupbox2 = QVBoxLayout()
-        layout_groupbox2.addWidget(self.scroll_area_comparison_panel)
+        layout_groupbox2.addWidget(self.compare_panel)
         self.groupbox_comparison.setLayout(layout_groupbox2)
 
         # BLOB INFO
@@ -351,10 +345,10 @@ class TagLab(QWidget):
         layout_blobpanel.addWidget(lblNote)
         layout_blobpanel.addWidget(self.editNote)
         groupbox_blobpanel.setLayout(layout_blobpanel)
+        groupbox_blobpanel.setMaximumHeight(160)
 
         # INFO WIDGET
         self.infoWidget = QtInfoWidget(self)
-
 
         layout_labels = QVBoxLayout()
         self.mapviewer.setStyleSheet("background-color: rgb(40,40,40); border:none")
@@ -377,7 +371,7 @@ class TagLab(QWidget):
         main_view_layout.addLayout(layout_labels)
 
         main_view_layout.setStretchFactor(layout_main_view, 8)
-        main_view_layout.setStretchFactor(layout_labels, 2)
+        main_view_layout.setStretchFactor(layout_labels, 3)
 
         self.menubar = self.createMenuBar()
 
@@ -712,8 +706,6 @@ class TagLab(QWidget):
         helpmenu.setStyleSheet(styleMenu)
         helpmenu.addAction(helpAct)
         helpmenu.addAction(aboutAct)
-
-
 
         return menubar
 
