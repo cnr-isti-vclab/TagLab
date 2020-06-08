@@ -97,6 +97,42 @@ class Correspondences(object):
 
 #        print("final data", self.data)
 
+    #startring for a blob will fin the cluster both in source and target
+    def findCluster(self, blobid, is_source):
+        # so we want source to be blob and target to be the other viewerplus.
+        source = "Blob 1"
+        target = "Blob 2"
+        if not is_source:
+            source, target = target, source
+
+        #involved rows
+        rows = []
+        # find all blobs in the target connected to the blob
+        data = self.data
+        linked = data.loc[data[source] == blobid]
+        targetcluster = []
+        for index, row in linked.iterrows():
+            targetid = row[target]
+            if targetid is None:
+                continue
+            targetcluster.append(targetid)
+            rows.append(index)
+
+        # find all the connected in the source connected to the selected targets
+        sourcecluster = [blobid]
+        linked = data.loc[data[target].isin(targetcluster)]
+        for index, row in linked.iterrows():
+            sourceid = row[source]
+            if sourceid is None:
+                continue
+            sourcecluster.append(sourceid)
+            rows.append(index)
+
+        if not is_source:
+            sourcecluster, targetcluster = targetcluster, sourcecluster
+
+        return (sourcecluster, targetcluster, rows)
+
     def autoMatch(self, blobs1, blobs2):
 
         for blob1 in blobs1:

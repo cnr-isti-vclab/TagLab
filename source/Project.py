@@ -53,7 +53,6 @@ def loadOldProject(data, labels_dict):
     image_name = os.path.basename(map_filename)
     image_name = image_name[:-4]
     image = Image(id=image_name)
-    print(image_name)
     image.map_px_to_mm_factor = data["Map Scale"]
     image.metadata['acquisition_date'] = data["Acquisition Date"]
     channel = Channel(filename=map_filename, type="rgb")
@@ -96,7 +95,6 @@ class Project(object):
         self.images = list(map(lambda img: Image(**img), images))       #list of annotated images
         self.correspondences = None
         corr = None if correspondences is None else correspondences['correspondences']
-        print(correspondences)
         if len(self.images) > 1:
             self.correspondences = Correspondences(self.images[0], self.images[1], corr)   #list of correspondences betweeen labels in images
                                     #[ [source_img: , target_img:, [[23, 12, [grow, shrink, split, join] ... ] }
@@ -119,8 +117,6 @@ class Project(object):
     def save(self, filename = None):
         #try:
         data = self.__dict__
-        for img in self.images:
-            print(img)
         str = json.dumps(data, cls=ProjectEncoder)
 
         if filename is None:

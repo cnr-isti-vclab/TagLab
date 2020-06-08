@@ -16,7 +16,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the             
 #GNU General Public License (http://www.gnu.org/licenses/gpl.txt)          
 # for more details.                                               
-from PyQt5.QtCore import Qt, QAbstractTableModel, QAbstractItemModel, QSortFilterProxyModel, QRegExp, QModelIndex, pyqtSlot, pyqtSignal
+from PyQt5.QtCore import Qt, QAbstractTableModel, QItemSelectionModel, QSortFilterProxyModel, QRegExp, QModelIndex, pyqtSlot, pyqtSignal
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QHeaderView, QComboBox, QLabel, QTableView, \
     QHBoxLayout, QVBoxLayout, QAbstractItemView, QStyleOptionViewItem, QStyledItemDelegate
 from PyQt5.QtGui import QColor
@@ -138,6 +138,7 @@ class QtComparePanel(QWidget):
 
         self.data_table = QTableView()
         self.data_table.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+        self.data_table.setSelectionMode(QAbstractItemView.MultiSelection);
 
         self.model = None
         self.data = None
@@ -196,6 +197,14 @@ class QtComparePanel(QWidget):
 
             self.data_table.setStyleSheet("QHeaderView::section { background-color: rgb(40,40,40) }")
 
+
+    def selectRows(self, rows):
+        print(rows)
+        self.data_table.clearSelection()
+
+        indexes = [self.model.index(r, 0) for r in rows]
+        mode = QItemSelectionModel.Select | QItemSelectionModel.Rows
+        [self.data_table.selectionModel().select(index, mode) for index in indexes]
 
     @pyqtSlot(QModelIndex)
     def getData(self, index):
