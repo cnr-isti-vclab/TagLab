@@ -195,6 +195,11 @@ class Project(object):
         for row in lines:
             corr.data = pd.concat([pd.DataFrame([row], columns=corr.data.columns), corr.data])
 
+        corr.data.sort_values(by=['Blob 1', 'Blob 2'])
+
+        # reverse the rows
+        corr.data = corr.data[::-1]
+
         self.correspondences = corr
 
         output_file = "correspondences_" + self.images[idx1].id + "-" + self.images[idx2].id + ".csv"
