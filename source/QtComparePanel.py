@@ -139,6 +139,8 @@ class QtComparePanel(QWidget):
         self.data_table = QTableView()
         self.data_table.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.data_table.setSelectionMode(QAbstractItemView.MultiSelection);
+        self.data_table.setSelectionMode(QAbstractItemView.ExtendedSelection);
+        self.data_table.setSelectionBehavior(QAbstractItemView.SelectRows);
 
         self.model = None
         self.data = None

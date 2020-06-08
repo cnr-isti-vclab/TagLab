@@ -295,6 +295,7 @@ class TagLab(QWidget):
         # COMPARE PANEL
         self.compare_panel = QtComparePanel()
         self.compare_panel.filterChanged[str].connect(self.updateVisibleMatches)
+        self.compare_panel.data_table.clicked.connect(self.showConnectionCluster)
 
         self.groupbox_comparison = QGroupBox("Comparison Panel")
 
@@ -980,6 +981,20 @@ class TagLab(QWidget):
         # TODO...
 
     @pyqtSlot()
+    def showConnectionCluster(self):
+        indexes = self.compare_panel.data_table.selectionModel().selectedRows()
+        if len(indexes) == 0:
+            return
+        row = self.project.correspondences.data.iloc[indexes[0].row()]
+        blob1 = row['Blob 1']
+        blob2 = row['Blob 2']
+        if blob1 is not None:
+            self.showCluster(blob1)
+        else:
+            self.showCluster(blob2)
+
+
+    @pyqtSlot()
     def showMatch(self):
 
         if self.activeviewer is None or self.inactiveviewer is None:
@@ -999,8 +1014,11 @@ class TagLab(QWidget):
             return
 
         blob = selected[0]
+        self.showCluster(blob.id)
 
-        sourceluster, targetcluster, rows = self.project.correspondences.findCluster(blob.id, self.activeviewer == self.viewerplus)
+    def showCluster(self, blobid):
+
+        sourceluster, targetcluster, rows = self.project.correspondences.findCluster(blobid, self.activeviewer == self.viewerplus)
 
         self.viewerplus.resetSelection()
         for id in sourceluster:
