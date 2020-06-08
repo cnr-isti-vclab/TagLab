@@ -199,12 +199,14 @@ class QtComparePanel(QWidget):
 
 
     def selectRows(self, rows):
-        print(rows)
         self.data_table.clearSelection()
 
         indexes = [self.model.index(r, 0) for r in rows]
         mode = QItemSelectionModel.Select | QItemSelectionModel.Rows
         [self.data_table.selectionModel().select(index, mode) for index in indexes]
+
+        if len(rows) > 0:
+            self.data_table.scrollTo(self.data_table.model().index(rows[0], 0))
 
     @pyqtSlot(QModelIndex)
     def getData(self, index):
