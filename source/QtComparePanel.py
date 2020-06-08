@@ -79,7 +79,9 @@ class TableModel(QAbstractTableModel):
 
     def flags(self, index):
 
-        if index.column() == 5:
+        value = self._data.iloc[index.row(), index.column()]
+
+        if value == "dead" and index.column() == 5:
             return QAbstractTableModel.flags(self, index) | Qt.ItemIsEditable
         else:
             return QAbstractTableModel.flags(self, index)
@@ -96,11 +98,8 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
 
         cb = QComboBox(parent)
         row = index.row()
-        cb.addItem("born")
         cb.addItem("dead")
-        cb.addItem("grow")
-        cb.addItem("split")
-        cb.addItem("shrink")
+        cb.addItem("gone")
         return cb
 
     def setEditorData(self, editor, index):
@@ -186,11 +185,7 @@ class QtComparePanel(QWidget):
             self.data_table.setModel(self.sortfilter)
 
             self.data_table.setVisible(False)
-            #self.data_table.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
             self.data_table.verticalHeader().hide()
-
-            #self.data_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-            #self.data_table.setMinimumWidth(600)
             self.data_table.resizeColumnsToContents()
             self.data_table.setVisible(True)
 

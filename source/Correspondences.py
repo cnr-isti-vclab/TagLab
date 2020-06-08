@@ -21,6 +21,10 @@ class Correspondences(object):
         return { "source": self.source.id, "target": self.target.id, "correspondences": self.data.values.tolist() }
 
     def set(self, sourceblobs, targetblobs):
+
+        sourceblobs.copy
+
+
         #assumes one oth the two list has 1 blob only.
         type = ""
         action = "none"
@@ -57,7 +61,7 @@ class Correspondences(object):
             self.data = pd.concat([pd.DataFrame([row], columns=self.data.columns), self.data])
 
         else:
-        #place new correspondences
+            #place new correspondences
 
             for source in sourceblobs:
                 for target in targetblobs:

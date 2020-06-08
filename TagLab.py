@@ -968,7 +968,9 @@ class TagLab(QWidget):
             return
 
         self.project.correspondences.set(sel1, sel2)
-        self.compare_panel.model.dataChanged.emit(QModelIndex(), QModelIndex())
+
+        # THE QTABLE MODEL SHOULD BE UPDATED HERE
+        # TODO...
 
     @pyqtSlot()
     def showMatch(self):
