@@ -294,7 +294,7 @@ class TagLab(QWidget):
 
         # COMPARE PANEL
         self.compare_panel = QtComparePanel()
-        self.compare_panel.showMatches[str].connect(self.showMatches)
+        self.compare_panel.filterChanged[str].connect(self.updateVisibleMatches)
 
         self.groupbox_comparison = QGroupBox("Comparison Panel")
 
@@ -1010,7 +1010,7 @@ class TagLab(QWidget):
                      #print(self.compare_panel.data)
 
 
-    def showMatches(self, type):
+    def updateVisibleMatches(self, type):
 
         if self.activeviewer.tools.tool == "MATCH":
 
