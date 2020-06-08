@@ -141,8 +141,6 @@ class Project(object):
             print("Missing label for " + blob.class_name + ". Creating one.")
             self.labels[blob.class_name] = Label(blob.class_name, blob.class_name, fill = [255, 0, 0])
 
-
-        print(self.labels[blob.class_name])
         color = self.labels[blob.class_name].fill
         brush = QBrush(QColor(color[0], color[1], color[2], 200))
         return brush

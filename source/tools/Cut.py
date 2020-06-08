@@ -29,13 +29,13 @@ class Cut(Tool):
 
         self.blobInfo.emit(selected_blob, "[TOOL][CUT][BLOB-SELECTED]")
 
+        self.viewerplus.removeBlob(selected_blob)
         for blob in created_blobs:
             self.viewerplus.addBlob(blob, selected=True)
             self.blobInfo.emit(blob, "[TOOL][CUT][BLOB-CREATED]")
 
         self.log.emit("[TOOL][CUT] Operation ends.")
 
-        self.viewerplus.removeBlob(selected_blob)
         self.viewerplus.saveUndo()
 
         self.viewerplus.resetTools()

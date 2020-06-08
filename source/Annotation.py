@@ -94,9 +94,6 @@ class Annotation(object):
         # list of all groups
         self.groups = []
 
-        # progressive id of the blobs
-        self.progressive_id = 0
-
         #relative weight of depth map for refine borders
         #refactor: this is to be saved and loaded in qsettings
         self.refine_depth_weight = 0.0
@@ -113,6 +110,9 @@ class Annotation(object):
         return group
 
     def addBlob(self, blob):
+        used = [blob.id for blob in self.seg_blobs]
+        if blob.id in used:
+            blob.id = self.getFreeId()
         self.seg_blobs.append(blob)
 
     def removeBlob(self, blob):
@@ -147,12 +147,21 @@ class Annotation(object):
 
             if region.area > area_th:
 
-                blob = Blob(region, map_pos_x, map_pos_y, self.progressive_id)
-                self.progressive_id += 1
+                blob = Blob(region, map_pos_x, map_pos_y, self.getFreeId())
 
                 last_blobs_added.append(blob)
 
         return last_blobs_added
+
+    def getFreeId(self):
+        used = []
+        for blob  in self.seg_blobs:
+            used.append(blob.id)
+        print("Used", used)
+        for id in range(len(used)):
+            if id not in used:
+                return id
+        return len(used)
 
     def removeGroup(self, group):
 
@@ -245,8 +254,7 @@ class Annotation(object):
         for region in measure.regionprops(label_image):
 
             if region.area > area_th:
-                b = Blob(region, box[1], box[0], self.progressive_id)
-                self.progressive_id += 1
+                b = Blob(region, box[1], box[0], self.getFreeId())
                 b.class_color = blob.class_color
                 b.class_name = blob.class_name
                 created_blobs.append(b)
@@ -280,8 +288,7 @@ class Annotation(object):
         label_image = measure.label(mask, connectivity=1)
         for region in measure.regionprops(label_image):
             if region.area > area_th:
-                b = Blob(region, box[1], box[0], self.progressive_id)
-                self.progressive_id += 1
+                b = Blob(region, box[1], box[0], self.getFreeId())
                 b.class_color = blob.class_color
                 b.class_name = blob.class_name
                 created_blobs.append(b)
@@ -317,8 +324,7 @@ class Annotation(object):
         labels = watershed((-distance+100*edges)/2, markers, mask=mask)
         created_blobs = []
         for region in measure.regionprops(labels):
-                b = Blob(region, box[1], box[0], self.progressive_id)
-                self.progressive_id += 1
+                b = Blob(region, box[1], box[0], self.getFreeId())
                 b.class_color = blob.class_color
                 b.class_name = blob.class_name
                 created_blobs.append(b)
@@ -358,8 +364,7 @@ class Annotation(object):
         for region in regions:
             if region.area > area_th:
                 id = len(self.seg_blobs)
-                b = Blob(region, box[1], box[0], self.progressive_id)
-                self.progressive_id += 1
+                b = Blob(region, box[1], box[0], self.getFreeId())
                 b.class_color = blob.class_color
                 b.class_name = blob.class_name
                 created_blobs.append(b)
@@ -515,8 +520,7 @@ class Annotation(object):
         for region in measure.regionprops(labels):
             if region.area > too_much_small_area:
                 id = len(self.seg_blobs)
-                blob = Blob(region, 0, 0, self.progressive_id)
-                self.progressive_id += 1
+                blob = Blob(region, 0, 0, self.getFreeId())
 
                 # assign class
                 row = region.coords[0, 0]

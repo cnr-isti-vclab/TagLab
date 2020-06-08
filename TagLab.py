@@ -968,7 +968,13 @@ class TagLab(QWidget):
             print("SHould we remove this corr?")
             return
 
+        filter = self.compare_panel.sortfilter
+        model = self.compare_panel.model
+        filter.beginResetModel()
         self.project.correspondences.set(sel1, sel2)
+        model._data = self.project.correspondences.data
+        filter.endResetModel()
+        model.endResetModel()
 
         # THE QTABLE MODEL SHOULD BE UPDATED HERE
         # TODO...
@@ -976,12 +982,10 @@ class TagLab(QWidget):
     @pyqtSlot()
     def showMatch(self):
 
+        if self.activeviewer is None or self.inactiveviewer is None:
+            return
+
         if self.activeviewer.tools.tool == "MATCH":
-
-            print("Show match", self.project.correspondences.data)
-            if self.activeviewer is None:
-                return
-
             selected = self.activeviewer.selected_blobs
             if len(selected) == 0:
                 self.inactiveviewer.resetSelection()
@@ -993,7 +997,9 @@ class TagLab(QWidget):
                 return
 
             blob = selected[0]
-            data = self.project.correspondences.data
+
+            #we know blob belongs to activeviewer, but we do not know which is which,
+            #so we want source to be blob and target to be the other viewerplus.
             source = "Blob 1"
             target = "Blob 2"
             sourceviewer = self.viewerplus
@@ -1002,15 +1008,27 @@ class TagLab(QWidget):
                 source, target = target, source
                 sourceviewer, targetviewer = targetviewer, sourceviewer
 
-            rows = data.loc[data[source] == blob.id]
+
+            #find all blobs in the target connected to the blob
+            data = self.project.correspondences.data
+            linked = data.loc[data[source] == blob.id]
             targetviewer.resetSelection()
-            for index, row in rows.iterrows():
-                targetblob = targetviewer.annotations.blobById(row[target])
+            targetcluster = []
+            for index, row in linked.iterrows():
+                targetid = row[target]
+                targetblob = targetviewer.annotations.blobById(targetid)
                 if targetblob is None:
                     continue
+                targetcluster.append(targetid)
                 targetviewer.addToSelectedList(targetblob)
-                    # look in correspondeces for blobs.
-                     #print(self.compare_panel.data)
+
+            #find all the connected in the source connected to the selected targets
+            linked = data.loc[data[target].isin(targetcluster)]
+            for index, row in linked.iterrows():
+                sourceblob = sourceviewer.annotations.blobById(row[source])
+                if sourceblob is None:
+                    continue
+                sourceviewer.addToSelectedList(sourceblob)
 
 
     def updateVisibleMatches(self, type):

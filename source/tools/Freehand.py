@@ -29,8 +29,7 @@ class Freehand(Tool):
             return
 
         if flagValid is True:
-            blob.setId(self.viewerplus.annotations.progressive_id)
-            self.viewerplus.annotations.progressive_id += 1
+            blob.setId(self.viewerplus.annotations.getFreeId())
 
             self.viewerplus.resetSelection()
             self.viewerplus.addBlob(blob, selected=True)

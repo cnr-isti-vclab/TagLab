@@ -43,9 +43,38 @@ class Correspondences(object):
             type = "same"
             #TODO consider morph!
 
-        #remove all correspondences where these are involved
+        #orphaned nodes: not in sourceblob, but had some connections in  targetblobs (dead now) and viceversa
+        #they will become born or dead
+        targetorphaned = self.data[self.data['Blob 1'].isin([b.id for b in sourceblobs])]['Blob 2']
+        sourceorphaned = self.data[self.data['Blob 2'].isin([b.id for b in targetblobs])]['Blob 1']
+
+        targetorphaned = list(set(targetorphaned) - set([b.id for b in targetblobs]))
+        sourceorphaned = list(set(sourceorphaned) - set([b.id for b in sourceblobs]))
+
+#        print("Sourceblobs: ", [b.id for b in sourceblobs])
+#        print("Targetblobs: ", [b.id for b in targetblobs])
+#        print("Orphaned source: ", sourceorphaned)
+#        print("Orphaned target: ", targetorphaned)
+
+        #remove all correspondences where orphaned
         self.data = self.data[self.data['Blob 1'].isin([b.id for b in sourceblobs]) == False]
         self.data = self.data[self.data['Blob 2'].isin([b.id for b in targetblobs]) == False]
+
+#        print("Clean data: ", self.data)
+        for id in targetorphaned:
+            if id is None: #bordn and dead result in orfaned  None
+                continue
+            target = self.target.annotations.blobById(id)
+            row = [None, target.id, 0.0, target.area, target.class_name, "", "born"]
+            self.data = pd.concat([pd.DataFrame([row], columns=self.data.columns), self.data])
+
+        for id in sourceorphaned:
+            if id is None:
+                continue
+            source = self.source.annotations.blobById(id)
+            row = [ source.id, None, source.area, 0.0, source.class_name, "", "dead"]
+            self.data = pd.concat([pd.DataFrame([row], columns=self.data.columns), self.data])
+
 
         if len(sourceblobs) == 0:
             target = targetblobs[0]
@@ -66,7 +95,7 @@ class Correspondences(object):
                            source.class_name if source.id is not None else target.class_name, type, action]
                     self.data = pd.concat([pd.DataFrame([row], columns=self.data.columns), self.data])
 
-        print(self.data)
+#        print("final data", self.data)
 
     def autoMatch(self, blobs1, blobs2):
 
@@ -88,8 +117,6 @@ class Correspondences(object):
                     sizeblob2 = np.count_nonzero(mask2)
                     minblob = min(sizeblob1, sizeblob2)
                     intersectionArea = np.count_nonzero(intersectMask(mask1, blob1.bbox, mask2, blob2.bbox))
-
-                    print(sizeblob1,sizeblob2,intersectionArea)
 
                     if (intersectionArea < (0.6 * minblob)):
                         continue

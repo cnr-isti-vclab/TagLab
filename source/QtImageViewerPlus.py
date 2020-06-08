@@ -23,7 +23,7 @@
 
 import os.path
 from PyQt5.QtCore import Qt, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
-from PyQt5.QtGui import QImage, QPixmap, QPainter, QPainterPath, QPen, QImageReader
+from PyQt5.QtGui import QImage, QPixmap, QPainter, QPainterPath, QPen, QImageReader, QFont
 from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QFileDialog, QGraphicsPixmapItem
 
 from source.Undo import Undo
@@ -180,8 +180,11 @@ class QtImageViewerPlus(QtImageViewer):
         # if it has just been created remove the current graphics item in order to set it again
         if blob.qpath_gitem is not None:
             self.scene.removeItem(blob.qpath_gitem)
+            self.scene.removeItem(blob.id_item)
             del blob.qpath_gitem
+            del blob.id_item
             blob.qpath_gitem = None
+            blob.id_item = None
 
         blob.setupForDrawing()
 
@@ -193,13 +196,19 @@ class QtImageViewerPlus(QtImageViewer):
 
         blob.qpath_gitem = self.scene.addPath(blob.qpath, pen, brush)
         blob.qpath_gitem.setZValue(1)
+        blob.id_item = self.scene.addText(str(blob.id), QFont("Times", 30, QFont.Bold))
+        blob.id_item.setPos(blob.centroid[0], blob.centroid[1])
+        blob.id_item.setZValue(2)
+        blob.id_item.setDefaultTextColor(Qt.white)
         #blob.qpath_gitem.setOpacity(self.transparency_value)
 
 
     def undrawBlob(self, blob):
         self.scene.removeItem(blob.qpath_gitem)
+        self.scene.removeItem(blob.id_item)
         blob.qpath = None
         blob.qpath_gitem = None
+        blob.id_item = None
         self.scene.invalidate()
 
 
@@ -277,6 +286,8 @@ class QtImageViewerPlus(QtImageViewer):
     def mousePressEvent(self, event):
         """ Start mouse pan or zoom mode.
         """
+        self.activated.emit()
+
         scenePos = self.mapToScene(event.pos())
 
         mods = event.modifiers()
@@ -284,10 +295,11 @@ class QtImageViewerPlus(QtImageViewer):
         if event.button() == Qt.LeftButton:
             (x, y) = self.clipScenePos(scenePos)
             #used from area selection and pen drawing,
-            if self.tools.tool == "MATCH":
-                self.tools.leftPressed(x, y, mods)
-            elif (self.panEnabled and not (mods & Qt.ShiftModifier)) or (mods & Qt.ControlModifier):
+
+            if (self.panEnabled and not (mods & Qt.ShiftModifier)) or (mods & Qt.ControlModifier):
                 self.setDragMode(QGraphicsView.ScrollHandDrag)
+            elif self.tools.tool == "MATCH":
+                self.tools.leftPressed(x, y, mods)
 
             elif mods & Qt.ShiftModifier:
                 self.dragSelectionStart = [x, y]
@@ -307,7 +319,6 @@ class QtImageViewerPlus(QtImageViewer):
             self.rightMouseButtonPressed.emit(clippedCoords[0], clippedCoords[1])
 
         QGraphicsView.mousePressEvent(self, event)
-        self.activated.emit()
 
     def mouseReleaseEvent(self, event):
         """ Stop mouse pan or zoom mode (apply zoom if valid).
@@ -470,7 +481,6 @@ class QtImageViewerPlus(QtImageViewer):
         """
         The only function to add annotations. will take care of undo and QGraphicItems.
         """
-        print("adding blob")
         self.undo_data.addBlob(blob)
         #self.undo_data_operation['remove'].append(blob)
         self.annotations.addBlob(blob)
@@ -522,12 +532,9 @@ class QtImageViewerPlus(QtImageViewer):
         self.undo_data.saveUndo()
 
     def undo(self):
-        print("undoing")
         operation = self.undo_data.undo()
         if operation is None:
             return
-
-        print("operation")
 
         for blob in operation['remove']:
             message = "[UNDO][REMOVE] BLOBID={:d} VERSION={:d}".format(blob.id, blob.version)
