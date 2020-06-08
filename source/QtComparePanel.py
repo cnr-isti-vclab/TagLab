@@ -124,7 +124,7 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
 class QtComparePanel(QWidget):
 
     highlightBlob = pyqtSignal(int)
-    showMatches = pyqtSignal(str)
+    filterChanged = pyqtSignal(str)
 
     def __init__(self, parent=None):
         super(QtComparePanel, self).__init__(parent)
@@ -229,7 +229,7 @@ class QtComparePanel(QWidget):
             self.sortfilter.setFilterRegExp(txt.lower())
             self.sortfilter.setFilterRole(Qt.DisplayRole)
 
-        self.showMatches.emit(txt.lower())
+        self.filterChanged.emit(txt.lower())
 
 
 
