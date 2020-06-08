@@ -22,9 +22,6 @@ class Correspondences(object):
 
     def set(self, sourceblobs, targetblobs):
 
-        sourceblobs.copy
-
-
         #assumes one oth the two list has 1 blob only.
         type = ""
         action = "none"
@@ -48,7 +45,7 @@ class Correspondences(object):
 
         #remove all correspondences where these are involved
         self.data = self.data[self.data['Blob 1'].isin([b.id for b in sourceblobs]) == False]
-        self.data = self.data[self.data['Blob 2'].isin([b.id for b in sourceblobs]) == False]
+        self.data = self.data[self.data['Blob 2'].isin([b.id for b in targetblobs]) == False]
 
         if len(sourceblobs) == 0:
             target = targetblobs[0]

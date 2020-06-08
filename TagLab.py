@@ -952,6 +952,7 @@ class TagLab(QWidget):
 
         self.viewerplus2.show()
         self.comboboxComparisonImage.show()
+        self.viewerplus.viewChanged()
 
         self.comparison_mode = True
 
