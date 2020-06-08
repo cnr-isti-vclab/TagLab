@@ -139,11 +139,12 @@ class Correspondences(object):
         missing = []
 
         for i in range(0, len(blobs1)):
-            all_blobs.append(blobs1[i].id)
+            all_blobs.append(int(blobs1[i].id))
 
         for j in range(0, len(self.correspondences)):
             existing.append(int(self.correspondences[j][0]))
-            missing = [i for i in all_blobs if i not in existing]
+
+        missing = [i for i in all_blobs if i not in existing]
 
         for id in missing:
             index = all_blobs.index(id)
@@ -163,11 +164,12 @@ class Correspondences(object):
         missing = []
 
         for i in range(0, len(blobs2)):
-            all_blobs.append(blobs2[i].id)
+            all_blobs.append(int(blobs2[i].id))
 
         for j in range(0, len(self.correspondences)):
             existing.append(int(self.correspondences[j][1]))
-            missing = [i for i in all_blobs if i not in existing]
+
+        missing = [i for i in all_blobs if i not in existing]
 
         for id in missing:
             index = all_blobs.index(id)
