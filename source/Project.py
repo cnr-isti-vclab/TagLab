@@ -191,6 +191,3 @@ class Project(object):
 
         self.correspondences = corr
 
-        output_file = "correspondences_" + self.images[idx1].id + "-" + self.images[idx2].id + ".csv"
-        corr.data.to_csv(output_file, index=False)
-
