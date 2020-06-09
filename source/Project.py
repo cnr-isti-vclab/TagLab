@@ -61,6 +61,7 @@ def loadOldProject(data, labels_dict):
     for blob_data in data["Segmentation Data"]:
         blob = Blob(None, 0, 0, 0)
         blob.fromDict(blob_data)
+        blob.id = int(blob.id)
         image.annotations.addBlob(blob)
 
     project.images.append(image)
@@ -179,11 +180,11 @@ class Project(object):
 
         corr = Correspondences(self.images[idx1], self.images[idx2])
         corr.autoMatch(blobs1, blobs2)
-        corr.findSplit()
-        corr.findFuse()
+        corr.assignSplit()
+        corr.assignFuse()
 
-        corr.findDead(blobs1)
-        corr.findBorn(blobs2)
+        corr.assignDead(blobs1)
+        corr.assignBorn(blobs2)
 
         lines = corr.correspondences + corr.dead + corr.born
         corr.data = pd.DataFrame(lines, columns=corr.data.columns)

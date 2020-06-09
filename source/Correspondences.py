@@ -111,9 +111,9 @@ class Correspondences(object):
 
         self.data.sort_values(by=['Blob 1', 'Blob 2'], inplace=True)
 
-    #startring for a blob will fin the cluster both in source and target
+    # starting for a blob id will find the cluster both in source and target
     def findCluster(self, blobid, is_source):
-        # so we want source to be blob and target to be the other viewerplus.
+        # so we want source to be blob and target to be the other viewerplus
         source = "Blob 1"
         target = "Blob 2"
         if not is_source:
@@ -145,7 +145,7 @@ class Correspondences(object):
         if not is_source:
             sourcecluster, targetcluster = targetcluster, sourcecluster
 
-        return (sourcecluster, targetcluster, rows)
+        return sourcecluster, targetcluster, rows
 
 
     def deleteCluster(self, indexes):
@@ -215,7 +215,7 @@ class Correspondences(object):
                         self.correspondences.append([blob1.id, blob2.id, blob1.area, blob2.area, blob1.class_name, 'same', 'none'])
 
 
-    def findSplit(self):
+    def assignSplit(self):
 
         mylist = []
         for i in range(0, len(self.correspondences)):
@@ -228,7 +228,7 @@ class Correspondences(object):
 
 
 
-    def findFuse(self):
+    def assignFuse(self):
 
         mylist = []
         for i in range(0, len(self.correspondences)):
@@ -241,7 +241,7 @@ class Correspondences(object):
 
 
 
-    def findDead(self, blobs1):
+    def assignDead(self, blobs1):
 
         # """
         # Deads are all the blobs that are in project 1 but don't match with any blobs of project 2
@@ -264,7 +264,7 @@ class Correspondences(object):
                 self.dead.append([id, None,  blobs1[index].area, 0.0, blobs1[index].class_name, 'dead', 'none'])
 
 
-    def findBorn(self, blobs2):
+    def assignBorn(self, blobs2):
 
         # """
         # Borns are all the blobs that are in project 2 but don't match with any blobs of project 1
@@ -287,3 +287,4 @@ class Correspondences(object):
             index = all_blobs.index(id)
             if blobs2[index].class_name != 'Empty':
                 self.born.append([None, id, 0.0, blobs2[index].area, blobs2[index].class_name, 'born', 'none'])
+
