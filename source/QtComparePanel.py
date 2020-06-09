@@ -200,8 +200,19 @@ class QtComparePanel(QWidget):
             self.data_table.setStyleSheet("QHeaderView::section { background-color: rgb(40,40,40) }")
 
 
+    def updateData(self):
+
+        if self.project.correspondences is not None:
+            self.sortfilter.beginResetModel()
+            self.model._data = self.project.correspondences.data
+            self.sortfilter.endResetModel()
+            self.model.endResetModel()
+
+
     def selectRows(self, rows):
         self.data_table.clearSelection()
+
+        print(len(rows))
 
         indexes = [self.model.index(r, 0) for r in rows]
         mode = QItemSelectionModel.Select | QItemSelectionModel.Rows

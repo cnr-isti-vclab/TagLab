@@ -969,16 +969,14 @@ class TagLab(QWidget):
             print("SHould we remove this corr?")
             return
 
-        filter = self.compare_panel.sortfilter
-        model = self.compare_panel.model
-        filter.beginResetModel()
         self.project.correspondences.set(sel1, sel2)
-        model._data = self.project.correspondences.data
-        filter.endResetModel()
-        model.endResetModel()
 
-        # THE QTABLE MODEL SHOULD BE UPDATED HERE
-        # TODO...
+        self.compare_panel.updateData()
+
+        if len(sel1) == 1:
+            self.showCluster(sel1[0])
+        else:
+            self.showCluster(sel2[0])
 
     @pyqtSlot()
     def showConnectionCluster(self):
