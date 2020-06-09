@@ -973,10 +973,8 @@ class TagLab(QWidget):
 
         self.compare_panel.updateData()
 
-        if len(sel1) == 1:
-            self.showCluster(sel1[0])
-        else:
-            self.showCluster(sel2[0])
+        # UPDATE SELECTION OF THE CORRESPONDENCE JUST ADDED
+        # TODO...
 
     @pyqtSlot()
     def showConnectionCluster(self):
