@@ -186,13 +186,8 @@ class Project(object):
         corr.findBorn(blobs2)
 
         lines = corr.correspondences + corr.dead + corr.born
-        for row in lines:
-            corr.data = pd.concat([pd.DataFrame([row], columns=corr.data.columns), corr.data])
-
+        corr.data = pd.DataFrame(lines, columns=corr.data.columns)
         corr.data.sort_values(by=['Blob 1', 'Blob 2'])
-
-        # reverse the rows
-        corr.data = corr.data[::-1]
 
         self.correspondences = corr
 
