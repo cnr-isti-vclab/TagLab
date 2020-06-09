@@ -822,6 +822,7 @@ class TagLab(QWidget):
         elif event.key() == Qt.Key_Delete:
             self.deleteSelectedBlobs()
 
+
         elif event.key() == Qt.Key_M:
             # MERGE OVERLAPPED BLOBS
             self.union()
@@ -1007,6 +1008,20 @@ class TagLab(QWidget):
 
 
     @pyqtSlot()
+    def deleteMatch(self):
+        if self.activeviewer is None or self.inactiveviewer is None:
+            return
+
+        indexes = self.compare_panel.data_table.selectionModel().selectedRows()
+        if len(indexes) == 0:
+            return
+        indexes = [a.row() for a in indexes]
+        self.project.correspondences.deleteCluster(indexes)
+        self.viewerplus.resetSelection()
+        self.viewerplus2.resetSelection()
+        self.compare_panel.updateData()
+
+    @pyqtSlot()
     def showMatch(self):
 
         if self.activeviewer is None or self.inactiveviewer is None:
@@ -1035,11 +1050,14 @@ class TagLab(QWidget):
         self.viewerplus.resetSelection()
         for id in sourceluster:
             blob = self.viewerplus.annotations.blobById(id)
+            print("source", id, blob)
             self.viewerplus.addToSelectedList(blob)
 
         self.viewerplus2.resetSelection()
         for id in targetcluster:
             blob = self.viewerplus2.annotations.blobById(id)
+            print("target", id, blob)
+
             self.viewerplus2.addToSelectedList(blob)
 
         self.compare_panel.selectRows(rows)
@@ -1336,8 +1354,11 @@ class TagLab(QWidget):
 
 
     def deleteSelectedBlobs(self):
-        self.activeviewer.deleteSelectedBlobs()
-        logfile.info("[OP-DELETE] Selected blobs has been DELETED")
+        if self.viewerplus.tools.tool == 'MATCH':
+            self.deleteMatch()
+        else:
+            self.activeviewer.deleteSelectedBlobs()
+            logfile.info("[OP-DELETE] Selected blobs has been DELETED")
 
 
 #OPERATIONS

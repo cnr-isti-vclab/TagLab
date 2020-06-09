@@ -60,47 +60,51 @@ class Correspondences(object):
         self.data = self.data[self.data['Blob 1'].isin([b.id for b in sourceblobs]) == False]
         self.data = self.data[self.data['Blob 2'].isin([b.id for b in targetblobs]) == False]
 
+        self.data.reindex()
+        count = len(self.data.index)
+
 #        print("Clean data: ", self.data)
         for id in targetorphaned:
             if id is None: #bordn and dead result in orfaned  None
                 continue
             target = self.target.annotations.blobById(id)
-            row = [None, target.id, 0.0, target.area, target.class_name, "", "born"]
-            df = pd.DataFrame([row], columns=self.data.columns)
-            self.data = self.data.append(df)
+            self.data.iloc[count] = [None, target.id, 0.0, target.area, target.class_name, "", "born"]
+            count += 1
 
         for id in sourceorphaned:
             if id is None:
                 continue
             source = self.source.annotations.blobById(id)
-            row = [ source.id, None, source.area, 0.0, source.class_name, "", "dead"]
-            df = pd.DataFrame([row], columns=self.data.columns)
-            self.data = self.data.append(df)
+            self.data.iloc[count] = [ source.id, None, source.area, 0.0, source.class_name, "", "dead"]
+            count += 1
 
         if len(sourceblobs) == 0:
             target = targetblobs[0]
-            row = [None, target.id, 0.0, target.area, target.class_name, type, action]
-            df = pd.DataFrame([row], columns=self.data.columns)
-            self.data = self.data.append(df)
+            self.data.iloc[count] = [None, target.id, 0.0, target.area, target.class_name, type, action]
+            count += 1
 
         elif len(targetblobs) == 0:
             source = sourceblobs[0]
-            row = [source.id, None, source.area, 0, source.class_name, type, action]
-            df = pd.DataFrame([row], columns=self.data.columns)
-            self.data = self.data.append(df)
+            self.data.iloc[count] = [source.id, None, source.area, 0, source.class_name, type, action]
+            count += 1
 
         else:
             #place new correspondences
 
             for source in sourceblobs:
                 for target in targetblobs:
-                    row = [source.id, target.id, source.area if source.id is not None else 0, target.area if target.id is not None else 0,
-                           source.class_name if source.id is not None else target.class_name, type, action]
-                    df = pd.DataFrame([row], columns=self.data.columns)
-                    self.data = self.data.append(df)
+                    source_area = 0
+                    if source.id is not None:
+                        source_area = source.area
+                    target_area = 0
+                    if target.id is not None:
+                        target_area = target.area
+
+                    class_name = source.class_name if source.id is not None else target.class_name
+                    self.data.iloc[count] = [source.id, target.id, source_area, target_area, class_name, type, action]
+                    count += 1
 
         self.data.sort_values(by=['Blob 1', 'Blob 2'], inplace=True)
-
 
     #startring for a blob will fin the cluster both in source and target
     def findCluster(self, blobid, is_source):
@@ -137,6 +141,37 @@ class Correspondences(object):
             sourcecluster, targetcluster = targetcluster, sourcecluster
 
         return (sourcecluster, targetcluster, rows)
+
+    def deleteCluster(self, indexes):
+        born = []
+        dead = []
+        for i in indexes:
+            row = self.data.iloc[i]
+            if row["Blob 1"] is not None:
+                dead.append(row["Blob 1"])
+            if row["Blob 2"] is not None:
+                born.append(row["Blob 2"])
+
+        self.data.drop(indexes, inplace=True)
+
+        self.data.reindex()
+        print(self.data, born, dead)
+        count = len(self.data.index)
+
+        for i in set(dead):
+            blob = self.source.annotations.blobById(i)
+            self.data.loc[count] =  [blob.id, None, blob.area, 0.0, blob.class_name, "", "born"]
+            count += 1
+
+        for i in set(born):
+            blob = self.target.annotations.blobById(i)
+            self.data.loc[count] = [None, blob.id, 0.0, blob.area, blob.class_name, "", "born"]
+            count += 1
+
+
+        self.data.sort_values(by=['Blob 1', 'Blob 2'], inplace=True)
+
+        #self.project.correspondences.data.reindex()
 
     def autoMatch(self, blobs1, blobs2):
 

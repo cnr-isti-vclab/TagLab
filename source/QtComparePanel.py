@@ -209,6 +209,7 @@ class QtComparePanel(QWidget):
 
         if self.project.correspondences is not None:
             self.sortfilter.beginResetModel()
+            self.model.beginResetModel()
             self.model._data = self.project.correspondences.data
             self.sortfilter.endResetModel()
             self.model.endResetModel()
