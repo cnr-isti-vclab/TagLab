@@ -127,7 +127,7 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
 
 class QtComparePanel(QWidget):
 
-    highlightBlob = pyqtSignal(int)
+    matchClicked = pyqtSignal(int, int)
     filterChanged = pyqtSignal(str)
 
     def __init__(self, parent=None):
@@ -231,14 +231,25 @@ class QtComparePanel(QWidget):
     def getData(self, index):
         column = index.column()
         row = index.row()
-        if column == 0:
-            blobid = self.data_table.model().index(row, column).data()
+
+        if column == 0 or column == 1:
+
+            blobid1 = self.data_table.model().index(row, 0).data()
+            blobid2 = self.data_table.model().index(row, 1).data()
+
+            dd = 2
 
             try:
-                id = int(blobid)
-                self.highlightBlob.emit(int(blobid))
+                id1 = int(blobid1)
             except ValueError:
-                print("No valid id")
+                id1 = -1
+
+            try:
+                id2 = int(blobid2)
+            except ValueError:
+                id2 = -1
+
+            self.matchClicked.emit(id1, id2)
 
 
     @pyqtSlot(str)
