@@ -214,6 +214,8 @@ class QtComparePanel(QWidget):
             self.sortfilter.endResetModel()
             self.model.endResetModel()
 
+            self.data_table.update()
+
 
     def selectRows(self, rows):
         self.data_table.clearSelection()

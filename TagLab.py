@@ -1026,8 +1026,6 @@ class TagLab(QWidget):
             return
         indexes = [a.row() for a in indexes]
 
-
-
         self.project.correspondences.deleteCluster(indexes)
 
         self.viewerplus.resetSelection()
