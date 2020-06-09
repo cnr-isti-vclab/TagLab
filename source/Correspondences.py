@@ -66,25 +66,29 @@ class Correspondences(object):
                 continue
             target = self.target.annotations.blobById(id)
             row = [None, target.id, 0.0, target.area, target.class_name, "", "born"]
-            self.data = pd.concat([pd.DataFrame([row], columns=self.data.columns), self.data])
+            df = pd.DataFrame([row], columns=self.data.columns)
+            self.data.append(df)
 
         for id in sourceorphaned:
             if id is None:
                 continue
             source = self.source.annotations.blobById(id)
             row = [ source.id, None, source.area, 0.0, source.class_name, "", "dead"]
-            self.data = pd.concat([pd.DataFrame([row], columns=self.data.columns), self.data])
+            df = pd.DataFrame([row], columns=self.data.columns)
+            self.data.append(df)
 
 
         if len(sourceblobs) == 0:
             target = targetblobs[0]
             row = [None, target.id, 0.0, target.area, target.class_name, type, action]
-            self.data = pd.concat([pd.DataFrame([row], columns=self.data.columns), self.data])
+            df = pd.DataFrame([row], columns=self.data.columns)
+            self.data.append(df)
 
         elif len(targetblobs) == 0:
             source = sourceblobs[0]
             row = [source.id, None, source.area, 0, source.class_name, type, action]
-            self.data = pd.concat([pd.DataFrame([row], columns=self.data.columns), self.data])
+            df = pd.DataFrame([row], columns=self.data.columns)
+            self.data.append(df)
 
         else:
             #place new correspondences
@@ -93,7 +97,8 @@ class Correspondences(object):
                 for target in targetblobs:
                     row = [source.id, target.id, source.area if source.id is not None else 0, target.area if target.id is not None else 0,
                            source.class_name if source.id is not None else target.class_name, type, action]
-                    self.data = pd.concat([pd.DataFrame([row], columns=self.data.columns), self.data])
+                    df = pd.DataFrame([row], columns=self.data.columns)
+                    self.data.append(df)
 
 #        print("final data", self.data)
 
