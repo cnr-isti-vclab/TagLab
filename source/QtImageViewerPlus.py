@@ -80,8 +80,8 @@ class QtImageViewerPlus(QtImageViewer):
         self.dragSelectionStyle.setCosmetic(True)
 
         # Set scrollbar
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
 
         # DRAWING SETTINGS
