@@ -414,6 +414,8 @@ class TagLab(QWidget):
         self.viewerplus.customContextMenuRequested.connect(self.openContextMenu)
         self.viewerplus2.customContextMenuRequested.connect(self.openContextMenu)
 
+        self.compare_panel.matchClicked[int, int].connect(self.highlightMatch)
+
         # SWITCH IMAGES
         self.current_image_index = 0
 
@@ -993,6 +995,13 @@ class TagLab(QWidget):
         # UPDATE SELECTION OF THE CORRESPONDENCE JUST ADDED AND SHOW IT BY SCROLL
         # TODO...
 
+    @pyqtSlot(int, int)
+    def highlightMatch(self, blobid1, blobid2):
+        """
+        Center the main view and the comparison view on the given correspondence.
+        """
+        pass
+
     @pyqtSlot()
     def showConnectionCluster(self):
         indexes = self.compare_panel.data_table.selectionModel().selectedRows()
@@ -1016,7 +1025,11 @@ class TagLab(QWidget):
         if len(indexes) == 0:
             return
         indexes = [a.row() for a in indexes]
+
+
+
         self.project.correspondences.deleteCluster(indexes)
+
         self.viewerplus.resetSelection()
         self.viewerplus2.resetSelection()
         self.compare_panel.updateData()
