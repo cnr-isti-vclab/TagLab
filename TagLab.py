@@ -696,11 +696,16 @@ class TagLab(QWidget):
         autoMatchLabels.setStatusTip("Match labels between two maps")
         autoMatchLabels.triggered.connect(self.autoCorrespondences)
 
+        exportMatchLabels = QAction("Export matches", self)
+        exportMatchLabels.setStatusTip("Export the current matches")
+        exportMatchLabels.triggered.connect(self.exportMatches)
+
 
         comparemenu = menubar.addMenu("&Comparison")
         comparemenu.setStyleSheet(styleMenu)
         comparemenu.addAction(splitScreenAction)
         comparemenu.addAction(autoMatchLabels)
+        comparemenu.addAction(exportMatchLabels)
 
 
         helpmenu = menubar.addMenu("&Help")
@@ -723,6 +728,17 @@ class TagLab(QWidget):
 
         self.project.computeCorrespondences(index1, index2)
         self.compare_panel.setProject(self.project)
+
+
+    @pyqtSlot()
+    def exportMatches(self):
+
+        filters = "CSV (*.csv)"
+        filename, _ = QFileDialog.getSaveFileName(self, "Save the current matches", self.taglab_dir, filters)
+
+        if filename:
+            if self.project.correspondences is not None:
+                self.project.correspondences.data.to_csv(filename, index=False)
 
 
     @pyqtSlot()
@@ -973,7 +989,7 @@ class TagLab(QWidget):
 
         self.compare_panel.updateData()
 
-        # UPDATE SELECTION OF THE CORRESPONDENCE JUST ADDED
+        # UPDATE SELECTION OF THE CORRESPONDENCE JUST ADDED AND SHOW IT BY SCROLL
         # TODO...
 
     @pyqtSlot()
