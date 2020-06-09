@@ -39,6 +39,11 @@ class TableModel(QAbstractTableModel):
             value = self._data.iloc[index.row(), index.column()]
             # if index.column() == 0 or index.column() == 1:
             #     return "" if math.isnan(value) else str(value)
+
+            if index.column() == 0 or index.column() == 1:
+                if value is None:
+                    return ""
+
             # format floating point values
             if index.column() == 2 or index.column() == 3:
                 txt = "{:.2f}".format(value)
