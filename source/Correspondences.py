@@ -65,51 +65,52 @@ class Correspondences(object):
 
 #        print("Clean data: ", self.data)
         for id in targetorphaned:
-            if id is None: #bordn and dead result in orfaned  None
+            if id < 0: # born and dead result in orphaned
                 continue
             target = self.target.annotations.blobById(id)
-            row = [None, target.id, 0.0, target.area, target.class_name, "", "born"]
+            row = [-1, target.id, 0.0, target.area, target.class_name, "", "born"]
             df = pd.DataFrame([row], columns=self.data.columns)
             self.data = self.data.append(df)
 
         for id in sourceorphaned:
-            if id is None:
+            if id < 0:
                 continue
             source = self.source.annotations.blobById(id)
-            row = [ source.id, None, source.area, 0.0, source.class_name, "", "dead"]
+            row = [ source.id, -1, source.area, 0.0, source.class_name, "", "dead"]
             df = pd.DataFrame([row], columns=self.data.columns)
             self.data = self.data.append(df)
 
         if len(sourceblobs) == 0:
             target = targetblobs[0]
-            row = [None, target.id, 0.0, target.area, target.class_name, type, action]
+            row = [-1, target.id, 0.0, target.area, target.class_name, type, action]
             df = pd.DataFrame([row], columns=self.data.columns)
             self.data = self.data.append(df)
 
         elif len(targetblobs) == 0:
             source = sourceblobs[0]
-            row = [source.id, None, source.area, 0, source.class_name, type, action]
+            row = [source.id, -1, source.area, 0, source.class_name, type, action]
             df = pd.DataFrame([row], columns=self.data.columns)
             self.data = self.data.append(df)
 
         else:
 
-            #place new correspondences
+            # place new correspondences
             for source in sourceblobs:
                 for target in targetblobs:
                     source_area = 0
-                    if source.id is not None:
+                    if source.id >= 0:
                         source_area = source.area
                     target_area = 0
-                    if target.id is not None:
+                    if target.id >= 0:
                         target_area = target.area
 
-                    class_name = source.class_name if source.id is not None else target.class_name
+                    class_name = source.class_name if source.id >= 0 else target.class_name
                     row = [source.id, target.id, source_area, target_area, class_name, type, action]
                     df = pd.DataFrame([row], columns=self.data.columns)
                     self.data = self.data.append(df)
 
         self.data.sort_values(by=['Blob 1', 'Blob 2'], inplace=True)
+
 
     # starting for a blob id will find the cluster both in source and target
     def findCluster(self, blobid, is_source):
@@ -127,7 +128,7 @@ class Correspondences(object):
         targetcluster = []
         for index, row in linked.iterrows():
             targetid = row[target]
-            if targetid is None:
+            if targetid < 0:
                 continue
             targetcluster.append(targetid)
             rows.append(index)
@@ -137,7 +138,7 @@ class Correspondences(object):
         linked = data.loc[data[target].isin(targetcluster)]
         for index, row in linked.iterrows():
             sourceid = row[source]
-            if sourceid is None:
+            if sourceid < 0:
                 continue
             sourcecluster.append(sourceid)
             rows.append(index)
@@ -154,9 +155,9 @@ class Correspondences(object):
         dead = []
         for i in indexes:
             row = self.data.iloc[i]
-            if row["Blob 1"] is not None:
+            if row["Blob 1"] >= 0:
                 dead.append(row["Blob 1"])
-            if row["Blob 2"] is not None:
+            if row["Blob 2"] >= 0:
                 born.append(row["Blob 2"])
 
         # delete rows from the dataframe
@@ -169,13 +170,13 @@ class Correspondences(object):
 
         for i in set(dead):
             blob = self.source.annotations.blobById(i)
-            row = [blob.id, None, blob.area, 0.0, blob.class_name, "dead", "none"]
+            row = [blob.id, -1, blob.area, 0.0, blob.class_name, "dead", "none"]
             df = pd.DataFrame([row], columns=self.data.columns)
             self.data = self.data.append(df)
 
         for i in set(born):
             blob = self.target.annotations.blobById(i)
-            row = [None, blob.id, 0.0, blob.area, blob.class_name, "born", "none"]
+            row = [-1, blob.id, 0.0, blob.area, blob.class_name, "born", "none"]
             df = pd.DataFrame([row], columns=self.data.columns)
             self.data = self.data.append(df)
 
@@ -215,6 +216,15 @@ class Correspondences(object):
                         self.correspondences.append([blob1.id, blob2.id, blob1.area, blob2.area, blob1.class_name, 'same', 'none'])
 
 
+        # operates on the correspondences found and update them
+        self.assignSplit()
+        self.assignFuse()
+
+        # fill self.born and self.dead blob lists
+        self.assignDead(blobs1)
+        self.assignBorn(blobs2)
+
+
     def assignSplit(self):
 
         mylist = []
@@ -227,7 +237,6 @@ class Correspondences(object):
                 self.correspondences[i][6] = 'split'
 
 
-
     def assignFuse(self):
 
         mylist = []
@@ -237,8 +246,7 @@ class Correspondences(object):
 
         for i in range(0, len(self.correspondences)):
             if int(self.correspondences[i][1]) in fused:
-                self.correspondences[i][6 ] = 'fuse'
-
+                self.correspondences[i][6] = 'fuse'
 
 
     def assignDead(self, blobs1):
@@ -261,7 +269,7 @@ class Correspondences(object):
         for id in missing:
             index = all_blobs.index(id)
             if blobs1[index].class_name != 'Empty':
-                self.dead.append([id, None,  blobs1[index].area, 0.0, blobs1[index].class_name, 'dead', 'none'])
+                self.dead.append([id, -1,  blobs1[index].area, 0.0, blobs1[index].class_name, 'dead', 'none'])
 
 
     def assignBorn(self, blobs2):
@@ -286,5 +294,5 @@ class Correspondences(object):
         for id in missing:
             index = all_blobs.index(id)
             if blobs2[index].class_name != 'Empty':
-                self.born.append([None, id, 0.0, blobs2[index].area, blobs2[index].class_name, 'born', 'none'])
+                self.born.append([-1, id, 0.0, blobs2[index].area, blobs2[index].class_name, 'born', 'none'])
 

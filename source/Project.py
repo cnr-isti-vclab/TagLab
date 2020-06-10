@@ -180,11 +180,6 @@ class Project(object):
 
         corr = Correspondences(self.images[idx1], self.images[idx2])
         corr.autoMatch(blobs1, blobs2)
-        corr.assignSplit()
-        corr.assignFuse()
-
-        corr.assignDead(blobs1)
-        corr.assignBorn(blobs2)
 
         lines = corr.correspondences + corr.dead + corr.born
         corr.data = pd.DataFrame(lines, columns=corr.data.columns)
