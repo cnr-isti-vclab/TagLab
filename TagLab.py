@@ -32,6 +32,8 @@ from skimage.measure import points_in_poly
 
 #import rasterio as rio
 
+import source.Mask as Mask
+
 from PyQt5.QtCore import Qt, QSize, QDir, QPoint, QPointF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo, QModelIndex
 from PyQt5.QtGui import QPainterPath, QFont, QColor, QPolygonF, QImageReader, QImage, QPixmap, QIcon, QKeySequence, \
     QPen, QBrush, qRgb, qRed, qGreen, qBlue
@@ -990,7 +992,7 @@ class TagLab(QWidget):
             sel1 = self.viewerplus.selected_blobs
             sel2 = self.viewerplus2.selected_blobs
 
-            #this should not happen at all
+            # this should not happen at all
             if len(sel1) > 1 and len(sel2) > 1:
                 return
 
@@ -1004,9 +1006,9 @@ class TagLab(QWidget):
 
             # highlight the correspondences just added and show it by scroll
             if len(sel1) > 0:
-                self.showCluster(sel1[0].id, True)
+                self.showCluster(sel1[0].id, is_source=True, center=False)
             elif len(sel2) > 0:
-                self.showCluster(sel2[0].id, False)
+                self.showCluster(sel2[0].id, is_source=False, center=False)
 
 
     @pyqtSlot()
@@ -1019,9 +1021,9 @@ class TagLab(QWidget):
         blob2id = row['Blob 2']
 
         if blob1id >= 0:
-            self.showCluster(blob1id, True)
+            self.showCluster(blob1id, is_source=True, center=True)
         else:
-            self.showCluster(blob2id, False)
+            self.showCluster(blob2id, is_source=False, center=True)
 
 
     @pyqtSlot()
@@ -1062,24 +1064,42 @@ class TagLab(QWidget):
 
         blob = selected[0]
         if self.activeviewer == self.viewerplus:
-            self.showCluster(blob.id, True)   # this blob is a source
+            self.showCluster(blob.id, is_source=True, center=False)   # this blob is a source
         else:
-            self.showCluster(blob.id, False)  # this blob is a target
+            self.showCluster(blob.id, is_source=False, center=False)  # this blob is a target
 
 
-    def showCluster(self, blobid, is_source):
+    def showCluster(self, blobid, is_source, center):
 
         sourcecluster, targetcluster, rows = self.project.correspondences.findCluster(blobid, is_source)
 
         self.viewerplus.resetSelection()
+
+        sourceboxes = []
         for id in sourcecluster:
             blob = self.viewerplus.annotations.blobById(id)
+            sourceboxes.append(blob.bbox)
             self.viewerplus.addToSelectedList(blob)
 
+        if center is True and len(sourceboxes) > 0:
+            box = Mask.jointBox(sourceboxes)
+            x = box[1] + box[2] / 2
+            y = box[0] + box[3] / 2
+            self.viewerplus.centerOn(x, y)
+
         self.viewerplus2.resetSelection()
+
+        targetboxes = []
         for id in targetcluster:
             blob = self.viewerplus2.annotations.blobById(id)
+            targetboxes.append(blob.bbox)
             self.viewerplus2.addToSelectedList(blob)
+
+        if center is True and len(targetboxes) > 0:
+            box = Mask.jointBox(targetboxes)
+            x = box[1] + box[2] / 2
+            y = box[0] + box[3] / 2
+            self.viewerplus.centerOn(x, y)
 
         self.compare_panel.selectRows(rows)
 
