@@ -127,7 +127,6 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
 
 class QtComparePanel(QWidget):
 
-    matchClicked = pyqtSignal(int, int)
     filterChanged = pyqtSignal(str)
 
     def __init__(self, parent=None):
@@ -176,7 +175,6 @@ class QtComparePanel(QWidget):
         self.data = None
 
         self.comboboxFilter.currentTextChanged.connect(self.changeFilter)
-        #self.data_table.doubleClicked.connect(self.getData)
 
 
     def setProject(self, project):
@@ -231,27 +229,11 @@ class QtComparePanel(QWidget):
 
     @pyqtSlot(QModelIndex)
     def getData(self, index):
-        column = index.column()
-        row = index.row()
 
-        if column == 0 or column == 1:
-
-            blobid1 = self.data_table.model().index(row, 0).data()
-            blobid2 = self.data_table.model().index(row, 1).data()
-
-            dd = 2
-
-            try:
-                id1 = int(blobid1)
-            except ValueError:
-                id1 = -1
-
-            try:
-                id2 = int(blobid2)
-            except ValueError:
-                id2 = -1
-
-            self.matchClicked.emit(id1, id2)
+        pass
+        #column = index.column()
+        #row = index.row()
+        #self.data_table.model().index(row, column).data()
 
 
     @pyqtSlot(str)
