@@ -41,14 +41,14 @@ import time
 class Blob(object):
     """
     Blob data. A blob is a group of pixels.
-    A blob can be tagged with the class and other information.
-    Both the set of pixels and the corresponding vectorized version are stored.
+    It can be tagged with the class and other information.
+    It is stored as an outer contour (the border) plus a list of inner contours (holes).
     """
 
     def __init__(self, region, offset_x, offset_y, id):
 
         self.version = 0
-        self.id = id
+        self.id = int(id)
 
         if region == None:     # AN EMPTY BLOB IS CREATED..
             self.area = 0.0
@@ -500,11 +500,8 @@ class Blob(object):
         self.class_color = dict["class color"]
         self.instance_name = dict["instance name"]
         self.blob_name = dict["blob name"]
-        self.id = dict["id"]
+        self.id = int(dict["id"])
         self.note = dict["note"]
-
-        # finalize blob
-        #self.setupForDrawing()
 
     def save(self):
         return self.toDict()
