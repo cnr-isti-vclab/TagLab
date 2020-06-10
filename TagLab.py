@@ -414,8 +414,6 @@ class TagLab(QWidget):
         self.viewerplus.customContextMenuRequested.connect(self.openContextMenu)
         self.viewerplus2.customContextMenuRequested.connect(self.openContextMenu)
 
-        self.compare_panel.matchClicked[int, int].connect(self.highlightMatch)
-
         # SWITCH IMAGES
         self.current_image_index = 0
 
@@ -935,10 +933,16 @@ class TagLab(QWidget):
 
     def disableComparisonMode(self):
 
+        if self.activeviewer is not None:
+            if self.activeviewer.tools.tool == "MATCH":
+                self.setTool("MOVE")
+
         self.viewerplus2.hide()
         self.comboboxComparisonImage.hide()
 
+        self.btnSplitScreen.setChecked(False)
         self.comparison_mode = False
+
 
     def enableComparisonMode(self):
 
@@ -974,32 +978,36 @@ class TagLab(QWidget):
         self.comboboxComparisonImage.show()
         self.viewerplus.viewChanged()
 
+        self.btnSplitScreen.setChecked(True)
         self.comparison_mode = True
 
     def createMatch(self):
-        sel1 = self.viewerplus.selected_blobs
-        sel2 = self.viewerplus2.selected_blobs
-
-        #this should not happen at all
-        if len(sel1) > 1 and len(sel2) > 1:
-            return
-
-        if len(sel1) == 0 and len(sel2) == 0:
-            print("SHould we remove this corr?")
-            return
-
-        self.project.correspondences.set(sel1, sel2)
-        self.compare_panel.updateData()
-
-        # UPDATE SELECTION OF THE CORRESPONDENCE JUST ADDED AND SHOW IT BY SCROLL
-        # TODO...
-
-    @pyqtSlot(int, int)
-    def highlightMatch(self, blobid1, blobid2):
         """
-        Center the main view and the comparison view on the given correspondence.
+        Create a new match and add it to the correspondences table.
         """
-        pass
+
+        if self.comparison_mode == True:
+            sel1 = self.viewerplus.selected_blobs
+            sel2 = self.viewerplus2.selected_blobs
+
+            #this should not happen at all
+            if len(sel1) > 1 and len(sel2) > 1:
+                return
+
+            if len(sel1) == 0 and len(sel2) == 0:
+                return
+
+            img1index = self.comboboxMainImage.currentIndex()
+            img2index = self.comboboxComparisonImage.currentIndex()
+            self.project.addCorrespondence(img1index, img2index, sel1, sel2)
+            self.compare_panel.updateData()
+
+            # highlight the correspondences just added and show it by scroll
+            if len(sel1) > 0:
+                self.showCluster(sel1[0].id, True)
+            elif len(sel2) > 0:
+                self.showCluster(sel2[0].id, False)
+
 
     @pyqtSlot()
     def showConnectionCluster(self):
@@ -1062,9 +1070,6 @@ class TagLab(QWidget):
     def showCluster(self, blobid, is_source):
 
         sourcecluster, targetcluster, rows = self.project.correspondences.findCluster(blobid, is_source)
-
-        print(sourcecluster)
-        print(targetcluster)
 
         self.viewerplus.resetSelection()
         for id in sourcecluster:
@@ -1216,7 +1221,6 @@ class TagLab(QWidget):
         self.btnSplitBlob.setChecked(False)
         self.btnDeepExtreme.setChecked(False)
         self.btnMatch.setChecked(False)
-
         self.btnAutoClassification.setChecked(False)
 
     def setTool(self, tool):
@@ -1243,6 +1247,9 @@ class TagLab(QWidget):
         self.comboboxComparisonImage.setEnabled(True)
 
         if tool == "MATCH":
+
+            if self.comparison_mode == False:
+                self.enableComparisonMode()
 
             # settings when MATCH tool is active
             self.comboboxMainImage.setEnabled(False)
