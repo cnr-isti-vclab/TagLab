@@ -20,6 +20,11 @@ class Correspondences(object):
     def save(self):
         return { "source": self.source.id, "target": self.target.id, "correspondences": self.data.values.tolist() }
 
+    def sort_data(self):
+
+        self.data.sort_values(by=['Action', 'Blob 1', 'Blob 2'], inplace=True, ignore_index=True)
+
+
     def set(self, sourceblobs, targetblobs):
 
         #assumes one oth the two list has 1 blob only.
@@ -109,7 +114,7 @@ class Correspondences(object):
                     df = pd.DataFrame([row], columns=self.data.columns)
                     self.data = self.data.append(df)
 
-        self.data.sort_values(by=['Blob 1', 'Blob 2'], inplace=True)
+        self.sort_data()
 
 
     # starting for a blob id will find the cluster both in source and target
@@ -180,7 +185,7 @@ class Correspondences(object):
             df = pd.DataFrame([row], columns=self.data.columns)
             self.data = self.data.append(df)
 
-        self.data.sort_values(by=['Blob 1', 'Blob 2'], inplace=True, ignore_index=True)
+        self.sort_data()
 
 
     def autoMatch(self, blobs1, blobs2):

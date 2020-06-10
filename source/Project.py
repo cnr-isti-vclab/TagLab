@@ -183,7 +183,7 @@ class Project(object):
 
         lines = corr.correspondences + corr.dead + corr.born
         corr.data = pd.DataFrame(lines, columns=corr.data.columns)
-        corr.data.sort_values(by=['Blob 1', 'Blob 2'], inplace=True, ignore_index=True)
+        corr.sort_data()
 
         self.correspondences = corr
 
