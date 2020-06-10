@@ -41,7 +41,7 @@ class TableModel(QAbstractTableModel):
             #     return "" if math.isnan(value) else str(value)
 
             if index.column() == 0 or index.column() == 1:
-                if value is None:
+                if value < 0:
                     return ""
 
             # format floating point values
