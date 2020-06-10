@@ -989,7 +989,6 @@ class TagLab(QWidget):
             return
 
         self.project.correspondences.set(sel1, sel2)
-
         self.compare_panel.updateData()
 
         # UPDATE SELECTION OF THE CORRESPONDENCE JUST ADDED AND SHOW IT BY SCROLL
@@ -1008,12 +1007,13 @@ class TagLab(QWidget):
         if len(indexes) == 0:
             return
         row = self.project.correspondences.data.iloc[indexes[0].row()]
-        blob1 = row['Blob 1']
-        blob2 = row['Blob 2']
-        if blob1 is not None:
-            self.showCluster(blob1)
+        blob1id = row['Blob 1']
+        blob2id = row['Blob 2']
+
+        if blob1id >= 0:
+            self.showCluster(blob1id, True)
         else:
-            self.showCluster(blob2)
+            self.showCluster(blob2id, False)
 
 
     @pyqtSlot()
@@ -1031,6 +1031,7 @@ class TagLab(QWidget):
         self.viewerplus.resetSelection()
         self.viewerplus2.resetSelection()
         self.compare_panel.updateData()
+
 
     @pyqtSlot()
     def showMatch(self):
@@ -1052,14 +1053,21 @@ class TagLab(QWidget):
             return
 
         blob = selected[0]
-        self.showCluster(blob.id)
+        if self.activeviewer == self.viewerplus:
+            self.showCluster(blob.id, True)   # this blob is a source
+        else:
+            self.showCluster(blob.id, False)  # this blob is a target
 
-    def showCluster(self, blobid):
 
-        sourceluster, targetcluster, rows = self.project.correspondences.findCluster(blobid, self.activeviewer == self.viewerplus)
+    def showCluster(self, blobid, is_source):
+
+        sourcecluster, targetcluster, rows = self.project.correspondences.findCluster(blobid, is_source)
+
+        print(sourcecluster)
+        print(targetcluster)
 
         self.viewerplus.resetSelection()
-        for id in sourceluster:
+        for id in sourcecluster:
             blob = self.viewerplus.annotations.blobById(id)
             self.viewerplus.addToSelectedList(blob)
 
