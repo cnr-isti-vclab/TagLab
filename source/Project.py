@@ -153,32 +153,37 @@ class Project(object):
 
         return self.labels[id].visible
 
+    def addCorrespondence(self, img1idx, img2idx, blobs1, blobs2):
 
+        if self.correspondences is not None:
+            self.correspondences.source = self.images[img1idx]
+            self.correspondences.target = self.images[img2idx]
+            self.correspondences.set(blobs1, blobs2)
 
-    def computeCorrespondences(self, idx1, idx2):
+    def computeCorrespondences(self, img1idx, img2idx):
 
-        conversion1 = self.images[idx1].map_px_to_mm_factor
-        conversion2 = self.images[idx2].map_px_to_mm_factor
+        conversion1 = self.images[img1idx].map_px_to_mm_factor
+        conversion2 = self.images[img2idx].map_px_to_mm_factor
 
         # switch form px to mm just for calculation (except areas that are in cm)
 
         blobs1 = []
-        for blob in self.images[idx1].annotations.seg_blobs:
+        for blob in self.images[img1idx].annotations.seg_blobs:
             blob_c = blob.copy()
             blob_c.bbox = (blob_c.bbox*conversion1).round().astype(int)
             blob_c.contour = blob_c.contour*conversion1
-            blob_c.area = blob_c.area*conversion1*conversion1/100
+            blob_c.area = blob_c.area*conversion1*conversion1 / 100
             blobs1.append(blob_c)
 
         blobs2 = []
-        for blob in self.images[idx2].annotations.seg_blobs:
+        for blob in self.images[img2idx].annotations.seg_blobs:
             blob_c = blob.copy()
             blob_c.bbox = (blob_c.bbox * conversion2).round().astype(int)
             blob_c.contour = blob_c.contour * conversion2
             blob_c.area = blob_c.area * conversion2 * conversion2 / 100
             blobs2.append(blob_c)
 
-        corr = Correspondences(self.images[idx1], self.images[idx2])
+        corr = Correspondences(self.images[img1idx], self.images[img2idx])
         corr.autoMatch(blobs1, blobs2)
 
         lines = corr.correspondences + corr.dead + corr.born
