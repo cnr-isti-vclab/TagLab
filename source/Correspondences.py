@@ -17,6 +17,15 @@ class Correspondences(object):
         self.threshold = 1.05
         self.data = pd.DataFrame(data = correspondences, columns=['Blob 1', 'Blob 2', 'Area1', 'Area2', 'Class', 'Action', 'Split\Fuse'])
 
+    def area_in_sq_cm(self, blob, is_source):
+
+        if is_source:
+            area = blob.area * self.source.map_px_to_mm_factor * self.source.map_px_to_mm_factor / 10000.0
+        else:
+            area = blob.area * self.source.map_px_to_mm_factor * self.source.map_px_to_mm_factor / 10000.0
+
+        return area
+
     def save(self):
         return { "source": self.source.id, "target": self.target.id, "correspondences": self.data.values.tolist() }
 
@@ -37,15 +46,15 @@ class Correspondences(object):
             action = "dead"
 
         elif len(sourceblobs) > 1:
-            action = "join"
+            type = "fuse"
         elif len(targetblobs) > 1:
-            action = "split"
+            type = "split"
         elif sourceblobs[0].area > targetblobs[0].area*self.threshold:
-            type = "shrink"
+            action = "shrink"
         elif sourceblobs[0].area < targetblobs[0].area/self.threshold:
-            type = "grow"
+            action = "grow"
         else:
-            type = "same"
+            action = "same"
             #TODO consider morph!
 
         #orphaned nodes: not in sourceblob, but had some connections in  targetblobs (dead now) and viceversa
@@ -69,7 +78,7 @@ class Correspondences(object):
             if id < 0: # born and dead result in orphaned
                 continue
             target = self.target.annotations.blobById(id)
-            row = [-1, target.id, 0.0, target.area, target.class_name, "born", "none"]
+            row = [-1, target.id, 0.0, self.area_sq_cm(target.area, False), target.class_name, "born", "none"]
             df = pd.DataFrame([row], columns=self.data.columns)
             self.data = self.data.append(df)
 
@@ -77,19 +86,19 @@ class Correspondences(object):
             if id < 0:
                 continue
             source = self.source.annotations.blobById(id)
-            row = [ source.id, -1, source.area, 0.0, source.class_name, "dead", "none"]
+            row = [ source.id, -1, self.area_sq_cm(source.area, True), 0.0, source.class_name, "dead", "none"]
             df = pd.DataFrame([row], columns=self.data.columns)
             self.data = self.data.append(df)
 
         if len(sourceblobs) == 0:
             target = targetblobs[0]
-            row = [-1, target.id, 0.0, target.area, target.class_name, type, action]
+            row = [-1, target.id, 0.0, self.area_sq_cm(target.area, False), target.class_name, action, type]
             df = pd.DataFrame([row], columns=self.data.columns)
             self.data = self.data.append(df)
 
         elif len(targetblobs) == 0:
             source = sourceblobs[0]
-            row = [source.id, -1, source.area, 0, source.class_name, type, action]
+            row = [source.id, -1, self.area_sq_cm(source.area, True), 0, source.class_name, action, type]
             df = pd.DataFrame([row], columns=self.data.columns)
             self.data = self.data.append(df)
 
@@ -106,7 +115,8 @@ class Correspondences(object):
                         target_area = target.area
 
                     class_name = source.class_name if source.id >= 0 else target.class_name
-                    row = [source.id, target.id, source_area, target_area, class_name, type, action]
+                    row = [source.id, target.id, self.area_in_sq_cm(source_area, True), self.area_in_sq_cm(target_area, False),
+                           class_name, action, type]
                     df = pd.DataFrame([row], columns=self.data.columns)
                     self.data = self.data.append(df)
 

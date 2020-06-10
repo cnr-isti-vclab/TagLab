@@ -1061,14 +1061,11 @@ class TagLab(QWidget):
         self.viewerplus.resetSelection()
         for id in sourceluster:
             blob = self.viewerplus.annotations.blobById(id)
-            print("source", id, blob)
             self.viewerplus.addToSelectedList(blob)
 
         self.viewerplus2.resetSelection()
         for id in targetcluster:
             blob = self.viewerplus2.annotations.blobById(id)
-            print("target", id, blob)
-
             self.viewerplus2.addToSelectedList(blob)
 
         self.compare_panel.selectRows(rows)
