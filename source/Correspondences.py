@@ -34,7 +34,7 @@ class Correspondences(object):
             action = "born"
 
         elif len(targetblobs) == 0:
-            action = "gone"
+            action = "dead"
 
         elif len(sourceblobs) > 1:
             action = "join"
@@ -65,15 +65,11 @@ class Correspondences(object):
         self.data = self.data[self.data['Blob 1'].isin([b.id for b in sourceblobs]) == False]
         self.data = self.data[self.data['Blob 2'].isin([b.id for b in targetblobs]) == False]
 
-        self.data.reindex()
-        count = len(self.data.index)
-
-#        print("Clean data: ", self.data)
         for id in targetorphaned:
             if id < 0: # born and dead result in orphaned
                 continue
             target = self.target.annotations.blobById(id)
-            row = [-1, target.id, 0.0, target.area, target.class_name, "", "born"]
+            row = [-1, target.id, 0.0, target.area, target.class_name, "born", "none"]
             df = pd.DataFrame([row], columns=self.data.columns)
             self.data = self.data.append(df)
 
@@ -81,7 +77,7 @@ class Correspondences(object):
             if id < 0:
                 continue
             source = self.source.annotations.blobById(id)
-            row = [ source.id, -1, source.area, 0.0, source.class_name, "", "dead"]
+            row = [ source.id, -1, source.area, 0.0, source.class_name, "dead", "none"]
             df = pd.DataFrame([row], columns=self.data.columns)
             self.data = self.data.append(df)
 
@@ -125,31 +121,32 @@ class Correspondences(object):
         if not is_source:
             source, target = target, source
 
-        #involved rows
-        rows = []
+        sourcecluster = [blobid] # source ids
+        targetcluster = []       # target ids
+        rows = []                # involved rows
+
         # find all blobs in the target connected to the blob
-        data = self.data
-        linked = data.loc[data[source] == blobid]
-        targetcluster = []
+        linked = self.data[self.data[source] == blobid]
         for index, row in linked.iterrows():
             targetid = row[target]
-            if targetid < 0:
-                continue
-            targetcluster.append(targetid)
+            if targetid >= 0:
+                targetcluster.append(targetid)
             rows.append(index)
 
         # find all the connected in the source connected to the selected targets
-        sourcecluster = [blobid]
-        linked = data.loc[data[target].isin(targetcluster)]
+        linked = self.data.loc[self.data[target].isin(targetcluster)]
         for index, row in linked.iterrows():
             sourceid = row[source]
-            if sourceid < 0:
-                continue
-            sourcecluster.append(sourceid)
+            if sourceid >= 0:
+                sourcecluster.append(sourceid)
             rows.append(index)
 
         if not is_source:
             sourcecluster, targetcluster = targetcluster, sourcecluster
+
+        sourcecluster = list(set(sourcecluster))
+        targetcluster = list(set(targetcluster))
+        rows = list(set(rows))
 
         return sourcecluster, targetcluster, rows
 
