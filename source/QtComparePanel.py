@@ -218,8 +218,6 @@ class QtComparePanel(QWidget):
     def selectRows(self, rows):
         self.data_table.clearSelection()
 
-        print(len(rows))
-
         indexes = [self.model.index(r, 0) for r in rows]
         mode = QItemSelectionModel.Select | QItemSelectionModel.Rows
         [self.data_table.selectionModel().select(index, mode) for index in indexes]
