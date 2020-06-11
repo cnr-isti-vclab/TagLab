@@ -1085,11 +1085,12 @@ class TagLab(QWidget):
             sourceboxes.append(blob.bbox)
             self.viewerplus.addToSelectedList(blob)
 
+        scale = self.viewerplus.px_to_mm
         if center is True and len(sourceboxes) > 0:
             box = Mask.jointBox(sourceboxes)
             x = box[1] + box[2] / 2
             y = box[0] + box[3] / 2
-            self.viewerplus.centerOn(x, y)
+            self.viewerplus.centerOn(x*scale, y*scale)
 
         self.viewerplus2.resetSelection()
 
@@ -1099,11 +1100,12 @@ class TagLab(QWidget):
             targetboxes.append(blob.bbox)
             self.viewerplus2.addToSelectedList(blob)
 
+        scale = self.viewerplus2.px_to_mm
         if center is True and len(targetboxes) > 0:
             box = Mask.jointBox(targetboxes)
             x = box[1] + box[2] / 2
             y = box[0] + box[3] / 2
-            self.viewerplus.centerOn(x, y)
+            self.viewerplus.centerOn(x*scale, y*scale)
 
         self.compare_panel.selectRows(rows)
 

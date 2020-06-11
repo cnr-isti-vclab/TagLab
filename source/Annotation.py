@@ -157,7 +157,6 @@ class Annotation(object):
         used = []
         for blob  in self.seg_blobs:
             used.append(blob.id)
-        print("Used", used)
         for id in range(len(used)):
             if id not in used:
                 return id
