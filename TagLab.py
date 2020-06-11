@@ -34,7 +34,7 @@ from skimage.measure import points_in_poly
 
 import source.Mask as Mask
 
-from PyQt5.QtCore import Qt, QSize, QDir, QPoint, QPointF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo, QModelIndex
+from PyQt5.QtCore import Qt, QSize, QMargins, QDir, QPoint, QPointF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo, QModelIndex
 from PyQt5.QtGui import QPainterPath, QFont, QColor, QPolygonF, QImageReader, QImage, QPixmap, QIcon, QKeySequence, \
     QPen, QBrush, qRgb, qRed, qGreen, qBlue
 from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QComboBox, QMenuBar, QMenu, QSizePolicy, QScrollArea, \
@@ -303,6 +303,7 @@ class TagLab(QWidget):
 
         layout_groupbox2 = QVBoxLayout()
         layout_groupbox2.addWidget(self.compare_panel)
+        layout_groupbox2.setContentsMargins(QMargins(0, 0, 0, 0))
         self.groupbox_comparison.setLayout(layout_groupbox2)
 
         # BLOB INFO
@@ -365,6 +366,7 @@ class TagLab(QWidget):
         layout_labels.setAlignment(self.mapviewer, Qt.AlignHCenter)
 
         self.groupbox_comparison.hide()
+        self.compare_panel.setMinimumHeight(600)
 
         ##### MAIN LAYOUT
 
