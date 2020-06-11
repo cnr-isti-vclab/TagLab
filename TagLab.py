@@ -1021,8 +1021,8 @@ class TagLab(QWidget):
         if len(indexes) == 0:
             return
         row = self.project.correspondences.data.iloc[indexes[0].row()]
-        blob1id = row['Blob 1']
-        blob2id = row['Blob 2']
+        blob1id = row['Blob1']
+        blob2id = row['Blob2']
 
         if blob1id >= 0:
             self.showCluster(blob1id, is_source=True, center=True)
@@ -1122,8 +1122,8 @@ class TagLab(QWidget):
                 return
             data = self.project.correspondences.data
             selection = data.loc[data["Action"] == type]
-            sourceblobs = selection['Blob 1'].tolist()
-            targetblobs = selection['Blob 2'].tolist()
+            sourceblobs = selection['Blob1'].tolist()
+            targetblobs = selection['Blob2'].tolist()
             for b in self.viewerplus.annotations.seg_blobs:
                 if b.qpath_gitem is not None:
                     b.qpath_gitem.setVisible(b.id in sourceblobs)
