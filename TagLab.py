@@ -437,7 +437,9 @@ class TagLab(QWidget):
     def newAction(self, text, shortcut, callback):
         action  = QAction(text, self)
         action.setShortcut(QKeySequence(shortcut))
-        action.setShortcutVisibleInContextMenu(True)
+        #compatibility with Qt < 5.10
+        if hasattr(action, 'setShortcutVisibleInContextMenu'):
+            action.setShortcutVisibleInContextMenu(True)
         action.triggered.connect(callback)
         return action
 

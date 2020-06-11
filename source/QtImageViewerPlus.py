@@ -117,6 +117,7 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.scene.invalidate()
         self.tools.tools['RULER'].setPxToMM(image.map_px_to_mm_factor)
+        self.px_to_mm = image.map_px_to_mm_factor
 
         self.activated.emit()
 

@@ -48,6 +48,8 @@ class QtImageViewer(QGraphicsView):
         self.ZOOM_FACTOR_MIN = 0.02
         self.ZOOM_FACTOR_MAX = 10.0
 
+        self.px_to_mm = 1.0
+
         # transparency
         self.opacity = 1.0
 
@@ -99,16 +101,27 @@ class QtImageViewer(QGraphicsView):
             return
         rect = self.viewportToScenePercent()
         self.viewUpdated.emit(rect)
-        posx = self.horizontalScrollBar().value()
-        posy = self.verticalScrollBar().value()
-        self.viewHasChanged.emit(posx, posy, self.zoom_factor)
+        posx = self.horizontalScrollBar().value() 
+        posy = self.verticalScrollBar().value() 
+        zoom = self.zoom_factor / self.px_to_mm
+        self.viewHasChanged.emit(posx, posy, zoom)
+
+    def setViewParameters(self, posx, posy, zoomfactor):
+        if not self.isVisible():
+            return
+        self.blockSignals(True)
+        self.horizontalScrollBar().setValue(posx)
+        self.verticalScrollBar().setValue(posy)
+        self.zoom_factor = zoomfactor * self.px_to_mm
+        self.updateViewer()
+        self.blockSignals(False)
+
 
     def updateViewer(self):
         """ Show current zoom (if showing entire image, apply current aspect ratio mode).
         """
         self.resetTransform()
         self.scale(self.zoom_factor, self.zoom_factor)
-
         self.invalidateScene()
 
     def clear(self):
@@ -116,7 +129,6 @@ class QtImageViewer(QGraphicsView):
         self.img_map = None
 
     def disableScrollBars(self):
-
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
@@ -179,15 +191,6 @@ class QtImageViewer(QGraphicsView):
         self.pixmapitem.setPixmap(pxmap)
 
 
-    def setViewParameters(self, posx, posy, zoomfactor):
-        if not self.isVisible():
-            return
-        self.blockSignals(True)
-        self.horizontalScrollBar().setValue(posx)
-        self.verticalScrollBar().setValue(posy)
-        self.zoom_factor = zoomfactor
-        self.updateViewer()
-        self.blockSignals(False)
 
     def clipScenePos(self, scenePosition):
         posx = scenePosition.x()
