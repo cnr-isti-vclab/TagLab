@@ -15,7 +15,7 @@ class Correspondences(object):
         self.dead = []
         self.born = []
         self.threshold = 1.05
-        self.data = pd.DataFrame(data = correspondences, columns=['Blob 1', 'Blob 2', 'Area1', 'Area2', 'Class', 'Action', 'Split\Fuse'])
+        self.data = pd.DataFrame(data = correspondences, columns=['Blob1', 'Blob2', 'Area1', 'Area2', 'Class', 'Action', 'Split\Fuse'])
 
     def area_in_sq_cm(self, area, is_source):
 
@@ -31,19 +31,19 @@ class Correspondences(object):
 
     def sort_data(self):
 
-        self.data.sort_values(by=['Action', 'Blob 1', 'Blob 2'], inplace=True, ignore_index=True)
+        self.data.sort_values(by=['Action', 'Blob1', 'Blob2'], inplace=True, ignore_index=True)
 
 
     def set(self, sourceblobs, targetblobs):
 
         #assumes one oth the two list has 1 blob only.
-        type = "none"
-        action = "none"
+        type = "n/s"
+        action = "n/s"
         if len(sourceblobs) == 0:
             action = "born"
             type = "none"
         elif len(targetblobs) == 0:
-            action = "dead"
+            action = "gone"
             type = "none"
         elif len(sourceblobs) > 1:
             type = "fuse"
@@ -59,15 +59,15 @@ class Correspondences(object):
 
         #orphaned nodes: not in sourceblob, but had some connections in  targetblobs (dead now) and viceversa
         #they will become born or dead
-        targetorphaned = self.data[self.data['Blob 1'].isin([b.id for b in sourceblobs])]['Blob 2']
-        sourceorphaned = self.data[self.data['Blob 2'].isin([b.id for b in targetblobs])]['Blob 1']
+        targetorphaned = self.data[self.data['Blob1'].isin([b.id for b in sourceblobs])]['Blob2']
+        sourceorphaned = self.data[self.data['Blob2'].isin([b.id for b in targetblobs])]['Blob1']
 
         targetorphaned = list(set(targetorphaned) - set([b.id for b in targetblobs]))
         sourceorphaned = list(set(sourceorphaned) - set([b.id for b in sourceblobs]))
 
         #remove all correspondences where orphaned
-        self.data = self.data[self.data['Blob 1'].isin([b.id for b in sourceblobs]) == False]
-        self.data = self.data[self.data['Blob 2'].isin([b.id for b in targetblobs]) == False]
+        self.data = self.data[self.data['Blob1'].isin([b.id for b in sourceblobs]) == False]
+        self.data = self.data[self.data['Blob2'].isin([b.id for b in targetblobs]) == False]
 
         for id in targetorphaned:
             if id < 0: # born and dead result in orphaned
@@ -120,8 +120,8 @@ class Correspondences(object):
     # starting for a blob id will find the cluster both in source and target
     def findCluster(self, blobid, is_source):
         # so we want source to be blob and target to be the other viewerplus
-        source = "Blob 1"
-        target = "Blob 2"
+        source = "Blob1"
+        target = "Blob2"
         if not is_source:
             source, target = target, source
 
@@ -161,10 +161,10 @@ class Correspondences(object):
         dead = []
         for i in indexes:
             row = self.data.iloc[i]
-            if row["Blob 1"] >= 0:
-                dead.append(row["Blob 1"])
-            if row["Blob 2"] >= 0:
-                born.append(row["Blob 2"])
+            if row["Blob1"] >= 0:
+                dead.append(row["Blob1"])
+            if row["Blob2"] >= 0:
+                born.append(row["Blob2"])
 
         # delete rows from the dataframe
         self.data.drop(indexes, inplace=True)
@@ -176,13 +176,13 @@ class Correspondences(object):
 
         for i in set(dead):
             blob = self.source.annotations.blobById(i)
-            row = [blob.id, -1, self.area_in_sq_cm(blob.area, True), 0.0, blob.class_name, "dead", "none"]
+            row = [blob.id, -1, self.area_in_sq_cm(blob.area, True), 0.0, blob.class_name, "gone", "none"]
             df = pd.DataFrame([row], columns=self.data.columns)
             self.data = self.data.append(df)
 
         for i in set(born):
             blob = self.target.annotations.blobById(i)
-            row = [-1, blob.id, 0.0, self.area_in_sq_cm(blob.area, False), blob.class_name, "born", "none"]
+            row = [-1, blob.id, 0.0, self.area_in_sq_cm(blob.area, False), blob.class_name, "gone", "none"]
             df = pd.DataFrame([row], columns=self.data.columns)
             self.data = self.data.append(df)
 
@@ -275,7 +275,7 @@ class Correspondences(object):
         for id in missing:
             index = all_blobs.index(id)
             if blobs1[index].class_name != 'Empty':
-                self.dead.append([id, -1,  blobs1[index].area, 0.0, blobs1[index].class_name, 'dead', 'none'])
+                self.dead.append([id, -1,  blobs1[index].area, 0.0, blobs1[index].class_name, 'gone', 'none'])
 
 
     def assignBorn(self, blobs2):

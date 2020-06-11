@@ -86,7 +86,7 @@ class TableModel(QAbstractTableModel):
 
         value = self._data.iloc[index.row(), index.column()]
 
-        if value == "dead" and index.column() == 5:
+        if index.column() == 5 or index.column() == 6:
             return QAbstractTableModel.flags(self, index) | Qt.ItemIsEditable
         else:
             return QAbstractTableModel.flags(self, index)
@@ -102,9 +102,21 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
     def createEditor(self, parent, option, index):
 
         cb = QComboBox(parent)
-        row = index.row()
-        cb.addItem("dead")
-        cb.addItem("gone")
+        column = index.column()
+
+        if column == 5:
+            cb.addItem("born")
+            cb.addItem("gone")
+            cb.addItem("grow")
+            cb.addItem("same")
+            cb.addItem("shrink")
+            cb.addItem("n/s")
+        elif column == 6:
+            cb.addItem("none")
+            cb.addItem("fuse")
+            cb.addItem("split")
+            cb.addItem("n/s")
+
         return cb
 
     def setEditorData(self, editor, index):
@@ -149,7 +161,8 @@ class QtComparePanel(QWidget):
         self.model = None
         self.data = None
 
-        self.combodelegate = ComboBoxItemDelegate(self.data_table)
+        self.combodelegate1 = ComboBoxItemDelegate(self.data_table)
+        self.combodelegate2 = ComboBoxItemDelegate(self.data_table)
 
         lblFilter = QLabel("Filter: ")
         self.comboboxFilter = QComboBox()
@@ -195,7 +208,8 @@ class QtComparePanel(QWidget):
             self.data_table.resizeColumnsToContents()
             self.data_table.setVisible(True)
 
-            self.data_table.setItemDelegateForColumn(5, self.combodelegate)
+            self.data_table.setItemDelegateForColumn(5, self.combodelegate1)
+            self.data_table.setItemDelegateForColumn(6, self.combodelegate2)
             self.data_table.setEditTriggers(QAbstractItemView.DoubleClicked)
 
             self.data_table.update()
@@ -223,7 +237,9 @@ class QtComparePanel(QWidget):
         [self.data_table.selectionModel().select(index, mode) for index in indexes]
 
         if len(rows) > 0:
-            self.data_table.scrollTo(self.data_table.model().index(rows[0], 0))
+            value = self.data_table.horizontalScrollBar().value()
+            column = self.data_table.columnAt(value)
+            self.data_table.scrollTo(self.data_table.model().index(rows[0], column))
 
     @pyqtSlot(QModelIndex)
     def getData(self, index):
