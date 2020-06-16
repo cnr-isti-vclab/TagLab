@@ -41,6 +41,8 @@ class SplitBlob(Tool):
     def apply(self):
         selected_blob = self.viewerplus.selected_blobs[0]
         points = self.pick_points.points
+
+        self.viewerplus.removeBlob(selected_blob)
         created_blobs = self.viewerplus.annotations.splitBlob(self.viewerplus.img_map, selected_blob, points)
 
         self.blobInfo.emit(selected_blob, "[TOOL][SPLITBLOB][BLOB-SELECTED]")
@@ -51,6 +53,5 @@ class SplitBlob(Tool):
 
         self.log.emit("[TOOL][SPLITBLOB] Operation ends.")
 
-        self.viewerplus.removeBlob(selected_blob)
         self.viewerplus.saveUndo()
         self.viewerplus.resetTools()

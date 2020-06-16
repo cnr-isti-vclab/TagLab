@@ -1643,10 +1643,10 @@ class TagLab(QWidget):
 
 
             try:
+                view.removeBlob(selected)
+
                 #    blob.updateUsingMask(bbox, mask.astype(np.int))
                 created_blobs = view.annotations.refineBorder(bbox, selected, img, depth, mask, view.refine_grow, view.tools.edit_points.last_editborder_points)
-
-                view.removeBlob(selected)
 
                 for blob in created_blobs:
                     view.addBlob(blob, selected=True)
