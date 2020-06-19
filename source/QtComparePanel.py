@@ -184,19 +184,18 @@ class QtComparePanel(QWidget):
         layout.addWidget(self.data_table)
         self.setLayout(layout)
 
-        self.project = None
+        self.correspondences = None
         self.data = None
 
         self.comboboxFilter.currentTextChanged.connect(self.changeFilter)
 
 
-    def setProject(self, project):
-
-        self.project = project
+    def setTable(self, project, img1idx, img2idx):
 
         if project.correspondences is not None:
 
-            self.data = project.correspondences.data
+            self.correspondences = project.getImagePairCorrespondences(img1idx, img2idx)
+            self.data = self.correspondences.data
 
             self.model = TableModel(self.data)
             self.sortfilter = QSortFilterProxyModel(self)
@@ -217,16 +216,20 @@ class QtComparePanel(QWidget):
             self.data_table.setStyleSheet("QHeaderView::section { background-color: rgb(40,40,40) }")
 
 
-    def updateData(self):
+    def updateData(self, corr):
 
-        if self.project.correspondences is not None:
-            self.sortfilter.beginResetModel()
-            self.model.beginResetModel()
-            self.model._data = self.project.correspondences.data
-            self.sortfilter.endResetModel()
-            self.model.endResetModel()
+        if corr is None:
+            return
 
-            self.data_table.update()
+        self.correspondences = corr
+        self.sortfilter.beginResetModel()
+        self.model.beginResetModel()
+        self.model._data = corr.data
+        self.sortfilter.endResetModel()
+        self.model.endResetModel()
+
+        self.data_table.update()
+
 
 
     def selectRows(self, rows):

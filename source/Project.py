@@ -94,11 +94,10 @@ class Project(object):
         self.labels = { key: Label(**value) for key, value in labels.items() }
 
         self.images = list(map(lambda img: Image(**img), images))       #list of annotated images
-        self.correspondences = None
-        corr = None if correspondences is None else correspondences['correspondences']
-        if len(self.images) > 1:
-            self.correspondences = Correspondences(self.images[0], self.images[1], corr)   #list of correspondences betweeen labels in images
-                                    #[ [source_img: , target_img:, [[23, 12, [grow, shrink, split, join] ... ] }
+
+        # dict of tables (DataFrame) of correspondences betweeen a source and a target image
+        self.correspondences = None if correspondences is None else correspondences['correspondences']
+
         self.spatial_reference_system = spatial_reference_system   #if None we assume coordinates in pixels (but Y is up or down?!)
         self.metadata = metadata    # project metadata => keyword -> value
         self.image_metadata_template = image_metadata_template  # description of metadata keywords expected in images
@@ -153,22 +152,47 @@ class Project(object):
 
         return self.labels[id].visible
 
-    def addCorrespondence(self, img1idx, img2idx, blobs1, blobs2):
 
-        if self.correspondences is not None:
-            self.correspondences.source = self.images[img1idx]
-            self.correspondences.target = self.images[img2idx]
-            self.correspondences.set(blobs1, blobs2)
+    def getImagePairCorrespondences(self, img_source_idx, img_target_idx):
+        """
+        Given two image indices returns the current correspondences table or create a new one.
+        Note that the correspondences between the image A and the image B are not the same of
+        the image B and A.
+        """
+        key = self.images[img_source_idx].id + "-" + self.images[img_target_idx].id
 
-    def computeCorrespondences(self, img1idx, img2idx):
+        if self.correspondences is None:
+            # create a new correspondences table
+            self.correspondences = {}
+            self.correspondences[key] = Correspondences(self.images[img_source_idx], self.images[img_target_idx])
+        elif not key in self.correspondences:
+            # create a new correspondences table
+            self.correspondences[key] = Correspondences(self.images[img_source_idx], self.images[img_target_idx])
 
-        conversion1 = self.images[img1idx].map_px_to_mm_factor
-        conversion2 = self.images[img2idx].map_px_to_mm_factor
+        return self.correspondences[key]
+
+
+    def addCorrespondence(self, img_source_idx, img_target_idx, blobs1, blobs2):
+        """
+        Add a correspondences to the current ones.
+        """
+
+        corr = self.getImagePairCorrespondences(img_source_idx, img_target_idx)
+        corr.set(blobs1, blobs2)
+
+
+    def computeCorrespondences(self, img_source_idx, img_target_idx):
+        """
+        Compute the correspondences between an image pair.
+        """
+
+        conversion1 = self.images[img_source_idx].map_px_to_mm_factor
+        conversion2 = self.images[img_target_idx].map_px_to_mm_factor
 
         # switch form px to mm just for calculation (except areas that are in cm)
 
         blobs1 = []
-        for blob in self.images[img1idx].annotations.seg_blobs:
+        for blob in self.images[img_source_idx].annotations.seg_blobs:
             blob_c = blob.copy()
             blob_c.bbox = (blob_c.bbox*conversion1).round().astype(int)
             blob_c.contour = blob_c.contour*conversion1
@@ -176,19 +200,17 @@ class Project(object):
             blobs1.append(blob_c)
 
         blobs2 = []
-        for blob in self.images[img2idx].annotations.seg_blobs:
+        for blob in self.images[img_target_idx].annotations.seg_blobs:
             blob_c = blob.copy()
             blob_c.bbox = (blob_c.bbox * conversion2).round().astype(int)
             blob_c.contour = blob_c.contour * conversion2
             blob_c.area = blob_c.area * conversion2 * conversion2 / 100
             blobs2.append(blob_c)
 
-        corr = Correspondences(self.images[img1idx], self.images[img2idx])
+        corr = self.getImagePairCorrespondences(img_source_idx, img_target_idx)
         corr.autoMatch(blobs1, blobs2)
 
         lines = corr.correspondences + corr.dead + corr.born
         corr.data = pd.DataFrame(lines, columns=corr.data.columns)
         corr.sort_data()
-
-        self.correspondences = corr
 

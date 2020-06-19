@@ -729,11 +729,11 @@ class TagLab(QWidget):
 
         self.setTool("MATCH")
 
-        index1 = self.comboboxMainImage.currentIndex()
-        index2 = self.comboboxComparisonImage.currentIndex()
+        img_source_index = self.comboboxMainImage.currentIndex()
+        img_target_index = self.comboboxComparisonImage.currentIndex()
 
-        self.project.computeCorrespondences(index1, index2)
-        self.compare_panel.setProject(self.project)
+        self.project.computeCorrespondences(img_source_index, img_target_index)
+        self.compare_panel.setTable(self.project, img_source_index, img_target_index)
 
 
     @pyqtSlot()
@@ -1003,10 +1003,11 @@ class TagLab(QWidget):
             if len(sel1) == 0 and len(sel2) == 0:
                 return
 
-            img1index = self.comboboxMainImage.currentIndex()
-            img2index = self.comboboxComparisonImage.currentIndex()
-            self.project.addCorrespondence(img1index, img2index, sel1, sel2)
-            self.compare_panel.updateData()
+            img_source_index = self.comboboxMainImage.currentIndex()
+            img_target_index = self.comboboxComparisonImage.currentIndex()
+            self.project.addCorrespondence(img_source_index, img_target_index, sel1, sel2)
+            corr = self.project.getImagePairCorrespondences(img_source_index, img_target_index)
+            self.compare_panel.updateData(corr)
 
             # highlight the correspondences just added and show it by scroll
             if len(sel1) > 0:
@@ -1020,7 +1021,11 @@ class TagLab(QWidget):
         indexes = self.compare_panel.data_table.selectionModel().selectedRows()
         if len(indexes) == 0:
             return
-        row = self.project.correspondences.data.iloc[indexes[0].row()]
+
+        img_source_index = self.comboboxMainImage.currentIndex()
+        img_target_index = self.comboboxComparisonImage.currentIndex()
+        corr = self.project.getImagePairCorrespondences(img_source_index, img_target_index)
+        row = corr.data.iloc[indexes[0].row()]
         blob1id = row['Blob1']
         blob2id = row['Blob2']
 
@@ -1032,6 +1037,7 @@ class TagLab(QWidget):
 
     @pyqtSlot()
     def deleteMatch(self):
+
         if self.activeviewer is None or self.inactiveviewer is None:
             return
 
@@ -1040,11 +1046,14 @@ class TagLab(QWidget):
             return
         indexes = [a.row() for a in indexes]
 
-        self.project.correspondences.deleteCluster(indexes)
+        img_source_index = self.comboboxMainImage.currentIndex()
+        img_target_index = self.comboboxComparisonImage.currentIndex()
+        corr = self.project.getImagePairCorrespondences(img_source_index, img_target_index)
+        corr.deleteCluster(indexes)
 
         self.viewerplus.resetSelection()
         self.viewerplus2.resetSelection()
-        self.compare_panel.updateData()
+        self.compare_panel.updateData(corr)
 
 
     @pyqtSlot()
@@ -1075,7 +1084,9 @@ class TagLab(QWidget):
 
     def showCluster(self, blobid, is_source, center):
 
-        sourcecluster, targetcluster, rows = self.project.correspondences.findCluster(blobid, is_source)
+        corr = self.project.getImagePairCorrespondences(self.comboboxMainImage.currentIndex(),
+                                                        self.comboboxComparisonImage.currentIndex())
+        sourcecluster, targetcluster, rows = corr.findCluster(blobid, is_source)
 
         self.viewerplus.resetSelection()
 
@@ -1367,7 +1378,7 @@ class TagLab(QWidget):
     @pyqtSlot()
     def matchTool(self):
         """
-        Activate the "Match" too
+        Activate the "Match" tool
         """
         if len(self.project.images) < 2:
             box = QMessageBox()
@@ -1376,7 +1387,10 @@ class TagLab(QWidget):
             return
 
         self.setTool("MATCH")
-        self.compare_panel.setProject(self.project)
+
+        img_source_index = self.comboboxMainImage.currentIndex()
+        img_target_index = self.comboboxComparisonImage.currentIndex()
+        self.compare_panel.setTable(self.project, img_source_index, img_target_index)
 
 
     @pyqtSlot()
