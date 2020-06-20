@@ -1190,6 +1190,9 @@ class TagLab(QWidget):
             self.viewerplus.setProject(self.project)
             self.viewerplus.setImage(self.project.images[index])
             self.viewerplus.setChannel(self.project.images[index].channels[0])
+            if self.compare_panel.isVisible():
+                index2 = self.comboboxComparisonImage.currentIndex()
+                self.compare_panel.setTable(self.project, index, index2)
 
 
     @pyqtSlot(int)
@@ -1199,6 +1202,9 @@ class TagLab(QWidget):
             self.viewerplus2.setProject(self.project)
             self.viewerplus2.setImage(self.project.images[index])
             self.viewerplus2.setChannel(self.project.images[index].channels[0])
+            if self.compare_panel.isVisible():
+                index1 = self.comboboxMainImage.currentIndex()
+                self.compare_panel.setTable(self.project, index1, index)
 
 
     @pyqtSlot()
@@ -1824,6 +1830,8 @@ class TagLab(QWidget):
                                                  Qt.SmoothTransformation)
             self.mapviewer.setPixmap(thumb)
             self.mapviewer.setOpacity(0.5)
+
+            self.disableComparisonMode()
 
             self.infoWidget.setInfoMessage("The map has been successfully loading.")
 
