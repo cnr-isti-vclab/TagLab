@@ -192,28 +192,26 @@ class QtComparePanel(QWidget):
 
     def setTable(self, project, img1idx, img2idx):
 
-        if project.correspondences is not None:
+        self.correspondences = project.getImagePairCorrespondences(img1idx, img2idx)
+        self.data = self.correspondences.data
 
-            self.correspondences = project.getImagePairCorrespondences(img1idx, img2idx)
-            self.data = self.correspondences.data
+        self.model = TableModel(self.data)
+        self.sortfilter = QSortFilterProxyModel(self)
+        self.sortfilter.setSourceModel(self.model)
+        self.data_table.setModel(self.sortfilter)
 
-            self.model = TableModel(self.data)
-            self.sortfilter = QSortFilterProxyModel(self)
-            self.sortfilter.setSourceModel(self.model)
-            self.data_table.setModel(self.sortfilter)
+        self.data_table.setVisible(False)
+        self.data_table.verticalHeader().hide()
+        self.data_table.resizeColumnsToContents()
+        self.data_table.setVisible(True)
 
-            self.data_table.setVisible(False)
-            self.data_table.verticalHeader().hide()
-            self.data_table.resizeColumnsToContents()
-            self.data_table.setVisible(True)
+        self.data_table.setItemDelegateForColumn(5, self.combodelegate1)
+        self.data_table.setItemDelegateForColumn(6, self.combodelegate2)
+        self.data_table.setEditTriggers(QAbstractItemView.DoubleClicked)
 
-            self.data_table.setItemDelegateForColumn(5, self.combodelegate1)
-            self.data_table.setItemDelegateForColumn(6, self.combodelegate2)
-            self.data_table.setEditTriggers(QAbstractItemView.DoubleClicked)
+        self.data_table.update()
 
-            self.data_table.update()
-
-            self.data_table.setStyleSheet("QHeaderView::section { background-color: rgb(40,40,40) }")
+        self.data_table.setStyleSheet("QHeaderView::section { background-color: rgb(40,40,40) }")
 
 
     def updateData(self, corr):
