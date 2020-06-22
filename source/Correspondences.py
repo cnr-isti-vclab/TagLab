@@ -33,6 +33,15 @@ class Correspondences(object):
 
         self.data.sort_values(by=['Action', 'Blob1', 'Blob2'], inplace=True, ignore_index=True)
 
+    def fillTable(self, lst):
+        """
+        Fill the table from a list of correspondences.
+        """
+
+        columns = self.data.columns
+        self.data = pd.DataFrame(lst, columns=columns)
+        self.sort_data()
+
 
     def set(self, sourceblobs, targetblobs):
 

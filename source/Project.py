@@ -96,7 +96,13 @@ class Project(object):
         self.images = list(map(lambda img: Image(**img), images))       #list of annotated images
 
         # dict of tables (DataFrame) of correspondences betweeen a source and a target image
-        self.correspondences = None if correspondences is None else correspondences['correspondences']
+        self.correspondences = {}
+        if correspondences is not None:
+            for key in correspondences.keys():
+                source = correspondences[key]['source']
+                target = correspondences[key]['target']
+                self.correspondences[key] = Correspondences(source, target)
+                self.correspondences[key].fillTable(correspondences[key]['correspondences'])
 
         self.spatial_reference_system = spatial_reference_system   #if None we assume coordinates in pixels (but Y is up or down?!)
         self.metadata = metadata    # project metadata => keyword -> value
