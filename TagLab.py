@@ -1560,41 +1560,39 @@ class TagLab(QWidget):
             self.infoWidget.setInfoMessage("You need to select <em>two</em> blobs for DIVIDE operation.")
 
     def refineBorderDilate(self):
+
         view = self.activeviewer
         if view is None:
             return
-
 
         logfile.info("[OP-REFINE-BORDER-DILATE] DILATE-BORDER operation begins..")
 
         view.refine_grow += 2
         self.refineBorder()
-        #self.refine_grow = 0
 
         logfile.info("[OP-REFINE-BORDER-DILATE] DILATE-BORDER operation ends.")
 
 
     def refineBorderErode(self):
 
-        logfile.info("[OP-REFINE-BORDER-ERODE] ERODE-BORDER operation begins..")
         view = self.activeviewer
         if view is None:
             return
 
+        logfile.info("[OP-REFINE-BORDER-ERODE] ERODE-BORDER operation begins..")
 
         view.refine_grow -= 2
         self.refineBorder()
-        #self.refine_grow = 0
 
         logfile.info("[OP-REFINE-BORDER-ERODE] ERODE-BORDER operation ends.")
 
     def refineBorderOperation(self):
 
-        logfile.info("[OP-REFINE-BORDER] REFINE-BORDER operation begins..")
         view = self.activeviewer
         if view is None:
             return
 
+        logfile.info("[OP-REFINE-BORDER] REFINE-BORDER operation begins..")
 
         view.refine_grow = 0
         self.refineBorder()
@@ -1605,13 +1603,13 @@ class TagLab(QWidget):
         """
         Refine blob border
         """
+
         view = self.activeviewer
         if view is None:
             return
 
         if view.refine_grow != 0 and view.refine_original_mask is None:
             return
-
 
         # padding mask to allow moving boundary
         padding = 35
@@ -1631,24 +1629,27 @@ class TagLab(QWidget):
                 mask = view.refine_original_mask.copy()
                 bbox = view.refine_original_bbox.copy()
 
-
-            bbox[0] -= padding; #top
-            bbox[1] -= padding; #left
-            bbox[2] += 2*padding; #width
-            bbox[3] += 2*padding; #height
+            bbox[0] -= padding    # top
+            bbox[1] -= padding    # left
+            bbox[2] += 2*padding  # width
+            bbox[3] += 2*padding  # height
 
             img = utils.cropQImage(view.img_map, bbox)
             img = utils.qimageToNumpyArray(img)
 
-            #if view.depth_map is not None:
-            #    depth = view.depth_map[bbox[0] : bbox[0]+bbox[3], bbox[1] : bbox[1] + bbox[2]]
-#                imgg = utils.floatmapToQImage((depth - 4)*255)
-#                imgg.save("test.png")
+            # USE DEPTH INFORMATION IF AVAILABLE
+            # if view.depth_map is not None:
+            #     depth = view.depth_map[bbox[0] : bbox[0]+bbox[3], bbox[1] : bbox[1] + bbox[2]]
+            #     imgg = utils.floatmapToQImage((depth - 4)*255)
+            #     imgg.save("test.png")
+            #
+            #     utils.cropQImage(self.depth_map, bbox)
+            #     depth = utils.qimageToNumpyArray(depth)
+            # else:
+            #     depth = None
 
-                # #utils.cropQImage(self.depth_map, bbox)
-                #depth = utils.qimageToNumpyArray(depth)
-            #else:
             depth = None
+
             #try:
             #    from coraline.Coraline import segment
             #    segment(utils.qimageToNumpyArray(img), mask, 0.0, conservative=0.07, grow=self.refine_grow, radius=30)
@@ -1658,15 +1659,15 @@ class TagLab(QWidget):
             #    msgBox.setText(str(e))
             #    msgBox.exec()
             #    return
+
             if view.tools.tool != 'EDITBORDER':
                 view.tools.edit_points.last_editborder_points = None
 
-
             try:
-                view.removeBlob(selected)
-
-                #    blob.updateUsingMask(bbox, mask.astype(np.int))
+                #blob.updateUsingMask(bbox, mask.astype(np.int))
                 created_blobs = view.annotations.refineBorder(bbox, selected, img, depth, mask, view.refine_grow, view.tools.edit_points.last_editborder_points)
+
+                view.removeBlob(selected)
 
                 for blob in created_blobs:
                     view.addBlob(blob, selected=True)
@@ -1682,6 +1683,7 @@ class TagLab(QWidget):
 
         else:
             self.infoWidget.setInfoMessage("You need to select <em>one</em> blob for REFINE operation.")
+
 
     def fillLabel(self, blob):
         view = self.activeviewer
