@@ -132,11 +132,7 @@ class TagLab(QWidget):
 
         self.mapWidget = None
         self.classifierWidget = None
-
-#        self.tool_used = "MOVE"        # tool currently used
-#        self.tool_orig = "MOVE"        # tool originally used when a shift key changes the current tool
-        #self.refine_grow = 0.0
-
+        self.progress_bar = None
 
         ##### TOP LAYOUT
 
@@ -177,7 +173,7 @@ class TagLab(QWidget):
         layout_tools.addWidget(self.btnRuler)
         layout_tools.addSpacing(10)
         layout_tools.addWidget(self.btnDeepExtreme)
-        # layout_tools.addWidget(self.btnAutoClassification)
+        layout_tools.addWidget(self.btnAutoClassification)
         layout_tools.addSpacing(10)
         layout_tools.addWidget(self.btnSplitScreen)
         layout_tools.addWidget(self.btnMatch)
@@ -400,10 +396,6 @@ class TagLab(QWidget):
         self.sliderTrasparency.setValue(50)
         self.transparency_value = 0.5
 
-#        self.img_map = None
-#        self.img_thumb_map = None
-#        self.img_overlay = QImage(16, 16, QImage.Format_RGB32)
-
         # EVENTS
         self.labels_widget.activeLabelChanged.connect(self.viewerplus.setActiveLabel)
         self.labels_widget.activeLabelChanged.connect(self.viewerplus2.setActiveLabel)
@@ -422,6 +414,7 @@ class TagLab(QWidget):
         self.current_image_index = 0
 
         # NETWORKS
+        self.deepextreme_net = None
         self.corals_classifier = None
 
         # a dirty trick to adjust all the size..
@@ -1248,6 +1241,8 @@ class TagLab(QWidget):
         # RE-INITIALIZATION
 
         self.mapWidget = None
+        self.classifierWidget = None
+        self.progress_bar = None
         self.project = Project()
         self.last_image_loaded = None
         self.activeviewer = None
@@ -1957,11 +1952,12 @@ class TagLab(QWidget):
         if not filename:
             return
 
-        size = QSize(self.activeviewer.image.width, self.activeviewer.image.height)
-        created_blobs = self.activeviewer.annotations.import_label_map(filename, size, self.labels_dictionary)
+        # -1, -1 means that the label map imported must not be rescaled
+        created_blobs = self.activeviewer.annotations.import_label_map(filename, self.labels_dictionary, -1, -1)
         for blob in created_blobs:
             self.viewerplus.addBlob(blob, selected=False)
         self.viewerplus.saveUndo()
+
 
     @pyqtSlot()
     def exportAnnAsDataTable(self):
@@ -2133,6 +2129,13 @@ class TagLab(QWidget):
 
     @pyqtSlot()
     def selectClassifier(self):
+        """
+        Select the classifier to use between the available classifiers.
+        """
+
+        if self.activeviewer is None:
+            self.move()
+            return
 
         if self.available_classifiers == "None":
             self.btnAutoClassification.setChecked(False)
@@ -2144,8 +2147,31 @@ class TagLab(QWidget):
             self.classifierWidget.show()
 
 
+    def resetAutomaticClassification(self):
+        """
+        Reset the automatic classification.
+        """
+
+        # free GPU memory
+        self.resetNetworks()
+
+        # delete classifier widget
+        if self.corals_classifier:
+            del self.corals_classifier
+            self.corals_classifier = None
+
+        # delete progress bar
+        if self.progress_bar:
+            self.progress_bar.close()
+            del self.progress_bar
+            self.progress_bar = None
+
+
     @pyqtSlot()
     def applyClassifier(self):
+        """
+        Apply the chosen classifier to the active image.
+        """
 
         if self.classifierWidget:
 
@@ -2158,104 +2184,90 @@ class TagLab(QWidget):
             del self.classifierWidget
             self.classifierWidget = None
 
-            self.tool_used = "AUTOCLASS"
-
-            progress_bar = QtProgressBarCustom(parent=self)
-            progress_bar.setWindowFlags(Qt.ToolTip | Qt.CustomizeWindowHint)
-            progress_bar.setWindowModality(Qt.NonModal)
+            self.progress_bar = QtProgressBarCustom(parent=self)
+            self.progress_bar.setWindowFlags(Qt.ToolTip | Qt.CustomizeWindowHint)
+            self.progress_bar.setWindowModality(Qt.NonModal)
             pos = self.viewerplus.pos()
-            progress_bar.move(pos.x()+15, pos.y()+30)
-            progress_bar.show()
+            self.progress_bar.move(pos.x()+15, pos.y()+30)
+            self.progress_bar.show()
 
             # setup the desired classifier
 
             self.infoWidget.setInfoMessage("Setup automatic classification..")
 
-            progress_bar.setMessage("Setup automatic classification..", False)
+            self.progress_bar.setMessage("Setup automatic classification..", False)
             QApplication.processEvents()
 
             message = "[AUTOCLASS] Automatic classification STARTS.. (classifier: )" + classifier_selected['Classifier Name']
             logfile.info(message)
 
             self.corals_classifier = MapClassifier(classifier_selected, self.labels_dictionary)
-            self.corals_classifier.updateProgress.connect(progress_bar.setProgress)
+            self.corals_classifier.updateProgress.connect(self.progress_bar.setProgress)
 
-            # rescaling the map to fit the target scale of the network
+            if self.activeviewer is None:
+                self.resetAutomaticClassification()
+            else:
+                # rescaling the map to fit the target scale of the network
 
-            progress_bar.setMessage("Map rescaling..", False)
-            QApplication.processEvents()
-
-            target_scale_factor = classifier_selected['Scale']
-            scale_factor = target_scale_factor / self.map_px_to_mm_factor
-
-            w = self.img_map.width() * scale_factor
-            h = self.img_map.height() * scale_factor
-
-            input_img_map = self.img_map.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
-
-            progress_bar.setMessage("Classification: ", True)
-            progress_bar.setProgress(0.0)
-            QApplication.processEvents()
-
-            # runs the classifier
-            self.infoWidget.setInfoMessage("Automatic classification is running..")
-
-            self.corals_classifier.run(input_img_map, 768, 512, 128)
-
-            if self.corals_classifier.flagStopProcessing is False:
-
-                # import generated label map
-                progress_bar.setMessage("Finalizing classification results..", False)
+                self.progress_bar.setMessage("Map rescaling..", False)
                 QApplication.processEvents()
 
-                filename = os.path.join("temp", "labelmap.png")
-                created_blobs = self.activeviewer.annotations.import_label_map(filename, self.img_map)
-                for blob in created_blobs:
-                    self.addBlob(blob, selected=False)
+                orthomap = self.activeviewer.img_map
+                target_scale_factor = classifier_selected['Scale']
+                scale_factor = target_scale_factor / self.activeviewer.image.map_px_to_mm_factor
 
-                logfile.info("[AUTOCLASS] Automatic classification ENDS.")
+                w_target = orthomap.width() * scale_factor
+                h_target = orthomap.height() * scale_factor
 
-                # free GPU memory
-                self.resetNetworks()
+                input_orthomap = orthomap.scaled(w_target, h_target, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
 
-                if self.corals_classifier:
-                    del self.corals_classifier
-                    self.corals_classifier = None
+                self.progress_bar.setMessage("Classification: ", True)
+                self.progress_bar.setProgress(0.0)
+                QApplication.processEvents()
 
-                if progress_bar:
-                    progress_bar.close()
-                    del progress_bar
+                # runs the classifier
+                self.infoWidget.setInfoMessage("Automatic classification is running..")
 
-                # save and close
-                msgBox = QMessageBox()
-                msgBox.setWindowTitle(self.TAGLAB_VERSION)
-                msgBox.setText(
-                    "Automatic classification is finished. TagLab will be close. Please, click ok and save the project.")
-                msgBox.exec()
+                self.corals_classifier.run(input_orthomap, 768, 512, 128)
 
-                self.saveAsProject()
+                if self.corals_classifier.flagStopProcessing is False:
 
-                QApplication.quit()
+                    # import generated label map
+                    self.progress_bar.setMessage("Finalizing classification results..", False)
+                    QApplication.processEvents()
 
-            else:
+                    filename = os.path.join("temp", "labelmap.png")
 
-                logfile.info("[AUTOCLASS] Automatic classification STOP by the users.")
+                    created_blobs = self.activeviewer.annotations.import_label_map(filename, self.labels_dictionary,
+                                                                                   orthomap.width(), orthomap.height())
+                    for blob in created_blobs:
+                        self.addBlob(blob, selected=False)
 
-                # free GPU memory
-                self.resetNetworks()
+                    logfile.info("[AUTOCLASS] Automatic classification ENDS.")
 
-                if self.corals_classifier:
-                    del self.corals_classifier
-                    self.corals_classifier = None
+                    self.resetAutomaticClassification()
 
-                if progress_bar:
-                    progress_bar.close()
-                    del progress_bar
+                    # save and close
+                    msgBox = QMessageBox()
+                    msgBox.setWindowTitle(self.TAGLAB_VERSION)
+                    msgBox.setText(
+                        "Automatic classification is finished. TagLab will be close. Please, click ok and save the project.")
+                    msgBox.exec()
 
-                import gc
-                gc.collect()
+                    self.saveAsProject()
 
-                self.move()
+                    QApplication.quit()
+
+                else:
+
+                    logfile.info("[AUTOCLASS] Automatic classification STOP by the users.")
+
+                    self.resetAutomaticClassification()
+
+                    import gc
+                    gc.collect()
+
+                    self.move()
 
     def automaticSegmentation(self):
         self.img_overlay = QImage(self.segmentation_map_filename)

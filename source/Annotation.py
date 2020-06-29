@@ -259,7 +259,9 @@ class Annotation(object):
                 created_blobs.append(b)
 
         return created_blobs
-    #expect numpu img and mask
+
+
+    #expect numpy img and mask
     def refineBorder(self, box, blob, img, depth, mask, grow, lastedit):
         clippoints = None
 
@@ -495,7 +497,7 @@ class Annotation(object):
     ###########################################################################
     ### IMPORT / EXPORT
 
-    def import_label_map(self, filename, size, labels_info):
+    def import_label_map(self, filename, labels_info, w_target, h_target):
         """
         It imports a label map and create the corresponding blobs.
         The label map is rescaled such that it coincides with the reference map.
@@ -503,6 +505,9 @@ class Annotation(object):
 
         qimg_label_map = QImage(filename)
         qimg_label_map = qimg_label_map.convertToFormat(QImage.Format_RGB32)
+
+        if w_target > 0 and h_target > 0:
+            qimg_label_map = qimg_label_map.scaled(w_target, h_target, Qt.IgnoreAspectRatio, Qt.FastTransformation)
 
         label_map = utils.qimageToNumpyArray(qimg_label_map)
         label_map = label_map.astype(np.int32)
