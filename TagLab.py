@@ -30,8 +30,6 @@ import numpy.ma as ma
 from skimage import measure
 from skimage.measure import points_in_poly
 
-import rasterio as rio
-
 import source.Mask as Mask
 
 from PyQt5.QtCore import Qt, QSize, QMargins, QDir, QPoint, QPointF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo, QModelIndex
@@ -833,7 +831,7 @@ class TagLab(QWidget):
                 return
 
             image = self.activeviewer.image
-            self.activeviewer.setChannel(image.channels[1])
+            self.activeviewer.setChannel(image.channels[1], True)
 
         elif event.key() == Qt.Key_Y:
 
@@ -841,7 +839,7 @@ class TagLab(QWidget):
                 return
 
             image = self.activeviewer.image
-            self.activeviewer.setChannel(image.channels[0])
+            self.activeviewer.setChannel(image.channels[0], True)
 
         elif event.key() == Qt.Key_S:
             # SUBTRACTION BETWEEN TWO BLOBS (A = A / B), THEN BLOB B IS DELETED
@@ -979,11 +977,9 @@ class TagLab(QWidget):
 
             self.viewerplus.setProject(self.project)
             self.viewerplus.setImage(self.project.images[index_to_set])
-            self.viewerplus.setChannel(self.project.images[index_to_set].channels[0])
 
             self.viewerplus2.setProject(self.project)
             self.viewerplus2.setImage(self.project.images[index_to_set + 1])
-            self.viewerplus2.setChannel(self.project.images[index_to_set + 1].channels[0])
 
             self.comboboxMainImage.currentIndexChanged.connect(self.mainImageChanged)
             self.comboboxComparisonImage.currentIndexChanged.connect(self.comparisonImageChanged)
@@ -1199,7 +1195,6 @@ class TagLab(QWidget):
         if index < len(self.project.images):
             self.viewerplus.setProject(self.project)
             self.viewerplus.setImage(self.project.images[index])
-            self.viewerplus.setChannel(self.project.images[index].channels[0])
             if self.compare_panel.isVisible():
                 index2 = self.comboboxComparisonImage.currentIndex()
                 self.compare_panel.setTable(self.project, index, index2)
@@ -1211,7 +1206,6 @@ class TagLab(QWidget):
         if index < len(self.project.images):
             self.viewerplus2.setProject(self.project)
             self.viewerplus2.setImage(self.project.images[index])
-            self.viewerplus2.setChannel(self.project.images[index].channels[0])
             if self.compare_panel.isVisible():
                 index1 = self.comboboxMainImage.currentIndex()
                 self.compare_panel.setTable(self.project, index1, index)
@@ -1800,41 +1794,23 @@ class TagLab(QWidget):
 
         dir = QDir(os.getcwd())
 
-        # set RGB map
-        rgb_filename = dir.relativeFilePath(self.mapWidget.data['rgb_filename'])
-
-        channel_rgb = Channel(rgb_filename, type="RGB")
         #TODO validate date, and do it in the map_widget!
-        #TODO implement coordinate system
-
-        # RGB image
-        image_reader = QImageReader(rgb_filename)
-        size = image_reader.size()
-
-        image_name = os.path.basename(rgb_filename)
-        image_name = image_name[:-4]
-
-        # DEM
-        georef = None
-        channel_depth = None
-        depth_filename = dir.relativeFilePath(self.mapWidget.data['depth_filename'])
-        if len(depth_filename) > 4:
-            channel_depth, georef = self.loadDEM(depth_filename)
 
         image = Image(
                         map_px_to_mm_factor = float(self.mapWidget.data['px_to_mm']),
-                        id = image_name,
-                        name = image_name,
-                        width = size.width(),
-                        height = size.height(),
-                        georef = georef,
+                        id = self.mapWidget.data['name'],
+                        name = self.mapWidget.data['name'],
                         metadata = { 'acquisition_date':  self.mapWidget.data['acquisition_date'] }
                       )
 
-        if channel_depth:
-            image.channels = [channel_rgb, channel_depth]
-        else:
-            image.channels = [channel_rgb]
+        # set RGB map
+        rgb_filename = dir.relativeFilePath(self.mapWidget.data['rgb_filename'])
+        depth_filename = dir.relativeFilePath(self.mapWidget.data['depth_filename'])
+
+        image.addChannel(rgb_filename, "RGB")
+
+        if len(depth_filename) > 3:
+            image.addChannel(depth_filename, "DEM")
 
         self.project.images.append(image)
         self.updateImageSelectionMenu()
@@ -1854,7 +1830,6 @@ class TagLab(QWidget):
             self.infoWidget.setInfoMessage("Map is loading..")
             self.viewerplus.setProject(self.project)
             self.viewerplus.setImage(image)
-            self.viewerplus.setChannel(image.channels[0])
             self.last_image_loaded = image
 
             index = self.project.images.index(image)

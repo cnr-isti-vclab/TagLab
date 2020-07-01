@@ -104,7 +104,10 @@ class QtImageViewerPlus(QtImageViewer):
         self.project = project
 
 
-    def setImage(self, image):
+    def setImage(self, image, channel_idx=0):
+        """
+        Set the image to visualize. The first channel is visualized unless otherwise specified.
+        """
 
         self.clear()
 
@@ -119,36 +122,25 @@ class QtImageViewerPlus(QtImageViewer):
         self.tools.tools['RULER'].setPxToMM(image.map_px_to_mm_factor)
         self.px_to_mm = image.map_px_to_mm_factor
 
+        self.setChannel(image.channels[channel_idx])
+
         self.activated.emit()
 
 
-    def setChannel(self, channel):
-
-        self.channel = channel
+    def setChannel(self, channel, switch=False):
+        """
+        Set the image channel to visualize. If the channel has not been previously loaded it is loaded and cached.
+        """
 
         if self.image is None:
             raise("Image has not been previously set in ViewerPlus")
 
+        self.channel = channel
+
         if channel.qimage is not None:
             img = channel.qimage
         else:
-
-            # retrieve image size
-            image_reader = QImageReader(channel.filename)
-            size = image_reader.size()
-            if self.image.width is None:
-                self.image.width = size.width()
-                self.image.height = size.height()
-
-            if size.width() != self.image.width or size.height() != self.image.height:
-                raise Exception("Size of the image changed! Should have been: " + str(self.image.width) + "x" + str(self.image.height))
-
-            if size.width() > 32767 or size.height() > 32767:
-                raise Exception(
-                    "This map exceeds the image dimension handled by TagLab (the maximum size is 32767 x 32767).")
-
-            img = QImage(channel.filename)
-            channel.qimage = img
+            img = channel.loadData()
 
         if img.isNull():
             (channel.filename, filter) = QFileDialog.getOpenFileName(self, "Couldn't find the map, please select it:",
@@ -160,7 +152,10 @@ class QtImageViewerPlus(QtImageViewer):
             if img.isNull():
                 raise Exception("Could not load or find the image: " + channel.filename)
 
-        self.setChannelImg(img)
+        if switch:
+            self.setChannelImg(img, self.zoom_factor)
+        else:
+            self.setChannelImg(img)
 
     def setChannelImg(self, channel_img, zoomf=0.0):
         """

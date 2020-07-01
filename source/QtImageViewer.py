@@ -82,16 +82,20 @@ class QtImageViewer(QGraphicsView):
 
         self.pixmapitem.setPixmap(self.pixmap)
 
-        # Set scene size to image size (!)
-        self.setSceneRect(QRectF(self.pixmap.rect()))
+        if zoomf < 0.0000001:
 
-        # calculate zoom factor
-        pixels_of_border = 10
-        zf1 = (self.viewport().width() - pixels_of_border) / self.imgwidth
-        zf2 = (self.viewport().height() - pixels_of_border) / self.imgheight
+            # calculate zoom factor
 
-        zf = min(zf1, zf2)
-        self.zoom_factor = zf
+            # Set scene size to image size (!)
+            self.setSceneRect(QRectF(self.pixmap.rect()))
+
+            # calculate zoom factor
+            pixels_of_border = 10
+            zf1 = (self.viewport().width() - pixels_of_border) / self.imgwidth
+            zf2 = (self.viewport().height() - pixels_of_border) / self.imgheight
+
+            zf = min(zf1, zf2)
+            self.zoom_factor = zf
 
         self.updateViewer()
 
