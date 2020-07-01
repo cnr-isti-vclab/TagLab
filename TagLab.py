@@ -30,7 +30,7 @@ import numpy.ma as ma
 from skimage import measure
 from skimage.measure import points_in_poly
 
-#import rasterio as rio
+import rasterio as rio
 
 import source.Mask as Mask
 
@@ -70,10 +70,11 @@ from source.QtClassifierWidget import QtClassifierWidget
 from source.QtComparePanel import QtComparePanel
 from source.Blob import Blob
 from source.Annotation import Annotation
-
 from source.Project import Project, loadProject
 from source.Image import Image
 from source.Channel import Channel
+
+from source.GeoRef import GeoRef
 
 from source.MapClassifier import MapClassifier
 from source import utils
@@ -825,6 +826,22 @@ class TagLab(QWidget):
         elif event.key() == Qt.Key_M:
             # MERGE OVERLAPPED BLOBS
             self.union()
+
+        elif event.key() == Qt.Key_X:
+
+            if self.activeviewer is None:
+                return
+
+            image = self.activeviewer.image
+            self.activeviewer.setChannel(image.channels[1])
+
+        elif event.key() == Qt.Key_Y:
+
+            if self.activeviewer is None:
+                return
+
+            image = self.activeviewer.image
+            self.activeviewer.setChannel(image.channels[0])
 
         elif event.key() == Qt.Key_S:
             # SUBTRACTION BETWEEN TWO BLOBS (A = A / B), THEN BLOB B IS DELETED
@@ -1750,13 +1767,6 @@ class TagLab(QWidget):
             self.mapWidget.setWindowModality(Qt.WindowModal)
             self.mapWidget.accepted.connect(self.setMapProperties)
 
-            # transfer current data to widget
-
-            #self.mapWidget.editMapFile.setText(self.map_image_filename)
-
-            #self.mapWidget.editAcquisitionDate.setText(self.map_acquisition_date)
-            #self.mapWidget.editScaleFactor.setText(str(self.map_px_to_mm_factor))
-
             self.mapWidget.show()
 
         else:
@@ -1766,22 +1776,50 @@ class TagLab(QWidget):
                 self.mapWidget.show()
 
 
+# move where ??
+    def loadDEM(self, filename):
+        """
+        DEM must be a Georeferenced Tiff. It returns a DEM channel plus the geo info.
+        """
+        img_georef = rio.open(filename)
+        if img_georef.crs is None:
+            # this image is not geo-referenced
+            return None, None
+        else:
+            dem = Channel(filename, type="DEM")
+            dem.float_map = img_georef.read(1).astype(np.float32)
+            dem.nodata = img_georef.nodata
+            dem.qimage = utils.floatmapToQImage(dem.float_map, dem.nodata)
+            geoinfo = GeoRef(img_georef)
+            return dem, geoinfo
+
+
 #REFACTOR
     @pyqtSlot()
     def setMapProperties(self):
 
         dir = QDir(os.getcwd())
+
+        # set RGB map
         rgb_filename = dir.relativeFilePath(self.mapWidget.data['rgb_filename'])
 
-        channel_rgb = Channel(rgb_filename, type="rgb")
+        channel_rgb = Channel(rgb_filename, type="RGB")
         #TODO validate date, and do it in the map_widget!
         #TODO implement coordinate system
 
+        # RGB image
         image_reader = QImageReader(rgb_filename)
         size = image_reader.size()
 
         image_name = os.path.basename(rgb_filename)
         image_name = image_name[:-4]
+
+        # DEM
+        georef = None
+        channel_depth = None
+        depth_filename = dir.relativeFilePath(self.mapWidget.data['depth_filename'])
+        if len(depth_filename) > 4:
+            channel_depth, georef = self.loadDEM(depth_filename)
 
         image = Image(
                         map_px_to_mm_factor = float(self.mapWidget.data['px_to_mm']),
@@ -1789,16 +1827,18 @@ class TagLab(QWidget):
                         name = image_name,
                         width = size.width(),
                         height = size.height(),
+                        georef = georef,
                         metadata = { 'acquisition_date':  self.mapWidget.data['acquisition_date'] }
                       )
-        image.channels = [channel_rgb]
+
+        if channel_depth:
+            image.channels = [channel_rgb, channel_depth]
+        else:
+            image.channels = [channel_rgb]
 
         self.project.images.append(image)
-
         self.updateImageSelectionMenu()
-
         self.mapWidget.close()
-
         self.showImage(image)
 
 

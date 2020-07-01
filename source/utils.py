@@ -101,7 +101,7 @@ def labelsToQImage(mask):
 
     return qimg
 
-def floatmapToQImage(floatmap):
+def floatmapToQImage(floatmap, nodata):
 
     h = floatmap.shape[0]
     w = floatmap.shape[1]
@@ -109,10 +109,23 @@ def floatmapToQImage(floatmap):
 
     qimg.fill(qRgb(0,0,0))
 
-    for y in range(h):
-        for x in range(w):
-            gray = int(floatmap[y,x])
-            qimg.setPixel(x,y,qRgb(gray,gray,gray))
+    fmap = floatmap.copy()
+    max_value = np.max(fmap)
+    fmap[fmap == nodata] = max_value
+    min_value = np.min(fmap)
+
+    fmap = (fmap - min_value) / (max_value - min_value)
+    fmap = 255.0 * fmap
+    fmap = fmap.astype(np.uint8)
+
+    img = np.zeros([h, w, 3], dtype=np.uint8)
+    img[:,:,0] = fmap
+    img[:,:,1] = fmap
+    img[:,:,2] = fmap
+
+    qimg = rgbToQImage(img)
+
+    del fmap
 
     return qimg
 

@@ -129,21 +129,27 @@ class QtImageViewerPlus(QtImageViewer):
         if self.image is None:
             raise("Image has not been previously set in ViewerPlus")
 
-        # retrieve image size
-        image_reader = QImageReader(channel.filename)
-        size = image_reader.size()
-        if self.image.width is None:
-            self.image.width = size.width()
-            self.image.height = size.height()
+        if channel.qimage is not None:
+            img = channel.qimage
+        else:
 
-        if size.width() != self.image.width or size.height() != self.image.height:
-            raise Exception("Size of the image changed! Should have been: " + str(self.image.width) + "x" + str(self.image.height))
+            # retrieve image size
+            image_reader = QImageReader(channel.filename)
+            size = image_reader.size()
+            if self.image.width is None:
+                self.image.width = size.width()
+                self.image.height = size.height()
 
-        if size.width() > 32767 or size.height() > 32767:
-            raise Exception(
-                "This map exceeds the image dimension handled by TagLab (the maximum size is 32767 x 32767).")
+            if size.width() != self.image.width or size.height() != self.image.height:
+                raise Exception("Size of the image changed! Should have been: " + str(self.image.width) + "x" + str(self.image.height))
 
-        img = QImage(channel.filename)
+            if size.width() > 32767 or size.height() > 32767:
+                raise Exception(
+                    "This map exceeds the image dimension handled by TagLab (the maximum size is 32767 x 32767).")
+
+            img = QImage(channel.filename)
+            channel.qimage = img
+
         if img.isNull():
             (channel.filename, filter) = QFileDialog.getOpenFileName(self, "Couldn't find the map, please select it:",
                                                                        QFileInfo(channel.filename).dir().path(),
