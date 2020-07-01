@@ -825,21 +825,19 @@ class TagLab(QWidget):
             # MERGE OVERLAPPED BLOBS
             self.union()
 
-        elif event.key() == Qt.Key_X:
+        elif event.key() == Qt.Key_C:
+            # TOGGLE RGB/DEPTH CHANNELS
 
             if self.activeviewer is None:
                 return
 
             image = self.activeviewer.image
-            self.activeviewer.setChannel(image.channels[1], True)
+            index = image.channels.index(self.activeviewer.channel)
 
-        elif event.key() == Qt.Key_Y:
-
-            if self.activeviewer is None:
-                return
-
-            image = self.activeviewer.image
-            self.activeviewer.setChannel(image.channels[0], True)
+            if index == 0:
+                self.activeviewer.setChannel(image.channels[1], True)
+            else:
+                self.activeviewer.setChannel(image.channels[0], True)
 
         elif event.key() == Qt.Key_S:
             # SUBTRACTION BETWEEN TWO BLOBS (A = A / B), THEN BLOB B IS DELETED
@@ -1768,24 +1766,6 @@ class TagLab(QWidget):
             # show it again
             if self.mapWidget.isHidden():
                 self.mapWidget.show()
-
-
-# move where ??
-    def loadDEM(self, filename):
-        """
-        DEM must be a Georeferenced Tiff. It returns a DEM channel plus the geo info.
-        """
-        img_georef = rio.open(filename)
-        if img_georef.crs is None:
-            # this image is not geo-referenced
-            return None, None
-        else:
-            dem = Channel(filename, type="DEM")
-            dem.float_map = img_georef.read(1).astype(np.float32)
-            dem.nodata = img_georef.nodata
-            dem.qimage = utils.floatmapToQImage(dem.float_map, dem.nodata)
-            geoinfo = GeoRef(img_georef)
-            return dem, geoinfo
 
 
 #REFACTOR
