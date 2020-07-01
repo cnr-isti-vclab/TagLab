@@ -31,6 +31,7 @@ from skimage import measure
 from skimage.measure import points_in_poly
 
 import source.Mask as Mask
+import source.RasterOps as rasterops
 
 from PyQt5.QtCore import Qt, QSize, QMargins, QDir, QPoint, QPointF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo, QModelIndex
 from PyQt5.QtGui import QPainterPath, QFont, QColor, QPolygonF, QImageReader, QImage, QPixmap, QIcon, QKeySequence, \
@@ -593,10 +594,10 @@ class TagLab(QWidget):
         exportHistogramAct.setStatusTip("Export histograms of current annotations")
         exportHistogramAct.triggered.connect(self.exportHistogramFromAnn)
 
-        #exportShapefilesAct = QAction("Export as Shapefiles", self)
-        #exportShapefilesAct.setShortcut('Ctrl+??')
-        #exportShapefilesAct.setStatusTip("Export current annotations as shapefiles")
-        #exportShapefilesAct.triggered.connect(self.exportAnnAsShapefiles)
+        exportShapefilesAct = QAction("Export as Shapefiles", self)
+        # exportShapefilesAct.setShortcut('Ctrl+??')
+        exportShapefilesAct.setStatusTip("Export current annotations as shapefiles")
+        exportShapefilesAct.triggered.connect(self.exportAnnAsShapefiles)
 
         exportTrainingDatasetAct = QAction("Export New Training Dataset", self)
         #exportTrainingDatasetAct.setShortcut('Ctrl+??')
@@ -660,7 +661,7 @@ class TagLab(QWidget):
         submenuExport = filemenu.addMenu("Export")
         submenuExport.addAction(exportDataTableAct)
         submenuExport.addAction(exportMapAct)
-        #submenuExport.addAction(exportShapefilesAct)
+        submenuExport.addAction(exportShapefilesAct)
         submenuExport.addAction(exportHistogramAct)
         submenuExport.addAction(exportTrainingDatasetAct)
 
@@ -2013,9 +2014,24 @@ class TagLab(QWidget):
         histo_widget.show()
 
     @pyqtSlot()
+
     def exportAnnAsShapefiles(self):
 
-        pass  # not yet available
+        if self.activeviewer is None:
+            return
+        filters = "SHP (*.shp)"
+        filename, _ = QFileDialog.getSaveFileName(self, "Save Shapefile as", self.taglab_dir, filters)
+
+        if filename:
+            source = self.activeviewer.image.georef
+            mypolygons = []
+            myIds = []
+            for blob in self.activeviewer.annotations.seg_blobs:
+                polygon = rasterops.createPolygon(blob, source)
+                myIds.append(blob.id)
+                mypolygons.append(polygon)
+            rasterops.write_shapefile(mypolygons, myIds, source, filename)
+
 
     @pyqtSlot()
     def exportAnnAsTrainingDataset(self):
@@ -2026,6 +2042,27 @@ class TagLab(QWidget):
 
             filename = os.path.join(folderName, "tile")
             self.activeviewer.annotations.export_new_dataset(self.viewerplus.img_map, tile_size=1024, step=256, basename=filename, labels_info = self.labels_dictionary)
+
+
+    def clipRaster(self):
+
+        # load tiff
+        with rio.open("D:\\MOOREA\\DEM\\Plot_18_2018\\2018-Plot18_2m_PL51_DEM_0.6666mm-32b.tif") as src:
+
+         if self.activeviewer is None:
+           return
+
+         mypolygons = []
+
+         for blob in self.activeviewer.annotations.seg_blobs:
+             polygon = rasterops.createPolygon(blob, src)
+             mypolygons.append(polygon)
+
+         out_raster='clipraster.tif'
+         out_shp = os.path.join("temp", out_raster)
+         rasterops.saveClippedTiff(mypolygons, src, out_raster)
+
+
 
 
     # REFACTOR use project methods

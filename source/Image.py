@@ -46,7 +46,7 @@ class Image(object):
         """
 
         img = rio.open(filename)
-        if img.crs is None:
+        if img.crs is not None:
             # this image georeferenced
             geoinfo = GeoRef(img)
             self.georef = geoinfo
