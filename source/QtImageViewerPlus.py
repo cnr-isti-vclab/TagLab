@@ -140,7 +140,9 @@ class QtImageViewerPlus(QtImageViewer):
         if channel.qimage is not None:
             img = channel.qimage
         else:
+            QApplication.setOverrideCursor(Qt.WaitCursor)
             img = channel.loadData()
+            QApplication.restoreOverrideCursor()
 
         if img.isNull():
             (channel.filename, filter) = QFileDialog.getOpenFileName(self, "Couldn't find the map, please select it:",
