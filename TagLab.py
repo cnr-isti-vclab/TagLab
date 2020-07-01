@@ -599,6 +599,11 @@ class TagLab(QWidget):
         exportShapefilesAct.setStatusTip("Export current annotations as shapefiles")
         exportShapefilesAct.triggered.connect(self.exportAnnAsShapefiles)
 
+        exportClippedRasterAct = QAction("Export clipped Raster", self)
+        # exportShapefilesAct.setShortcut('Ctrl+??')
+        exportClippedRasterAct.setStatusTip("Export a raster clipped using visible annotations")
+        exportClippedRasterAct.triggered.connect(self.exportclippedRaster)
+
         exportTrainingDatasetAct = QAction("Export New Training Dataset", self)
         #exportTrainingDatasetAct.setShortcut('Ctrl+??')
         exportTrainingDatasetAct.setStatusTip("Export a new training dataset based on the current annotations")
@@ -662,6 +667,7 @@ class TagLab(QWidget):
         submenuExport.addAction(exportDataTableAct)
         submenuExport.addAction(exportMapAct)
         submenuExport.addAction(exportShapefilesAct)
+        submenuExport.addAction(exportClippedRasterAct)
         submenuExport.addAction(exportHistogramAct)
         submenuExport.addAction(exportTrainingDatasetAct)
 
@@ -2043,27 +2049,35 @@ class TagLab(QWidget):
             filename = os.path.join(folderName, "tile")
             self.activeviewer.annotations.export_new_dataset(self.viewerplus.img_map, tile_size=1024, step=256, basename=filename, labels_info = self.labels_dictionary)
 
-
-    def clipRaster(self):
+    @pyqtSlot()
+    def exportclippedRaster(self):
 
         # load tiff
-        with rio.open("D:\\MOOREA\\DEM\\Plot_18_2018\\2018-Plot18_2m_PL51_DEM_0.6666mm-32b.tif") as src:
+        if self.activeviewer is None:
+            return
+        filters = " TIFF (*.tif)"
+        filename, _ = QFileDialog.getSaveFileName(self, "Save raster as", self.taglab_dir, filters)
 
-         if self.activeviewer is None:
-           return
+        if filename:
+            source = self.activeviewer.image.georef
+            mypolygons = []
 
-         mypolygons = []
+            for blob in self.activeviewer.annotations.seg_blobs:
+                if blob.qpath_gitem.isVisible():
+                 polygon = rasterops.createPolygon(blob, source)
+                 mypolygons.append(polygon)
 
-         for blob in self.activeviewer.annotations.seg_blobs:
-             polygon = rasterops.createPolygon(blob, src)
-             mypolygons.append(polygon)
-
-         out_raster='clipraster.tif'
-         out_shp = os.path.join("temp", out_raster)
-         rasterops.saveClippedTiff(mypolygons, src, out_raster)
+            rasterops.saveClippedTiff(mypolygons, source, filename)
 
 
 
+    def adjustAreaUsingSlope(self):
+
+        # source = self.activeviewer.image.georef
+        # for blob in self.activeviewer.annotations.seg_blobs:
+        #     blob.area
+
+        pass
 
     # REFACTOR use project methods
 

@@ -5,6 +5,7 @@ import numpy as np
 from shapely.geometry import Polygon
 from osgeo import gdal,osr
 from rasterio.plot import reshape_as_raster
+from rasterio.mask import mask
 
 
 
@@ -87,8 +88,6 @@ def write_shapefile(polygons, myIds, georef, out_shp):
 
 
 
-
-
 def saveClippedTiff(polygons,georef,name):
 
     out_image, out_transform = rio.mask.mask(georef, polygons, crop=True)
@@ -131,7 +130,7 @@ def exportSlope(raster, filename):
 def adjustAreaUsingSlope(polygon, areaor, georef):
 
     array = georef.read()
-    slope= exportSlope("D:\\MOOREA\\DEM\\Plot_18_2018\\2018-Plot18_2m_PL51_DEM_0.6666mm-32b.tif", 'slope')
+    slope = exportSlope("D:\\MOOREA\\DEM\\Plot_18_2018\\2018-Plot18_2m_PL51_DEM_0.6666mm-32b.tif", 'slope')
     meta = georef.meta
     area_px = meta['transform'][0] ** 2
     non_null = (array != array.min()).astype(int)

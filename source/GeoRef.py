@@ -21,6 +21,7 @@ class GeoRef(object):
 
     def __init__(self, geotiff):
 
+        self.meta = geotiff.meta
         self.crs = geotiff.crs              # Coordinate Reference System
         self.transform = geotiff.transform  # Affine transform
         self.bounds = geotiff.bounds        # Bounding box
