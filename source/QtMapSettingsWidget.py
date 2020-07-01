@@ -126,23 +126,32 @@ class QtMapSettingsWidget(QWidget):
 
         if self.data["name"] == "":
             msgBox = QMessageBox()
-            msgBox.setText("Please give this map a name.")
+            msgBox.setText("Please, enter a name for the map.")
             msgBox.exec()
             return
 
+        # check if the RGB map file exists
         rgb_filename = self.data['rgb_filename']
-        # check if the map file exists
         if not os.path.exists(rgb_filename):
             msgBox = QMessageBox()
-            msgBox.setText("The file does not seems to exist.")
+            msgBox.setText("The RGB image file does not seems to exist.")
             msgBox.exec()
             return
 
+        # check if the depth map file exists
+        depth_filename = self.data['depth_filename']
+        if not os.path.exists(rgb_filename):
+            msgBox = QMessageBox()
+            msgBox.setText("The depth map file does not seems to exist.")
+            msgBox.exec()
+            return
+
+        # TODO: redundat check, remove it ?
         image_reader = QImageReader(rgb_filename)
         size = image_reader.size()
         if size.width() > 32767 or size.height() > 32767:
             msgBox = QMessageBox()
-            msgBox.setText("The mage is too big. TagLab is limited to 32767x32767 pixels.")
+            msgBox.setText("The image is too big. TagLab is limited to 32767x32767 pixels.")
             msgBox.exec()
             return
 
