@@ -88,11 +88,12 @@ def write_shapefile(polygons, myIds, georef, out_shp):
 
 
 
-def saveClippedTiff(polygons,georef,name):
+def saveClippedTiff(input, polygons, georef, name):
 
-    out_image, out_transform = rio.mask.mask(georef, polygons, crop=True)
+    dataset = rio.open(input)
+    out_image, out_transform = rio.mask.mask(dataset, polygons, crop=True)
     # num_non_null = (out_image != 500000).sum()
-    out_meta = georef.meta
+    out_meta = dataset.meta
     # area= out_meta['transform'][0] ** 2*out_image
     out_meta.update({"driver": "GTiff",
                       "height": out_image.shape[1],

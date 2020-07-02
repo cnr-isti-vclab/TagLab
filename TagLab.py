@@ -599,7 +599,7 @@ class TagLab(QWidget):
         exportShapefilesAct.setStatusTip("Export current annotations as shapefiles")
         exportShapefilesAct.triggered.connect(self.exportAnnAsShapefiles)
 
-        exportClippedRasterAct = QAction("Export clipped Raster", self)
+        exportClippedRasterAct = QAction("Export Clipped Raster", self)
         # exportShapefilesAct.setShortcut('Ctrl+??')
         exportClippedRasterAct.setStatusTip("Export a raster clipped using visible annotations")
         exportClippedRasterAct.triggered.connect(self.exportClippedRaster)
@@ -2067,8 +2067,12 @@ class TagLab(QWidget):
                  polygon = rasterops.createPolygon(blob, source)
                  mypolygons.append(polygon)
 
-            rasterops.saveClippedTiff(mypolygons, source, filename)
+            # the depth is clipped - get the file name of the Tiff which stores it
+            for channel in self.activeviewer.image.channels:
+                if channel.type == "DEM":
+                    input_tiff = channel.filename
 
+            rasterops.saveClippedTiff(input_tiff, mypolygons, source, filename)
 
 
     def adjustAreaUsingSlope(self):

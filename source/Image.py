@@ -8,7 +8,7 @@ import rasterio as rio
 class Image(object):
     def __init__(self, rect = [0.0, 0.0, 0.0, 0.0],
         map_px_to_mm_factor = 1.0, width = None, height = None, channels = [], id = None, name = None,
-        georef_filename = None, workspace = [], metadata = {}, annotations = {}):
+        georef_filename = "", workspace = [], metadata = {}, annotations = {}):
 
         #we have to select a standanrd enforced!
         #in image standard (x, y, width height)
@@ -48,7 +48,6 @@ class Image(object):
             geoinfo = GeoRef(img)
             self.georef = geoinfo
             self.georef_filename = filename
-            print("GEOREF LOADED")
 
 
     def addChannel(self, filename, type):
