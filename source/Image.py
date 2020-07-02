@@ -8,7 +8,7 @@ import rasterio as rio
 class Image(object):
     def __init__(self, rect = [0.0, 0.0, 0.0, 0.0],
         map_px_to_mm_factor = 1.0, width = None, height = None, channels = [], id = None, name = None,
-        georef = None, workspace = [], metadata = {}, annotations = {}):
+        georef_filename = None, workspace = [], metadata = {}, annotations = {}):
 
         #we have to select a standanrd enforced!
         #in image standard (x, y, width height)
@@ -29,19 +29,32 @@ class Image(object):
 
         self.channels = list(map(lambda c: Channel(**c), channels))
 
-        self.id = id                        # internal id used in correspondences it will never changes
-        self.name = name                    # a label for an annotated image
-        self.workspace = workspace          # a polygon in spatial reference system
-        #self.map_acquisition_date = None   # this should be suggested in project creation in image_metadata_template
-        self.georef = georef
-        self.metadata = metadata            # this follows image_metadata_template, do we want to allow freedom to add custome values?
+        self.id = id                            # internal id used in correspondences it will never changes
+        self.name = name                        # a label for an annotated image
+        self.workspace = workspace              # a polygon in spatial reference system
+        #self.map_acquisition_date = None       # this should be suggested in project creation in image_metadata_template
+        self.georef = None                      # georeferencing information
+        self.georef_filename = georef_filename  # filename used to fill the georeferencing information
+        self.metadata = metadata                # this follows image_metadata_template, do we want to allow freedom to add custome values?
 
+
+    def loadGeoInfo(self, filename):
+        """
+        Update the georeferencing information.
+        """
+        img = rio.open(filename)
+        if img.crs is not None:
+            # this image georeferenced
+            geoinfo = GeoRef(img)
+            self.georef = geoinfo
+            self.georef_filename = filename
+            print("GEOREF LOADED")
 
 
     def addChannel(self, filename, type):
         """
         This image add a channel to this image. The functions update the size (in pixels) and
-        the Coordinate Reference System (if the image if georeferenced).
+        the georeferencing information (if the image if georeferenced).
         The image data is loaded when the image channel is used for the first time.
         """
 
@@ -50,6 +63,7 @@ class Image(object):
             # this image georeferenced
             geoinfo = GeoRef(img)
             self.georef = geoinfo
+            self.georef_filename = filename
 
         # check image size consistency (all the channels muist have the same size)
         if self.width is not None and self.height is not None:
@@ -69,5 +83,10 @@ class Image(object):
 
 
     def save(self):
-        data = self.__dict__
+        data = self.__dict__.copy()
+
+        # IMPORTANT NOTE: the georeferencing information are not saved, they must be loaded
+        #                 from the georeferenced image (georef_filename)
+        del data['georef']
+
         return data

@@ -30,12 +30,19 @@ def loadProject(filename, labels_dict):
         project = Project(**data)
 
     project.filename = filename
-    #ensure all maps have an ID:
+
+    # load geo-reference information
+    for im in project.images:
+        if im.georef_filename != "":
+            im.loadGeoInfo(im.georef_filename)
+
+    # ensure all maps have an ID:
     count = 1
     for im in project.images:
         if im.id is None:
             im.id = "Map " + str(count)
         count += 1
+
     f.close()
     return project
 
