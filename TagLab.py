@@ -602,7 +602,7 @@ class TagLab(QWidget):
         exportClippedRasterAct = QAction("Export clipped Raster", self)
         # exportShapefilesAct.setShortcut('Ctrl+??')
         exportClippedRasterAct.setStatusTip("Export a raster clipped using visible annotations")
-        exportClippedRasterAct.triggered.connect(self.exportclippedRaster)
+        exportClippedRasterAct.triggered.connect(self.exportClippedRaster)
 
         exportTrainingDatasetAct = QAction("Export New Training Dataset", self)
         #exportTrainingDatasetAct.setShortcut('Ctrl+??')
@@ -2050,7 +2050,7 @@ class TagLab(QWidget):
             self.activeviewer.annotations.export_new_dataset(self.viewerplus.img_map, tile_size=1024, step=256, basename=filename, labels_info = self.labels_dictionary)
 
     @pyqtSlot()
-    def exportclippedRaster(self):
+    def exportClippedRaster(self):
 
         # load tiff
         if self.activeviewer is None:
