@@ -40,6 +40,11 @@ Taglab relies on __*CUDA 10*__ and __*Python 3.6*__ and needs a few packages to 
 |  pandas  | `pip3 install pandas `|
 |  opencv-python | `pip3 install opencv-python `|
 |  matplotlib  | `pip3 install matplotlib `|
+|  ogr         | `pip3 install ogr` |
+|  shapely         | `pip3 install shapely` |
+|  GDAL        |  `pip3 install GDAL-3.1.1-cp36-cp36m-win_amd64.whl` (https://www.lfd.uci.edu/~gohlke/pythonlibs/#gdal, cp36 means Python 3.6, pick the correct one) |
+|  rasterio    |  `pip3 install rasterio-1.1.5-cp36-cp36m-win_amd64.whl` (http://www.lfd.uci.edu/~gohlke/pythonlibs/#rasterio) |
+
 
 
 

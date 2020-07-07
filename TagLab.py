@@ -1782,22 +1782,29 @@ class TagLab(QWidget):
         dir = QDir(os.getcwd())
 
         #TODO validate date, and do it in the map_widget!
+        try:
+            image = Image(
+                            map_px_to_mm_factor = float(self.mapWidget.data['px_to_mm']),
+                            id = self.mapWidget.data['name'],
+                            name = self.mapWidget.data['name'],
+                            metadata = { 'acquisition_date':  self.mapWidget.data['acquisition_date'] }
+                          )
 
-        image = Image(
-                        map_px_to_mm_factor = float(self.mapWidget.data['px_to_mm']),
-                        id = self.mapWidget.data['name'],
-                        name = self.mapWidget.data['name'],
-                        metadata = { 'acquisition_date':  self.mapWidget.data['acquisition_date'] }
-                      )
+            # set RGB map
+            rgb_filename = dir.relativeFilePath(self.mapWidget.data['rgb_filename'])
+            depth_filename = dir.relativeFilePath(self.mapWidget.data['depth_filename'])
 
-        # set RGB map
-        rgb_filename = dir.relativeFilePath(self.mapWidget.data['rgb_filename'])
-        depth_filename = dir.relativeFilePath(self.mapWidget.data['depth_filename'])
+            image.addChannel(rgb_filename, "RGB")
 
-        image.addChannel(rgb_filename, "RGB")
+            if len(depth_filename) > 3:
+                image.addChannel(depth_filename, "DEM")
 
-        if len(depth_filename) > 3:
-            image.addChannel(depth_filename, "DEM")
+        except Exception as e:
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("Error creating map:" + str(e))
+            msgBox.exec()
+            return
 
         self.project.images.append(image)
         self.updateImageSelectionMenu()

@@ -68,7 +68,7 @@ class Image(object):
         if self.width is not None and self.height is not None:
             if self.width != img.width or self.height != img.height:
                 raise Exception(
-                    "Size of the image changed! Should have been: " + str(self.image.width) + "x" + str(self.image.height))
+                    "Size of the images is not consistent! It is " + str(img.width) + "x" + str(img.height) + ", should have been: " + str(self.width) + "x" + str(self.height))
 
         # check image size limits
         if img.width > 32767 or img.height > 32767:
