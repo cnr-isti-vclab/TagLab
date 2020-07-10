@@ -21,10 +21,12 @@ import sys
 import os
 import time
 import datetime
-
-
+import shutil
+import random as rnd
+import source.Split as Split
 
 import json
+import math
 import numpy as np
 import numpy.ma as ma
 from skimage import measure
@@ -2049,12 +2051,65 @@ class TagLab(QWidget):
     @pyqtSlot()
     def exportAnnAsTrainingDataset(self):
 
-        folderName = QFileDialog.getExistingDirectory(self, "Choose Export Folder", "")
+        TILE_SIZE = 1024
+        STEP = 256
 
-        if folderName:
+        #mode = "UNIFORM"                 # the map is subdivided vertically (70 / 15 / 15)
+        mode = "RANDOM"                   # the map is subdivided randomly into three non-overlapping part
+        #mode = "BIOLOGICALLY-INSPIRED"   # the map is subdivided according to the spatial distribution of the classes
 
-            filename = os.path.join(folderName, "tile")
-            self.activeviewer.annotations.export_new_dataset(self.viewerplus.img_map, tile_size=1024, step=256, basename=filename, labels_info = self.labels_dictionary)
+        # size of the each area is 15% of the entire map
+        map_w = self.activeviewer.image.width
+        map_h = self.activeviewer.image.height
+
+        val_area = [0, 0, 0, 0]
+        test_area = [0, 0, 0, 0]
+        # the train area is represented by the entire map minus the validation and test areas
+
+        if mode == "UNIFORM":
+
+            val_area = [0, map_h * 0.7, map_w, map_h * 0.15]
+            test_area = [0, map_h * 0.85, map_w, map_h * 0.15]
+
+        if mode == "RANDOM":
+
+            area_w = math.sqrt(0.15) * map_w
+            area_h = math.sqrt(0.15) * map_h
+
+            for j in range(1000):
+                px1 = rnd.randint(0, map_w - area_w - 1)
+                py1 = rnd.randint(0, map_h - area_h - 1)
+                px2 = rnd.randint(0, map_w - area_w - 1)
+                py2 = rnd.randint(0, map_h - area_h - 1)
+
+                area1 = [px1, py1, area_w, area_h]
+                area2 = [px2, py2, area_w, area_h]
+
+                intersection = Split.bbox_intersection(area1, area2)
+
+                if intersection < 1.0:
+                    val_area = area1
+                    test_area = area2
+
+        elif mode == "BIOLOGICALLY-INSPIRED":
+
+            area_w = math.sqrt(0.15) * map_w
+            area_h = math.sqrt(0.15) * map_h
+            blobs = self.activeviewer.annotations.seg_blobs
+            val_area, test_area = Split.findAreas(blobs, area_w, area_h)
+
+
+        shutil.rmtree("output")
+        filename = "output"
+        self.activeviewer.annotations.export_tiles(self.viewerplus.img_map, val_area=val_area, test_area=test_area,
+                                                   tile_size=TILE_SIZE, step=STEP,
+                                                   basename=filename, labels_info=self.labels_dictionary)
+
+
+        filename = "showareas.png"
+        self.activeviewer.annotations.save_exported_areas(map_w, map_h, filename, self.labels_dictionary, val_area, test_area)
+
+
 
     @pyqtSlot()
     def exportClippedRaster(self):
