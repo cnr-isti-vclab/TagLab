@@ -112,19 +112,67 @@ class NewDataset(object):
 		return intersection_area
 
 
-	def calculateMetrics(self, target_classes, map_w, map_h):
+	def checkBlobInclusion(self, area, blob):
 		"""
-		Given a list of blobs calculate the spatial/ecological metrics.
+		Given an area and a blob this function returns True if the blob should be included in the statistics for
+		the given area, False otherwise.
+		The area is stored as (top, left, width, height).
+		"""
+
+		intersection = self.bbox_intersection(area, blob.bbox)
+		perc_inside = intersection / (blob.bbox[2] * blob.bbox[3])
+		if perc_inside > 0.8:
+			return True
+		else:
+			return False
+
+
+	def computeFrequencies(self, target_classes):
+		"""
+		Compute the frequencies of the target classes on the entire map.
+		"""
+
+		map_w = self.orthoimage.width()
+		map_h = self.orthoimage.height()
+		area_map = map_w * map_h
+
+		frequencies = []
+		for class_name in target_classes:
+			area = 0.0
+			for blob in self.blobs:
+				if blob.class_name == class_name:
+					area += blob.area
+
+			freq = area / area_map
+			frequencies.append(freq)
+
+		return frequencies
+
+
+	def computeFrequenciesOnArea(self, area, target_classes):
+		"""
+		Compute the frequencies of the target classes inside the given area.
+		The area is stored as (top, left, width, height).
+		"""
+
+		pass
+
+
+	def calculateMetrics(self, area, target_classes):
+		"""
+		Given an area it calculates the spatial/ecological metrics.
+		The area is stored as (top, left, width, height).
 		"""
 
 		number = []
 		coverage = []
 		PSCV = []
+
 		for class_name in target_classes:
 
 			areas = []
-			for blob in blobs:
-				if blob.class_name == class_name:
+			for blob in self.blobs:
+				if blob.class_name == class_name and self.checkBlobInclusion(area, blob):
 					areas.append(blob.area)
 
 			# number of entities
@@ -138,7 +186,7 @@ class NewDataset(object):
 				PSCV.append((100.0 * std_areas) / mean_areas)
 
 				# Coverage, related to the density
-				coverage.append(sum(areas) / (map_w * map_h))
+				coverage.append(sum(areas) / (area[2] * area[3]))
 
 			else:
 
@@ -150,23 +198,71 @@ class NewDataset(object):
 
 	def calculateScore(self, area_number, area_coverage, area_PSCV, landscape_number, landscape_coverage, landscape_PSCV):
 		"""
-		The score is close to one if
+		The score is the distance (in percentage) w.r.t the landscape metrics used.
 		"""
 
-		s1 = abs((area_number / landscape_number) * 100.0 - 15.0)
-		s2 = abs((area_coverage - landscape_coverage) * 100.0)
-		s3 = abs(area_PSCV - landscape_PSCV)
+		scores = []
+		for i in range(len(area_number)):
 
-		score = 1.5 * s1 + s2 + s3
+			s1 = abs((area_number[i] / landscape_number[i]) * 100.0 - 10.0)
+			s2 = abs((area_coverage[i] - landscape_coverage[i]) * 100.0)
+			s3 = abs(area_PSCV[i] - landscape_PSCV[i])
 
-		return score
+			score = s1 + s2 + s3
+
+			scores.append(score)
+
+		return scores
 
 
-	def findAreas(self, blobs):
+	def findAreas(self, target_classes):
+		"""
+		Find the validation and test areas with landscape metrics similar to the ones of the entire map.
+		"""
 
-		pass
+		area_info = []
 
-	def setupAreas(self, mode):
+		map_w = self.orthoimage.width()
+		map_h = self.orthoimage.height()
+
+		area_w = int(math.sqrt(0.1) * map_w)
+		area_h = int(math.sqrt(0.1) * map_h)
+
+		landscape_number, landscape_coverage, landscape_PSCV = self.calculateMetrics([0, 0, map_w, map_h], target_classes)
+
+		for i in range(1000):
+
+			px = rnd.randint(0, map_w - area_w - 1)
+			py = rnd.randint(0, map_h - area_h - 1)
+			aspect_ratio_factor = factor = rnd.uniform(0.4, 2.5)
+			w = int(area_w / aspect_ratio_factor)
+			h = int(area_h * aspect_ratio_factor)
+
+			area_bbox = [py, px, w, h]
+
+			area_number, area_coverage, area_PSCV = self.calculateMetrics(area_bbox, target_classes)
+			scores = self.calculateScore(area_number, area_coverage, area_PSCV, landscape_number, landscape_coverage, landscape_PSCV)
+			aggregated_score = sum(scores) / len(scores)
+
+			area_info.append((area_bbox, scores, aggregated_score))
+
+
+		area_info.sort(key=lambda x:x[2])
+
+		for i in range(30):
+			print(area_info[i])
+
+		val_area = area_info[0][0]
+		for i in range(len(area_info)):
+			intersection = self.bbox_intersection(val_area, area_info[i][0])
+			if intersection < 10.0:
+				test_area = area_info[i][0]
+				break
+
+		return val_area, test_area
+
+
+	def setupAreas(self, mode, target_classes=None):
 		"""
 		mode:
 
@@ -185,8 +281,10 @@ class NewDataset(object):
 
 		if mode == "UNIFORM":
 
-			val_area = [0, map_h * 0.7, map_w, map_h * 0.15]
-			test_area = [0, map_h * 0.85, map_w, map_h * 0.15]
+			delta = int((self.tile_size - self.crop_size) / 2)
+
+			val_area = [delta + (map_h - delta*2) * 0.7, delta, map_w - delta*2, map_h * 0.15]
+			test_area = [delta + (map_h - delta*2) * 0.85, delta, map_w - delta*2, map_h * 0.15]
 
 		if mode == "RANDOM":
 
@@ -210,10 +308,7 @@ class NewDataset(object):
 
 		elif mode == "BIOLOGICALLY-INSPIRED":
 
-			area_w = int(math.sqrt(0.15) * map_w)
-			area_h = int(math.sqrt(0.15) * map_h)
-			val_area, test_area = self.findAreas(self.blobs, area_w, area_h)
-
+			val_area, test_area = self.findAreas(target_classes=target_classes)
 
 		self.val_area = val_area
 		self.test_area = test_area
@@ -230,16 +325,16 @@ class NewDataset(object):
 		area_W = area[2]
 		area_H = area[3]
 
-		tile_cols = 1 + int((area_W - tile_size) / step)
-		tile_rows = 1 + int((area_H - tile_size) / step)
+		tile_cols = 1 + int(area_W / step)
+		tile_rows = 1 + int(area_H / step)
 
-		deltaW = (area_W - tile_size - (tile_cols-1) * step) / 2.0
-		deltaH = (area_H - tile_size - (tile_rows-1) * step) / 2.0
+		deltaW = (area_W - tile_cols * step) / 2.0
+		deltaH = (area_H - tile_rows * step) / 2.0
 		deltaW = int(deltaW)
 		deltaH = int(deltaH)
 
-		area_top = area[0] + deltaH
-		area_left = area[1] + deltaW
+		area_top = area[0] + deltaH - int((tile_size - self.crop_size) / 2)
+		area_left = area[1] + deltaW - int((tile_size - self.crop_size) / 2)
 
 		for row in range(tile_rows):
 			for col in range(tile_cols):
@@ -374,17 +469,19 @@ class NewDataset(object):
 		w = self.orthoimage.width()
 		h = self.orthoimage.height()
 
+		delta = int(self.tile_size / 2)
+
 		if regular is True:
 			self.validation_tiles = self.sampleAreaUniformly(self.val_area, self.tile_size, self.step)
 			self.test_tiles = self.sampleAreaUniformly(self.test_area, self.tile_size, self.step)
 
-			self.training_tiles = self.sampleAreaUniformly([0, 0, w, h], self.tile_size, self.step)
+			self.training_tiles = self.sampleAreaUniformly([delta, delta, w-delta*2, h-delta*2], self.tile_size, self.step)
 
 		if oversampling is True:
 
 			DISK_RADIUS = 50.0
 
-			self.training_tiles = self.sampleAreaPoissonDisk([0, 0, w, h], self.blobs, DISK_RADIUS * 2.0)
+			self.training_tiles = self.sampleAreaPoissonDisk([delta, delta, w-delta*2, h-delta*2], self.blobs, DISK_RADIUS * 2.0)
 			self.validation_tiles = self.sampleAreaPoissonDisk(self.val_area, self.blobs, DISK_RADIUS * 2.0)
 			self.test_tiles = self.sampleAreaUniformly(self.test_area, self.tile_size, self.step)
 
@@ -392,6 +489,7 @@ class NewDataset(object):
 
 		if oversampling is True:
 			self.validation_tiles = self.cleaningValidationTiles(self.validation_tiles)
+
 
 	def create_label_image(self, labels_info):
 		"""
@@ -442,8 +540,6 @@ class NewDataset(object):
 		basenameVlab = os.path.join(basename, "val_lab")
 		os.makedirs(basenameVlab)
 
-		samplesVal = self.sampleAreaUniformly(self.val_area, self.tile_size, self.step)
-
 		half_tile_size = tile_size = self.tile_size / 2
 
 		for i, sample in enumerate(self.validation_tiles):
@@ -453,7 +549,7 @@ class NewDataset(object):
 			top = cy - half_tile_size
 			left = cx - half_tile_size
 			cropimg = utils.cropQImage(self.orthoimage, [top, left, self.tile_size, self.tile_size])
-			croplabel = utils.cropQImage(labelimg, [top, left, self.tile_size, self.tile_size])
+			croplabel = utils.cropQImage(self.label_image, [top, left, self.tile_size, self.tile_size])
 
 			filenameRGB = os.path.join(basenameVim, "tile_" + str.format("{0:04d}", (i)) + ".png")
 			filenameLabel = os.path.join(basenameVlab, "tile_" + str.format("{0:04d}", (i)) + ".png")
@@ -494,7 +590,7 @@ class NewDataset(object):
 		basenameTrainLab = os.path.join(basename, "train_lab")
 		os.makedirs(basenameTrainLab)
 
-		for i, sample in enumerate(self.test_tiles):
+		for i, sample in enumerate(self.training_tiles):
 
 			cx = sample[0]
 			cy = sample[1]

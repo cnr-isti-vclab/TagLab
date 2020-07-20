@@ -429,6 +429,8 @@ class TagLab(QWidget):
 
         self.move()
 
+
+
     #just to make the code less verbose
     def newAction(self, text, shortcut, callback):
         action  = QAction(text, self)
@@ -2053,15 +2055,17 @@ class TagLab(QWidget):
         new_dataset = NewDataset(self.activeviewer.img_map, self.activeviewer.annotations.seg_blobs, tile_size=1024, step=512)
 
         # create training, validation and test areas
-        new_dataset.setupAreas("RANDOM")
+        target_classes = ["Pocillopora", "Pocillopora_eydouxi", "Porite_massive", "Montipora_plate/flabellata",
+                          "Montipora_crust/patula"]
+        new_dataset.setupAreas("BIOLOGICALLY-INSPIRED", target_classes)
 
         # cut the tiles on the areas areas
-        new_dataset.cut_tiles(regular=False, oversampling=True)
+        new_dataset.cut_tiles(regular=True, oversampling=False)
         new_dataset.create_label_image(self.labels_dictionary)
         new_dataset.save_samples("showsamples.png", show_tiles=True)
         # generate the dataset
-        #shutil.rmtree("output", ignore_errors=True)
-        #new_dataset.create(basename="output", labels_info=self.labels_dictionary)
+        shutil.rmtree("output", ignore_errors=True)
+        new_dataset.export_tiles(basename="output", labels_info=self.labels_dictionary)
 
 
 
