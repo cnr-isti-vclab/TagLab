@@ -1,5 +1,5 @@
 
-import ogr
+import osgeo.ogr as ogr
 import rasterio as rio
 import numpy as np
 from shapely.geometry import Polygon
