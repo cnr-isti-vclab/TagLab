@@ -204,7 +204,7 @@ class NewDataset(object):
 		scores = []
 		for i in range(len(area_number)):
 
-			s1 = abs((area_number[i] / landscape_number[i]) * 100.0 - 10.0)
+			s1 = abs((area_number[i] / landscape_number[i]) * 100.0 - 15.0)
 			s2 = abs((area_coverage[i] - landscape_coverage[i]) * 100.0)
 			s3 = abs(area_PSCV[i] - landscape_PSCV[i])
 
@@ -225,18 +225,18 @@ class NewDataset(object):
 		map_w = self.orthoimage.width()
 		map_h = self.orthoimage.height()
 
-		area_w = int(math.sqrt(0.1) * map_w)
-		area_h = int(math.sqrt(0.1) * map_h)
+		area_w = int(math.sqrt(0.15) * map_w)
+		area_h = int(math.sqrt(0.15) * map_h)
 
 		landscape_number, landscape_coverage, landscape_PSCV = self.calculateMetrics([0, 0, map_w, map_h], target_classes)
 
-		for i in range(1000):
+		for i in range(12000):
 
-			px = rnd.randint(0, map_w - area_w - 1)
-			py = rnd.randint(0, map_h - area_h - 1)
 			aspect_ratio_factor = factor = rnd.uniform(0.4, 2.5)
 			w = int(area_w / aspect_ratio_factor)
 			h = int(area_h * aspect_ratio_factor)
+			px = rnd.randint(0, map_w - w - 1)
+			py = rnd.randint(0, map_h - h - 1)
 
 			area_bbox = [py, px, w, h]
 
