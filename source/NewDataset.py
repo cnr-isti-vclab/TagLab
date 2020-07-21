@@ -51,6 +51,16 @@ class NewDataset(object):
 		self.label_image = None
 		self.crop_size = 513
 
+		self.frequencies = None
+
+		# normalization factors
+		self.sn_min = 0.0
+		self.sn_max = 0.0
+		self.sc_min = 0.0
+		self.sc_max = 0.0
+		self.sP_min = 0.0
+		self.sP_max = 0.0
+
 
 	def isFullyInsideBBox(self, bbox1, bbox2):
 		"""
@@ -121,7 +131,7 @@ class NewDataset(object):
 
 		intersection = self.bbox_intersection(area, blob.bbox)
 		perc_inside = intersection / (blob.bbox[2] * blob.bbox[3])
-		if perc_inside > 0.8:
+		if perc_inside > 0.7:
 			return True
 		else:
 			return False
@@ -146,7 +156,8 @@ class NewDataset(object):
 			freq = area / area_map
 			frequencies.append(freq)
 
-		return frequencies
+		print(frequencies)
+		self.frequencies = frequencies
 
 
 	def computeFrequenciesOnArea(self, area, target_classes):
@@ -168,12 +179,13 @@ class NewDataset(object):
 		coverage = []
 		PSCV = []
 
-		for class_name in target_classes:
+		for i, class_name in enumerate(target_classes):
 
 			areas = []
-			for blob in self.blobs:
-				if blob.class_name == class_name and self.checkBlobInclusion(area, blob):
-					areas.append(blob.area)
+			if self.frequencies[i] > 0.0:
+				for blob in self.blobs:
+					if blob.class_name == class_name and self.checkBlobInclusion(area, blob):
+						areas.append(blob.area)
 
 			# number of entities
 			number.append(len(areas))
@@ -196,6 +208,29 @@ class NewDataset(object):
 		return number, coverage, PSCV
 
 
+	def rangeScore(self, area_number, area_coverage, area_PSCV, landscape_number, landscape_coverage, landscape_PSCV):
+
+		s1 = []
+		s2 = []
+		s3 = []
+		for i in range(len(area_number)):
+
+			score = 0.0
+			if landscape_number[i] > 0:
+
+				s1.append(abs((area_number[i] / landscape_number[i]) * 100.0 - 15.0))
+				s2.append(abs((area_coverage[i] - landscape_coverage[i]) * 100.0))
+				s3.append(abs(area_PSCV[i] - landscape_PSCV[i]))
+
+			else:
+
+				s1.append(0.0)
+				s2.append(0.0)
+				s3.append(0.0)
+
+		return s1, s2, s3
+
+
 	def calculateScore(self, area_number, area_coverage, area_PSCV, landscape_number, landscape_coverage, landscape_PSCV):
 		"""
 		The score is the distance (in percentage) w.r.t the landscape metrics used.
@@ -204,11 +239,40 @@ class NewDataset(object):
 		scores = []
 		for i in range(len(area_number)):
 
-			s1 = abs((area_number[i] / landscape_number[i]) * 100.0 - 15.0)
-			s2 = abs((area_coverage[i] - landscape_coverage[i]) * 100.0)
-			s3 = abs(area_PSCV[i] - landscape_PSCV[i])
+			score = 0.0
+			if landscape_number[i] > 0:
 
-			score = s1 + s2 + s3
+				s1 = abs((area_number[i] / landscape_number[i]) * 100.0 - 15.0)
+				s2 = abs((area_coverage[i] - landscape_coverage[i]) * 100.0)
+				s3 = abs(area_PSCV[i] - landscape_PSCV[i])
+
+				score = s1 + s2 + s3
+
+			scores.append(score)
+
+		return scores
+
+
+	def calculateNormalizedScore(self, area_number, area_coverage, area_PSCV, landscape_number, landscape_coverage, landscape_PSCV):
+		"""
+		The score is the distance (in percentage) w.r.t the landscape metrics used.
+		"""
+
+		scores = []
+		for i in range(len(area_number)):
+
+			score = 0.0
+			if landscape_number[i] > 0:
+
+				s1 = abs((area_number[i] / landscape_number[i]) * 100.0 - 15.0)
+				s2 = abs((area_coverage[i] - landscape_coverage[i]) * 100.0)
+				s3 = abs(area_PSCV[i] - landscape_PSCV[i])
+
+				sn = (s1 - self.sn_min[i]) / (self.sn_max[i] - self.sn_min[i])
+				sc = (s2 - self.sc_min[i]) / (self.sc_max[i] - self.sc_min[i])
+				sP = (s3 - self.sP_min[i]) / (self.sP_max[i] - self.sP_min[i])
+
+				score = (sn + sc + sP) / 3.0
 
 			scores.append(score)
 
@@ -230,7 +294,44 @@ class NewDataset(object):
 
 		landscape_number, landscape_coverage, landscape_PSCV = self.calculateMetrics([0, 0, map_w, map_h], target_classes)
 
-		for i in range(12000):
+		# calculate normalization factor
+		numbers = []
+		coverages = []
+		PSCVs = []
+		sn = []
+		sc = []
+		sP = []
+		for i in range(500):
+
+			aspect_ratio_factor = factor = rnd.uniform(0.4, 2.5)
+			w = int(area_w / aspect_ratio_factor)
+			h = int(area_h * aspect_ratio_factor)
+			px = rnd.randint(0, map_w - w - 1)
+			py = rnd.randint(0, map_h - h - 1)
+
+			area_bbox = [py, px, w, h]
+			area_number, area_coverage, area_PSCV = self.calculateMetrics(area_bbox, target_classes)
+			s1, s2, s3 = self.rangeScore(area_number, area_coverage, area_PSCV, landscape_number, landscape_coverage, landscape_PSCV)
+
+			numbers.append(area_number)
+			coverages.append(area_coverage)
+			PSCVs.append(area_PSCV)
+
+			sn.append(s1)
+			sc.append(s2)
+			sP.append(s3)
+
+		sn = np.array(sn)
+		sc = np.array(sc)
+		sP = np.array(sP)
+		self.sn_min = np.min(sn, axis=0)
+		self.sn_max = np.max(sn, axis=0)
+		self.sc_min = np.min(sc, axis=0)
+		self.sc_max = np.max(sc, axis=0)
+		self.sP_min = np.min(sP, axis=0)
+		self.sP_max = np.max(sP, axis=0)
+
+		for i in range(5000):
 
 			aspect_ratio_factor = factor = rnd.uniform(0.4, 2.5)
 			w = int(area_w / aspect_ratio_factor)
@@ -241,18 +342,31 @@ class NewDataset(object):
 			area_bbox = [py, px, w, h]
 
 			area_number, area_coverage, area_PSCV = self.calculateMetrics(area_bbox, target_classes)
-			scores = self.calculateScore(area_number, area_coverage, area_PSCV, landscape_number, landscape_coverage, landscape_PSCV)
+			scores = self.calculateNormalizedScore(area_number, area_coverage, area_PSCV, landscape_number, landscape_coverage, landscape_PSCV)
+
 			aggregated_score = sum(scores) / len(scores)
 
 			area_info.append((area_bbox, scores, aggregated_score))
 
 
 		area_info.sort(key=lambda x:x[2])
-
-		for i in range(30):
-			print(area_info[i])
-
 		val_area = area_info[0][0]
+
+		area_number, area_coverage, area_PSCV = self.calculateMetrics(val_area, target_classes)
+		scores = self.calculateScore(area_number, area_coverage, area_PSCV, landscape_number, landscape_coverage, landscape_PSCV)
+		lc = [value * 100.0 for value in landscape_coverage]
+		ac = [value * 100.0 for value in area_coverage]
+		print(scores)
+		print("Number of corals per class (landscape):", landscape_number)
+		print("Coverage of corals per class (landscape):", lc)
+		print("PSCV per class (landscape): ", landscape_PSCV)
+		print("Number of corals per class (selected area):", area_number)
+		print("Coverage of corals per class (selected area):", ac)
+		print("PSCV of corals per class (selected area):", area_PSCV)
+
+		#for i in range(30):
+		#	print(area_info[i])
+
 		for i in range(len(area_info)):
 			intersection = self.bbox_intersection(val_area, area_info[i][0])
 			if intersection < 10.0:
