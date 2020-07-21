@@ -49,6 +49,8 @@ class NewDataset(object):
 		self.test_tiles = []
 
 		self.label_image = None
+		self.labels = None
+
 		self.crop_size = 513
 
 		self.frequencies = None
@@ -122,16 +124,16 @@ class NewDataset(object):
 		return intersection_area
 
 
-	def checkBlobInclusion(self, area, blob):
+	def checkBlobInside(self, area, blob, threshold):
 		"""
-		Given an area and a blob this function returns True if the blob should be included in the statistics for
-		the given area, False otherwise.
+		Given an area and a blob this function returns True if the blob is inside the given area
+		(according to a given threshold), False otherwise.
 		The area is stored as (top, left, width, height).
 		"""
 
 		intersection = self.bbox_intersection(area, blob.bbox)
 		perc_inside = intersection / (blob.bbox[2] * blob.bbox[3])
-		if perc_inside > 0.7:
+		if perc_inside > threshold:
 			return True
 		else:
 			return False
@@ -160,13 +162,27 @@ class NewDataset(object):
 		self.frequencies = frequencies
 
 
-	def computeFrequenciesOnArea(self, area, target_classes):
+	def computeExactCoverage(self, area, target_classes):
 		"""
-		Compute the frequencies of the target classes inside the given area.
+		Compute the coverage of the target classes inside the given area.
 		The area is stored as (top, left, width, height).
 		"""
 
-		pass
+		top = area[0]
+		left = area[1]
+		right = left + area[2]
+		bottom = top + area[3]
+		labelsint = self.labels[top:bottom, left:right].copy()
+
+		A = float(area[2] * area[3])
+
+		coverage_per_class = []
+		for i in range(len(target_classes)):
+			i = i + 1  # background is skipped
+			coverage = float(np.count_nonzero(labelsint == i)) / A
+			coverage_per_class.append(coverage)
+
+		return coverage_per_class
 
 
 	def calculateMetrics(self, area, target_classes):
@@ -176,15 +192,15 @@ class NewDataset(object):
 		"""
 
 		number = []
-		coverage = []
 		PSCV = []
 
+		# a coral is counted if and only if it is inside the given area for 3/4
 		for i, class_name in enumerate(target_classes):
 
 			areas = []
 			if self.frequencies[i] > 0.0:
 				for blob in self.blobs:
-					if blob.class_name == class_name and self.checkBlobInclusion(area, blob):
+					if blob.class_name == class_name and self.checkBlobInside(area, blob, 3.0/4.0):
 						areas.append(blob.area)
 
 			# number of entities
@@ -197,13 +213,12 @@ class NewDataset(object):
 				std_areas = np.std(areas)
 				PSCV.append((100.0 * std_areas) / mean_areas)
 
-				# Coverage, related to the density
-				coverage.append(sum(areas) / (area[2] * area[3]))
-
 			else:
 
 				PSCV.append(0.0)
-				coverage.append(0.0)
+
+		# coverage evaluation
+		coverage = self.computeExactCoverage(area, target_classes)
 
 		return number, coverage, PSCV
 
@@ -303,6 +318,8 @@ class NewDataset(object):
 		sP = []
 		for i in range(500):
 
+			print(i)
+
 			aspect_ratio_factor = factor = rnd.uniform(0.4, 2.5)
 			w = int(area_w / aspect_ratio_factor)
 			h = int(area_h * aspect_ratio_factor)
@@ -332,6 +349,8 @@ class NewDataset(object):
 		self.sP_max = np.max(sP, axis=0)
 
 		for i in range(5000):
+
+			print(i)
 
 			aspect_ratio_factor = factor = rnd.uniform(0.4, 2.5)
 			w = int(area_w / aspect_ratio_factor)
@@ -374,6 +393,62 @@ class NewDataset(object):
 				break
 
 		return val_area, test_area
+
+
+
+	def create_label_image(self, labels_info):
+		"""
+		It converts the blobs in the label image.
+		"""
+
+		# create a black canvas of the same size of your map
+		w = self.orthoimage.width()
+		h = self.orthoimage.height()
+
+		labelimg = QImage(w, h, QImage.Format_RGB32)
+		labelimg.fill(qRgb(0, 0, 0))
+
+		painter = QPainter(labelimg)
+
+		# CREATE LABEL IMAGE
+		for i, blob in enumerate(self.blobs):
+
+			if blob.qpath_gitem.isVisible():
+
+				if blob.qpath_gitem.isVisible():
+
+					if blob.class_name == "Empty":
+						rgb = qRgb(255, 255, 255)
+					else:
+						class_color = labels_info[blob.class_name]
+						rgb = qRgb(class_color[0], class_color[1], class_color[2])
+
+					painter.setBrush(QBrush(QColor(rgb)))
+					painter.drawPath(blob.qpath_gitem.path())
+
+		painter.end()
+
+		self.label_image = labelimg
+
+
+	def convert_colors_to_labels(self, target_classes, labels_colors):
+		"""
+		Convert the label image to a numpy array with the labels' values.
+		"""
+
+		label_w = self.label_image.width()
+		label_h = self.label_image.height()
+
+		imglbl = utils.qimageToNumpyArray(self.label_image)
+
+		num_classes = len(target_classes)
+
+		# class 0 --> background
+		self.labels = np.zeros((label_h, label_w), dtype='int64')
+		for i, cl in enumerate(target_classes):
+			class_colors = labels_colors[cl]
+			idx = np.where((imglbl[:, :, 0] == class_colors[0]) & (imglbl[:, :, 1] == class_colors[1]) & (imglbl[:, :, 2] == class_colors[2]))
+			self.labels[idx] = i + 1
 
 
 	def setupAreas(self, mode, target_classes=None):
@@ -603,41 +678,6 @@ class NewDataset(object):
 
 		if oversampling is True:
 			self.validation_tiles = self.cleaningValidationTiles(self.validation_tiles)
-
-
-	def create_label_image(self, labels_info):
-		"""
-		It converts the blobs in the label image.
-		"""
-
-		# create a black canvas of the same size of your map
-		w = self.orthoimage.width()
-		h = self.orthoimage.height()
-
-		labelimg = QImage(w, h, QImage.Format_RGB32)
-		labelimg.fill(qRgb(0, 0, 0))
-
-		painter = QPainter(labelimg)
-
-		# CREATE LABEL IMAGE
-		for i, blob in enumerate(self.blobs):
-
-			if blob.qpath_gitem.isVisible():
-
-				if blob.qpath_gitem.isVisible():
-
-					if blob.class_name == "Empty":
-						rgb = qRgb(255, 255, 255)
-					else:
-						class_color = labels_info[blob.class_name]
-						rgb = qRgb(class_color[0], class_color[1], class_color[2])
-
-					painter.setBrush(QBrush(QColor(rgb)))
-					painter.drawPath(blob.qpath_gitem.path())
-
-		painter.end()
-
-		self.label_image = labelimg
 
 
 	def export_tiles(self, basename, labels_info):

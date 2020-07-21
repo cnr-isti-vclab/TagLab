@@ -2057,11 +2057,15 @@ class TagLab(QWidget):
         # create training, validation and test areas
         target_classes = ["Pocillopora", "Pocillopora_eydouxi", "Porite_massive", "Montipora_plate/flabellata",
                           "Montipora_crust/patula"]
+
+        new_dataset.create_label_image(self.labels_dictionary)
+        new_dataset.convert_colors_to_labels(target_classes, self.labels_dictionary)
+        new_dataset.computeFrequencies(target_classes)
+
         new_dataset.setupAreas("BIOLOGICALLY-INSPIRED", target_classes)
 
         # cut the tiles on the areas areas
         new_dataset.cut_tiles(regular=True, oversampling=False)
-        new_dataset.create_label_image(self.labels_dictionary)
         new_dataset.save_samples("showsamples.png", show_tiles=True)
         # generate the dataset
         shutil.rmtree("output", ignore_errors=True)
