@@ -2,7 +2,7 @@
 
 TagLab was created to support the activity of annotation and extraction of statistical data from ortho-maps of benthic communities. The tool includes different types of CNN-based segmentation networks specially trained for agnostic (relative only to contours) or semantic (also related to species) recognition of corals. TagLab is an ongoing project of the Visual Computing Lab http://vcg.isti.cnr.it/.
 
-![ScreenShot](screenshot.png)
+![ScreenShot](screenshot.jpg)
 
   
 ### Interaction:
