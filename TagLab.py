@@ -2968,7 +2968,7 @@ class TagLab(QWidget):
             extreme_points_ori = extreme_points_new.astype(int)
 
             #  Crop image to the bounding box from the extreme points and resize
-            bbox = helpers.get_bbox(img, points=extgreme_points_ori, pad=pad, zero_pad=True)
+            bbox = helpers.get_bbox(img, points=extreme_points_ori, pad=pad, zero_pad=True)
             crop_image = helpers.crop_from_bbox(img, bbox, zero_pad=True)
             resize_image = helpers.fixed_resize(crop_image, (512, 512)).astype(np.float32)
 
