@@ -2,7 +2,7 @@
 
 TagLab was created to support the activity of annotation and extraction of statistical data from ortho-maps of benthic communities. The tool includes different types of CNN-based segmentation networks specially trained for agnostic (relative only to contours) or semantic (also related to species) recognition of corals. TagLab is an ongoing project of the Visual Computing Lab http://vcg.isti.cnr.it/.
 
-![ScreenShot](Screenshot.png)
+![ScreenShot](screenshot.png)
 
   
 ### Interaction:
@@ -29,18 +29,21 @@ Deep Extreme Cut original code : https://github.com/scaelles/DEXTR-PyTorch/
 
 ### Installing TagLab
 #### Step 0: Requirements
-Taglab relies on __*CUDA 10*__ and __*Python 3.6*__ and needs a few packages to be installed. Probably the simplest way to prepare a clean pc to run TagLab is to install the standard python distribution (3.6 version) and then run the pip installer for adding all following packages:
+Taglab relies on __*CUDA*__ and __*Python*__ and needs a few packages to be installed. Be sure to install them before to install the other packages required.
+THe CUDA version supported are 9.2, 10.1 and 10.2. TagLab has been successfully tested with Python 3.6.x and Python 3.7.x. We report problems with Python 3.8.x.
+
+The simplest way to install the required packages is through the Python package manager (pip): 
 
 | Package    | Command |
 |-----------|----|
-|  pytorch 1.0+  | `pip3 install torch==1.2.0 torchvision==0.4.0 -f https://download.pytorch.org/whl/torch_stable.html `|
-|  pyqt5 5.13+|  `pip3 install pyqt5 ` |
-|  scikit-image  |  `pip3 install scikit-image `|
-|  scikit-learn  | `pip3 install scikit-learn `|
-|  pandas  | `pip3 install pandas `|
-|  opencv-python | `pip3 install opencv-python `|
-|  matplotlib  | `pip3 install matplotlib `|
-
+|  pytorch 1.0+  | `pip install torch==1.5.1 torchvision==0.6.1 -f https://download.pytorch.org/whl/torch_stable.html `|
+|  pyqt5 5.13+|  `pip install pyqt5 ` |
+|  scikit-image  |  `pip install scikit-image `|
+|  scikit-learn  | `pip install scikit-learn `|
+|  pandas  | `pip install pandas `|
+|  opencv-python | `pip install opencv-python `|
+|  matplotlib  | `pip install matplotlib `|
+|  albumentations  | `pip install albumentations `|
 
 
 #### Step 1: Clone the repository
