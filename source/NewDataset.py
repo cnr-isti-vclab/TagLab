@@ -24,6 +24,8 @@ from PyQt5.QtGui import QPainter, QImage, QPen, QBrush, QColor, qRgb
 from PyQt5.QtCore import Qt
 import random as rnd
 from source import utils
+from skimage.filters import gaussian
+import glob
 
 
 class NewDataset(object):
@@ -54,6 +56,8 @@ class NewDataset(object):
 		self.crop_size = 513
 
 		self.frequencies = None
+
+		self.radius_map = None
 
 		# normalization factors
 		self.sn_min = 0.0
@@ -635,8 +639,8 @@ class NewDataset(object):
 
 	def sampleAreaPoissonDisk(self, area, blobs, radius):
 		"""
-		Sample the corals in the given area using the Poisson Disk sampling according to the given radius.
-		The tiles may lie outside the given area. The area is stored as (top, left, width, height).
+		Sample the blobs in the given area using the Poisson Disk sampling according to the given radius.
+		The area is stored as (top, left, width, height).
 		The functions returns a list of (x,y) coordinates.
 		"""
 
@@ -647,6 +651,148 @@ class NewDataset(object):
 				self.sampleBlob(blob, samples, radius, centroid=False)
 
 		return samples
+
+
+	def importanceSamplingBlob(self, blob, current_samples, centroid=False):
+
+		# centroid
+		if centroid is True:
+			centroid = (blob.centroid[0], blob.centroid[1])
+			current_samples.append(centroid)
+
+		offset_x = blob.bbox[1]
+		offset_y = blob.bbox[0]
+		w = blob.bbox[2]
+		h = blob.bbox[3]
+
+		# NOTE: MASK HAS HOLES (!) DO WE WANT TO SAMPLE INSIDE THEM ??
+		mask = blob.getMask()
+
+		for i in range(30):
+			px = rnd.randint(1, w - 1)
+			py = rnd.randint(1, h - 1)
+
+			if mask[py, px] == 1:
+
+				px = px + offset_x
+				py = py + offset_y
+
+				r1 = self.radius_map[py, px]
+
+				flag = True
+				for sample in current_samples:
+					r2 = self.radius_map[sample[1], sample[0]]
+					d = math.sqrt((sample[0] - px) * (sample[0] - px) + (sample[1] - py) * (sample[1] - py))
+					if d < (r1 + r2) / 2.0:
+						flag = False
+						break
+
+				if flag is True:
+					current_samples.append((px, py))
+
+		return current_samples
+
+
+	def importanceSamplingSubArea(self, area, current_samples):
+		"""
+		Sample the blobs in the given area using the Poisson Disk sampling according to the given radius.
+		The area is stored as (top, left, width, height).
+		"""
+
+		top = area[0]
+		left = area[1]
+		w = area[2]
+		h = area[3]
+
+		for i in range(30):
+			px = rnd.randint(left, left + w - 1)
+			py = rnd.randint(top, top + h - 1)
+
+			r1 = self.radius_map[py, px]
+
+			flag = True
+			for sample in current_samples:
+				r2 = self.radius_map[sample[1], sample[0]]
+				d = math.sqrt((sample[0] - px) * (sample[0] - px) + (sample[1] - py) * (sample[1] - py))
+				if d < (r1+r2)/2.0:
+					flag = False
+					break
+
+			if flag is True:
+				current_samples.append((px, py))
+
+		return current_samples
+
+
+	def sampleAreaImportanceSampling(self, area):
+		"""
+		Sample the given area according to the previously computed radius map (importance is inversely correlated to the class frequencies).
+		The area is stored as (top, left, width, height).
+		The functions returns a list of (x,y) coordinates.
+		"""
+
+		samples = []
+
+		classes = ["Montipora_crust/patula", "Pocillopora_eydouxi", "Pocillopora", "Porite_massive", "Montipora_plate/flabellata" ]
+
+		for class_name in classes:
+			print(class_name)
+			for blob in self.blobs:
+				if blob.class_name == class_name:
+					samples = self.importanceSamplingBlob(blob, samples)
+					print(len(samples))
+
+
+		tile_size = 1024
+		step = 256
+
+		tile_cols = 1 + int(area[2] / step)
+		tile_rows = 1 + int(area[3] / step)
+
+		for row in range(tile_rows):
+			for col in range(tile_cols):
+
+				top = area[0] + row * step
+				left = area[1] + col * step
+
+				if left + tile_size > area[1] + area[2] - 1:
+					left = area[2] - tile_size - 1
+
+				if top + tile_size > area[0] + area[3] - 1:
+					top = area[3] - tile_size - 1
+
+				sub_area = [top, left, tile_size, tile_size]
+				print(sub_area)
+
+				samples = self.importanceSamplingSubArea(sub_area, samples)
+
+				print(len(samples))
+
+		return samples
+
+
+	def compute_radius_map(self, radius_min, radius_max):
+
+		h = self.labels.shape[0]
+		w = self.labels.shape[1]
+
+		radius = np.zeros(len(self.frequencies) + 1)
+		radius[0] = sum(self.frequencies)
+		for i in range(len(self.frequencies)):
+			radius[i+1] = self.frequencies[i]
+
+		f_min = np.min(radius, axis=0)
+		f_max = np.max(radius, axis=0)
+
+		radius = radius - f_min
+		radius = radius / (f_max - f_min)
+		radius = (radius * (radius_max - radius_min)) + radius_min
+
+		self.radius_map = np.zeros((h, w), dtype='float')
+		for i, r in enumerate(radius):
+			self.radius_map[self.labels == i] = r
+
+		self.radius_map = gaussian(self.radius_map, sigma=60.0, mode='reflect')
 
 
 	def cut_tiles(self, regular=True, oversampling=False):
@@ -668,16 +814,19 @@ class NewDataset(object):
 
 		if oversampling is True:
 
-			DISK_RADIUS = 50.0
+			#DISK_RADIUS = 50.0
+			#self.training_tiles = self.sampleAreaPoissonDisk([delta, delta, w-delta*2, h-delta*2], self.blobs, DISK_RADIUS * 2.0)
+			#self.validation_tiles = self.sampleAreaPoissonDisk(self.val_area, self.blobs, DISK_RADIUS * 2.0)
 
-			self.training_tiles = self.sampleAreaPoissonDisk([delta, delta, w-delta*2, h-delta*2], self.blobs, DISK_RADIUS * 2.0)
-			self.validation_tiles = self.sampleAreaPoissonDisk(self.val_area, self.blobs, DISK_RADIUS * 2.0)
-			self.test_tiles = self.sampleAreaUniformly(self.test_area, self.tile_size, self.step)
+			self.training_tiles = self.sampleAreaImportanceSampling([delta, delta, w-delta*2, h-delta*2])
+			#self.validation_tiles = self.sampleAreaImportanceSampling(self.val_area)
 
-		self.training_tiles = self.cleanTrainingTiles(self.training_tiles)
+			#self.test_tiles = self.sampleAreaUniformly(self.test_area, self.tile_size, self.step)
 
-		if oversampling is True:
-			self.validation_tiles = self.cleaningValidationTiles(self.validation_tiles)
+		#self.training_tiles = self.cleanTrainingTiles(self.training_tiles)
+
+		#if oversampling is True:
+		#	self.validation_tiles = self.cleaningValidationTiles(self.validation_tiles)
 
 
 	def export_tiles(self, basename, labels_info):
@@ -760,6 +909,42 @@ class NewDataset(object):
 			cropimg.save(filenameRGB)
 			croplabel.save(filenameLabel)
 
+	##### SERVICE FUNCTIONS
+
+	def classFrequenciesOnDataset(self, labels_dir, target_classes, labels_colors):
+		"""
+		Returns the frequencies of the target classes on the given dataset.
+		"""
+
+		num_classes = len(target_classes)
+
+		image_label_names = [x for x in glob.glob(os.path.join(labels_dir, '*.png'))]
+
+		total_pixels = 0
+		counters = np.zeros(num_classes, dtype='float')
+		for label_name in image_label_names:
+
+			print(label_name)
+			image_label = QImage(label_name)
+			#image_label = image_label.convertToFormat(QImage.Format_RGB32)
+			label_w = image_label.width()
+			label_h = image_label.height()
+			total_pixels += label_w * label_h
+			imglbl = utils.qimageToNumpyArray(image_label)
+
+			# class 0 --> background
+			labelsint = np.zeros((label_h, label_w), dtype='int64')
+			for i, cl in enumerate(target_classes):
+				class_colors = labels_colors[cl]
+				idx = np.where((imglbl[:, :, 0] == class_colors[0]) & (imglbl[:, :, 1] == class_colors[1]) & (imglbl[:, :, 2] == class_colors[2]))
+				labelsint[idx] = i + 1
+
+			for i in range(len(target_classes)):
+				counters[i] += float(np.count_nonzero(labelsint == i+1))
+
+		freq = counters / float(total_pixels)
+
+		print("Class frequencies:", freq * 100.0)
 
 
 	##### VISUALIZATION FUNCTIONS - FOR DEBUG PURPOSES

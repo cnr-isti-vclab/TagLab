@@ -2052,7 +2052,7 @@ class TagLab(QWidget):
     @pyqtSlot()
     def exportAnnAsTrainingDataset(self):
 
-        new_dataset = NewDataset(self.activeviewer.img_map, self.activeviewer.annotations.seg_blobs, tile_size=1024, step=512)
+        new_dataset = NewDataset(self.activeviewer.img_map, self.activeviewer.annotations.seg_blobs, tile_size=1026, step=513)
 
         # create training, validation and test areas
         target_classes = ["Pocillopora", "Pocillopora_eydouxi", "Porite_massive", "Montipora_plate/flabellata",
@@ -2062,14 +2062,19 @@ class TagLab(QWidget):
         new_dataset.convert_colors_to_labels(target_classes, self.labels_dictionary)
         new_dataset.computeFrequencies(target_classes)
 
-        new_dataset.setupAreas("BIOLOGICALLY-INSPIRED", target_classes)
+        new_dataset.compute_radius_map(50.0, 200.0)
+        qimg = utils.floatmapToQImage(new_dataset.radius_map, -1.0)
+        qimg.save("C:\\temp\\prova.png")
+
+        new_dataset.setupAreas("RANDOM", target_classes)
 
         # cut the tiles on the areas areas
-        new_dataset.cut_tiles(regular=True, oversampling=False)
-        new_dataset.save_samples("showsamples.png", show_tiles=True)
+        new_dataset.cut_tiles(regular=False, oversampling=True)
+        new_dataset.save_samples("showsamples.png", show_tiles=False)
+
         # generate the dataset
-        shutil.rmtree("output", ignore_errors=True)
-        new_dataset.export_tiles(basename="output", labels_info=self.labels_dictionary)
+        #shutil.rmtree("output", ignore_errors=True)
+        #new_dataset.export_tiles(basename="output", labels_info=self.labels_dictionary)
 
 
 
