@@ -322,8 +322,6 @@ class NewDataset(object):
 		sP = []
 		for i in range(500):
 
-			print(i)
-
 			aspect_ratio_factor = factor = rnd.uniform(0.4, 2.5)
 			w = int(area_w / aspect_ratio_factor)
 			h = int(area_h * aspect_ratio_factor)
@@ -354,11 +352,10 @@ class NewDataset(object):
 
 		for i in range(5000):
 
-			print(i)
-
 			aspect_ratio_factor = factor = rnd.uniform(0.4, 2.5)
 			w = int(area_w / aspect_ratio_factor)
 			h = int(area_h * aspect_ratio_factor)
+
 			px = rnd.randint(0, map_w - w - 1)
 			py = rnd.randint(0, map_h - h - 1)
 
@@ -375,11 +372,13 @@ class NewDataset(object):
 		area_info.sort(key=lambda x:x[2])
 		val_area = area_info[0][0]
 
+		print("*** VALIDATION AREA ***")
 		area_number, area_coverage, area_PSCV = self.calculateMetrics(val_area, target_classes)
 		scores = self.calculateScore(area_number, area_coverage, area_PSCV, landscape_number, landscape_coverage, landscape_PSCV)
 		lc = [value * 100.0 for value in landscape_coverage]
 		ac = [value * 100.0 for value in area_coverage]
 		print(scores)
+		print(sum(scores) / len(scores))
 		print("Number of corals per class (landscape):", landscape_number)
 		print("Coverage of corals per class (landscape):", lc)
 		print("PSCV per class (landscape): ", landscape_PSCV)
@@ -387,14 +386,25 @@ class NewDataset(object):
 		print("Coverage of corals per class (selected area):", ac)
 		print("PSCV of corals per class (selected area):", area_PSCV)
 
-		#for i in range(30):
-		#	print(area_info[i])
-
 		for i in range(len(area_info)):
 			intersection = self.bbox_intersection(val_area, area_info[i][0])
 			if intersection < 10.0:
 				test_area = area_info[i][0]
 				break
+
+		print("*** TEST AREA ***")
+		area_number, area_coverage, area_PSCV = self.calculateMetrics(test_area, target_classes)
+		scores = self.calculateScore(area_number, area_coverage, area_PSCV, landscape_number, landscape_coverage, landscape_PSCV)
+		lc = [value * 100.0 for value in landscape_coverage]
+		ac = [value * 100.0 for value in area_coverage]
+		print(scores)
+		print(sum(scores) / len(scores))
+		print("Number of corals per class (landscape):", landscape_number)
+		print("Coverage of corals per class (landscape):", lc)
+		print("PSCV per class (landscape): ", landscape_PSCV)
+		print("Number of corals per class (selected area):", area_number)
+		print("Coverage of corals per class (selected area):", ac)
+		print("PSCV of corals per class (selected area):", area_PSCV)
 
 		return val_area, test_area
 
@@ -474,9 +484,9 @@ class NewDataset(object):
 
 		if mode == "UNIFORM":
 
-			delta = int((self.tile_size - self.crop_size) / 2)
+			delta = int(self.crop_size / 2)
 
-			val_area = [delta + (map_h - delta*2) * 0.7, delta, map_w - delta*2, map_h * 0.15]
+			val_area = [delta + (map_h - delta*2) * 0.7 - self.crop_size, delta, map_w - delta*2, map_h * 0.15]
 			test_area = [delta + (map_h - delta*2) * 0.85, delta, map_w - delta*2, map_h * 0.15]
 
 		if mode == "RANDOM":
@@ -733,6 +743,7 @@ class NewDataset(object):
 
 		samples = []
 
+		# the minority classes MUST be sampled before the majority classes
 		classes = ["Montipora_crust/patula", "Pocillopora_eydouxi", "Pocillopora", "Porite_massive", "Montipora_plate/flabellata" ]
 
 		for class_name in classes:
@@ -804,7 +815,7 @@ class NewDataset(object):
 		w = self.orthoimage.width()
 		h = self.orthoimage.height()
 
-		delta = int(self.tile_size / 2)
+		delta = int(self.crop_size / 2)
 
 		if regular is True:
 			self.validation_tiles = self.sampleAreaUniformly(self.val_area, self.tile_size, self.step)
@@ -823,10 +834,10 @@ class NewDataset(object):
 
 			#self.test_tiles = self.sampleAreaUniformly(self.test_area, self.tile_size, self.step)
 
-		#self.training_tiles = self.cleanTrainingTiles(self.training_tiles)
+		self.training_tiles = self.cleanTrainingTiles(self.training_tiles)
 
-		#if oversampling is True:
-		#	self.validation_tiles = self.cleaningValidationTiles(self.validation_tiles)
+		if oversampling is True:
+			self.validation_tiles = self.cleaningValidationTiles(self.validation_tiles)
 
 
 	def export_tiles(self, basename, labels_info):
@@ -909,7 +920,70 @@ class NewDataset(object):
 			cropimg.save(filenameRGB)
 			croplabel.save(filenameLabel)
 
+
 	##### SERVICE FUNCTIONS
+
+	def classFrequenciesOnTiles(self, target_classes):
+
+		num_classes = len(target_classes)
+		delta = int(self.crop_size / 2)
+		area = [0, 0, 0, 0]
+		coverage = np.zeros(num_classes, dtype='float')
+		for tile in self.training_tiles:
+
+			area[0] = int(tile[1] - delta)
+			area[1] = int(tile[0] - delta)
+			area[2] = self.crop_size
+			area[3] = self.crop_size
+
+			cov = self.computeExactCoverage(area, target_classes)
+			coverage += np.array(cov)
+
+		coverage = coverage / len(self.training_tiles)
+		print(coverage)
+
+
+	def splitBackground(self, labels_dir):
+		"""
+		Returns the frequencies of the target classes on the given dataset.
+		"""
+
+		image_label_names = [x for x in glob.glob(os.path.join(labels_dir, '*.png'))]
+
+		total_pixels = 0
+		freq_tot = 0.0
+		count = 0
+		total_background = 0
+		total_B2 = 0
+		for label_name in image_label_names:
+
+			print(label_name)
+			image_label = QImage(label_name)
+			label_w = image_label.width()
+			label_h = image_label.height()
+			imglbl = utils.qimageToNumpyArray(image_label)
+
+			labelsint = np.zeros((label_h, label_w), dtype='int64')
+			idx = np.where((imglbl[:, :, 0] == 0) & (imglbl[:, :, 1] == 0) & (imglbl[:, :, 2] == 0))
+			labelsint[idx] = 1
+			background = float(np.count_nonzero(labelsint == 1))
+			freq = 100.0 * (background / float(label_w * label_h))
+
+			total_background += background
+			print(freq)
+			if freq > 50.0:
+				caso = rnd.uniform(0.0, 1.0)
+				if caso > 0.8:
+					total_B2 += background
+
+					imglbl[idx] = [128, 128, 128]
+					qimg = utils.rgbToQImage(imglbl)
+					qimg.save(label_name)
+
+		print(total_background)
+		print(total_B2)
+
+
 
 	def classFrequenciesOnDataset(self, labels_dir, target_classes, labels_colors):
 		"""
@@ -999,9 +1073,11 @@ class NewDataset(object):
 			size = self.crop_size
 			half_size = int(size / 2)
 
+			PEN_WIDTH = 20
+
 			painter.setBrush(Qt.NoBrush)
 			pen = QPen(Qt.green)
-			pen.setWidth(5)
+			pen.setWidth(PEN_WIDTH)
 			painter.setPen(pen)
 			for sample in self.training_tiles:
 				cx = sample[0]
@@ -1011,7 +1087,7 @@ class NewDataset(object):
 				painter.drawRect(left, top, size, size)
 
 			pen = QPen(Qt.blue)
-			pen.setWidth(5)
+			pen.setWidth(PEN_WIDTH)
 			painter.setPen(pen)
 			for sample in self.validation_tiles:
 				cx = sample[0]
@@ -1021,7 +1097,7 @@ class NewDataset(object):
 				painter.drawRect(left, top, size, size)
 
 			pen = QPen(Qt.red)
-			pen.setWidth(5)
+			pen.setWidth(PEN_WIDTH)
 			painter.setPen(pen)
 			for sample in self.test_tiles:
 				cx = sample[0]
@@ -1032,7 +1108,7 @@ class NewDataset(object):
 
 		if show_areas is True:
 
-			pen_width = int(min(self.label_image.width(), self.label_image.height()) / 250.0)
+			pen_width = int(min(self.label_image.width(), self.label_image.height()) / 200.0)
 
 			painter.setBrush(Qt.NoBrush)
 			pen = QPen(Qt.blue)
