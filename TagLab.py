@@ -429,7 +429,7 @@ class TagLab(QWidget):
 
         self.move()
 
-        self.createDatasetUsingOversampling()
+        #self.createDatasetUsingOversampling()
 
 
     def createDatasetUsingOversampling(self):
