@@ -25,6 +25,8 @@ from PyQt5.QtCore import Qt
 import random as rnd
 from source import utils
 from skimage.filters import gaussian
+from skimage.segmentation import find_boundaries
+from skimage import measure
 import glob
 
 
@@ -806,7 +808,58 @@ class NewDataset(object):
 		self.radius_map = gaussian(self.radius_map, sigma=60.0, mode='reflect')
 
 
-	def cut_tiles(self, regular=True, oversampling=False):
+
+	def sampleBlobWPoissonDisk(self, blob, current_samples, r):
+
+		offset_x = blob.bbox[1]
+		offset_y = blob.bbox[0]
+		w = blob.bbox[2]
+		h = blob.bbox[3]
+
+		# NOTE: MASK HAS HOLES (!) DO WE WANT TO SAMPLE INSIDE THEM ??
+		mask = blob.getMask()
+
+		for i in range(300):
+			px = rnd.randint(1, w - 1)
+			py = rnd.randint(1, h - 1)
+
+			if mask[py, px] == 1:
+
+				px = px + offset_x
+				py = py + offset_y
+
+				flag = True
+				for sample in current_samples:
+					d = math.sqrt((sample[0] - px) * (sample[0] - px) + (sample[1] - py) * (sample[1] - py))
+					if d < 2.0*r:
+						flag = False
+						break
+
+				if flag is True:
+					current_samples.append((px, py))
+
+		return current_samples
+
+	def oversamplingBlobs(self, area, classes_to_sample, radii):
+		"""
+		Sample the blobs of the map using Poisson Disk sampling with the given radii.
+		Note that only the given classes are sampled. The majority class are not oversampledd-
+		The functions returns a list of (x,y) coordinates.
+		"""
+
+		samples = []
+		for i, class_name in enumerate(classes_to_sample):
+			print(class_name)
+			radius = radii[i]
+			for blob in self.blobs:
+				if blob.class_name == class_name:
+					samples = self.sampleBlobWPoissonDisk(blob, samples, radius)
+					print(len(samples))
+
+		return samples
+
+
+	def cut_tiles(self, regular=True, oversampling=False, classes_to_sample=None, radii=None):
 		"""
 		Cut the ortho into tiles.
 		The cutting can be regular or depending on the area and shape of the corals (oversampling).
@@ -829,18 +882,20 @@ class NewDataset(object):
 			#self.training_tiles = self.sampleAreaPoissonDisk([delta, delta, w-delta*2, h-delta*2], self.blobs, DISK_RADIUS * 2.0)
 			#self.validation_tiles = self.sampleAreaPoissonDisk(self.val_area, self.blobs, DISK_RADIUS * 2.0)
 
-			self.training_tiles = self.sampleAreaImportanceSampling([delta, delta, w-delta*2, h-delta*2])
+			#self.training_tiles = self.sampleAreaImportanceSampling([delta, delta, w-delta*2, h-delta*2])
 			#self.validation_tiles = self.sampleAreaImportanceSampling(self.val_area)
+
+			self.training_tiles = self.oversamplingBlobs([delta, delta, w-delta*2, h-delta*2], classes_to_sample, radii)
 
 			#self.test_tiles = self.sampleAreaUniformly(self.test_area, self.tile_size, self.step)
 
-		self.training_tiles = self.cleanTrainingTiles(self.training_tiles)
+		#self.training_tiles = self.cleanTrainingTiles(self.training_tiles)
 
 		if oversampling is True:
 			self.validation_tiles = self.cleaningValidationTiles(self.validation_tiles)
 
 
-	def export_tiles(self, basename, labels_info):
+	def export_tiles(self, basename, tilename, labels_info):
 		"""
 		Exports the tiles INSIDE the given areas (val_area and test_area are stored as (top, left, width, height))
 		The training tiles are the ones of the entire map minus the ones inside the test validation and test area.
@@ -865,8 +920,8 @@ class NewDataset(object):
 			cropimg = utils.cropQImage(self.orthoimage, [top, left, self.tile_size, self.tile_size])
 			croplabel = utils.cropQImage(self.label_image, [top, left, self.tile_size, self.tile_size])
 
-			filenameRGB = os.path.join(basenameVim, "tile_" + str.format("{0:04d}", (i)) + ".png")
-			filenameLabel = os.path.join(basenameVlab, "tile_" + str.format("{0:04d}", (i)) + ".png")
+			filenameRGB = os.path.join(basenameVim, tilename + str.format("_{0:04d}", (i)) + ".png")
+			filenameLabel = os.path.join(basenameVlab, tilename + str.format("_{0:04d}", (i)) + ".png")
 
 			cropimg.save(filenameRGB)
 			croplabel.save(filenameLabel)
@@ -890,8 +945,8 @@ class NewDataset(object):
 			cropimg = utils.cropQImage(self.orthoimage, [top, left, self.tile_size, self.tile_size])
 			croplabel = utils.cropQImage(self.label_image, [top, left, self.tile_size, self.tile_size])
 
-			filenameRGB = os.path.join(basenameTestIm, "tile_" + str.format("{0:04d}", (i)) + ".png")
-			filenameLabel = os.path.join(basenameTestLab, "tile_" + str.format("{0:04d}", (i)) + ".png")
+			filenameRGB = os.path.join(basenameTestIm, tilename + str.format("_{0:04d}", (i)) + ".png")
+			filenameLabel = os.path.join(basenameTestLab, tilename + str.format("_{0:04d}", (i)) + ".png")
 
 			cropimg.save(filenameRGB)
 			croplabel.save(filenameLabel)
@@ -914,8 +969,8 @@ class NewDataset(object):
 			cropimg = utils.cropQImage(self.orthoimage, [top, left, tile_size, tile_size])
 			croplabel = utils.cropQImage(self.label_image, [top, left, tile_size, tile_size])
 
-			filenameRGB = os.path.join(basenameTrainIm, "tile_" + str.format("{0:04d}", (i)) + ".png")
-			filenameLabel = os.path.join(basenameTrainLab, "tile_" + str.format("{0:04d}", (i)) + ".png")
+			filenameRGB = os.path.join(basenameTrainIm, tilename + str.format("_{0:04d}", (i)) + ".png")
+			filenameLabel = os.path.join(basenameTrainLab, tilename + str.format("_{0:04d}", (i)) + ".png")
 
 			cropimg.save(filenameRGB)
 			croplabel.save(filenameLabel)
@@ -930,7 +985,6 @@ class NewDataset(object):
 		area = [0, 0, 0, 0]
 		coverage = np.zeros(num_classes, dtype='float')
 		for tile in self.training_tiles:
-
 			area[0] = int(tile[1] - delta)
 			area[1] = int(tile[0] - delta)
 			area[2] = self.crop_size
@@ -939,56 +993,15 @@ class NewDataset(object):
 			cov = self.computeExactCoverage(area, target_classes)
 			coverage += np.array(cov)
 
+		print(len(self.training_tiles))
 		coverage = coverage / len(self.training_tiles)
 		print(coverage)
 
 
-	def splitBackground(self, labels_dir):
-		"""
-		Returns the frequencies of the target classes on the given dataset.
-		"""
-
-		image_label_names = [x for x in glob.glob(os.path.join(labels_dir, '*.png'))]
-
-		total_pixels = 0
-		freq_tot = 0.0
-		count = 0
-		total_background = 0
-		total_B2 = 0
-		for label_name in image_label_names:
-
-			print(label_name)
-			image_label = QImage(label_name)
-			label_w = image_label.width()
-			label_h = image_label.height()
-			imglbl = utils.qimageToNumpyArray(image_label)
-
-			labelsint = np.zeros((label_h, label_w), dtype='int64')
-			idx = np.where((imglbl[:, :, 0] == 0) & (imglbl[:, :, 1] == 0) & (imglbl[:, :, 2] == 0))
-			labelsint[idx] = 1
-			background = float(np.count_nonzero(labelsint == 1))
-			freq = 100.0 * (background / float(label_w * label_h))
-
-			total_background += background
-			print(freq)
-			if freq > 50.0:
-				caso = rnd.uniform(0.0, 1.0)
-				if caso > 0.8:
-					total_B2 += background
-
-					imglbl[idx] = [128, 128, 128]
-					qimg = utils.rgbToQImage(imglbl)
-					qimg.save(label_name)
-
-		print(total_background)
-		print(total_B2)
-
-
-
 	def classFrequenciesOnDataset(self, labels_dir, target_classes, labels_colors):
 		"""
-		Returns the frequencies of the target classes on the given dataset.
-		"""
+        Returns the frequencies of the target classes on the given dataset.
+        """
 
 		num_classes = len(target_classes)
 
@@ -1000,7 +1013,7 @@ class NewDataset(object):
 
 			print(label_name)
 			image_label = QImage(label_name)
-			#image_label = image_label.convertToFormat(QImage.Format_RGB32)
+			# image_label = image_label.convertToFormat(QImage.Format_RGB32)
 			label_w = image_label.width()
 			label_h = image_label.height()
 			total_pixels += label_w * label_h
@@ -1010,23 +1023,23 @@ class NewDataset(object):
 			labelsint = np.zeros((label_h, label_w), dtype='int64')
 			for i, cl in enumerate(target_classes):
 				class_colors = labels_colors[cl]
-				idx = np.where((imglbl[:, :, 0] == class_colors[0]) & (imglbl[:, :, 1] == class_colors[1]) & (imglbl[:, :, 2] == class_colors[2]))
+				idx = np.where((imglbl[:, :, 0] == class_colors[0]) & (imglbl[:, :, 1] == class_colors[1]) & (
+							imglbl[:, :, 2] == class_colors[2]))
 				labelsint[idx] = i + 1
 
 			for i in range(len(target_classes)):
-				counters[i] += float(np.count_nonzero(labelsint == i+1))
+				counters[i] += float(np.count_nonzero(labelsint == i + 1))
 
 		freq = counters / float(total_pixels)
 
 		print("Class frequencies:", freq * 100.0)
 
-
 	##### VISUALIZATION FUNCTIONS - FOR DEBUG PURPOSES
 
 	def save_samples(self, filename, show_tiles=False, show_areas=True):
 		"""
-		Save a figure to show the samples in the different areas.
-		"""
+        Save a figure to show the samples in the different areas.
+        """
 
 		labelimg = self.label_image.copy()
 
@@ -1067,7 +1080,6 @@ class NewDataset(object):
 			cy = sample[1] - HALF_SAMPLE_SIZE
 			painter.drawEllipse(cx, cy, SAMPLE_SIZE, SAMPLE_SIZE)
 
-
 		if show_tiles is True:
 
 			size = self.crop_size
@@ -1107,7 +1119,6 @@ class NewDataset(object):
 				painter.drawRect(left, top, size, size)
 
 		if show_areas is True:
-
 			pen_width = int(min(self.label_image.width(), self.label_image.height()) / 200.0)
 
 			painter.setBrush(Qt.NoBrush)

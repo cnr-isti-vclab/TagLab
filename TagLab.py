@@ -429,6 +429,31 @@ class TagLab(QWidget):
 
         self.move()
 
+        self.createDatasetUsingOversampling()
+
+
+    def createDatasetUsingOversampling(self):
+
+        target_classes = {"Background": 0,
+                          "Pocillopora": 1,
+                          "Porite_massive": 2,
+                          "Montipora_plate/flabellata": 3,
+                          "Montipora_crust/patula": 4,
+                          "Montipora_capitata": 5
+                          }
+
+        weights = [1.79463675, 12.34562974, 5.87393838, 9.02889105, 23.44283539, 26.22758697]
+        frequencies = [0.55721583, 0.08100032, 0.17024353, 0.11075557, 0.04265696, 0.03812779]
+
+        maps = ["D:\\INVITED-REMOTE-SENSING\\VOS2013.json"
+                ]
+
+        for i in range(1):
+            self.load(maps[i])
+            basename = os.path.basename(maps[i])
+            self.showresult = basename.replace(".json", ".png")
+            self.tilename = os.path.splitext(basename)[0]
+            self.exportAnnAsTrainingDataset()
 
 
     #just to make the code less verbose
@@ -2030,7 +2055,6 @@ class TagLab(QWidget):
         histo_widget.show()
 
     @pyqtSlot()
-
     def exportAnnAsShapefiles(self):
 
         if self.activeviewer is None:
@@ -2055,22 +2079,35 @@ class TagLab(QWidget):
         new_dataset = NewDataset(self.activeviewer.img_map, self.activeviewer.annotations.seg_blobs, tile_size=1026, step=513)
 
         # create training, validation and test areas
-        target_classes = ["Pocillopora", "Pocillopora_eydouxi", "Porite_massive", "Montipora_plate/flabellata",
-                          "Montipora_crust/patula"]
+        #target_classes = ["Pocillopora", "Pocillopora_eydouxi", "Porite_massive", "Montipora_plate/flabellata",
+        #                 "Montipora_crust/patula"]
+        target_classes = ["Pocillopora",
+                          "Porite_massive",
+                          "Montipora_plate/flabellata",
+                          "Montipora_crust/patula",
+                          "Montipora_capitata"]
+
+        classes_to_sample = ["Montipora_plate/flabellata", "Montipora_crust/patula", "Pocillopora",
+                          "Porite_massive",
+                          "Montipora_plate/flabellata"]
+
+        radii = [256.0 / math.sqrt(2.0), 256.0 / math.sqrt(6.0), 256.0, 256.0, 256.0]
 
         new_dataset.create_label_image(self.labels_dictionary)
         new_dataset.convert_colors_to_labels(target_classes, self.labels_dictionary)
         new_dataset.computeFrequencies(target_classes)
 
-        new_dataset.compute_radius_map(50.0, 200.0)
-        qimg = utils.floatmapToQImage(new_dataset.radius_map, -1.0)
-        qimg.save("C:\\temp\\prova.png")
+        #new_dataset.compute_radius_map(50.0, 200.0)
+        #qimg = utils.floatmapToQImage(new_dataset.radius_map, -1.0)
+        #qimg.save("C:\\temp\\prova.png")
 
-        new_dataset.setupAreas("RANDOM", target_classes)
+        new_dataset.setupAreas("UNIFORM", target_classes)
 
         # cut the tiles on the areas areas
-        new_dataset.cut_tiles(regular=False, oversampling=True)
-        new_dataset.save_samples("showsamples.png", show_tiles=False)
+        new_dataset.cut_tiles(regular=False, oversampling=True, classes_to_sample=classes_to_sample, radii=radii)
+        new_dataset.save_samples(self.showresult, show_tiles=False)
+
+        new_dataset.classFrequenciesOnTiles(target_classes)
 
         # generate the dataset
         #shutil.rmtree("output", ignore_errors=True)
