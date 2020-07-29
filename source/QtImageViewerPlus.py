@@ -24,7 +24,7 @@
 import os.path
 from PyQt5.QtCore import Qt, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
 from PyQt5.QtGui import QImage, QPixmap, QPainter, QPainterPath, QPen, QImageReader, QFont
-from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QFileDialog, QGraphicsPixmapItem
+from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QFileDialog, QGraphicsItem, QGraphicsSimpleTextItem
 
 from source.Undo import Undo
 from source.Project import Project
@@ -34,6 +34,22 @@ from source.Annotation import Blob
 from source.Tools import Tools
 
 from source.QtImageViewer import QtImageViewer
+
+class TextItem(QGraphicsSimpleTextItem):
+    def __init__(self, text, font):
+        QGraphicsSimpleTextItem.__init__(self)
+        self.setText(text)
+        self.setFont(font)
+
+    def paint(self, painter, option, widget):
+        painter.translate(self.boundingRect().topLeft())
+        super().paint(painter, option, widget)
+        painter.translate(-self.boundingRect().topLeft())
+
+    def boundingRect(self ):
+        b = super().boundingRect()
+        return QRectF(b.x()-b.width()/2.0, b.y()-b.height()/2.0, b.width(), b.height())
+
 
 #TODO: crackwidget uses qimageviewerplus to draw an image.
 #circular dependency. create a viewer and a derived class which also deals with the rest.
@@ -98,11 +114,12 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.setContextMenuPolicy(Qt.CustomContextMenu)
 
+        self.refine_grow = 0.0 #maybe should in in tools
+        self.refine_original_mask = None
 
     def setProject(self, project):
 
         self.project = project
-
 
     def setImage(self, image, channel_idx=0):
         """
@@ -125,7 +142,6 @@ class QtImageViewerPlus(QtImageViewer):
         self.setChannel(image.channels[channel_idx])
 
         self.activated.emit()
-
 
     def setChannel(self, channel, switch=False):
         """
@@ -180,7 +196,6 @@ class QtImageViewerPlus(QtImageViewer):
 
 
     def drawBlob(self, blob, prev=False):
-
         # if it has just been created remove the current graphics item in order to set it again
         if blob.qpath_gitem is not None:
             self.scene.removeItem(blob.qpath_gitem)
@@ -200,10 +215,16 @@ class QtImageViewerPlus(QtImageViewer):
 
         blob.qpath_gitem = self.scene.addPath(blob.qpath, pen, brush)
         blob.qpath_gitem.setZValue(1)
-        blob.id_item = self.scene.addText(str(blob.id), QFont("Times", 30, QFont.Bold))
+
+        blob.id_item = TextItem(str(blob.id),  QFont("Times", 14, QFont.Bold))
+        self.scene.addItem(blob.id_item)
         blob.id_item.setPos(blob.centroid[0], blob.centroid[1])
+        blob.id_item.setTransformOriginPoint(QPointF(blob.centroid[0] + 14.0, blob.centroid[1] + 14.0))
         blob.id_item.setZValue(2)
-        blob.id_item.setDefaultTextColor(Qt.white)
+        blob.id_item.setBrush(Qt.white)
+
+        #blob.id_item.setDefaultTextColor(Qt.white)
+        blob.id_item.setFlag(QGraphicsItem.ItemIgnoresTransformations)
         #blob.qpath_gitem.setOpacity(self.transparency_value)
 
 

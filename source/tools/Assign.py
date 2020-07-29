@@ -14,7 +14,7 @@ class Assign(Tool):
     def leftPressed(self, x, y, mods):
 
         if self.active_label is None:
-            raise Exception("Active label is not set in tools!")
+            return #do nothing, no label is set
 
         selected_blob = self.viewerplus.annotations.clickedBlob(x, y)
 

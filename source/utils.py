@@ -101,7 +101,7 @@ def labelsToQImage(mask):
 
     return qimg
 
-def floatmapToQImage(floatmap, nodata):
+def floatmapToQImage(floatmap, nodata = float('NaN')):
 
     h = floatmap.shape[0]
     w = floatmap.shape[1]

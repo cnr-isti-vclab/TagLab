@@ -29,13 +29,8 @@ class Tools(object):
         self.CROSS_LINE_WIDTH = 2
         self.extreme_pick_style = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.red,  'size': 6}
 
-
-
         # DATA FOR THE CREATECRACK TOOL
         self.crackWidget = None
-
-        #TOOLS OPTIONS
-        self.refine_grow = 0.0
 
     def createTools(self):
         # TOOLS

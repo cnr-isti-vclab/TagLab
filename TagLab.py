@@ -1224,24 +1224,25 @@ class TagLab(QWidget):
 
     @pyqtSlot(int)
     def mainImageChanged(self, index):
+        if index == -1 or index < len(self.project.images):
+            return
 
-        if index < len(self.project.images):
-            self.viewerplus.setProject(self.project)
-            self.viewerplus.setImage(self.project.images[index])
-            if self.compare_panel.isVisible():
-                index2 = self.comboboxComparisonImage.currentIndex()
-                self.compare_panel.setTable(self.project, index, index2)
+        self.viewerplus.setProject(self.project)
+        self.viewerplus.setImage(self.project.images[index])
+        if self.compare_panel.isVisible():
+            index2 = self.comboboxComparisonImage.currentIndex()
+            self.compare_panel.setTable(self.project, index, index2)
 
 
     @pyqtSlot(int)
     def comparisonImageChanged(self, index):
-
-        if index < len(self.project.images):
-            self.viewerplus2.setProject(self.project)
-            self.viewerplus2.setImage(self.project.images[index])
-            if self.compare_panel.isVisible():
-                index1 = self.comboboxMainImage.currentIndex()
-                self.compare_panel.setTable(self.project, index1, index)
+        if index == -1 or index < len(self.project.images):
+            return
+        self.viewerplus2.setProject(self.project)
+        self.viewerplus2.setImage(self.project.images[index])
+        if self.compare_panel.isVisible():
+            index1 = self.comboboxMainImage.currentIndex()
+            self.compare_panel.setTable(self.project, index1, index)
 
 
     @pyqtSlot()
