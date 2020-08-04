@@ -239,11 +239,15 @@ class Blob(object):
 
         (mask, box) = Mask.jointMask(box, box)
         Mask.paintPoints(mask, box, points, 1)
+        before = np.count_nonzero(mask)
         mask = ndi.binary_fill_holes(mask)
+        after = np.count_nonzero(mask)
+
+        if before == after:
+            return False
 
         selem = np.array([[0, 0, 0], [0, 0, 1], [0, 1, 0]])
         mask = binary_erosion(mask, selem)
-        #mask = binary_dilation(mask)
         self.updateUsingMask(box, mask)
         return True
 
