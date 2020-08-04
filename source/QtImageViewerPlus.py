@@ -455,6 +455,8 @@ class QtImageViewerPlus(QtImageViewer):
             visibility = self.project.isLabelVisible(blob.class_name)
             if blob.qpath_gitem is not None:
                 blob.qpath_gitem.setVisible(visibility)
+            if blob.id_item is not None:
+                blob.id_item.setVisible(visibility)
 
 
 
@@ -539,10 +541,8 @@ class QtImageViewerPlus(QtImageViewer):
         self.undo_data.setBlobClass(blob, class_name)
 
         blob.class_name = class_name
-        if class_name == "Empty":
-            blob.class_color = [255, 255, 255]
-        else:
-            blob.class_color = self.project.labels[blob.class_name].fill
+        #THIS should be removed: the color comes from the labels!
+        blob.class_color = self.project.labels[blob.class_name].fill
 
         brush = self.project.classBrushFromName(blob)
         blob.qpath_gitem.setBrush(brush)

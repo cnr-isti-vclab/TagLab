@@ -99,6 +99,8 @@ class Project(object):
                  spatial_reference_system = None, metadata = {}, image_metadata_template = {}):
         self.filename = None        #filename with path of the project json
         self.labels = { key: Label(**value) for key, value in labels.items() }
+        if not 'Empty' in self.labels:
+            self.labels['Empty'] = Label(id='Empty', name='Empty', description=None, fill=[127, 127, 127], border=[200, 200, 200], visible=True)
 
         self.images = list(map(lambda img: Image(**img), images))       #list of annotated images
 
@@ -122,6 +124,8 @@ class Project(object):
         This function should be removed when the Labels Panel will be finished.
         """
         self.labels = {}
+        if not 'Empty' in dictionary:
+            self.labels['Empty'] = Label(id='Empty', name='Empty', description=None, fill=[127, 127, 127], border=[200, 200, 200], visible=True)
         for key in dictionary.keys():
             color = dictionary[key]
             self.labels[key] = Label(id=key, name=key, description=None, fill=color, border=[200, 200, 200], visible=True)
@@ -156,10 +160,6 @@ class Project(object):
 
 
     def isLabelVisible(self, id):
-
-        if id == "Empty":
-            return True
-
         if not id in self.labels:
             raise Exception("Unknown label: " + id)
 
