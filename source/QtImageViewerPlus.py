@@ -449,14 +449,16 @@ class QtImageViewerPlus(QtImageViewer):
         self.tools.tools["ASSIGN"].setActiveLabel(label)
 
 
+    def setBlobVisible(self, blob, visibility):
+        if blob.qpath_gitem is not None:
+            blob.qpath_gitem.setVisible(visibility)
+        if blob.id_item is not None:
+            blob.id_item.setVisible(visibility)
     def updateVisibility(self):
 
         for blob in self.annotations.seg_blobs:
             visibility = self.project.isLabelVisible(blob.class_name)
-            if blob.qpath_gitem is not None:
-                blob.qpath_gitem.setVisible(visibility)
-            if blob.id_item is not None:
-                blob.id_item.setVisible(visibility)
+            self.setBlobVisible(blob, visibility)
 
 
 

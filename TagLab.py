@@ -1136,7 +1136,6 @@ class TagLab(QWidget):
             self.viewerplus.addToSelectedList(blob)
 
         scale = self.viewerplus.px_to_mm
-        print(scale)
         if center is True and len(sourceboxes) > 0:
             box = Mask.jointBox(sourceboxes)
             x = box[1] + box[2] / 2
@@ -1152,7 +1151,6 @@ class TagLab(QWidget):
             self.viewerplus2.addToSelectedList(blob)
 
         scale = self.viewerplus2.px_to_mm
-        print(scale)
         if center is True and len(targetboxes) > 0:
             box = Mask.jointBox(targetboxes)
             x = box[1] + box[2] / 2
@@ -1175,16 +1173,17 @@ class TagLab(QWidget):
                     if b.qpath_gitem is not None:
                         b.qpath_gitem.setVisible(True)
                 return
-            data = self.project.correspondences.data
+            img_source_index = self.comboboxMainImage.currentIndex()
+            img_target_index = self.comboboxComparisonImage.currentIndex()
+            correspondences = self.project.getImagePairCorrespondences(img_source_index, img_target_index)
+            data = correspondences.data
             selection = data.loc[data["Action"] == type]
             sourceblobs = selection['Blob1'].tolist()
             targetblobs = selection['Blob2'].tolist()
             for b in self.viewerplus.annotations.seg_blobs:
-                if b.qpath_gitem is not None:
-                    b.qpath_gitem.setVisible(b.id in sourceblobs)
+                self.viewerplus.setBlobVisible(b, b.id in sourceblobs)
             for b in self.viewerplus2.annotations.seg_blobs:
-                if b.qpath_gitem is not None:
-                    b.qpath_gitem.setVisible(b.id in targetblobs)
+                self.viewerplus.setBlobVisible(b, b.id in targetblobs)
 
     @pyqtSlot()
     def undo(self):

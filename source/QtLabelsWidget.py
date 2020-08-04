@@ -190,7 +190,6 @@ class QtLabelsWidget(QWidget):
 
         button_clicked = self.sender()
         key = self.sender().getProperty('key')
-        print(key)
 
         index = self.btnClass.index(button_clicked)
         label_name = self.lineeditClass[index].text()
