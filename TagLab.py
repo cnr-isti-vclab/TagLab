@@ -1707,7 +1707,6 @@ class TagLab(QWidget):
                 created_blobs = view.annotations.refineBorder(bbox, selected, img, depth, mask, view.refine_grow, view.tools.edit_points.last_editborder_points)
 
                 view.removeBlob(selected)
-
                 for blob in created_blobs:
                     view.addBlob(blob, selected=True)
                     self.logBlobInfo(blob, "[OP-REFINE-BORDER][BLOB-CREATED]")
@@ -2357,7 +2356,7 @@ class TagLab(QWidget):
                     created_blobs = self.activeviewer.annotations.import_label_map(filename, self.labels_dictionary,
                                                                                    orthomap.width(), orthomap.height())
                     for blob in created_blobs:
-                        self.addBlob(blob, selected=False)
+                        self.viewerplus.addBlob(blob, selected=False)
 
                     logfile.info("[AUTOCLASS] Automatic classification ENDS.")
 

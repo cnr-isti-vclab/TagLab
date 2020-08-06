@@ -199,6 +199,7 @@ class Correspondences(object):
 
 
     def autoMatch(self, blobs1, blobs2):
+        self.correspondences.clear()
         for blob1 in blobs1:
             for blob2 in blobs2:
                 # use bb to quickly calculate intersection

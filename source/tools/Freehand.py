@@ -40,6 +40,7 @@ class Freehand(Tool):
 
         else:
             self.log.emit("[TOOL][FREEHAND] Operation ends (INVALID SNAP!).")
+            return
 
 
         self.viewerplus.resetTools()

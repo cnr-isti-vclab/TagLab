@@ -1,21 +1,21 @@
-# TagLab                                               
-# A semi-automatic segmentation tool                                    
+# TagLab
+# A semi-automatic segmentation tool
 #
 # Copyright(C) 2020
-# Visual Computing Lab                                           
-# ISTI - Italian National Research Council                              
-# All rights reserved.                                                      
-                                                                          
-# This program is free software; you can redistribute it and/or modify      
-# it under the terms of the GNU General Public License as published by      
-# the Free Software Foundation; either version 2 of the License, or         
-# (at your option) any later version.                                       
-                                                                           
-# This program is distributed in the hope that it will be useful,           
-# but WITHOUT ANY WARRANTY; without even the implied warranty of            
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the             
-#GNU General Public License (http://www.gnu.org/licenses/gpl.txt)          
-# for more details.                                               
+# Visual Computing Lab
+# ISTI - Italian National Research Council
+# All rights reserved.
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#GNU General Public License (http://www.gnu.org/licenses/gpl.txt)
+# for more details.
 
 import os
 import numpy as np
@@ -265,8 +265,10 @@ class Annotation(object):
     def refineBorder(self, box, blob, img, depth, mask, grow, lastedit):
         clippoints = None
 
+        print("lastedit", lastedit)
         if lastedit is not None:
             points = [blob.drawLine(line) for line in lastedit]
+            print("points", points)
             if points is not None and len(points) > 0:
                 clippoints = np.empty(shape=(0, 2), dtype=int)
                 for arc in points:
@@ -274,13 +276,16 @@ class Annotation(object):
                 origin = np.array([box[1], box[0]])
                 clippoints = clippoints - origin
         try:
+            print('clippoints', clippoints)
             from coraline.Coraline import segment
             segment(img, depth, mask, clippoints, 0.0, conservative=self.refine_conservative, grow=grow, radius=30, depth_weight = self.refine_depth_weight)
+
         except Exception as e:
-            msgBox = QMessageBox()
-            msgBox.setText(str(e))
-            msgBox.exec()
-            return
+            print(e)
+            #msgBox = QMessageBox()
+            #msgBox.setText(str(e))
+            #msgBox.exec()
+#            return
 
         #TODO this should be moved to a function!
         area_th = 30
@@ -497,7 +502,7 @@ class Annotation(object):
     ###########################################################################
     ### IMPORT / EXPORT
 
-    def import_label_map(self, filename, labels_info, w_target, h_target):
+    def import_label_map(self, filename, labels_info, w_target, h_target, create_holes=False):
         """
         It imports a label map and create the corresponding blobs.
         The label map is rescaled such that it coincides with the reference map.
@@ -537,8 +542,8 @@ class Annotation(object):
                         blob.class_name = label_name
                         blob.class_color = c
                         break
-
-                created_blobs.append(blob)
+                if create_holes or blob.class_name is not 'Empty':
+                    created_blobs.append(blob)
 
         return created_blobs
 

@@ -216,7 +216,7 @@ class QtImageViewerPlus(QtImageViewer):
         blob.qpath_gitem = self.scene.addPath(blob.qpath, pen, brush)
         blob.qpath_gitem.setZValue(1)
 
-        blob.id_item = TextItem(str(blob.id),  QFont("Times", 14, QFont.Bold))
+        blob.id_item = TextItem(str(blob.id),  QFont("Arial", 14, QFont.Bold))
         self.scene.addItem(blob.id_item)
         blob.id_item.setPos(blob.centroid[0], blob.centroid[1])
         blob.id_item.setTransformOriginPoint(QPointF(blob.centroid[0] + 14.0, blob.centroid[1] + 14.0))
@@ -247,7 +247,9 @@ class QtImageViewerPlus(QtImageViewer):
     def drawForeground(self, painter, rect):
         if self.showCrossair:
             painter.setClipRect(rect)
-            painter.setPen(QPen(Qt.white, 1))
+            pen = QPen(Qt.white, 1)
+            pen.setCosmetic(True)
+            painter.setPen(pen)
             painter.drawLine(self.mouseCoords.x(), rect.top(), self.mouseCoords.x(), rect.bottom())
             painter.drawLine(rect.left(), self.mouseCoords.y(), rect.right(), self.mouseCoords.y())
 
