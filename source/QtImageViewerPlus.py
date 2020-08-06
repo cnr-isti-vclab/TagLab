@@ -480,6 +480,7 @@ class QtImageViewerPlus(QtImageViewer):
 
         if not blob.qpath_gitem is None:
             blob.qpath_gitem.setPen(self.border_selected_pen)
+            blob.qpath_gitem.setZValue(2)
         else:
             print("blob qpath_qitem is None!")
         self.scene.invalidate()
@@ -491,6 +492,8 @@ class QtImageViewerPlus(QtImageViewer):
             self.selected_blobs = [x for x in self.selected_blobs if not x == blob]
             if not blob.qpath_gitem is None:
                 blob.qpath_gitem.setPen(self.border_pen)
+                blob.qpath_gitem.setZValue(1)
+
             self.scene.invalidate()
         except Exception as e:
             print("Exception: e", e)
@@ -502,6 +505,7 @@ class QtImageViewerPlus(QtImageViewer):
                 print("Selected item with no path!")
             else:
                 blob.qpath_gitem.setPen(self.border_pen)
+                blob.qpath_gitem.setZValue(1)
         self.selected_blobs.clear()
         self.scene.invalidate(self.scene.sceneRect())
 
