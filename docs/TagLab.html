@@ -147,7 +147,7 @@ em {
  
  <h3> The Tool Bar </h3>
 
-     <p>The toolbar is located on the left side of the interface. It contains the following operation buttons, individually activable:</p>
+     <p>The toolbar is located on the left side of the interface. It contains the following operation buttons, individually activatable:</p>
     
     
     <ul>
@@ -250,12 +250,12 @@ areas, perimeter, centroids. The project is saved as a JSON file. </p>
 
 <h3>File &gt; Export Options &gt; Annotation as data table</h3>
 
-<p> saves a.csv files containg a unique ID for each polygon, class information,  area, perimeter, centroids coordinates and additional notes</p> 
+<p> saves a.csv files containing a unique ID for each polygon, class information, area, perimeter, centroids coordinates and additional notes</p> 
 
 <h3>File &gt; Export Options &gt; Annotations as map</h3>
 
-<p> saves a.png label a pixel-wise segmented map with a black background class and foreground classes according to the <em>visible</em> classes in your label panel. Class visibility might be 
-switch on and off using the eye icon </p> 
+<p> saves a.png label a pixel-wise segmented map with a black background class and foreground classes according to the <em>visible</em> classes in your label panel. Class visibility may be 
+switched on and off using the eye icon </p> 
 
 <h3>File &gt; Export Options &gt; Histograms</h3>
 
@@ -290,38 +290,38 @@ or a group of label can be selected by dragging a rectangular window (<key>Shift
 
 <h2>Tools</h2>
 <a name="zoom"></a>
-<p>The zoom tool is always active by using the scroll. Tools are activable only singularly. Taglab has two smart tools, the 4-click tools and the Fully automatic segmentation tools, all the other implements
+<p>The zoom tool is always active by using the scroll. Tools are activatable only singularly. Taglab has two smart tools, the 4-click tools and the Fully automatic segmentation tools, all the other implement
 classical image processing algorithms. For each operation computed on labels the information contained in the Info Panel are automatically adjusted. </p>
 
 
 <a name="move"></a>
 <h3>Move</h3>
-<p> When the move tool is selected the image pan operation is active (left click + drag) . When on of the others tool is selected the pan operation is allowed only by pressing <key>Ctrl</key> (left click + drag)
-Pan Move and zoom operation in the Main view are sincronized with ones in the Map viewer on the bottom right. The map viewer is interactive too, can be use to navigate large maps and always
-displays the current position inside an highlighted window.  </p> 
+<p> When the move tool is selected the image pan operation is active (left click + drag) . When one of the other tools is selected the pan operation is allowed only by pressing <key>Ctrl</key> (left click + drag).
+Pan Move and zoom operation in the Main view are synchronized with the Map viewer on the bottom right. The map viewer is interactive too, can be used to navigate large maps and always
+displays the current position inside a highlighted window.  </p> 
 
 <a name="assigntool"></a>
 <h3>Assign</h3>
 
-<p> When the assing (buket icon) tool is active, all the clicked blobs assumes the class property and the correspondig color values of the selected class in the labels panel. Multiple selection is allowed by pressing <key>Shift</key> (same options as below). If multiple blobs are selected and the bucket tool is active, all blobs are simultanously assigned to the same class </p>
+<p> When the assign (bucket icon) tool is active, all the clicked blobs assume the class property and the corresponding color values of the selected class in the labels panel. Multiple selection is allowed by pressing <key>Shift</key> (same options as below). If multiple blobs are selected and the bucket tool is active, all blobs are simultanously assigned to the same class. </p>
 
 <a name="freehand"></a>
 <h3>Freehand drawing</h3>
 
-<p> When the Freehand drawing is active users can draw a pixel-wise curve of a fixed thickness of 1px. The curves doesn't need to be draw continuosly but can be drawn in different overlapping segments. 
-By pressing <key>Space bar</key> the operation is applied and the curve became a polygon. Only closed curve can became polygons, unclosed curves are automatically removed. Curves might intersect themselves several times but they always produced a unique closed polygon without holes.</p>
+<p> When the Freehand drawing is active users can draw a pixel-wise curve of a fixed thickness of 1px. The curves don't need to be drawn continuosly but can be drawn in different overlapping segments. 
+By pressing <key>Space bar</key> the operation is applied and the curve becomes a polygon. Only closed curves can become polygons, unclosed curves are automatically removed. Curves might intersect themselves several times but they always produce a unique closed polygon without holes.</p>
 
-<p>There is no need to exactly match the start and the end of the line. Additional segments, inside or outside the polygon are automatically removed too. Operation can be discarded in every moment (before confirming) by pressing <key>Esc</key>. Drawing is always allowed also internally to another blob</p>
+<p>There is no need to exactly match the start and the end of the line. Additional segments, inside or outside the polygon are automatically removed too. Operation can be discarded in every moment (before confirming) by pressing <key>Esc</key>. Drawing is always allowed also internally to another blob.</p>
 
 
 <a name="editborder"></a>
 <h3>Edit Border</h3>
 
-<p>When this tool is selected, the user can arbitrary draw some segment on a <em>single selected</em> blob. 
-Areas included or excluded from the edit curves are automatically added or removed from the selected blob. Information in the info panel is automatically updated. If no blob is selected or multiple blobs are selected, the edit operation cannot be applyed; select a single area and press <key>Spacebar</key> again.
-<p>Curves don't need to be continue and can be concave or covex. Curves must crossing the coral borders at least <em>twice</em>
+<p>When this tool is selected, the user can arbitrarily draw some segment on a <em>single selected</em> blob. 
+Areas included or excluded from the edit curves are automatically added or removed from the selected blob. Information in the info panel is automatically updated. If no blob is selected or multiple blobs are selected, the edit operation cannot be applied; select a single area and press <key>Spacebar</key> again.
+<p>Curves don't need to be continued and can be concave or covex. Curves must cross the coral borders at least <em>twice</em>
 to be effective, otherwise they will be automatically removed. Any inner labels contours can be edited following the same criterion. The snapping option is always active and the resulting polygon cleaned from unwanted scratches.
-By pressing <key>Esc</key> before confirming all the editing curves eill be removed. Undo and Redo operation are always allowed.
+By pressing <key>Esc</key> before confirming all the editing curves will be removed. Undo and Redo operation are always allowed.
  </p> 
 
 <a name="cut"></a>
@@ -365,9 +365,9 @@ This tool works only if you have the network's weights properly placed in TagLab
 <a name="fully"></a>
 <h3>Fully automatic segmentation </h3>
 
-<p>This tool loads and apply pre-trained binary classifiers based on the fully automatic semantic segmentation network <a href="https://github.com/jfzhang95/pytorch-deeplab-xception/"> DeepLab V3+ </a> . 
+<p>This tool loads and applies pre-trained binary classifiers based on the fully automatic semantic segmentation network <a href="https://github.com/jfzhang95/pytorch-deeplab-xception/"> DeepLab V3+ </a> . 
 When activated, it opens a window and demands the selection of compatible classifiers among 
-those available in the 'models' folder. The following fields are not editable; they are read directly from the config.json file. The segmentation operation begins when the user press Apply. The progress of processing is declared by the progress bar at the top left. As soon as the classification starts, in the TagLab folder, a 'temp' subfolder is created, and the annotations are saved into separate tiles, and then recomposed in a single mosaic map. At the end of the operation, the user must save
+those available in the 'models' folder. The following fields are not editable; they are read directly from the config.json file. The segmentation operation begins when the user press Apply. The progress of processing is declared by the progress bar at the top left. As soon as the classification starts, in the TagLab folder, a 'temp' subfolder is created, and the annotations are saved into separate files, and then recomposed in a single mosaic map. At the end of the operation, the user must save
  the project and close TagLab. If the process ends before displaying the labels, 
  but if the labeled map has been created, use the 'File> Import Label Map' option to load them correctly. </p>
 
