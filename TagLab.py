@@ -1223,7 +1223,7 @@ class TagLab(QWidget):
 
     @pyqtSlot(int)
     def mainImageChanged(self, index):
-        if index == -1 or index < len(self.project.images):
+        if index == -1 or index >= len(self.project.images):
             return
 
         self.viewerplus.setProject(self.project)
@@ -1844,7 +1844,6 @@ class TagLab(QWidget):
         """
         Show the image into the main view and update the map viewer accordingly.
         """
-
         try:
             QApplication.setOverrideCursor(Qt.WaitCursor)
 

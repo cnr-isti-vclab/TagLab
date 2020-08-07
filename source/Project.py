@@ -110,7 +110,7 @@ class Project(object):
             for key in correspondences.keys():
                 source = correspondences[key]['source']
                 target = correspondences[key]['target']
-                self.correspondences[key] = Correspondences(source, target)
+                self.correspondences[key] = Correspondences(self.getImageFromId(source), self.getImageFromId(target))
                 self.correspondences[key].fillTable(correspondences[key]['correspondences'])
 
         self.spatial_reference_system = spatial_reference_system   #if None we assume coordinates in pixels (but Y is up or down?!)
@@ -165,6 +165,11 @@ class Project(object):
 
         return self.labels[id].visible
 
+    def getImageFromId(self, id):
+        for img in self.images:
+            if img.id == id:
+                return img
+        return None
 
     def getImagePairCorrespondences(self, img_source_idx, img_target_idx):
         """
