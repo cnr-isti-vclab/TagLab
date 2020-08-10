@@ -28,6 +28,7 @@ from skimage.filters import gaussian
 from skimage.segmentation import find_boundaries
 from skimage import measure
 import glob
+import sys
 
 
 class NewDataset(object):
@@ -322,7 +323,9 @@ class NewDataset(object):
 		sn = []
 		sc = []
 		sP = []
-		for i in range(500):
+		for i in range(5000):
+
+			print(i)
 
 			aspect_ratio_factor = factor = rnd.uniform(0.4, 2.5)
 			w = int(area_w / aspect_ratio_factor)
@@ -352,7 +355,11 @@ class NewDataset(object):
 		self.sP_min = np.min(sP, axis=0)
 		self.sP_max = np.max(sP, axis=0)
 
-		for i in range(5000):
+		print(self.sn_min, self.sn_max, self.sc_min, self.sc_max, self.sP_min, self.sP_max)
+
+		for i in range(10000):
+
+			print(i)
 
 			aspect_ratio_factor = factor = rnd.uniform(0.4, 2.5)
 			w = int(area_w / aspect_ratio_factor)
@@ -366,6 +373,10 @@ class NewDataset(object):
 			area_number, area_coverage, area_PSCV = self.calculateMetrics(area_bbox, target_classes)
 			scores = self.calculateNormalizedScore(area_number, area_coverage, area_PSCV, landscape_number, landscape_coverage, landscape_PSCV)
 
+			for i, score in enumerate(scores):
+				if math.isnan(score):
+					scores[i] = 0.0
+
 			aggregated_score = sum(scores) / len(scores)
 
 			area_info.append((area_bbox, scores, aggregated_score))
@@ -377,10 +388,18 @@ class NewDataset(object):
 		print("*** VALIDATION AREA ***")
 		area_number, area_coverage, area_PSCV = self.calculateMetrics(val_area, target_classes)
 		scores = self.calculateScore(area_number, area_coverage, area_PSCV, landscape_number, landscape_coverage, landscape_PSCV)
+		scoresNorm = self.calculateNormalizedScore(area_number, area_coverage, area_PSCV, landscape_number,
+											   landscape_coverage, landscape_PSCV)
 		lc = [value * 100.0 for value in landscape_coverage]
 		ac = [value * 100.0 for value in area_coverage]
 		print(scores)
-		print(sum(scores) / len(scores))
+		print("Old score:", sum(scores) / len(scores))
+
+		for i, score in enumerate(scoresNorm):
+			if math.isnan(score):
+				scoresNorm[i] = 0.0
+		print(scoresNorm)
+		print("Normalized score:", sum(scoresNorm) / len(scoresNorm))
 		print("Number of corals per class (landscape):", landscape_number)
 		print("Coverage of corals per class (landscape):", lc)
 		print("PSCV per class (landscape): ", landscape_PSCV)
@@ -397,10 +416,18 @@ class NewDataset(object):
 		print("*** TEST AREA ***")
 		area_number, area_coverage, area_PSCV = self.calculateMetrics(test_area, target_classes)
 		scores = self.calculateScore(area_number, area_coverage, area_PSCV, landscape_number, landscape_coverage, landscape_PSCV)
+		scoresNorm = self.calculateNormalizedScore(area_number, area_coverage, area_PSCV, landscape_number,
+											   landscape_coverage, landscape_PSCV)
 		lc = [value * 100.0 for value in landscape_coverage]
 		ac = [value * 100.0 for value in area_coverage]
 		print(scores)
-		print(sum(scores) / len(scores))
+		print("Old score:", sum(scores) / len(scores))
+
+		for i, score in enumerate(scoresNorm):
+			if math.isnan(score):
+				scoresNorm[i] = 0.0
+		print(scoresNorm)
+		print("Normalized score:", sum(scoresNorm) / len(scoresNorm))
 		print("Number of corals per class (landscape):", landscape_number)
 		print("Coverage of corals per class (landscape):", lc)
 		print("PSCV per class (landscape): ", landscape_PSCV)
@@ -488,8 +515,8 @@ class NewDataset(object):
 
 			delta = int(self.crop_size / 2)
 
-			val_area = [delta + (map_h - delta*2) * 0.7 - self.crop_size, delta, map_w - delta*2, map_h * 0.15]
-			test_area = [delta + (map_h - delta*2) * 0.85, delta, map_w - delta*2, map_h * 0.15]
+			val_area = [delta + (map_h - delta*2) * 0.7 - self.crop_size, delta, map_w - delta*2, (map_h - delta*2) * 0.175]
+			test_area = [delta + (map_h - delta*2) * 0.875, delta, map_w - delta*2, (map_h - delta*2) * 0.125]
 
 		if mode == "RANDOM":
 
@@ -513,7 +540,9 @@ class NewDataset(object):
 
 		elif mode == "BIOLOGICALLY-INSPIRED":
 
-			val_area, test_area = self.findAreas(target_classes=target_classes)
+			#val_area, test_area = self.findAreas(target_classes=target_classes)
+			val_area = [5360, 1490, 7590, 1920]
+			test_area = [955, 2520, 6846, 2121]
 
 		self.val_area = val_area
 		self.test_area = test_area
@@ -560,20 +589,45 @@ class NewDataset(object):
 		"""
 
 		cleaned_tiles = []
-		bbox = [0, 0, 0, 0]
-		size = self.crop_size + 10
+		bbox1 = [0, 0, 0, 0]
+		bbox2 = [0, 0, 0, 0]
+		size = self.crop_size + 4
 		half_size = size / 2
 
 		for tile in training_tiles:
 
-			bbox[0] = tile[1] - half_size
-			bbox[1] = tile[0] - half_size
-			bbox[2] = size
-			bbox[3] = size
+			bbox1[0] = tile[1] - half_size
+			bbox1[1] = tile[0] - half_size
+			bbox1[2] = size
+			bbox1[3] = size
 
-			areaV = self.bbox_intersection(bbox, self.val_area)
-			areaT = self.bbox_intersection(bbox, self.test_area)
-			if areaV < 10.0 and areaT < 10.0:
+			flag = True
+			for vtile in self.validation_tiles:
+
+				bbox2[0] = vtile[1] - half_size
+				bbox2[1] = vtile[0] - half_size
+				bbox2[2] = size
+				bbox2[3] = size
+
+				area = self.bbox_intersection(bbox1, bbox2)
+				if area > 10.0:
+					flag = False
+					break
+
+			if flag is True:
+				for ttile in self.test_tiles:
+
+					bbox2[0] = ttile[1] - half_size
+					bbox2[1] = ttile[0] - half_size
+					bbox2[2] = size
+					bbox2[3] = size
+
+					area = self.bbox_intersection(bbox1, bbox2)
+					if area > 10.0:
+						flag = False
+						break
+
+			if flag is True:
 				cleaned_tiles.append(tile)
 
 		return cleaned_tiles
@@ -598,16 +652,28 @@ class NewDataset(object):
 			bbox1[3] = size
 
 			flag = True
-			for tile in self.training_tiles:
+			for ttile in self.training_tiles:
 
-				bbox2[0] = tile[1] - half_size
-				bbox2[1] = tile[0] - half_size
+				bbox2[0] = ttile[1] - half_size
+				bbox2[1] = ttile[0] - half_size
 				bbox2[2] = size
 				bbox2[3] = size
 
 				area = self.bbox_intersection(bbox1, bbox2)
 				if area > 10.0:
 					flag = False
+
+			if flag is True:
+				for tile in self.test_tiles:
+
+					bbox2[0] = tile[1] - half_size
+					bbox2[1] = tile[0] - half_size
+					bbox2[2] = size
+					bbox2[3] = size
+
+					area = self.bbox_intersection(bbox1, bbox2)
+					if area > 10.0:
+						flag = False
 
 			if flag is True:
 				cleaned_tiles.append(vtile)
@@ -811,6 +877,9 @@ class NewDataset(object):
 
 	def sampleBlobWPoissonDisk(self, blob, current_samples, r):
 
+		map_w = self.orthoimage.width()
+		map_h = self.orthoimage.height()
+
 		offset_x = blob.bbox[1]
 		offset_y = blob.bbox[0]
 		w = blob.bbox[2]
@@ -819,11 +888,41 @@ class NewDataset(object):
 		# NOTE: MASK HAS HOLES (!) DO WE WANT TO SAMPLE INSIDE THEM ??
 		mask = blob.getMask()
 
-		for i in range(300):
+		for i in range(500):
 			px = rnd.randint(1, w - 1)
 			py = rnd.randint(1, h - 1)
 
 			if mask[py, px] == 1:
+
+				px = px + offset_x
+				py = py + offset_y
+
+				if px > self.crop_size and px < map_w - self.crop_size and py > self.crop_size and py < map_h - self.crop_size:
+
+					flag = True
+					for sample in current_samples:
+						d = math.sqrt((sample[0] - px) * (sample[0] - px) + (sample[1] - py) * (sample[1] - py))
+						if d < 2.0*r:
+							flag = False
+							break
+
+					if flag is True:
+						current_samples.append((px, py))
+
+		return current_samples
+
+	def sampleBackgroundWPoissonDisk(self, area, current_samples, r):
+
+		offset_x = int(area[1])
+		offset_y = int(area[0])
+		w = int(area[2])
+		h = int(area[3])
+
+		for i in range(10000):
+			px = rnd.randint(1, w - 1)
+			py = rnd.randint(1, h - 1)
+
+			if self.labels[py, px] == 0:
 
 				px = px + offset_x
 				py = py + offset_y
@@ -840,6 +939,7 @@ class NewDataset(object):
 
 		return current_samples
 
+
 	def oversamplingBlobs(self, area, classes_to_sample, radii):
 		"""
 		Sample the blobs of the map using Poisson Disk sampling with the given radii.
@@ -854,7 +954,10 @@ class NewDataset(object):
 			for blob in self.blobs:
 				if blob.class_name == class_name:
 					samples = self.sampleBlobWPoissonDisk(blob, samples, radius)
-					print(len(samples))
+					txt = str(len(samples)) + "\r"
+					sys.stdout.write(txt)
+
+		samples = self.sampleBackgroundWPoissonDisk(area=area, current_samples=samples, r=280.0)
 
 		return samples
 
@@ -885,15 +988,32 @@ class NewDataset(object):
 			#self.training_tiles = self.sampleAreaImportanceSampling([delta, delta, w-delta*2, h-delta*2])
 			#self.validation_tiles = self.sampleAreaImportanceSampling(self.val_area)
 
-			self.training_tiles = self.oversamplingBlobs([delta, delta, w-delta*2, h-delta*2], classes_to_sample, radii)
+			self.validation_tiles = self.sampleAreaUniformly(self.val_area, self.tile_size, self.step)
+			self.test_tiles = self.sampleAreaUniformly(self.test_area, self.tile_size, self.step)
 
-			#self.test_tiles = self.sampleAreaUniformly(self.test_area, self.tile_size, self.step)
+			self.training_tiles = self.oversamplingBlobs([delta, delta, w-delta*2,  h - self.tile_size - delta],
+														 classes_to_sample, radii)
 
-		#self.training_tiles = self.cleanTrainingTiles(self.training_tiles)
+			# map_h = self.orthoimage.height()
+			# areaext = self.val_area
+			# areaext[1] = 0
+			# areaext[2] = w
+			# areaext[3] = map_h - self.tile_size - areaext[0]
+			# bbox = [0, 0, 0, 0]
+			# for tile in self.training_tiles:
+			# 	bbox[0] = tile[1] - int(self.crop_size/2)
+			# 	bbox[1] = tile[0] - int(self.crop_size/2)
+			# 	bbox[2] = self.crop_size
+			# 	bbox[3] = self.crop_size
+			# 	intersection = self.bbox_intersection(bbox, areaext)
+			# 	intersection = float(intersection) / float(bbox[2] * bbox[3])
+			# 	if intersection > 0.85:
+			# 		self.validation_tiles.append(tile)
+
+		self.training_tiles = self.cleanTrainingTiles(self.training_tiles)
 
 		if oversampling is True:
 			self.validation_tiles = self.cleaningValidationTiles(self.validation_tiles)
-
 
 	def export_tiles(self, basename, tilename, labels_info):
 		"""
@@ -904,10 +1024,16 @@ class NewDataset(object):
 		##### VALIDATION AREA
 
 		basenameVim = os.path.join(basename, "val_im")
-		os.makedirs(basenameVim)
+		try:
+			os.makedirs(basenameVim)
+		except:
+			pass
 
 		basenameVlab = os.path.join(basename, "val_lab")
-		os.makedirs(basenameVlab)
+		try:
+			os.makedirs(basenameVlab)
+		except:
+			pass
 
 		half_tile_size = tile_size = self.tile_size / 2
 
@@ -930,10 +1056,16 @@ class NewDataset(object):
 		##### TEST AREA
 
 		basenameTestIm = os.path.join(basename, "test_im")
-		os.makedirs(basenameTestIm)
+		try:
+			os.makedirs(basenameTestIm)
+		except:
+			pass
 
 		basenameTestLab = os.path.join(basename, "test_lab")
-		os.makedirs(basenameTestLab)
+		try:
+			os.makedirs(basenameTestLab)
+		except:
+			pass
 
 		for i, sample in enumerate(self.test_tiles):
 
@@ -954,10 +1086,16 @@ class NewDataset(object):
 		##### TRAINING AREA = ENTIRE MAP / (VALIDATION AREA U TEST_AREA)
 
 		basenameTrainIm = os.path.join(basename, "train_im")
-		os.makedirs(basenameTrainIm)
+		try:
+			os.makedirs(basenameTrainIm)
+		except:
+			pass
 
 		basenameTrainLab = os.path.join(basename, "train_lab")
-		os.makedirs(basenameTrainLab)
+		try:
+			os.makedirs(basenameTrainLab)
+		except:
+			pass
 
 		for i, sample in enumerate(self.training_tiles):
 
@@ -1036,7 +1174,7 @@ class NewDataset(object):
 
 	##### VISUALIZATION FUNCTIONS - FOR DEBUG PURPOSES
 
-	def save_samples(self, filename, show_tiles=False, show_areas=True):
+	def save_samples(self, filename, show_tiles=False, show_areas=True, radii=None):
 		"""
         Save a figure to show the samples in the different areas.
         """
@@ -1047,7 +1185,7 @@ class NewDataset(object):
 
 		half_tile_size = self.tile_size / 2
 
-		SAMPLE_SIZE = 26
+		SAMPLE_SIZE = 20
 		HALF_SAMPLE_SIZE = SAMPLE_SIZE / 2
 
 		# TRAINING
@@ -1061,6 +1199,19 @@ class NewDataset(object):
 			cx = sample[0] - HALF_SAMPLE_SIZE
 			cy = sample[1] - HALF_SAMPLE_SIZE
 			painter.drawEllipse(cx, cy, SAMPLE_SIZE, SAMPLE_SIZE)
+
+		# brush = QBrush(Qt.NoBrush)
+		# brush.setColor(Qt.green)
+		# painter.setBrush(brush)
+		# pen = QPen(Qt.white)
+		# pen.setWidth(3)
+		# painter.setPen(pen)
+		# for sample in self.training_tiles:
+		# 	cx = sample[0]
+		# 	cy = sample[1]
+		# 	r = int(radii[self.labels[cy,cx]])
+		# 	if r < 61.0:
+		# 		painter.drawEllipse(cx - r, cy - r, r*2, r*2)
 
 		# VALIDATION
 		brush = QBrush(Qt.SolidPattern)
