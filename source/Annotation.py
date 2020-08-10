@@ -265,10 +265,8 @@ class Annotation(object):
     def refineBorder(self, box, blob, img, depth, mask, grow, lastedit):
         clippoints = None
 
-        print("lastedit", lastedit)
         if lastedit is not None:
             points = [blob.drawLine(line) for line in lastedit]
-            print("points", points)
             if points is not None and len(points) > 0:
                 clippoints = np.empty(shape=(0, 2), dtype=int)
                 for arc in points:
@@ -276,19 +274,18 @@ class Annotation(object):
                 origin = np.array([box[1], box[0]])
                 clippoints = clippoints - origin
         try:
-            print('clippoints', clippoints)
             from coraline.Coraline import segment
             segment(img, depth, mask, clippoints, 0.0, conservative=self.refine_conservative, grow=grow, radius=30, depth_weight = self.refine_depth_weight)
 
         except Exception as e:
-            print(e)
+            print(e, flush=True)
             #msgBox = QMessageBox()
             #msgBox.setText(str(e))
             #msgBox.exec()
 #            return
 
         #TODO this should be moved to a function!
-        area_th = 30
+        area_th = 2
         created_blobs = []
         first = True
         label_image = measure.label(mask, connectivity=1)
@@ -298,7 +295,6 @@ class Annotation(object):
                 b.class_color = blob.class_color
                 b.class_name = blob.class_name
                 created_blobs.append(b)
-
         return created_blobs
 
     def splitBlob(self,map, blob, seeds):

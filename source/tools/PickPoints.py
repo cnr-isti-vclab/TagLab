@@ -32,12 +32,12 @@ class PickPoints(object):
         line1.setPos(QPointF(x, y))
         line1.setParentItem(point)  # self.viewerplus._pxmapitem)
         line1.setFlag(QGraphicsItem.ItemIgnoresTransformations)
-        line1.setZValue(3)
+        line1.setZValue(5)
 
         line2 = self.scene.addLine(- size, + size, + size, - size, pen)
         line2.setPos(QPointF(x, y))
         line2.setParentItem(point)  # self.viewerplus._pxmapitem)
         line2.setFlag(QGraphicsItem.ItemIgnoresTransformations)
-        line2.setZValue(3)
+        line2.setZValue(5)
         # no need to add the lines to the markers, the parent will take care of them
         self.markers.append(point)

@@ -103,7 +103,7 @@ uchar *Coraline::segment() {
 		test[i*3] = test[i*3+1] = test[i*3+2] = mask[i]*64;
 	}
 	savePPM(test, w, h, string("mask.ppm")); */
-	
+
 	pixels = distanceField();
 	if(lambda > 0.0f)
 		setColorDistribution();
@@ -154,10 +154,12 @@ uchar *Coraline::geodesic() {
 uchar *Coraline::graphCut() {
 	//thisis the graphcut
 
+//#define IMG_DEBUG
+#ifdef IMG_DEBUG
 	vector<uchar> dist(distance.size());
 	for(int i = 0; i < distance.size(); i++)
 		dist[i] = (int)255*(distance[i]/(radius-1));
-	savePPM(dist.data(), w, h, "distance.ppm", 1);
+	savePPM(dist.data(), w, h, "distance.ppm", 1); 
 	//convert to 0.255
 	if(depth) {
 		vector<unsigned char> d(w*h);
@@ -177,7 +179,9 @@ uchar *Coraline::graphCut() {
 		savePPM(d.data(), w, h, "depth.ppm", 1);
 	}
 	savePPM(img, w, h, "img.ppm");
-	
+
+#endif
+
 	typedef maxflow::Graph<double,double,double> GraphType;
 	GraphType graph(/*estimated # of nodes*/ (int)sqrt(w*h), /*estimated # of edges*/ 6*(int)sqrt(w*h));
 	
@@ -248,7 +252,6 @@ uchar *Coraline::graphCut() {
 	uchar *res = new uchar[w*h];
 	memcpy(res, mask, w*h);
 	
-	//printf("Flow = %f\n", flow);
 	for(int k = 0; k < pixels.size(); k++) {
 		if(graph.what_segment(k) == maxflow::Graph<double, double, double>::SOURCE)
 			res[pixels[k]] = 1; //1 foreground, 2 background
@@ -293,8 +296,13 @@ void Coraline::seedBorder(vector<int> &stack) {
 void Coraline::seedClips(vector<int> &stack) {
 	for(int i = 0; i < nclips; i+= 2) {
 		int x = clips[i*2];
-		int y = clips[i*2+2];
+		int y = clips[i*2+1];
+		if (x < 0 || x >= w) continue;
+		if (y < 0 || y >= h) continue;
+
 		int a = x + y*w;
+		if (a < 0 || a >= distance.size())
+			continue;
 		if(distance[a] == 0.0f)
 			continue;
 		distance[a] =  0;

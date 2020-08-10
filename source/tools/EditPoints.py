@@ -20,8 +20,9 @@ class EditPoints(QObject):
         self.border_pen.setCosmetic(True)
 
         self.qpath_gitem = self.scene.addPath(QPainterPath(), self.border_pen)
-        self.qpath_gitem.setZValue(2)
+        self.qpath_gitem.setZValue(5)
         self.last_editborder_points = []
+        self.last_blob = None
 
     def reset(self):
         self.qpath_gitem.setPath(QPainterPath())

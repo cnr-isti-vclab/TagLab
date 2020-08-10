@@ -25,6 +25,7 @@ class EditBorder(Tool):
         selected_blob = self.viewerplus.selected_blobs[0]
 
         blob = selected_blob.copy()
+        self.edit_points.last_blob = blob
         self.edit_points.last_editborder_points = points
         self.viewerplus.annotations.editBorder(blob, points)
 

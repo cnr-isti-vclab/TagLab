@@ -29,12 +29,11 @@ extern "C" {
 		coraline->depth_weight = depth_weight;
 
 		uchar* segment = coraline->segment();
-		//printf("Segmented");
+
 		memcpy(coraline->mask, segment, (size_t)w * (size_t)h);
-		//printf("copied");
+
 		delete[]segment;
 		delete coraline;
-		//printf("deleted");
 	}
 /*	//Horrible hack since Python truncate pointers.
 	Coraline* global = 0;

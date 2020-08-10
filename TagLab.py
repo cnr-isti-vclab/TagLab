@@ -88,7 +88,6 @@ LOG_FILENAME = "tool" + now.strftime("%Y-%m-%d-%H-%M") + ".log"
 logging.basicConfig(level=logging.DEBUG, filemode='w', filename=LOG_FILENAME, format = '%(asctime)s %(levelname)-8s %(message)s')
 logfile = logging.getLogger("tool-logger")
 
-
 class TagLab(QWidget):
 
     def __init__(self, parent=None):
@@ -1604,6 +1603,12 @@ class TagLab(QWidget):
         if view is None:
             return
 
+        if len(view.selected_blobs) == 1:
+            selected = view.selected_blobs[0]
+            if view.refine_original_blob is None or view.refine_original_blob.id != selected.id:
+                view.refine_grow = 0
+                view.refine_original_mask = None
+
         logfile.info("[OP-REFINE-BORDER-DILATE] DILATE-BORDER operation begins..")
 
         view.refine_grow += 2
@@ -1618,6 +1623,12 @@ class TagLab(QWidget):
         if view is None:
             return
 
+        if len(view.selected_blobs) == 1:
+            selected = view.selected_blobs[0]
+            if view.refine_original_blob is None or view.refine_original_blob.id != selected.id:
+                view.refine_grow = 0
+                view.refine_original_mask = None
+
         logfile.info("[OP-REFINE-BORDER-ERODE] ERODE-BORDER operation begins..")
 
         view.refine_grow -= 2
@@ -1630,6 +1641,12 @@ class TagLab(QWidget):
         view = self.activeviewer
         if view is None:
             return
+
+        if len(view.selected_blobs) == 1:
+            selected = view.selected_blobs[0]
+            if view.refine_original_blob is None or view.refine_original_blob.id != selected.id:
+                view.refine_grow = 0
+                view.refine_original_mask = None
 
         logfile.info("[OP-REFINE-BORDER] REFINE-BORDER operation begins..")
 
@@ -1647,20 +1664,23 @@ class TagLab(QWidget):
         if view is None:
             return
 
-        if view.refine_grow != 0 and view.refine_original_mask is None:
-            return
+
 
         # padding mask to allow moving boundary
         padding = 35
         if len(view.selected_blobs) == 1:
 
             selected = view.selected_blobs[0]
+
+            if view.refine_original_mask is None:
+                view.refine_grow = 0
             #blob = selected.copy()
             self.logBlobInfo(selected, "[OP-REFINE-BORDER][BLOB-SELECTED]")
 
             if view.refine_grow == 0:
                 mask = selected.getMask()
                 mask = np.pad(mask, (padding, padding), mode='constant', constant_values=(0, 0)).astype(np.ubyte)
+                view.refine_original_blob = selected
                 view.refine_original_mask = mask.copy()
                 view.refine_original_bbox = selected.bbox.copy()
                 bbox = selected.bbox.copy()
@@ -1703,17 +1723,23 @@ class TagLab(QWidget):
                 view.tools.edit_points.last_editborder_points = None
 
             try:
-                #blob.updateUsingMask(bbox, mask.astype(np.int))
                 view.removeBlob(selected)
+                if view.tools.edit_points.last_blob != selected:
+                    view.tools.edit_points.last_editborder_points = None
                 created_blobs = view.annotations.refineBorder(bbox, selected, img, depth, mask, view.refine_grow, view.tools.edit_points.last_editborder_points)
 
-                for blob in created_blobs:
-                    view.addBlob(blob, selected=True)
-                    self.logBlobInfo(blob, "[OP-REFINE-BORDER][BLOB-CREATED]")
+                if len(created_blobs) > 0:
+
+                    for blob in created_blobs:
+                        view.addBlob(blob, selected=True)
+                        #NOTE: they are not CREATED! they are refined! Leaving it here because some logging software might depend on it.
+                        self.logBlobInfo(blob, "[OP-REFINE-BORDER][BLOB-CREATED]")
+                        self.logBlobInfo(blob, "[OP-REFINE-BORDER][BLOB-REFINED]")
+
+                else:
+                    view.addBlob(selected, selected=True)
 
                 view.saveUndo()
-
-                self.logBlobInfo(blob, "[OP-REFINE-BORDER][BLOB-REFINED]")
 
             except Exception as e:
                 print("FAILED!", e)

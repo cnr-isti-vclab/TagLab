@@ -35,6 +35,13 @@ from source.Tools import Tools
 
 from source.QtImageViewer import QtImageViewer
 
+#note on ZValue:
+# 0: image
+# 1: blobs
+# 2: blob text
+# 3: selected blobs
+# 4: selected blobs text
+# 5: pick points and tools
 class TextItem(QGraphicsSimpleTextItem):
     def __init__(self, text, font):
         QGraphicsSimpleTextItem.__init__(self)
@@ -116,6 +123,7 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.refine_grow = 0.0 #maybe should in in tools
         self.refine_original_mask = None
+        self.refine_original_blob = None
 
     def setProject(self, project):
 
@@ -480,7 +488,8 @@ class QtImageViewerPlus(QtImageViewer):
 
         if not blob.qpath_gitem is None:
             blob.qpath_gitem.setPen(self.border_selected_pen)
-            blob.qpath_gitem.setZValue(2)
+            blob.qpath_gitem.setZValue(3)
+            blob.id_item.setZValue(4)
         else:
             print("blob qpath_qitem is None!")
         self.scene.invalidate()
@@ -493,6 +502,7 @@ class QtImageViewerPlus(QtImageViewer):
             if not blob.qpath_gitem is None:
                 blob.qpath_gitem.setPen(self.border_pen)
                 blob.qpath_gitem.setZValue(1)
+                blob.id_item.setZValue(2)
 
             self.scene.invalidate()
         except Exception as e:
@@ -506,6 +516,8 @@ class QtImageViewerPlus(QtImageViewer):
             else:
                 blob.qpath_gitem.setPen(self.border_pen)
                 blob.qpath_gitem.setZValue(1)
+                blob.id_item.setZValue(2)
+
         self.selected_blobs.clear()
         self.scene.invalidate(self.scene.sceneRect())
 
