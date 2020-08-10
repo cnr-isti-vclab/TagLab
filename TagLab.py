@@ -428,8 +428,6 @@ class TagLab(QWidget):
 
         self.move()
 
-        #self.createDatasetUsingOversampling()
-
 
     def createDatasetUsingOversampling(self):
 
@@ -2099,6 +2097,8 @@ class TagLab(QWidget):
 
     @pyqtSlot()
     def exportAnnAsTrainingDataset(self):
+
+        ##### THE FOLLOWING CODE MUST BE CLEANED..
 
         new_dataset = NewDataset(self.activeviewer.img_map, self.activeviewer.annotations.seg_blobs, tile_size=1026, step=513)
 
