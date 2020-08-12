@@ -1,0 +1,432 @@
+import sys
+import os
+import numpy as np
+import torch
+import torch.multiprocessing
+from torch.utils.data import DataLoader
+import torch.nn as nn
+import torch.optim as optim
+from deeplab import DeepLab
+from sklearn.metrics import jaccard_score
+from sklearn.metrics import confusion_matrix
+from models.coral_dataset import CoralsDataset
+import models.losses as losses
+
+# SEED
+torch.manual_seed(997)
+np.random.seed(997)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+
+
+def checkDataset(dataset_folder):
+    """
+    Check if the training, validation and test folders exist and contain the corresponding images and labels.
+    """
+
+    flag = 0
+    if os.path.exists(dataset_folder) and os.listdir(dataset_folder) == ['test', 'training', 'validation']:
+       for sub in os.listdir(dataset_folder):
+           subfolder = os.path.join(dataset_folder, sub)
+           if os.listdir(subfolder) == ['images', 'labels'] and len(set(os.listdir(os.path.join(subfolder, os.listdir(subfolder)[0]))) - set(os.listdir(os.path.join(subfolder, os.listdir(subfolder)[1]))))==0:
+               flag = 0 # Your training dataset is valid
+           else:
+               return 1 # A subfolder is missing or a files mismatch in subfolder
+    else:
+        return 1 # This dataset contains mismatching files
+
+    return flag
+
+def createTargetClasses(annotations):
+    """
+    Create the label name - label code correspondences for the classifier.
+    """
+
+    labels_set = set()
+    for blob in annotations.seg_blobs:
+        if blob.qpath_gitem.isVisible():
+            labels_set.add(blob.class_name)
+
+    # Background class must be present
+    labels_set.add("Background")
+
+    target_dict = {}
+    for i, label in enumerate(labels_set):
+        target_dict[label] = i
+
+    return target_dict
+
+
+# VALIDATION
+def evaluateNetwork(dataset, dataloader, loss_to_use, CEloss, w_for_GDL, tversky_loss_alpha, tversky_loss_beta,
+                    focal_tversky_gamma, epoch, epochs_switch, epochs_transition, nclasses, net,
+                    flag_compute_mIoU=False, savefolder=""):
+    """
+    It evaluates the network on the validation set.  
+    :param dataloader: Pytorch DataLoader to load the dataset for the evaluation.
+    :param net: Network to evaluate.
+    :param savefolder: if a folder is given the classification results are saved into this folder. 
+    :return: all the computed metrics.
+    """""
+
+    ##### SETUP THE NETWORK #####
+
+    USE_CUDA = torch.cuda.is_available()
+
+    if USE_CUDA:
+        device = torch.device("cuda")
+        net.to(device)
+        torch.cuda.synchronize()
+
+    ##### EVALUATION #####
+
+    net.eval()  # set the network in evaluation mode
+
+    batch_size = dataloader.batch_size
+
+    CM = np.zeros((nclasses, nclasses), dtype=int)
+    class_indices = list(range(nclasses))
+
+    ypred_list = []
+    ytrue_list = []
+    loss_values = []
+    with torch.no_grad():
+        for k, data in enumerate(dataloader):
+
+            batch_images, labels_batch, names = data['image'], data['labels'], data['name']
+            print(names)
+
+            if USE_CUDA:
+                batch_images = batch_images.to(device)
+                labels_batch = labels_batch.to(device)
+
+            # N x K x H x W --> N: batch size, K: number of classes, H: height, W: width
+            outputs = net(batch_images)
+
+            # predictions size --> N x H x W
+            values, predictions_t = torch.max(outputs, 1)
+
+            if loss_to_use == "NONE":
+                loss_values.append(0.0)
+            else:
+                loss = computeLoss(loss_to_use, CEloss, w_for_GDL, tversky_loss_alpha, tversky_loss_beta,
+                                   focal_tversky_gamma, epoch, epochs_switch, epochs_transition, labels_batch, outputs)
+
+                loss_values.append(loss.item())
+
+            pred_cpu = predictions_t.cpu()
+            labels_cpu = labels_batch.cpu()
+
+            if flag_compute_mIoU:
+                ypred_list.extend(pred_cpu.numpy().ravel())
+                ytrue_list.extend(labels_cpu.numpy().ravel())
+
+            # CONFUSION MATRIX, PREDICTIONS ARE PER-COLUMN, GROUND TRUTH CLASSES ARE PER-ROW
+            for i in range(batch_size):
+                print(i)
+                pred_index = pred_cpu[i].numpy().ravel()
+                true_index = labels_cpu[i].numpy().ravel()
+                confmat = confusion_matrix(true_index, pred_index, class_indices)
+                CM += confmat
+
+            # SAVE THE OUTPUT OF THE NETWORK
+            for i in range(batch_size):
+
+                if savefolder:
+                    imgfilename = os.path.join(savefolder, names[i])
+                    dataset.saveClassificationResult(batch_images[i].cpu(), outputs[i].cpu(), imgfilename)
+
+    mean_loss = sum(loss_values) / len(loss_values)
+
+    jaccard_s = 0.0
+
+    if flag_compute_mIoU:
+        ypred = np.array(ypred_list)
+        del ypred_list
+        ytrue = np.array(ytrue_list)
+        del ytrue_list
+        jaccard_s = jaccard_score(ytrue, ypred, average='weighted')
+
+    # NORMALIZED CONFUSION MATRIX
+    sum_row = CM.sum(axis=1)
+    sum_row = sum_row.reshape((nclasses, 1))   # transform into column vector
+    sum_row = sum_row + 1
+    CMnorm = CM / sum_row    # divide each row using broadcasting
+
+
+    # FINAL ACCURACY
+    pixels_total = CM.sum()
+    pixels_correct = np.sum(np.diag(CM))
+    accuracy = float(pixels_correct) / float(pixels_total)
+
+    metrics = {'ConfMatrix': CM, 'NormConfMatrix': CMnorm, 'Accuracy': accuracy, 'JaccardScore': jaccard_s}
+
+    return metrics, mean_loss
+
+
+def computeLoss(loss_name, CE, w_for_GDL, tversky_alpha, tversky_beta, focal_tversky_gamma,
+                epoch, epochs_switch, epochs_transition, labels, predictions):
+    """
+    Compute the loss given its name.
+    """
+
+    if loss_name == "CROSSENTROPY":
+        loss = CE(predictions, labels)
+    elif loss_name == "DICE":
+        loss = losses.GDL(predictions, labels, w_for_GDL)
+    elif loss_name == "BOUNDARY":
+        loss = losses.surface_loss(labels, predictions)
+    elif loss_name == "DICE+BOUNDARY":
+        if epoch >= epochs_switch:
+            alpha = 1.0 - (float(epoch - epochs_switch) / float(epochs_transition))
+            if alpha < 0.0:
+                alpha = 0.0
+            GDL = losses.GDL(predictions, labels, w_for_GDL)
+            B = losses.surface_loss(labels, predictions)
+            loss = alpha * GDL + (1.0 - alpha) * B
+
+            str = "Alpha={:.4f}, GDL={:.4f}, Boundary={:.4f}, loss={:.4f}".format(alpha, GDL, B, loss)
+            print(str)
+        else:
+            loss = losses.GDL(predictions, labels, w_for_GDL)
+    elif loss_name == "FOCAL_TVERSKY":
+        loss = losses.focal_tversky(predictions, labels, tversky_alpha, tversky_beta, focal_tversky_gamma)
+    elif loss_name == "FOCAL+BOUNDARY":
+        if epoch >= epochs_switch:
+            alpha = 1.0 - (float(epoch - epochs_switch) / float(epochs_transition))
+            if alpha < 0.0:
+                alpha = 0.0
+            loss = alpha * losses.focal_tversky(predictions, labels, tversky_alpha, tversky_beta,
+                                                focal_tversky_gamma) + (1.0 - alpha) * losses.surface_loss(labels, predictions)
+        else:
+            loss = losses.focal_tversky(predictions, labels, tversky_alpha, tversky_beta, focal_tversky_gamma)
+
+    return loss
+
+
+def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val, labels_folder_val,
+                    dictionary, target_classes, output_classes, save_network_as, classifier_name,
+                    epochs, batch_sz, batch_mult, learning_rate, L2_penalty, validation_frequency, loss_to_use,
+                    epochs_switch, epochs_transition, tversky_alpha, tversky_gamma, optimiz,
+                    flag_shuffle, flag_training_accuracy, experiment_name):
+
+    ##### DATA #####
+
+    # setup the training dataset
+    datasetTrain = CoralsDataset(images_folder_train, labels_folder_train, dictionary, target_classes)
+
+    print("Dataset setup..", end='')
+    datasetTrain.computeAverage()
+    datasetTrain.computeWeights()
+    print(datasetTrain.dict_target)
+    print(datasetTrain.weights)
+    freq = 1.0 / datasetTrain.weights
+    print(freq)
+    print("done.")
+
+    save_classifier_as = save_network_as.replace(".net", ".json")
+    writeClassifierInfo(save_classifier_as, classifier_name, datasetTrain, output_classes)
+
+    datasetTrain.enableAugumentation()
+
+    datasetVal = CoralsDataset(images_folder_val, labels_folder_val, dictionary, target_classes)
+    datasetVal.dataset_average = datasetTrain.dataset_average
+    datasetVal.weights = datasetTrain.weights
+
+    #AUGUMENTATION IS NOT APPLIED ON THE VALIDATION SET
+    datasetVal.disableAugumentation()
+
+    # setup the data loader
+    dataloaderTrain = DataLoader(datasetTrain, batch_size=batch_sz, shuffle=flag_shuffle, num_workers=0, drop_last=True,
+                                 pin_memory=True)
+
+    validation_batch_size = 4
+    dataloaderVal = DataLoader(datasetVal, batch_size=validation_batch_size, shuffle=False, num_workers=0, drop_last=True,
+                                 pin_memory=True)
+
+    training_images_number = len(datasetTrain.images_names)
+    validation_images_number = len(datasetVal.images_names)
+
+    print("NETWORK USED: DEEPLAB V3+")
+
+    if os.path.exists(save_network_as):
+        net = DeepLab(backbone='resnet', output_stride=16, num_classes=output_classes)
+        net.load_state_dict(torch.load(save_network_as))
+        print("Checkpoint loaded.")
+    else:
+        ###### SETUP THE NETWORK #####
+        net = DeepLab(backbone='resnet', output_stride=16, num_classes=output_classes)
+        state = torch.load("deeplab-resnet.pth.tar")
+        # RE-INIZIALIZE THE CLASSIFICATION LAYER WITH THE RIGHT NUMBER OF CLASSES, DON'T LOAD WEIGHTS OF THE CLASSIFICATION LAYER
+        new_dictionary = state['state_dict']
+        del new_dictionary['decoder.last_conv.8.weight']
+        del new_dictionary['decoder.last_conv.8.bias']
+        net.load_state_dict(state['state_dict'], strict=False)
+
+    # OPTIMIZER
+    if optimiz == "SGD":
+        optimizer = optim.SGD(net.parameters(), lr=learning_rate, weight_decay=L2_penalty, momentum=0.9)
+    elif optimiz == "ADAM":
+        optimizer = optim.Adam(net.parameters(), lr=learning_rate, weight_decay=L2_penalty)
+
+    USE_CUDA = torch.cuda.is_available()
+
+    if USE_CUDA:
+        device = torch.device("cuda")
+        net.to(device)
+
+    ##### TRAINING LOOP #####
+
+    reduce_lr_patience = 2
+    if loss_to_use == "DICE+BOUNDARY":
+        reduce_lr_patience = 200
+        print("patience increased !")
+
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=reduce_lr_patience, verbose=True)
+
+    best_accuracy = 0.0
+    best_jaccard_score = 0.0
+
+
+    # Crossentropy loss
+    weights = datasetTrain.weights
+    class_weights = torch.FloatTensor(weights).cuda()
+    CEloss = nn.CrossEntropyLoss(weight=class_weights, ignore_index=-1)
+
+    # weights for GENERALIZED DICE LOSS (GDL)
+    freq = 1.0 / datasetTrain.weights[1:]
+    w = 1.0 / (freq * freq)
+    w = w / w.sum() + 0.00001
+    w_for_GDL = torch.from_numpy(w)
+    w_for_GDL = w_for_GDL.to(device)
+
+    # Focal Tversky loss
+    focal_tversky_gamma = torch.tensor(tversky_gamma)
+    focal_tversky_gamma = focal_tversky_gamma.to(device)
+
+    tversky_loss_alpha = torch.tensor(tversky_alpha)
+    tversky_loss_beta = torch.tensor(1.0 - tversky_alpha)
+    tversky_loss_alpha = tversky_loss_alpha.to(device)
+    tversky_loss_beta = tversky_loss_beta.to(device)
+
+    print("Training Network")
+    for epoch in range(epochs):  # loop over the dataset multiple times
+
+        net.train()
+        optimizer.zero_grad()
+
+        loss_values = []
+        for i, minibatch in enumerate(dataloaderTrain):
+            # get the inputs
+            images_batch = minibatch['image']
+            labels_batch = minibatch['labels']
+
+            if USE_CUDA:
+                images_batch = images_batch.to(device)
+                labels_batch = labels_batch.to(device)
+
+            # forward+loss+backward
+            outputs = net(images_batch)
+
+            loss = computeLoss(loss_to_use, CEloss, w_for_GDL, tversky_loss_alpha, tversky_loss_beta, focal_tversky_gamma,
+                               epoch, epochs_switch, epochs_transition, labels_batch, outputs)
+
+            loss.backward()
+
+            # TO AVOID MEMORY TROUBLE UPDATE WEIGHTS EVERY BATCH SIZE X BATCH MULT
+            if (i+1)% batch_mult == 0:
+                optimizer.step()
+                optimizer.zero_grad()
+
+            print(epoch, i, loss.item())
+            loss_values.append(loss.item())
+
+        mean_loss_train = sum(loss_values) / len(loss_values)
+        print("Epoch: %d , Mean loss = %f" % (epoch, mean_loss_train))
+
+        ### VALIDATION ###
+        if epoch > 0 and (epoch+1) % validation_frequency == 0:
+
+            print("RUNNING VALIDATION.. ", end='')
+
+            metrics_val, mean_loss_val = evaluateNetwork(datasetVal, dataloaderVal, loss_to_use, CEloss, w_for_GDL,
+                                                         tversky_loss_alpha, tversky_loss_beta, focal_tversky_gamma,
+                                                         epoch, epochs_switch, epochs_transition,
+                                                         output_classes, net, flag_compute_mIoU=False)
+            accuracy = metrics_val['Accuracy']
+            jaccard_score = metrics_val['JaccardScore']
+
+            scheduler.step(mean_loss_val)
+
+            accuracy_training = 0.0
+            jaccard_training = 0.0
+
+            if flag_training_accuracy is True:
+                metrics_train, mean_loss_train = evaluateNetwork(datasetTrain, dataloaderTrain, loss_to_use, CEloss, w_for_GDL,
+                                                                 tversky_loss_alpha, tversky_loss_beta, focal_tversky_gamma,
+                                                                 epoch, epochs_switch, epochs_transition,
+                                                                 output_classes, net, flag_compute_mIoU=False)
+                accuracy_training = metrics_train['Accuracy']
+                jaccard_training = metrics_train['JaccardScore']
+
+            #if jaccard_score > best_jaccard_score:
+            if accuracy > best_accuracy:
+                best_accuracy = accuracy
+                best_jaccard_score = jaccard_score
+                torch.save(net.state_dict(), save_network_as)
+                # performance of the best accuracy network on the validation dataset
+                metrics_filename = save_network_as[:len(save_network_as) - 4] + "-val-metrics.txt"
+                saveMetrics(metrics_val, metrics_filename)
+                if flag_training_accuracy is True:
+                    metrics_filename = save_network_as[:len(save_network_as) - 4] + "-train-metrics.txt"
+                    saveMetrics(metrics_train, metrics_filename)
+
+            print("-> CURRENT BEST ACCURACY ", best_accuracy)
+
+
+    # main loop ended - reload it and evaluate mIoU
+    torch.cuda.empty_cache()
+    del net
+    net = None
+
+    print("Final evaluation..")
+    net = DeepLab(backbone='resnet', output_stride=16, num_classes=datasetTrain.num_classes)
+    net.load_state_dict(torch.load(save_network_as))
+
+    metrics_val, mean_loss_val = evaluateNetwork(datasetVal, dataloaderVal, loss_to_use, CEloss, w_for_GDL,
+                                                 tversky_loss_alpha, tversky_loss_beta, focal_tversky_gamma,
+                                                 epoch, epochs_switch, epochs_transition,
+                                                 datasetVal.num_classes, net, flag_compute_mIoU=True)
+
+    print("***** TRAINING FINISHED *****")
+    print("BEST ACCURACY REACHED ON THE VALIDATION SET: %.3f " % best_accuracy)
+
+
+def testNetwork(images_folder, labels_folder, dictionary, target_classes, network_filename, output_folder):
+    """
+    Load a network and test it on the test dataset.
+    :param network_filename: Full name of the network to load (PATH+name)
+    """
+
+    # TEST DATASET
+    datasetTest = CoralsDataset(images_folder, labels_folder, dictionary, target_classes)
+    datasetTest.disableAugumentation()
+
+    classifier_info_filename = network_filename.replace(".net", ".json")
+    output_classes = readClassifierInfo(classifier_info_filename, datasetTest)
+
+    batchSize = 4
+    dataloaderTest = DataLoader(datasetTest, batch_size=batchSize, shuffle=False, num_workers=0, drop_last=True,
+                            pin_memory=True)
+
+    # DEEPLAB V3+
+    net = DeepLab(backbone='resnet', output_stride=16, num_classes=output_classes)
+    net.load_state_dict(torch.load(network_filename))
+    print("Weights loaded.")
+
+    metrics_test, loss = evaluateNetwork(datasetTest, dataloaderTest, "NONE", None, [0.0], 0.0, 0.0, 0.0, 0, 0, 0,
+                                         output_classes, net, True, output_folder)
+    metrics_filename = network_filename[:len(network_filename) - 4] + "-test-metrics.txt"
+    saveMetrics(metrics_test, metrics_filename)
+    print("***** TEST FINISHED *****")
+

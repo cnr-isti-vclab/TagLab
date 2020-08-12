@@ -22,17 +22,9 @@ import os
 import time
 import datetime
 import shutil
-from source.NewDataset import NewDataset
-
 import json
 import math
 import numpy as np
-import numpy.ma as ma
-from skimage import measure
-from skimage.measure import points_in_poly
-
-import source.Mask as Mask
-import source.RasterOps as rasterops
 
 from PyQt5.QtCore import Qt, QSize, QMargins, QDir, QPoint, QPointF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo, QModelIndex
 from PyQt5.QtGui import QPainterPath, QFont, QColor, QPolygonF, QImageReader, QImage, QPixmap, QIcon, QKeySequence, \
@@ -57,6 +49,8 @@ except Exception as e:
 import cv2
 
 # CUSTOM
+import source.Mask as Mask
+import source.RasterOps as rasterops
 from source.QtImageViewerPlus import QtImageViewerPlus
 from source.QtMapViewer import QtMapViewer
 from source.QtMapSettingsWidget import QtMapSettingsWidget
@@ -67,16 +61,12 @@ from source.QtProgressBarCustom import QtProgressBarCustom
 from source.QtCrackWidget import QtCrackWidget
 from source.QtHistogramWidget import QtHistogramWidget
 from source.QtClassifierWidget import QtClassifierWidget
+from source.QtTYNWidget import QtTYNWidget
 from source.QtComparePanel import QtComparePanel
-from source.Blob import Blob
-from source.Annotation import Annotation
 from source.Project import Project, loadProject
 from source.Image import Image
-from source.Channel import Channel
-
-from source.GeoRef import GeoRef
-
 from source.MapClassifier import MapClassifier
+from source.NewDataset import NewDataset
 from source import utils
 
 # LOGGING
@@ -132,6 +122,7 @@ class TagLab(QWidget):
 
         self.mapWidget = None
         self.classifierWidget = None
+        self.trainYourNetworkWidget = None
         self.progress_bar = None
 
         ##### TOP LAYOUT
@@ -429,30 +420,6 @@ class TagLab(QWidget):
         self.move()
 
 
-    def createDatasetUsingOversampling(self):
-
-        target_classes = {"Background": 0,
-                          "Pocillopora": 1,
-                          "Porite_massive": 2,
-                          "Montipora_plate/flabellata": 3,
-                          "Montipora_crust/patula": 4,
-                          "Montipora_capitata": 5
-                          }
-
-        weights = [1.79463675, 12.34562974, 5.87393838, 9.02889105, 23.44283539, 26.22758697]
-        frequencies = [0.55721583, 0.08100032, 0.17024353, 0.11075557, 0.04265696, 0.03812779]
-
-        maps = ["D:\\INVITED-REMOTE-SENSING\\VOS2013.json"
-                ]
-
-        for i in range(1):
-            self.load(maps[i])
-            basename = os.path.basename(maps[i])
-            self.showresult = basename.replace(".json", ".png")
-            self.tilename = os.path.splitext(basename)[0]
-            self.exportAnnAsTrainingDataset()
-
-
     #just to make the code less verbose
     def newAction(self, text, shortcut, callback):
         action  = QAction(text, self)
@@ -634,6 +601,11 @@ class TagLab(QWidget):
         exportTrainingDatasetAct.setStatusTip("Export a new training dataset based on the current annotations")
         exportTrainingDatasetAct.triggered.connect(self.exportAnnAsTrainingDataset)
 
+        trainYourNetworkAct = QAction("Train Your Network", self)
+        #exportTrainingDatasetAct.setShortcut('Ctrl+??')
+        trainYourNetworkAct.setStatusTip("Export a new training dataset and, eventually, train your network on it")
+        trainYourNetworkAct.triggered.connect(self.trainYourNetwork)
+
         undoAct = QAction("Undo", self)
         undoAct.setShortcut('Ctrl+Z')
         undoAct.setStatusTip("Undo")
@@ -695,6 +667,8 @@ class TagLab(QWidget):
         submenuExport.addAction(exportClippedRasterAct)
         submenuExport.addAction(exportHistogramAct)
         submenuExport.addAction(exportTrainingDatasetAct)
+        filemenu.addSeparator()
+        filemenu.addAction(trainYourNetworkAct)
 
         editmenu = menubar.addMenu("&Edit")
         editmenu.addAction(undoAct)
@@ -889,7 +863,7 @@ class TagLab(QWidget):
             self.refineBorderErode()
 
         elif event.key() == Qt.Key_F:
-            self.fillBorder()
+            self.fillLabel()
 
         elif event.key() == Qt.Key_1:
             # ACTIVATE "MOVE" TOOL
@@ -1283,6 +1257,7 @@ class TagLab(QWidget):
 
         self.mapWidget = None
         self.classifierWidget = None
+        self.trainYourNetworkWidget = None
         self.progress_bar = None
         self.project = Project()
         self.last_image_loaded = None
@@ -1747,7 +1722,8 @@ class TagLab(QWidget):
             self.infoWidget.setInfoMessage("You need to select <em>one</em> blob for REFINE operation.")
 
 
-    def fillLabel(self, blob):
+    def fillLabel(self):
+
         view = self.activeviewer
         if view is None:
             return
@@ -2121,10 +2097,6 @@ class TagLab(QWidget):
         new_dataset.convert_colors_to_labels(target_classes, self.labels_dictionary)
         new_dataset.computeFrequencies(target_classes)
 
-        #new_dataset.compute_radius_map(50.0, 200.0)
-        #qimg = utils.floatmapToQImage(new_dataset.radius_map, -1.0)
-        #qimg.save("C:\\temp\\prova.png")
-
         new_dataset.setupAreas("UNIFORM", target_classes)
 
         # cut the tiles on the areas areas
@@ -2137,6 +2109,113 @@ class TagLab(QWidget):
         #shutil.rmtree("output", ignore_errors=True)
         #new_dataset.export_tiles(basename="output", labels_info=self.labels_dictionary)
 
+    @pyqtSlot()
+    def trainNewNetwork(self):
+
+        dataset_folder = self.trainYourNetworkWidget.getDatasetFolder()
+
+        # check dataset
+        check = training.checkDataset(dataset_folder)
+        if check == 1:
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("An error occured with your dataset, there might be a mismatching between files. Please, export a new dataset.")
+            msgBox.exec()
+            return
+
+        # CLASSES TO RECOGNIZE (label name - label code)
+        target_classes = training.createTargetClasses(annotations=self.annotations)
+        num_classes = len(target_classes)
+
+        # GO TRAINING GO...
+
+        nepochs = self.trainYourNetworkWidget.getEpochs()
+        lr = self.trainYourNetworkWidget.getLR()
+        L2 = self.trainYourNetworkWidget.getWeightDecay()
+
+        classifier_name = self.trainYourNetworkWidget.editClassifierName.text()
+        network_name = self.trainYourNetworkWidget.editNetworkName.text() + ".net"
+        network_filename = os.path.join(os.path.join(self.taglab_dir, "models"), network_name)
+
+        progress_bar = QtProgressBarCustom(parent=self)
+        progress_bar.setWindowFlags(Qt.ToolTip | Qt.CustomizeWindowHint)
+        progress_bar.setWindowModality(Qt.NonModal)
+        pos = self.viewerplus.pos()
+        progress_bar.move(pos.x() + 15, pos.y() + 30)
+        progress_bar.show()
+
+        progress_bar.hidePerc()
+        progress_bar.setMessage("Dataset setup..")
+        QApplication.processEvents()
+
+        # training folders
+        train_folder = os.path.join(dataset_folder, "training")
+        images_dir_train = os.path.join(train_folder, "images")
+        labels_dir_train = os.path.join(train_folder, "labels")
+
+        val_folder = os.path.join(dataset_folder, "validation")
+        images_dir_val = os.path.join(val_folder, "images")
+        labels_dir_val = os.path.join(val_folder, "labels")
+
+
+        dataset_train = training.trainingNetwork(images_dir_train, labels_dir_train, images_dir_val, labels_dir_val,
+                        self.labels, target_classes, output_classes=num_classes,
+                        save_network_as=network_filename, classifier_name=classifier_name,
+                        epochs=nepochs, batch_sz=4, batch_mult=8, validation_frequency=2,
+                        loss_to_use="Adam", epochs_switch=0, epochs_transition=0,
+                        learning_rate=lr, L2_penalty=L2, tversky_alpha=0.75, tversky_gamma=0.0,
+                        flag_shuffle=True, flag_training_accuracy=False, experiment_name="_EXP")
+
+        ##### TEST
+
+        test_folder = os.path.join(dataset_folder, "test")
+        images_dir_test = os.path.join(test_folder, "images")
+        labels_dir_test = os.path.join(test_folder, "labels")
+
+        output_folder = os.path.join(self.taglab_dir, "temp")
+        if os.path.exists(output_folder):
+            shutil.rmtree(output_folder, ignore_errors=True)
+
+        os.mkdir(output_folder)
+
+        metrics = training.testNetwork(images_dir_test, labels_dir_test, self.labels, dataset_train,
+                             network_filename=network_filename, output_folder=output_folder)
+
+        if progress_bar:
+            progress_bar.close()
+            del progress_bar
+
+        txt = "Accuracy: " + str(metrics['Accuracy']) + "mIoU: " + str(metrics['JaccardScore']) + "Do you want to save this new classifier?"
+        confirm_training = QMessageBox.question(self, self.TAGLAB_VERSION, txt, QMessageBox.Yes | QMessageBox.No)
+
+        if confirm_training == QMessageBox.Yes:
+            new_classifier = dict()
+            new_classifier["Classifier Name"] = classifier_name
+            new_classifier["Average Norm."] = list(dataset_train.dataset_average)
+            new_classifier["Num. Classes"] = dataset_train.num_classes
+            new_classifier["Classes"] = list(dataset_train.dict_target)
+            new_classifier["Scale"] = self.map_px_to_mm_factor
+            self.available_classifiers.append(new_classifier)
+            newconfig = dict()
+            newconfig["Available Classifiers"] = self.available_classifiers
+            newconfig["Labels"] = self.labels
+            str = json.dumps(newconfig)
+            classifier_filename = network_name.replace(".net", ".json")
+            classifier_filename = os.path.join(self.taglab_dir, classifier_name)
+            f = open(classifier_filename, "w")
+            f.write(str)
+            f.close()
+
+    @pyqtSlot()
+    def trainYourNetwork(self):
+
+        if self.activeviewer is not None:
+            if self.trainYourNetworkWidget is None:
+                annotations = self.activeviewer.annotations
+                self.trainYourNetworkWidget = QtTYNWidget(annotations, parent=self)
+                self.trainYourNetworkWidget.setWindowModality(Qt.WindowModal)
+                self.trainYourNetworkWidget.btnTrain.clicked.connect(self.trainNewNetwork)
+                self.trainYourNetworkWidget.show()
 
 
     @pyqtSlot()
@@ -2145,6 +2224,7 @@ class TagLab(QWidget):
         # load tiff
         if self.activeviewer is None:
             return
+
         filters = " TIFF (*.tif)"
         filename, _ = QFileDialog.getSaveFileName(self, "Save raster as", self.taglab_dir, filters)
 

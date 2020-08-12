@@ -323,7 +323,7 @@ class NewDataset(object):
 		sn = []
 		sc = []
 		sP = []
-		for i in range(5000):
+		for i in range(1500):
 
 			print(i)
 
@@ -681,62 +681,31 @@ class NewDataset(object):
 		return cleaned_tiles
 
 
+	def computeRadiusMap(self, radius_min, radius_max):
 
-	def sampleBlob(self, blob, samples, r, centroid=False):
+		h = self.labels.shape[0]
+		w = self.labels.shape[1]
 
-		# centroid
-		if centroid is True:
-			centroid = (blob.centroid[0], blob.centroid[1])
-			samples.append(centroid)
+		radius = np.zeros(len(self.frequencies) + 1)
+		radius[0] = sum(self.frequencies)
+		for i in range(len(self.frequencies)):
+			radius[i+1] = self.frequencies[i]
 
-		offset_x = blob.bbox[1]
-		offset_y = blob.bbox[0]
-		w = blob.bbox[2]
-		h = blob.bbox[3]
+		f_min = np.min(radius, axis=0)
+		f_max = np.max(radius, axis=0)
 
-		# NOTE: MASK HAS HOLES (!) DO WE WANT TO SAMPLE INSIDE THEM ??
-		mask = blob.getMask()
+		radius = radius - f_min
+		radius = radius / (f_max - f_min)
+		radius = (radius * (radius_max - radius_min)) + radius_min
 
-		current_samples = []
-		for i in range(1000):
-			px = rnd.randint(1, w - 1)
-			py = rnd.randint(1, h - 1)
+		self.radius_map = np.zeros((h, w), dtype='float')
+		for i, r in enumerate(radius):
+			self.radius_map[self.labels == i] = r
 
-			if mask[py, px] == 1:
-
-				dmin = 100000000.0
-				for sample in current_samples:
-					d = math.sqrt((sample[0] - px) * (sample[0] - px) + (sample[1] - py) * (sample[1] - py))
-					if d < dmin:
-						dmin = d
-
-				if dmin >= r:
-					current_samples.append((px, py))
-					samples.append((px + offset_x, py + offset_y))
+		self.radius_map = gaussian(self.radius_map, sigma=60.0, mode='reflect')
 
 
-	def sampleAreaPoissonDisk(self, area, blobs, radius):
-		"""
-		Sample the blobs in the given area using the Poisson Disk sampling according to the given radius.
-		The area is stored as (top, left, width, height).
-		The functions returns a list of (x,y) coordinates.
-		"""
-
-		samples = []
-
-		for blob in blobs:
-			if self.bbox_intersection(area, blob.bbox) > 100.0:
-				self.sampleBlob(blob, samples, radius, centroid=False)
-
-		return samples
-
-
-	def importanceSamplingBlob(self, blob, current_samples, centroid=False):
-
-		# centroid
-		if centroid is True:
-			centroid = (blob.centroid[0], blob.centroid[1])
-			current_samples.append(centroid)
+	def sampleBlobWimportanceSampling(self, blob, current_samples):
 
 		offset_x = blob.bbox[1]
 		offset_y = blob.bbox[0]
@@ -771,9 +740,9 @@ class NewDataset(object):
 		return current_samples
 
 
-	def importanceSamplingSubArea(self, area, current_samples):
+	def sampleSubAreaWImportanceSampling(self, area, current_samples):
 		"""
-		Sample the blobs in the given area using the Poisson Disk sampling according to the given radius.
+		Sample the given area using the Poisson Disk sampling according to the given radius map.
 		The area is stored as (top, left, width, height).
 		"""
 
@@ -800,79 +769,6 @@ class NewDataset(object):
 				current_samples.append((px, py))
 
 		return current_samples
-
-
-	def sampleAreaImportanceSampling(self, area):
-		"""
-		Sample the given area according to the previously computed radius map (importance is inversely correlated to the class frequencies).
-		The area is stored as (top, left, width, height).
-		The functions returns a list of (x,y) coordinates.
-		"""
-
-		samples = []
-
-		# the minority classes MUST be sampled before the majority classes
-		classes = ["Montipora_crust/patula", "Pocillopora_eydouxi", "Pocillopora", "Porite_massive", "Montipora_plate/flabellata" ]
-
-		for class_name in classes:
-			print(class_name)
-			for blob in self.blobs:
-				if blob.class_name == class_name:
-					samples = self.importanceSamplingBlob(blob, samples)
-					print(len(samples))
-
-
-		tile_size = 1024
-		step = 256
-
-		tile_cols = 1 + int(area[2] / step)
-		tile_rows = 1 + int(area[3] / step)
-
-		for row in range(tile_rows):
-			for col in range(tile_cols):
-
-				top = area[0] + row * step
-				left = area[1] + col * step
-
-				if left + tile_size > area[1] + area[2] - 1:
-					left = area[2] - tile_size - 1
-
-				if top + tile_size > area[0] + area[3] - 1:
-					top = area[3] - tile_size - 1
-
-				sub_area = [top, left, tile_size, tile_size]
-				print(sub_area)
-
-				samples = self.importanceSamplingSubArea(sub_area, samples)
-
-				print(len(samples))
-
-		return samples
-
-
-	def compute_radius_map(self, radius_min, radius_max):
-
-		h = self.labels.shape[0]
-		w = self.labels.shape[1]
-
-		radius = np.zeros(len(self.frequencies) + 1)
-		radius[0] = sum(self.frequencies)
-		for i in range(len(self.frequencies)):
-			radius[i+1] = self.frequencies[i]
-
-		f_min = np.min(radius, axis=0)
-		f_max = np.max(radius, axis=0)
-
-		radius = radius - f_min
-		radius = radius / (f_max - f_min)
-		radius = (radius * (radius_max - radius_min)) + radius_min
-
-		self.radius_map = np.zeros((h, w), dtype='float')
-		for i, r in enumerate(radius):
-			self.radius_map[self.labels == i] = r
-
-		self.radius_map = gaussian(self.radius_map, sigma=60.0, mode='reflect')
-
 
 
 	def sampleBlobWPoissonDisk(self, blob, current_samples, r):
@@ -911,6 +807,7 @@ class NewDataset(object):
 
 		return current_samples
 
+
 	def sampleBackgroundWPoissonDisk(self, area, current_samples, r):
 
 		offset_x = int(area[1])
@@ -940,16 +837,16 @@ class NewDataset(object):
 		return current_samples
 
 
-	def oversamplingBlobs(self, area, classes_to_sample, radii):
+	def oversamplingBlobsWPoissonDisk(self, area, classes_to_sample, radii):
 		"""
 		Sample the blobs of the map using Poisson Disk sampling with the given radii.
-		Note that only the given classes are sampled. The majority class are not oversampledd-
+		Only the given classes are sampled.
 		The functions returns a list of (x,y) coordinates.
 		"""
 
+		# minority classes are sampled before majority classes
 		samples = []
 		for i, class_name in enumerate(classes_to_sample):
-			print(class_name)
 			radius = radii[i]
 			for blob in self.blobs:
 				if blob.class_name == class_name:
@@ -958,6 +855,50 @@ class NewDataset(object):
 					sys.stdout.write(txt)
 
 		samples = self.sampleBackgroundWPoissonDisk(area=area, current_samples=samples, r=280.0)
+
+		return samples
+
+
+	def oversamplingBlobsWImportanceSampling(self, area, classes_to_sample, radii):
+		"""
+		Sample the blobs of the map using Importance Sampling according to the precomputed radius map.
+		Only the given classes are sampled.
+		The functions returns a list of (x,y) coordinates.
+		"""
+
+		# minority classes are sampled before majority classes
+		samples = []
+		for class_name in classes_to_sample:
+			for blob in self.blobs:
+				if blob.class_name == class_name:
+					samples = self.sampleBlobWimportanceSampling(blob, samples)
+					txt = str(len(samples)) + "\r"
+					sys.stdout.write(txt)
+
+		tile_size = 1024
+		step = 256
+
+		tile_cols = 1 + int(area[2] / step)
+		tile_rows = 1 + int(area[3] / step)
+
+		for row in range(tile_rows):
+			for col in range(tile_cols):
+
+				top = area[0] + row * step
+				left = area[1] + col * step
+
+				if left + tile_size > area[1] + area[2] - 1:
+					left = area[2] - tile_size - 1
+
+				if top + tile_size > area[0] + area[3] - 1:
+					top = area[3] - tile_size - 1
+
+				sub_area = [top, left, tile_size, tile_size]
+				print(sub_area)
+
+				samples = self.sampleSubAreaWImportanceSampling(sub_area, samples)
+
+				print(len(samples))
 
 		return samples
 
@@ -971,49 +912,24 @@ class NewDataset(object):
 		w = self.orthoimage.width()
 		h = self.orthoimage.height()
 
-		delta = int(self.crop_size / 2)
+		delta = int(self.tile_size / 2)
 
 		if regular is True:
 			self.validation_tiles = self.sampleAreaUniformly(self.val_area, self.tile_size, self.step)
 			self.test_tiles = self.sampleAreaUniformly(self.test_area, self.tile_size, self.step)
-
 			self.training_tiles = self.sampleAreaUniformly([delta, delta, w-delta*2, h-delta*2], self.tile_size, self.step)
 
 		if oversampling is True:
-
-			#DISK_RADIUS = 50.0
-			#self.training_tiles = self.sampleAreaPoissonDisk([delta, delta, w-delta*2, h-delta*2], self.blobs, DISK_RADIUS * 2.0)
-			#self.validation_tiles = self.sampleAreaPoissonDisk(self.val_area, self.blobs, DISK_RADIUS * 2.0)
-
-			#self.training_tiles = self.sampleAreaImportanceSampling([delta, delta, w-delta*2, h-delta*2])
-			#self.validation_tiles = self.sampleAreaImportanceSampling(self.val_area)
-
 			self.validation_tiles = self.sampleAreaUniformly(self.val_area, self.tile_size, self.step)
 			self.test_tiles = self.sampleAreaUniformly(self.test_area, self.tile_size, self.step)
-
-			self.training_tiles = self.oversamplingBlobs([delta, delta, w-delta*2,  h - self.tile_size - delta],
-														 classes_to_sample, radii)
-
-			# map_h = self.orthoimage.height()
-			# areaext = self.val_area
-			# areaext[1] = 0
-			# areaext[2] = w
-			# areaext[3] = map_h - self.tile_size - areaext[0]
-			# bbox = [0, 0, 0, 0]
-			# for tile in self.training_tiles:
-			# 	bbox[0] = tile[1] - int(self.crop_size/2)
-			# 	bbox[1] = tile[0] - int(self.crop_size/2)
-			# 	bbox[2] = self.crop_size
-			# 	bbox[3] = self.crop_size
-			# 	intersection = self.bbox_intersection(bbox, areaext)
-			# 	intersection = float(intersection) / float(bbox[2] * bbox[3])
-			# 	if intersection > 0.85:
-			# 		self.validation_tiles.append(tile)
+			self.training_tiles = self.oversamplingBlobsWPoissonDisk([delta, delta, w-delta*2,  h-delta*2],
+																	 classes_to_sample, radii)
 
 		self.training_tiles = self.cleanTrainingTiles(self.training_tiles)
 
 		if oversampling is True:
 			self.validation_tiles = self.cleaningValidationTiles(self.validation_tiles)
+
 
 	def export_tiles(self, basename, tilename, labels_info):
 		"""
@@ -1023,13 +939,13 @@ class NewDataset(object):
 
 		##### VALIDATION AREA
 
-		basenameVim = os.path.join(basename, "val_im")
+		basenameVim = os.path.join(basename, os.path.join("validation", "images"))
 		try:
 			os.makedirs(basenameVim)
 		except:
 			pass
 
-		basenameVlab = os.path.join(basename, "val_lab")
+		basenameVlab = os.path.join(basename, os.path.join("validation", "labels"))
 		try:
 			os.makedirs(basenameVlab)
 		except:
@@ -1055,13 +971,13 @@ class NewDataset(object):
 
 		##### TEST AREA
 
-		basenameTestIm = os.path.join(basename, "test_im")
+		basenameTestIm = os.path.join(basename, os.path.join("test", "images"))
 		try:
 			os.makedirs(basenameTestIm)
 		except:
 			pass
 
-		basenameTestLab = os.path.join(basename, "test_lab")
+		basenameTestLab = os.path.join(basename, os.path.join("test", "labels"))
 		try:
 			os.makedirs(basenameTestLab)
 		except:
@@ -1085,13 +1001,13 @@ class NewDataset(object):
 
 		##### TRAINING AREA = ENTIRE MAP / (VALIDATION AREA U TEST_AREA)
 
-		basenameTrainIm = os.path.join(basename, "train_im")
+		basenameTrainIm = os.path.join(basename, os.path.join("training", "images"))
 		try:
 			os.makedirs(basenameTrainIm)
 		except:
 			pass
 
-		basenameTrainLab = os.path.join(basename, "train_lab")
+		basenameTrainLab = os.path.join(basename, os.path.join("training", "labels"))
 		try:
 			os.makedirs(basenameTrainLab)
 		except:
@@ -1138,7 +1054,7 @@ class NewDataset(object):
 
 	def classFrequenciesOnDataset(self, labels_dir, target_classes, labels_colors):
 		"""
-        Returns the frequencies of the target classes on the given dataset.
+		Returns the frequencies of the target classes on the given dataset.
         """
 
 		num_classes = len(target_classes)
