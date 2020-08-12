@@ -6,11 +6,12 @@ import torch.multiprocessing
 from torch.utils.data import DataLoader
 import torch.nn as nn
 import torch.optim as optim
-from deeplab import DeepLab
+from models.deeplab import DeepLab
 from sklearn.metrics import jaccard_score
 from sklearn.metrics import confusion_matrix
 from models.coral_dataset import CoralsDataset
 import models.losses as losses
+from PyQt5.QtWidgets import QApplication
 
 # SEED
 torch.manual_seed(997)
@@ -208,7 +209,7 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
                     dictionary, target_classes, output_classes, save_network_as, classifier_name,
                     epochs, batch_sz, batch_mult, learning_rate, L2_penalty, validation_frequency, loss_to_use,
                     epochs_switch, epochs_transition, tversky_alpha, tversky_gamma, optimiz,
-                    flag_shuffle, flag_training_accuracy, experiment_name):
+                    flag_shuffle, flag_training_accuracy, progress):
 
     ##### DATA #####
 
@@ -287,7 +288,6 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
     best_accuracy = 0.0
     best_jaccard_score = 0.0
 
-
     # Crossentropy loss
     weights = datasetTrain.weights
     class_weights = torch.FloatTensor(weights).cuda()
@@ -310,13 +310,19 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
     tversky_loss_beta = tversky_loss_beta.to(device)
 
     print("Training Network")
-    for epoch in range(epochs):  # loop over the dataset multiple times
+    for epoch in range(epochs):
+
+        txt = "Epoch " + str(epoch+1) + "/" + str(epochs)
+        progress.setMessage(txt)
+        progress.setProgress((100.0 * epoch) / epochs)
+        QApplication.processEvents()
 
         net.train()
         optimizer.zero_grad()
 
         loss_values = []
         for i, minibatch in enumerate(dataloaderTrain):
+
             # get the inputs
             images_batch = minibatch['image']
             labels_batch = minibatch['labels']
@@ -333,7 +339,7 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
 
             loss.backward()
 
-            # TO AVOID MEMORY TROUBLE UPDATE WEIGHTS EVERY BATCH SIZE X BATCH MULT
+            # TO AVOID MEMORY TROUBLE UPDATE WEIGHTS EVERY BATCH SIZE x BATCH MULT
             if (i+1)% batch_mult == 0:
                 optimizer.step()
                 optimizer.zero_grad()
