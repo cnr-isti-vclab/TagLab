@@ -2074,40 +2074,72 @@ class TagLab(QWidget):
     @pyqtSlot()
     def exportAnnAsTrainingDataset(self):
 
-        ##### THE FOLLOWING CODE MUST BE CLEANED..
+        # THIS CODE MUST BE CLEANED !!!
 
         new_dataset = NewDataset(self.activeviewer.img_map, self.activeviewer.annotations.seg_blobs, tile_size=1026, step=513)
 
         # create training, validation and test areas
         #target_classes = ["Pocillopora", "Pocillopora_eydouxi", "Porite_massive", "Montipora_plate/flabellata",
         #                 "Montipora_crust/patula"]
+
         target_classes = ["Pocillopora",
                           "Porite_massive",
                           "Montipora_plate/flabellata",
                           "Montipora_crust/patula",
                           "Montipora_capitata"]
 
-        classes_to_sample = ["Montipora_plate/flabellata", "Montipora_crust/patula", "Pocillopora",
-                          "Porite_massive",
-                          "Montipora_plate/flabellata"]
-
-        radii = [256.0 / math.sqrt(2.0), 256.0 / math.sqrt(6.0), 256.0, 256.0, 256.0]
+        radii_disegno = [280.0, 60.0, 120.0, 256.0, 20.0, 20.0]
 
         new_dataset.create_label_image(self.labels_dictionary)
         new_dataset.convert_colors_to_labels(target_classes, self.labels_dictionary)
         new_dataset.computeFrequencies(target_classes)
 
-        new_dataset.setupAreas("UNIFORM", target_classes)
+        class_sample_info = []
+        for i, freq in enumerate(new_dataset.frequencies):
+            if freq > 0.0005:
+                K = max(new_dataset.frequencies) / freq
+                #K = 0.15 / freq
+                K = math.pow(K, 1.3)
+                if K < 1.5:
+                    radius = 256.0
+                else:
+                    radius = 256.0 / math.sqrt(K * 1.5)
+
+                if radius < 20.0:
+                    radius = 20.0
+            else:
+                radius = 0.0
+
+            class_sample_info.append((target_classes[i], radius))
+
+        class_sample_info.sort(key=lambda x: x[1])
+
+        class_to_sample = []
+        radii = []
+        for info in class_sample_info:
+            if info[1] > 5.0:
+                class_to_sample.append(info[0])
+                radii.append(info[1])
+
+        #new_dataset.compute_radius_map(50.0, 200.0)
+        #qimg = utils.floatmapToQImage(new_dataset.radius_map, -1.0)
+        #qimg.save("C:\\temp\\prova.png")
+
+        new_dataset.setupAreas("BIOLOGICALLY-INSPIRED", target_classes)
+
+
+        print(class_to_sample)
+        print(radii)
 
         # cut the tiles on the areas areas
-        new_dataset.cut_tiles(regular=False, oversampling=True, classes_to_sample=classes_to_sample, radii=radii)
-        new_dataset.save_samples(self.showresult, show_tiles=False)
-
-        new_dataset.classFrequenciesOnTiles(target_classes)
+        new_dataset.cut_tiles(regular=True, oversampling=False, classes_to_sample=class_to_sample, radii=radii)
+        new_dataset.save_samples(self.showresult, show_tiles=True, show_areas=True, radii=radii_disegno)
 
         # generate the dataset
-        #shutil.rmtree("output", ignore_errors=True)
-        #new_dataset.export_tiles(basename="output", labels_info=self.labels_dictionary)
+        new_dataset.export_tiles(basename="C:\\oversampling", tilename=self.tilename, labels_info=self.labels_dictionary)
+
+        new_dataset.classFrequenciesOnDataset("C:\\oversampling\\train_lab", target_classes, self.labels_dictionary)
+
 
     @pyqtSlot()
     def trainNewNetwork(self):
