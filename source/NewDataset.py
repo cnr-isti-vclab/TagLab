@@ -192,6 +192,38 @@ class NewDataset(object):
 		return coverage_per_class
 
 
+	def computeRadii(self, target_classes):
+
+		class_sample_info = []
+		for i, freq in enumerate(self.frequencies):
+			if freq > 0.0005:
+				K = max(self.frequencies) / freq
+				# K = 0.15 / freq
+				K = math.pow(K, 1.3)
+				if K < 1.5:
+					radius = 256.0
+				else:
+					radius = 256.0 / math.sqrt(K * 1.5)
+
+				if radius < 20.0:
+					radius = 20.0
+			else:
+				radius = 0.0
+
+			class_sample_info.append((target_classes[i], radius))
+
+		class_sample_info.sort(key=lambda x: x[1])
+
+		class_to_sample = []
+		radii = []
+		for info in class_sample_info:
+			if info[1] > 5.0:
+				class_to_sample.append(info[0])
+				radii.append(info[1])
+
+		return class_to_sample, radii
+
+
 	def calculateMetrics(self, area, target_classes):
 		"""
 		Given an area it calculates the spatial/ecological metrics.

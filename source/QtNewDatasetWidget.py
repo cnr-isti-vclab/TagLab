@@ -19,17 +19,14 @@
 
 import os
 
-from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSlot
 from PyQt5.QtGui import QImage, QPixmap, QIcon, qRgb, qRed, qGreen, qBlue
-from PyQt5.QtWidgets import QWidget, QDialog, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
-from source.Annotation import Annotation
+from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
 
-from source import utils
+class QtNewDatasetWidget(QWidget):
 
-class QtTYNWidget(QWidget):
-
-    def __init__(self, annotations, parent=None):
-        super(QtTYNWidget, self).__init__(parent)
+    def __init__(self, parent=None):
+        super(QtNewDatasetWidget, self).__init__(parent)
 
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
 
@@ -37,7 +34,8 @@ class QtTYNWidget(QWidget):
         self.setMinimumWidth(300)
         self.setMinimumHeight(100)
 
-        TEXT_SPACE = 100
+        TEXT_SPACE = 140
+        LINEWIDTH = 300
 
         ###########################################################
 
@@ -47,8 +45,8 @@ class QtTYNWidget(QWidget):
         self.lblDatasetFolder.setFixedWidth(TEXT_SPACE)
         self.lblDatasetFolder.setAlignment(Qt.AlignRight)
         self.editDatasetFolder = QLineEdit("temp")
-        self.editDatasetFolder.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        self.editDatasetFolder.setMinimumWidth(300)
+        self.editDatasetFolder.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
+        self.editDatasetFolder.setMinimumWidth(LINEWIDTH)
         self.btnChooseDatasetFolder = QPushButton("...")
         self.btnChooseDatasetFolder.setMaximumWidth(20)
         self.btnChooseDatasetFolder.clicked.connect(self.chooseDatasetFolder)
@@ -61,52 +59,32 @@ class QtTYNWidget(QWidget):
 
         ###########################################################
 
-        self.lblClassifierName = QLabel("Classifier name:")
-        self.lblNetworkName = QLabel("Network name:")
-        self.lblEpochs = QLabel("Number of epochs:")
-        self.lblLR = QLabel("Learning Rate: ")
-        self.lblDecay = QLabel("Decay: ")
-
-        layoutH1a = QVBoxLayout()
-        layoutH1a.setAlignment(Qt.AlignRight)
-        layoutH1a.addWidget(self.lblNetworkName)
-        layoutH1a.addWidget(self.lblEpochs)
-        layoutH1a.addWidget(self.lblLR)
-        layoutH1a.addWidget(self.lblDecay)
-
-        LINEWIDTH = 300
-        self.editClassifierName = QLineEdit("myclassifier")
-        self.editClassifierName.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
-        self.editClassifierName.setFixedWidth(LINEWIDTH)
-        self.editClassifierName.setReadOnly(True)
-        self.editNetworkName = QLineEdit("mynetwork")
-        self.editNetworkName.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
-        self.editNetworkName.setFixedWidth(LINEWIDTH)
-        self.editNetworkName.setReadOnly(False)
-        self.editEpochs = QLineEdit("2")
-        self.editEpochs.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
-        self.editEpochs.setFixedWidth(LINEWIDTH)
-        self.editEpochs.setReadOnly(True)
-        self.editLR = QLineEdit("0.00005")
-        self.editLR.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
-        self.editLR.setReadOnly(True)
-        self.editLR.setFixedWidth(LINEWIDTH)
-        self.editDecay = QLineEdit("0.0005")
-        self.editDecay.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
-        self.editDecay.setReadOnly(True)
-        self.editDecay.setFixedWidth(LINEWIDTH)
-
-        layoutH1b = QVBoxLayout()
-        layoutH1b.setAlignment(Qt.AlignLeft)
-        layoutH1b.addWidget(self.editNetworkName)
-        layoutH1b.addWidget(self.editEpochs)
-        layoutH1b.addWidget(self.editLR)
-        layoutH1b.addWidget(self.editDecay)
+        self.lblSplitMode = QLabel("Dataset split:")
+        self.lblSplitMode.setFixedWidth(TEXT_SPACE)
+        self.lblSplitMode.setAlignment(Qt.AlignRight)
+        self.comboSplitMode = QComboBox()
+        self.comboSplitMode.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
+        self.comboSplitMode.setFixedWidth(LINEWIDTH)
+        self.comboSplitMode.addItem("Uniform")
+        self.comboSplitMode.addItem("Random")
+        self.comboSplitMode.addItem("Biologically-inspired")
 
         layoutH1 = QHBoxLayout()
-        layoutH1.addLayout(layoutH1a)
-        layoutH1.addLayout(layoutH1b)
+        layoutH1.setAlignment(Qt.AlignRight)
+        layoutH1.addWidget(self.lblSplitMode)
+        layoutH1.addWidget(self.comboSplitMode)
+        layoutH1.addStretch()
 
+        ###########################################################
+
+        self.checkOversampling = QCheckBox("Oversampling")
+        self.checkTiles = QCheckBox("Show exported tiles")
+
+        layoutH2 = QHBoxLayout()
+        layoutH2.setAlignment(Qt.AlignLeft)
+        layoutH2.addWidget(self.checkOversampling)
+        layoutH2.addWidget(self.checkTiles)
+        layoutH2.addStretch()
 
         ###########################################################
 
@@ -114,23 +92,23 @@ class QtTYNWidget(QWidget):
 
         self.btnCancel = QPushButton("Cancel")
         self.btnCancel.clicked.connect(self.close)
-        self.btnTrain = QPushButton("Training")
+        self.btnExport = QPushButton("Export")
 
         layoutH3.setAlignment(Qt.AlignRight)
         layoutH3.addStretch()
         layoutH3.addWidget(self.btnCancel)
-        layoutH3.addWidget(self.btnTrain)
+        layoutH3.addWidget(self.btnExport)
 
         ###########################################################
 
         layoutV = QVBoxLayout()
         layoutV.addLayout(layoutH0)
         layoutV.addLayout(layoutH1)
+        layoutV.addLayout(layoutH2)
         layoutV.addLayout(layoutH3)
-        # layoutV.setSpacing(3)
         self.setLayout(layoutV)
 
-        self.setWindowTitle("Train Your Network - Settings")
+        self.setWindowTitle("Export New Dataset - Settings")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
 
@@ -145,15 +123,7 @@ class QtTYNWidget(QWidget):
 
         return self.editDatasetFolder.text()
 
-    def getEpochs(self):
+    def getSplitMode(self):
 
-        return int(self.editEpochs.text())
-
-    def getLR(self):
-
-        return float(self.editLR.text())
-
-    def getWeightDecay(self):
-
-        return float(self.editDecay.text())
+        return self.comboModeSplit.currentText()
 

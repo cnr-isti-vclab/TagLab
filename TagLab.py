@@ -42,12 +42,6 @@ except Exception as e:
           "Knowing working version combinations are\n: Cuda 10.0, pytorch 1.0.0, python 3.6.8" + str(e))
    # exit()
 
-
-# DEEP EXTREME
-# import models.deeplab_resnet as resnet
-# from models.dataloaders import helpers as helpers
-import cv2
-
 # CUSTOM
 import source.Mask as Mask
 import source.RasterOps as rasterops
@@ -61,6 +55,7 @@ from source.QtProgressBarCustom import QtProgressBarCustom
 from source.QtCrackWidget import QtCrackWidget
 from source.QtHistogramWidget import QtHistogramWidget
 from source.QtClassifierWidget import QtClassifierWidget
+from source.QtNewDatasetWidget import QtNewDatasetWidget
 from source.QtTYNWidget import QtTYNWidget
 from source.QtComparePanel import QtComparePanel
 from source.Project import Project, loadProject
@@ -68,6 +63,8 @@ from source.Image import Image
 from source.MapClassifier import MapClassifier
 from source.NewDataset import NewDataset
 from source import utils
+
+import models.training as training
 
 # LOGGING
 import logging
@@ -122,6 +119,7 @@ class TagLab(QWidget):
 
         self.mapWidget = None
         self.classifierWidget = None
+        self.newDatasetWidget = None
         self.trainYourNetworkWidget = None
         self.progress_bar = None
 
@@ -1257,6 +1255,7 @@ class TagLab(QWidget):
 
         self.mapWidget = None
         self.classifierWidget = None
+        self.newDatasetWidget = None
         self.trainYourNetworkWidget = None
         self.progress_bar = None
         self.project = Project()
@@ -2074,71 +2073,42 @@ class TagLab(QWidget):
     @pyqtSlot()
     def exportAnnAsTrainingDataset(self):
 
-        # THIS CODE MUST BE CLEANED !!!
+        if self.activeviewer is not None:
+            if self.newDatasetWidget is None:
+                annotations = self.activeviewer.annotations
+                self.newDatasetWidget = QtNewDatasetWidget(parent=self)
+                self.newDatasetWidget.setWindowModality(Qt.WindowModal)
+                self.newDatasetWidget.btnExport.clicked.connect(self.exportNewDataset)
+                self.newDatasetWidget.show()
+
+    def exportNewDataset(self):
 
         new_dataset = NewDataset(self.activeviewer.img_map, self.activeviewer.annotations.seg_blobs, tile_size=1026, step=513)
 
         # create training, validation and test areas
-        #target_classes = ["Pocillopora", "Pocillopora_eydouxi", "Porite_massive", "Montipora_plate/flabellata",
-        #                 "Montipora_crust/patula"]
 
-        target_classes = ["Pocillopora",
-                          "Porite_massive",
-                          "Montipora_plate/flabellata",
-                          "Montipora_crust/patula",
-                          "Montipora_capitata"]
-
-        radii_disegno = [280.0, 60.0, 120.0, 256.0, 20.0, 20.0]
+        target_classes = training.createTargetClasses(self.activeviewer.annotations)
 
         new_dataset.create_label_image(self.labels_dictionary)
         new_dataset.convert_colors_to_labels(target_classes, self.labels_dictionary)
         new_dataset.computeFrequencies(target_classes)
 
-        class_sample_info = []
-        for i, freq in enumerate(new_dataset.frequencies):
-            if freq > 0.0005:
-                K = max(new_dataset.frequencies) / freq
-                #K = 0.15 / freq
-                K = math.pow(K, 1.3)
-                if K < 1.5:
-                    radius = 256.0
-                else:
-                    radius = 256.0 / math.sqrt(K * 1.5)
-
-                if radius < 20.0:
-                    radius = 20.0
-            else:
-                radius = 0.0
-
-            class_sample_info.append((target_classes[i], radius))
-
-        class_sample_info.sort(key=lambda x: x[1])
-
-        class_to_sample = []
-        radii = []
-        for info in class_sample_info:
-            if info[1] > 5.0:
-                class_to_sample.append(info[0])
-                radii.append(info[1])
-
-        #new_dataset.compute_radius_map(50.0, 200.0)
-        #qimg = utils.floatmapToQImage(new_dataset.radius_map, -1.0)
-        #qimg.save("C:\\temp\\prova.png")
-
-        new_dataset.setupAreas("BIOLOGICALLY-INSPIRED", target_classes)
-
-
-        print(class_to_sample)
-        print(radii)
+        mode = self.newDatasetWidget.getSplitMode()
+        new_dataset.setupAreas(mode.upper(), target_classes)
 
         # cut the tiles on the areas areas
-        new_dataset.cut_tiles(regular=True, oversampling=False, classes_to_sample=class_to_sample, radii=radii)
-        new_dataset.save_samples(self.showresult, show_tiles=True, show_areas=True, radii=radii_disegno)
+        flag_oversampling = self.newDatasetWidget.checkOversampling.isChecked()
+
+        if flag_oversampling is True:
+            class_to_sample, radii = new_dataset.computeRadii()
+            new_dataset.cut_tiles(regular=True, oversampling=False, classes_to_sample=class_to_sample, radii=radii)
+        else:
+            new_dataset.cut_tiles(regular=True, oversampling=False, classes_to_sample=class_to_sample, radii=radii)
+
+        #new_dataset.save_samples(self.showresult, show_tiles=True, show_areas=True, radii=radii_disegno)
 
         # generate the dataset
         new_dataset.export_tiles(basename="C:\\oversampling", tilename=self.tilename, labels_info=self.labels_dictionary)
-
-        new_dataset.classFrequenciesOnDataset("C:\\oversampling\\train_lab", target_classes, self.labels_dictionary)
 
 
     @pyqtSlot()
@@ -2196,7 +2166,8 @@ class TagLab(QWidget):
                         epochs=nepochs, batch_sz=4, batch_mult=8, validation_frequency=2,
                         loss_to_use="Adam", epochs_switch=0, epochs_transition=0,
                         learning_rate=lr, L2_penalty=L2, tversky_alpha=0.75, tversky_gamma=0.0,
-                        flag_shuffle=True, flag_training_accuracy=False, experiment_name="_EXP")
+                        flag_shuffle=True, flag_training_accuracy=False,
+                        progress=progress_bar)
 
         ##### TEST
 
