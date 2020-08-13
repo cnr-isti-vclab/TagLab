@@ -41,52 +41,54 @@ class QtTYNWidget(QWidget):
 
         ###########################################################
 
-        layoutH0 = QHBoxLayout()
-
         self.lblDatasetFolder = QLabel("Dataset folder: ")
         self.lblDatasetFolder.setFixedWidth(TEXT_SPACE)
         self.lblDatasetFolder.setAlignment(Qt.AlignRight)
-        self.editDatasetFolder = QLineEdit("temp")
-        self.editDatasetFolder.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        self.editDatasetFolder.setMinimumWidth(300)
-        self.btnChooseDatasetFolder = QPushButton("...")
-        self.btnChooseDatasetFolder.setMaximumWidth(20)
-        self.btnChooseDatasetFolder.clicked.connect(self.chooseDatasetFolder)
-
-        layoutH0.setAlignment(Qt.AlignLeft)
-        layoutH0.addWidget(self.lblDatasetFolder)
-        layoutH0.addWidget(self.editDatasetFolder)
-        layoutH0.addWidget(self.btnChooseDatasetFolder)
-        layoutH0.addStretch()
-
-        ###########################################################
 
         self.lblClassifierName = QLabel("Classifier name:")
+        self.lblClassifierName.setFixedWidth(TEXT_SPACE)
+        self.lblDatasetFolder.setAlignment(Qt.AlignRight)
+
         self.lblNetworkName = QLabel("Network name:")
+        self.lblNetworkName.setFixedWidth(TEXT_SPACE)
+        self.lblNetworkName.setAlignment(Qt.AlignRight)
+
         self.lblEpochs = QLabel("Number of epochs:")
+        self.lblEpochs.setFixedWidth(TEXT_SPACE)
+        self.lblEpochs.setAlignment(Qt.AlignRight)
+
         self.lblLR = QLabel("Learning Rate: ")
+        self.lblLR.setFixedWidth(TEXT_SPACE)
+        self.lblLR.setAlignment(Qt.AlignRight)
+
         self.lblDecay = QLabel("Decay: ")
+        self.lblDecay.setFixedWidth(TEXT_SPACE)
+        self.lblDecay.setAlignment(Qt.AlignRight)
 
         layoutH1a = QVBoxLayout()
         layoutH1a.setAlignment(Qt.AlignRight)
+        layoutH1a.addWidget(self.lblDatasetFolder)
         layoutH1a.addWidget(self.lblNetworkName)
         layoutH1a.addWidget(self.lblEpochs)
         layoutH1a.addWidget(self.lblLR)
         layoutH1a.addWidget(self.lblDecay)
 
         LINEWIDTH = 300
+        self.editDatasetFolder = QLineEdit("temp")
+        self.editDatasetFolder.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        self.editDatasetFolder.setFixedWidth(LINEWIDTH)
         self.editClassifierName = QLineEdit("myclassifier")
-        self.editClassifierName.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
+        self.editClassifierName.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editClassifierName.setFixedWidth(LINEWIDTH)
-        self.editClassifierName.setReadOnly(True)
+        self.editClassifierName.setReadOnly(False)
         self.editNetworkName = QLineEdit("mynetwork")
-        self.editNetworkName.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
+        self.editNetworkName.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editNetworkName.setFixedWidth(LINEWIDTH)
         self.editNetworkName.setReadOnly(False)
         self.editEpochs = QLineEdit("2")
-        self.editEpochs.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
+        self.editEpochs.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editEpochs.setFixedWidth(LINEWIDTH)
-        self.editEpochs.setReadOnly(True)
+        self.editEpochs.setReadOnly(False)
         self.editLR = QLineEdit("0.00005")
         self.editLR.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
         self.editLR.setReadOnly(True)
@@ -98,14 +100,23 @@ class QtTYNWidget(QWidget):
 
         layoutH1b = QVBoxLayout()
         layoutH1b.setAlignment(Qt.AlignLeft)
+        layoutH1b.addWidget(self.editDatasetFolder)
         layoutH1b.addWidget(self.editNetworkName)
         layoutH1b.addWidget(self.editEpochs)
         layoutH1b.addWidget(self.editLR)
         layoutH1b.addWidget(self.editDecay)
 
+        layoutH1c = QVBoxLayout()
+        self.btnChooseDatasetFolder = QPushButton("...")
+        self.btnChooseDatasetFolder.setMaximumWidth(20)
+        self.btnChooseDatasetFolder.clicked.connect(self.chooseDatasetFolder)
+        layoutH1c.addWidget(self.btnChooseDatasetFolder)
+        layoutH1c.addStretch()
+
         layoutH1 = QHBoxLayout()
         layoutH1.addLayout(layoutH1a)
         layoutH1.addLayout(layoutH1b)
+        layoutH1.addLayout(layoutH1c)
 
 
         ###########################################################
@@ -124,7 +135,6 @@ class QtTYNWidget(QWidget):
         ###########################################################
 
         layoutV = QVBoxLayout()
-        layoutV.addLayout(layoutH0)
         layoutV.addLayout(layoutH1)
         layoutV.addLayout(layoutH3)
         # layoutV.setSpacing(3)

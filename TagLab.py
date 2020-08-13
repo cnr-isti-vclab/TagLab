@@ -2096,7 +2096,7 @@ class TagLab(QWidget):
         mode = self.newDatasetWidget.getSplitMode()
         new_dataset.setupAreas(mode.upper(), target_classes)
 
-        # cut the tiles on the areas areas
+        # cut the tiles
         flag_oversampling = self.newDatasetWidget.checkOversampling.isChecked()
 
         if flag_oversampling is True:
@@ -2108,6 +2108,7 @@ class TagLab(QWidget):
         #new_dataset.save_samples(self.showresult, show_tiles=True, show_areas=True, radii=radii_disegno)
 
         # generate the dataset
+        basename = self.newDatasetWidget.getDatasetFolder()
         new_dataset.export_tiles(basename="C:\\oversampling", tilename=self.tilename, labels_info=self.labels_dictionary)
 
 

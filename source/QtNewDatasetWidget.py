@@ -34,54 +34,64 @@ class QtNewDatasetWidget(QWidget):
         self.setMinimumWidth(300)
         self.setMinimumHeight(100)
 
-        TEXT_SPACE = 140
+        TEXT_SPACE = 100
         LINEWIDTH = 300
 
         ###########################################################
 
-        layoutH0 = QHBoxLayout()
-
         self.lblDatasetFolder = QLabel("Dataset folder: ")
         self.lblDatasetFolder.setFixedWidth(TEXT_SPACE)
         self.lblDatasetFolder.setAlignment(Qt.AlignRight)
-        self.editDatasetFolder = QLineEdit("temp")
-        self.editDatasetFolder.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
-        self.editDatasetFolder.setMinimumWidth(LINEWIDTH)
-        self.btnChooseDatasetFolder = QPushButton("...")
-        self.btnChooseDatasetFolder.setMaximumWidth(20)
-        self.btnChooseDatasetFolder.clicked.connect(self.chooseDatasetFolder)
-
-        layoutH0.setAlignment(Qt.AlignLeft)
-        layoutH0.addWidget(self.lblDatasetFolder)
-        layoutH0.addWidget(self.editDatasetFolder)
-        layoutH0.addWidget(self.btnChooseDatasetFolder)
-        layoutH0.addStretch()
-
-        ###########################################################
-
         self.lblSplitMode = QLabel("Dataset split:")
         self.lblSplitMode.setFixedWidth(TEXT_SPACE)
         self.lblSplitMode.setAlignment(Qt.AlignRight)
+
+        layoutH0a = QVBoxLayout()
+        layoutH0a.setAlignment(Qt.AlignRight)
+        layoutH0a.addWidget(self.lblDatasetFolder)
+        layoutH0a.addWidget(self.lblSplitMode)
+
+        ###########################################################
+
+        self.editDatasetFolder = QLineEdit("temp")
+        self.editDatasetFolder.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        self.editDatasetFolder.setMinimumWidth(LINEWIDTH)
         self.comboSplitMode = QComboBox()
-        self.comboSplitMode.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
+        self.comboSplitMode.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.comboSplitMode.setFixedWidth(LINEWIDTH)
         self.comboSplitMode.addItem("Uniform")
         self.comboSplitMode.addItem("Random")
         self.comboSplitMode.addItem("Biologically-inspired")
 
+        layoutH0b = QVBoxLayout()
+        layoutH0b.setAlignment(Qt.AlignLeft)
+        layoutH0b.addWidget(self.editDatasetFolder)
+        layoutH0b.addWidget(self.comboSplitMode)
+
+        ###########################################################
+
+        self.btnChooseDatasetFolder = QPushButton("...")
+        self.btnChooseDatasetFolder.setMaximumWidth(20)
+        self.btnChooseDatasetFolder.clicked.connect(self.chooseDatasetFolder)
+
+        layoutH0c = QVBoxLayout()
+        layoutH0c.addWidget(self.btnChooseDatasetFolder)
+        layoutH0c.addStretch()
+
         layoutH1 = QHBoxLayout()
-        layoutH1.setAlignment(Qt.AlignRight)
-        layoutH1.addWidget(self.lblSplitMode)
-        layoutH1.addWidget(self.comboSplitMode)
-        layoutH1.addStretch()
+        layoutH1.addLayout(layoutH0a)
+        layoutH1.addLayout(layoutH0b)
+        layoutH1.addLayout(layoutH0c)
 
         ###########################################################
 
         self.checkOversampling = QCheckBox("Oversampling")
+        self.checkOversampling.setFixedWidth(TEXT_SPACE)
         self.checkTiles = QCheckBox("Show exported tiles")
 
         layoutH2 = QHBoxLayout()
-        layoutH2.setAlignment(Qt.AlignLeft)
+        layoutH2.setAlignment(Qt.AlignCenter)
+        layoutH2.addStretch()
         layoutH2.addWidget(self.checkOversampling)
         layoutH2.addWidget(self.checkTiles)
         layoutH2.addStretch()
@@ -102,7 +112,6 @@ class QtNewDatasetWidget(QWidget):
         ###########################################################
 
         layoutV = QVBoxLayout()
-        layoutV.addLayout(layoutH0)
         layoutV.addLayout(layoutH1)
         layoutV.addLayout(layoutH2)
         layoutV.addLayout(layoutH3)
@@ -110,7 +119,6 @@ class QtNewDatasetWidget(QWidget):
 
         self.setWindowTitle("Export New Dataset - Settings")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
-
 
     @pyqtSlot()
     def chooseDatasetFolder(self):
