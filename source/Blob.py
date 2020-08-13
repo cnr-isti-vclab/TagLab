@@ -194,8 +194,8 @@ class Blob(object):
         # a string with a number to identify the blob plus its centroid
         xc = self.centroid[0]
         yc = self.centroid[1]
-        self.blob_name = "c-{:d}-{:.1f}x-{:.1f}y".format(self.id, xc, yc)
         self.id = id
+        self.blob_name = "c-{:d}-{:.1f}x-{:.1f}y".format(self.id, xc, yc)
 
     def getMask(self):
         """

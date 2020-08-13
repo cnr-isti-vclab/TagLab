@@ -293,31 +293,34 @@ class TagLab(QWidget):
 
         # BLOB INFO
         groupbox_blobpanel = QGroupBox("Segmentation Info Panel")
-        lblInstance = QLabel("Instance Name: ")
-        self.editInstance = QLineEdit()
-        self.editInstance.setMinimumWidth(80)
-        self.editInstance.setMaximumHeight(25)
-        self.editInstance.setStyleSheet("background-color: rgb(40,40,40); border: none")
+        lblBlobName = QLabel("Blob Name: ")
+        self.editBlobName = QLineEdit()
+        self.editBlobName.setMinimumWidth(80)
+        self.editBlobName.setMaximumHeight(25)
+        self.editBlobName.setStyleSheet("background-color: rgb(40,40,40); border: none")
         lblId = QLabel("Id: ")
         self.editId = QLineEdit()
-        self.editId.setMinimumWidth(80)
+        self.editId.setMaximumWidth(40)
         self.editId.setMaximumHeight(25)
         self.editId.setStyleSheet("background-color: rgb(40,40,40);  border: none")
-
-        blobpanel_layoutH1 = QHBoxLayout()
-        blobpanel_layoutH1.addWidget(lblInstance)
-        blobpanel_layoutH1.addWidget(self.editInstance)
-        blobpanel_layoutH1.addWidget(lblId)
-        blobpanel_layoutH1.addWidget(self.editId)
+        self.editId.setReadOnly(True)
 
         lblcl = QLabel("Class: ")
         self.lblClass = QLabel("<b>Empty</b>")
+
+        blobpanel_layoutH1 = QHBoxLayout()
+        blobpanel_layoutH1.addWidget(lblBlobName)
+        blobpanel_layoutH1.addWidget(self.editBlobName)
+        blobpanel_layoutH1.addWidget(lblId)
+        blobpanel_layoutH1.addWidget(self.editId)
+        blobpanel_layoutH1.addWidget(lblcl)
+        blobpanel_layoutH1.addWidget(self.lblClass)
+
+        self.lblC = QLabel("Centroid: ")
         self.lblP = QLabel("Perimeter: ")
         self.lblA = QLabel("Area: ")
         blobpanel_layoutH2 = QHBoxLayout()
-        blobpanel_layoutH2.addWidget(lblcl)
-        blobpanel_layoutH2.addWidget(self.lblClass)
-        blobpanel_layoutH2.addSpacing(6)
+        blobpanel_layoutH2.addWidget(self.lblC)
         blobpanel_layoutH2.addWidget(self.lblP)
         blobpanel_layoutH2.addWidget(self.lblA)
         blobpanel_layoutH2.addStretch()
@@ -1418,8 +1421,8 @@ class TagLab(QWidget):
 
     def updatePanelInfo(self, blob):
 
-        self.editId.setText(blob.blob_name)
-        self.editInstance.setText(blob.instance_name)
+        self.editId.setText(str(blob.id))
+        self.editBlobName.setText(blob.blob_name)
         self.lblClass.setText(blob.class_name)
 
         factor = self.activeviewer.image.map_px_to_mm_factor
@@ -1936,6 +1939,21 @@ class TagLab(QWidget):
         help_widget.setWindowModality(Qt.WindowModal)
         help_widget.show()
 
+    def setupProgressBar(self):
+
+        self.progress_bar = QtProgressBarCustom(parent=self)
+        self.progress_bar.setWindowFlags(Qt.ToolTip | Qt.CustomizeWindowHint)
+        self.progress_bar.setWindowModality(Qt.NonModal)
+        pos = self.viewerplus.pos()
+        self.progress_bar.move(pos.x() + 15, pos.y() + 30)
+        self.progress_bar.show()
+
+    def deleteProgressBar(self):
+
+        if self.progress_bar:
+            self.progress_bar.close()
+            del self.progress_bar
+            self.progress_bar = None
 
     @pyqtSlot()
     def about(self):
@@ -2083,34 +2101,54 @@ class TagLab(QWidget):
 
     def exportNewDataset(self):
 
-        new_dataset = NewDataset(self.activeviewer.img_map, self.activeviewer.annotations.seg_blobs, tile_size=1026, step=513)
+        if self.activeviewer is not None and self.newDatasetWidget is not None:
 
-        # create training, validation and test areas
+            QApplication.setOverrideCursor(Qt.WaitCursor)
 
-        target_classes = training.createTargetClasses(self.activeviewer.annotations)
+            self.setupProgressBar()
 
-        new_dataset.create_label_image(self.labels_dictionary)
-        new_dataset.convert_colors_to_labels(target_classes, self.labels_dictionary)
-        new_dataset.computeFrequencies(target_classes)
+            self.progress_bar.hidePerc()
+            self.progress_bar.setMessage("Export new dataset (setup)..")
 
-        mode = self.newDatasetWidget.getSplitMode()
-        new_dataset.setupAreas(mode.upper(), target_classes)
+            new_dataset = NewDataset(self.activeviewer.img_map, self.activeviewer.annotations.seg_blobs, tile_size=1026, step=513)
 
-        # cut the tiles
-        flag_oversampling = self.newDatasetWidget.checkOversampling.isChecked()
+            target_classes = training.createTargetClasses(self.activeviewer.annotations)
+            target_classes = list(target_classes.keys())
 
-        if flag_oversampling is True:
-            class_to_sample, radii = new_dataset.computeRadii()
-            new_dataset.cut_tiles(regular=True, oversampling=False, classes_to_sample=class_to_sample, radii=radii)
-        else:
-            new_dataset.cut_tiles(regular=True, oversampling=False, classes_to_sample=class_to_sample, radii=radii)
+            new_dataset.createLabelImage(self.labels_dictionary)
+            new_dataset.convert_colors_to_labels(target_classes, self.labels_dictionary)
+            new_dataset.computeFrequencies(target_classes)
 
-        #new_dataset.save_samples(self.showresult, show_tiles=True, show_areas=True, radii=radii_disegno)
+            # create training, validation and test areas
 
-        # generate the dataset
-        basename = self.newDatasetWidget.getDatasetFolder()
-        new_dataset.export_tiles(basename="C:\\oversampling", tilename=self.tilename, labels_info=self.labels_dictionary)
+            self.progress_bar.setMessage("Export new dataset (create train/val/test areas)..")
 
+            mode = self.newDatasetWidget.getSplitMode()
+            new_dataset.setupAreas(mode.upper(), target_classes)
+
+            # cut the tiles
+            flag_oversampling = self.newDatasetWidget.checkOversampling.isChecked()
+
+            self.progress_bar.setMessage("Export new dataset (cut tiles)..")
+            if flag_oversampling is True:
+                class_to_sample, radii = new_dataset.computeRadii()
+                new_dataset.cut_tiles(regular=False, oversampling=True, classes_to_sample=class_to_sample, radii=radii)
+            else:
+                new_dataset.cut_tiles(regular=True, oversampling=False, classes_to_sample=None, radii=None)
+
+            flag_save = self.newDatasetWidget.checkTiles.isChecked()
+            if flag_save:
+                new_dataset.save_samples(self.showresult, show_tiles=True, show_areas=True, radii=radii_disegno)
+
+            # export the tiles
+            self.progress_bar.setMessage("Export new dataset (export tiles)..")
+
+            basename = self.newDatasetWidget.getDatasetFolder()
+            new_dataset.export_tiles(basename=basename, tilename=self.tilename, labels_info=self.labels_dictionary)
+
+            self.deleteProgressBar()
+
+            QApplication.restoreOverrideCursor()
 
     @pyqtSlot()
     def trainNewNetwork(self):
@@ -2140,15 +2178,10 @@ class TagLab(QWidget):
         network_name = self.trainYourNetworkWidget.editNetworkName.text() + ".net"
         network_filename = os.path.join(os.path.join(self.taglab_dir, "models"), network_name)
 
-        progress_bar = QtProgressBarCustom(parent=self)
-        progress_bar.setWindowFlags(Qt.ToolTip | Qt.CustomizeWindowHint)
-        progress_bar.setWindowModality(Qt.NonModal)
-        pos = self.viewerplus.pos()
-        progress_bar.move(pos.x() + 15, pos.y() + 30)
-        progress_bar.show()
+        self.setupProgressBar()
 
-        progress_bar.hidePerc()
-        progress_bar.setMessage("Dataset setup..")
+        self.progress_bar.hidePerc()
+        self.progress_bar.setMessage("Dataset setup..")
         QApplication.processEvents()
 
         # training folders
@@ -2168,7 +2201,7 @@ class TagLab(QWidget):
                         loss_to_use="Adam", epochs_switch=0, epochs_transition=0,
                         learning_rate=lr, L2_penalty=L2, tversky_alpha=0.75, tversky_gamma=0.0,
                         flag_shuffle=True, flag_training_accuracy=False,
-                        progress=progress_bar)
+                        progress=self.progress_bar)
 
         ##### TEST
 
@@ -2185,9 +2218,7 @@ class TagLab(QWidget):
         metrics = training.testNetwork(images_dir_test, labels_dir_test, self.labels, dataset_train,
                              network_filename=network_filename, output_folder=output_folder)
 
-        if progress_bar:
-            progress_bar.close()
-            del progress_bar
+        self.deleteProgressBar()
 
         txt = "Accuracy: " + str(metrics['Accuracy']) + "mIoU: " + str(metrics['JaccardScore']) + "Do you want to save this new classifier?"
         confirm_training = QMessageBox.question(self, self.TAGLAB_VERSION, txt, QMessageBox.Yes | QMessageBox.No)
@@ -2385,10 +2416,7 @@ class TagLab(QWidget):
             self.corals_classifier = None
 
         # delete progress bar
-        if self.progress_bar:
-            self.progress_bar.close()
-            del self.progress_bar
-            self.progress_bar = None
+        self.deleteProgressBar()
 
 
     @pyqtSlot()
@@ -2408,18 +2436,15 @@ class TagLab(QWidget):
             del self.classifierWidget
             self.classifierWidget = None
 
-            self.progress_bar = QtProgressBarCustom(parent=self)
-            self.progress_bar.setWindowFlags(Qt.ToolTip | Qt.CustomizeWindowHint)
-            self.progress_bar.setWindowModality(Qt.NonModal)
-            pos = self.viewerplus.pos()
-            self.progress_bar.move(pos.x()+15, pos.y()+30)
-            self.progress_bar.show()
+            self.setupProgressBar()
 
             # setup the desired classifier
 
             self.infoWidget.setInfoMessage("Setup automatic classification..")
 
-            self.progress_bar.setMessage("Setup automatic classification..", False)
+            self.progress_bar.hidePerc()
+            self.progress_bar.setMessage("Setup automatic classification..")
+
             QApplication.processEvents()
 
             message = "[AUTOCLASS] Automatic classification STARTS.. (classifier: )" + classifier_selected['Classifier Name']
@@ -2433,7 +2458,7 @@ class TagLab(QWidget):
             else:
                 # rescaling the map to fit the target scale of the network
 
-                self.progress_bar.setMessage("Map rescaling..", False)
+                self.progress_bar.setMessage("Map rescaling..")
                 QApplication.processEvents()
 
                 orthomap = self.activeviewer.img_map
@@ -2445,7 +2470,8 @@ class TagLab(QWidget):
 
                 input_orthomap = orthomap.scaled(w_target, h_target, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
 
-                self.progress_bar.setMessage("Classification: ", True)
+                self.progress_bar.showPerc()
+                self.progress_bar.setMessage("Classification: ")
                 self.progress_bar.setProgress(0.0)
                 QApplication.processEvents()
 
@@ -2457,7 +2483,8 @@ class TagLab(QWidget):
                 if self.corals_classifier.flagStopProcessing is False:
 
                     # import generated label map
-                    self.progress_bar.setMessage("Finalizing classification results..", False)
+                    self.progress_bar.hidePerc()
+                    self.progress_bar.setMessage("Finalizing classification results..")
                     QApplication.processEvents()
 
                     filename = os.path.join("temp", "labelmap.png")

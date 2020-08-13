@@ -68,7 +68,7 @@ def loadOldProject(data, labels_dict):
     for blob_data in data["Segmentation Data"]:
         blob = Blob(None, 0, 0, 0)
         blob.fromDict(blob_data)
-        blob.id = int(blob.id)
+        blob.setId(int(blob.id))  # id should be set again to update related info
         image.annotations.addBlob(blob)
 
     project.images.append(image)

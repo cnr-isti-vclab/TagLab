@@ -133,5 +133,5 @@ class QtNewDatasetWidget(QWidget):
 
     def getSplitMode(self):
 
-        return self.comboModeSplit.currentText()
+        return self.comboSplitMode.currentText()
 

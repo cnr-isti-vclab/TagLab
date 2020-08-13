@@ -471,7 +471,7 @@ class NewDataset(object):
 
 
 
-	def create_label_image(self, labels_info):
+	def createLabelImage(self, labels_info):
 		"""
 		It converts the blobs in the label image.
 		"""
@@ -521,7 +521,12 @@ class NewDataset(object):
 		# class 0 --> background
 		self.labels = np.zeros((label_h, label_w), dtype='int64')
 		for i, cl in enumerate(target_classes):
-			class_colors = labels_colors[cl]
+			class_colors = labels_colors.get(cl)
+			if class_colors is None:
+				if cl == "Background":
+					class_colors = [0, 0, 0]
+				else:
+					class_colors = [255, 255, 255]
 			idx = np.where((imglbl[:, :, 0] == class_colors[0]) & (imglbl[:, :, 1] == class_colors[1]) & (imglbl[:, :, 2] == class_colors[2]))
 			self.labels[idx] = i + 1
 
