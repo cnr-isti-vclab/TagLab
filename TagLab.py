@@ -320,6 +320,7 @@ class TagLab(QWidget):
         self.lblP = QLabel("Perimeter: ")
         self.lblA = QLabel("Area: ")
         blobpanel_layoutH2 = QHBoxLayout()
+        blobpanel_layoutH2.setSpacing(6)
         blobpanel_layoutH2.addWidget(self.lblC)
         blobpanel_layoutH2.addWidget(self.lblP)
         blobpanel_layoutH2.addWidget(self.lblA)
@@ -1427,13 +1428,18 @@ class TagLab(QWidget):
 
         factor = self.activeviewer.image.map_px_to_mm_factor
 
+        cx = blob.centroid[0]
+        cy = blob.centroid[1]
+        txt = "Centroid (px): ({:6.2f},{:6.2f})".format(cx, cy)
+        self.lblC.setText(txt)
+
         scaled_perimeter = blob.perimeter * factor / 10
-        text1 = "Perimeter (cm): {:8.2f}".format(scaled_perimeter)
-        self.lblP.setText(text1)
+        txt = "Perimeter (cm): {:6.2f}".format(scaled_perimeter)
+        self.lblP.setText(txt)
 
         scaled_area = blob.area * factor * factor / 100
-        text2 = "Area (cm<sup>2</sup>): {:8.2f}".format(scaled_area)
-        self.lblA.setText(text2)
+        txt = "Area (cm<sup>2</sup>): {:6.2f}".format(scaled_area)
+        self.lblA.setText(txt)
 
         self.editNote.setPlainText(blob.note)
 
@@ -2109,6 +2115,7 @@ class TagLab(QWidget):
 
             self.progress_bar.hidePerc()
             self.progress_bar.setMessage("Export new dataset (setup)..")
+            QApplication.processEvents()
 
             new_dataset = NewDataset(self.activeviewer.img_map, self.activeviewer.annotations.seg_blobs, tile_size=1026, step=513)
 
@@ -2122,6 +2129,7 @@ class TagLab(QWidget):
             # create training, validation and test areas
 
             self.progress_bar.setMessage("Export new dataset (create train/val/test areas)..")
+            QApplication.processEvents()
 
             mode = self.newDatasetWidget.getSplitMode()
             new_dataset.setupAreas(mode.upper(), target_classes)
@@ -2130,6 +2138,8 @@ class TagLab(QWidget):
             flag_oversampling = self.newDatasetWidget.checkOversampling.isChecked()
 
             self.progress_bar.setMessage("Export new dataset (cut tiles)..")
+            QApplication.processEvents()
+
             if flag_oversampling is True:
                 class_to_sample, radii = new_dataset.computeRadii()
                 new_dataset.cut_tiles(regular=False, oversampling=True, classes_to_sample=class_to_sample, radii=radii)
@@ -2138,10 +2148,11 @@ class TagLab(QWidget):
 
             flag_save = self.newDatasetWidget.checkTiles.isChecked()
             if flag_save:
-                new_dataset.save_samples(self.showresult, show_tiles=True, show_areas=True, radii=radii_disegno)
+                new_dataset.save_samples("tiles_cutted.png", show_tiles=True, show_areas=True, radii=None)
 
             # export the tiles
             self.progress_bar.setMessage("Export new dataset (export tiles)..")
+            QApplication.processEvents()
 
             basename = self.newDatasetWidget.getDatasetFolder()
             new_dataset.export_tiles(basename=basename, tilename=self.tilename, labels_info=self.labels_dictionary)
