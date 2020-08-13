@@ -2,7 +2,7 @@
 
 TagLab was created to support the activity of annotation and extraction of statistical data from ortho-maps of benthic communities. The tool includes different types of CNN-based segmentation networks specially trained for agnostic (relative only to contours) or semantic (also related to species) recognition of corals. TagLab is an ongoing project of the Visual Computing Lab http://vcg.isti.cnr.it/.
 
-![ScreenShot](Screenshot.png)
+![ScreenShot](screenshot.jpg)
 
   
 ### Interaction:
@@ -29,24 +29,23 @@ Deep Extreme Cut original code : https://github.com/scaelles/DEXTR-PyTorch/
 
 ### Installing TagLab
 #### Step 0: Requirements
-Taglab relies on __*CUDA 10*__ and __*Python 3.6*__ and needs a few packages to be installed. Probably the simplest way to prepare a clean pc to run TagLab is to install the standard python distribution (3.6 version) and then run the pip installer for adding all following packages:
+Taglab relies mainly on __*CUDA*__ and __*Python*__ . Be sure to install them before to install the other packages required. THe CUDA version supported are 9.2, 10.1 and 10.2. TagLab has been successfully tested with Python 3.6.x and Python 3.7.x. We report problems with Python 3.8.x.
+
+The simplest way to install the required packages is through the Python package manager (pip): 
 
 | Package    | Command |
 |-----------|----|
-|  pytorch 1.0+  | `pip3 install torch==1.2.0 torchvision==0.4.0 -f https://download.pytorch.org/whl/torch_stable.html `|
-|  pyqt5 5.13+|  `pip3 install pyqt5 ` |
-|  scikit-image  |  `pip3 install scikit-image `|
-|  scikit-learn  | `pip3 install scikit-learn `|
-|  pandas  | `pip3 install pandas `|
-|  opencv-python | `pip3 install opencv-python `|
-|  matplotlib  | `pip3 install matplotlib `|
-|  ogr         | `pip3 install ogr` |
-|  shapely         | `pip3 install shapely` |
-|  GDAL        |  `pip3 install GDAL-3.1.1-cp36-cp36m-win_amd64.whl` (https://www.lfd.uci.edu/~gohlke/pythonlibs/#gdal, cp36 means Python 3.6, pick the correct one) |
-|  rasterio    |  `pip3 install rasterio-1.1.5-cp36-cp36m-win_amd64.whl` (http://www.lfd.uci.edu/~gohlke/pythonlibs/#rasterio) |
+|  (*) pytorch 1.0+  | `pip install torch==1.5.1 torchvision==0.6.1 -f https://download.pytorch.org/whl/torch_stable.html `|
+|  pyqt5 5.13+|  `pip install pyqt5 ` |
+|  scikit-image  |  `pip install scikit-image `|
+|  scikit-learn  | `pip install scikit-learn `|
+|  pandas  | `pip install pandas `|
+|  opencv-python | `pip install opencv-python `|
+|  matplotlib  | `pip install matplotlib `|
+|  albumentations  | `pip install albumentations `|
 
 
-
+(*) The right command to install pytorch depends on the version of CUDA installed on your system. Go on the **[Get Started](https://pytorch.org/get-started/locally)** web page of the Pytorch web site, select your system, select Pip, and select your CUDA version to get the command to launch.
 
 #### Step 1: Clone the repository
 Just click on the "Clone or Download" button at the top of this page and unzip the whole package in a folder of your choice. 
