@@ -2065,15 +2065,12 @@ class TagLab(QWidget):
     @pyqtSlot()
     def exportHistogramFromAnn(self):
 
-        if self.image is None:
-            box = QMessageBox()
-            box.setText("A map is needed to export labels. Load a map or a project.")
-            box.exec()
-            return
+        if self.activeviewer is not None:
 
-        histo_widget = QtHistogramWidget(self.activeviewer.annotations, self.map_px_to_mm_factor, self.map_acquisition_date, self)
-        histo_widget.setWindowModality(Qt.WindowModal)
-        histo_widget.show()
+            histo_widget = QtHistogramWidget(self.activeviewer.annotations, self.labels_dictionary,
+                                             self.map_px_to_mm_factor, self.map_acquisition_date, self)
+            histo_widget.setWindowModality(Qt.WindowModal)
+            histo_widget.show()
 
     @pyqtSlot()
     def exportAnnAsShapefiles(self):

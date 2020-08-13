@@ -28,25 +28,25 @@ matplotlib.use('agg')
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
-from source.Annotation import Annotation
 from source import utils
-
+import io
+import cv2
 
 class QtHistogramWidget(QWidget):
 
-    def __init__(self, annotations, scale_factor, year, parent=None):
+    def __init__(self, annotations, labels_info, scale_factor, year, parent=None):
 
         super(QtHistogramWidget, self).__init__(parent)
 
         self.scale_factor = scale_factor
         self.year = year
         self.ann = annotations
-        self.labels_info = annotations.labels_info
+        self.labels_info = labels_info
         self.checkBoxes = []  # list of QCheckBox
-        self.setStyleSheet("background-color: rgba(60,60,65); color: white")
+        self.setStyleSheet("background-color: rgba(40,40,40); color: white")
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        self.setMinimumWidth(800)
-        self.setMinimumHeight(500)
+        self.setMinimumWidth(900)
+        self.setMinimumHeight(600)
 
         # look for existing labels in annotations
         labels_set = set()
@@ -60,7 +60,7 @@ class QtHistogramWidget(QWidget):
         CLASS_LABELS_HEIGHT = 20
         LABELS_FOR_ROW = 4
 
-
+        layout = None
         for i, label_name in enumerate(labels_set):
 
             chkBox = QCheckBox(label_name)
@@ -81,13 +81,20 @@ class QtHistogramWidget(QWidget):
             btnC.setFixedHeight(CLASS_LABELS_HEIGHT)
 
             if i % LABELS_FOR_ROW == 0:
+                if layout is not None:
+                    layout.addStretch()
                 layout = QHBoxLayout()
+                layout.addStretch()
                 labels_layout.addLayout(layout)
 
             self.checkBoxes.append(chkBox)
             layout.addWidget(chkBox)
             layout.addWidget(btnC)
-            layout.addSpacing(20)
+
+            if i % LABELS_FOR_ROW < LABELS_FOR_ROW-1 and i < len(labels_set)-1:
+                layout.addSpacing(25)
+
+        layout.addStretch()
 
         self.btnCancel = QPushButton("Cancel")
         self.btnCancel.clicked.connect(self.close)
@@ -104,8 +111,8 @@ class QtHistogramWidget(QWidget):
         buttons_layout.addWidget(self.btnSaveAs)
 
 
-        self.preview_W = 800
-        self.preview_H = 520
+        self.preview_W = 920
+        self.preview_H = 600
         pxmap = QPixmap(self.preview_W, self.preview_H)
         self.lblPreview = QLabel()
         self.lblPreview.setFixedWidth(self.preview_W+4)
@@ -145,7 +152,6 @@ class QtHistogramWidget(QWidget):
     def create_histogram(self, list_selected, list_color):
 
         class_area = []
-
         for my_class in list_selected:
             my_area = []
             for blob in self.ann.seg_blobs:
@@ -153,6 +159,7 @@ class QtHistogramWidget(QWidget):
                    blob_area = blob.area * self.scale_factor * self.scale_factor / 100
                    blob_area = np.around(blob_area, decimals=2)
                    my_area.append(blob_area)
+
             class_area.append(my_area)
 
         max_area = np.zeros(len(list_selected))
@@ -176,12 +183,13 @@ class QtHistogramWidget(QWidget):
         plt.hist(areas, bins, color=colors)
         plt.xlabel("Colonies area (cm^2)")
         plt.ylabel("Number of colonies")
-        plt.title('%.4f' % (total_coverage/ 10000) + " m^2 of " + '+ '.join(list_selected)+ " classes in " + self.year)
+
+        txt = "Total coverage {:.4f}".format(total_coverage/10000.0) + " m^2"
+        if self.year is not None:
+            txt += " (" + str(self.year) + ")"
+
+        plt.title(txt)
         #plt.show()
-
-        import io
-        import cv2
-
 
         buf = io.BytesIO()
         fig.savefig(buf, format="png", dpi=180)
@@ -190,7 +198,6 @@ class QtHistogramWidget(QWidget):
         buf.close()
         im = cv2.imdecode(img_arr, 1)
         im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
-
 
         # numpy array to QPixmap
         qimg = utils.rgbToQImage(im)
