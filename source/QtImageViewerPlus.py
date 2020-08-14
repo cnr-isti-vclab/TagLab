@@ -35,6 +35,8 @@ from source.Tools import Tools
 
 from source.QtImageViewer import QtImageViewer
 
+import random as rnd
+
 #note on ZValue:
 # 0: image
 # 1: blobs
@@ -224,7 +226,8 @@ class QtImageViewerPlus(QtImageViewer):
         blob.qpath_gitem = self.scene.addPath(blob.qpath, pen, brush)
         blob.qpath_gitem.setZValue(1)
 
-        blob.id_item = TextItem(str(blob.id),  QFont("Arial", 14, QFont.Bold))
+        font_size = 12
+        blob.id_item = TextItem(str(blob.id),  QFont("Arial", font_size, QFont.Bold))
         self.scene.addItem(blob.id_item)
         blob.id_item.setPos(blob.centroid[0], blob.centroid[1])
         blob.id_item.setTransformOriginPoint(QPointF(blob.centroid[0] + 14.0, blob.centroid[1] + 14.0))
@@ -232,7 +235,7 @@ class QtImageViewerPlus(QtImageViewer):
         blob.id_item.setBrush(Qt.white)
 
         #blob.id_item.setDefaultTextColor(Qt.white)
-        blob.id_item.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+        #blob.id_item.setFlag(QGraphicsItem.ItemIgnoresTransformations)
         #blob.qpath_gitem.setOpacity(self.transparency_value)
 
 
@@ -464,6 +467,7 @@ class QtImageViewerPlus(QtImageViewer):
             blob.qpath_gitem.setVisible(visibility)
         if blob.id_item is not None:
             blob.id_item.setVisible(visibility)
+
     def updateVisibility(self):
 
         for blob in self.annotations.seg_blobs:
