@@ -354,7 +354,7 @@ class NewDataset(object):
 		sn = []
 		sc = []
 		sP = []
-		for i in range(1500):
+		for i in range(5000):
 
 			aspect_ratio_factor = factor = rnd.uniform(0.4, 2.5)
 			w = int(area_w / aspect_ratio_factor)
@@ -564,9 +564,7 @@ class NewDataset(object):
 
 		elif mode == "BIOLOGICALLY-INSPIRED":
 
-			#val_area, test_area = self.findAreas(target_classes=target_classes)
-			val_area = [5360, 1490, 7590, 1920]
-			test_area = [955, 2520, 6846, 2121]
+			val_area, test_area = self.findAreas(target_classes=target_classes)
 
 		self.val_area = val_area
 		self.test_area = test_area
