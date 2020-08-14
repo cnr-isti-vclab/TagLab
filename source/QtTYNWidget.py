@@ -37,7 +37,7 @@ class QtTYNWidget(QWidget):
         self.setMinimumWidth(300)
         self.setMinimumHeight(100)
 
-        TEXT_SPACE = 100
+        TEXT_SPACE = 120
 
         ###########################################################
 
@@ -150,6 +150,7 @@ class QtTYNWidget(QWidget):
         folderName = QFileDialog.getExistingDirectory(self, "Choose a Folder to Export the Dataset", "")
         if folderName:
             self.editDatasetFolder.setText(folderName)
+
 
     def getDatasetFolder(self):
 
