@@ -1960,6 +1960,20 @@ class TagLab(QWidget):
             self.progress_bar.close()
             del self.progress_bar
             self.progress_bar = None
+            
+    def deleteNewDatasetWidget(self):
+
+        if self.newDatasetWidget:
+            self.newDatasetWidget.close()
+            del self.newDatasetWidget
+            self.newDatasetWidget = None
+
+    def deleteTrainYourNetworkWidget(self):
+
+        if self.trainYourNetworkWidget:
+            self.trainYourNetworkWidget.close()
+            del self.trainYourNetworkWidget
+            self.trainYourNetworkWidget = None
 
     @pyqtSlot()
     def about(self):
@@ -2126,6 +2140,7 @@ class TagLab(QWidget):
             # create training, validation and test areas
 
             self.progress_bar.setMessage("Export new dataset (create train/val/test areas)..")
+            self.progress_bar.setProgress(25.0)
             QApplication.processEvents()
 
             mode = self.newDatasetWidget.getSplitMode()
@@ -2135,6 +2150,7 @@ class TagLab(QWidget):
             flag_oversampling = self.newDatasetWidget.checkOversampling.isChecked()
 
             self.progress_bar.setMessage("Export new dataset (cut tiles)..")
+            self.progress_bar.setProgress(50.0)
             QApplication.processEvents()
 
             if flag_oversampling is True:
@@ -2149,12 +2165,15 @@ class TagLab(QWidget):
 
             # export the tiles
             self.progress_bar.setMessage("Export new dataset (export tiles)..")
+            self.progress_bar.setProgress(75.0)
             QApplication.processEvents()
 
             basename = self.newDatasetWidget.getDatasetFolder()
-            new_dataset.export_tiles(basename=basename, tilename=self.tilename, labels_info=self.labels_dictionary)
+            tilename = os.path.splitext(self.activeviewer.image.name)[0]
+            new_dataset.export_tiles(basename=basename, tilename=tilename, labels_info=self.labels_dictionary)
 
             self.deleteProgressBar()
+            self.deleteNewDatasetWidget()
 
             QApplication.restoreOverrideCursor()
 
@@ -2168,7 +2187,7 @@ class TagLab(QWidget):
         if check == 1:
             msgBox = QMessageBox()
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
-            msgBox.setText("An error occured with your dataset, there might be a mismatching between files. Please, export a new dataset.")
+            msgBox.setText("An error occured with your dataset, there is a mismatch between files. Please, export a new dataset.")
             msgBox.exec()
             return
 
@@ -2227,6 +2246,7 @@ class TagLab(QWidget):
                              network_filename=network_filename, output_folder=output_folder)
 
         self.deleteProgressBar()
+        self.deleteTrainYourNetworkWidget()
 
         txt = "Accuracy: " + str(metrics['Accuracy']) + "mIoU: " + str(metrics['JaccardScore']) + "Do you want to save this new classifier?"
         confirm_training = QMessageBox.question(self, self.TAGLAB_VERSION, txt, QMessageBox.Yes | QMessageBox.No)

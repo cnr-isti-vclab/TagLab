@@ -165,7 +165,6 @@ class NewDataset(object):
 			freq = area / area_map
 			frequencies.append(freq)
 
-		print(frequencies)
 		self.frequencies = frequencies
 
 
@@ -357,8 +356,6 @@ class NewDataset(object):
 		sP = []
 		for i in range(1500):
 
-			print(i)
-
 			aspect_ratio_factor = factor = rnd.uniform(0.4, 2.5)
 			w = int(area_w / aspect_ratio_factor)
 			h = int(area_h * aspect_ratio_factor)
@@ -387,11 +384,7 @@ class NewDataset(object):
 		self.sP_min = np.min(sP, axis=0)
 		self.sP_max = np.max(sP, axis=0)
 
-		print(self.sn_min, self.sn_max, self.sc_min, self.sc_max, self.sP_min, self.sP_max)
-
 		for i in range(10000):
-
-			print(i)
 
 			aspect_ratio_factor = factor = rnd.uniform(0.4, 2.5)
 			w = int(area_w / aspect_ratio_factor)
@@ -419,13 +412,10 @@ class NewDataset(object):
 
 		print("*** VALIDATION AREA ***")
 		area_number, area_coverage, area_PSCV = self.calculateMetrics(val_area, target_classes)
-		scores = self.calculateScore(area_number, area_coverage, area_PSCV, landscape_number, landscape_coverage, landscape_PSCV)
 		scoresNorm = self.calculateNormalizedScore(area_number, area_coverage, area_PSCV, landscape_number,
 											   landscape_coverage, landscape_PSCV)
 		lc = [value * 100.0 for value in landscape_coverage]
 		ac = [value * 100.0 for value in area_coverage]
-		print(scores)
-		print("Old score:", sum(scores) / len(scores))
 
 		for i, score in enumerate(scoresNorm):
 			if math.isnan(score):
@@ -447,13 +437,10 @@ class NewDataset(object):
 
 		print("*** TEST AREA ***")
 		area_number, area_coverage, area_PSCV = self.calculateMetrics(test_area, target_classes)
-		scores = self.calculateScore(area_number, area_coverage, area_PSCV, landscape_number, landscape_coverage, landscape_PSCV)
 		scoresNorm = self.calculateNormalizedScore(area_number, area_coverage, area_PSCV, landscape_number,
 											   landscape_coverage, landscape_PSCV)
 		lc = [value * 100.0 for value in landscape_coverage]
 		ac = [value * 100.0 for value in area_coverage]
-		print(scores)
-		print("Old score:", sum(scores) / len(scores))
 
 		for i, score in enumerate(scoresNorm):
 			if math.isnan(score):
@@ -931,11 +918,8 @@ class NewDataset(object):
 					top = area[3] - tile_size - 1
 
 				sub_area = [top, left, tile_size, tile_size]
-				print(sub_area)
 
 				samples = self.sampleSubAreaWImportanceSampling(sub_area, samples)
-
-				print(len(samples))
 
 		return samples
 
@@ -1084,9 +1068,7 @@ class NewDataset(object):
 			cov = self.computeExactCoverage(area, target_classes)
 			coverage += np.array(cov)
 
-		print(len(self.training_tiles))
 		coverage = coverage / len(self.training_tiles)
-		print(coverage)
 
 
 	def classFrequenciesOnDataset(self, labels_dir, target_classes, labels_colors):
@@ -1102,7 +1084,6 @@ class NewDataset(object):
 		counters = np.zeros(num_classes, dtype='float')
 		for label_name in image_label_names:
 
-			print(label_name)
 			image_label = QImage(label_name)
 			# image_label = image_label.convertToFormat(QImage.Format_RGB32)
 			label_w = image_label.width()
@@ -1122,8 +1103,6 @@ class NewDataset(object):
 				counters[i] += float(np.count_nonzero(labelsint == i + 1))
 
 		freq = counters / float(total_pixels)
-
-		print("Class frequencies:", freq * 100.0)
 
 	##### VISUALIZATION FUNCTIONS - FOR DEBUG PURPOSES
 
