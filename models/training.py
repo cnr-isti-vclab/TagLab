@@ -58,6 +58,23 @@ def createTargetClasses(annotations):
     return target_dict
 
 
+def saveMetrics(metrics, filename):
+    """
+    Save the computed metrics.
+    """
+
+    file = open(filename, 'w')
+    file.write("CONFUSION MATRIX: \n\n")
+    np.savetxt(file, metrics['ConfMatrix'], fmt='%d')
+    file.write("\n")
+    file.write("NORMALIZED CONFUSION MATRIX: \n\n")
+    np.savetxt(file, metrics['NormConfMatrix'], fmt='%.3f')
+    file.write("\n")
+    file.write("ACCURACY      : %.3f\n\n" % metrics['Accuracy'])
+    file.write("Jaccard Score : %.3f\n\n" % metrics['JaccardScore'])
+    file.close()
+
+
 # VALIDATION
 def evaluateNetwork(dataset, dataloader, loss_to_use, CEloss, w_for_GDL, tversky_loss_alpha, tversky_loss_beta,
                     focal_tversky_gamma, epoch, epochs_switch, epochs_transition, nclasses, net,
@@ -256,7 +273,7 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
     else:
         ###### SETUP THE NETWORK #####
         net = DeepLab(backbone='resnet', output_stride=16, num_classes=output_classes)
-        state = torch.load("deeplab-resnet.pth.tar")
+        state = torch.load("models/deeplab-resnet.pth.tar")
         # RE-INIZIALIZE THE CLASSIFICATION LAYER WITH THE RIGHT NUMBER OF CLASSES, DON'T LOAD WEIGHTS OF THE CLASSIFICATION LAYER
         new_dictionary = state['state_dict']
         del new_dictionary['decoder.last_conv.8.weight']
@@ -308,19 +325,24 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
     tversky_loss_alpha = tversky_loss_alpha.to(device)
     tversky_loss_beta = tversky_loss_beta.to(device)
 
-    print("Training Network")
-    for epoch in range(epochs):
 
-        txt = "Epoch " + str(epoch+1) + "/" + str(epochs)
-        progress.setMessage(txt)
-        progress.setProgress((100.0 * epoch) / epochs)
-        QApplication.processEvents()
+
+    print("Training Network")
+    num_iter = 0
+    total_iter = epochs * int(len(datasetTrain) / dataloaderTrain.batch_size)
+    for epoch in range(epochs):
 
         net.train()
         optimizer.zero_grad()
 
         loss_values = []
         for i, minibatch in enumerate(dataloaderTrain):
+
+            txt = "Training - Iterations " + str(num_iter + 1) + "/" + str(total_iter)
+            progress.setMessage(txt)
+            progress.setProgress((100.0 * num_iter) / total_iter)
+            QApplication.processEvents()
+            num_iter += 1
 
             # get the inputs
             images_batch = minibatch['image']
@@ -382,32 +404,24 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
                 # performance of the best accuracy network on the validation dataset
                 metrics_filename = save_network_as[:len(save_network_as) - 4] + "-val-metrics.txt"
                 saveMetrics(metrics_val, metrics_filename)
-                if flag_training_accuracy is True:
-                    metrics_filename = save_network_as[:len(save_network_as) - 4] + "-train-metrics.txt"
-                    saveMetrics(metrics_train, metrics_filename)
+
 
             print("-> CURRENT BEST ACCURACY ", best_accuracy)
 
 
-    # main loop ended - reload it and evaluate mIoU
+    # main loop ended
     torch.cuda.empty_cache()
     del net
     net = None
 
-    print("Final evaluation..")
-    net = DeepLab(backbone='resnet', output_stride=16, num_classes=datasetTrain.num_classes)
-    net.load_state_dict(torch.load(save_network_as))
-
-    metrics_val, mean_loss_val = evaluateNetwork(datasetVal, dataloaderVal, loss_to_use, CEloss, w_for_GDL,
-                                                 tversky_loss_alpha, tversky_loss_beta, focal_tversky_gamma,
-                                                 epoch, epochs_switch, epochs_transition,
-                                                 datasetVal.num_classes, net, flag_compute_mIoU=True)
-
     print("***** TRAINING FINISHED *****")
     print("BEST ACCURACY REACHED ON THE VALIDATION SET: %.3f " % best_accuracy)
 
+    return datasetTrain
 
-def testNetwork(images_folder, labels_folder, dictionary, target_classes, network_filename, output_folder):
+
+def testNetwork(images_folder, labels_folder, dictionary, target_classes, dataset_train,
+                network_filename, output_folder):
     """
     Load a network and test it on the test dataset.
     :param network_filename: Full name of the network to load (PATH+name)
@@ -417,8 +431,12 @@ def testNetwork(images_folder, labels_folder, dictionary, target_classes, networ
     datasetTest = CoralsDataset(images_folder, labels_folder, dictionary, target_classes)
     datasetTest.disableAugumentation()
 
-    classifier_info_filename = network_filename.replace(".net", ".json")
-    output_classes = readClassifierInfo(classifier_info_filename, datasetTest)
+    datasetTest.num_classes = dataset_train.num_classes
+    datasetTest.weights = dataset_train.weights
+    datasetTest.dataset_average = dataset_train.dataset_average
+    datasetTest.dict_target = dataset_train.dict_target
+
+    output_classes = dataset_train.num_classes
 
     batchSize = 4
     dataloaderTest = DataLoader(datasetTest, batch_size=batchSize, shuffle=False, num_workers=0, drop_last=True,
