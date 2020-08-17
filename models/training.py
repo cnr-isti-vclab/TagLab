@@ -453,3 +453,4 @@ def testNetwork(images_folder, labels_folder, dictionary, target_classes, datase
     saveMetrics(metrics_test, metrics_filename)
     print("***** TEST FINISHED *****")
 
+    return metrics_test
