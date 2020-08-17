@@ -2194,9 +2194,18 @@ class TagLab(QWidget):
             msgBox.exec()
             return
 
+        self.setupProgressBar()
+        self.progress_bar.hidePerc()
+        self.progress_bar.setMessage("Dataset setup..")
+        QApplication.processEvents()
+
         # CLASSES TO RECOGNIZE (label name - label code)
-        target_classes = CoralsDataset.importClassesFromDataset(dataset_folder, self.labels_dictionary)
+        labels_folder = os.path.join(dataset_folder, "training")
+        labels_folder = os.path.join(labels_folder, "labels")
+        target_classes = CoralsDataset.importClassesFromDataset(labels_folder, self.labels_dictionary)
         num_classes = len(target_classes)
+
+        print(target_classes)
 
         # GO TRAINING GO...
         nepochs = self.trainYourNetworkWidget.getEpochs()
@@ -2207,12 +2216,6 @@ class TagLab(QWidget):
         network_name = self.trainYourNetworkWidget.editNetworkName.text() + ".net"
         network_filename = os.path.join(os.path.join(self.taglab_dir, "models"), network_name)
 
-        self.setupProgressBar()
-
-        self.progress_bar.hidePerc()
-        self.progress_bar.setMessage("Dataset setup..")
-        QApplication.processEvents()
-
         # training folders
         train_folder = os.path.join(dataset_folder, "training")
         images_dir_train = os.path.join(train_folder, "images")
@@ -2222,14 +2225,13 @@ class TagLab(QWidget):
         images_dir_val = os.path.join(val_folder, "images")
         labels_dir_val = os.path.join(val_folder, "labels")
 
-
         dataset_train = training.trainingNetwork(images_dir_train, labels_dir_train, images_dir_val, labels_dir_val,
-                        self.labels, target_classes, num_classes,
+                        self.labels_dictionary, target_classes, num_classes,
                         save_network_as=network_filename, classifier_name=classifier_name,
                         epochs=nepochs, batch_sz=4, batch_mult=8, validation_frequency=2,
-                        loss_to_use="Adam", epochs_switch=0, epochs_transition=0,
-                        learning_rate=lr, L2_penalty=L2, tversky_alpha=0.75, tversky_gamma=0.0,
-                        flag_shuffle=True, flag_training_accuracy=False,
+                        loss_to_use="FOCAL_TVERSKY", epochs_switch=0, epochs_transition=0,
+                        learning_rate=lr, L2_penalty=L2, tversky_alpha=0.6, tversky_gamma=0.75,
+                        optimiz="ADAM", flag_shuffle=True, flag_training_accuracy=False,
                         progress=self.progress_bar)
 
         ##### TEST
@@ -2238,19 +2240,24 @@ class TagLab(QWidget):
         images_dir_test = os.path.join(test_folder, "images")
         labels_dir_test = os.path.join(test_folder, "labels")
 
-        output_folder = os.path.join(self.taglab_dir, "temp")
+        output_folder = os.path.join(self.taglab_dir, "testnetwork")
         if os.path.exists(output_folder):
             shutil.rmtree(output_folder, ignore_errors=True)
 
         os.mkdir(output_folder)
 
-        metrics = training.testNetwork(images_dir_test, labels_dir_test, self.labels, dataset_train,
-                             network_filename=network_filename, output_folder=output_folder)
+        self.progress_bar.hidePerc()
+        self.progress_bar.setMessage("Test network..")
+        QApplication.processEvents()
+
+        metrics = training.testNetwork(images_dir_test, labels_dir_test, dictionary=self.labels_dictionary,
+                                       target_classes=target_classes, dataset_train=dataset_train,
+                                       network_filename=network_filename, output_folder=output_folder)
 
         self.deleteProgressBar()
         self.deleteTrainYourNetworkWidget()
 
-        txt = "Accuracy: " + str(metrics['Accuracy']) + "mIoU: " + str(metrics['JaccardScore']) + "Do you want to save this new classifier?"
+        txt = "Accuracy: {:.3f} mIoU: {:.3f}\nDo you want to save this new classifier?".format(metrics['Accuracy'], metrics['JaccardScore'])
         confirm_training = QMessageBox.question(self, self.TAGLAB_VERSION, txt, QMessageBox.Yes | QMessageBox.No)
 
         if confirm_training == QMessageBox.Yes:
@@ -2274,13 +2281,11 @@ class TagLab(QWidget):
     @pyqtSlot()
     def trainYourNetwork(self):
 
-        if self.activeviewer is not None:
-            if self.trainYourNetworkWidget is None:
-                annotations = self.activeviewer.annotations
-                self.trainYourNetworkWidget = QtTYNWidget(annotations, parent=self)
-                self.trainYourNetworkWidget.setWindowModality(Qt.WindowModal)
-                self.trainYourNetworkWidget.btnTrain.clicked.connect(self.trainNewNetwork)
-                self.trainYourNetworkWidget.show()
+        if self.trainYourNetworkWidget is None:
+            self.trainYourNetworkWidget = QtTYNWidget(annotations=None, parent=self)
+            self.trainYourNetworkWidget.setWindowModality(Qt.WindowModal)
+            self.trainYourNetworkWidget.btnTrain.clicked.connect(self.trainNewNetwork)
+            self.trainYourNetworkWidget.show()
 
 
     @pyqtSlot()
