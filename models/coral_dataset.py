@@ -273,13 +273,17 @@ class CoralsDataset(Dataset):
             unique_colors = np.unique(color_codes)
             existing_color_codes.update(list(unique_colors))
 
-        dict_classes["Background"] = [0, 0, 0]
+        dict_classes["Background"] = 0
+        class_code = 1
         for color_code in existing_color_codes:
             for key in labels_dictionary.keys():
                 color = labels_dictionary[key]
                 code = color[0] + color[1] * 256 + color[2] * 65536
                 if color_code == code:
-                    dict_classes[key] = color
+                    value = dict_classes.get(key)
+                    if value is None:
+                        dict_classes[key] = class_code
+                        class_code += 1
                     break
 
         return dict_classes
