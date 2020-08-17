@@ -970,7 +970,7 @@ class NewDataset(object):
 		except:
 			pass
 
-		half_tile_size = tile_size = self.tile_size / 2
+		half_tile_size = self.tile_size / 2
 
 		for i, sample in enumerate(self.validation_tiles):
 
@@ -1039,8 +1039,8 @@ class NewDataset(object):
 			top = cy - half_tile_size
 			left = cx - half_tile_size
 
-			cropimg = utils.cropQImage(self.orthoimage, [top, left, tile_size, tile_size])
-			croplabel = utils.cropQImage(self.label_image, [top, left, tile_size, tile_size])
+			cropimg = utils.cropQImage(self.orthoimage, [top, left, self.tile_size, self.tile_size])
+			croplabel = utils.cropQImage(self.label_image, [top, left, self.tile_size, self.tile_size])
 
 			filenameRGB = os.path.join(basenameTrainIm, tilename + str.format("_{0:04d}", (i)) + ".png")
 			filenameLabel = os.path.join(basenameTrainLab, tilename + str.format("_{0:04d}", (i)) + ".png")
