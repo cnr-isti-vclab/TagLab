@@ -247,8 +247,48 @@ class CoralsDataset(Dataset):
 
         return sample
 
+    @staticmethod
+    def importClassesFromDataset(labels_folder, labels_dictionary):
+        """
+        Check all the dataset and creates the corresponding target classes.
+        """
+        dict_classes = {}
+
+        CROP_SIZE = 513
+        labels_names = [os.path.basename(x) for x in glob.glob(os.path.join(labels_folder, '*.png'))]
+
+        existing_color_codes = set([0])
+        for i, label_name in enumerate(labels_names):
+            label_filename = os.path.join(labels_folder, label_name)
+            imglbl = PILimage.open(label_filename)
+            data = np.array(imglbl)
+            w = data.shape[1]
+            h = data.shape[0]
+            ox = int((w - CROP_SIZE) / 2)
+            oy = int((h - CROP_SIZE) / 2)
+            data_crop = data[oy:oy + CROP_SIZE, ox:ox + CROP_SIZE]
+
+            # a color is transformed into a code
+            color_codes = data_crop[:, :, 0] + data_crop[:, :, 1] * 256 + data_crop[:, :, 2] * 65536
+            unique_colors = np.unique(color_codes)
+            existing_color_codes.update(list(unique_colors))
+
+        dict_classes["Background"] = [0, 0, 0]
+        for color_code in existing_color_codes:
+            for key in labels_dictionary.keys():
+                color = labels_dictionary[key]
+                code = color[0] + color[1] * 256 + color[2] * 65536
+                if color_code == code:
+                    dict_classes[key] = color
+                    break
+
+        return dict_classes
 
     def computeWeights(self):
+        """
+        Compute the weights of the target classes as the inverse of their frequencies.
+        The target classes are updated eliminating the non-present classes.
+        """
 
         class_sample_count = np.zeros(self.num_classes)
         N = len(self.images_names)
