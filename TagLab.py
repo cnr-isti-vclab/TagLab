@@ -2270,10 +2270,9 @@ class TagLab(QWidget):
             self.available_classifiers.append(new_classifier)
             newconfig = dict()
             newconfig["Available Classifiers"] = self.available_classifiers
-            newconfig["Labels"] = self.labels
+            newconfig["Labels"] = self.labels_dictionary
             str = json.dumps(newconfig)
-            classifier_filename = network_name.replace(".net", ".json")
-            classifier_filename = os.path.join(self.taglab_dir, classifier_name)
+            newconfig_filename = os.path.join(self.taglab_dir, "newconfig.json")
             f = open(classifier_filename, "w")
             f.write(str)
             f.close()
