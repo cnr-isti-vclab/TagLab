@@ -226,7 +226,6 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
     print("done.")
 
     save_classifier_as = save_network_as.replace(".net", ".json")
-    writeClassifierInfo(save_classifier_as, classifier_name, datasetTrain, output_classes)
 
     datasetTrain.enableAugumentation()
 
