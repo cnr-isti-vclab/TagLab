@@ -64,7 +64,10 @@ from source.MapClassifier import MapClassifier
 from source.NewDataset import NewDataset
 from source import utils
 
+# training modules
+from models.coral_dataset import CoralsDataset
 import models.training as training
+
 
 # LOGGING
 import logging
@@ -2192,11 +2195,10 @@ class TagLab(QWidget):
             return
 
         # CLASSES TO RECOGNIZE (label name - label code)
-        target_classes = training.createTargetClasses(annotations=self.annotations)
+        target_classes = CoralsDataset.importClassesFromDataset(dataset_folder, self.labels_dictionary)
         num_classes = len(target_classes)
 
         # GO TRAINING GO...
-
         nepochs = self.trainYourNetworkWidget.getEpochs()
         lr = self.trainYourNetworkWidget.getLR()
         L2 = self.trainYourNetworkWidget.getWeightDecay()
@@ -2222,7 +2224,7 @@ class TagLab(QWidget):
 
 
         dataset_train = training.trainingNetwork(images_dir_train, labels_dir_train, images_dir_val, labels_dir_val,
-                        self.labels, target_classes, output_classes=num_classes,
+                        self.labels, target_classes, num_classes,
                         save_network_as=network_filename, classifier_name=classifier_name,
                         epochs=nepochs, batch_sz=4, batch_mult=8, validation_frequency=2,
                         loss_to_use="Adam", epochs_switch=0, epochs_transition=0,
