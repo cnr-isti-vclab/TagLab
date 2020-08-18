@@ -34,7 +34,7 @@ def changeFormat(contour,georef):
         return coords
 
 
-def createPolygon(blob,georef):
+def createPolygon(blob, georef):
 
     # load blob.contour and transform coordinate
     exterior =  changeFormat(blob.contour,georef)
@@ -107,7 +107,6 @@ def saveClippedTiff(input, polygons, georef, name):
 
 def saveGeorefLabelMap(label_map, src, out_name):
 
-    # myLabel = io.imread('D:\\MOOREA\\DEM\\Plot_18_2018\\Plot_18_2018_RGB.png')
     myLabel = reshape_as_raster(label_map)
     myLabel_meta = src.meta.copy()
 
@@ -128,17 +127,22 @@ def exportSlope(raster, filename):
     return slope
 
 
-def adjustAreaUsingSlope(polygon, areaor, georef):
+def calculateAreaUsingSlope(depth_filename, georef, blobs):
 
-    array = georef.read()
-    slope = exportSlope("D:\\MOOREA\\DEM\\Plot_18_2018\\2018-Plot18_2m_PL51_DEM_0.6666mm-32b.tif", 'slope')
-    meta = georef.meta
-    area_px = meta['transform'][0] ** 2
-    non_null = (array != array.min()).astype(int)
-    area = (area_px*non_null).sum()*10**4
+    slope = exportSlope(depth_filename, 'slope')
+    area_px = georef.transform[0] ** 2
 
     # filter out null values and jumps
-    # slope[slope < 9998] = 0
     slope[slope > 87] = 0
-    surface_area = (area_px*non_null/(abs(np.cos(np.radians(slope))))).sum()*10**4
+
+    for blob in blobs:
+        non_null = blob.getMask()
+        top = blob.bbox[0]
+        left = blob.bbox[1]
+        right = left + blob.bbox[2]
+        bottom = top + blob.bbox[3]
+        slope_crop = slope[top:bottom, left:right]
+        surface_area = (area_px*non_null/(abs(np.cos(np.radians(slope_crop))))).sum()*10**4
+        blob.area = surface_area
+
     # volume = (array * (area_px*non_null)).sum()*10**6

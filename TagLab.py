@@ -557,7 +557,6 @@ class TagLab(QWidget):
         for i in range(self.maxRecentFiles):
             self.recentFileActs.append(QAction(self, visible=False, triggered=self.openRecentProject))
 
-        # THIS WILL BECOME "ADD MAP" TO ADD MULTIPLE MAPS (e.g. depth, different years)
         newMapAct = QAction("Add a New Map..", self)
         newMapAct.setShortcut('Ctrl+L')
         newMapAct.setStatusTip("Add a new map to the project and load it")
@@ -675,25 +674,31 @@ class TagLab(QWidget):
         filemenu.addSeparator()
         filemenu.addAction(trainYourNetworkAct)
 
+
+        calculateSurfaceAreaAct = QAction("Calculate Surface Area", self)
+        #calculateSurfaceAreaAct.setShortcut('Alt+C')
+        calculateSurfaceAreaAct.setStatusTip("Estimate surface area using slope derived from the DEM")
+        calculateSurfaceAreaAct.triggered.connect(self.calculateAreaUsingSlope)
+
+        demmenu = menubar.addMenu("&DEM")
+        demmenu.setStyleSheet(styleMenu)
+        demmenu.addAction(calculateSurfaceAreaAct)
+
         editmenu = menubar.addMenu("&Edit")
+        editmenu.setStyleSheet(styleMenu)
         editmenu.addAction(undoAct)
         editmenu.addAction(redoAct)
         editmenu.addSeparator()
-
         editmenu.addAction(self.assignAction)
         editmenu.addAction(self.deleteAction)
-
         editmenu.addSeparator()
-
         editmenu.addAction(self.mergeAction)
         editmenu.addAction(self.divideAction)
         editmenu.addAction(self.subtractAction)
-
         editmenu.addSeparator()
         editmenu.addAction(self.refineAction)
         editmenu.addAction(self.refineActionDilate)
         editmenu.addAction(self.refineActionErode)
-
         editmenu.addAction(self.fillAction)
 
         splitScreenAction = QAction("Split Screen", self)
@@ -1648,8 +1653,6 @@ class TagLab(QWidget):
         if view is None:
             return
 
-
-
         # padding mask to allow moving boundary
         padding = 35
         if len(view.selected_blobs) == 1:
@@ -2313,16 +2316,19 @@ class TagLab(QWidget):
 
             rasterops.saveClippedTiff(input_tiff, mypolygons, source, filename)
 
+    @pyqtSlot()
+    def calculateAreaUsingSlope(self):
 
-    def adjustAreaUsingSlope(self):
+        if self.activeviewer is not None:
 
-        # source = self.activeviewer.image.georef
-        # for blob in self.activeviewer.annotations.seg_blobs:
-        #     blob.area
+            # get the file name of the Tiff which stores the depth
+            for channel in self.activeviewer.image.channels:
+                if channel.type == "DEM":
+                    input_tiff = channel.filename
 
-        pass
-
-    # REFACTOR use project methods
+            georef = self.activeviewer.image.georef
+            blobs = self.activeviewer.annotations.seg_blobs
+            rasterops.calculateAreaUsingSlope(input_tiff, georef, blobs)
 
     def load(self, filename):
         """
