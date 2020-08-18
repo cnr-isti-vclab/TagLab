@@ -12,19 +12,18 @@ TagLab allows to :
        -zoom/ mouse wheel
       - pan/ 'move' tool  selected + left button
        -with every other tool selected the pan is activated with ctrl + left button
-- segment coral instances using the Deep Extreme Cut network fine-tuned on coral images.
-
-Deep Extreme Cut original code : https://github.com/scaelles/DEXTR-PyTorch/
-
-- assign a class with the 'Assign class' tool. Area and perimeter are now displayed in pixels (the scale can be added to transform measures in mm) in the segmentation info panel on the right.
+- segment coral instances in a semi-automatic way by simply clicks at the corals' extremes. This is achieved using the Deep Extreme Cut network fine-tuned on coral images. Deep Extreme Cut original code : https://github.com/scaelles/DEXTR-PyTorch/
+- assign a class with the 'Assign class' tool. Area and perimeter are now displayed in the segmentation info panel on the right.
 - simultaneously turn off the visibility of one or more classes, (ctrl + left button/disable all but the selected, shift + left button, inverse operation), change the class transparency using the above slider.
-- edit the incorrect edges with the 'Edit Border' tool.
-- Draw coral internal cracks with the 'Create Crack' tool.
-- Perform the boolean operation between labels: 'Merge Overlapped Labels', 'Divide Label', 'Subtract Label' (right button panel)
+- perform boolean operations between existing labels (right button to open the menu)
+- refine the incorrect borders automatically with the Refine operation or manually with the 'Edit Border' tool.
+- draw coral internal cracks with the 'Create Crack' tool.
 - make freehand measurements or measure the distance between centroids (Ruler tool).
-- save the annotations (as polygons) and import them into a new project (Save Annotation, Load Annotation)
-- Export a .csv file table containing the data of each coral colony.
-- Export a .jpg file of a black background with totally opaque labels.
+- save the annotations (as polygons) and import them into a new project
+- export a CSV file table containing the data of each coral colony.
+- export a JPG file of a black background with totally opaque labels.
+- export shapefiles
+- export a new dataset and train your network (!)
 
 
 ### Installing TagLab
@@ -58,7 +57,6 @@ Taglab on a 64-bit Windows system with Python 3.6 you can download and install t
 wheel for GDAL and the `rasterio‑1.1.5‑cp36‑cp36m‑win_amd64.whl` wheel for Rasterio. 
 
  
-
 #### Step 1: Clone the repository
 Just click on the "Clone or Download" button at the top of this page and unzip the whole package in a folder of your choice. 
 
@@ -69,13 +67,4 @@ TagLab uses a retrained _dextr_ network for the four-click segmentation; the fil
 #### Step 3: Run
 Open a python prompt and just start `TagLab.py`, the tool will start and you can try to open the sample that you can find in the `projects` folder. 
 
- 
-### New features
 
-- Faster EditBorder tool.
-- Improved refinement operation.
-- Management of depth information.
-- Multi-temporal tracking of colonies.
-- Support for GeoTiff added.
-- Export shapefile.
-- Export dataset and train your network.
