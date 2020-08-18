@@ -8,22 +8,24 @@ TagLab was created to support the activity of annotation and extraction of stati
 ### Interaction:
 TagLab allows to :
 
-- zoom and navigate a large map using a Map viewer
-       -zoom/ mouse wheel
-      - pan/ 'move' tool  selected + left button
-       -with every other tool selected the pan is activated with ctrl + left button
+- zoom and navigate a large map using (zoom/mouse wheel, pan/'Move' tool selected + left button). With every other tool selected the pan is activated with ctrl + left button
 - segment coral instances in a semi-automatic way by simply clicks at the corals' extremes. This is achieved using the Deep Extreme Cut network fine-tuned on coral images. Deep Extreme Cut original code : https://github.com/scaelles/DEXTR-PyTorch/
-- assign a class with the 'Assign class' tool. Area and perimeter are now displayed in the segmentation info panel on the right.
-- simultaneously turn off the visibility of one or more classes, (ctrl + left button/disable all but the selected, shift + left button, inverse operation), change the class transparency using the above slider.
+- assign a class with the 'Assign class' tool. Area and perimeter are now displayed in the segmentation info panel on the right
+- simultaneously turn off the visibility of one or more classes, (ctrl + left button/disable all but the selected, shift + left button, inverse operation), change the class transparency using the above slider
 - perform boolean operations between existing labels (right button to open the menu)
-- refine the incorrect borders automatically with the Refine operation or manually with the 'Edit Border' tool.
-- draw coral internal cracks with the 'Create Crack' tool.
+- refine the incorrect borders automatically with the Refine operation or manually with the 'Edit Border' tool
+- tracking coral changes in different time intervals
+- import depth information of the seafloor
+- import GeoTiff 
+- draw coral internal cracks with the 'Create Crack' tool
 - make freehand measurements or measure the distance between centroids (Ruler tool).
 - save the annotations (as polygons) and import them into a new project
-- export a CSV file table containing the data of each coral colony.
-- export a JPG file of a black background with totally opaque labels.
+- export a CSV file table containing the data of each coral colony
+- export a JPG file of a black background with totally opaque labels
 - export shapefiles
 - export a new dataset and train your network (!)
+
+We are working hard to create a web site with detailed instructions about TagLab. Stay tuned(!)
 
 
 ### Installing TagLab
