@@ -2040,7 +2040,7 @@ class TagLab(QWidget):
     @pyqtSlot()
     def exportAnnAsDataTable(self):
 
-        if self.last_image_loaded is None:
+        if self.activeviewer.image is None:
             box = QMessageBox()
             box.setText("A map is needed to export labels. Load a map or a project.")
             box.exec()
@@ -2051,7 +2051,7 @@ class TagLab(QWidget):
 
         if filename:
 
-            self.activeviewer.annotations.export_data_table_for_Scripps(self.image.map_px_to_mm_factor,filename)
+            self.activeviewer.annotations.export_data_table_for_Scripps(self.activeviewer.image.map_px_to_mm_factor,filename)
 
             msgBox = QMessageBox(self)
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
@@ -2062,7 +2062,7 @@ class TagLab(QWidget):
     @pyqtSlot()
     def exportAnnAsMap(self):
 
-        if self.image is None:
+        if self.last_image_loaded is None:
             box = QMessageBox()
             box.setText("A map is needed to export labels. Load a map or a project.")
             box.exec()
@@ -2072,7 +2072,7 @@ class TagLab(QWidget):
         filename, _ = QFileDialog.getSaveFileName(self, "Output file", "", filters)
 
         if filename:
-            size = QSize(self.image.width, self.image.height)
+            size = QSize(self.activeviewer.image.width, self.activeviewer.image.height)
             self.activeviewer.annotations.export_image_data_for_Scripps(size, filename, self.labels_dictionary)
 
             msgBox = QMessageBox(self)
