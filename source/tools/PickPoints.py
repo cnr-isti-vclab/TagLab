@@ -27,6 +27,7 @@ class PickPoints(object):
 
         size = style['size']
         point = self.scene.addEllipse(x, y, 0, 0, pen)
+        point.setZValue(5)
         # line1 = self.viewerplus.scene.addLine(x - size, y - size, x + size, y + size, pen)
         line1 = self.scene.addLine(- size, -size, +size, +size, pen)
         line1.setPos(QPointF(x, y))
