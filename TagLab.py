@@ -1271,6 +1271,7 @@ class TagLab(QWidget):
         self.trainYourNetworkWidget = None
         self.progress_bar = None
         self.project = Project()
+        self.project.importLabelsFromConfiguration(self.labels_dictionary)
         self.last_image_loaded = None
         self.activeviewer = None
 

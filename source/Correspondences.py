@@ -244,11 +244,11 @@ class Correspondences(object):
 
         mylist = []
         for i in range(0, len(self.correspondences)):
-            mylist.append(int(self.correspondences[i][1]))
+            mylist.append(int(self.correspondences[i][0]))
         splitted = sorted(set([i for i in mylist if mylist.count(i) > 1]))
 
         for i in range(0, len(self.correspondences)):
-            if int(self.correspondences[i][1]) in splitted:
+            if int(self.correspondences[i][0]) in splitted:
                 self.correspondences[i][6] = 'split'
 
 
@@ -256,7 +256,7 @@ class Correspondences(object):
 
         mylist = []
         for i in range(0, len(self.correspondences)):
-            mylist.append(int(self.correspondences[i][2]))
+            mylist.append(int(self.correspondences[i][1]))
         fused = sorted(set([i for i in mylist if mylist.count(i) > 1]))
 
         for i in range(0, len(self.correspondences)):
