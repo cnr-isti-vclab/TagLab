@@ -60,7 +60,8 @@ def write_shapefile(polygons, myIds, georef, out_shp):
     outDriver = ogr.GetDriverByName('Esri Shapefile')
     outDataSource = outDriver.CreateDataSource(out_shp)
     srs = osr.SpatialReference()
-    srs.ImportFromWkt(georef.crs.wkt)
+    if georef is not None:
+        srs.ImportFromWkt(georef.crs.wkt)
     outLayer = outDataSource.CreateLayer("polygon", srs, geom_type=ogr.wkbPolygon)
 
     # Add id to polygon

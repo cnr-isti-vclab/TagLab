@@ -627,7 +627,7 @@ class QtImageViewerPlus(QtImageViewer):
 
         for (blob, class_name) in operation['newclass']:
             blob.class_name = class_name
-            brush = self.classBrushFromName(blob)
+            brush = self.project.classBrushFromName(blob)
             blob.qpath_gitem.setBrush(brush)
 
         self.updateVisibility()
