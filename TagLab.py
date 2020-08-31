@@ -752,7 +752,8 @@ class TagLab(QWidget):
 
         if filename:
             if self.project.correspondences is not None:
-                self.project.correspondences.data.to_csv(filename, index=False)
+                for key,corr in self.project.correspondences.items():
+                    corr.data.to_csv(filename + '_' + key + '.csv', index=False)
 
 
     @pyqtSlot()
