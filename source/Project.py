@@ -62,7 +62,7 @@ def loadOldProject(data, labels_dict):
     image = Image(id=image_name)
     image.map_px_to_mm_factor = data["Map Scale"]
     image.metadata['acquisition_date'] = data["Acquisition Date"]
-    channel = Channel(filename=map_filename, type="rgb")
+    channel = Channel(filename=map_filename, type="RGB")
     image.channels.append(channel)
 
     for blob_data in data["Segmentation Data"]:
