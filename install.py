@@ -4,6 +4,12 @@ import os
 import subprocess
 
 osused = platform.system()
+if osused != 'Linux' and osused != 'Windows' and osused != 'Darwin':
+    raise Exception("Operative System not supported")
+
+# check python version
+if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] < 6):
+    raise Exception("Must be using Python >= 3.6\nInstallation aborted.")
 
 # manage thorch
 nvcc_version = ''
@@ -67,6 +73,7 @@ if osused == 'Linux':
         raise Exception('Impossible to access to gdal-config binary.\nInstallation aborted.')
 elif osused == 'Darwin':
     print('TODO: Manage installagion of gdal from MacOS')
+    raise Exception('TODO Manage installagion of gdal from MacOS')
     
 
 gdal_package = 'gdal==' + gdal_version
@@ -83,11 +90,12 @@ if osused != 'Windows':
                 print('Coraline built correctly.')
                 os.chdir('..')
             else:
-                print('WARNING: Error while building Coraline library.')
+                raise Exception('Error while building Coraline library.\nInstallation aborted.')
         else:
-            print('WARNING: Error while configuring Coraline library.')
+            raise Exception('Error while configuring Coraline library.\nInstallation aborted.')
     except OSError:
-        print('WARNING: cmake not found. Coraline library cannot be compiled.')
+        raise Exception('Cmake not found. Coraline library cannot be compiled. Please install cmake '
+                        'first.\nInstallation aborted.')
 
 # requirements needed by TagLab
 install_requires = [
@@ -118,3 +126,40 @@ subprocess.check_call([sys.executable, "-m", "pip", "install", torchvision_packa
 if osused != 'Windows':
     subprocess.check_call([sys.executable, "-m", "pip", "install", gdal_package])
     subprocess.check_call([sys.executable, "-m", "pip", "install", 'rasterio'])
+else:
+    # TODO: this base url does not work
+    base_url = 'https://download.lfd.uci.edu/pythonlibs/w3jqiv8s/'
+    pythonversion = str(sys.version_info[0]) + str(sys.version_info[1])
+    # compute rasterio and gdal urls download
+    filename_gdal = 'GDAL-3.1.2-cp' + pythonversion + '-cp' + pythonversion
+    filename_rasterio = 'rasterio-1.1.5-cp' + pythonversion + '-cp' + pythonversion
+    if sys.version_info[1] < 8:
+        filename_gdal += 'm'
+        filename_rasterio += 'm'
+    filename_gdal += '-win_amd64.whl'
+    filename_rasterio += '-win_amd64.whl'
+    base_url_gdal = base_url + filename_gdal
+    base_url_rastetio = base_url + filename_rasterio
+
+    print('URL GDAL: ' + base_url_gdal)
+
+    # download gdal and rasterio
+    from os import path
+    import urllib.request
+
+    this_directory = path.abspath(path.dirname(__file__))
+    try:
+        slib = 'GDAL'
+        urllib.request.urlretrieve(base_url_gdal, this_directory + '/' + filename_gdal)
+        slib = 'Rasterio'
+        urllib.request.urlretrieve(base_url_rastetio, this_directory + '/' + filename_rasterio)
+    except:
+        raise Exception("Cannot download " + slib + ".")
+
+    # install gdal and rasterio
+    subprocess.check_call([sys.executable, "-m", "pip", "install", filename_gdal])
+    subprocess.check_call([sys.executable, "-m", "pip", "install", filename_rasterio])
+
+    #delete wheel files
+    os.remove(this_directory + '/' + filename_gdal)
+    os.remove(this_directory + '/' + filename_rasterio)
