@@ -38,9 +38,15 @@ else:
 gdal_version = ''
 
 if osused == 'Linux':
-    print('Installing gdal...')
-    import osgeo.gdal
-    gdal_version=osgeo.gdal.__version__
+    import subprocess
+    result = subprocess.getstatusoutput('gdal-config --version')
+    output = result[1]
+    rc = result[0]
+    if rc == 0:
+        gdal_version=output
+    else:
+        print('Warning: GDAL lib not installed correctly.')
+        print('"gdal-config --version" exit code: ' + str(rc))
     
 
 gdal_package = 'gdal'
