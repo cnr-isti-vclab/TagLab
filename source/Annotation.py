@@ -498,6 +498,39 @@ class Annotation(object):
     ###########################################################################
     ### IMPORT / EXPORT
 
+    def create_label_map(self, size, labels_info):
+        """
+        Create a label map as a QImage and returns it.
+        """
+
+        # create a black canvas of the same size of your map
+        w = size.width()
+        h = size.height()
+
+        labelimg = QImage(w, h, QImage.Format_RGB32)
+        labelimg.fill(qRgb(0, 0, 0))
+
+        painter = QPainter(labelimg)
+
+        pen = QPen(Qt.black)
+        pen.setWidth(1)
+        painter.setPen(pen)
+
+        for i, blob in enumerate(self.seg_blobs):
+            if blob.qpath_gitem.isVisible():
+                if blob.class_name == "Empty":
+                    rgb = qRgb(255, 255, 255)
+                else:
+                    class_color = labels_info[blob.class_name]
+                    rgb = qRgb(class_color[0], class_color[1], class_color[2])
+
+                painter.setBrush(QBrush(QColor(rgb)))
+                painter.drawPath(blob.qpath_gitem.path())
+
+        painter.end()
+
+        return labelimg
+
     def import_label_map(self, filename, labels_info, w_target, h_target, create_holes=False):
         """
         It imports a label map and create the corresponding blobs.
@@ -596,33 +629,5 @@ class Annotation(object):
 
     def export_image_data_for_Scripps(self, size, filename, labels_info):
 
-        # create a black canvas of the same size of your map
-        w = size.width()
-        h = size.height()
-
-        labelimg = QImage(w, h, QImage.Format_RGB32)
-        labelimg.fill(qRgb(0, 0, 0))
-
-        painter = QPainter(labelimg)
-
-        pen = QPen(Qt.black)
-        pen.setWidth(1)
-        painter.setPen(pen)
-
-        for i, blob in enumerate(self.seg_blobs):
-
-            if blob.qpath_gitem.isVisible():
-
-                if blob.class_name == "Empty":
-                    rgb = qRgb(255, 255, 255)
-                else:
-                    class_color = labels_info[blob.class_name]
-                    rgb = qRgb(class_color[0], class_color[1], class_color[2])
-
-                painter.setBrush(QBrush(QColor(rgb)))
-                painter.drawPath(blob.qpath_gitem.path())
-
-
-        painter.end()
-
-        labelimg.save(filename)
+        label_map = self.create_label_map(size, labels_info)
+        label_map.save(filename)

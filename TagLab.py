@@ -595,10 +595,10 @@ class TagLab(QWidget):
         exportShapefilesAct.setStatusTip("Export current annotations as shapefiles")
         exportShapefilesAct.triggered.connect(self.exportAnnAsShapefiles)
 
-        exportClippedRasterAct = QAction("Export Clipped Raster", self)
+        exportGeoRefLabelMapAct = QAction("Export Annotations as a GeoTiff", self)
         # exportShapefilesAct.setShortcut('Ctrl+??')
-        exportClippedRasterAct.setStatusTip("Export a raster clipped using visible annotations")
-        exportClippedRasterAct.triggered.connect(self.exportClippedRaster)
+        exportGeoRefLabelMapAct.setStatusTip("Create a label map and export it as a GeoTiff")
+        exportGeoRefLabelMapAct.triggered.connect(self.exportGeoRefLabelMap)
 
         exportTrainingDatasetAct = QAction("Export New Training Dataset", self)
         #exportTrainingDatasetAct.setShortcut('Ctrl+??')
@@ -668,21 +668,34 @@ class TagLab(QWidget):
         submenuExport.addAction(exportDataTableAct)
         submenuExport.addAction(exportMapAct)
         submenuExport.addAction(exportShapefilesAct)
-        submenuExport.addAction(exportClippedRasterAct)
+        submenuExport.addAction(exportGeoRefLabelMapAct)
         submenuExport.addAction(exportHistogramAct)
         submenuExport.addAction(exportTrainingDatasetAct)
         filemenu.addSeparator()
         filemenu.addAction(trainYourNetworkAct)
 
+        ###### DEM MENU
 
         calculateSurfaceAreaAct = QAction("Calculate Surface Area", self)
         #calculateSurfaceAreaAct.setShortcut('Alt+C')
         calculateSurfaceAreaAct.setStatusTip("Estimate surface area using slope derived from the DEM")
         calculateSurfaceAreaAct.triggered.connect(self.calculateAreaUsingSlope)
 
+        exportClippedRasterAct = QAction("Export Clipped Raster", self)
+        # exportShapefilesAct.setShortcut('Ctrl+??')
+        exportClippedRasterAct.setStatusTip("Export a raster clipped using visible annotations")
+        exportClippedRasterAct.triggered.connect(self.exportClippedRaster)
+
+        switchDEMAct = QAction("Switch image/DEM", self)
+        # exportShapefilesAct.setShortcut('Ctrl+??')
+        switchDEMAct.setStatusTip("Switch between the image and the DEM")
+        switchDEMAct.triggered.connect(self.switchDEM)
+
         demmenu = menubar.addMenu("&DEM")
         demmenu.setStyleSheet(styleMenu)
         demmenu.addAction(calculateSurfaceAreaAct)
+        demmenu.addAction(exportClippedRasterAct)
+        demmenu.addAction(switchDEMAct)
 
         editmenu = menubar.addMenu("&Edit")
         editmenu.setStyleSheet(styleMenu)
@@ -728,6 +741,32 @@ class TagLab(QWidget):
         helpmenu.addAction(aboutAct)
 
         return menubar
+
+    @pyqtSlot()
+    def switchDEM(self):
+
+        if self.activeviewer is None:
+            return
+
+        if self.activeviewer.channel is not None:
+
+            if self.activeviewer.channel.type != "DEM":
+                index = -1
+                for i, channel in enumerate(self.activeviewer.image.channels):
+                    if channel.type == "DEM":
+                        index = i
+
+                if index == -1:
+                    box = QMessageBox()
+                    box.setText("DEM not found!")
+                    box.exec()
+                    return
+
+                self.activeviewer.setChannel(self.actieviewer.image.channels[i])
+            else:
+                self.activeviewer.setChannel(self.activeviewer.image.channels[0])
+
+
 
     @pyqtSlot()
     def autoCorrespondences(self):
@@ -2099,18 +2138,55 @@ class TagLab(QWidget):
 
         if self.activeviewer is None:
             return
-        filters = "SHP (*.shp)"
-        filename, _ = QFileDialog.getSaveFileName(self, "Save Shapefile as", self.taglab_dir, filters)
 
-        if filename:
-            source = self.activeviewer.image.georef
-            mypolygons = []
-            myIds = []
-            for blob in self.activeviewer.annotations.seg_blobs:
-                polygon = rasterops.createPolygon(blob, source)
-                myIds.append(blob.id)
-                mypolygons.append(polygon)
-            rasterops.write_shapefile(mypolygons, myIds, source, filename)
+        if self.activeviewer.image is not None:
+            if self.activeviewer.image.georef_filename == "":
+                box = QMessageBox()
+                box.setText("Georeference information are not available.")
+                box.exec()
+                return
+
+        filters = "SHP (*.shp)"
+        output_filename, _ = QFileDialog.getSaveFileName(self, "Save Shapefile as", self.taglab_dir, filters)
+
+        if output_filename:
+            blobs = self.activeviewer.annotations.seg_blobs
+            gf = self.activeviewer.image.georef_filename
+            rasterops.write_shapefile(blobs, gf, output_filename)
+
+    @pyqtSlot()
+    def exportGeoRefLabelMap(self):
+
+        if self.activeviewer is None:
+            return
+
+        if self.activeviewer.image is None:
+            box = QMessageBox()
+            box.setText("A map is needed to import labels. Load a map or a project.")
+            box.exec()
+            return
+
+        if self.activeviewer.image.georef_filename == "":
+            box = QMessageBox()
+            box.setText("Georeference information are not available.")
+            box.exec()
+            return
+
+        filters = "Tiff (*.png) ;; All Files (*)"
+        output_filename, _ = QFileDialog.getSaveFileName(self, "Output GeoTiff", "", filters)
+
+        if output_filename:
+            size = QSize(self.activeviewer.image.width, self.activeviewer.image.height)
+            label_map_img = self.activeviewer.annotations.create_label_map(size, self.labels_dictionary)
+            label_map_np = utils.qimageToNumpyArray(label_map_image)
+            georef_filename = self.activeviewer.image.georef_filename
+            rasterops.saveGeorefLabelMap(label_map_np, georef_filename, output_filename)
+
+            msgBox = QMessageBox(self)
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("Map exported successfully!")
+            msgBox.exec()
+            return
 
 
     @pyqtSlot()
@@ -2291,46 +2367,55 @@ class TagLab(QWidget):
             self.trainYourNetworkWidget.btnTrain.clicked.connect(self.trainNewNetwork)
             self.trainYourNetworkWidget.show()
 
-
     @pyqtSlot()
     def exportClippedRaster(self):
 
-        # load tiff
         if self.activeviewer is None:
             return
 
-        filters = " TIFF (*.tif)"
-        filename, _ = QFileDialog.getSaveFileName(self, "Save raster as", self.taglab_dir, filters)
-
-        if filename:
-            source = self.activeviewer.image.georef
-            mypolygons = []
-
-            for blob in self.activeviewer.annotations.seg_blobs:
-                if blob.qpath_gitem.isVisible():
-                 polygon = rasterops.createPolygon(blob, source)
-                 mypolygons.append(polygon)
-
-            # the depth is clipped - get the file name of the Tiff which stores it
+        # the depth is clipped - get the file name of the GeoTiff which stores it
+        input_tiff = ""
+        if self.activeviewer.image is not None:
             for channel in self.activeviewer.image.channels:
                 if channel.type == "DEM":
                     input_tiff = channel.filename
 
-            rasterops.saveClippedTiff(input_tiff, mypolygons, source, filename)
+        if input_tiff == "":
+            box = QMessageBox()
+            box.setText("DEM not found! You need to load a DEM to export a clipped version of it.")
+            box.exec()
+            return
+
+        filters = " TIFF (*.tif)"
+        output_filename, _ = QFileDialog.getSaveFileName(self, "Save raster as", self.taglab_dir, filters)
+
+        if output_filename:
+            blobs = self.activeviewer.annotations.seg_blobs
+            gf = self.activeviewer.image.georef_filename
+            rasterops.saveClippedTiff(input_tiff, blobs, gf, output_filename)
 
     @pyqtSlot()
     def calculateAreaUsingSlope(self):
 
-        if self.activeviewer is not None:
+        if self.activeviewer is None:
+            return
 
-            # get the file name of the Tiff which stores the depth
+        # get the file name of the Tiff which stores the depth
+        input_tiff = ""
+        if self.activeviewer.image is None:
             for channel in self.activeviewer.image.channels:
                 if channel.type == "DEM":
                     input_tiff = channel.filename
 
-            georef = self.activeviewer.image.georef
-            blobs = self.activeviewer.annotations.seg_blobs
-            rasterops.calculateAreaUsingSlope(input_tiff, georef, blobs)
+        if input_tiff == "":
+            box = QMessageBox()
+            box.setText("DEM not found! You need a DEM to compute the surface area.")
+            box.exec()
+            return
+
+        georef_filename = self.activeviewer.image.georef_filename
+        blobs = self.activeviewer.annotations.seg_blobs
+        rasterops.calculateAreaUsingSlope(input_tiff, georef_filename, blobs)
 
     def load(self, filename):
         """

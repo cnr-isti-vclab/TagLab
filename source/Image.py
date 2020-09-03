@@ -1,8 +1,6 @@
-import numpy as np
 from source.Channel import Channel
 from source.Blob import Blob
 from source.Annotation import Annotation
-from source.GeoRef import GeoRef
 import rasterio as rio
 
 class Image(object):
@@ -33,8 +31,7 @@ class Image(object):
         self.name = name                        # a label for an annotated image
         self.workspace = workspace              # a polygon in spatial reference system
         #self.map_acquisition_date = None       # this should be suggested in project creation in image_metadata_template
-        self.georef = None                      # georeferencing information
-        self.georef_filename = georef_filename  # filename used to fill the georeferencing information
+        self.georef_filename = georef_filename  # image file (GeoTiff) contained the georeferencing information
         self.metadata = metadata                # this follows image_metadata_template, do we want to allow freedom to add custome values?
 
 
@@ -44,9 +41,7 @@ class Image(object):
         """
         img = rio.open(filename)
         if img.crs is not None:
-            # this image georeferenced
-            geoinfo = GeoRef(img)
-            self.georef = geoinfo
+            # this image contains georeference information
             self.georef_filename = filename
 
 
@@ -59,9 +54,7 @@ class Image(object):
 
         img = rio.open(filename)
         if img.crs is not None:
-            # this image georeferenced
-            geoinfo = GeoRef(img)
-            self.georef = geoinfo
+            # this image contains georeference information
             self.georef_filename = filename
 
         # check image size consistency (all the channels muist have the same size)
