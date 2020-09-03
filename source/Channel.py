@@ -39,7 +39,7 @@ class Channel(object):
         if self.type == "RGB":
             self.qimage = QImage(self.filename)
 
-        # typically the depth map is stored in a 32-bit Tiff..
+        # typically the depth map is stored in a 32-bit Tiff
         if self.type == "DEM":
             dem = rio.open(self.filename)
             self.float_map = dem.read(1).astype(np.float32)
