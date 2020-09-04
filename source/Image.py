@@ -76,9 +76,4 @@ class Image(object):
 
     def save(self):
         data = self.__dict__.copy()
-
-        # IMPORTANT NOTE: the georeferencing information are not saved, they must be loaded
-        #                 from the georeferenced image (georef_filename)
-        del data['georef']
-
         return data
