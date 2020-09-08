@@ -123,12 +123,12 @@ subprocess.check_call([sys.executable, "-m", "pip", "install", torchvision_packa
                        '-f https://download.pytorch.org/whl/torch_stable.html'])
 
 # gdal and rasterio
+
 if osused != 'Windows':
     subprocess.check_call([sys.executable, "-m", "pip", "install", gdal_package])
     subprocess.check_call([sys.executable, "-m", "pip", "install", 'rasterio'])
 else:
-    # TODO: this base url does not work
-    base_url = 'https://download.lfd.uci.edu/pythonlibs/w3jqiv8s/'
+    base_url = 'http://taglab.isti.cnr.it/wheels/'
     pythonversion = str(sys.version_info[0]) + str(sys.version_info[1])
     # compute rasterio and gdal urls download
     filename_gdal = 'GDAL-3.1.2-cp' + pythonversion + '-cp' + pythonversion
@@ -150,6 +150,9 @@ else:
     this_directory = path.abspath(path.dirname(__file__))
     try:
         slib = 'GDAL'
+        opener = urllib.request.build_opener()
+        opener.addheaders = [('User-agent', 'Mozilla/5.0')]
+        urllib.request.install_opener(opener)
         urllib.request.urlretrieve(base_url_gdal, this_directory + '/' + filename_gdal)
         slib = 'Rasterio'
         urllib.request.urlretrieve(base_url_rastetio, this_directory + '/' + filename_rasterio)
@@ -163,3 +166,32 @@ else:
     #delete wheel files
     os.remove(this_directory + '/' + filename_gdal)
     os.remove(this_directory + '/' + filename_rasterio)
+    
+# download models
+base_url = 'http://taglab.isti.cnr.it/models/'
+from os import path
+import urllib.request
+this_directory = path.abspath(path.dirname(__file__))
+
+filename_dextr_corals = 'dextr_corals.pth'
+try:
+    url_dextr = base_url + filename_dextr_corals
+    print('Downloading ' + url_dextr + '...')
+    opener = urllib.request.build_opener()
+    opener.addheaders = [('User-agent', 'Mozilla/5.0')]
+    urllib.request.install_opener(opener)
+    urllib.request.urlretrieve(url_dextr, 'models/' + filename_dextr_corals)
+except:
+    raise Exception("Cannot download " + filename_dextr_corals + ".")
+    
+filename_deeplab = 'deeplab-resnet.pth.tar'
+try:
+    url_deeplab = base_url + filename_deeplab
+    print('Downloading ' + url_deeplab + '...')
+    opener = urllib.request.build_opener()
+    opener.addheaders = [('User-agent', 'Mozilla/5.0')]
+    urllib.request.install_opener(opener)
+    urllib.request.urlretrieve(url_deeplab, this_directory + '/models/' + filename_deeplab)
+except:
+    raise Exception("Cannot download " + filename_deeplab + ".")
+
