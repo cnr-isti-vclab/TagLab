@@ -118,9 +118,9 @@ for package in install_requires:
 
 # torch
 subprocess.check_call([sys.executable, "-m", "pip", "install", torch_package,
-                       '-f https://download.pytorch.org/whl/torch_stable.html'])
+                       '-f', 'https://download.pytorch.org/whl/torch_stable.html'])
 subprocess.check_call([sys.executable, "-m", "pip", "install", torchvision_package,
-                       '-f https://download.pytorch.org/whl/torch_stable.html'])
+                       '-f', 'https://download.pytorch.org/whl/torch_stable.html'])
 
 # gdal and rasterio
 
