@@ -762,7 +762,7 @@ class TagLab(QWidget):
                     box.exec()
                     return
 
-                self.activeviewer.setChannel(self.actieviewer.image.channels[i])
+                self.activeviewer.setChannel(self.activeviewer.image.channels[i])
             else:
                 self.activeviewer.setChannel(self.activeviewer.image.channels[0])
 
@@ -2402,7 +2402,7 @@ class TagLab(QWidget):
 
         # get the file name of the Tiff which stores the depth
         input_tiff = ""
-        if self.activeviewer.image is None:
+        if self.activeviewer.image is not None:
             for channel in self.activeviewer.image.channels:
                 if channel.type == "DEM":
                     input_tiff = channel.filename
@@ -2415,7 +2415,7 @@ class TagLab(QWidget):
 
         georef_filename = self.activeviewer.image.georef_filename
         blobs = self.activeviewer.annotations.seg_blobs
-        rasterops.calculateAreaUsingSlope(input_tiff, georef_filename, blobs)
+        rasterops.calculateAreaUsingSlope(input_tiff, blobs)
 
     def load(self, filename):
         """

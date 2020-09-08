@@ -141,14 +141,17 @@ def exportSlope(raster, filename):
          slope = dataset.read(1)
     return slope
 
-def calculateAreaUsingSlope(depth_filename, georef_filename, blobs):
+def calculateAreaUsingSlope(depth_filename, blobs):
+    """'Outputs areas as number of pixels"""
 
     # load georeference information to use
-    img = rio.open(georef_filename)
-    transform = img.transform
+    #   img = rio.open(georef_filename)
+    #transform[0] displays px to mm conversion factor in m
+    #   transform = img.transform
 
     slope = exportSlope(depth_filename, 'slope')
-    area_px = transform[0] ** 2
+    #meters to mm
+    # area_px = (transform[0]*1000)** 2
 
     # filter out null values and jumps
     slope[slope > 87] = 0
@@ -160,7 +163,8 @@ def calculateAreaUsingSlope(depth_filename, georef_filename, blobs):
         right = left + blob.bbox[2]
         bottom = top + blob.bbox[3]
         slope_crop = slope[top:bottom, left:right]
-        surface_area = (area_px*non_null/(abs(np.cos(np.radians(slope_crop))))).sum()*10**4
+        surface_area = (non_null / abs(np.cos(np.radians(slope_crop)))).sum()
+       # surface_area = ((area_px*non_null/(abs(np.cos(np.radians(slope_crop))))).sum())/10**2
         blob.area = surface_area
 
-    # volume = (array * (area_px*non_null)).sum()*10**6
+       # volume = (array * (area_px*non_null)).sum()*10**6
