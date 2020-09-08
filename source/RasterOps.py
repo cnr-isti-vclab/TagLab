@@ -141,10 +141,14 @@ def exportSlope(raster, filename):
          slope = dataset.read(1)
     return slope
 
-def calculateAreaUsingSlope(depth_filename, georef, blobs):
+def calculateAreaUsingSlope(depth_filename, georef_filename, blobs):
+
+    # load georeference information to use
+    img = rio.open(georef_filename)
+    transform = img.transform
 
     slope = exportSlope(depth_filename, 'slope')
-    area_px = georef.transform[0] ** 2
+    area_px = transform[0] ** 2
 
     # filter out null values and jumps
     slope[slope > 87] = 0
