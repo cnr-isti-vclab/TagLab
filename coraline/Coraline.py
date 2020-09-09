@@ -5,15 +5,23 @@ import source.utils as utils
 from skimage.filters import gaussian
 from skimage.restoration import denoise_bilateral
 import numpy as np
+from os import path
+
+this_directory = path.abspath(path.dirname(__file__))
 
 try:
 	if sys.platform == "linux" or sys.platform == "linux2":
-		lib = cdll.LoadLibrary('coraline/libcoraline.so')
+		lib = cdll.LoadLibrary(this_directory + '/libcoraline.so')
 	elif sys.platform == "win32":
-		lib = cdll.LoadLibrary('coraline/coraline.dll')
+		lib = cdll.LoadLibrary(this_directory + '/coraline.dll')
+	else:
+		lib = None
 
 except:
 	lib = None
+	
+if lib!=None:
+	print('libcoraline loaded')
 
 #import numpy as np
 
