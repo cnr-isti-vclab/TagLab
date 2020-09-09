@@ -135,23 +135,19 @@ def saveGeorefLabelMap(label_map, georef_filename, out_name):
         dest.write(myLabel)
 
 def exportSlope(raster, filename):
-    # save slope raster
-    gdal.DEMProcessing(filename+'.tif', raster, 'slope')
-    with rio.open(filename+'.tif') as dataset:
-         slope = dataset.read(1)
+
+    # process slope raster and save it
+    # IMPORTANT NOTE: DEMprocessing using the INTERNAL scale of the GeoTiff, so the
+    # geo transform MUST BE CORRECT to obtain a reliable calculation of the slope !!
+    gdal.DEMProcessing(filename, raster, 'slope')
+    with rio.open(filename) as dataset:
+         slope = dataset.read(1).astype(np.float32)
     return slope
 
 def calculateAreaUsingSlope(depth_filename, blobs):
     """'Outputs areas as number of pixels"""
 
-    # load georeference information to use
-    #   img = rio.open(georef_filename)
-    #transform[0] displays px to mm conversion factor in m
-    #   transform = img.transform
-
-    slope = exportSlope(depth_filename, 'slope')
-    #meters to mm
-    # area_px = (transform[0]*1000)** 2
+    slope = exportSlope(depth_filename, 'slope.tif')
 
     # filter out null values and jumps
     slope[slope > 87] = 0
@@ -164,7 +160,8 @@ def calculateAreaUsingSlope(depth_filename, blobs):
         bottom = top + blob.bbox[3]
         slope_crop = slope[top:bottom, left:right]
         surface_area = (non_null / abs(np.cos(np.radians(slope_crop)))).sum()
-       # surface_area = ((area_px*non_null/(abs(np.cos(np.radians(slope_crop))))).sum())/10**2
+        # surface_area = ((area_px*non_null/(abs(np.cos(np.radians(slope_crop))))).sum())/10**2
         blob.area = surface_area
 
-       # volume = (array * (area_px*non_null)).sum()*10**6
+         # volume = (array * (area_px*non_null)).sum()*10**6
+
