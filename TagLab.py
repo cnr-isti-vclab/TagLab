@@ -145,12 +145,18 @@ class TagLab(QWidget):
         self.btnCut         = self.newButton("scissors.png", "Cut Segmentation",      flatbuttonstyle1, self.cut)
         self.btnFreehand    = self.newButton("pencil.png",   "Freehand segmentation", flatbuttonstyle1, self.freehandSegmentation)
         self.btnCreateCrack = self.newButton("crack.png",    "Create crack",          flatbuttonstyle1, self.createCrack)
-        self.btnSplitBlob   = self.newButton("split.png",    "Split Blob",            flatbuttonstyle1, self.splitBlob)
+
+        # Split blob operation removed from the toolbar
+        # self.btnSplitBlob   = self.newButton("split.png",    "Split Blob",            flatbuttonstyle1, self.splitBlob)
+
+
         self.btnRuler       = self.newButton("ruler.png",    "Measure tool",          flatbuttonstyle1, self.ruler)
         self.btnMatch       = self.newButton("connect.png",  "Match tool",            flatbuttonstyle1, self.matchTool)
         self.btnDeepExtreme = self.newButton("dexter.png",   "4-click segmentation",  flatbuttonstyle2, self.deepExtreme)
         self.btnAutoClassification = self.newButton("auto.png", "Fully automatic classification", flatbuttonstyle2, self.selectClassifier)
-        self.btnSplitScreen = self.newButton("splitscreen.png", "Toggle comparison mode", flatbuttonstyle2, self.toggleComparison)
+
+        # Split Screen operation removed from the toolbar
+        #self.btnSplitScreen = self.newButton("splitscreen.png", "Toggle comparison mode", flatbuttonstyle2, self.toggleComparison)
 
 
         layout_tools = QVBoxLayout()
@@ -161,13 +167,13 @@ class TagLab(QWidget):
         layout_tools.addWidget(self.btnEditBorder)
         layout_tools.addWidget(self.btnCut)
         layout_tools.addWidget(self.btnCreateCrack)
-        layout_tools.addWidget(self.btnSplitBlob)
+        #layout_tools.addWidget(self.btnSplitBlob)
         layout_tools.addWidget(self.btnRuler)
         layout_tools.addSpacing(10)
         layout_tools.addWidget(self.btnDeepExtreme)
         layout_tools.addWidget(self.btnAutoClassification)
         layout_tools.addSpacing(10)
-        layout_tools.addWidget(self.btnSplitScreen)
+        #layout_tools.addWidget(self.btnSplitScreen)
         layout_tools.addWidget(self.btnMatch)
 
         layout_tools.addStretch()
@@ -1008,7 +1014,7 @@ class TagLab(QWidget):
         self.viewerplus2.hide()
         self.comboboxComparisonImage.hide()
 
-        self.btnSplitScreen.setChecked(False)
+        #self.btnSplitScreen.setChecked(False)
         self.comparison_mode = False
 
 
@@ -1044,7 +1050,7 @@ class TagLab(QWidget):
         self.comboboxComparisonImage.show()
         self.viewerplus.viewChanged()
 
-        self.btnSplitScreen.setChecked(True)
+        #self.btnSplitScreen.setChecked(True)
         self.comparison_mode = True
 
     def createMatch(self):
@@ -1327,7 +1333,7 @@ class TagLab(QWidget):
         self.btnFreehand.setChecked(False)
         self.btnRuler.setChecked(False)
         self.btnCreateCrack.setChecked(False)
-        self.btnSplitBlob.setChecked(False)
+        #self.btnSplitBlob.setChecked(False)
         self.btnDeepExtreme.setChecked(False)
         self.btnMatch.setChecked(False)
         self.btnAutoClassification.setChecked(False)
@@ -1336,7 +1342,7 @@ class TagLab(QWidget):
         tools = {
             "MOVE"       : ["Move"       , self.btnMove],
             "CREATECRACK": ["Crack"      , self.btnCreateCrack],
-            "SPLITBLOB"  : ["Split Blob" , self.btnSplitBlob],
+            #"SPLITBLOB"  : ["Split Blob" , self.btnSplitBlob],
             "ASSIGN"     : ["Assign"     , self.btnAssign],
             "EDITBORDER" : ["Edit Border", self.btnEditBorder],
             "CUT"        : ["Cut"        , self.btnCut],
