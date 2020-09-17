@@ -23,14 +23,13 @@ class Ruler(Tool):
         if len(points) == 0:
             self.pick_points.addPoint(x, y, self.pick_style)
 
-        # sedcond point
+        # second point
         elif len(points) == 1:
             self.pick_points.addPoint(x, y, self.pick_style)
             self.drawRuler(self.viewerplus.annotations)
 
         else:
             self.pick_points.reset()
-
 
 
     def drawRuler(self, annotations):
@@ -85,7 +84,7 @@ class Ruler(Tool):
         blob1 = annotations.clickedBlob(x1, y1)
         blob2 = annotations.clickedBlob(x2, y2)
 
-        if blob1 is not None and blob2 is not None and blob1 != blob2:
+        if blob1 is not None and blob2 is not None and blob1 is not blob2:
 
             x1 = blob1.centroid[0]
             y1 = blob1.centroid[1]
@@ -93,8 +92,8 @@ class Ruler(Tool):
             y2 = blob2.centroid[1]
 
             points[0][0] = x1
+            points[0][1] = y1
             points[1][0] = x2
-            points[1][0] = y1
             points[1][1] = y2
 
         measurepx = np.sqrt(((x2 - x1) ** 2) + ((y2 - y1) ** 2))
