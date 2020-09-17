@@ -2687,6 +2687,10 @@ if __name__ == '__main__':
 
     app.setStyleSheet("QToolTip {color: white; background-color: rgb(49,51,53); border: none; }")
 
+    # default font
+    font = QFont("Calibri")
+    app.setFont(font)
+
     # Create the inspection tool
     tool = TagLab()
 

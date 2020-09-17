@@ -57,7 +57,7 @@ class Ruler(Tool):
         middle.setZValue(5)
 
         ruler_text = self.scene.addText('%.1f cm' % measure)
-        ruler_text.setFont(QFont("Times", 12, QFont.Bold))
+        ruler_text.setFont(QFont("Calibri", 12, QFont.Bold))
         ruler_text.setDefaultTextColor(Qt.white)
         ruler_text.setPos(middle_x, middle_y)
         ruler_text.setParentItem(middle)
