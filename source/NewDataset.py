@@ -197,7 +197,7 @@ class NewDataset(object):
 		for i, freq in enumerate(self.frequencies):
 			if freq > 0.0005:
 				K = max(self.frequencies) / freq
-				# K = 0.15 / freq
+				#K = 0.25 / freq
 				K = math.pow(K, 1.3)
 				if K < 1.5:
 					radius = 256.0
@@ -480,7 +480,7 @@ class NewDataset(object):
 				if blob.qpath_gitem.isVisible():
 
 					if blob.class_name == "Empty":
-						rgb = qRgb(255, 255, 255)
+						rgb = qRgb(0, 0, 0)
 					else:
 						class_color = labels_info[blob.class_name]
 						rgb = qRgb(class_color[0], class_color[1], class_color[2])
@@ -566,6 +566,9 @@ class NewDataset(object):
 
 			val_area, test_area = self.findAreas(target_classes=target_classes)
 
+			print(val_area)
+			print(test_area)
+
 		self.val_area = val_area
 		self.test_area = test_area
 
@@ -614,22 +617,22 @@ class NewDataset(object):
 		bbox1 = [0, 0, 0, 0]
 		bbox2 = [0, 0, 0, 0]
 		size = self.crop_size + 4
-		half_size = size / 2
+		half_size = int(size / 2)
 
 		for tile in training_tiles:
 
 			bbox1[0] = tile[1] - half_size
 			bbox1[1] = tile[0] - half_size
-			bbox1[2] = size
-			bbox1[3] = size
+			bbox1[2] = half_size * 2
+			bbox1[3] = half_size * 2
 
 			flag = True
 			for vtile in self.validation_tiles:
 
 				bbox2[0] = vtile[1] - half_size
 				bbox2[1] = vtile[0] - half_size
-				bbox2[2] = size
-				bbox2[3] = size
+				bbox2[2] = half_size * 2
+				bbox2[3] = half_size * 2
 
 				area = self.bbox_intersection(bbox1, bbox2)
 				if area > 10.0:
@@ -641,8 +644,8 @@ class NewDataset(object):
 
 					bbox2[0] = ttile[1] - half_size
 					bbox2[1] = ttile[0] - half_size
-					bbox2[2] = size
-					bbox2[3] = size
+					bbox2[2] = half_size * 2
+					bbox2[3] = half_size * 2
 
 					area = self.bbox_intersection(bbox1, bbox2)
 					if area > 10.0:
@@ -663,23 +666,23 @@ class NewDataset(object):
 		cleaned_tiles = []
 		bbox1 = [0, 0, 0, 0]
 		bbox2 = [0, 0, 0, 0]
-		size = self.crop_size + 10
+		size = self.crop_size + 4
 		half_size = size / 2
 
 		for vtile in validation_tiles:
 
 			bbox1[0] = vtile[1] - half_size
 			bbox1[1] = vtile[0] - half_size
-			bbox1[2] = size
-			bbox1[3] = size
+			bbox1[2] = half_size * 2
+			bbox1[3] = half_size * 2
 
 			flag = True
 			for ttile in self.training_tiles:
 
 				bbox2[0] = ttile[1] - half_size
 				bbox2[1] = ttile[0] - half_size
-				bbox2[2] = size
-				bbox2[3] = size
+				bbox2[2] = half_size * 2
+				bbox2[3] = half_size * 2
 
 				area = self.bbox_intersection(bbox1, bbox2)
 				if area > 10.0:
@@ -690,8 +693,8 @@ class NewDataset(object):
 
 					bbox2[0] = tile[1] - half_size
 					bbox2[1] = tile[0] - half_size
-					bbox2[2] = size
-					bbox2[3] = size
+					bbox2[2] = half_size * 2
+					bbox2[3] = half_size * 2
 
 					area = self.bbox_intersection(bbox1, bbox2)
 					if area > 10.0:
@@ -939,10 +942,33 @@ class NewDataset(object):
 			self.training_tiles = self.sampleAreaUniformly([delta, delta, w-delta*2, h-delta*2], self.tile_size, self.step)
 
 		if oversampling is True:
-			self.validation_tiles = self.sampleAreaUniformly(self.val_area, self.tile_size, self.step)
-			self.test_tiles = self.sampleAreaUniformly(self.test_area, self.tile_size, self.step)
-			self.training_tiles = self.oversamplingBlobsWPoissonDisk([delta, delta, w-delta*2,  h-delta*2],
+
+			validation_oversampled = False
+
+			if validation_oversampled is False:
+				self.validation_tiles = self.sampleAreaUniformly(self.val_area, self.tile_size, self.step)
+				self.test_tiles = self.sampleAreaUniformly(self.test_area, self.tile_size, self.step)
+				self.training_tiles = self.oversamplingBlobsWPoissonDisk([delta, delta, w-delta*2,  h-delta*2],
 																	 classes_to_sample, radii)
+			else:
+				self.test_tiles = self.sampleAreaUniformly(self.test_area, self.tile_size, self.step)
+				tiles = self.oversamplingBlobsWPoissonDisk([delta, delta, w-delta*2,  h-delta*2],
+																	 classes_to_sample, radii)
+
+				bbox = [0, 0, 0, 0]
+				half_size = int(self.crop_size + 4) / 2
+				self.validation_tiles = []
+				self.training_tiles = []
+				for tile in tiles:
+					bbox[0] = tile[1] - half_size
+					bbox[1] = tile[0] - half_size
+					bbox[2] = half_size * 2
+					bbox[3] = half_size * 2
+					perc = (100.0 * self.bbox_intersection(self.val_area, bbox)) / float(half_size * half_size * 4)
+					if perc > 95.0:
+						self.validation_tiles.append(tile)
+					else:
+						self.training_tiles.append(tile)
 
 		self.training_tiles = self.cleanTrainingTiles(self.training_tiles)
 
@@ -1067,6 +1093,7 @@ class NewDataset(object):
 			coverage += np.array(cov)
 
 		coverage = coverage / len(self.training_tiles)
+		return coverage
 
 
 	def classFrequenciesOnDataset(self, labels_dir, target_classes, labels_colors):
@@ -1101,6 +1128,7 @@ class NewDataset(object):
 				counters[i] += float(np.count_nonzero(labelsint == i + 1))
 
 		freq = counters / float(total_pixels)
+		print(freq)
 
 	##### VISUALIZATION FUNCTIONS - FOR DEBUG PURPOSES
 
