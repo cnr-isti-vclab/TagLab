@@ -48,7 +48,6 @@ def write_shapefile(blobs, georef_filename, out_shp):
     """
     https://gis.stackexchange.com/a/52708/8104
     """
-
     # load georeference information to use
     img = rio.open(georef_filename)
     geoinfo = img.crs
@@ -57,9 +56,14 @@ def write_shapefile(blobs, georef_filename, out_shp):
     # convert blobs in polygons
     polygons = []
     ids = []
+    classnames = []
+    colors = []
+
     for blob in blobs:
         polygon = createPolygon(blob, transform)
         ids.append(blob.id)
+        classnames.append(blob.class_name)
+        colors.append('#%02X%02X%02X' % tuple(blob.class_color))
         polygons.append(polygon)
 
     # Now convert them to a shapefile with OGR
@@ -72,24 +76,26 @@ def write_shapefile(blobs, georef_filename, out_shp):
 
     # Add id to polygon
     outLayer.CreateField(ogr.FieldDefn('id', ogr.OFTInteger))
+    outLayer.CreateField(ogr.FieldDefn('class', ogr.OFTString))
     defn = outLayer.GetLayerDefn()
 
     ## If there are multiple geometries, put the "for" loop here
     for i in range(len(ids)):
-
         # Create a new feature (attribute and geometry)
         feat = ogr.Feature(defn)
         feat.SetField('id', ids[i])
+        feat.SetField('class', classnames[i])
 
         # Make a geometry, from Shapely object
         geom = ogr.CreateGeometryFromWkb(polygons[i].wkb)
         feat.SetGeometry(geom)
-
+        feat.SetStyleString('BRUSH(fc:' + colors[i] + ')')
         outLayer.CreateFeature(feat)
         feat = geom = None  # destroy these
 
     # Save and close everything
     ds = layer = feat = geom = None
+
 
 def saveClippedTiff(input, blobs, georef_filename, name):
 
