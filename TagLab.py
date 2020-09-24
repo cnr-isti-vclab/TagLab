@@ -1489,11 +1489,20 @@ class TagLab(QWidget):
         self.lblC.setText(txt)
 
         scaled_perimeter = blob.perimeter * factor / 10
-        txt = "Perimeter (cm): {:6.2f}".format(scaled_perimeter)
+
+        if factor == 1.0:
+            txt = "P (px): {:6.2f}".format(scaled_perimeter)
+        else:
+            txt = "P (cm): {:6.2f}".format(scaled_perimeter)
+
         self.lblP.setText(txt)
 
         scaled_area = blob.area * factor * factor / 100
-        txt = "Area (cm<sup>2</sup>): {:6.2f}".format(scaled_area)
+        if factor == 1.0:
+            txt = "A (px<sup>2</sup>): {:6.2f}".format(scaled_area)
+        else:
+            txt = "A (cm<sup>2</sup>): {:6.2f}".format(scaled_area)
+
         self.lblA.setText(txt)
 
         self.editNote.setPlainText(blob.note)
