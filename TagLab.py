@@ -1489,20 +1489,11 @@ class TagLab(QWidget):
         self.lblC.setText(txt)
 
         scaled_perimeter = blob.perimeter * factor / 10
-
-        if factor == 1.0:
-            txt = "P (px): {:6.2f}".format(scaled_perimeter)
-        else:
-            txt = "P (cm): {:6.2f}".format(scaled_perimeter)
-
+        txt = "Perimeter (cm): {:6.2f}".format(scaled_perimeter)
         self.lblP.setText(txt)
 
         scaled_area = blob.area * factor * factor / 100
-        if factor == 1.0:
-            txt = "A (px<sup>2</sup>): {:6.2f}".format(scaled_area)
-        else:
-            txt = "A (cm<sup>2</sup>): {:6.2f}".format(scaled_area)
-
+        txt = "Area (cm<sup>2</sup>): {:6.2f}".format(scaled_area)
         self.lblA.setText(txt)
 
         self.editNote.setPlainText(blob.note)
@@ -2235,6 +2226,8 @@ class TagLab(QWidget):
             new_dataset.createLabelImage(self.labels_dictionary)
             new_dataset.convert_colors_to_labels(target_classes, self.labels_dictionary)
             new_dataset.computeFrequencies(target_classes)
+            target_scale_factor = self.newDatasetWidget.getTargetScale()
+            new_dataset.rescale(self.activeviewer.image.map_px_to_mm_factor, target_scale_factor)
 
             # create training, validation and test areas
 

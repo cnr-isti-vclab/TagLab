@@ -45,11 +45,17 @@ class QtNewDatasetWidget(QWidget):
         self.lblSplitMode = QLabel("Dataset split:")
         self.lblSplitMode.setFixedWidth(TEXT_SPACE)
         self.lblSplitMode.setAlignment(Qt.AlignRight)
+        self.lblTargetScale = QLabel("Target scale:")
+        self.lblTargetScale.setFixedWidth(TEXT_SPACE)
+        self.lblTargetScale.setAlignment(Qt.AlignRight)
+
+
 
         layoutH0a = QVBoxLayout()
         layoutH0a.setAlignment(Qt.AlignRight)
         layoutH0a.addWidget(self.lblDatasetFolder)
         layoutH0a.addWidget(self.lblSplitMode)
+        layoutH0a.addWidget(self.lblTargetScale)
 
         ###########################################################
 
@@ -62,13 +68,17 @@ class QtNewDatasetWidget(QWidget):
         self.comboSplitMode.addItem("Uniform")
         self.comboSplitMode.addItem("Random")
         self.comboSplitMode.addItem("Biologically-inspired")
+        self.editTargetScale = QLineEdit("1.0")
+        self.editTargetScale .setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        self.editTargetScale .setMinimumWidth(LINEWIDTH)
 
         layoutH0b = QVBoxLayout()
         layoutH0b.setAlignment(Qt.AlignLeft)
         layoutH0b.addWidget(self.editDatasetFolder)
         layoutH0b.addWidget(self.comboSplitMode)
+        layoutH0b.addWidget(self.editTargetScale)
 
-        ###########################################################
+        ###############################################################
 
         self.btnChooseDatasetFolder = QPushButton("...")
         self.btnChooseDatasetFolder.setMaximumWidth(20)
@@ -134,4 +144,9 @@ class QtNewDatasetWidget(QWidget):
     def getSplitMode(self):
 
         return self.comboSplitMode.currentText()
+
+
+    def getTargetScale(self):
+
+        return float(self.editTargetScale.text())
 

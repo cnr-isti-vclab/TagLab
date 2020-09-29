@@ -71,6 +71,16 @@ class NewDataset(object):
 		self.sP_max = 0.0
 
 
+	def rescale(self, current_scale, target_scale):
+
+		scale= target_scale/current_scale
+		w  = self.orthoimage.width()*scale
+		h = self.orthoimage.height()*scale
+
+		self.orthoimage = self.orthoimage.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+		self.label_image = self.label_image.scaled(w, h, Qt.IgnoreAspectRatio, Qt.FastTransformation)
+
+
 	def isFullyInsideBBox(self, bbox1, bbox2):
 		"""
 		Check if bbox1 is inside bbox2.
