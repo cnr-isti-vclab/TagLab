@@ -1573,7 +1573,7 @@ class TagLab(QWidget):
             #blobA and will be modified, make a copy!
             blobA = selectedA.copy()
 
-            flag_intersection = view.annotations.subtract(blobA, selectedB, view.scene)
+            flag_intersection = view.annotations.subtract(blobA, selectedB)
 
             if flag_intersection:
 
@@ -1613,9 +1613,12 @@ class TagLab(QWidget):
             blobA = selectedA.copy()
             blobB = selectedB.copy()
 
-            intersects = view.annotations.subtract(blobB, blobA, view.scene)
-            if intersects:
+            intersects = view.annotations.subtract(blobB, blobA)
 
+            if not intersects: #this means one blob B is inside blob A
+                intersects = view.annotations.subtract(blobA, blobB)
+
+            if intersects:
                 self.logBlobInfo(selectedA, "[OP-DIVIDE][BLOB-SELECTED]")
                 self.logBlobInfo(blobA, "[OP-DIVIDE][BLOB-EDITED]")
                 self.logBlobInfo(selectedB, "[OP-DIVIDE][BLOB-SELECTED]")
@@ -1627,6 +1630,8 @@ class TagLab(QWidget):
                 view.addBlob(blobB, selected=False)
                 view.saveUndo()
 
+
+                pass
             logfile.info("[OP-DIVIDE] DIVIDE LABELS operation ends.")
 
         else:

@@ -39,7 +39,18 @@ On Linux, also __*cmake*__ and a C++ compiler must be installed.
 Just click on the "Clone or Download" button at the top of this page and unzip the whole package in a folder of your choice. 
 
 #### Step 2: Install dependencies
-Open a python prompt and start `install.py`. The script will automatically install the remaining libraries required by TagLab and download the network weights.
+Open a shell (not python prompt!), change directory to the TagLab main directory and run: 
+
+```
+python3 install.py
+```
+or, on Windows:
+
+```
+python3.exe install.py
+```
+
+The script will automatically install the remaining libraries required by TagLab and download the network weights.
 
 #### Step 3: Run
 Open a python prompt and just start `TagLab.py`, the tool will start and you can try to open the sample that you can find in the `projects` folder. 
