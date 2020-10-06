@@ -2,12 +2,14 @@ from PyQt5.QtCore import Qt
 
 from source.tools.PickPoints import PickPoints
 from source.tools.EditPoints import EditPoints
+from source.tools.Scribbles import Scribbles
 
 
 from source.tools.CreateCrack import CreateCrack
 from source.tools.SplitBlob import SplitBlob
 from source.tools.Assign import Assign
 from source.tools.EditBorder import EditBorder
+from source.tools.Watershed import Watershed
 from source.tools.Cut import Cut
 from source.tools.Freehand import Freehand
 from source.tools.Ruler import Ruler
@@ -25,6 +27,7 @@ class Tools(object):
 
         self.pick_points = PickPoints(self.scene)
         self.edit_points = EditPoints(self.scene)
+        self.scribbles = Scribbles(self.scene)
 
         self.CROSS_LINE_WIDTH = 2
         self.extreme_pick_style = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.red,  'size': 6}
@@ -41,6 +44,7 @@ class Tools(object):
             "EDITBORDER": EditBorder(self.viewerplus, self.edit_points),
             "CUT": Cut(self.viewerplus, self.edit_points),
             "FREEHAND": Freehand(self.viewerplus, self.edit_points),
+            "WATERSHED": Watershed(self.viewerplus, self.scribbles),
             "RULER": Ruler(self.viewerplus, self.pick_points),
             "DEEPEXTREME": DeepExtreme(self.viewerplus, self.pick_points),
             "MATCH": Match(self.viewerplus)
@@ -54,6 +58,7 @@ class Tools(object):
     def resetTools(self):
         self.pick_points.reset()
         self.edit_points.reset()
+        self.scribbles.reset()
 
         self.scene.invalidate(self.scene.sceneRect())
 
