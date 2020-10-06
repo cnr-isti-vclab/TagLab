@@ -204,11 +204,10 @@ class Annotation(object):
         return None
 
 
-    def subtract(self, blobA, blobB, scene):
+    def subtract(self, blobA, blobB):
         """
         Create a new blob that subtracting the second blob from the first one
         """
-
         (mask, box) = Mask.subtract(blobA.getMask(), blobA.bbox, blobB.getMask(), blobB.bbox)
         if mask.any():
             # measure is brutally slower with non int types (factor 4), while byte&bool would be faster by 25%, conversion is fast.
