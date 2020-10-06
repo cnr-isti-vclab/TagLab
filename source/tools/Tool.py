@@ -20,5 +20,8 @@ class Tool(QObject):
     def leftReleased(self, x, y):
         pass
 
+    def wheel(self, delta):
+        pass
+
     def apply(self):
         pass

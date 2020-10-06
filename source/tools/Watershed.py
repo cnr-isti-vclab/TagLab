@@ -17,7 +17,6 @@ class Watershed(Tool):
 
     def setActiveLabel(self, label):
         self.scribbles.setColor(label.fill)
-        self.active_label = label
 
     def leftPressed(self, x, y, mods):
         if self.scribbles.startDrawing(x, y):
@@ -25,6 +24,14 @@ class Watershed(Tool):
 
     def mouseMove(self, x, y):
         self.scribbles.move(x, y)
+
+    def wheel(self, delta):
+        increase = float(delta.y()) / 10.0
+        if 0.0 < increase < 1.0:
+            increase = 1
+        elif -1.0 < increase < 0.0:
+            increase = -1
+        self.scribbles.setSize(int(increase))
 
     def apply(self):
         if len(self.scribbles.points) == 0:

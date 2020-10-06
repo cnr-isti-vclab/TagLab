@@ -86,6 +86,11 @@ class Tools(object):
             return
         self.tools[self.tool].leftReleased(x, y)
 
+    def wheel(self, delta):
+        if self.tool == "MOVE":
+            return
+        self.tools[self.tool].wheel(delta)
+
     def applyTool(self):
         if self.tool == "MOVE":
             return

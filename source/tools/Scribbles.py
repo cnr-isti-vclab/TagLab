@@ -1,7 +1,7 @@
 import numpy as np
 
 from PyQt5.QtCore import Qt, QObject, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
-from PyQt5.QtGui import QImage, QPixmap, QPainter, QPainterPath, QPen, QImageReader, QFont, QColor
+from PyQt5.QtGui import QImage, QPixmap, QPainter, QPainterPath, QPen, QBrush, QCursor, QColor
 from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsItem, QGraphicsScene, QFileDialog, QGraphicsPixmapItem
 
 
@@ -17,6 +17,7 @@ class Scribbles(QObject):
         self.current_size = 30
 
         self.border_pen = QPen(Qt.black, self.current_size)
+        self.border_pen.setCapStyle(Qt.RoundCap)
         self.border_pen.setCosmetic(True)
         self.color = []
         self.current_color = QColor(Qt.black)
@@ -24,7 +25,7 @@ class Scribbles(QObject):
         self.qpath_gitem = None
         self.qpath_list = []
 
-
+        self.setCustomCursor()
 
     def reset(self):
 
@@ -32,15 +33,30 @@ class Scribbles(QObject):
             qpath_gitem.setPath(QPainterPath())
         self.points = []
 
+    def setCustomCursor(self):
+
+        pxmap = QPixmap(self.current_size, self.current_size)
+        pxmap.fill(QColor("transparent"))
+        painter = QPainter(pxmap)
+        brush = QBrush(self.current_color)
+        painter.setBrush(brush)
+        painter.drawEllipse(0, 0, self.current_size, self.current_size)
+        painter.end()
+        custom_cursor = QCursor(pxmap)
+        QApplication.setOverrideCursor(custom_cursor)
+
     def setColor(self, color):
+        print(color)
 
         qt_color = QColor(color[0], color[1], color[2])
         self.border_pen.setColor(qt_color)
         self.current_color = qt_color
 
+        self.setCustomCursor()
+
     def setSize(self, delta_size):
 
-        new_size = self.size + delta_size
+        new_size = self.current_size + delta_size
 
         if new_size < 3:
             new_size = 3
@@ -50,16 +66,14 @@ class Scribbles(QObject):
         self.current_size = new_size
         self.border_pen.setWidth(new_size)
 
+        self.setCustomCursor()
+
     # return true if the first points for a tool
     def startDrawing(self, x, y):
 
         first_start = False
         if len(self.points) == 0:  # first point, initialize
-
-            # self.qpath_gitem.setPath(QPainterPath())
-            # self.qpath_gitem.setPen(self.border_pen)
             first_start = True
-
             message = "[TOOL] DRAWING starts.."
             self.log.emit(message)
 

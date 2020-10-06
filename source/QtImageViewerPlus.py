@@ -32,6 +32,7 @@ from source.Image import Image
 from source.Annotation import Annotation
 from source.Annotation import Blob
 from source.Tools import Tools
+from source.Label import Label
 
 from source.QtImageViewer import QtImageViewer
 
@@ -126,6 +127,8 @@ class QtImageViewerPlus(QtImageViewer):
         self.refine_grow = 0.0 #maybe should in in tools
         self.refine_original_mask = None
         self.refine_original_blob = None
+
+        self.active_label = None
 
     def setProject(self, project):
 
@@ -269,10 +272,21 @@ class QtImageViewerPlus(QtImageViewer):
 
     def setTool(self, tool):
 
+        QApplication.setOverrideCursor(Qt.ArrowCursor)
+
         self.tools.setTool(tool)
 
         if tool in ["FREEHAND", "RULER", "DEEPEXTREME"] or (tool in ["CUT", "EDITBORDER"] and len(self.selected_blobs) > 1):
             self.resetSelection()
+
+        if tool == "WATERSHED":
+            label_info = self.project.labels.get(self.active_label)
+            if label_info is not None:
+                self.tools.tools["WATERSHED"].setActiveLabel(label_info)
+            else:
+                lbl = Label("", "", fill=[0, 0, 0])
+                self.tools.tools["WATERSHED"].setActiveLabel(lbl)
+
         if tool == "DEEPEXTREME":
             self.showCrossair = True
         else:
@@ -288,7 +302,6 @@ class QtImageViewerPlus(QtImageViewer):
         self.showCrossair = False
         self.scene.invalidate(self.scene.sceneRect())
         self.setDragMode(QGraphicsView.NoDrag)
-
 
 #TODO not necessarily a slot
     @pyqtSlot(float, float)
@@ -423,6 +436,10 @@ class QtImageViewerPlus(QtImageViewer):
         """ Zoom in/zoom out.
         """
 
+        if self.tools.tool == "WATERSHED":
+            self.tools.wheel(event.angleDelta())
+            return
+
         if self.zoomEnabled:
 
             pt = event.angleDelta()
@@ -459,8 +476,15 @@ class QtImageViewerPlus(QtImageViewer):
     @pyqtSlot(str)
     def setActiveLabel(self, label):
 
-        self.tools.tools["ASSIGN"].setActiveLabel(label)
+        if self.tools.tool == "ASSIGN":
+            self.tools.tools["ASSIGN"].setActiveLabel(label)
 
+        if self.tools.tool == "WATERSHED":
+            label_info = self.project.labels.get(label)
+            if label_info is not None:
+                self.tools.tools["WATERSHED"].setActiveLabel(label_info)
+
+        self.active_label = label
 
     def setBlobVisible(self, blob, visibility):
         if blob.qpath_gitem is not None:
