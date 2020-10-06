@@ -139,12 +139,13 @@ class TagLab(QWidget):
         QPushButton:hover   { border: 1px solid rgb(255,100,100); }"""
 
 
-        self.btnMove        = self.newButton("move.png",     "Move",                  flatbuttonstyle1, self.move)
-        self.btnAssign      = self.newButton("bucket.png",   "Assign class",          flatbuttonstyle1, self.assign)
-        self.btnEditBorder  = self.newButton("edit.png",     "Edit border",           flatbuttonstyle1, self.editBorder)
-        self.btnCut         = self.newButton("scissors.png", "Cut Segmentation",      flatbuttonstyle1, self.cut)
-        self.btnFreehand    = self.newButton("pencil.png",   "Freehand segmentation", flatbuttonstyle1, self.freehandSegmentation)
-        self.btnCreateCrack = self.newButton("crack.png",    "Create crack",          flatbuttonstyle1, self.createCrack)
+        self.btnMove        = self.newButton("move.png",     "Move",                   flatbuttonstyle1, self.move)
+        self.btnAssign      = self.newButton("bucket.png",   "Assign class",           flatbuttonstyle1, self.assign)
+        self.btnEditBorder  = self.newButton("edit.png",     "Edit border",            flatbuttonstyle1, self.editBorder)
+        self.btnCut         = self.newButton("scissors.png", "Cut Segmentation",       flatbuttonstyle1, self.cut)
+        self.btnFreehand    = self.newButton("pencil.png",   "Freehand segmentation",  flatbuttonstyle1, self.freehandSegmentation)
+        self.btnCreateCrack = self.newButton("crack.png",    "Create crack",           flatbuttonstyle1, self.createCrack)
+        self.btnWatershed = self.newButton("pencil.png",     "Watershed segmentation", flatbuttonstyle1, self.watershedSegmentation)
 
         # Split blob operation removed from the toolbar
         # self.btnSplitBlob   = self.newButton("split.png",    "Split Blob",            flatbuttonstyle1, self.splitBlob)
@@ -164,6 +165,7 @@ class TagLab(QWidget):
         layout_tools.addWidget(self.btnMove)
         layout_tools.addWidget(self.btnAssign)
         layout_tools.addWidget(self.btnFreehand)
+        layout_tools.addWidget(self.btnWatershed)
         layout_tools.addWidget(self.btnEditBorder)
         layout_tools.addWidget(self.btnCut)
         layout_tools.addWidget(self.btnCreateCrack)
@@ -1331,6 +1333,7 @@ class TagLab(QWidget):
         self.btnEditBorder.setChecked(False)
         self.btnCut.setChecked(False)
         self.btnFreehand.setChecked(False)
+        self.btnWatershed.setChecked(False)
         self.btnRuler.setChecked(False)
         self.btnCreateCrack.setChecked(False)
         #self.btnSplitBlob.setChecked(False)
@@ -1347,6 +1350,7 @@ class TagLab(QWidget):
             "EDITBORDER" : ["Edit Border", self.btnEditBorder],
             "CUT"        : ["Cut"        , self.btnCut],
             "FREEHAND"   : ["Freehand"   , self.btnFreehand],
+            "WATERSHED":   ["Watershed",   self.btnWatershed],
             "RULER"      : ["Ruler"      , self.btnRuler],
             "DEEPEXTREME": ["4-click"    , self.btnDeepExtreme],
             "MATCH"      : ["Match"      , self.btnMatch]
@@ -1434,6 +1438,13 @@ class TagLab(QWidget):
         Activate the tool "FREEHAND" for manual segmentation.
         """
         self.setTool("FREEHAND")
+
+    @pyqtSlot()
+    def watershedSegmentation(self):
+        """
+        Activate the tool "Brush" for large area segmentation.
+        """
+        self.setTool("WATERSHED")
 
     @pyqtSlot()
     def ruler(self):
@@ -2189,7 +2200,7 @@ class TagLab(QWidget):
         if output_filename:
             size = QSize(self.activeviewer.image.width, self.activeviewer.image.height)
             label_map_img = self.activeviewer.annotations.create_label_map(size, self.labels_dictionary)
-            label_map_np = utils.qimageToNumpyArray(label_map_image)
+            label_map_np = utils.qimageToNumpyArray(label_map_img)
             georef_filename = self.activeviewer.image.georef_filename
             rasterops.saveGeorefLabelMap(label_map_np, georef_filename, output_filename)
 
