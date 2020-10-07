@@ -14,11 +14,11 @@ class Scribbles(QObject):
         self.scene = scene
         self.points = []
         self.size = []
-        self.current_size = 30
+        self.current_size = 50
 
         self.border_pen = QPen(Qt.black, self.current_size)
         self.border_pen.setCapStyle(Qt.RoundCap)
-        self.border_pen.setCosmetic(True)
+        self.border_pen.setCosmetic(False)
         self.color = []
         self.current_color = QColor(Qt.black)
 
@@ -58,10 +58,10 @@ class Scribbles(QObject):
 
         new_size = self.current_size + delta_size
 
-        if new_size < 3:
-            new_size = 3
-        elif new_size > 100:
-            new_size = 100
+        if new_size < 10:
+            new_size = 10
+        elif new_size > 200:
+            new_size = 200
 
         self.current_size = new_size
         self.border_pen.setWidth(new_size)
