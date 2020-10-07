@@ -3,7 +3,8 @@ from source.Blob import Blob
 from source import Mask
 from source import utils
 import numpy as np
-from skimage import measure
+from skimage import measure, filters
+from skimage.morphology import disk
 from skimage.color import rgb2gray
 from skimage.filters import sobel
 import cv2
@@ -39,6 +40,7 @@ class Watershed(Tool):
             self.infoMessage.emit("You need to draw something for this operation.")
             return
 
+        # compute bbox of scribbles (working area)
         bboxes =[]
         for i, curve in enumerate(self.scribbles.points):
             bbox= Mask.pointsBox(curve, int(self.scribbles.size[i]/2))
@@ -51,21 +53,18 @@ class Watershed(Tool):
         if working_area[1] < 0:
            working_area[1] = 0
 
-        if working_area[0] + working_area[3] > self.viewerplus.img_map.height():
-           working_area[3] = self.viewerplus.img_map.height() - working_area[0]
+        if working_area[0] + working_area[3] > self.viewerplus.img_map.height() - 1:
+           working_area[3] = self.viewerplus.img_map.height() - 1 - working_area[0]
 
-        if working_area[1] + working_area[2] > self.viewerplus.img_map.width():
-           working_area[2] = self.viewerplus.img_map.width() - working_area[1]
-
+        if working_area[1] + working_area[2] > self.viewerplus.img_map.width() - 1:
+           working_area[2] = self.viewerplus.img_map.width() - 1 - working_area[1]
 
         crop_img = utils.cropQImage(self.viewerplus.img_map, working_area)
         crop_imgnp = utils.qimageToNumpyArray(crop_img)
-        #edges = sobel(crop_imgnp)
 
-        # x,y
+        # create markers
         mask = np.zeros((working_area[3], working_area[2], 3), dtype=np.int32)
 
-        # Green color in BGR
         color_codes = dict()
         counter = 1
         for i, curve in enumerate(self.scribbles.points):
@@ -87,7 +86,8 @@ class Watershed(Tool):
             curve[:, 1] = curve[:, 1] - working_area[0]
 
             curve = curve.reshape((-1, 1, 2))
-            mask = cv2.polylines(mask, [curve], False, color, thickness=self.scribbles.size[i], lineType=cv2.LINE_4)
+            mask = cv2.polylines(mask, pts=[curve], isClosed=False, color=color,
+                                 thickness=self.scribbles.size[i], lineType=cv2.LINE_8)
 
         mask = np.uint8(mask)
 
@@ -106,15 +106,17 @@ class Watershed(Tool):
         # markersprint = 255*rgb2gray(mask)
         markersprint = labelsint
         cv2.imwrite('mask.png', markersprint)
-        # ret, markers = cv2.connectedComponents(mask)
-       # image = utils.qimageToNumpyArray(self.viewerplus.img_map)
+
+        # watershed segmentation
         segmentation = cv2.watershed(crop_imgnp, labelsint)
-        segmentation = segmentation + 1
+        segmentation = filters.median(segmentation, disk(5), mode="mirror")
         cv2.imwrite('segmentation.png', segmentation)
 
-        for region in measure.regionprops(segmentation):
+        # the result of the segmentation must be converted into labels again
+        lbls = measure.label(segmentation)
+
+        for region in measure.regionprops(lbls):
             blob = Blob(region, working_area[1], working_area[0], self.viewerplus.annotations.getFreeId())
-           # blob = Blob(region, 0, 0, self.viewerplus.annotations.getFreeId())
             self.viewerplus.addBlob(blob)
             
         self.viewerplus.resetTools()

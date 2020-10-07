@@ -436,7 +436,9 @@ class QtImageViewerPlus(QtImageViewer):
         """ Zoom in/zoom out.
         """
 
-        if self.tools.tool == "WATERSHED":
+        mods = event.modifiers()
+
+        if self.tools.tool == "WATERSHED" and mods & Qt.ShiftModifier:
             self.tools.wheel(event.angleDelta())
             return
 
