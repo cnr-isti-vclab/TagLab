@@ -66,8 +66,21 @@ class Watershed(Tool):
         mask = np.zeros((working_area[3], working_area[2], 3), dtype=np.int32)
 
         # Green color in BGR
+        color_codes = dict()
+        counter = 1
         for i, curve in enumerate(self.scribbles.points):
-            color = (self.scribbles.color[i].blue(), self.scribbles.color[i].green(), self.scribbles.color[i].red())
+
+            b = self.scribbles.color[i].blue()
+            g = self.scribbles.color[i].green()
+            r = self.scribbles.color[i].red()
+            color = (b, g, r)
+
+            color_code = b + 256 * g + 65536 * r
+            color_key = str(color_code)
+            if color_codes.get(color_key) is None:
+                color_codes[color_key] = counter
+                counter = counter + 1
+
             curve = np.int32(curve)
 
             curve[:, 0] = curve[:, 0] - working_area[1]
@@ -76,18 +89,28 @@ class Watershed(Tool):
             curve = curve.reshape((-1, 1, 2))
             mask = cv2.polylines(mask, [curve], False, color, thickness=self.scribbles.size[i], lineType=cv2.LINE_4)
 
-        mask=np.uint8(mask)
+        mask = np.uint8(mask)
 
-       # mask = cv2.imread('C:\\Users\\Gaia\\Desktop\\mura\\crop_mask.png')
+        labelsint = np.zeros((working_area[3], working_area[2]), dtype='int32')
+        for color in self.scribbles.color:
+            b = color.blue()
+            g = color.green()
+            r = color.red()
+            color_code = b + 256 * g + 65536 * r
+            color_key = str(color_code)
 
-        markers = np.int32(255*rgb2gray(mask))
+            idx = np.where((mask[:, :, 0] == b) & (mask[:, :, 1] == g) & (mask[:, :, 2] == r))
+            labelsint[idx] = color_codes[color_key]
+
+        # markers = np.int32(255*rgb2gray(mask))
         # markersprint = 255*rgb2gray(mask)
-        # cv2.imwrite('mask.png', markersprint)
+        markersprint = labelsint
+        cv2.imwrite('mask.png', markersprint)
         # ret, markers = cv2.connectedComponents(mask)
        # image = utils.qimageToNumpyArray(self.viewerplus.img_map)
-        segmentation = cv2.watershed(crop_imgnp, markers)
+        segmentation = cv2.watershed(crop_imgnp, labelsint)
         segmentation = segmentation + 1
-
+        cv2.imwrite('segmentation.png', segmentation)
 
         for region in measure.regionprops(segmentation):
             blob = Blob(region, working_area[1], working_area[0], self.viewerplus.annotations.getFreeId())

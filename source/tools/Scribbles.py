@@ -31,7 +31,10 @@ class Scribbles(QObject):
 
         for qpath_gitem in self.qpath_list:
             qpath_gitem.setPath(QPainterPath())
+
         self.points = []
+        self.color = []
+        self.size = []
 
     def setCustomCursor(self):
 
