@@ -15,7 +15,7 @@ class Scribbles(QObject):
         self.scene = scene
         self.points = []
         self.size = []
-        self.current_size = 50
+        self.current_size = 30
 
         self.border_pen = QPen(Qt.black, self.current_size)
         self.border_pen.setCapStyle(Qt.RoundCap)
@@ -25,6 +25,9 @@ class Scribbles(QObject):
 
         self.qpath_gitem = None
         self.qpath_list = []
+
+        # scale factor of the cursor
+        self.scale_factor = 1.0
 
         self.setCustomCursor()
 
@@ -39,13 +42,15 @@ class Scribbles(QObject):
 
     def setCustomCursor(self):
 
-        pxmap = QPixmap(self.current_size, self.current_size)
+        cursor_size = self.current_size * self.scale_factor
+
+        pxmap = QPixmap(cursor_size, cursor_size)
         pxmap.fill(QColor("transparent"))
         painter = QPainter(pxmap)
         color = self.current_label.fill
         brush = QBrush(QColor(color[0], color[1], color[2]))
         painter.setBrush(brush)
-        painter.drawEllipse(0, 0, self.current_size, self.current_size)
+        painter.drawEllipse(0, 0, cursor_size, cursor_size)
         painter.end()
         custom_cursor = QCursor(pxmap)
         QApplication.setOverrideCursor(custom_cursor)
@@ -61,6 +66,10 @@ class Scribbles(QObject):
 
         self.setCustomCursor()
 
+    def setScaleFactor(self, scale_factor):
+
+        self.scale_factor = scale_factor
+
     def setSize(self, delta_size):
 
         new_size = self.current_size + delta_size
@@ -71,7 +80,7 @@ class Scribbles(QObject):
             new_size = 200
 
         self.current_size = new_size
-        self.border_pen.setWidth(new_size)
+        self.border_pen.setWidth(self.current_size)
 
         self.setCustomCursor()
 

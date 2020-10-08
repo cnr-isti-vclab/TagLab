@@ -272,6 +272,9 @@ class QtImageViewerPlus(QtImageViewer):
 
     def setTool(self, tool):
 
+        if not self.isVisible():
+            return
+
         QApplication.setOverrideCursor(Qt.ArrowCursor)
 
         self.tools.setTool(tool)
@@ -280,6 +283,9 @@ class QtImageViewerPlus(QtImageViewer):
             self.resetSelection()
 
         if tool == "WATERSHED":
+
+            self.tools.tools["WATERSHED"].scribbles.setScaleFactor(self.zoom_factor)
+
             label_info = self.project.labels.get(self.active_label)
             if label_info is not None:
                 self.tools.tools["WATERSHED"].setActiveLabel(label_info)
@@ -439,6 +445,7 @@ class QtImageViewerPlus(QtImageViewer):
         mods = event.modifiers()
 
         if self.tools.tool == "WATERSHED" and mods & Qt.ShiftModifier:
+            self.tools.tools["WATERSHED"].scribbles.setScaleFactor(self.zoom_factor)
             self.tools.wheel(event.angleDelta())
             return
 
