@@ -18,7 +18,7 @@ class Watershed(Tool):
         self.scribbles = scribbles
 
     def setActiveLabel(self, label):
-        self.scribbles.setColor(label.fill)
+        self.scribbles.setLabel(label)
 
     def leftPressed(self, x, y, mods):
         if self.scribbles.startDrawing(x, y):
@@ -69,15 +69,17 @@ class Watershed(Tool):
         counter = 1
         for i, curve in enumerate(self.scribbles.points):
 
-            b = self.scribbles.color[i].blue()
-            g = self.scribbles.color[i].green()
-            r = self.scribbles.color[i].red()
+            col = self.scribbles.label[i].fill
+            b = col[2]
+            g = col[1]
+            r = col[0]
             color = (b, g, r)
 
             color_code = b + 256 * g + 65536 * r
             color_key = str(color_code)
             if color_codes.get(color_key) is None:
-                color_codes[color_key] = counter
+                name = self.scribbles.label[i].name
+                color_codes[color_key] = (counter, name)
                 counter = counter + 1
 
             curve = np.int32(curve)
@@ -91,24 +93,27 @@ class Watershed(Tool):
 
         mask = np.uint8(mask)
 
-        labelsint = np.zeros((working_area[3], working_area[2]), dtype='int32')
-        for color in self.scribbles.color:
-            b = color.blue()
-            g = color.green()
-            r = color.red()
+        markers = np.zeros((working_area[3], working_area[2]), dtype='int32')
+        for label in self.scribbles.label:
+
+            col = label.fill
+            b = col[2]
+            g = col[1]
+            r = col[0]
             color_code = b + 256 * g + 65536 * r
             color_key = str(color_code)
 
             idx = np.where((mask[:, :, 0] == b) & (mask[:, :, 1] == g) & (mask[:, :, 2] == r))
-            labelsint[idx] = color_codes[color_key]
+            (value, name) = color_codes[color_key]
+            markers[idx] = value
 
         # markers = np.int32(255*rgb2gray(mask))
         # markersprint = 255*rgb2gray(mask)
-        markersprint = labelsint
+        markersprint = markers
         cv2.imwrite('mask.png', markersprint)
 
         # watershed segmentation
-        segmentation = cv2.watershed(crop_imgnp, labelsint)
+        segmentation = cv2.watershed(crop_imgnp, markers)
         segmentation = filters.median(segmentation, disk(5), mode="mirror")
         cv2.imwrite('segmentation.png', segmentation)
 
@@ -117,6 +122,23 @@ class Watershed(Tool):
 
         for region in measure.regionprops(lbls):
             blob = Blob(region, working_area[1], working_area[0], self.viewerplus.annotations.getFreeId())
+            color_index = segmentation[region.coords[0][0], region.coords[0][1]]
+            data = list(color_codes.items())
+            index = 0
+            for i in range(len(data)):
+                (color_code, t) = data[i]
+                if t[0] == color_index:
+                    color_code = int(color_code)
+                    r = int(color_code / 65536)
+                    g = int(int(color_code - r * 65536) / 256)
+                    b = int(color_code - r * 65536 - g * 256)
+                    color = [r, g, b]
+                    name = t[1]
+                    break
+
+            blob.class_color = color
+            blob.class_name = name
+
             self.viewerplus.addBlob(blob)
             
         self.viewerplus.resetTools()

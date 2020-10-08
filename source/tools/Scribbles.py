@@ -4,6 +4,7 @@ from PyQt5.QtCore import Qt, QObject, QPointF, QRectF, QFileInfo, QDir, pyqtSlot
 from PyQt5.QtGui import QImage, QPixmap, QPainter, QPainterPath, QPen, QBrush, QCursor, QColor
 from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsItem, QGraphicsScene, QFileDialog, QGraphicsPixmapItem
 
+from source.Label import Label
 
 class Scribbles(QObject):
     log = pyqtSignal(str)
@@ -19,8 +20,8 @@ class Scribbles(QObject):
         self.border_pen = QPen(Qt.black, self.current_size)
         self.border_pen.setCapStyle(Qt.RoundCap)
         self.border_pen.setCosmetic(False)
-        self.color = []
-        self.current_color = QColor(Qt.black)
+
+        self.current_label = Label("Background", "Background", description=None, fill=[0, 0, 0])
 
         self.qpath_gitem = None
         self.qpath_list = []
@@ -33,7 +34,7 @@ class Scribbles(QObject):
             qpath_gitem.setPath(QPainterPath())
 
         self.points = []
-        self.color = []
+        self.label = []
         self.size = []
 
     def setCustomCursor(self):
@@ -41,19 +42,22 @@ class Scribbles(QObject):
         pxmap = QPixmap(self.current_size, self.current_size)
         pxmap.fill(QColor("transparent"))
         painter = QPainter(pxmap)
-        brush = QBrush(self.current_color)
+        color = self.current_label.fill
+        brush = QBrush(QColor(color[0], color[1], color[2]))
         painter.setBrush(brush)
         painter.drawEllipse(0, 0, self.current_size, self.current_size)
         painter.end()
         custom_cursor = QCursor(pxmap)
         QApplication.setOverrideCursor(custom_cursor)
 
-    def setColor(self, color):
-        print(color)
+    def setLabel(self, label):
 
+        self.current_label = label
+
+        # new cursor color
+        color = label.fill
         qt_color = QColor(color[0], color[1], color[2])
         self.border_pen.setColor(qt_color)
-        self.current_color = qt_color
 
         self.setCustomCursor()
 
@@ -81,7 +85,7 @@ class Scribbles(QObject):
             self.log.emit(message)
 
         self.points.append(np.array([[x, y]]))
-        self.color.append(self.current_color)
+        self.label.append(self.current_label)
         self.size.append(self.current_size)
 
         self.qpath_gitem = self.scene.addPath(QPainterPath(), self.border_pen)
