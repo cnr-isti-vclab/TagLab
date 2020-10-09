@@ -145,7 +145,7 @@ class TagLab(QWidget):
         self.btnCut         = self.newButton("scissors.png", "Cut Segmentation",       flatbuttonstyle1, self.cut)
         self.btnFreehand    = self.newButton("pencil.png",   "Freehand segmentation",  flatbuttonstyle1, self.freehandSegmentation)
         self.btnCreateCrack = self.newButton("crack.png",    "Create crack",           flatbuttonstyle1, self.createCrack)
-        self.btnWatershed = self.newButton("pencil.png",     "Watershed segmentation", flatbuttonstyle1, self.watershedSegmentation)
+        self.btnWatershed   = self.newButton("brush.png",    "Watershed segmentation", flatbuttonstyle1, self.watershedSegmentation)
 
         # Split blob operation removed from the toolbar
         # self.btnSplitBlob   = self.newButton("split.png",    "Split Blob",            flatbuttonstyle1, self.splitBlob)
