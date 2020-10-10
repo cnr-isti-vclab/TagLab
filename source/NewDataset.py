@@ -532,7 +532,8 @@ class NewDataset(object):
 		"""
 		mode:
 
-			"UNIFORM"              : the map is subdivided vertically (70 / 15 / 15)
+			"UNIFORM (VERTICAL)    : the map is subdivided vertically (70 / 15 / 15)
+			"UNIFORM (HORIZONTAL)  : the map is subdivided horizontally (70 / 15 / 15)
 			"RANDOM"               : the map is subdivided randomly into three non-overlapping part
 			"BIOLOGICALLY-INSPIRED": the map is subdivided according to the spatial distribution of the classes
 		"""
@@ -545,14 +546,27 @@ class NewDataset(object):
 		test_area = [0, 0, 0, 0]
 		# the train area is represented by the entire map minus the validation and test areas
 
-		if mode == "UNIFORM":
+		if mode == "UNIFORM (VERTICAL)":
 
 			delta = int(self.crop_size / 2)
+			ww_val = map_w - delta*2
+			hh_val = (map_h - delta*2) * 0.175
+			ww_test = ww_val
+			hh_test = (map_h - delta*2) * 0.125
+			val_area = [delta + (map_h - delta*2) * 0.7 - self.crop_size, delta, ww_val, hh_val]
+			test_area = [delta + (map_h - delta*2) * 0.875, delta, ww_test, hh_test]
 
-			val_area = [delta + (map_h - delta*2) * 0.7 - self.crop_size, delta, map_w - delta*2, (map_h - delta*2) * 0.175]
-			test_area = [delta + (map_h - delta*2) * 0.875, delta, map_w - delta*2, (map_h - delta*2) * 0.125]
+		elif mode == "UNIFORM (HORIZONTAL)":
 
-		if mode == "RANDOM":
+			delta = int(self.crop_size / 2)
+			ww_val = (map_w - delta*2) * 0.15
+			hh_val = map_h - delta*2
+			ww_test = (map_w - delta*2) * 0.15
+			hh_test = hh_val
+			val_area = [delta, delta + (map_w - delta*2) * 0.7 - self.crop_size, ww_val, hh_val]
+			test_area = [delta, delta + (map_w - delta*2) * 0.85, ww_test, hh_test]
+
+		elif mode == "RANDOM":
 
 			area_w = int(math.sqrt(0.15) * map_w)
 			area_h = int(math.sqrt(0.15) * map_h)
