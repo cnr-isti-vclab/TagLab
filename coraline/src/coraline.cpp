@@ -301,8 +301,6 @@ void Coraline::seedClips(vector<int> &stack) {
 		if (y < 0 || y >= h) continue;
 
 		int a = x + y*w;
-		if (a < 0 || a >= distance.size())
-			continue;
 		if(distance[a] == 0.0f)
 			continue;
 		distance[a] =  0;

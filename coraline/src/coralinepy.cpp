@@ -19,8 +19,9 @@ extern "C" {
 		Coraline* coraline = new Coraline(img, mask, w, h);
 		if(depth)
 			coraline->setDepth(depth);
-		if(nclips)
+		if(nclips) {
 			coraline->setClippoints(clippoints, nclips);
+		}
 		coraline->lambda = lambda;
 		coraline->conservative = conservative;
 		coraline->grow = grow;
