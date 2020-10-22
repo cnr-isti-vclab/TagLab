@@ -21,7 +21,7 @@ torchvision_package = 'torchvision==0.6.1'
 if len(sys.argv)==2 and sys.argv[1]=='cpu':
     flag_install_pythorch_cpu = True
 
-if flag_install_pythorch_cpu == False:
+if flag_install_pythorch_cpu == False and osused != 'Darwin':
     result = subprocess.getstatusoutput('nvcc --version')
     output = result[1]
     rc = result[0]
@@ -62,6 +62,13 @@ if flag_install_pythorch_cpu == False:
             flag_install_pythorch_cpu = True
         else:
             raise Exception('Installation aborted. Install a proper NVCC version or set the pythorch CPU version.')
+elif osused == 'Darwin' and flag_install_pythorch_cpu == True:
+    ans = input('Something is wrong with NVCC. Do you want to install the CPU version of pythorch? [Y/n]')
+    if ans == "Y":
+        flag_install_pythorch_cpu = True
+    else:
+        raise Exception('Installation aborted. Install a proper NVCC version or set the pythorch CPU version.')
+
 
 if flag_install_pythorch_cpu==True:
     print('Torch will be installed in its CPU version.')
@@ -94,9 +101,27 @@ if osused == 'Linux':
     else:
         raise Exception('Impossible to access to gdal-config binary.\nInstallation aborted.')
 elif osused == 'Darwin':
-    print('TODO: Manage installagion of gdal from MacOS')
-    raise Exception('TODO Manage installagion of gdal from MacOS')
-
+    result = subprocess.getstatusoutput('gdal-config --version')
+    output = result[1]
+    rc = result[0]
+    if rc != 0:
+        print('Trying to install gdal...')
+        from subprocess import STDOUT, check_call
+        import os
+        try:
+            check_call(['brew', 'install', 'gdal'],
+                       stdout=open(os.devnull, 'wb'), stderr=STDOUT)
+        except:
+            raise Exception('Impossible to install gdal through homebrew. Please install manually gdal before running '
+                            'this script.\nInstallation aborted.')
+        result = subprocess.getstatusoutput('gdal-config --version')
+        output = result[1]
+        rc = result[0]
+    if rc == 0:
+        gdal_version = output
+        print('GDAL version installed: ' + output)
+    else:
+        raise Exception('Impossible to access to gdal-config binary.\nInstallation aborted.')
 
 gdal_package = 'gdal==' + gdal_version
 
