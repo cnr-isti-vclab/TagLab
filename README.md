@@ -1,11 +1,11 @@
-### TagLab: an image segmentation tool oriented to marine data analysis
+# TagLab: an image segmentation tool oriented to marine data analysis
 
 TagLab was created to support the activity of annotation and extraction of statistical data from ortho-maps of benthic communities. The tool includes different types of CNN-based segmentation networks specially trained for agnostic (relative only to contours) or semantic (also related to species) recognition of corals. TagLab is an ongoing project of the Visual Computing Lab http://vcg.isti.cnr.it/.
 
 ![ScreenShot](screenshot.jpg)
 
   
-### Interaction:
+## Interaction
 TagLab allows to :
 
 - zoom and navigate a large map using (zoom/mouse wheel, pan/'Move' tool selected + left button). With every other tool selected the pan is activated with ctrl + left button
@@ -28,18 +28,32 @@ TagLab allows to :
 We are working hard to create a web site with detailed instructions about TagLab. Stay tuned(!)
 
 
-### Installing TagLab
-#### Step 0: Requirements
-Taglab relies mainly on __*CUDA*__ and __*Python*__ . Be sure to install Python and the NVIDIA CUDA Toolkit before 
-to install the other packages required. THe CUDA version supported are 9.2, 10.1 and 10.2. 
-TagLab has been successfully tested with Python 3.6.x and Python 3.7.x. We report problems with Python 3.8.x.
-On Linux, also __*cmake*__ and a C++ compiler must be installed.
- 
-#### Step 1: Clone the repository
-Just click on the "Clone or Download" button at the top of this page and unzip the whole package in a folder of your choice. 
+## Supported Platforms and Requirements
+TagLab runs on __Linux__, __Windows__, and __MacOS__. To run TagLab, the main requirement is just __Python 3.6.x or 3.7.x__.
 
-#### Step 2: Install dependencies
-Open a shell (not python prompt!), change directory to the TagLab main directory and run: 
+GPU accelerated computations are not supported on MacOS and on any machine that has not an NVIDIA graphics card.
+To use them, you'll need to install the __NVIDIA CUDA Toolkit__, versions 9.2, 10.1 or 10.2 are supported.
+If you don't have a NVida graphics card (or if you use MacOS), CPU will be used.
+
+For the installation of TagLab, on MacOS and Linux also also __*cmake*__ and a C++ compiler must be installed.
+
+## Installing TagLab
+
+__NOTE__: Installation is still not supported on MacOS. It will be supported as soon as possible.
+
+### Step 1: Clone the repository
+Just click on the "Clone or Download" button at the top of this page and unzip the whole package in a folder of your choice.
+
+### Step 2: Install all the dependencies
+Be sure to have Python3.x and, if supported, NVIDIA CUDA Toolkit installed. You can check if they are properly installed by running the following commands in a shell (bash on Linux, poweshell on Windows):
+
+```
+python3 --version
+nvcc --version
+```
+If python and cuda are properly installed, both commands will print their versions.
+
+Then, open a shell (not python prompt!), change directory to the TagLab main directory and run:
 
 ```
 python3 install.py
@@ -51,6 +65,16 @@ python3.exe install.py
 ```
 
 The script will automatically install the remaining libraries required by TagLab and download the network weights.
+If NVIDIA CUDA Toolkit is not supported by your machine, the script will ask to install the cpu version.
+You can bypass this step and force to install the cpu version by running
+```
+python3 install.py cpu
+```
+or, on Windows:
 
-#### Step 3: Run
+```
+python3.exe install.py cpu
+```
+
+### Step 3: Run
 Open a python prompt and just start `TagLab.py`, the tool will start and you can try to open the sample that you can find in the `projects` folder. 

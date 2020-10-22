@@ -12,39 +12,61 @@ if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] 
     raise Exception("Must be using Python >= 3.6\nInstallation aborted.")
 
 # manage thorch
+something_wrong_with_nvcc = False
+flag_install_pythorch_cpu = False
 nvcc_version = ''
-
-result = subprocess.getstatusoutput('nvcc --version')
-output = result[1]
-rc = result[0]
-if rc == 0:
-    pos = output.find('release')
-    cont = True
-    if pos >= 0:
-        pos += 8
-        nvcc_version = output[pos:pos+4]
-        print('Found NVCC version: ' + nvcc_version)
-    else:
-        raise Exception('Could not read NVCC version.\nInstallation aborted.')
-else:
-    raise Exception('NVCC not found. Please install NVidia CUDA first.\nInstallation aborted.')
-
 torch_package = 'torch==1.5.1'
 torchvision_package = 'torchvision==0.6.1'
 
-if '9.2' in nvcc_version:
-    nvcc_version = '9.2'
-    print('Torch for CUDA 9.2')
-    torch_package += '+cu92'
-    torchvision_package += '+cu92'
-elif nvcc_version == '10.1':
-    print('Torch for CUDA 10.1')
-    torch_package += '+cu101'
-    torchvision_package += '+cu101'
-elif nvcc_version == '10.2':
-    print('Torch for CUDA 10.2')
-else:
-    raise Exception('NVCC version not supported by pythorch.\nInstallation aborted.')
+if len(sys.argv)==2 and sys.argv[1]=='cpu':
+    flag_install_pythorch_cpu = True
+
+if flag_install_pythorch_cpu == False:
+    result = subprocess.getstatusoutput('nvcc --version')
+    output = result[1]
+    rc = result[0]
+    if rc == 0:
+        pos = output.find('release')
+        cont = True
+        if pos >= 0:
+            pos += 8
+            nvcc_version = output[pos:pos+4]
+            print('Found NVCC version: ' + nvcc_version)
+        else:
+            raise Exception('Could not read NVCC version.\nInstallation aborted.')
+    else:
+        #raise Exception('NVCC not found. Please install NVidia CUDA first.\nInstallation aborted.')
+        print('Impossible to run "nvcc --version" command. CUDA seems to be not installed.')
+        something_wrong_with_nvcc = True
+
+
+    if '9.2' in nvcc_version:
+        nvcc_version = '9.2'
+        print('Torch for CUDA 9.2')
+        torch_package += '+cu92'
+        torchvision_package += '+cu92'
+    elif nvcc_version == '10.1':
+        print('Torch for CUDA 10.1')
+        torch_package += '+cu101'
+        torchvision_package += '+cu101'
+    elif nvcc_version == '10.2':
+        print('Torch for CUDA 10.2')
+    elif something_wrong_with_nvcc==False:
+        print('nvcc version installed not supported by pytorch!!')
+        something_wrong_with_nvcc = True
+        #raise Exception('NVCC version not supported by pythorch.\nInstallation aborted.')
+
+    if something_wrong_with_nvcc == True and flag_install_pythorch_cpu == False:
+        ans = input('Something is wrong with NVCC. Do you want to install the CPU version of pythorch? [Y/n]')
+        if ans == "Y":
+            flag_install_pythorch_cpu = True
+        else:
+            raise Exception('Installation aborted. Install a proper NVCC version or set the pythorch CPU version.')
+
+if flag_install_pythorch_cpu==True:
+    print('Torch will be installed in its CPU version.')
+    torch_package += '+cpu'
+    torchvision_package += '+cpu'
 
 # manage gdal
 gdal_version = ''
@@ -74,7 +96,7 @@ if osused == 'Linux':
 elif osused == 'Darwin':
     print('TODO: Manage installagion of gdal from MacOS')
     raise Exception('TODO Manage installagion of gdal from MacOS')
-    
+
 
 gdal_package = 'gdal==' + gdal_version
 
@@ -99,7 +121,7 @@ if osused != 'Windows':
 
 # requirements needed by TagLab
 install_requires = [
-    'wheel', 
+    'wheel',
     'pyqt5',
     'scikit-image',
     'scikit-learn',
@@ -166,7 +188,7 @@ else:
     #delete wheel files
     os.remove(this_directory + '/' + filename_gdal)
     os.remove(this_directory + '/' + filename_rasterio)
-    
+
 # download models
 base_url = 'http://taglab.isti.cnr.it/models/'
 from os import path
@@ -183,7 +205,7 @@ try:
     urllib.request.urlretrieve(url_dextr, 'models/' + filename_dextr_corals)
 except:
     raise Exception("Cannot download " + filename_dextr_corals + ".")
-    
+
 filename_deeplab = 'deeplab-resnet.pth.tar'
 try:
     url_deeplab = base_url + filename_deeplab
@@ -194,4 +216,3 @@ try:
     urllib.request.urlretrieve(url_deeplab, this_directory + '/models/' + filename_deeplab)
 except:
     raise Exception("Cannot download " + filename_deeplab + ".")
-
