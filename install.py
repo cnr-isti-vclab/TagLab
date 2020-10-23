@@ -2,6 +2,7 @@ import platform
 import sys
 import os
 import subprocess
+from pathlib import Path
 
 osused = platform.system()
 if osused != 'Linux' and osused != 'Windows' and osused != 'Darwin':
@@ -72,8 +73,9 @@ elif osused == 'Darwin' and flag_install_pythorch_cpu == True:
 
 if flag_install_pythorch_cpu==True:
     print('Torch will be installed in its CPU version.')
-    torch_package += '+cpu'
-    torchvision_package += '+cpu'
+    if osused != 'Darwin':
+        torch_package += '+cpu'
+        torchvision_package += '+cpu'
 
 # manage gdal
 gdal_version = ''
@@ -221,23 +223,31 @@ import urllib.request
 this_directory = path.abspath(path.dirname(__file__))
 
 filename_dextr_corals = 'dextr_corals.pth'
-try:
-    url_dextr = base_url + filename_dextr_corals
-    print('Downloading ' + url_dextr + '...')
-    opener = urllib.request.build_opener()
-    opener.addheaders = [('User-agent', 'Mozilla/5.0')]
-    urllib.request.install_opener(opener)
-    urllib.request.urlretrieve(url_dextr, 'models/' + filename_dextr_corals)
-except:
-    raise Exception("Cannot download " + filename_dextr_corals + ".")
+dextr_corals_file = Path('models/' + filename_dextr_corals)
+if not dextr_corals_file.is_file(): #if file not exists
+    try:
+        url_dextr = base_url + filename_dextr_corals
+        print('Downloading ' + url_dextr + '...')
+        opener = urllib.request.build_opener()
+        opener.addheaders = [('User-agent', 'Mozilla/5.0')]
+        urllib.request.install_opener(opener)
+        urllib.request.urlretrieve(url_dextr, 'models/' + filename_dextr_corals)
+    except:
+        raise Exception("Cannot download " + filename_dextr_corals + ".")
+else:
+    print(filename_dextr_corals + ' already exists.')
 
 filename_deeplab = 'deeplab-resnet.pth.tar'
-try:
-    url_deeplab = base_url + filename_deeplab
-    print('Downloading ' + url_deeplab + '...')
-    opener = urllib.request.build_opener()
-    opener.addheaders = [('User-agent', 'Mozilla/5.0')]
-    urllib.request.install_opener(opener)
-    urllib.request.urlretrieve(url_deeplab, this_directory + '/models/' + filename_deeplab)
-except:
-    raise Exception("Cannot download " + filename_deeplab + ".")
+deeplab_file = Path('models/' + filename_dextr_corals)
+if not deeplab_file.is_file(): #if file not exists
+    try:
+        url_deeplab = base_url + filename_deeplab
+        print('Downloading ' + url_deeplab + '...')
+        opener = urllib.request.build_opener()
+        opener.addheaders = [('User-agent', 'Mozilla/5.0')]
+        urllib.request.install_opener(opener)
+        urllib.request.urlretrieve(url_deeplab, this_directory + '/models/' + filename_deeplab)
+    except:
+        raise Exception("Cannot download " + filename_deeplab + ".")
+else:
+    print(filename_deeplab + ' already exists.')
