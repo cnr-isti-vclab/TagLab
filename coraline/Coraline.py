@@ -54,7 +54,7 @@ def segment(img, depth, mask, clippoints, l = 0, conservative = 0.1, grow = 0, r
 	clippointsPtr = None
 	nclips = 0
 	if clippoints is not None:
-		clippoints = clippoints.astype(np.int)
+		clippoints = clippoints.astype(np.int32)
 		clippointsPtr = clippoints.ctypes.data
 		nclips = clippoints.shape[0]
 
