@@ -78,7 +78,7 @@ LOG_FILENAME = "tool" + now.strftime("%Y-%m-%d-%H-%M") + ".log"
 logging.basicConfig(level=logging.DEBUG, filemode='w', filename=LOG_FILENAME, format = '%(asctime)s %(levelname)-8s %(message)s')
 logfile = logging.getLogger("tool-logger")
 
-class TagLab(QMainWindow):
+class TagLab(QWidget):
 
     def __init__(self, parent=None):
         super(TagLab, self).__init__(parent)
@@ -304,50 +304,44 @@ class TagLab(QMainWindow):
 
         # BLOB INFO
         groupbox_blobpanel = QGroupBox("Segmentation Info Panel")
-        lblBlobName = QLabel("Blob Name: ")
-        self.editBlobName = QLineEdit()
-        self.editBlobName.setMinimumWidth(80)
-        self.editBlobName.setMaximumHeight(25)
-        self.editBlobName.setStyleSheet("background-color: rgb(40,40,40); border: none")
         lblId = QLabel("Id: ")
-        self.editId = QLineEdit()
-        self.editId.setMaximumWidth(40)
-        self.editId.setMaximumHeight(25)
-        self.editId.setStyleSheet("background-color: rgb(40,40,40);  border: none")
-        self.editId.setReadOnly(True)
-
+        self.lblId = QLabel("")
         lblcl = QLabel("Class: ")
         self.lblClass = QLabel("<b>Empty</b>")
 
         blobpanel_layoutH1 = QHBoxLayout()
-        blobpanel_layoutH1.addWidget(lblBlobName)
-        blobpanel_layoutH1.addWidget(self.editBlobName)
         blobpanel_layoutH1.addWidget(lblId)
-        blobpanel_layoutH1.addWidget(self.editId)
+        blobpanel_layoutH1.addWidget(self.lblId)
         blobpanel_layoutH1.addWidget(lblcl)
         blobpanel_layoutH1.addWidget(self.lblClass)
+        blobpanel_layoutH1.addStretch()
 
-        self.lblC = QLabel("Centroid: ")
+
         self.lblP = QLabel("Perimeter: ")
         self.lblA = QLabel("Area: ")
         blobpanel_layoutH2 = QHBoxLayout()
         blobpanel_layoutH2.setSpacing(6)
-        blobpanel_layoutH2.addWidget(self.lblC)
         blobpanel_layoutH2.addWidget(self.lblP)
         blobpanel_layoutH2.addWidget(self.lblA)
         blobpanel_layoutH2.addStretch()
 
-        lblNote = QLabel("Note:")
-        self.editNote = QTextEdit()
-        self.editNote.setMinimumWidth(100)
-        self.editNote.setMaximumHeight(50)
-        self.editNote.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
-        self.editNote.textChanged.connect(self.noteChanged)
+        self.lblC = QLabel("Centroid: ")
+        blobpanel_layoutH3 = QHBoxLayout()
+        blobpanel_layoutH3.addWidget(self.lblC)
+
+
+  #      lblNote = QLabel("Note:")
+  #      self.editNote = QTextEdit()
+  #       self.editNote.setMinimumWidth(100)
+  #       self.editNote.setMaximumHeight(50)
+  #       self.editNote.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
+  #       self.editNote.textChanged.connect(self.noteChanged)
         layout_blobpanel = QVBoxLayout()
         layout_blobpanel.addLayout(blobpanel_layoutH1)
         layout_blobpanel.addLayout(blobpanel_layoutH2)
-        layout_blobpanel.addWidget(lblNote)
-        layout_blobpanel.addWidget(self.editNote)
+        layout_blobpanel.addLayout(blobpanel_layoutH3)
+        #layout_blobpanel.addWidget(lblNote)
+        #layout_blobpanel.addWidget(self.editNote)
         groupbox_blobpanel.setLayout(layout_blobpanel)
         groupbox_blobpanel.setMaximumHeight(160)
 
@@ -1479,17 +1473,16 @@ class TagLab(QMainWindow):
         self.compare_panel.setTable(self.project, img_source_index, img_target_index)
 
 
-    @pyqtSlot()
-    def noteChanged(self):
-        if len(self.viewerplus.selected_blobs) > 0:
-
-            for blob in self.viewerplus.selected_blobs:
-                blob.note = self.editNote.toPlainText()
+    # @pyqtSlot()
+    # def noteChanged(self):
+    #     if len(self.viewerplus.selected_blobs) > 0:
+    #
+    #         for blob in self.viewerplus.selected_blobs:
+    #             blob.note = self.editNote.toPlainText()
 
     def updatePanelInfo(self, blob):
 
-        self.editId.setText(str(blob.id))
-        self.editBlobName.setText(blob.blob_name)
+        self.lblId.setText(str(blob.id))
         self.lblClass.setText(blob.class_name)
 
         factor = self.activeviewer.image.map_px_to_mm_factor
@@ -1507,7 +1500,7 @@ class TagLab(QMainWindow):
         txt = "Area (cm<sup>2</sup>): {:6.2f}".format(scaled_area)
         self.lblA.setText(txt)
 
-        self.editNote.setPlainText(blob.note)
+  #      self.editNote.setPlainText(blob.note)
 
 
     def deleteSelectedBlobs(self):
@@ -1835,7 +1828,7 @@ class TagLab(QMainWindow):
 
     def logBlobInfo(self, blob, tag):
 
-        message1 = tag + " BLOBID=" + str(blob.id) + " VERSION=" + str(blob.version) + " NAME=" + blob.blob_name + " CLASS=" + blob.class_name
+        message1 = tag + " BLOBID=" + str(blob.id) + " VERSION=" + str(blob.version) + " CLASS=" + blob.class_name
         message2 = tag + " top={:.1f} left={:.1f} width={:.1f} height={:.1f}".format(blob.bbox[0], blob.bbox[1], blob.bbox[2], blob.bbox[3])
         message3 = tag + " cx={:.1f} cy={:.1f}".format(blob.centroid[0], blob.centroid[1])
         message4 = tag + " A={:.1f} P={:.1f} ".format(blob.area, blob.perimeter)

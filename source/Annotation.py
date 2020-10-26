@@ -579,7 +579,7 @@ class Annotation(object):
     def export_data_table_for_Scripps(self, scale_factor, filename):
 
         # create a list of properties
-        properties = ['Class name', 'Centroid x', 'Centroid y', 'Coral area', 'Coral perimeter', 'Coral note']
+        properties = ['Blob id','Class name', 'Centroid x', 'Centroid y', 'Coral area', 'Coral perimeter', 'Coral note']
 
         # create a list of instances
         name_list = []
@@ -593,6 +593,7 @@ class Annotation(object):
 
         number_of_seg = len(name_list)
         class_name = []
+        blob_id = np.zeros(number_of_seg)
         centroid_x = np.zeros(number_of_seg)
         centroid_y = np.zeros(number_of_seg)
         coral_area = np.zeros(number_of_seg)
@@ -602,28 +603,27 @@ class Annotation(object):
 
         for i, blob in enumerate(visible_blobs):
 
+            blob_id[i] = blob.id
             class_name.append(blob.class_name)
             centroid_x[i] = round(blob.centroid[0], 1)
             centroid_y[i] = round(blob.centroid[1], 1)
             coral_area[i] = round(blob.area * (scale_factor) * (scale_factor)/ 100,2)
             coral_perimeter[i] = round(blob.perimeter*scale_factor / 10,1)
-            #coral_maximum_diameter[i] = blob.major_axis_length
             coral_note.append(blob.note)
 
 
         # create a dictionary
         dic = {
+            'Blob id' : blob_id,
             'Class name': class_name,
             'Centroid x': centroid_x,
             'Centroid y': centroid_y,
             'Coral area': coral_area,
-            'Coral perimeter': coral_perimeter,
-            'Coral maximum diameter': coral_maximum_diameter,
-            'Coral note': coral_note }
+            'Coral perimeter': coral_perimeter}
 
         # create dataframe
-        df = pd.DataFrame(dic, columns=properties, index=name_list)
-        df.to_csv(filename, sep='\t')
+        df = pd.DataFrame(dic, columns=properties)
+        df.to_csv(filename, sep='\t', index=False)
 
 
     def export_image_data_for_Scripps(self, size, filename, labels_info):
