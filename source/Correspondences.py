@@ -52,7 +52,7 @@ class Correspondences(object):
             action = "born"
             type = "none"
         elif len(targetblobs) == 0:
-            action = "gone"
+            action = "dead"
             type = "none"
         elif len(sourceblobs) > 1:
             type = "fuse"
@@ -185,13 +185,13 @@ class Correspondences(object):
 
         for i in set(dead):
             blob = self.source.annotations.blobById(i)
-            row = [blob.id, -1, self.area_in_sq_cm(blob.area, True), 0.0, blob.class_name, "gone", "none"]
+            row = [blob.id, -1, self.area_in_sq_cm(blob.area, True), 0.0, blob.class_name, "dead", "none"]
             df = pd.DataFrame([row], columns=self.data.columns)
             self.data = self.data.append(df)
 
         for i in set(born):
             blob = self.target.annotations.blobById(i)
-            row = [-1, blob.id, 0.0, self.area_in_sq_cm(blob.area, False), blob.class_name, "gone", "none"]
+            row = [-1, blob.id, 0.0, self.area_in_sq_cm(blob.area, False), blob.class_name, "dead", "none"]
             df = pd.DataFrame([row], columns=self.data.columns)
             self.data = self.data.append(df)
 
@@ -284,7 +284,7 @@ class Correspondences(object):
         for id in missing:
             index = all_blobs.index(id)
             if blobs1[index].class_name != 'Empty':
-                self.dead.append([id, -1,  blobs1[index].area, 0.0, blobs1[index].class_name, 'gone', 'none'])
+                self.dead.append([id, -1,  blobs1[index].area, 0.0, blobs1[index].class_name, 'dead', 'none'])
 
 
     def assignBorn(self, blobs2):
