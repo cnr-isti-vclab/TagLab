@@ -1205,14 +1205,13 @@ class TagLab(QWidget):
 
         if self.activeviewer.tools.tool == "MATCH":
 
-            if type == 'all':
+            if type == 'All':
                 for b in self.viewerplus.annotations.seg_blobs:
-                    if b.qpath_gitem is not None:
-                        b.qpath_gitem.setVisible(True)
+                    self.activeviewer.setBlobVisible(b, True)
                 for b in self.viewerplus2.annotations.seg_blobs:
-                    if b.qpath_gitem is not None:
-                        b.qpath_gitem.setVisible(True)
+                    self.activeviewer.setBlobVisible(b, True)
                 return
+
             img_source_index = self.comboboxMainImage.currentIndex()
             img_target_index = self.comboboxComparisonImage.currentIndex()
             correspondences = self.project.getImagePairCorrespondences(img_source_index, img_target_index)
