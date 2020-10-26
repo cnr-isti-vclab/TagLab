@@ -78,7 +78,7 @@ LOG_FILENAME = "tool" + now.strftime("%Y-%m-%d-%H-%M") + ".log"
 logging.basicConfig(level=logging.DEBUG, filemode='w', filename=LOG_FILENAME, format = '%(asctime)s %(levelname)-8s %(message)s')
 logfile = logging.getLogger("tool-logger")
 
-class TagLab(QWidget):
+class TagLab(QMainWindow):
 
     def __init__(self, parent=None):
         super(TagLab, self).__init__(parent)
@@ -514,7 +514,7 @@ class TagLab(QWidget):
         title = "TagLab - [Project: " + project_name + "]"
         self.setWindowTitle(title)
 
-        if project_name is not "NONE":
+        if project_name != "NONE":
 
             settings = QSettings('VCLAB', 'TagLab')
             files = settings.value('recentFileList')
