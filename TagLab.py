@@ -2151,7 +2151,7 @@ class TagLab(QWidget):
         if self.activeviewer is not None:
 
             histo_widget = QtHistogramWidget(self.activeviewer.annotations, self.labels_dictionary,
-                                             self.map_px_to_mm_factor, self.map_acquisition_date, self)
+                                             self.activeviewer.image.map_px_to_mm_factor, self.map_acquisition_date, self)
             histo_widget.setWindowModality(Qt.WindowModal)
             histo_widget.show()
 
@@ -2616,7 +2616,7 @@ class TagLab(QWidget):
                 target_scale_factor = classifier_selected['Scale']
                 scale_factor = target_scale_factor / self.activeviewer.image.map_px_to_mm_factor
 
-                w_target = orthomap.width() * scale_factor
+                w_target = orthomap.width() *  scale_factor
                 h_target = orthomap.height() * scale_factor
 
                 input_orthomap = orthomap.scaled(w_target, h_target, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
