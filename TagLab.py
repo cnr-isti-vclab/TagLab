@@ -29,7 +29,7 @@ import numpy as np
 from PyQt5.QtCore import Qt, QSize, QMargins, QDir, QPoint, QPointF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo, QModelIndex
 from PyQt5.QtGui import QPainterPath, QFont, QColor, QPolygonF, QImageReader, QImage, QPixmap, QIcon, QKeySequence, \
     QPen, QBrush, qRgb, qRed, qGreen, qBlue
-from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QComboBox, QMenuBar, QMenu, QSizePolicy, QScrollArea, \
+from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QFileDialog, QComboBox, QMenuBar, QMenu, QSizePolicy, QScrollArea, \
     QLabel, QToolButton, QPushButton, QSlider, \
     QMessageBox, QGroupBox, QHBoxLayout, QVBoxLayout, QTextEdit, QLineEdit, QGraphicsView, QAction, QGraphicsItem
 
@@ -2722,6 +2722,11 @@ if __name__ == '__main__':
     # Create the inspection tool
     tool = TagLab()
 
+    mw = QMainWindow()
+    mw.setCentralWidget(tool)
+    mw.setStyleSheet("background-color: rgb(55,55,55); color: white")
+    mw.showMaximized()
+
     # Show the viewer and run the application.
-    tool.show()
+    mw.show()
     sys.exit(app.exec_())
