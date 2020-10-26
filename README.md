@@ -35,23 +35,26 @@ GPU accelerated computations are not supported on MacOS and on any machine that 
 To use them, you'll need to install the __NVIDIA CUDA Toolkit__, versions 9.2, 10.1 or 10.2 are supported.
 If you don't have a NVida graphics card (or if you use MacOS), CPU will be used.
 
-For the installation of TagLab, on MacOS and Linux also also __*cmake*__ and a C++ compiler must be installed.
-
 ## Installing TagLab
 
-__NOTE__: Installation is still not supported on MacOS. It will be supported as soon as possible.
-
-### Step 1: Clone the repository
-Just click on the "Clone or Download" button at the top of this page and unzip the whole package in a folder of your choice.
-
-### Step 2: Install all the dependencies
-Be sure to have Python3.x and, if supported, NVIDIA CUDA Toolkit installed. You can check if they are properly installed by running the following commands in a shell (bash on Linux, poweshell on Windows):
+### Step 0: Dependencies
+Before installing TagLab, be sure to have installed __Python 3.6.x or 3.7.x__, and __NVIDIA CUDA Toolkit__ if it is supported. You can check if they are properly installed by running the following commands in a shell (bash on Linux, poweshell on Windows):
 
 ```
 python3 --version
 nvcc --version
 ```
 If python and cuda are properly installed, both commands will print their versions.
+
+Under Linux, if you don't use the APT package manager (not ubuntu or debian derived distros), be sure to install the gdal library manually (the command `gdal-config --version` should output the gdal library version).
+Under MacOS, if you don't use HomeBrew package manager, be sure to install the gdal library manually (the command `gdal-config --version` should output the gdal library version).
+
+Under MacOS and Linux, also __*cmake*__ and a C++ compiler must be installed.
+
+### Step 1: Clone the repository
+Just click on the "Clone or Download" button at the top of this page and unzip the whole package in a folder of your choice.
+
+### Step 2: Install all the dependencies
 
 Then, open a shell (not python prompt!), change directory to the TagLab main directory and run:
 
