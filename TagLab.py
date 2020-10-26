@@ -1207,9 +1207,9 @@ class TagLab(QWidget):
 
             if type == 'All':
                 for b in self.viewerplus.annotations.seg_blobs:
-                    self.activeviewer.setBlobVisible(b, True)
+                    self.viewerplus.setBlobVisible(b, True)
                 for b in self.viewerplus2.annotations.seg_blobs:
-                    self.activeviewer.setBlobVisible(b, True)
+                    self.viewerplus2.setBlobVisible(b, True)
                 return
 
             img_source_index = self.comboboxMainImage.currentIndex()
@@ -1222,7 +1222,7 @@ class TagLab(QWidget):
             for b in self.viewerplus.annotations.seg_blobs:
                 self.viewerplus.setBlobVisible(b, b.id in sourceblobs)
             for b in self.viewerplus2.annotations.seg_blobs:
-                self.viewerplus.setBlobVisible(b, b.id in targetblobs)
+                self.viewerplus2.setBlobVisible(b, b.id in targetblobs)
 
     @pyqtSlot()
     def undo(self):
