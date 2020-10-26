@@ -20,9 +20,9 @@ class Correspondences(object):
     def area_in_sq_cm(self, area, is_source):
 
         if is_source:
-            area_sq_cm = area * self.source.map_px_to_mm_factor * self.source.map_px_to_mm_factor / 10000.0
+            area_sq_cm = area * self.source.map_px_to_mm_factor * self.source.map_px_to_mm_factor / 100.0
         else:
-            area_sq_cm = area * self.source.map_px_to_mm_factor * self.source.map_px_to_mm_factor / 10000.0
+            area_sq_cm = area * self.source.map_px_to_mm_factor * self.source.map_px_to_mm_factor / 100.0
 
         return area_sq_cm
 

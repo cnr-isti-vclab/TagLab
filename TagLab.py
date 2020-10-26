@@ -721,7 +721,7 @@ class TagLab(QWidget):
         splitScreenAction.setStatusTip("Split screen")
         splitScreenAction.triggered.connect(self.toggleComparison)
 
-        autoMatchLabels = QAction("Match labels", self)
+        autoMatchLabels = QAction("Compute matches", self)
         autoMatchLabels.setStatusTip("Match labels between two maps")
         autoMatchLabels.triggered.connect(self.autoCorrespondences)
 
@@ -776,13 +776,30 @@ class TagLab(QWidget):
         if len(self.project.images) < 2:
             return
 
-        self.setTool("MATCH")
 
         img_source_index = self.comboboxMainImage.currentIndex()
         img_target_index = self.comboboxComparisonImage.currentIndex()
 
-        self.project.computeCorrespondences(img_source_index, img_target_index)
-        self.compare_panel.setTable(self.project, img_source_index, img_target_index)
+        key = self.project.images[img_source_index].id + "-" + self.project.images[img_target_index].id
+        corr = self.project.correspondences.get(key)
+        flag_compute = False
+
+
+        if corr is not None:
+            if corr.data.empty is False:
+                reply = QMessageBox.question(self, self.TAGLAB_VERSION, "Would you like to clean up the table and delete all the existing matches?",  QMessageBox.Yes | QMessageBox.No)
+                if reply == QMessageBox.Yes:
+                    flag_compute = True
+            else:
+                flag_compute = True
+        else:
+            flag_compute = True
+
+
+        if flag_compute is True:
+            self.setTool("MATCH")
+            self.project.computeCorrespondences(img_source_index, img_target_index)
+            self.compare_panel.setTable(self.project, img_source_index, img_target_index)
 
 
     @pyqtSlot()

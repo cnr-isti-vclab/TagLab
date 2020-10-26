@@ -231,4 +231,8 @@ class Project(object):
         lines = corr.correspondences + corr.dead + corr.born
         corr.data = pd.DataFrame(lines, columns=corr.data.columns)
         corr.sort_data()
+        corr.correspondence = []
+        corr.dead = []
+        corr.born =[]
+
 
