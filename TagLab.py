@@ -897,6 +897,27 @@ class TagLab(QWidget):
             self.deleteSelectedBlobs()
 
 
+        elif event.key() == Qt.Key_X:
+
+            biologicalsplitCM = np.array([
+                [0.902, 0.021, 0.009, 0.044, 0.018, 0.006],
+                [0.072, 0.916, 0.002, 0.006, 0.003, 0.002],
+                [0.086, 0.016, 0.886, 0.004, 0.008, 0.000],
+                [0.044, 0.002, 0.001, 0.943, 0.008, 0.001],
+                [0.032, 0.004, 0.007, 0.040, 0.917, 0.000],
+                [0.197, 0.008, 0.003, 0.038, 0.034, 0.720]
+            ])
+
+            for i in range(50):
+                train_loss_values = np.random.random(50)
+                val_loss_values = np.random.random(50)
+
+            metrics = {"Accuracy": 0.2, "JaccardScore": 0.1, 'NormConfMatrix': biologicalsplitCM}
+            trainwidget = QtTrainingResultsWidget(metrics, train_loss_values, val_loss_values, "C:\\TagLab\\temp\\test\\images", "C:\\TagLab\\temp\\test\\labels", "C:\\TagLab\\testpredictions", parent=self)
+            trainwidget.setWindowModality(Qt.WindowModal)
+            trainwidget.show()
+
+
         elif event.key() == Qt.Key_M:
             # MERGE OVERLAPPED BLOBS
             self.union()
@@ -2325,7 +2346,8 @@ class TagLab(QWidget):
         # GO TRAINING GO...
         nepochs = self.trainYourNetworkWidget.getEpochs()
         lr = self.trainYourNetworkWidget.getLR()
-        L2 = self.trainYourNetworkWidget.getWeightDecay()
+        L2 = self.trainYourNetworkWidget.getL2()
+        batch_size = self.trainYourNetworkWidget.getBatchSize()
 
         classifier_name = self.trainYourNetworkWidget.editClassifierName.text()
         network_name = self.trainYourNetworkWidget.editNetworkName.text() + ".net"
@@ -2340,10 +2362,11 @@ class TagLab(QWidget):
         images_dir_val = os.path.join(val_folder, "images")
         labels_dir_val = os.path.join(val_folder, "labels")
 
-        dataset_train = training.trainingNetwork(images_dir_train, labels_dir_train, images_dir_val, labels_dir_val,
+        dataset_train, train_loss_values, val_loss_values = training.trainingNetwork(images_dir_train, labels_dir_train,
+                        images_dir_val, labels_dir_val,
                         self.labels_dictionary, target_classes, num_classes,
                         save_network_as=network_filename, classifier_name=classifier_name,
-                        epochs=nepochs, batch_sz=4, batch_mult=8, validation_frequency=2,
+                        epochs=nepochs, batch_sz=batch_size, batch_mult=4, validation_frequency=2,
                         loss_to_use="FOCAL_TVERSKY", epochs_switch=0, epochs_transition=0,
                         learning_rate=lr, L2_penalty=L2, tversky_alpha=0.6, tversky_gamma=0.75,
                         optimiz="ADAM", flag_shuffle=True, flag_training_accuracy=False,
@@ -2355,7 +2378,7 @@ class TagLab(QWidget):
         images_dir_test = os.path.join(test_folder, "images")
         labels_dir_test = os.path.join(test_folder, "labels")
 
-        output_folder = os.path.join(self.taglab_dir, "testnetwork")
+        output_folder = os.path.join(self.taglab_dir, "testpredictions")
         if os.path.exists(output_folder):
             shutil.rmtree(output_folder, ignore_errors=True)
 
@@ -2373,7 +2396,7 @@ class TagLab(QWidget):
         self.deleteTrainYourNetworkWidget()
 
         txt = "Accuracy: {:.3f} mIoU: {:.3f}\nDo you want to save this new classifier?".format(metrics['Accuracy'], metrics['JaccardScore'])
-        confirm_training = QMessageBox.question(self, self.TAGLAB_VERSION, txt, QMessageBox.Yes | QMessageBox.No)
+        confirm_training = QtTrainingResultsWidget(metrics, train_loss_values, val_loss_values, images_dir_test, labels_dir_test, output_folder)
 
         if confirm_training == QMessageBox.Yes:
             new_classifier = dict()

@@ -61,9 +61,13 @@ class QtTYNWidget(QWidget):
         self.lblLR.setFixedWidth(TEXT_SPACE)
         self.lblLR.setAlignment(Qt.AlignRight)
 
-        self.lblDecay = QLabel("Decay: ")
-        self.lblDecay.setFixedWidth(TEXT_SPACE)
-        self.lblDecay.setAlignment(Qt.AlignRight)
+        self.lblL2 = QLabel("L2 Regularization: ")
+        self.lblL2.setFixedWidth(TEXT_SPACE)
+        self.lblL2.setAlignment(Qt.AlignRight)
+
+        self.lblBS = QLabel("Batch Size: ")
+        self.lblBS.setFixedWidth(TEXT_SPACE)
+        self.lblBS.setAlignment(Qt.AlignRight)
 
         layoutH1a = QVBoxLayout()
         layoutH1a.setAlignment(Qt.AlignRight)
@@ -71,7 +75,8 @@ class QtTYNWidget(QWidget):
         layoutH1a.addWidget(self.lblNetworkName)
         layoutH1a.addWidget(self.lblEpochs)
         layoutH1a.addWidget(self.lblLR)
-        layoutH1a.addWidget(self.lblDecay)
+        layoutH1a.addWidget(self.lblL2)
+        layoutH1a.addWidget(self.lblBS)
 
         LINEWIDTH = 300
         self.editDatasetFolder = QLineEdit("temp")
@@ -90,13 +95,18 @@ class QtTYNWidget(QWidget):
         self.editEpochs.setFixedWidth(LINEWIDTH)
         self.editEpochs.setReadOnly(False)
         self.editLR = QLineEdit("0.00005")
-        self.editLR.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
-        self.editLR.setReadOnly(True)
+        self.editLR.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        self.editLR.setReadOnly(False)
         self.editLR.setFixedWidth(LINEWIDTH)
-        self.editDecay = QLineEdit("0.0005")
-        self.editDecay.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
-        self.editDecay.setReadOnly(True)
-        self.editDecay.setFixedWidth(LINEWIDTH)
+        self.editL2 = QLineEdit("0.0005")
+        self.editL2.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        self.editL2.setReadOnly(False)
+        self.editL2.setFixedWidth(LINEWIDTH)
+        self.editBatchSize = QLineEdit("4")
+        self.editBatchSize.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        self.editBatchSize.setReadOnly(False)
+        self.editBatchSize.setFixedWidth(LINEWIDTH)
+
 
         layoutH1b = QVBoxLayout()
         layoutH1b.setAlignment(Qt.AlignLeft)
@@ -104,7 +114,8 @@ class QtTYNWidget(QWidget):
         layoutH1b.addWidget(self.editNetworkName)
         layoutH1b.addWidget(self.editEpochs)
         layoutH1b.addWidget(self.editLR)
-        layoutH1b.addWidget(self.editDecay)
+        layoutH1b.addWidget(self.editL2)
+        layoutH1b.addWidget(self.editBatchSize)
 
         layoutH1c = QVBoxLayout()
         self.btnChooseDatasetFolder = QPushButton("...")
@@ -123,12 +134,15 @@ class QtTYNWidget(QWidget):
 
         layoutH3 = QHBoxLayout()
 
+        self.btnHelp = QPushButton("Help")
+        self.btnHelp.clicked.connect(self.help)
         self.btnCancel = QPushButton("Cancel")
         self.btnCancel.clicked.connect(self.close)
-        self.btnTrain = QPushButton("Training")
+        self.btnTrain = QPushButton("Train")
 
         layoutH3.setAlignment(Qt.AlignRight)
         layoutH3.addStretch()
+        layoutH3.addWidget(self.btnHelp)
         layoutH3.addWidget(self.btnCancel)
         layoutH3.addWidget(self.btnTrain)
 
@@ -151,6 +165,9 @@ class QtTYNWidget(QWidget):
         if folderName:
             self.editDatasetFolder.setText(folderName)
 
+    @pyqtSlot()
+    def help(self):
+        pass
 
     def getDatasetFolder(self):
 
