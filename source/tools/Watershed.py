@@ -16,6 +16,7 @@ class Watershed(Tool):
         super(Watershed, self).__init__(viewerplus)
         self.viewerplus = viewerplus
         self.scribbles = scribbles
+        self.current_blobs = []
 
     def setActiveLabel(self, label):
         self.scribbles.setLabel(label)
@@ -35,29 +36,26 @@ class Watershed(Tool):
             increase = -1
         self.scribbles.setSize(int(increase))
 
-    def apply(self):
-        if len(self.scribbles.points) == 0:
-            self.infoMessage.emit("You need to draw something for this operation.")
-            return
+    def segmentation(self):
 
         # compute bbox of scribbles (working area)
-        bboxes =[]
+        bboxes = []
         for i, curve in enumerate(self.scribbles.points):
-            bbox= Mask.pointsBox(curve, int(self.scribbles.size[i]/2))
+            bbox = Mask.pointsBox(curve, int(self.scribbles.size[i] / 2))
             bboxes.append(bbox)
         working_area = Mask.jointBox(bboxes)
 
         if working_area[0] < 0:
-           working_area[0] = 0
+            working_area[0] = 0
 
         if working_area[1] < 0:
-           working_area[1] = 0
+            working_area[1] = 0
 
         if working_area[0] + working_area[3] > self.viewerplus.img_map.height() - 1:
-           working_area[3] = self.viewerplus.img_map.height() - 1 - working_area[0]
+            working_area[3] = self.viewerplus.img_map.height() - 1 - working_area[0]
 
         if working_area[1] + working_area[2] > self.viewerplus.img_map.width() - 1:
-           working_area[2] = self.viewerplus.img_map.width() - 1 - working_area[1]
+            working_area[2] = self.viewerplus.img_map.width() - 1 - working_area[1]
 
         crop_img = utils.cropQImage(self.viewerplus.img_map, working_area)
         crop_imgnp = utils.qimageToNumpyArray(crop_img)
@@ -95,7 +93,6 @@ class Watershed(Tool):
 
         markers = np.zeros((working_area[3], working_area[2]), dtype='int32')
         for label in self.scribbles.label:
-
             col = label.fill
             b = col[2]
             g = col[1]
@@ -120,6 +117,7 @@ class Watershed(Tool):
         # the result of the segmentation must be converted into labels again
         lbls = measure.label(segmentation)
 
+        blobs = []
         for region in measure.regionprops(lbls):
             blob = Blob(region, working_area[1], working_area[0], self.viewerplus.annotations.getFreeId())
             color_index = segmentation[region.coords[0][0], region.coords[0][1]]
@@ -139,6 +137,30 @@ class Watershed(Tool):
             blob.class_color = color
             blob.class_name = name
 
+            blobs.append(blob)
+
+        return blobs
+
+    def leftReleased(self, x, y):
+        pass
+
+        # for blob in self.current_blobs:
+        #     self.viewerplus.removeBlob(blob)
+        #
+        # self.current_blobs = self.segmentation()
+        #
+        # for blob in self.current_blobs:
+        #     self.viewerplus.addBlob(blob)
+
+    def apply(self):
+
+        if len(self.scribbles.points) == 0:
+            self.infoMessage.emit("You need to draw something for this operation.")
+            return
+
+        blobs = self.segmentation()
+
+        for blob in blobs:
             self.viewerplus.addBlob(blob)
             
         self.viewerplus.resetTools()

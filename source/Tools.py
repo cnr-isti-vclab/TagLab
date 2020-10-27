@@ -69,6 +69,8 @@ class Tools(object):
         if self.tool == "AUTOCLASS":
             self.corals_classifier.stopProcessing()
 
+        if self.tool == "WATERSHED":
+            self.current_blobs = []
 
     #logfile, annotations, selecttion, activelabelbname, undo
     def leftPressed(self, x, y, mods = None):
