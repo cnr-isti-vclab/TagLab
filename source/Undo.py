@@ -36,7 +36,7 @@ class Undo(object):
         self.position = len(self.operations) -1;
 
     def undo(self):
-        if len(self.operations) is 0:
+        if len(self.operations) == 0:
             return None
         if self.position < 0:
             return None
