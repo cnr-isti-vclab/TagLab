@@ -27,7 +27,7 @@ from skimage.filters import sobel
 from scipy import ndimage as ndi
 from PyQt5.QtGui import QPainter, QImage, QPen, QBrush, QColor, qRgb
 from PyQt5.QtWidgets import QMessageBox
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QObject, pyqtSignal
 from skimage.color import rgb2gray
 from skimage.draw import polygon_perimeter
 
@@ -80,12 +80,14 @@ class Group(object):
 
 
 #refactor: change name to annotationS
-class Annotation(object):
+class Annotation(QObject):
     """
         Annotation object contains all the annotations as a list of blobs.
     """
+    blobUpdated = pyqtSignal(Blob)
 
     def __init__(self):
+        super(QObject, self).__init__()
 
         #refactor: rename this to blobs.
         # list of all blobs
@@ -121,8 +123,10 @@ class Annotation(object):
 
     #just
     def updateBlob(self, old_blob, new_blob):
+        new_blob.id = old_blob.id;
         self.removeBlob(old_blob)
         self.addBlob(new_blob)
+        self.blobUpdated.emit(new_blob)
 
 
     def blobById(self, id):

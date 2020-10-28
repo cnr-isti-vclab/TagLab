@@ -193,6 +193,12 @@ class QtComparePanel(QWidget):
     def setTable(self, project, img1idx, img2idx):
 
         self.correspondences = project.getImagePairCorrespondences(img1idx, img2idx)
+
+        self.sourceImg = project.images[img1idx]
+        self.targetImg = project.images[img2idx]
+        self.sourceImg.annotations.blobUpdated.connect(self.sourceBlobUpdated)
+        self.targetImg.annotations.blobUpdated.connect(self.targetBlobUpdated)
+
         self.data = self.correspondences.data
 
         self.model = TableModel(self.data)
@@ -213,6 +219,16 @@ class QtComparePanel(QWidget):
 
         self.data_table.setStyleSheet("QHeaderView::section { background-color: rgb(40,40,40) }")
 
+    def sourceBlobUpdated(self, blob):
+        for i, row in self.data.iterrows():
+            if row[0] == blob.id:
+                self.data.loc[i, 'Area1'] = self.correspondences.area_in_sq_cm(blob.area, True)
+
+    def targetBlobUpdated(self, blob):
+        for i, row in self.data.iterrows():
+            if row[1] == blob.id:
+                self.data.loc[i, 'Area2'] =  self.correspondences.area_in_sq_cm(blob.area, False)
+
 
     def updateData(self, corr):
 
@@ -227,7 +243,6 @@ class QtComparePanel(QWidget):
         self.model.endResetModel()
 
         self.data_table.update()
-
 
 
     def selectRows(self, rows):
