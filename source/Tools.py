@@ -15,6 +15,7 @@ from source.tools.Freehand import Freehand
 from source.tools.Ruler import Ruler
 from source.tools.DeepExtreme import DeepExtreme
 from source.tools.Match import Match
+from source.tools.WorkingArea import WorkingArea
 
 
 
@@ -47,7 +48,8 @@ class Tools(object):
             "WATERSHED": Watershed(self.viewerplus, self.scribbles),
             "RULER": Ruler(self.viewerplus, self.pick_points),
             "DEEPEXTREME": DeepExtreme(self.viewerplus, self.pick_points),
-            "MATCH": Match(self.viewerplus)
+            "MATCH": Match(self.viewerplus),
+            "WORKINGAREA": WorkingArea(self.viewerplus,self.pick_points)
         }
         # connect infomessage, log, blobinfo for   all tools with self.infoWidget.setInfoMessage(
 
