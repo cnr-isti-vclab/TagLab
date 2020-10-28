@@ -236,6 +236,7 @@ class QtImageViewerPlus(QtImageViewer):
         blob.id_item.setTransformOriginPoint(QPointF(blob.centroid[0] + 14.0, blob.centroid[1] + 14.0))
         blob.id_item.setZValue(2)
         blob.id_item.setBrush(Qt.white)
+        blob.id_item.setOpacity(0.5)
 
         #blob.id_item.setDefaultTextColor(Qt.white)
         #blob.id_item.setFlag(QGraphicsItem.ItemIgnoresTransformations)
@@ -572,7 +573,6 @@ class QtImageViewerPlus(QtImageViewer):
         if selected:
             self.addToSelectedList(blob)
 
-
     def removeBlob(self, blob):
         """
         The only function to remove annotations.
@@ -581,6 +581,18 @@ class QtImageViewerPlus(QtImageViewer):
         self.undrawBlob(blob)
         self.undo_data.removeBlob(blob)
         self.annotations.removeBlob(blob)
+
+    def updateBlob(self, old_blob, new_blob, selected = False):
+        self.annotations.updateBlob(old_blob, new_blob)
+
+        self.removeFromSelectedList(old_blob)
+        self.undrawBlob(old_blob)
+        self.undo_data.removeBlob(old_blob)
+
+        self.undo_data.addBlob(new_blob)
+        self.drawBlob(new_blob)
+        if selected:
+            self.addToSelectedList(new_blob)
 
 
     def deleteSelectedBlobs(self):

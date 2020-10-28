@@ -119,6 +119,12 @@ class Annotation(object):
         index = self.seg_blobs.index(blob)
         del self.seg_blobs[index]
 
+    #just
+    def updateBlob(self, old_blob, new_blob):
+        self.removeBlob(old_blob)
+        self.addBlob(new_blob)
+
+
     def blobById(self, id):
         for blob in self.seg_blobs:
             if blob.id == id:

@@ -34,8 +34,7 @@ class EditBorder(Tool):
 
         self.log.emit("[TOOL][EDITBORDER] Operation ends.")
 
-        self.viewerplus.removeBlob(selected_blob)
-        self.viewerplus.addBlob(blob, selected=True)
+        self.viewerplus.updateBlob(selected_blob, blob, selected=True)
         self.viewerplus.saveUndo()
 
         self.viewerplus.resetTools()

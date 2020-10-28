@@ -1667,10 +1667,8 @@ class TagLab(QWidget):
                 self.logBlobInfo(selectedB, "[OP-DIVIDE][BLOB-SELECTED]")
                 self.logBlobInfo(blobB, "[OP-DIVIDE][BLOB-EDITED]")
 
-                view.removeBlob(selectedA)
-                view.removeBlob(selectedB)
-                view.addBlob(blobA, selected=False)
-                view.addBlob(blobB, selected=False)
+                view.updateBlob(selectedA, blobA, selected=False)
+                view.updateBlob(selectedB, blobB, selected=False)
                 view.saveUndo()
 
 
@@ -1850,10 +1848,9 @@ class TagLab(QWidget):
 
             self.logBlobInfo(filled, "[OP-FILL][BLOB-SELECTED]")
 
-            view.removeBlob(blob)
             filled.inner_contours.clear()
             filled.createFromClosedCurve([filled.contour])
-            view.addBlob(filled, True)
+            view.updateBlob(blob, filled, True)
 
             self.logBlobInfo(filled, "[OP-FILL][BLOB-EDITED]")
 
