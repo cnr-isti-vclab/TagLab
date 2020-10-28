@@ -35,7 +35,7 @@ from source import utils
 
 import pandas as pd
 from scipy import ndimage as ndi
-from skimage.morphology import watershed, flood
+from skimage.morphology import watershed, flood, binary_dilation
 from skimage.filters import gaussian
 from source.Blob import Blob
 import source.Mask as Mask
@@ -506,27 +506,30 @@ class Annotation(object):
         w = size.width()
         h = size.height()
 
-        labelimg = QImage(w, h, QImage.Format_RGB32)
-        labelimg.fill(qRgb(0, 0, 0))
-
-        painter = QPainter(labelimg)
-
-        pen = QPen(Qt.black)
-        pen.setWidth(1)
-        painter.setPen(pen)
-
+        image = np.zeros([w, h, 3], np.uint8)
         for i, blob in enumerate(self.seg_blobs):
-            if blob.qpath_gitem.isVisible():
-                if blob.class_name == "Empty":
-                    rgb = qRgb(255, 255, 255)
-                else:
-                    class_color = labels_info[blob.class_name]
-                    rgb = qRgb(class_color[0], class_color[1], class_color[2])
+            if not blob.qpath_gitem.isVisible():
+                continue
 
-                painter.setBrush(QBrush(QColor(rgb)))
-                painter.drawPath(blob.qpath_gitem.path())
+            if blob.class_name == "Empty":
+                rgb = [255, 255, 255]
+            else:
+                class_color = labels_info[blob.class_name]
+                rgb = class_color
 
-        painter.end()
+            mask = blob.getMask().astype(bool)
+            box = blob.bbox
+            #TODO crop mask!
+            if box[0] < 0 or box[1] < 0:
+                continue
+
+            subimage =  image[box[0]:box[3] + box[0], box[1]:box[2] + box[1]]
+            subimage[mask] = rgb
+            border = binary_dilation(mask) & ~mask
+            samecolor = np.all(subimage == rgb, axis=-1)
+            subimage[border & samecolor] = [0, 0, 0]
+
+        labelimg = QImage(image.data, w, h, w*3, QImage.Format_RGB888)
 
         return labelimg
 
