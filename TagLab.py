@@ -1803,21 +1803,23 @@ class TagLab(QWidget):
                 view.tools.edit_points.last_editborder_points = None
 
             try:
-                view.removeBlob(selected)
                 if view.tools.edit_points.last_blob != selected:
                     view.tools.edit_points.last_editborder_points = None
                 created_blobs = view.annotations.refineBorder(bbox, selected, img, depth, mask, view.refine_grow, view.tools.edit_points.last_editborder_points)
 
-                if len(created_blobs) > 0:
-
+                if len(created_blobs) == 0:
+                    pass
+                if len(created_blobs) == 1:
+                    view.updateBlob(selected, created_blobs[0])
+                    self.logBlobInfo(created_blobs[0], "[OP-REFINE-BORDER][BLOB-CREATED]")
+                    self.logBlobInfo(created_blobs[0], "[OP-REFINE-BORDER][BLOB-REFINED]")
+                else:
+                    view.removeBlob(selected)
                     for blob in created_blobs:
                         view.addBlob(blob, selected=True)
                         #NOTE: they are not CREATED! they are refined! Leaving it here because some logging software might depend on it.
                         self.logBlobInfo(blob, "[OP-REFINE-BORDER][BLOB-CREATED]")
                         self.logBlobInfo(blob, "[OP-REFINE-BORDER][BLOB-REFINED]")
-
-                else:
-                    view.addBlob(selected, selected=True)
 
                 view.saveUndo()
 
