@@ -2248,11 +2248,30 @@ class TagLab(QWidget):
         if self.activeviewer is not None:
             if self.newDatasetWidget is None:
                 annotations = self.activeviewer.annotations
-                self.newDatasetWidget = QtNewDatasetWidget(parent=self)
-                self.newDatasetWidget.setWindowModality(Qt.WindowModal)
+                self.newDatasetWidget = QtNewDatasetWidget(self.activeviewer.img_map.width(), self.activeviewer.img_map.height(), parent=self)
+                self.newDatasetWidget.setWindowModality(Qt.NonModal)
+                self.newDatasetWidget.btnChooseWorkingArea.clicked.connect(self.enableWorkingArea)
                 self.newDatasetWidget.btnExport.clicked.connect(self.exportNewDataset)
-                self.newDatasetWidget.show()
+                self.newDatasetWidget.btnCancel.clicked.connect(self.disableWorkingArea)
+                self.activeviewer.tools.tools["WORKINGAREA"].rectChanged.connect(self.updateWorkingArea)
 
+            self.newDatasetWidget.show()
+
+    @pyqtSlot(int, int, int, int)
+    def updateWorkingArea(self, x, y, width, height):
+        txt = self.newDatasetWidget.formatWorkingArea(y, x, width, height)
+        self.newDatasetWidget.editWorkingArea.setText(txt)
+
+    @pyqtSlot()
+    def enableWorkingArea(self):
+        self.activeviewer.setTool("WORKINGAREA")
+
+    @pyqtSlot()
+    def disableWorkingArea(self):
+        self.activeviewer.setTool("MOVE")
+
+
+    @pyqtSlot()
     def exportNewDataset(self):
 
         if self.activeviewer is not None and self.newDatasetWidget is not None:
@@ -2314,6 +2333,7 @@ class TagLab(QWidget):
             self.deleteProgressBar()
             self.deleteNewDatasetWidget()
 
+            self.disableWorkingArea()
             QApplication.restoreOverrideCursor()
 
     @pyqtSlot()
