@@ -56,6 +56,7 @@ from source.QtCrackWidget import QtCrackWidget
 from source.QtHistogramWidget import QtHistogramWidget
 from source.QtClassifierWidget import QtClassifierWidget
 from source.QtNewDatasetWidget import QtNewDatasetWidget
+from source.QtTrainingResultsWidget import QtTrainingResultsWidget
 from source.QtTYNWidget import QtTYNWidget
 from source.QtComparePanel import QtComparePanel
 from source.Project import Project, loadProject
@@ -913,7 +914,7 @@ class TagLab(QWidget):
                 val_loss_values = np.random.random(50)
 
             metrics = {"Accuracy": 0.2, "JaccardScore": 0.1, 'NormConfMatrix': biologicalsplitCM}
-            trainwidget = QtTrainingResultsWidget(metrics, train_loss_values, val_loss_values, "C:\\TagLab\\temp\\test\\images", "C:\\TagLab\\temp\\test\\labels", "C:\\TagLab\\testpredictions", parent=self)
+            trainwidget = QtTrainingResultsWidget(metrics, train_loss_values, val_loss_values, "C:\\temp\\test\\images", "C:\\temp\\test\\labels", "C:\\temp\\predictions", parent=self)
             trainwidget.setWindowModality(Qt.WindowModal)
             trainwidget.show()
 
@@ -2378,7 +2379,7 @@ class TagLab(QWidget):
         images_dir_test = os.path.join(test_folder, "images")
         labels_dir_test = os.path.join(test_folder, "labels")
 
-        output_folder = os.path.join(self.taglab_dir, "testpredictions")
+        output_folder = os.path.join(dataset_folder, "predictions")
         if os.path.exists(output_folder):
             shutil.rmtree(output_folder, ignore_errors=True)
 

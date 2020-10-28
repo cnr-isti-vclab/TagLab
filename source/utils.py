@@ -19,9 +19,11 @@
 
 # THIS FILE CONTAINS UTILITY FUNCTIONS, E.G. CONVERSION BETWEEN DATA TYPES, BASIC OPERATIONS, ETC.
 
+import io
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QImage, qRgb, qRgba
+from PyQt5.QtGui import QImage, QPixmap, qRgb, qRgba
 import numpy as np
+import cv2
 import math
 from skimage.draw import line
 
@@ -152,6 +154,23 @@ def rgbToQImage(image):
         qimg = QImage(imgdata.data, w, h, QImage.Format_ARGB32)
 
     return qimg.copy()
+
+def figureToQPixmap(fig, dpi, width, height):
+
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", dpi=dpi)
+    buf.seek(0)
+    img_arr = np.frombuffer(buf.getvalue(), dtype=np.uint8)
+    buf.close()
+    im = cv2.imdecode(img_arr, 1)
+    im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+
+    # numpy array to QPixmap
+    qimg = rgbToQImage(im)
+    qimg = qimg.scaled(width, height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+    pxmap = QPixmap.fromImage(qimg)
+
+    return pxmap
 
 def prepareForDeepExtreme(qimage_map, four_points, pad_max):
     """
