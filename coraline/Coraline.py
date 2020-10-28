@@ -14,6 +14,8 @@ try:
 		lib = cdll.LoadLibrary(this_directory + '/libcoraline.so')
 	elif sys.platform == "win32":
 		lib = cdll.LoadLibrary(this_directory + '/coraline.dll')
+	elif sys.platform == "darwin":
+		lib = cdll.LoadLibrary(this_directory + '/libcoraline.dylib')
 	else:
 		lib = None
 
