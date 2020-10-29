@@ -558,21 +558,21 @@ class NewDataset(object):
 
 			delta = int(self.crop_size / 2)
 			ww_val = map_w - delta*2
-			hh_val = (map_h - delta*2) * 0.175
+			hh_val = (map_h - delta*2) * 0.15 - delta
 			ww_test = ww_val
-			hh_test = (map_h - delta*2) * 0.125
-			val_area = [delta + (map_h - delta*2) * 0.7 - self.crop_size, delta, ww_val, hh_val]
-			test_area = [delta + (map_h - delta*2) * 0.875, delta, ww_test, hh_test]
+			hh_test = (map_h - delta*2) * 0.15 - delta
+			val_area = [delta + (map_h - delta * 2) * 0.7, delta, ww_val, hh_val]
+			test_area = [2*delta + (map_h - delta*2) * 0.85, delta, ww_test, hh_test]
 
 		elif mode == "UNIFORM (HORIZONTAL)":
 
 			delta = int(self.crop_size / 2)
-			ww_val = (map_w - delta*2) * 0.15
+			ww_val = (map_w - delta*2) * 0.15 - delta
 			hh_val = map_h - delta*2
-			ww_test = (map_w - delta*2) * 0.15
+			ww_test = (map_w - delta*2) * 0.15 - delta
 			hh_test = hh_val
-			val_area = [delta, delta + (map_w - delta*2) * 0.7 - self.crop_size, ww_val, hh_val]
-			test_area = [delta, delta + (map_w - delta*2) * 0.85, ww_test, hh_test]
+			val_area = [delta, delta + (map_w - delta*2) * 0.7, ww_val, hh_val]
+			test_area = [delta, 2* delta + (map_w - delta*2) * 0.85, ww_test, hh_test]
 
 		elif mode == "RANDOM":
 
@@ -966,7 +966,7 @@ class NewDataset(object):
 		w = self.orthoimage.width()
 		h = self.orthoimage.height()
 
-		delta = int(self.tile_size / 2)
+		delta = int(self.crop_size / 2)
 
 		if regular is True:
 			self.validation_tiles = self.sampleAreaUniformly(self.val_area, self.tile_size, self.step)
