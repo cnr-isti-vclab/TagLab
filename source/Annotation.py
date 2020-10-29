@@ -382,22 +382,6 @@ class Annotation(QObject):
 
         return created_blobs
 
-            # if len(regions):
-            #     largest = regions[0]
-            #     for region in regions:
-            #         if region.area > largest.area and region.area > 1000:
-            #             largest = region
-            #
-            #
-            #     # adjust the image bounding box (relative to the region mask) to directly use area.image mask
-            #     # image box is standard (minx, miny, maxx, maxy)
-            #     box = np.array([box[0] + largest.bbox[0], box[1] + largest.bbox[1], largest.bbox[3], largest.bbox[2]])
-            #     try:
-            #         self.updateUsingMask(box, largest.image.astype(int))
-            #     except:
-            #         pass
-
-            #self.updateUsingMask(self.bbox, cracked_blob)
 
     def editBorder(self, blob, lines):
         points = [blob.drawLine(line) for line in lines]

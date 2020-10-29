@@ -95,16 +95,17 @@ class ProjectEncoder(json.JSONEncoder):
 
 class Project(object):
 
-    def __init__(self, filename = None, labels = {}, images = [], correspondences = None,
-                 spatial_reference_system = None, metadata = {}, image_metadata_template = {}):
-        self.filename = None        #filename with path of the project json
+    def __init__(self, filename=None, labels={}, images=[], correspondences=None,
+                 spatial_reference_system=None, metadata={}, image_metadata_template={}):
+
+        self.filename = None                                             #filename with path of the project json
         self.labels = { key: Label(**value) for key, value in labels.items() }
         if not 'Empty' in self.labels:
             self.labels['Empty'] = Label(id='Empty', name='Empty', description=None, fill=[127, 127, 127], border=[200, 200, 200], visible=True)
 
         self.images = list(map(lambda img: Image(**img), images))       #list of annotated images
 
-        # dict of tables (DataFrame) of correspondences betweeen a source and a target image
+                                                                         # dict of tables (DataFrame) of correspondences betweeen a source and a target image
         self.correspondences = {}
         if correspondences is not None:
             for key in correspondences.keys():
@@ -113,10 +114,11 @@ class Project(object):
                 self.correspondences[key] = Correspondences(self.getImageFromId(source), self.getImageFromId(target))
                 self.correspondences[key].fillTable(correspondences[key]['correspondences'])
 
-        self.spatial_reference_system = spatial_reference_system   #if None we assume coordinates in pixels (but Y is up or down?!)
-        self.metadata = metadata    # project metadata => keyword -> value
-        self.image_metadata_template = image_metadata_template  # description of metadata keywords expected in images
-                                           # name: { type: (integer, date, string), mandatory: (true|false), default: ... }
+        self.spatial_reference_system = spatial_reference_system        #if None we assume coordinates in pixels (but Y is up or down?!)
+        self.metadata = metadata                                        # project metadata => keyword -> value
+        self.image_metadata_template = image_metadata_template          # description of metadata keywords expected in images
+                                                                         # name: { type: (integer, date, string), mandatory: (true|false), default: ... }
+
 
 
     def importLabelsFromConfiguration(self, dictionary):

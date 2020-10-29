@@ -789,7 +789,7 @@ class TagLab(QWidget):
             if corr is not None:
                 if corr.data.empty is False:
                     reply = QMessageBox.question(self, self.TAGLAB_VERSION,
-                                                 "Would you like to clean up the table and delete all the existing matches?",
+                                                 "Would you like to clean up the table and replace all the existing matches?",
                                                  QMessageBox.Yes | QMessageBox.No)
                     if reply == QMessageBox.Yes:
                         flag_compute = True
@@ -2247,8 +2247,12 @@ class TagLab(QWidget):
 
         if self.activeviewer is not None:
             if self.newDatasetWidget is None:
+
+                if not self.activeviewer.image.working_area :
+                    self.activeviewer.image.working_area = [0, 0 , self.activeviewer.img_map.width(), self.activeviewer.img_map.height()]
+
                 annotations = self.activeviewer.annotations
-                self.newDatasetWidget = QtNewDatasetWidget(self.activeviewer.img_map.width(), self.activeviewer.img_map.height(), parent=self)
+                self.newDatasetWidget = QtNewDatasetWidget(self.activeviewer.image.working_area, parent=self)
                 self.newDatasetWidget.setWindowModality(Qt.NonModal)
                 self.newDatasetWidget.btnChooseWorkingArea.clicked.connect(self.enableWorkingArea)
                 self.newDatasetWidget.btnExport.clicked.connect(self.exportNewDataset)
@@ -2261,6 +2265,8 @@ class TagLab(QWidget):
     def updateWorkingArea(self, x, y, width, height):
         txt = self.newDatasetWidget.formatWorkingArea(y, x, width, height)
         self.newDatasetWidget.editWorkingArea.setText(txt)
+        self.activeviewer.image.working_area = [y, x, width, height]
+
 
     @pyqtSlot()
     def enableWorkingArea(self):
@@ -2293,7 +2299,7 @@ class TagLab(QWidget):
             new_dataset.convert_colors_to_labels(target_classes, self.labels_dictionary)
             new_dataset.computeFrequencies(target_classes)
             target_scale_factor = self.newDatasetWidget.getTargetScale()
-            new_dataset.rescale(self.activeviewer.image.map_px_to_mm_factor, target_scale_factor)
+            new_dataset.workingAreaCropAndRescale(self.activeviewer.image.map_px_to_mm_factor, target_scale_factor,self.activeviewer.image.working_area)
 
             # create training, validation and test areas
 

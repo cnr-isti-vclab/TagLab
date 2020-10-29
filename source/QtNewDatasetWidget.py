@@ -25,7 +25,7 @@ from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QComboBox, QSizePol
 
 class QtNewDatasetWidget(QWidget):
 
-    def __init__(self, map_width, map_height, parent=None):
+    def __init__(self, working_area, parent=None):
         super(QtNewDatasetWidget, self).__init__(parent)
 
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
@@ -61,7 +61,7 @@ class QtNewDatasetWidget(QWidget):
         self.editDatasetFolder = QLineEdit("temp")
         self.editDatasetFolder.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editDatasetFolder.setMinimumWidth(LINEWIDTH)
-        txt = self.formatWorkingArea(0, 0, map_width, map_height)
+        txt = self.formatWorkingArea(working_area[0],working_area[1],working_area[2],working_area[3])
         self.editWorkingArea = QLineEdit(txt)
         self.editWorkingArea.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editWorkingArea.setMinimumWidth(LINEWIDTH)
@@ -92,7 +92,7 @@ class QtNewDatasetWidget(QWidget):
         self.btnChooseWorkingArea = QPushButton()
         WorkingAreaIcon = QIcon("icons\\select_area.png")
         self.btnChooseWorkingArea.setIcon(WorkingAreaIcon)
-       # self.btnChooseWorkingArea.setMaximumWidth(20)
+        # self.btnChooseWorkingArea.setMaximumWidth(20)
         #self.btnChooseWorkingArea.clicked.connect(self.dragWorkingArea)
 
         layoutH0c = QVBoxLayout()

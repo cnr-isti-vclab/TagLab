@@ -71,14 +71,22 @@ class NewDataset(object):
 		self.sP_max = 0.0
 
 
-	def rescale(self, current_scale, target_scale):
+	def workingAreaCropAndRescale(self, current_scale, target_scale, working_area):
 
-		scale= target_scale/current_scale
-		w  = self.orthoimage.width()*scale
-		h = self.orthoimage.height()*scale
+		x = working_area[1]
+		y = working_area[0]
+		width = working_area[2]
+		height = working_area[3]
 
-		self.orthoimage = self.orthoimage.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
-		self.label_image = self.label_image.scaled(w, h, Qt.IgnoreAspectRatio, Qt.FastTransformation)
+		crop_orthoimage = self.orthoimage.copy(x, y, width, height)
+		crop_label_image = self.label_image.copy(x, y, width, height)
+
+		scale = target_scale/current_scale
+		w = crop_orthoimage.width()*scale
+		h = crop_orthoimage.height()*scale
+
+		self.orthoimage = crop_orthoimage.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+		self.label_image = crop_label_image.scaled(w, h, Qt.IgnoreAspectRatio, Qt.FastTransformation)
 
 
 	def isFullyInsideBBox(self, bbox1, bbox2):
