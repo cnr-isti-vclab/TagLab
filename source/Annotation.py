@@ -501,7 +501,7 @@ class Annotation(QObject):
         h = size.height()
 
         imagebox = [0, 0, w, h]
-        image = np.zeros([w, h, 3], np.uint8)
+        image = np.zeros([h, w, 3], np.uint8)
 
         for i, blob in enumerate(self.seg_blobs):
             if not blob.qpath_gitem.isVisible():
