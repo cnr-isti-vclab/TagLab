@@ -87,7 +87,7 @@ class QtTrainingResultsWidget(QWidget):
 
         groupbox_style = "QGroupBox\
         {\
-            border: 3px solid gray;\
+            border: 2px solid gray;\
             border-radius: 10px;\
             margin-top: 10px;\
             margin-left: 0px;\
