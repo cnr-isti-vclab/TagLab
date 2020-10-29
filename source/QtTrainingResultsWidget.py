@@ -85,7 +85,28 @@ class QtTrainingResultsWidget(QWidget):
         layoutMetrics.addLayout(layoutButtonSaveAs)
         layoutMetrics.addStretch()
 
+        groupbox_style = "QGroupBox\
+        {\
+            border: 3px solid gray;\
+            border-radius: 10px;\
+            margin-top: 10px;\
+            margin-left: 0px;\
+            margin-right: 0px;\
+            padding-top: 5px;\
+            padding-left: 5px;\
+            padding-bottom: 5px;\
+            padding-right: 5px;\
+        }\
+        \
+        QGroupBox::title\
+        {\
+            subcontrol-origin: margin;\
+            subcontrol-position: top center;\
+            padding: 0 0px;\
+        }"
+
         group_results = QGroupBox("Test Results", self)
+        group_results.setStyleSheet(groupbox_style)
         group_results.setLayout(layoutMetrics)
 
 
@@ -111,6 +132,7 @@ class QtTrainingResultsWidget(QWidget):
         layoutGraphs.addLayout(layoutSaveTG)
 
         group_graphs = QGroupBox("Training Graphs", self)
+        group_graphs.setStyleSheet(groupbox_style)
         group_graphs.setLayout(layoutGraphs)
 
         #################################################################################### PREVIEW
@@ -151,6 +173,7 @@ class QtTrainingResultsWidget(QWidget):
         layoutPredictions.addLayout(layoutTiles)
 
         group_pred = QGroupBox("Predictions", self)
+        group_pred.setStyleSheet(groupbox_style)
         group_pred.setLayout(layoutPredictions)
 
         ############################################################### FINAL LAYOUT
