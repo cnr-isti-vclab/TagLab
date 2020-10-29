@@ -36,9 +36,9 @@ class NewDataset(object):
 	This class handles the functionalities to create a new dataset.
 	"""
 
-	def __init__(self, orthoimage, blobs, tile_size, step):
+	def __init__(self, ortho_image, blobs, tile_size, step):
 
-		self.orthoimage = orthoimage  # QImage
+		self.ortho_image = ortho_image  # QImage
 		self.blobs = blobs
 		self.tile_size = tile_size
 		self.step = step
@@ -78,14 +78,14 @@ class NewDataset(object):
 		width = working_area[2]
 		height = working_area[3]
 
-		crop_orthoimage = self.orthoimage.copy(x, y, width, height)
+		crop_ortho_image = self.ortho_image.copy(x, y, width, height)
 		crop_label_image = self.label_image.copy(x, y, width, height)
 
 		scale = target_scale/current_scale
-		w = crop_orthoimage.width()*scale
-		h = crop_orthoimage.height()*scale
+		w = crop_ortho_image.width()*scale
+		h = crop_ortho_image.height()*scale
 
-		self.orthoimage = crop_orthoimage.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+		self.ortho_image = crop_ortho_image.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
 		self.label_image = crop_label_image.scaled(w, h, Qt.IgnoreAspectRatio, Qt.FastTransformation)
 
 
@@ -169,8 +169,8 @@ class NewDataset(object):
 		Compute the frequencies of the target classes on the entire map.
 		"""
 
-		map_w = self.orthoimage.width()
-		map_h = self.orthoimage.height()
+		map_w = self.ortho_image.width()
+		map_h = self.ortho_image.height()
 		area_map = map_w * map_h
 
 		frequencies = []
@@ -357,8 +357,8 @@ class NewDataset(object):
 
 		area_info = []
 
-		map_w = self.orthoimage.width()
-		map_h = self.orthoimage.height()
+		map_w = self.ortho_image.width()
+		map_h = self.ortho_image.height()
 
 		area_w = int(math.sqrt(0.15) * map_w)
 		area_h = int(math.sqrt(0.15) * map_h)
@@ -482,8 +482,8 @@ class NewDataset(object):
 		"""
 
 		# create a black canvas of the same size of your map
-		w = self.orthoimage.width()
-		h = self.orthoimage.height()
+		w = self.ortho_image.width()
+		h = self.ortho_image.height()
 
 		labelimg = QImage(w, h, QImage.Format_RGB32)
 		labelimg.fill(qRgb(0, 0, 0))
@@ -547,8 +547,8 @@ class NewDataset(object):
 		"""
 
 		# size of the each area is 15% of the entire map
-		map_w = self.orthoimage.width()
-		map_h = self.orthoimage.height()
+		map_w = self.ortho_image.width()
+		map_h = self.ortho_image.height()
 
 		val_area = [0, 0, 0, 0]
 		test_area = [0, 0, 0, 0]
@@ -830,8 +830,8 @@ class NewDataset(object):
 
 	def sampleBlobWPoissonDisk(self, blob, current_samples, r):
 
-		map_w = self.orthoimage.width()
-		map_h = self.orthoimage.height()
+		map_w = self.ortho_image.width()
+		map_h = self.ortho_image.height()
 
 		offset_x = blob.bbox[1]
 		offset_y = blob.bbox[0]
@@ -963,8 +963,8 @@ class NewDataset(object):
 		The cutting can be regular or depending on the area and shape of the corals (oversampling).
 		"""
 
-		w = self.orthoimage.width()
-		h = self.orthoimage.height()
+		w = self.ortho_image.width()
+		h = self.ortho_image.height()
 
 		delta = int(self.crop_size / 2)
 
@@ -1036,7 +1036,7 @@ class NewDataset(object):
 			cy = sample[1]
 			top = cy - half_tile_size
 			left = cx - half_tile_size
-			cropimg = utils.cropQImage(self.orthoimage, [top, left, self.tile_size, self.tile_size])
+			cropimg = utils.cropQImage(self.ortho_image, [top, left, self.tile_size, self.tile_size])
 			croplabel = utils.cropQImage(self.label_image, [top, left, self.tile_size, self.tile_size])
 
 			filenameRGB = os.path.join(basenameVim, tilename + str.format("_{0:04d}", (i)) + ".png")
@@ -1067,7 +1067,7 @@ class NewDataset(object):
 			top = cy - half_tile_size
 			left = cx - half_tile_size
 
-			cropimg = utils.cropQImage(self.orthoimage, [top, left, self.tile_size, self.tile_size])
+			cropimg = utils.cropQImage(self.ortho_image, [top, left, self.tile_size, self.tile_size])
 			croplabel = utils.cropQImage(self.label_image, [top, left, self.tile_size, self.tile_size])
 
 			filenameRGB = os.path.join(basenameTestIm, tilename + str.format("_{0:04d}", (i)) + ".png")
@@ -1097,7 +1097,7 @@ class NewDataset(object):
 			top = cy - half_tile_size
 			left = cx - half_tile_size
 
-			cropimg = utils.cropQImage(self.orthoimage, [top, left, self.tile_size, self.tile_size])
+			cropimg = utils.cropQImage(self.ortho_image, [top, left, self.tile_size, self.tile_size])
 			croplabel = utils.cropQImage(self.label_image, [top, left, self.tile_size, self.tile_size])
 
 			filenameRGB = os.path.join(basenameTrainIm, tilename + str.format("_{0:04d}", (i)) + ".png")
