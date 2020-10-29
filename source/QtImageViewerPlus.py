@@ -283,6 +283,10 @@ class QtImageViewerPlus(QtImageViewer):
         if tool in ["FREEHAND", "RULER", "DEEPEXTREME"] or (tool in ["CUT", "EDITBORDER"] and len(self.selected_blobs) > 1):
             self.resetSelection()
 
+        if tool == "WORKINGAREA":
+
+            QApplication.setOverrideCursor(Qt.CrossCursor)
+
         if tool == "WATERSHED":
 
             self.tools.tools["WATERSHED"].scribbles.setScaleFactor(self.zoom_factor)

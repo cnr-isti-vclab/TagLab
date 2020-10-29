@@ -386,11 +386,6 @@ class TagLab(QWidget):
         ##### FURTHER INITIALIZAION #####
         #################################
 
-#        self.map_top = 0   #REFACTOR to project.map_top
-#        self.map_left = 0
-#        self.map_bottom = 0
-#        self.map_right = 0
-
         # set default opacity
         self.sliderTrasparency.setValue(50)
         self.transparency_value = 0.5
@@ -411,6 +406,9 @@ class TagLab(QWidget):
 
         # SWITCH IMAGES
         self.current_image_index = 0
+
+        # Graphis Item of the working area
+        self.working_area_rect = None
 
         # NETWORKS
         self.deepextreme_net = None
@@ -730,13 +728,11 @@ class TagLab(QWidget):
         exportMatchLabels.setStatusTip("Export the current matches")
         exportMatchLabels.triggered.connect(self.exportMatches)
 
-
         comparemenu = menubar.addMenu("&Comparison")
         comparemenu.setStyleSheet(styleMenu)
         comparemenu.addAction(splitScreenAction)
         comparemenu.addAction(autoMatchLabels)
         comparemenu.addAction(exportMatchLabels)
-
 
         helpmenu = menubar.addMenu("&Help")
         helpmenu.setStyleSheet(styleMenu)
@@ -2247,16 +2243,43 @@ class TagLab(QWidget):
                 self.newDatasetWidget.btnChooseWorkingArea.clicked.connect(self.enableWorkingArea)
                 self.newDatasetWidget.btnExport.clicked.connect(self.exportNewDataset)
                 self.newDatasetWidget.btnCancel.clicked.connect(self.disableWorkingArea)
+                self.newDatasetWidget.closed.connect(self.disableWorkingArea)
                 self.activeviewer.tools.tools["WORKINGAREA"].rectChanged.connect(self.updateWorkingArea)
 
+            self.showWorkingArea()
             self.newDatasetWidget.show()
+
+    def showWorkingArea(self):
+        """
+        Show the working area of the current image.
+        """
+        working_area = self.activeviewer.image.working_area
+
+        if working_area is not None:
+            workingAreaStyle = QPen(Qt.magenta, 5, Qt.DashLine)
+            workingAreaStyle.setCosmetic(True)
+
+            x = working_area[1]
+            y = working_area[0]
+            w = working_area[2]
+            h = working_area[3]
+
+            if self.working_area_rect is None:
+                self.working_area_rect = self.activeviewer.scene.addRect(x, y, w, h, workingAreaStyle)
+                self.working_area_rect.setZValue(5)
+            else:
+                self.working_area_rect.setVisible(True)
+                self.working_area_rect.setRect(x, y, w, h)
+
+    def hideWorkingArea(self):
+        self.working_area_rect.setVisible(False)
 
     @pyqtSlot(int, int, int, int)
     def updateWorkingArea(self, x, y, width, height):
         txt = self.newDatasetWidget.formatWorkingArea(y, x, width, height)
         self.newDatasetWidget.editWorkingArea.setText(txt)
         self.activeviewer.image.working_area = [y, x, width, height]
-
+        self.showWorkingArea()
 
     @pyqtSlot()
     def enableWorkingArea(self):
@@ -2265,7 +2288,7 @@ class TagLab(QWidget):
     @pyqtSlot()
     def disableWorkingArea(self):
         self.activeviewer.setTool("MOVE")
-
+        self.hideWorkingArea()
 
     @pyqtSlot()
     def exportNewDataset(self):

@@ -1260,17 +1260,20 @@ class NewDataset(object):
 				painter.drawRect(left, top, size, size)
 
 		if show_areas is True:
+
 			pen_width = int(min(self.label_image.width(), self.label_image.height()) / 200.0)
 
 			painter.setBrush(Qt.NoBrush)
 			pen = QPen(Qt.blue)
-			pen.setWidth(5)
+			pen.setWidth(pen_width)
+			pen.setStyle(Qt.DashDotLine)
 			painter.setPen(pen)
 			painter.drawRect(self.val_area[1], self.val_area[0], self.val_area[2], self.val_area[3])
 
 			painter.setBrush(Qt.NoBrush)
 			pen = QPen(Qt.red)
-			pen.setWidth(5)
+			pen.setWidth(pen_width)
+			pen.setStyle(Qt.DashDotLine)
 			painter.setPen(pen)
 			painter.drawRect(self.test_area[1], self.test_area[0], self.test_area[2], self.test_area[3])
 

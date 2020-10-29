@@ -19,11 +19,13 @@
 
 import os
 
-from PyQt5.QtCore import Qt, pyqtSlot
+from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QImage, QPixmap, QIcon, qRgb, qRed, qGreen, qBlue
 from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
 
 class QtNewDatasetWidget(QWidget):
+
+    closed = pyqtSignal()
 
     def __init__(self, working_area, parent=None):
         super(QtNewDatasetWidget, self).__init__(parent)
@@ -148,6 +150,8 @@ class QtNewDatasetWidget(QWidget):
         if folderName:
             self.editDatasetFolder.setText(folderName)
 
+    def closeEvent(self, event):
+        self.closed.emit()
 
     def formatWorkingArea(self, top, left, width, height):
         txt = str(int(top)) + ',' + str(int(left)) + ',' + str(int(width)) + ',' + str(int(height))
@@ -160,7 +164,6 @@ class QtNewDatasetWidget(QWidget):
     def getSplitMode(self):
 
         return self.comboSplitMode.currentText()
-
 
     def getTargetScale(self):
 
