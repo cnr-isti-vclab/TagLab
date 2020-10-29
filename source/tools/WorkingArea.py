@@ -12,7 +12,7 @@ class WorkingArea(Tool):
         super(WorkingArea, self).__init__(viewerplus)
         self.pick_points = pick_points
         self.scene = viewerplus.scene
-        self.Rect = None
+        self.rect = None
 
 
     def leftPressed(self, x, y, mods):
@@ -41,11 +41,11 @@ class WorkingArea(Tool):
         start = self.pick_points.points[0]
         end = self.pick_points.points[1]
 
-        if self.Rect is None:
-            self.Rect = self.scene.addRect(start[0], start[1], end[0] - start[0], end[1] - start[1], dragSelectionStyle)
-            self.Rect.setZValue(5)
+        if self.rect is None:
+            self.rect = self.scene.addRect(start[0], start[1], end[0] - start[0], end[1] - start[1], dragSelectionStyle)
+            self.rect.setZValue(5)
         else:
-            self.Rect.setRect(start[0], start[1], end[0] - start[0], end[1] - start[1])
+            self.rect.setRect(start[0], start[1], end[0] - start[0], end[1] - start[1])
 
         self.rectChanged.emit(start[0], start[1], end[0] - start[0], end[1] - start[1])
 
