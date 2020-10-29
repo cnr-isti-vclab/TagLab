@@ -925,17 +925,7 @@ class TagLab(QWidget):
 
         elif event.key() == Qt.Key_C:
             # TOGGLE RGB/DEPTH CHANNELS
-
-            if self.activeviewer is None:
-                return
-
-            image = self.activeviewer.image
-            index = image.channels.index(self.activeviewer.channel)
-
-            if index == 0:
-                self.activeviewer.setChannel(image.channels[1], True)
-            else:
-                self.activeviewer.setChannel(image.channels[0], True)
+            self.switchDEM()
 
         elif event.key() == Qt.Key_S:
             # SUBTRACTION BETWEEN TWO BLOBS (A = A / B), THEN BLOB B IS DELETED
