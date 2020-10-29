@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.metrics import ConfusionMatrixDisplay
 from PyQt5.QtCore import Qt, QSize, QFile, QIODevice, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QImage, QPixmap, QIcon, qRgb, qRed, qGreen, qBlue
-from PyQt5.QtWidgets import QWidget, QDialog, QGroupBox, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
+from PyQt5.QtWidgets import QSlider, QWidget, QDialog, QGroupBox, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
 
 from source import utils
 

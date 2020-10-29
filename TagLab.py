@@ -2438,7 +2438,7 @@ class TagLab(QWidget):
             self.trainYourNetworkWidget = QtTYNWidget(annotations=None, parent=self)
             self.trainYourNetworkWidget.setWindowModality(Qt.WindowModal)
             self.trainYourNetworkWidget.btnTrain.clicked.connect(self.trainNewNetwork)
-            self.trainYourNetworkWidget.show()
+        self.trainYourNetworkWidget.show()
 
     @pyqtSlot()
     def exportClippedRaster(self):
