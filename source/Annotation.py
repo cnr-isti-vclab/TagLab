@@ -35,7 +35,7 @@ from source import utils
 
 import pandas as pd
 from scipy import ndimage as ndi
-from skimage.morphology import watershed, flood, binary_dilation
+from skimage.morphology import watershed, flood, binary_dilation, binary_erosion
 from skimage.filters import gaussian
 from source.Blob import Blob
 import source.Mask as Mask
@@ -390,14 +390,32 @@ class Annotation(QObject):
             return
 
         # compute the box for the outer contour
-        (mask, box) = self.editBorderContour(blob, blob.contour, points)
+        intersected = False
+        (mask, box, intersected) = self.editBorderContour(blob, blob.contour, points)
 
+        pointIntersectsContours = intersected
         for contour in blob.inner_contours:
-            (inner_mask, inner_box) = self.editBorderContour(blob, contour, points)
+            (inner_mask, inner_box, intersected) = self.editBorderContour(blob, contour, points)
+            pointIntersectsContours = pointIntersectsContours or intersected
             Mask.paintMask(mask, box, inner_mask, inner_box, 0)
 
+        if not pointIntersectsContours:
+            #probably a hole, draw the points fill the hole and subtract from mask
+            allpoints = np.empty(shape=(0, 2), dtype=int)
+            for arc in points:
+                allpoints = np.append(allpoints, arc, axis =0)
+            points_box = Mask.pointsBox(allpoints, 4)
+            (points_mask, points_box) = Mask.jointMask(points_box, points_box)
+            Mask.paintPoints(points_mask, points_box, allpoints, 1)
+            origin = np.array([points_box[1], points_box[0]])
+            Mask.paintPoints(points_mask, points_box, allpoints - origin, 1)
+            points_mask = ndi.binary_fill_holes(points_mask)
+            points_mask = binary_erosion(points_mask)
+            Mask.paintMask(mask, box, points_mask, points_box, 0)
+
+
         blob.updateUsingMask(box, mask)
-        return
+
 
     def editBorderContour(self, blob, contour, points):
         snapped_points = np.empty(shape=(0, 2), dtype=int)
@@ -408,13 +426,14 @@ class Annotation(QObject):
 
         contour_box = Mask.pointsBox(contour, 4)
 
+        #if the countour did not intersect with the outer contour, get the mask of the outer contour
         if snapped_points is None or len(snapped_points) == 0:
             # not very elegant repeated code...
             (mask, box) = Mask.jointMask(contour_box, contour_box)
             origin = np.array([box[1], box[0]])
             contour_points = contour.round().astype(int)
             fillPoly(mask, pts=[contour_points - origin], color=(1))
-            return (mask, box)
+            return (mask, box, False)
 
         points_box = Mask.pointsBox(snapped_points, 4)
 
@@ -440,7 +459,7 @@ class Annotation(QObject):
         # adjust the image bounding box (relative to the region mask) to directly use area.image mask
         box = np.array([box[0] + largest.bbox[0], box[1] + largest.bbox[1], largest.bbox[3] - largest.bbox[1],
                         largest.bbox[2] - largest.bbox[0]])
-        return (largest.image, box)
+        return (largest.image, box, True)
 
     def statistics(self):
         """
