@@ -416,7 +416,7 @@ class TagLab(QWidget):
 
         # NETWORKS
         self.deepextreme_net = None
-        self.corals_classifier = None
+        self.classifier = None
 
         # a dirty trick to adjust all the size..
         self.showMinimized()
@@ -2605,9 +2605,9 @@ class TagLab(QWidget):
             del self.deepextreme_net
             self.deepextreme_net = None
 
-        if self.corals_classifier is not None:
-            del self.corals_classifier
-            self.corals_classifier = None
+        if self.classifier is not None:
+            del self.classifier
+            self.classifier = None
 
     @pyqtSlot()
     def selectClassifier(self):
@@ -2643,9 +2643,13 @@ class TagLab(QWidget):
     @pyqtSlot()
     def cropPrev(self):
 
+        classifier_selected = self.classifierWidget.selected()
+        target_scale_factor = classifier_selected['Scale']
+        scale_factor = target_scale_factor / self.activeviewer.image.map_px_to_mm_factor
+
         prev_area = self.prev_area
-        width = max(513, prev_area[2])
-        height = max(513, prev_area[3])
+        width = max(513*scale_factor, prev_area[2])
+        height = max(513*scale_factor, prev_area[3])
         crop_image = self.activeviewer.img_map.copy(prev_area[1],prev_area[0],width, height)
         self.classifierWidget.QPixmapRGB = QPixmap.fromImage(crop_image)
         size = self.classifierWidget.LABEL_SIZE
@@ -2655,10 +2659,39 @@ class TagLab(QWidget):
         """
         crop selected area and apply preview.
         """
-        prev_area = self.prev_area
 
-        if prev_area[2]> 513 and prev_area[3]> 513:
-            pass
+        prev_area = self.prev_area
+        width = max(513, prev_area[2])
+        height = max(513, prev_area[3])
+        
+
+        crop_image = self.activeviewer.img_map.copy(prev_area[1], prev_area[0], width, height)
+
+
+
+        classifier_selected = self.classifierWidget.selected()
+        # free GPU memory
+        self.resetNetworks()
+        self.setupProgressBar()
+
+        QApplication.processEvents()
+
+        self.classifier = MapClassifier(classifier_selected, self.labels_dictionary)
+        self.classifier.updateProgress.connect(self.progress_bar.setProgress)
+
+        target_scale_factor = classifier_selected['Scale']
+        scale_factor = target_scale_factor / self.activeviewer.image.map_px_to_mm_factor
+        w_target = crop_image.width() *  scale_factor
+        h_target = crop_image.height() * scale_factor
+        input_crop_image = crop_image.scaled(w_target, h_target, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+
+        self.progress_bar.showPerc()
+        self.progress_bar.setMessage("Classification: ")
+        self.progress_bar.setProgress(0.0)
+        QApplication.processEvents()
+
+        self.classifier.run(input_crop_image, 1026, 513, 256)
+
 
 
     def showPrevArea(self):
@@ -2714,9 +2747,9 @@ class TagLab(QWidget):
         self.resetNetworks()
 
         # delete classifier widget
-        if self.corals_classifier:
-            del self.corals_classifier
-            self.corals_classifier = None
+        if self.classifier:
+            del self.classifier
+            self.classifier = None
 
         # delete progress bar
         self.deleteProgressBar()
@@ -2753,8 +2786,8 @@ class TagLab(QWidget):
             message = "[AUTOCLASS] Automatic classification STARTS.. (classifier: )" + classifier_selected['Classifier Name']
             logfile.info(message)
 
-            self.corals_classifier = MapClassifier(classifier_selected, self.labels_dictionary)
-            self.corals_classifier.updateProgress.connect(self.progress_bar.setProgress)
+            self.classifier = MapClassifier(classifier_selected, self.labels_dictionary)
+            self.classifier.updateProgress.connect(self.progress_bar.setProgress)
 
             if self.activeviewer is None:
                 self.resetAutomaticClassification()
@@ -2781,9 +2814,9 @@ class TagLab(QWidget):
                 # runs the classifier
                 self.infoWidget.setInfoMessage("Automatic classification is running..")
 
-                self.corals_classifier.run(input_orthomap, 768, 512, 128)
+                self.classifier.run(input_orthomap, 768, 512, 128)
 
-                if self.corals_classifier.flagStopProcessing is False:
+                if self.classifier.flagStopProcessing is False:
 
                     # import generated label map
                     self.progress_bar.hidePerc()
@@ -2823,9 +2856,6 @@ class TagLab(QWidget):
 
                     self.move()
 
-    def automaticSegmentation(self):
-        self.img_overlay = QImage(self.segmentation_map_filename)
-        self.viewerplus.setOverlayImage(self.img_overlay)
 
 if __name__ == '__main__':
 
