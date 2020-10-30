@@ -285,7 +285,7 @@ class TagLab(QWidget):
         #self.scroll_area_labels_panel.setWidgetResizable(True)
         self.scroll_area_labels_panel.setWidget(self.labels_widget)
 
-        self.groupbox_labels = QGroupBox("Labels Panel")
+        self.groupbox_labels = QGroupBox("Labels")
 
         layout_groupbox = QVBoxLayout()
         layout_groupbox.addWidget(self.scroll_area_labels_panel)
@@ -296,7 +296,7 @@ class TagLab(QWidget):
         self.compare_panel.filterChanged[str].connect(self.updateVisibleMatches)
         self.compare_panel.data_table.clicked.connect(self.showConnectionCluster)
 
-        self.groupbox_comparison = QGroupBox("Comparison Panel")
+        self.groupbox_comparison = QGroupBox("Comparison")
 
         layout_groupbox2 = QVBoxLayout()
         layout_groupbox2.addWidget(self.compare_panel)
@@ -304,7 +304,7 @@ class TagLab(QWidget):
         self.groupbox_comparison.setLayout(layout_groupbox2)
 
         # BLOB INFO
-        groupbox_blobpanel = QGroupBox("Segmentation Info Panel")
+        groupbox_blobpanel = QGroupBox("Segmentation Info")
         lblId = QLabel("Id: ")
         self.lblId = QLabel("")
         lblcl = QLabel("Class: ")
@@ -1366,7 +1366,7 @@ class TagLab(QWidget):
 
     def setTool(self, tool):
         tools = {
-            "MOVE"       : ["Move"       , self.btnMove],
+            "MOVE"       : ["Pan"       , self.btnMove],
             "CREATECRACK": ["Crack"      , self.btnCreateCrack],
             #"SPLITBLOB"  : ["Split Blob" , self.btnSplitBlob],
             "ASSIGN"     : ["Assign"     , self.btnAssign],

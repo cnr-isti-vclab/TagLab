@@ -56,7 +56,7 @@ class QtHelpWidget(QWidget):
         self.groupbox_tool = QGroupBox("Tools")
         self.gridlayout2 = QGridLayout()
         self.gridlayout2.setHorizontalSpacing(20)
-        self.gridlayout2.addWidget(QLabel("Active Move Tool"), 0, 0)
+        self.gridlayout2.addWidget(QLabel("Active Pan Tool"), 0, 0)
         self.gridlayout2.addWidget(QLabel("Active Assign Tool"), 1, 0)
         self.gridlayout2.addWidget(QLabel("Active Freehand Tool"), 2, 0)
         self.gridlayout2.addWidget(QLabel("Active Edit Border Tool"), 3, 0)
