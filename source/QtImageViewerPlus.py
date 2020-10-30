@@ -78,6 +78,7 @@ class QtImageViewerPlus(QtImageViewer):
     #leftMouseButtonDoubleClicked = pyqtSignal(float, float)
     rightMouseButtonDoubleClicked = pyqtSignal(float, float)
     mouseMoveLeftPressed = pyqtSignal(float, float)
+    mouseMoved = pyqtSignal(float, float)
 
     # custom signal
     updateInfoPanel = pyqtSignal(Blob)
@@ -413,6 +414,7 @@ class QtImageViewerPlus(QtImageViewer):
         QGraphicsView.mouseMoveEvent(self, event)
 
         scenePos = self.mapToScene(event.pos())
+        self.mouseMoved.emit(scenePos.x(), scenePos.y())
 
         if self.showCrossair == True:
             self.mouseCoords = scenePos

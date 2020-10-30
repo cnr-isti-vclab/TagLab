@@ -203,6 +203,7 @@ class TagLab(QWidget):
         self.viewerplus.viewUpdated.connect(self.updateViewInfo)
         self.viewerplus.activated.connect(self.setActiveViewer)
         self.viewerplus.updateInfoPanel.connect(self.updatePanelInfo)
+        self.viewerplus.mouseMoved[float, float].connect(self.updateMousePos)
 
         # secondary viewer in SPLIT MODE
         self.viewerplus2 = QtImageViewerPlus()
@@ -210,6 +211,7 @@ class TagLab(QWidget):
         self.viewerplus2.viewUpdated.connect(self.updateViewInfo)
         self.viewerplus2.activated.connect(self.setActiveViewer)
         self.viewerplus2.updateInfoPanel.connect(self.updatePanelInfo)
+        self.viewerplus2.mouseMoved[float, float].connect(self.updateMousePos)
 
         self.viewerplus.newSelection.connect(self.showMatch)
         self.viewerplus2.newSelection.connect(self.showMatch)
@@ -250,14 +252,23 @@ class TagLab(QWidget):
         self.sliderTrasparency.setTickInterval(10)
         self.sliderTrasparency.valueChanged[int].connect(self.sliderTrasparencyChanged)
 
-        self.labelViewInfo = QLabel("100% | top:0 left:0 right:0 bottom:0         ")
+        self.labelViewInfo = QLabel("100% |      ,      ")
+        self.labelZoomInfo = QLabel("100%")
+        self.labelMouseLeftInfo = QLabel("0")
+        self.labelMouseTopInfo = QLabel("0")
+        self.labelZoomInfo.setFixedWidth(70)
+        self.labelMouseLeftInfo.setFixedWidth(70)
+        self.labelMouseTopInfo.setFixedWidth(70)
 
         layout_slider = QHBoxLayout()
         layout_slider.addWidget(self.comboboxMainImage)
         layout_slider.addWidget(self.comboboxComparisonImage)
         layout_slider.addWidget(self.lblSlider)
         layout_slider.addWidget(self.sliderTrasparency)
-        layout_slider.addWidget(self.labelViewInfo)
+        layout_slider.addWidget(self.labelZoomInfo)
+        layout_slider.addWidget(self.labelMouseLeftInfo)
+        layout_slider.addWidget(self.labelMouseTopInfo)
+
 
         layout_viewers = QHBoxLayout()
         layout_viewers.addWidget(self.viewerplus)
@@ -1315,22 +1326,36 @@ class TagLab(QWidget):
     @pyqtSlot()
     def updateViewInfo(self):
 
-        zf = self.viewerplus.zoom_factor * 100.0
 
         topleft = self.viewerplus.mapToScene(QPoint(0, 0))
         bottomright = self.viewerplus.mapToScene(self.viewerplus.viewport().rect().bottomRight())
 
         (left, top) = self.viewerplus.clampCoords(topleft.x(), topleft.y())
         (right, bottom) = self.viewerplus.clampCoords(bottomright.x(), bottomright.y())
+        self.updateMousePos(0, 0) #todo we should separate zoom from coords
+        zf = self.viewerplus.zoom_factor * 100.0
+        zoom = "{:6.0f}%".format(zf)
+        self.labelZoomInfo.setText(zoom)
 
-        text = "| {:6.2f}% | top: {:4d} left: {:4d} bottom: {:4d} right: {:4d}".format(zf, top, left, bottom, right)
 
         self.map_top = top
         self.map_left = left
         self.map_bottom = bottom
         self.map_right = right
 
-        self.labelViewInfo.setText(text)
+    @pyqtSlot(float, float)
+    def updateMousePos(self, x, y):
+        zf = self.viewerplus.zoom_factor * 100.0
+        zoom = "{:6.0f}%".format(zf)
+        left = "x: {:5d}".format(int(round(x)))
+        top = "y: {:5d}".format(int(round(y)))
+
+        self.labelZoomInfo.setText(zoom)
+        self.labelMouseLeftInfo.setText(left)
+        self.labelMouseTopInfo.setText(top)
+        #text = "| " + zoom.ljust(8) + " | " + left.ljust(5, '&nbsp;') + ", " + right.ljust(5)
+        #self.labelViewInfo.setText(text)
+
 
     def resetAll(self):
 
