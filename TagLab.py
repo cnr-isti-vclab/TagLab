@@ -231,7 +231,6 @@ class TagLab(QWidget):
         ###### LAYOUT MAIN VIEW
 
         layout_viewer = QVBoxLayout()
-
         self.comboboxMainImage = QComboBox()
         self.comboboxMainImage.setMinimumWidth(180)
         self.comboboxComparisonImage = QComboBox()
@@ -241,7 +240,6 @@ class TagLab(QWidget):
         self.comboboxComparisonImage.currentIndexChanged.connect(self.comparisonImageChanged)
 
         self.lblSlider = QLabel("Transparency: 0%")
-
         self.sliderTrasparency = QSlider(Qt.Horizontal)
         self.sliderTrasparency.setFocusPolicy(Qt.StrongFocus)
         self.sliderTrasparency.setMinimumWidth(200)
@@ -252,7 +250,6 @@ class TagLab(QWidget):
         self.sliderTrasparency.setTickInterval(10)
         self.sliderTrasparency.valueChanged[int].connect(self.sliderTrasparencyChanged)
 
-        self.labelViewInfo = QLabel("100% |      ,      ")
         self.labelZoomInfo = QLabel("100%")
         self.labelMouseLeftInfo = QLabel("0")
         self.labelMouseTopInfo = QLabel("0")
@@ -261,6 +258,7 @@ class TagLab(QWidget):
         self.labelMouseTopInfo.setFixedWidth(70)
 
         layout_slider = QHBoxLayout()
+        layout_slider.addWidget(QLabel("Map name:"))
         layout_slider.addWidget(self.comboboxMainImage)
         layout_slider.addWidget(self.comboboxComparisonImage)
         layout_slider.addWidget(self.lblSlider)
