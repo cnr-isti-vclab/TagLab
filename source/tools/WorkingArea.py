@@ -9,6 +9,7 @@ from PyQt5.QtCore import pyqtSlot, pyqtSignal
 class WorkingArea(Tool):
 
     rectChanged = pyqtSignal(int, int, int, int)
+    released = pyqtSignal()
 
     def __init__(self, viewerplus, pick_points ):
         super(WorkingArea, self).__init__(viewerplus)
@@ -23,6 +24,10 @@ class WorkingArea(Tool):
             self.pick_points.points.append(np.array([x, y]))
         else:
             self.pick_points.reset()
+
+
+    def leftReleased(self, x, y):
+        self.released.emit()
 
     def mouseMove(self, x, y):
         if len(self.pick_points.points) > 1:

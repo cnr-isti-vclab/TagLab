@@ -28,6 +28,9 @@ from source import utils
 
 class QtClassifierWidget(QWidget):
 
+
+    closed = pyqtSignal()
+
     def __init__(self, classifiers, parent=None):
         super(QtClassifierWidget, self).__init__(parent)
 
@@ -66,6 +69,7 @@ class QtClassifierWidget(QWidget):
         layoutH1a.addWidget(self.lblClasses)
         layoutH1a.addWidget(self.lblScale)
         layoutH1a.addWidget(self.lblAvgColor)
+        self.lblAvgColor.hide()
 
         LINEWIDTH = 300
         self.editFilename = QLineEdit(classifiers[0]["Weights"])
@@ -84,10 +88,10 @@ class QtClassifierWidget(QWidget):
         self.editScale.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
         self.editScale.setFixedWidth(LINEWIDTH)
         self.editScale.setReadOnly(True)
-        #self.editAvgColor = QLineEdit(self.avgcolor2str(classifiers[0]["Average Norm."]))
-        # self.editAvgColor.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
-        # self.editAvgColor.setFixedWidth(LINEWIDTH)
-        # self.editAvgColor.setReadOnly(True)
+        self.editAvgColor = QLineEdit(self.avgcolor2str(classifiers[0]["Average Norm."]))
+        self.editAvgColor.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
+        self.editAvgColor.setFixedWidth(LINEWIDTH)
+        self.editAvgColor.setReadOnly(True)
 
         layoutH1b = QVBoxLayout()
         layoutH1b.setAlignment(Qt.AlignLeft)
@@ -95,7 +99,9 @@ class QtClassifierWidget(QWidget):
         layoutH1b.addWidget(self.editNClasses)
         layoutH1b.addWidget(self.editClasses)
         layoutH1b.addWidget(self.editScale)
-        #layoutH1b.addWidget(self.editAvgColor)
+        layoutH1b.addWidget(self.editAvgColor)
+        self.editAvgColor.hide()
+
 
         layoutH1 = QHBoxLayout()
         layoutH1.addLayout(layoutH1a)
@@ -182,6 +188,7 @@ class QtClassifierWidget(QWidget):
         layoutV = QVBoxLayout()
         layoutV.addLayout(layoutH0)
         layoutV.addLayout(layoutH1)
+        layoutV.addSpacing(10)
         layoutV.addWidget(self.groupPrew)
         layoutV.addLayout(layoutH2)
         layoutV.setSpacing(3)
@@ -230,3 +237,7 @@ class QtClassifierWidget(QWidget):
         #
         # # update the preview
         # self.preview()
+
+
+    def closeEvent(self, event):
+        self.closed.emit()
