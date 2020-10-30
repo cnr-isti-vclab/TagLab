@@ -140,7 +140,7 @@ class TagLab(QWidget):
         QPushButton:hover   { border: 1px solid rgb(255,100,100); }"""
 
 
-        self.btnMove        = self.newButton("move.png",     "Move",                   flatbuttonstyle1, self.move)
+        self.btnMove        = self.newButton("move.png",     "Pan",                   flatbuttonstyle1, self.move)
         self.btnAssign      = self.newButton("bucket.png",   "Assign class",           flatbuttonstyle1, self.assign)
         self.btnEditBorder  = self.newButton("edit.png",     "Edit border",            flatbuttonstyle1, self.editBorder)
         self.btnCut         = self.newButton("scissors.png", "Cut Segmentation",       flatbuttonstyle1, self.cut)
@@ -509,7 +509,10 @@ class TagLab(QWidget):
     def setProjectTitle(self, project_name):
 
         title = "TagLab - [Project: " + project_name + "]"
-        self.setWindowTitle(title)
+        if self.parent() is not None:
+            self.parent().setWindowTitle(title)
+        else:
+            self.setWindowTitle(title)
 
         if project_name != "NONE":
 
