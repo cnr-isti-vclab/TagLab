@@ -52,6 +52,10 @@ class TableModel(QAbstractTableModel):
 
             return txt
 
+        if role == Qt.TextAlignmentRole:
+            if index.column() == 2 or index.column() == 3:
+                return Qt.AlignRight | Qt.AlignVCenter
+
         if role == Qt.BackgroundRole:
             return QColor(40, 40, 40)
 
