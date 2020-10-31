@@ -79,6 +79,7 @@ class QtImageViewerPlus(QtImageViewer):
     rightMouseButtonDoubleClicked = pyqtSignal(float, float)
     mouseMoveLeftPressed = pyqtSignal(float, float)
     mouseMoved = pyqtSignal(float, float)
+    selectionChanged = pyqtSignal()
 
     # custom signal
     updateInfoPanel = pyqtSignal(Blob)
@@ -145,6 +146,7 @@ class QtImageViewerPlus(QtImageViewer):
         self.image = image
         self.annotations = image.annotations
         self.selected_blobs = []
+        self.selectionChanged.emit()
 
         for blob in self.annotations.seg_blobs:
             self.drawBlob(blob)
@@ -200,6 +202,7 @@ class QtImageViewerPlus(QtImageViewer):
 
         QtImageViewer.clear(self)
         self.selected_blobs = []
+        self.selectionChanged.emit()
         self.undo_data = Undo()
 
         for blob in self.annotations.seg_blobs:
@@ -537,6 +540,7 @@ class QtImageViewerPlus(QtImageViewer):
         else:
             print("blob qpath_qitem is None!")
         self.scene.invalidate()
+        self.selectionChanged.emit()
 
 
     def removeFromSelectedList(self, blob):
@@ -552,6 +556,7 @@ class QtImageViewerPlus(QtImageViewer):
         except Exception as e:
             print("Exception: e", e)
             pass
+        self.selectionChanged.emit()
 
     def resetSelection(self):
         for blob in self.selected_blobs:
@@ -564,6 +569,7 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.selected_blobs.clear()
         self.scene.invalidate(self.scene.sceneRect())
+        self.selectionChanged.emit()
 
 
 
@@ -648,6 +654,7 @@ class QtImageViewerPlus(QtImageViewer):
             self.logfile.info(message)
             self.annotations.addBlob(blob)
             self.selected_blobs.append(blob)
+            self.selectionChanged.emit()
             self.drawBlob(blob)
 
         for (blob, class_name) in operation['class']:
@@ -674,6 +681,7 @@ class QtImageViewerPlus(QtImageViewer):
             self.logfile.info(message)
             self.annotations.addBlob(blob)
             self.selected_blobs.append(blob)
+            self.selectionChanged.emit()
             self.drawBlob(blob)
 
         for (blob, class_name) in operation['newclass']:

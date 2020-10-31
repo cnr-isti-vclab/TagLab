@@ -204,6 +204,7 @@ class TagLab(QWidget):
         self.viewerplus.activated.connect(self.setActiveViewer)
         self.viewerplus.updateInfoPanel.connect(self.updatePanelInfo)
         self.viewerplus.mouseMoved[float, float].connect(self.updateMousePos)
+        self.viewerplus.selectionChanged.connect(self.updateEditActions)
 
         # secondary viewer in SPLIT MODE
         self.viewerplus2 = QtImageViewerPlus()
@@ -212,6 +213,7 @@ class TagLab(QWidget):
         self.viewerplus2.activated.connect(self.setActiveViewer)
         self.viewerplus2.updateInfoPanel.connect(self.updatePanelInfo)
         self.viewerplus2.mouseMoved[float, float].connect(self.updateMousePos)
+        self.viewerplus2.selectionChanged.connect(self.updateEditActions)
 
         self.viewerplus.newSelection.connect(self.showMatch)
         self.viewerplus2.newSelection.connect(self.showMatch)
@@ -468,6 +470,19 @@ class TagLab(QWidget):
         button.clicked.connect(callback)
         return button
 
+    @pyqtSlot()
+    def updateEditActions(self):
+        nSelected = len(self.viewerplus.selected_blobs) + len(self.viewerplus2.selected_blobs)
+        self.assignAction.setEnabled(nSelected > 0)
+        self.deleteAction.setEnabled(nSelected > 0)
+        self.mergeAction.setEnabled(nSelected > 1)
+        self.divideAction.setEnabled(nSelected > 1)
+        self.subtractAction.setEnabled(nSelected > 1)
+        self.refineAction.setEnabled(nSelected == 1)
+        self.refineActionDilate.setEnabled(nSelected == 1)
+        self.refineActionErode.setEnabled(nSelected == 1)
+        self.fillAction.setEnabled(nSelected > 0)
+
     def activateAutosave(self):
 
         pass
@@ -485,13 +500,14 @@ class TagLab(QWidget):
     # call by pressing right button
     def openContextMenu(self, position):
 
+
         menu = QMenu(self)
         menu.setAutoFillBackground(True)
 
         str = "QMenu::item:selected{\
             background-color: rgb(110, 110, 120);\
             color: rgb(255, 255, 255);\
-            }"
+            } QMenu::item:disabled { color:rgb(150, 150, 150); }"
 
         menu.setStyleSheet(str)
 
@@ -756,6 +772,8 @@ class TagLab(QWidget):
         helpmenu.addAction(aboutAct)
 
         return menubar
+
+
 
     @pyqtSlot()
     def switchDEM(self):
