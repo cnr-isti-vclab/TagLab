@@ -165,7 +165,7 @@ class TagLab(QWidget):
         layout_tools.addWidget(self.btnMove)
         layout_tools.addWidget(self.btnAssign)
         layout_tools.addWidget(self.btnFreehand)
-        layout_tools.addWidget(self.btnWatershed)
+        #layout_tools.addWidget(self.btnWatershed)
         layout_tools.addWidget(self.btnEditBorder)
         layout_tools.addWidget(self.btnCut)
         layout_tools.addWidget(self.btnCreateCrack)
