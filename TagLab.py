@@ -166,10 +166,7 @@ class TagLab(QWidget):
         layout_tools.addWidget(self.btnMove)
         layout_tools.addWidget(self.btnDeepExtreme)
         layout_tools.addWidget(self.btnFreehand)
-<<<<<<< HEAD
-=======
         layout_tools.addWidget(self.btnAssign)
->>>>>>> origin/devel
         #layout_tools.addWidget(self.btnWatershed)
         layout_tools.addWidget(self.btnEditBorder)
         layout_tools.addWidget(self.btnCut)
