@@ -240,7 +240,7 @@ class QtImageViewerPlus(QtImageViewer):
         blob.id_item.setTransformOriginPoint(QPointF(blob.centroid[0] + 14.0, blob.centroid[1] + 14.0))
         blob.id_item.setZValue(2)
         blob.id_item.setBrush(Qt.white)
-        blob.id_item.setOpacity(0.5)
+        blob.id_item.setOpacity(0.8)
 
         #blob.id_item.setDefaultTextColor(Qt.white)
         #blob.id_item.setFlag(QGraphicsItem.ItemIgnoresTransformations)
