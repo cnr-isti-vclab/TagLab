@@ -27,7 +27,7 @@ from skimage.filters import sobel
 from scipy import ndimage as ndi
 from PyQt5.QtGui import QPainter, QImage, QPen, QBrush, QColor, qRgb
 from PyQt5.QtWidgets import QMessageBox
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QObject, pyqtSignal
 from skimage.color import rgb2gray
 from skimage.draw import polygon_perimeter
 
@@ -35,7 +35,7 @@ from source import utils
 
 import pandas as pd
 from scipy import ndimage as ndi
-from skimage.morphology import watershed, flood
+from skimage.morphology import watershed, flood, binary_dilation, binary_erosion
 from skimage.filters import gaussian
 from source.Blob import Blob
 import source.Mask as Mask
@@ -80,12 +80,14 @@ class Group(object):
 
 
 #refactor: change name to annotationS
-class Annotation(object):
+class Annotation(QObject):
     """
         Annotation object contains all the annotations as a list of blobs.
     """
+    blobUpdated = pyqtSignal(Blob)
 
     def __init__(self):
+        super(QObject, self).__init__()
 
         #refactor: rename this to blobs.
         # list of all blobs
@@ -118,6 +120,14 @@ class Annotation(object):
     def removeBlob(self, blob):
         index = self.seg_blobs.index(blob)
         del self.seg_blobs[index]
+
+    #just
+    def updateBlob(self, old_blob, new_blob):
+        new_blob.id = old_blob.id;
+        self.removeBlob(old_blob)
+        self.addBlob(new_blob)
+        self.blobUpdated.emit(new_blob)
+
 
     def blobById(self, id):
         for blob in self.seg_blobs:
@@ -372,22 +382,6 @@ class Annotation(object):
 
         return created_blobs
 
-            # if len(regions):
-            #     largest = regions[0]
-            #     for region in regions:
-            #         if region.area > largest.area and region.area > 1000:
-            #             largest = region
-            #
-            #
-            #     # adjust the image bounding box (relative to the region mask) to directly use area.image mask
-            #     # image box is standard (minx, miny, maxx, maxy)
-            #     box = np.array([box[0] + largest.bbox[0], box[1] + largest.bbox[1], largest.bbox[3], largest.bbox[2]])
-            #     try:
-            #         self.updateUsingMask(box, largest.image.astype(int))
-            #     except:
-            #         pass
-
-            #self.updateUsingMask(self.bbox, cracked_blob)
 
     def editBorder(self, blob, lines):
         points = [blob.drawLine(line) for line in lines]
@@ -396,14 +390,32 @@ class Annotation(object):
             return
 
         # compute the box for the outer contour
-        (mask, box) = self.editBorderContour(blob, blob.contour, points)
+        intersected = False
+        (mask, box, intersected) = self.editBorderContour(blob, blob.contour, points)
 
+        pointIntersectsContours = intersected
         for contour in blob.inner_contours:
-            (inner_mask, inner_box) = self.editBorderContour(blob, contour, points)
+            (inner_mask, inner_box, intersected) = self.editBorderContour(blob, contour, points)
+            pointIntersectsContours = pointIntersectsContours or intersected
             Mask.paintMask(mask, box, inner_mask, inner_box, 0)
 
+        if not pointIntersectsContours:
+            #probably a hole, draw the points fill the hole and subtract from mask
+            allpoints = np.empty(shape=(0, 2), dtype=int)
+            for arc in points:
+                allpoints = np.append(allpoints, arc, axis =0)
+            points_box = Mask.pointsBox(allpoints, 4)
+            (points_mask, points_box) = Mask.jointMask(points_box, points_box)
+            Mask.paintPoints(points_mask, points_box, allpoints, 1)
+            origin = np.array([points_box[1], points_box[0]])
+            Mask.paintPoints(points_mask, points_box, allpoints - origin, 1)
+            points_mask = ndi.binary_fill_holes(points_mask)
+            points_mask = binary_erosion(points_mask)
+            Mask.paintMask(mask, box, points_mask, points_box, 0)
+
+
         blob.updateUsingMask(box, mask)
-        return
+
 
     def editBorderContour(self, blob, contour, points):
         snapped_points = np.empty(shape=(0, 2), dtype=int)
@@ -414,13 +426,14 @@ class Annotation(object):
 
         contour_box = Mask.pointsBox(contour, 4)
 
+        #if the countour did not intersect with the outer contour, get the mask of the outer contour
         if snapped_points is None or len(snapped_points) == 0:
             # not very elegant repeated code...
             (mask, box) = Mask.jointMask(contour_box, contour_box)
             origin = np.array([box[1], box[0]])
             contour_points = contour.round().astype(int)
             fillPoly(mask, pts=[contour_points - origin], color=(1))
-            return (mask, box)
+            return (mask, box, False)
 
         points_box = Mask.pointsBox(snapped_points, 4)
 
@@ -446,7 +459,7 @@ class Annotation(object):
         # adjust the image bounding box (relative to the region mask) to directly use area.image mask
         box = np.array([box[0] + largest.bbox[0], box[1] + largest.bbox[1], largest.bbox[3] - largest.bbox[1],
                         largest.bbox[2] - largest.bbox[0]])
-        return (largest.image, box)
+        return (largest.image, box, True)
 
     def statistics(self):
         """
@@ -506,27 +519,39 @@ class Annotation(object):
         w = size.width()
         h = size.height()
 
-        labelimg = QImage(w, h, QImage.Format_RGB32)
-        labelimg.fill(qRgb(0, 0, 0))
-
-        painter = QPainter(labelimg)
-
-        pen = QPen(Qt.black)
-        pen.setWidth(1)
-        painter.setPen(pen)
+        imagebox = [0, 0, w, h]
+        image = np.zeros([h, w, 3], np.uint8)
 
         for i, blob in enumerate(self.seg_blobs):
-            if blob.qpath_gitem.isVisible():
-                if blob.class_name == "Empty":
-                    rgb = qRgb(255, 255, 255)
-                else:
-                    class_color = labels_info[blob.class_name]
-                    rgb = qRgb(class_color[0], class_color[1], class_color[2])
+            if not blob.qpath_gitem.isVisible():
+                continue
 
-                painter.setBrush(QBrush(QColor(rgb)))
-                painter.drawPath(blob.qpath_gitem.path())
+            if blob.class_name == "Empty":
+                rgb = [255, 255, 255]
+            else:
+                class_color = labels_info[blob.class_name]
+                rgb = class_color
 
-        painter.end()
+            mask = blob.getMask().astype(bool)  #bool is required for bitmask indexing
+            box = blob.bbox
+            (box[2], box[3]) = (box[3] + box[0], box[2] + box[1])
+
+            #extract common parts of mask and image (mask might be partly outside of the image
+            range = [max(box[0], imagebox[0]), max(box[1], imagebox[1]), min(box[2], imagebox[2]), min(box[3], imagebox[3])]
+            subimage = image[range[0] - imagebox[0]:range[2] - imagebox[0], range[1] - imagebox[1]:range[3] - imagebox[1]]
+            submask = mask[range[0] - box[0]:range[2] - box[0], range[1] - box[1]:range[3] - box[1]]
+
+            #use the binary mask to assign a color
+            subimage[submask] = rgb
+
+            #create 1px border: dilate then subtract the mask.
+            border = binary_dilation(submask) & ~submask
+
+            #select only the border over blobs of the same color and draw the border
+            samecolor = np.all(subimage == rgb, axis=-1)
+            subimage[border & samecolor] = [0, 0, 0]
+
+        labelimg = QImage(image.data, w, h, w*3, QImage.Format_RGB888)
 
         return labelimg
 

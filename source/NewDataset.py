@@ -36,9 +36,9 @@ class NewDataset(object):
 	This class handles the functionalities to create a new dataset.
 	"""
 
-	def __init__(self, orthoimage, blobs, tile_size, step):
+	def __init__(self, ortho_image, blobs, tile_size, step):
 
-		self.orthoimage = orthoimage  # QImage
+		self.ortho_image = ortho_image  # QImage
 		self.blobs = blobs
 		self.tile_size = tile_size
 		self.step = step
@@ -71,14 +71,22 @@ class NewDataset(object):
 		self.sP_max = 0.0
 
 
-	def rescale(self, current_scale, target_scale):
+	def workingAreaCropAndRescale(self, current_scale, target_scale, working_area):
 
-		scale= target_scale/current_scale
-		w  = self.orthoimage.width()*scale
-		h = self.orthoimage.height()*scale
+		x = working_area[1]
+		y = working_area[0]
+		width = working_area[2]
+		height = working_area[3]
 
-		self.orthoimage = self.orthoimage.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
-		self.label_image = self.label_image.scaled(w, h, Qt.IgnoreAspectRatio, Qt.FastTransformation)
+		crop_ortho_image = self.ortho_image.copy(x, y, width, height)
+		crop_label_image = self.label_image.copy(x, y, width, height)
+
+		scale = target_scale/current_scale
+		w = crop_ortho_image.width()*scale
+		h = crop_ortho_image.height()*scale
+
+		self.ortho_image = crop_ortho_image.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+		self.label_image = crop_label_image.scaled(w, h, Qt.IgnoreAspectRatio, Qt.FastTransformation)
 
 
 	def isFullyInsideBBox(self, bbox1, bbox2):
@@ -161,8 +169,8 @@ class NewDataset(object):
 		Compute the frequencies of the target classes on the entire map.
 		"""
 
-		map_w = self.orthoimage.width()
-		map_h = self.orthoimage.height()
+		map_w = self.ortho_image.width()
+		map_h = self.ortho_image.height()
 		area_map = map_w * map_h
 
 		frequencies = []
@@ -349,8 +357,8 @@ class NewDataset(object):
 
 		area_info = []
 
-		map_w = self.orthoimage.width()
-		map_h = self.orthoimage.height()
+		map_w = self.ortho_image.width()
+		map_h = self.ortho_image.height()
 
 		area_w = int(math.sqrt(0.15) * map_w)
 		area_h = int(math.sqrt(0.15) * map_h)
@@ -474,8 +482,8 @@ class NewDataset(object):
 		"""
 
 		# create a black canvas of the same size of your map
-		w = self.orthoimage.width()
-		h = self.orthoimage.height()
+		w = self.ortho_image.width()
+		h = self.ortho_image.height()
 
 		labelimg = QImage(w, h, QImage.Format_RGB32)
 		labelimg.fill(qRgb(0, 0, 0))
@@ -539,8 +547,8 @@ class NewDataset(object):
 		"""
 
 		# size of the each area is 15% of the entire map
-		map_w = self.orthoimage.width()
-		map_h = self.orthoimage.height()
+		map_w = self.ortho_image.width()
+		map_h = self.ortho_image.height()
 
 		val_area = [0, 0, 0, 0]
 		test_area = [0, 0, 0, 0]
@@ -550,21 +558,21 @@ class NewDataset(object):
 
 			delta = int(self.crop_size / 2)
 			ww_val = map_w - delta*2
-			hh_val = (map_h - delta*2) * 0.175
+			hh_val = (map_h - delta*2) * 0.15 - delta
 			ww_test = ww_val
-			hh_test = (map_h - delta*2) * 0.125
-			val_area = [delta + (map_h - delta*2) * 0.7 - self.crop_size, delta, ww_val, hh_val]
-			test_area = [delta + (map_h - delta*2) * 0.875, delta, ww_test, hh_test]
+			hh_test = (map_h - delta*2) * 0.15 - delta
+			val_area = [delta + (map_h - delta * 2) * 0.7, delta, ww_val, hh_val]
+			test_area = [2*delta + (map_h - delta*2) * 0.85, delta, ww_test, hh_test]
 
 		elif mode == "UNIFORM (HORIZONTAL)":
 
 			delta = int(self.crop_size / 2)
-			ww_val = (map_w - delta*2) * 0.15
+			ww_val = (map_w - delta*2) * 0.15 - delta
 			hh_val = map_h - delta*2
-			ww_test = (map_w - delta*2) * 0.15
+			ww_test = (map_w - delta*2) * 0.15 - delta
 			hh_test = hh_val
-			val_area = [delta, delta + (map_w - delta*2) * 0.7 - self.crop_size, ww_val, hh_val]
-			test_area = [delta, delta + (map_w - delta*2) * 0.85, ww_test, hh_test]
+			val_area = [delta, delta + (map_w - delta*2) * 0.7, ww_val, hh_val]
+			test_area = [delta, 2* delta + (map_w - delta*2) * 0.85, ww_test, hh_test]
 
 		elif mode == "RANDOM":
 
@@ -822,8 +830,8 @@ class NewDataset(object):
 
 	def sampleBlobWPoissonDisk(self, blob, current_samples, r):
 
-		map_w = self.orthoimage.width()
-		map_h = self.orthoimage.height()
+		map_w = self.ortho_image.width()
+		map_h = self.ortho_image.height()
 
 		offset_x = blob.bbox[1]
 		offset_y = blob.bbox[0]
@@ -955,10 +963,10 @@ class NewDataset(object):
 		The cutting can be regular or depending on the area and shape of the corals (oversampling).
 		"""
 
-		w = self.orthoimage.width()
-		h = self.orthoimage.height()
+		w = self.ortho_image.width()
+		h = self.ortho_image.height()
 
-		delta = int(self.tile_size / 2)
+		delta = int(self.crop_size / 2)
 
 		if regular is True:
 			self.validation_tiles = self.sampleAreaUniformly(self.val_area, self.tile_size, self.step)
@@ -1028,7 +1036,7 @@ class NewDataset(object):
 			cy = sample[1]
 			top = cy - half_tile_size
 			left = cx - half_tile_size
-			cropimg = utils.cropQImage(self.orthoimage, [top, left, self.tile_size, self.tile_size])
+			cropimg = utils.cropQImage(self.ortho_image, [top, left, self.tile_size, self.tile_size])
 			croplabel = utils.cropQImage(self.label_image, [top, left, self.tile_size, self.tile_size])
 
 			filenameRGB = os.path.join(basenameVim, tilename + str.format("_{0:04d}", (i)) + ".png")
@@ -1059,7 +1067,7 @@ class NewDataset(object):
 			top = cy - half_tile_size
 			left = cx - half_tile_size
 
-			cropimg = utils.cropQImage(self.orthoimage, [top, left, self.tile_size, self.tile_size])
+			cropimg = utils.cropQImage(self.ortho_image, [top, left, self.tile_size, self.tile_size])
 			croplabel = utils.cropQImage(self.label_image, [top, left, self.tile_size, self.tile_size])
 
 			filenameRGB = os.path.join(basenameTestIm, tilename + str.format("_{0:04d}", (i)) + ".png")
@@ -1089,7 +1097,7 @@ class NewDataset(object):
 			top = cy - half_tile_size
 			left = cx - half_tile_size
 
-			cropimg = utils.cropQImage(self.orthoimage, [top, left, self.tile_size, self.tile_size])
+			cropimg = utils.cropQImage(self.ortho_image, [top, left, self.tile_size, self.tile_size])
 			croplabel = utils.cropQImage(self.label_image, [top, left, self.tile_size, self.tile_size])
 
 			filenameRGB = os.path.join(basenameTrainIm, tilename + str.format("_{0:04d}", (i)) + ".png")
@@ -1252,17 +1260,20 @@ class NewDataset(object):
 				painter.drawRect(left, top, size, size)
 
 		if show_areas is True:
+
 			pen_width = int(min(self.label_image.width(), self.label_image.height()) / 200.0)
 
 			painter.setBrush(Qt.NoBrush)
 			pen = QPen(Qt.blue)
-			pen.setWidth(5)
+			pen.setWidth(pen_width)
+			pen.setStyle(Qt.DashDotLine)
 			painter.setPen(pen)
 			painter.drawRect(self.val_area[1], self.val_area[0], self.val_area[2], self.val_area[3])
 
 			painter.setBrush(Qt.NoBrush)
 			pen = QPen(Qt.red)
-			pen.setWidth(5)
+			pen.setWidth(pen_width)
+			pen.setStyle(Qt.DashDotLine)
 			painter.setPen(pen)
 			painter.drawRect(self.test_area[1], self.test_area[0], self.test_area[2], self.test_area[3])
 

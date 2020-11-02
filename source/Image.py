@@ -6,7 +6,7 @@ import rasterio as rio
 class Image(object):
     def __init__(self, rect = [0.0, 0.0, 0.0, 0.0],
         map_px_to_mm_factor = 1.0, width = None, height = None, channels = [], id = None, name = None,
-        georef_filename = "", workspace = [], metadata = {}, annotations = {}):
+        georef_filename = "", workspace = [], metadata = {}, annotations = {}, working_area = []):
 
         #we have to select a standanrd enforced!
         #in image standard (x, y, width height)
@@ -30,6 +30,7 @@ class Image(object):
         self.id = id                            # internal id used in correspondences it will never changes
         self.name = name                        # a label for an annotated image
         self.workspace = workspace              # a polygon in spatial reference system
+        self.working_area = working_area        # this is the working area of data exports for training
         #self.map_acquisition_date = None       # this should be suggested in project creation in image_metadata_template
         self.georef_filename = georef_filename  # image file (GeoTiff) contained the georeferencing information
         self.metadata = metadata                # this follows image_metadata_template, do we want to allow freedom to add custome values?

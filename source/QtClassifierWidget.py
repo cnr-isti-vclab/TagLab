@@ -21,12 +21,15 @@ import os
 
 from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QImage, QPixmap, QIcon, qRgb, qRed, qGreen, qBlue
-from PyQt5.QtWidgets import QWidget, QDialog, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
+from PyQt5.QtWidgets import QSlider,QGroupBox, QWidget, QDialog, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
 from source.Annotation import Annotation
 
 from source import utils
 
 class QtClassifierWidget(QWidget):
+
+
+    closed = pyqtSignal()
 
     def __init__(self, classifiers, parent=None):
         super(QtClassifierWidget, self).__init__(parent)
@@ -35,9 +38,6 @@ class QtClassifierWidget(QWidget):
 
         self.setStyleSheet("background-color: rgba(60,60,65,100); color: white")
 
-        self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        self.setMinimumWidth(300)
-        self.setMinimumHeight(100)
 
         layoutH0 = QHBoxLayout()
 
@@ -69,6 +69,7 @@ class QtClassifierWidget(QWidget):
         layoutH1a.addWidget(self.lblClasses)
         layoutH1a.addWidget(self.lblScale)
         layoutH1a.addWidget(self.lblAvgColor)
+        self.lblAvgColor.hide()
 
         LINEWIDTH = 300
         self.editFilename = QLineEdit(classifiers[0]["Weights"])
@@ -99,10 +100,81 @@ class QtClassifierWidget(QWidget):
         layoutH1b.addWidget(self.editClasses)
         layoutH1b.addWidget(self.editScale)
         layoutH1b.addWidget(self.editAvgColor)
+        self.editAvgColor.hide()
+
 
         layoutH1 = QHBoxLayout()
         layoutH1.addLayout(layoutH1a)
         layoutH1.addLayout(layoutH1b)
+
+        #prev panel
+
+        self.btnChooseArea = QPushButton()
+        ChooseAreaIcon = QIcon("icons\\select_area.png")
+        self.btnChooseArea.setIcon(ChooseAreaIcon)
+        self.btnPrev = QPushButton("Preview")
+
+        layoutButtons = QHBoxLayout()
+        layoutButtons.setAlignment(Qt.AlignLeft)
+        layoutButtons.addWidget(self.btnChooseArea)
+        layoutButtons.addWidget(self.btnPrev)
+
+        self.LABEL_SIZE = 600
+
+        self.QlabelRGB = QLabel("")
+        self.QPixmapRGB = QPixmap(self.LABEL_SIZE, self.LABEL_SIZE)
+        self.QPixmapRGB.fill(Qt.black)
+        self.QlabelRGB.setPixmap(self.QPixmapRGB)
+
+        self.QlabelPred = QLabel("")
+        self.QPixmapPred = QPixmap(self.LABEL_SIZE, self.LABEL_SIZE)
+        self.QPixmapPred.fill(Qt.black)
+        self.QlabelPred.setPixmap(self.QPixmapPred)
+
+        layoutTiles = QHBoxLayout()
+        layoutTiles.setAlignment(Qt.AlignTop)
+        layoutTiles.addWidget(self.QlabelRGB)
+        layoutTiles.addWidget(self.QlabelPred)
+
+
+        self.QlabelThresh = QLabel("Predition Threshold:")
+        self.QlabelThreshValue= QLabel("0.0")
+
+        SLIDER_WIDTH = 200
+
+        self.sliderTolerance = QSlider(Qt.Horizontal)
+        self.sliderTolerance.setFocusPolicy(Qt.StrongFocus)
+        self.sliderTolerance.setMinimumWidth(SLIDER_WIDTH)
+        self.sliderTolerance.setMinimum(0)
+        self.sliderTolerance.setMaximum(100)
+        self.sliderTolerance.setValue(0)
+        self.sliderTolerance.setTickInterval(5)
+        self.sliderTolerance.setAutoFillBackground(True)
+        self.sliderTolerance.valueChanged.connect(self.sliderToleranceChanged)
+
+
+        layoutSlider = QHBoxLayout()
+        layoutSlider.setAlignment(Qt.AlignTop)
+        layoutSlider.addWidget(self.QlabelThreshValue)
+        layoutSlider.addWidget(self.sliderTolerance)
+
+        layoutThreshold = QVBoxLayout()
+        layoutThreshold.setAlignment(Qt.AlignTop)
+        layoutThreshold.addWidget(self.QlabelThresh)
+        layoutThreshold.addLayout(layoutSlider)
+
+        layoutPred= QHBoxLayout()
+        layoutPred.addLayout(layoutTiles)
+        layoutPred.addLayout(layoutThreshold)
+
+        layoutPreview = QVBoxLayout()
+        layoutPreview.addLayout(layoutButtons)
+        layoutPreview.addLayout(layoutPred)
+
+
+        self.groupPrew = QGroupBox("Check Classifier Prediction")
+        self.groupPrew.setLayout(layoutPreview)
+        self.groupPrew.hide()
 
         self.btnCancel = QPushButton("Cancel")
         self.btnCancel.clicked.connect(self.close)
@@ -117,9 +189,12 @@ class QtClassifierWidget(QWidget):
         layoutV = QVBoxLayout()
         layoutV.addLayout(layoutH0)
         layoutV.addLayout(layoutH1)
+        layoutV.addSpacing(10)
+        layoutV.addWidget(self.groupPrew)
         layoutV.addLayout(layoutH2)
         layoutV.setSpacing(3)
         self.setLayout(layoutV)
+
 
         self.setWindowTitle("SELECT CLASSIFIER")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
@@ -152,3 +227,18 @@ class QtClassifierWidget(QWidget):
         return txt
 
 
+    @pyqtSlot()
+    def sliderToleranceChanged(self):
+        pass
+        # # update tolerance value
+        # newvalue = self.sliderTolerance.value()
+        # str1 = "Tolerance {}".format(newvalue)
+        # self.lblTolerance.setText(str1)
+        # self.tolerance = newvalue
+        #
+        # # update the preview
+        # self.preview()
+
+
+    def closeEvent(self, event):
+        self.closed.emit()

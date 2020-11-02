@@ -19,22 +19,19 @@
 
 import os
 
-from PyQt5.QtCore import Qt, pyqtSlot
+from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QImage, QPixmap, QIcon, qRgb, qRed, qGreen, qBlue
 from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
 
 class QtNewDatasetWidget(QWidget):
 
-    def __init__(self, parent=None):
+    closed = pyqtSignal()
+
+    def __init__(self, working_area, parent=None):
         super(QtNewDatasetWidget, self).__init__(parent)
 
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
-
-        self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        self.setMinimumWidth(300)
-        self.setMinimumHeight(100)
-
-        TEXT_SPACE = 100
+        TEXT_SPACE = 130
         LINEWIDTH = 300
 
         ###########################################################
@@ -42,6 +39,10 @@ class QtNewDatasetWidget(QWidget):
         self.lblDatasetFolder = QLabel("Dataset folder: ")
         self.lblDatasetFolder.setFixedWidth(TEXT_SPACE)
         self.lblDatasetFolder.setAlignment(Qt.AlignRight)
+        self.lblWorkingArea = QLabel("Working Area: ")
+        self.lblWorkingArea.setFixedWidth(TEXT_SPACE)
+        self.lblWorkingArea.setAlignment(Qt.AlignRight)
+
         self.lblSplitMode = QLabel("Dataset split:")
         self.lblSplitMode.setFixedWidth(TEXT_SPACE)
         self.lblSplitMode.setAlignment(Qt.AlignRight)
@@ -50,10 +51,10 @@ class QtNewDatasetWidget(QWidget):
         self.lblTargetScale.setAlignment(Qt.AlignRight)
 
 
-
         layoutH0a = QVBoxLayout()
         layoutH0a.setAlignment(Qt.AlignRight)
         layoutH0a.addWidget(self.lblDatasetFolder)
+        layoutH0a.addWidget(self.lblWorkingArea)
         layoutH0a.addWidget(self.lblSplitMode)
         layoutH0a.addWidget(self.lblTargetScale)
 
@@ -62,6 +63,10 @@ class QtNewDatasetWidget(QWidget):
         self.editDatasetFolder = QLineEdit("temp")
         self.editDatasetFolder.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editDatasetFolder.setMinimumWidth(LINEWIDTH)
+        txt = self.formatWorkingArea(working_area[0],working_area[1],working_area[2],working_area[3])
+        self.editWorkingArea = QLineEdit(txt)
+        self.editWorkingArea.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        self.editWorkingArea.setMinimumWidth(LINEWIDTH)
         self.comboSplitMode = QComboBox()
         self.comboSplitMode.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.comboSplitMode.setFixedWidth(LINEWIDTH)
@@ -76,17 +81,25 @@ class QtNewDatasetWidget(QWidget):
         layoutH0b = QVBoxLayout()
         layoutH0b.setAlignment(Qt.AlignLeft)
         layoutH0b.addWidget(self.editDatasetFolder)
+        layoutH0b.addWidget(self.editWorkingArea)
         layoutH0b.addWidget(self.comboSplitMode)
         layoutH0b.addWidget(self.editTargetScale)
 
         ###############################################################
 
         self.btnChooseDatasetFolder = QPushButton("...")
-        self.btnChooseDatasetFolder.setMaximumWidth(20)
+       # self.btnChooseDatasetFolder.setMaximumWidth(20)
         self.btnChooseDatasetFolder.clicked.connect(self.chooseDatasetFolder)
+
+        self.btnChooseWorkingArea = QPushButton()
+        WorkingAreaIcon = QIcon("icons\\select_area.png")
+        self.btnChooseWorkingArea.setIcon(WorkingAreaIcon)
+        # self.btnChooseWorkingArea.setMaximumWidth(20)
+        #self.btnChooseWorkingArea.clicked.connect(self.dragWorkingArea)
 
         layoutH0c = QVBoxLayout()
         layoutH0c.addWidget(self.btnChooseDatasetFolder)
+        layoutH0c.addWidget(self.btnChooseWorkingArea)
         layoutH0c.addStretch()
 
         layoutH1 = QHBoxLayout()
@@ -97,7 +110,6 @@ class QtNewDatasetWidget(QWidget):
         ###########################################################
 
         self.checkOversampling = QCheckBox("Oversampling")
-        self.checkOversampling.setFixedWidth(TEXT_SPACE)
         self.checkTiles = QCheckBox("Show exported tiles")
 
         layoutH2 = QHBoxLayout()
@@ -138,6 +150,13 @@ class QtNewDatasetWidget(QWidget):
         if folderName:
             self.editDatasetFolder.setText(folderName)
 
+    def closeEvent(self, event):
+        self.closed.emit()
+
+    def formatWorkingArea(self, top, left, width, height):
+        txt = str(int(top)) + ',' + str(int(left)) + ',' + str(int(width)) + ',' + str(int(height))
+        return txt
+
     def getDatasetFolder(self):
 
         return self.editDatasetFolder.text()
@@ -146,8 +165,8 @@ class QtNewDatasetWidget(QWidget):
 
         return self.comboSplitMode.currentText()
 
-
     def getTargetScale(self):
 
         return float(self.editTargetScale.text())
+
 

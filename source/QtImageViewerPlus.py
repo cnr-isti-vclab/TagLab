@@ -78,6 +78,8 @@ class QtImageViewerPlus(QtImageViewer):
     #leftMouseButtonDoubleClicked = pyqtSignal(float, float)
     rightMouseButtonDoubleClicked = pyqtSignal(float, float)
     mouseMoveLeftPressed = pyqtSignal(float, float)
+    mouseMoved = pyqtSignal(float, float)
+    selectionChanged = pyqtSignal()
 
     # custom signal
     updateInfoPanel = pyqtSignal(Blob)
@@ -144,6 +146,7 @@ class QtImageViewerPlus(QtImageViewer):
         self.image = image
         self.annotations = image.annotations
         self.selected_blobs = []
+        self.selectionChanged.emit()
 
         for blob in self.annotations.seg_blobs:
             self.drawBlob(blob)
@@ -199,6 +202,7 @@ class QtImageViewerPlus(QtImageViewer):
 
         QtImageViewer.clear(self)
         self.selected_blobs = []
+        self.selectionChanged.emit()
         self.undo_data = Undo()
 
         for blob in self.annotations.seg_blobs:
@@ -236,6 +240,7 @@ class QtImageViewerPlus(QtImageViewer):
         blob.id_item.setTransformOriginPoint(QPointF(blob.centroid[0] + 14.0, blob.centroid[1] + 14.0))
         blob.id_item.setZValue(2)
         blob.id_item.setBrush(Qt.white)
+        blob.id_item.setOpacity(0.5)
 
         #blob.id_item.setDefaultTextColor(Qt.white)
         #blob.id_item.setFlag(QGraphicsItem.ItemIgnoresTransformations)
@@ -281,6 +286,10 @@ class QtImageViewerPlus(QtImageViewer):
 
         if tool in ["FREEHAND", "RULER", "DEEPEXTREME"] or (tool in ["CUT", "EDITBORDER"] and len(self.selected_blobs) > 1):
             self.resetSelection()
+
+        if tool == "WORKINGAREA":
+
+            QApplication.setOverrideCursor(Qt.CrossCursor)
 
         if tool == "WATERSHED":
 
@@ -408,6 +417,7 @@ class QtImageViewerPlus(QtImageViewer):
         QGraphicsView.mouseMoveEvent(self, event)
 
         scenePos = self.mapToScene(event.pos())
+        self.mouseMoved.emit(scenePos.x(), scenePos.y())
 
         if self.showCrossair == True:
             self.mouseCoords = scenePos
@@ -530,6 +540,7 @@ class QtImageViewerPlus(QtImageViewer):
         else:
             print("blob qpath_qitem is None!")
         self.scene.invalidate()
+        self.selectionChanged.emit()
 
 
     def removeFromSelectedList(self, blob):
@@ -545,6 +556,7 @@ class QtImageViewerPlus(QtImageViewer):
         except Exception as e:
             print("Exception: e", e)
             pass
+        self.selectionChanged.emit()
 
     def resetSelection(self):
         for blob in self.selected_blobs:
@@ -557,6 +569,7 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.selected_blobs.clear()
         self.scene.invalidate(self.scene.sceneRect())
+        self.selectionChanged.emit()
 
 
 
@@ -572,7 +585,6 @@ class QtImageViewerPlus(QtImageViewer):
         if selected:
             self.addToSelectedList(blob)
 
-
     def removeBlob(self, blob):
         """
         The only function to remove annotations.
@@ -581,6 +593,18 @@ class QtImageViewerPlus(QtImageViewer):
         self.undrawBlob(blob)
         self.undo_data.removeBlob(blob)
         self.annotations.removeBlob(blob)
+
+    def updateBlob(self, old_blob, new_blob, selected = False):
+        self.annotations.updateBlob(old_blob, new_blob)
+
+        self.removeFromSelectedList(old_blob)
+        self.undrawBlob(old_blob)
+        self.undo_data.removeBlob(old_blob)
+
+        self.undo_data.addBlob(new_blob)
+        self.drawBlob(new_blob)
+        if selected:
+            self.addToSelectedList(new_blob)
 
 
     def deleteSelectedBlobs(self):
@@ -630,6 +654,7 @@ class QtImageViewerPlus(QtImageViewer):
             self.logfile.info(message)
             self.annotations.addBlob(blob)
             self.selected_blobs.append(blob)
+            self.selectionChanged.emit()
             self.drawBlob(blob)
 
         for (blob, class_name) in operation['class']:
@@ -656,6 +681,7 @@ class QtImageViewerPlus(QtImageViewer):
             self.logfile.info(message)
             self.annotations.addBlob(blob)
             self.selected_blobs.append(blob)
+            self.selectionChanged.emit()
             self.drawBlob(blob)
 
         for (blob, class_name) in operation['newclass']:
