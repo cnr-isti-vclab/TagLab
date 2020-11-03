@@ -314,31 +314,37 @@ class TagLab(QWidget):
 
         # BLOB INFO
         groupbox_blobpanel = QGroupBox("Segmentation Info")
-        lblId = QLabel("Id: ")
-        self.lblId = QLabel("")
-        lblcl = QLabel("Class: ")
-        self.lblClass = QLabel("<b>Empty</b>")
+        self.lblId = QLabel("Id: ")
+        self.lblIdValue = QLabel(" ")
+        self.lblCl = QLabel("Class: ")
+        self.lblClass = QLabel("Empty")
 
         blobpanel_layoutH1 = QHBoxLayout()
-        blobpanel_layoutH1.addWidget(lblId)
         blobpanel_layoutH1.addWidget(self.lblId)
-        blobpanel_layoutH1.addWidget(lblcl)
+        blobpanel_layoutH1.addWidget(self.lblIdValue)
+        blobpanel_layoutH1.addWidget(self.lblCl)
         blobpanel_layoutH1.addWidget(self.lblClass)
         blobpanel_layoutH1.addStretch()
 
 
-        self.lblP = QLabel("Perimeter: ")
-        self.lblA = QLabel("Area: ")
+        self.lblPerimeter = QLabel("Perimeter: ")
+        self.lblPerimeterValue = QLabel(" ")
+        self.lblArea = QLabel("Area: ")
+        self.lblAreaValue = QLabel(" ")
         blobpanel_layoutH2 = QHBoxLayout()
         blobpanel_layoutH2.setSpacing(6)
-        blobpanel_layoutH2.addWidget(self.lblP)
-        blobpanel_layoutH2.addWidget(self.lblA)
+        blobpanel_layoutH2.addWidget(self.lblPerimeter)
+        blobpanel_layoutH2.addWidget(self.lblPerimeterValue)
+        blobpanel_layoutH2.addWidget(self.lblArea)
+        blobpanel_layoutH2.addWidget(self.lblAreaValue)
         blobpanel_layoutH2.addStretch()
 
-        self.lblC = QLabel("Centroid: ")
+        self.lblCentroid = QLabel("Centroid: ")
+        self.lblCentroidValue = QLabel(" ")
         blobpanel_layoutH3 = QHBoxLayout()
-        blobpanel_layoutH3.addWidget(self.lblC)
-
+        blobpanel_layoutH3.addWidget(self.lblCentroid)
+        blobpanel_layoutH3.addWidget(self.lblCentroidValue)
+        blobpanel_layoutH3.addStretch()
 
   #      lblNote = QLabel("Note:")
   #      self.editNote = QTextEdit()
@@ -346,6 +352,7 @@ class TagLab(QWidget):
   #       self.editNote.setMaximumHeight(50)
   #       self.editNote.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
   #       self.editNote.textChanged.connect(self.noteChanged)
+
         layout_blobpanel = QVBoxLayout()
         layout_blobpanel.addLayout(blobpanel_layoutH1)
         layout_blobpanel.addLayout(blobpanel_layoutH2)
@@ -1553,23 +1560,34 @@ class TagLab(QWidget):
 
     def updatePanelInfo(self, blob):
 
-        self.lblId.setText(str(blob.id))
+        self.lblIdValue.setText(str(blob.id))
+        self.lblIdValue.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.lblClass.setText(blob.class_name)
+        self.lblClass.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         factor = self.activeviewer.image.map_px_to_mm_factor
 
         cx = blob.centroid[0]
         cy = blob.centroid[1]
-        txt = "Centroid (px): ({:6.2f},{:6.2f})".format(cx, cy)
-        self.lblC.setText(txt)
+        txt = "Centroid (px): "
+        self.lblCentroid.setText(txt)
+        txt = "({:6.2f},{:6.2f})".format(cx, cy)
+        self.lblCentroidValue.setText(txt)
+        self.lblCentroidValue.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
-        scaled_perimeter = blob.perimeter * factor / 10
-        txt = "Perimeter (cm): {:6.2f}".format(scaled_perimeter)
-        self.lblP.setText(txt)
+        scaled_perimeter = blob.perimeter * factor / 10.0
+        txt = "Perimeter (cm): "
+        self.lblPerimeter.setText(txt)
+        txt = "{:6.2f}".format(scaled_perimeter)
+        self.lblPerimeterValue.setText(txt)
+        self.lblPerimeterValue.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
-        scaled_area = blob.area * factor * factor / 100
-        txt = "Area (cm<sup>2</sup>): {:6.2f}".format(scaled_area)
-        self.lblA.setText(txt)
+        scaled_area = blob.area * factor * factor / 100.0
+        txt = "Area (cm<sup>2</sup>)"
+        self.lblArea.setText(txt)
+        txt = "{:6.2f}".format(scaled_area)
+        self.lblAreaValue.setText(txt)
+        self.lblAreaValue.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
   #      self.editNote.setPlainText(blob.note)
 
