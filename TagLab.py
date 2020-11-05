@@ -143,7 +143,7 @@ class TagLab(QWidget):
         self.btnMove        = self.newButton("move.png",     "Pan",                   flatbuttonstyle1, self.move)
         self.btnAssign      = self.newButton("bucket.png",   "Assign class",           flatbuttonstyle1, self.assign)
         self.btnEditBorder  = self.newButton("edit.png",     "Edit border",            flatbuttonstyle1, self.editBorder)
-        self.btnCut         = self.newButton("scissors.png", "Cut Segmentation",       flatbuttonstyle1, self.cut)
+        self.btnCut         = self.newButton("scissors.png", "Cut segmentation",       flatbuttonstyle1, self.cut)
         self.btnFreehand    = self.newButton("pencil.png",   "Freehand segmentation",  flatbuttonstyle1, self.freehandSegmentation)
         self.btnCreateCrack = self.newButton("crack.png",    "Create crack",           flatbuttonstyle1, self.createCrack)
         self.btnWatershed   = self.newButton("brush.png",    "Watershed segmentation", flatbuttonstyle1, self.watershedSegmentation)
@@ -153,12 +153,16 @@ class TagLab(QWidget):
 
 
         self.btnRuler       = self.newButton("ruler.png",    "Measure tool",          flatbuttonstyle1, self.ruler)
-        self.btnMatch       = self.newButton("connect.png",  "Match tool",            flatbuttonstyle1, self.matchTool)
         self.btnDeepExtreme = self.newButton("dexter.png",   "4-click segmentation",  flatbuttonstyle2, self.deepExtreme)
         self.btnAutoClassification = self.newButton("auto.png", "Fully automatic classification", flatbuttonstyle2, self.selectClassifier)
 
         # Split Screen operation removed from the toolbar
-        #self.btnSplitScreen = self.newButton("splitscreen.png", "Toggle comparison mode", flatbuttonstyle2, self.toggleComparison)
+        self.pxmapSeparator = QPixmap("icons/separator.png")
+        self.labelSeparator = QLabel()
+        self.labelSeparator.setPixmap(self.pxmapSeparator.scaled(QSize(45, 30)))
+        self.btnSplitScreen = self.newButton("split.png", "Split screen", flatbuttonstyle1, self.toggleComparison)
+        self.btnAutoMatch = self.newButton("automatch.png", "Compute automatic matches", flatbuttonstyle1, self.autoCorrespondences)
+        self.btnMatch = self.newButton("manualmatch.png", "Add manual matches ", flatbuttonstyle1, self.matchTool)
 
 
         layout_tools = QVBoxLayout()
@@ -174,7 +178,11 @@ class TagLab(QWidget):
         #layout_tools.addWidget(self.btnSplitBlob)
         layout_tools.addWidget(self.btnRuler)
         layout_tools.addWidget(self.btnAutoClassification)
-        #layout_tools.addWidget(self.btnSplitScreen)
+        layout_tools.addSpacing(5)
+        layout_tools.addWidget(self.labelSeparator)
+        layout_tools.addSpacing(5)
+        layout_tools.addWidget(self.btnSplitScreen)
+        layout_tools.addWidget(self.btnAutoMatch)
         layout_tools.addWidget(self.btnMatch)
 
         layout_tools.addStretch()
@@ -282,7 +290,7 @@ class TagLab(QWidget):
         # LABELS PANEL
         self.labels_widget = QtLabelsWidget()
 
-        #FIXME: QtLabelsWidget does not resize properly inside the scroll area
+
         self.project.importLabelsFromConfiguration(self.labels_dictionary)
         self.labels_widget.setLabels(self.project)
 
@@ -458,8 +466,9 @@ class TagLab(QWidget):
 
 
     def newButton(self, icon, tooltip, style, callback):
-        ICON_SIZE = 48
-        BUTTON_SIZE = 54
+        #ICON_SIZE = 48
+        ICON_SIZE = 35
+        BUTTON_SIZE = 45
 
         button = QPushButton()
         button.setEnabled(True)
@@ -761,8 +770,8 @@ class TagLab(QWidget):
         autoMatchLabels.setStatusTip("Match labels between two maps automatically")
         autoMatchLabels.triggered.connect(self.autoCorrespondences)
         
-        manualMatchLabels = QAction("Compute automatic matches", self)
-        manualMatchLabels.setStatusTip("Activate manual match tools")
+        manualMatchLabels = QAction("Add manual matches", self)
+        manualMatchLabels.setStatusTip("Add manual matches")
         manualMatchLabels.triggered.connect(self.matchTool)
 
         exportMatchLabels = QAction("Export matches", self)
@@ -773,6 +782,7 @@ class TagLab(QWidget):
         comparemenu.setStyleSheet(styleMenu)
         comparemenu.addAction(splitScreenAction)
         comparemenu.addAction(autoMatchLabels)
+        comparemenu.addAction(manualMatchLabels)
         comparemenu.addAction(exportMatchLabels)
 
         helpmenu = menubar.addMenu("&Help")
