@@ -1555,6 +1555,15 @@ class TagLab(QWidget):
             box = QMessageBox()
             box.setText("This project has only a single map.")
             box.exec()
+            self.move()
+            return
+
+        if self.split_screen_flag is False:
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("Please, enable Split Screen and select the source and the target image (!)")
+            msgBox.exec()
+            self.move()
             return
 
         self.setTool("MATCH")
