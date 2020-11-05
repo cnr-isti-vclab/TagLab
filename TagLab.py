@@ -1329,31 +1329,69 @@ class TagLab(QWidget):
         self.comboboxSourceImage.currentIndexChanged.connect(self.sourceImageChanged)
         self.comboboxTargetImage.currentIndexChanged.connect(self.targetImageChanged)
 
+    def updateComboboxSourceImage(self, index):
+        """
+        Update the combobox without changing the source image.
+        """
+        self.comboboxSourceImage.disconnect()
+        self.comboboxSourceImage.setCurrentIndex(index)
+        self.comboboxSourceImage.currentIndexChanged.connect(self.sourceImageChanged)
+
+    def updateComboboxTargetImage(self, index):
+        """
+        Update the combobox without changing the target image.
+        """
+        self.comboboxTargetImage.disconnect()
+        self.comboboxTargetImage.setCurrentIndex(index)
+        self.comboboxTargetImage.currentIndexChanged.connect(self.targetImageChanged)
 
     @pyqtSlot(int)
-    def sourceImageChanged(self, index):
+    def sourceImageChanged(self, index1):
 
-        if index == -1 or index >= len(self.project.images):
+        N = len(self.project.images)
+        if index1 == -1 or index1 >= N:
             return
+
+        self.viewerplus.clear()
+
+        # target and source image cannot be the same !!
+        index2 = self.comboboxTargetImage.currentIndex()
+        if index1 == index2:
+            index2 = (index1 + 1) % N
+            self.viewerplus2.clear()
+            self.viewerplus2.setProject(self.project)
+            self.viewerplus2.setImage(self.project.images[index2])
+            self.updateComboboxTargetImage(index2)
 
         self.viewerplus.setProject(self.project)
-        self.viewerplus.setImage(self.project.images[index])
-        if self.compare_panel.isVisible():
-            index2 = self.comboboxTargetImage.currentIndex()
-            self.compare_panel.setTable(self.project, index, index2)
+        self.viewerplus.setImage(self.project.images[index1])
 
+        if self.compare_panel.isVisible():
+            self.compare_panel.setTable(self.project, index1, index2)
 
     @pyqtSlot(int)
-    def targetImageChanged(self, index):
+    def targetImageChanged(self, index2):
 
-        if index == -1 or index >= len(self.project.images):
+        N = len(self.project.images)
+        if index2 == -1 or index2 >= N:
             return
 
+        self.viewerplus2.clear()
+
+        # target and source image cannot be the same !!
+        index1 = self.comboboxSourceImage.currentIndex()
+        if index1 == index2:
+            index1 = (index2 - 1) % N
+            self.viewerplus.clear()
+            self.viewerplus.setProject(self.project)
+            self.viewerplus.setImage(self.project.images[index1])
+            self.updateComboboxSourceImage(index1)
+
         self.viewerplus2.setProject(self.project)
-        self.viewerplus2.setImage(self.project.images[index])
+        self.viewerplus2.setImage(self.project.images[index2])
+
         if self.compare_panel.isVisible():
-            index1 = self.comboboxSourceImage.currentIndex()
-            self.compare_panel.setTable(self.project, index1, index)
+            self.compare_panel.setTable(self.project, index1, index2)
 
 
     @pyqtSlot()
@@ -2044,10 +2082,7 @@ class TagLab(QWidget):
             self.last_image_loaded = image
 
             index = self.project.images.index(image)
-
-            self.comboboxSourceImage.disconnect()
-            self.comboboxSourceImage.setCurrentIndex(index)
-            self.comboboxSourceImage.currentIndexChanged.connect(self.sourceImageChanged)
+            self.updateComboboxSourceImage(index)
 
             thumb = self.viewerplus.pixmap.scaled(self.MAP_VIEWER_SIZE, self.MAP_VIEWER_SIZE, Qt.KeepAspectRatio,
                                                  Qt.SmoothTransformation)
