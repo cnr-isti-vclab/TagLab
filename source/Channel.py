@@ -38,6 +38,7 @@ class Channel(object):
 
         if self.type == "RGB":
             self.qimage = QImage(self.filename)
+            self.qimage = self.qimage.convertToFormat(QImage.Format_RGB32)
 
         # typically the depth map is stored in a 32-bit Tiff
         if self.type == "DEM":

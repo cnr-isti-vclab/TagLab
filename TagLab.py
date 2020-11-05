@@ -856,7 +856,6 @@ class TagLab(QWidget):
                 flag_compute = True
 
             if flag_compute is True:
-                self.setTool("MATCH")
                 self.project.computeCorrespondences(img_source_index, img_target_index)
                 self.compare_panel.setTable(self.project, img_source_index, img_target_index)
 
@@ -1446,8 +1445,8 @@ class TagLab(QWidget):
         self.viewerplus.clear()
         self.viewerplus2.clear()
         self.mapviewer.clear()
-        # RE-INITIALIZATION
 
+        # RE-INITIALIZATION
         self.mapWidget = None
         self.classifierWidget = None
         self.newDatasetWidget = None
@@ -1457,6 +1456,8 @@ class TagLab(QWidget):
         self.project.importLabelsFromConfiguration(self.labels_dictionary)
         self.last_image_loaded = None
         self.activeviewer = None
+
+        self.compare_panel.clear()
 
         self.comboboxSourceImage.clear()
         self.comboboxTargetImage.clear()

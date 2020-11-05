@@ -158,9 +158,9 @@ class QtComparePanel(QWidget):
 
         self.data_table = QTableView()
         self.data_table.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        self.data_table.setSelectionMode(QAbstractItemView.MultiSelection);
-        self.data_table.setSelectionMode(QAbstractItemView.ExtendedSelection);
-        self.data_table.setSelectionBehavior(QAbstractItemView.SelectRows);
+        self.data_table.setSelectionMode(QAbstractItemView.MultiSelection)
+        self.data_table.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.data_table.setSelectionBehavior(QAbstractItemView.SelectRows)
 
         self.model = None
         self.data = None
@@ -233,6 +233,13 @@ class QtComparePanel(QWidget):
             if row[1] == blob.id:
                 self.data.loc[i, 'Area2'] =  self.correspondences.area_in_sq_cm(blob.area, False)
 
+    def clear(self):
+
+        self.model = None
+        self.data = None
+
+        self.data_table.setModel(self.model)
+        self.data_table.update()
 
     def updateData(self, corr):
 
@@ -247,7 +254,6 @@ class QtComparePanel(QWidget):
         self.model.endResetModel()
 
         self.data_table.update()
-
 
     def selectRows(self, rows):
         self.data_table.clearSelection()
