@@ -1685,7 +1685,6 @@ class TagLab(QWidget):
 
             self.infoWidget.setInfoMessage("You need to select <em>two</em> blobs for SUBTRACT operation.")
 
-
     def divide(self):
         """
         Separe intersecting blob
@@ -2177,8 +2176,8 @@ class TagLab(QWidget):
         # -1, -1 means that the label map imported must not be rescaled
         created_blobs = self.activeviewer.annotations.import_label_map(filename, self.labels_dictionary, -1, -1)
         for blob in created_blobs:
-            self.viewerplus.addBlob(blob, selected=False)
-        self.viewerplus.saveUndo()
+            self.activeviewer.addBlob(blob, selected=False)
+        self.activeviewer.saveUndo()
 
 
     @pyqtSlot()
