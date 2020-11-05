@@ -164,6 +164,8 @@ class TagLab(QWidget):
         self.btnAutoMatch = self.newButton("automatch.png", "Compute automatic matches", flatbuttonstyle1, self.autoCorrespondences)
         self.btnMatch = self.newButton("manualmatch.png", "Add manual matches ", flatbuttonstyle1, self.matchTool)
 
+        # NOTE: Automatic matches button is not checkable
+        self.btnAutoMatch.setCheckable(False)
 
         layout_tools = QVBoxLayout()
         layout_tools.setSpacing(0)
