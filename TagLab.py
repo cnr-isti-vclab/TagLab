@@ -231,13 +231,13 @@ class TagLab(QWidget):
         ###### LAYOUT MAIN VIEW
 
         layout_viewer = QVBoxLayout()
-        self.comboboxMainImage = QComboBox()
-        self.comboboxMainImage.setMinimumWidth(180)
-        self.comboboxComparisonImage = QComboBox()
-        self.comboboxComparisonImage.setMinimumWidth(180)
+        self.comboboxSourceImage = QComboBox()
+        self.comboboxSourceImage.setMinimumWidth(180)
+        self.comboboxTargetImage = QComboBox()
+        self.comboboxTargetImage.setMinimumWidth(180)
 
-        self.comboboxMainImage.currentIndexChanged.connect(self.mainImageChanged)
-        self.comboboxComparisonImage.currentIndexChanged.connect(self.comparisonImageChanged)
+        self.comboboxSourceImage.currentIndexChanged.connect(self.sourceImageChanged)
+        self.comboboxTargetImage.currentIndexChanged.connect(self.targetImageChanged)
 
         self.lblSlider = QLabel("Transparency: 0%")
         self.sliderTrasparency = QSlider(Qt.Horizontal)
@@ -259,8 +259,8 @@ class TagLab(QWidget):
 
         layout_slider = QHBoxLayout()
         layout_slider.addWidget(QLabel("Map name:"))
-        layout_slider.addWidget(self.comboboxMainImage)
-        layout_slider.addWidget(self.comboboxComparisonImage)
+        layout_slider.addWidget(self.comboboxSourceImage)
+        layout_slider.addWidget(self.comboboxTargetImage)
         layout_slider.addWidget(self.lblSlider)
         layout_slider.addWidget(self.sliderTrasparency)
         layout_slider.addWidget(self.labelZoomInfo)
@@ -812,8 +812,8 @@ class TagLab(QWidget):
         if len(self.project.images) < 2:
             return
 
-        img_source_index = self.comboboxMainImage.currentIndex()
-        img_target_index = self.comboboxComparisonImage.currentIndex()
+        img_source_index = self.comboboxSourceImage.currentIndex()
+        img_target_index = self.comboboxTargetImage.currentIndex()
 
         if img_source_index != img_target_index:
 
@@ -1073,7 +1073,7 @@ class TagLab(QWidget):
                 self.setTool("MOVE")
 
         self.viewerplus2.hide()
-        self.comboboxComparisonImage.hide()
+        self.comboboxTargetImage.hide()
 
         #self.btnSplitScreen.setChecked(False)
         self.comparison_mode = False
@@ -1087,14 +1087,14 @@ class TagLab(QWidget):
 
             QApplication.setOverrideCursor(Qt.WaitCursor)
 
-            index = self.comboboxMainImage.currentIndex()
+            index = self.comboboxSourceImage.currentIndex()
             index_to_set = min(index, len(self.project.images) - 2)
 
-            self.comboboxMainImage.currentIndexChanged.disconnect()
-            self.comboboxComparisonImage.currentIndexChanged.disconnect()
+            self.comboboxSourceImage.currentIndexChanged.disconnect()
+            self.comboboxTargetImage.currentIndexChanged.disconnect()
 
-            self.comboboxMainImage.setCurrentIndex(index_to_set)
-            self.comboboxComparisonImage.setCurrentIndex(index_to_set + 1)
+            self.comboboxSourceImage.setCurrentIndex(index_to_set)
+            self.comboboxTargetImage.setCurrentIndex(index_to_set + 1)
 
             self.viewerplus.setProject(self.project)
             self.viewerplus.setImage(self.project.images[index_to_set])
@@ -1102,13 +1102,13 @@ class TagLab(QWidget):
             self.viewerplus2.setProject(self.project)
             self.viewerplus2.setImage(self.project.images[index_to_set + 1])
 
-            self.comboboxMainImage.currentIndexChanged.connect(self.mainImageChanged)
-            self.comboboxComparisonImage.currentIndexChanged.connect(self.comparisonImageChanged)
+            self.comboboxSourceImage.currentIndexChanged.connect(self.sourceImageChanged)
+            self.comboboxTargetImage.currentIndexChanged.connect(self.targetImageChanged)
 
             QApplication.restoreOverrideCursor()
 
         self.viewerplus2.show()
-        self.comboboxComparisonImage.show()
+        self.comboboxTargetImage.show()
         self.viewerplus.viewChanged()
 
         #self.btnSplitScreen.setChecked(True)
@@ -1130,8 +1130,8 @@ class TagLab(QWidget):
             if len(sel1) == 0 and len(sel2) == 0:
                 return
 
-            img_source_index = self.comboboxMainImage.currentIndex()
-            img_target_index = self.comboboxComparisonImage.currentIndex()
+            img_source_index = self.comboboxSourceImage.currentIndex()
+            img_target_index = self.comboboxTargetImage.currentIndex()
             self.project.addCorrespondence(img_source_index, img_target_index, sel1, sel2)
             corr = self.project.getImagePairCorrespondences(img_source_index, img_target_index)
             self.compare_panel.updateData(corr)
@@ -1149,8 +1149,8 @@ class TagLab(QWidget):
         if len(indexes) == 0:
             return
 
-        img_source_index = self.comboboxMainImage.currentIndex()
-        img_target_index = self.comboboxComparisonImage.currentIndex()
+        img_source_index = self.comboboxSourceImage.currentIndex()
+        img_target_index = self.comboboxTargetImage.currentIndex()
         corr = self.project.getImagePairCorrespondences(img_source_index, img_target_index)
         row = corr.data.iloc[indexes[0].row()]
         blob1id = row['Blob1']
@@ -1173,8 +1173,8 @@ class TagLab(QWidget):
             return
         indexes = [a.row() for a in indexes]
 
-        img_source_index = self.comboboxMainImage.currentIndex()
-        img_target_index = self.comboboxComparisonImage.currentIndex()
+        img_source_index = self.comboboxSourceImage.currentIndex()
+        img_target_index = self.comboboxTargetImage.currentIndex()
         corr = self.project.getImagePairCorrespondences(img_source_index, img_target_index)
         corr.deleteCluster(indexes)
 
@@ -1211,8 +1211,8 @@ class TagLab(QWidget):
 
     def showCluster(self, blobid, is_source, center):
 
-        corr = self.project.getImagePairCorrespondences(self.comboboxMainImage.currentIndex(),
-                                                        self.comboboxComparisonImage.currentIndex())
+        corr = self.project.getImagePairCorrespondences(self.comboboxSourceImage.currentIndex(),
+                                                        self.comboboxTargetImage.currentIndex())
         sourcecluster, targetcluster, rows = corr.findCluster(blobid, is_source)
 
         self.viewerplus.resetSelection()
@@ -1260,8 +1260,8 @@ class TagLab(QWidget):
                     self.viewerplus2.setBlobVisible(b, True)
                 return
 
-            img_source_index = self.comboboxMainImage.currentIndex()
-            img_target_index = self.comboboxComparisonImage.currentIndex()
+            img_source_index = self.comboboxSourceImage.currentIndex()
+            img_target_index = self.comboboxTargetImage.currentIndex()
             correspondences = self.project.getImagePairCorrespondences(img_source_index, img_target_index)
             data = correspondences.data
             selection = data.loc[data["Action"] == type]
@@ -1294,40 +1294,43 @@ class TagLab(QWidget):
 
     def updateImageSelectionMenu(self):
 
-        self.comboboxMainImage.currentIndexChanged.disconnect()
-        self.comboboxComparisonImage.currentIndexChanged.disconnect()
+        self.comboboxSourceImage.currentIndexChanged.disconnect()
+        self.comboboxTargetImage.currentIndexChanged.disconnect()
 
-        self.comboboxMainImage.clear()
-        self.comboboxComparisonImage.clear()
+        self.comboboxSourceImage.clear()
+        self.comboboxTargetImage.clear()
 
         for image in self.project.images:
-            self.comboboxMainImage.addItem(image.id)
-            self.comboboxComparisonImage.addItem(image.id)
+            self.comboboxSourceImage.addItem(image.id)
+            self.comboboxTargetImage.addItem(image.id)
 
-        self.comboboxMainImage.currentIndexChanged.connect(self.mainImageChanged)
-        self.comboboxComparisonImage.currentIndexChanged.connect(self.comparisonImageChanged)
+        self.comboboxSourceImage.currentIndexChanged.connect(self.sourceImageChanged)
+        self.comboboxTargetImage.currentIndexChanged.connect(self.targetImageChanged)
 
 
     @pyqtSlot(int)
-    def mainImageChanged(self, index):
+    def sourceImageChanged(self, index):
+
         if index == -1 or index >= len(self.project.images):
             return
 
         self.viewerplus.setProject(self.project)
         self.viewerplus.setImage(self.project.images[index])
         if self.compare_panel.isVisible():
-            index2 = self.comboboxComparisonImage.currentIndex()
+            index2 = self.comboboxTargetImage.currentIndex()
             self.compare_panel.setTable(self.project, index, index2)
 
 
     @pyqtSlot(int)
-    def comparisonImageChanged(self, index):
-        if index == -1 or index < len(self.project.images):
+    def targetImageChanged(self, index):
+
+        if index == -1 or index >= len(self.project.images):
             return
+
         self.viewerplus2.setProject(self.project)
         self.viewerplus2.setImage(self.project.images[index])
         if self.compare_panel.isVisible():
-            index1 = self.comboboxMainImage.currentIndex()
+            index1 = self.comboboxSourceImage.currentIndex()
             self.compare_panel.setTable(self.project, index1, index)
 
 
@@ -1395,8 +1398,8 @@ class TagLab(QWidget):
         self.last_image_loaded = None
         self.activeviewer = None
 
-        self.comboboxMainImage.clear()
-        self.comboboxComparisonImage.clear()
+        self.comboboxSourceImage.clear()
+        self.comboboxTargetImage.clear()
 
     def resetToolbar(self):
 
@@ -1434,8 +1437,8 @@ class TagLab(QWidget):
         newtool[1].setChecked(True)
         logfile.info("[TOOL][" + tool + "] Tool activated")
         self.infoWidget.setInfoMessage(newtool[0] + " Tool is active")
-        self.comboboxMainImage.setEnabled(True)
-        self.comboboxComparisonImage.setEnabled(True)
+        self.comboboxSourceImage.setEnabled(True)
+        self.comboboxTargetImage.setEnabled(True)
 
         if tool == "MATCH":
 
@@ -1443,8 +1446,8 @@ class TagLab(QWidget):
                 self.enableComparisonMode()
 
             # settings when MATCH tool is active
-            self.comboboxMainImage.setEnabled(False)
-            self.comboboxComparisonImage.setEnabled(False)
+            self.comboboxSourceImage.setEnabled(False)
+            self.comboboxTargetImage.setEnabled(False)
 
             self.groupbox_labels.hide()
             self.mapviewer.hide()
@@ -1546,8 +1549,8 @@ class TagLab(QWidget):
 
         self.setTool("MATCH")
 
-        img_source_index = self.comboboxMainImage.currentIndex()
-        img_target_index = self.comboboxComparisonImage.currentIndex()
+        img_source_index = self.comboboxSourceImage.currentIndex()
+        img_target_index = self.comboboxTargetImage.currentIndex()
         self.compare_panel.setTable(self.project, img_source_index, img_target_index)
 
 
@@ -2011,9 +2014,9 @@ class TagLab(QWidget):
 
             index = self.project.images.index(image)
 
-            self.comboboxMainImage.disconnect()
-            self.comboboxMainImage.setCurrentIndex(index)
-            self.comboboxMainImage.currentIndexChanged.connect(self.mainImageChanged)
+            self.comboboxSourceImage.disconnect()
+            self.comboboxSourceImage.setCurrentIndex(index)
+            self.comboboxSourceImage.currentIndexChanged.connect(self.sourceImageChanged)
 
             thumb = self.viewerplus.pixmap.scaled(self.MAP_VIEWER_SIZE, self.MAP_VIEWER_SIZE, Qt.KeepAspectRatio,
                                                  Qt.SmoothTransformation)
