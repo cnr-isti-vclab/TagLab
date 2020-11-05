@@ -27,7 +27,7 @@ from scipy import ndimage as ndi
 from PyQt5.QtGui import QPainterPath, QPolygonF, QImage, QPixmap, qRgba
 from PyQt5.QtCore import QPointF
 
-from skimage.morphology import flood, flood_fill, binary_dilation, binary_erosion
+from skimage.morphology import square, flood, flood_fill, binary_dilation, binary_erosion
 from skimage.measure import points_in_poly
 from skimage.draw import polygon_perimeter, polygon
 import cv2
@@ -210,10 +210,6 @@ class Blob(object):
         points = self.contour.round().astype(int)
         fillPoly(mask, pts=[points - origin], color=(1))
 
-#DEBUG
-#        cv2.imshow(" ", mask)
-#        cv2.waitKey()
-
         # holes
         for inner_contour in self.inner_contours:
             points = inner_contour.round().astype(int)
@@ -347,14 +343,26 @@ class Blob(object):
             points = np.append(points, p, axis=0)
         return points
 
+    def dilate(self, size=1):
+        """Dilate the blob"""
+
+        mask = self.getMask()
+        dilated_mask = binary_dilation(mask, square(size))
+        self.updateUsingMask(self.bbox, dilated_mask)
+
+    def erode(self, size=1):
+        """Erode the blob"""
+
+        mask = self.getMask()
+        eroded_mask = binary_erosion(mask, square(size))
+        self.updateUsingMask(self.bbox, eroded_mask)
+
     def drawLine(self, line):
         (x, y) = utils.draw_open_polygon(line[:, 1], line[:, 0])
         points = np.asarray([x, y]).astype(int)
         points = points.transpose()
         points[:, [1, 0]] = points[:, [0, 1]]
         return points
-
-
 
     def snapToBorder(self, points):
         return self.snapToContour(points, self.contour)
