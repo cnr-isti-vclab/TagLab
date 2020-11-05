@@ -415,7 +415,7 @@ class TagLab(QWidget):
 
         self.viewerplus.viewHasChanged[float, float, float].connect(self.viewerplus2.setViewParameters)
         self.viewerplus2.viewHasChanged[float, float, float].connect(self.viewerplus.setViewParameters)
-        self.disableComparisonMode()
+        self.disableSplitScreen()
 
         self.viewerplus.customContextMenuRequested.connect(self.openContextMenu)
         self.viewerplus2.customContextMenuRequested.connect(self.openContextMenu)
@@ -757,9 +757,13 @@ class TagLab(QWidget):
         splitScreenAction.setStatusTip("Split screen")
         splitScreenAction.triggered.connect(self.toggleComparison)
 
-        autoMatchLabels = QAction("Compute matches", self)
-        autoMatchLabels.setStatusTip("Match labels between two maps")
+        autoMatchLabels = QAction("Compute automatic matches", self)
+        autoMatchLabels.setStatusTip("Match labels between two maps automatically")
         autoMatchLabels.triggered.connect(self.autoCorrespondences)
+        
+        manualMatchLabels = QAction("Compute automatic matches", self)
+        manualMatchLabels.setStatusTip("Activate manual match tools")
+        manualMatchLabels.triggered.connect(self.matchTool)
 
         exportMatchLabels = QAction("Export matches", self)
         exportMatchLabels.setStatusTip("Export the current matches")
@@ -805,11 +809,17 @@ class TagLab(QWidget):
                 self.activeviewer.setChannel(self.activeviewer.image.channels[0])
 
 
-
     @pyqtSlot()
     def autoCorrespondences(self):
 
         if len(self.project.images) < 2:
+            return
+
+        if self.split_screen_flag is False:
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("Please, enable Split Screen and select the source and the target image (!)")
+            msgBox.exec()
             return
 
         img_source_index = self.comboboxSourceImage.currentIndex()
@@ -853,10 +863,10 @@ class TagLab(QWidget):
 
     @pyqtSlot()
     def toggleComparison(self):
-        if self.comparison_mode is True:
-            self.disableComparisonMode()
+        if self.split_screen_flag is True:
+            self.disableSplitScreen()
         else:
-            self.enableComparisonMode()
+            self.enableSplitScreen()
 
     def updateRecentFileActions(self):
 
@@ -921,10 +931,10 @@ class TagLab(QWidget):
 
         elif event.key() == Qt.Key_C and modifiers & Qt.AltModifier:
 
-            if self.comparison_mode is True:
-                self.disableComparisonMode()
+            if self.split_screen_flag is True:
+                self.disableSplitScreen()
             else:
-                self.enableComparisonMode()
+                self.enableSplitScreen()
 
         elif event.key() == Qt.Key_A:
             self.assignOperation()
@@ -1066,7 +1076,7 @@ class TagLab(QWidget):
                 self.activeviewer.tools.applyTool()
 
 
-    def disableComparisonMode(self):
+    def disableSplitScreen(self):
 
         if self.activeviewer is not None:
             if self.activeviewer.tools.tool == "MATCH":
@@ -1076,10 +1086,10 @@ class TagLab(QWidget):
         self.comboboxTargetImage.hide()
 
         #self.btnSplitScreen.setChecked(False)
-        self.comparison_mode = False
+        self.split_screen_flag = False
 
 
-    def enableComparisonMode(self):
+    def enableSplitScreen(self):
 
         self.viewerplus.viewChanged()
 
@@ -1112,14 +1122,14 @@ class TagLab(QWidget):
         self.viewerplus.viewChanged()
 
         #self.btnSplitScreen.setChecked(True)
-        self.comparison_mode = True
+        self.split_screen_flag = True
 
     def createMatch(self):
         """
         Create a new match and add it to the correspondences table.
         """
 
-        if self.comparison_mode == True:
+        if self.split_screen_flag == True:
             sel1 = self.viewerplus.selected_blobs
             sel2 = self.viewerplus2.selected_blobs
 
@@ -1442,8 +1452,8 @@ class TagLab(QWidget):
 
         if tool == "MATCH":
 
-            if self.comparison_mode == False:
-                self.enableComparisonMode()
+            if self.split_screen_flag == False:
+                self.enableSplitScreen()
 
             # settings when MATCH tool is active
             self.comboboxSourceImage.setEnabled(False)
@@ -2023,7 +2033,7 @@ class TagLab(QWidget):
             self.mapviewer.setPixmap(thumb)
             self.mapviewer.setOpacity(0.5)
 
-            self.disableComparisonMode()
+            self.disableSplitScreen()
 
             self.infoWidget.setInfoMessage("The map has been successfully loading.")
 
