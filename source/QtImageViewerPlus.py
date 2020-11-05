@@ -141,8 +141,6 @@ class QtImageViewerPlus(QtImageViewer):
         Set the image to visualize. The first channel is visualized unless otherwise specified.
         """
 
-        self.clear()
-
         self.image = image
         self.annotations = image.annotations
         self.selected_blobs = []
