@@ -80,6 +80,7 @@ class QtImageViewerPlus(QtImageViewer):
     mouseMoveLeftPressed = pyqtSignal(float, float)
     mouseMoved = pyqtSignal(float, float)
     selectionChanged = pyqtSignal()
+    selectionReset = pyqtSignal()
 
     # custom signal
     updateInfoPanel = pyqtSignal(Blob)
@@ -568,6 +569,7 @@ class QtImageViewerPlus(QtImageViewer):
         self.selected_blobs.clear()
         self.scene.invalidate(self.scene.sceneRect())
         self.selectionChanged.emit()
+        self.selectionReset.emit()
 
 
 

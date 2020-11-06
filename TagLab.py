@@ -213,6 +213,7 @@ class TagLab(QWidget):
         self.viewerplus.updateInfoPanel.connect(self.updatePanelInfo)
         self.viewerplus.mouseMoved[float, float].connect(self.updateMousePos)
         self.viewerplus.selectionChanged.connect(self.updateEditActions)
+        self.viewerplus.selectionReset.connect(self.resetPanelInfo)
 
         # secondary viewer in SPLIT MODE
         self.viewerplus2 = QtImageViewerPlus()
@@ -222,6 +223,7 @@ class TagLab(QWidget):
         self.viewerplus2.updateInfoPanel.connect(self.updatePanelInfo)
         self.viewerplus2.mouseMoved[float, float].connect(self.updateMousePos)
         self.viewerplus2.selectionChanged.connect(self.updateEditActions)
+        self.viewerplus2.selectionReset.connect(self.resetPanelInfo)
 
         self.viewerplus.newSelection.connect(self.showMatch)
         self.viewerplus2.newSelection.connect(self.showMatch)
@@ -323,7 +325,7 @@ class TagLab(QWidget):
         self.groupbox_comparison.setLayout(layout_groupbox2)
 
         # BLOB INFO
-        groupbox_blobpanel = QGroupBox("Segmentation Info")
+        groupbox_blobpanel = QGroupBox("Region Info")
         self.lblId = QLabel("Id: ")
         self.lblIdValue = QLabel(" ")
         self.lblCl = QLabel("Class: ")
@@ -349,7 +351,7 @@ class TagLab(QWidget):
         blobpanel_layoutH2.addWidget(self.lblAreaValue)
         blobpanel_layoutH2.addStretch()
 
-        self.lblCentroid = QLabel("Centroid: ")
+        self.lblCentroid = QLabel("Centroid (px): ")
         self.lblCentroidValue = QLabel(" ")
         blobpanel_layoutH3 = QHBoxLayout()
         blobpanel_layoutH3.addWidget(self.lblCentroid)
@@ -606,9 +608,9 @@ class TagLab(QWidget):
         for i in range(self.maxRecentFiles):
             self.recentFileActs.append(QAction(self, visible=False, triggered=self.openRecentProject))
 
-        newMapAct = QAction("Add a New Map..", self)
+        newMapAct = QAction("Add New Map..", self)
         newMapAct.setShortcut('Ctrl+L')
-        newMapAct.setStatusTip("Add a new map to the project and load it")
+        newMapAct.setStatusTip("Add a new map to the project")
         newMapAct.triggered.connect(self.setMapToLoad)
 
         ### IMPORT
@@ -869,6 +871,7 @@ class TagLab(QWidget):
         if filename:
             if self.project.correspondences is not None:
                 for key,corr in self.project.correspondences.items():
+                    filename = filename.replace('.csv','')
                     corr.data.to_csv(filename + '_' + key + '.csv', index=False)
 
 
@@ -1456,11 +1459,10 @@ class TagLab(QWidget):
         self.project.importLabelsFromConfiguration(self.labels_dictionary)
         self.last_image_loaded = None
         self.activeviewer = None
-
         self.compare_panel.clear()
-
         self.comboboxSourceImage.clear()
         self.comboboxTargetImage.clear()
+        self.resetPanelInfo()
 
     def resetToolbar(self):
 
@@ -1624,13 +1626,6 @@ class TagLab(QWidget):
         self.compare_panel.setTable(self.project, img_source_index, img_target_index)
 
 
-    # @pyqtSlot()
-    # def noteChanged(self):
-    #     if len(self.viewerplus.selected_blobs) > 0:
-    #
-    #         for blob in self.viewerplus.selected_blobs:
-    #             blob.note = self.editNote.toPlainText()
-
     def updatePanelInfo(self, blob):
 
         self.lblIdValue.setText(str(blob.id))
@@ -1642,8 +1637,6 @@ class TagLab(QWidget):
 
         cx = blob.centroid[0]
         cy = blob.centroid[1]
-        txt = "Centroid (px): "
-        self.lblCentroid.setText(txt)
         txt = "({:6.2f},{:6.2f})".format(cx, cy)
         self.lblCentroidValue.setText(txt)
         self.lblCentroidValue.setTextInteractionFlags(Qt.TextSelectableByMouse)
@@ -1662,7 +1655,19 @@ class TagLab(QWidget):
         self.lblAreaValue.setText(txt)
         self.lblAreaValue.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
-  #      self.editNote.setPlainText(blob.note)
+    @pyqtSlot()
+    def resetPanelInfo(self):
+
+        self.lblIdValue.setText("")
+        self.lblClass.setText("")
+        txt = " "
+        self.lblCentroidValue.setText(txt)
+        txtP = "Perimeter (cm):"
+        self.lblPerimeter.setText(txtP)
+        self.lblPerimeterValue.setText(txt)
+        txtA = "Area (cm<sup>2</sup>):"
+        self.lblArea.setText(txtA)
+        self.lblAreaValue.setText(txt)
 
 
     def deleteSelectedBlobs(self):
@@ -2079,6 +2084,7 @@ class TagLab(QWidget):
 
             self.infoWidget.setInfoMessage("Map is loading..")
             self.viewerplus.setProject(self.project)
+            self.viewerplus.clear()
             self.viewerplus.setImage(image)
             self.last_image_loaded = image
 
