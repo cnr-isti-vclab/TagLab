@@ -159,7 +159,7 @@ class TagLab(QWidget):
         # Split Screen operation removed from the toolbar
         self.pxmapSeparator = QPixmap("icons/separator.png")
         self.labelSeparator = QLabel()
-        self.labelSeparator.setPixmap(self.pxmapSeparator.scaled(QSize(45, 30)))
+        self.labelSeparator.setPixmap(self.pxmapSeparator.scaled(QSize(35, 30)))
         self.btnSplitScreen = self.newButton("split.png", "Split screen", flatbuttonstyle1, self.toggleComparison)
         self.btnAutoMatch = self.newButton("automatch.png", "Compute automatic matches", flatbuttonstyle1, self.autoCorrespondences)
         self.btnMatch = self.newButton("manualmatch.png", "Add manual matches ", flatbuttonstyle1, self.matchTool)
@@ -470,7 +470,7 @@ class TagLab(QWidget):
     def newButton(self, icon, tooltip, style, callback):
         #ICON_SIZE = 48
         ICON_SIZE = 35
-        BUTTON_SIZE = 45
+        BUTTON_SIZE = 35
 
         button = QPushButton()
         button.setEnabled(True)
