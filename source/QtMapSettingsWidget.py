@@ -42,11 +42,11 @@ class QtMapSettingsWidget(QWidget):
         TEXT_SPACE = 100
 
         self.fields = {
-            "name"            : {"name": "Map name:"        , "value": "", "place": "Name of the map"        , "width": 300, "action": None },
+            "name"            : {"name": "Map Name:"        , "value": "", "place": "Name of the map"        , "width": 300, "action": None },
             "rgb_filename"    : {"name": "RGB Image:"       , "value": "", "place": "Path of the rgb image"  , "width": 300, "action": self.chooseMapFile },
             "depth_filename"  : {"name": "Depth Image:"     , "value": "", "place": "Path of the depth image", "width": 300, "action": self.choose3DMapFile },
             "acquisition_date": {"name": "Acquisition Date:", "value": "", "place": "YYYY-MM-DD"             , "width": 150, "action": None },
-            "px_to_mm"        : {"name": "Px-to-mm:"        , "value": "1.0", "place": ""                    , "width": 150, "action": None }
+            "px_to_mm"        : {"name": "Pixel size (mm):"        , "value": "1.0", "place": ""                    , "width": 150, "action": None }
         }
         self.data = {}
 
