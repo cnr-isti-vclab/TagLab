@@ -167,6 +167,42 @@ class Project(object):
 
         return self.labels[id].visible
 
+    def findCorrespondences(self, image):
+
+        corresps = list(filter(lambda i, image=image: i.source == image or i.target == image,
+                               self.correspondences.values()))
+        return corresps
+
+    def addBlob(self, image, blob):
+
+        # update image annotations
+        image.annotations.addBlob(blob)
+
+        # update correspondences
+        correspondences = self.findCorrespondences(image)
+        for corr in correspondences:
+            corr.addBlob(image, blob)
+
+    def removeBlob(self, image, blob):
+
+        # updata image annotations
+        image.annotations.removeBlob(blob)
+
+        # update correspondences
+        correspondences = self.findCorrespondences(image)
+        for corr in correspondences:
+            corr.removeBlob(image, blob)
+
+    def updateBlob(self, image, old_blob, new_blob):
+
+        # update image annotations
+        image.annotations.updateBlob(old_blob, new_blob)
+
+        # update correspondences
+        correspondences = self.findCorrespondences(image)
+        for corr in correspondences:
+            corr.updateBlob(image, old_blob, new_blob)
+
     def getImageFromId(self, id):
         for img in self.images:
             if img.id == id:

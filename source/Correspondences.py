@@ -43,6 +43,18 @@ class Correspondences(object):
         self.data = pd.DataFrame(lst, columns=columns)
         self.sort_data()
 
+    def addBlob(self, image, blob):
+
+        if self.source == image:
+            self.set([blob], [])
+        else:
+            self.set([], [blob])
+
+    def removeBlob(self, image, blob):
+        pass
+
+    def updateBlob(self, image, old_blob, new_blob):
+        pass
 
     def set(self, sourceblobs, targetblobs):
 

@@ -246,7 +246,11 @@ class QtComparePanel(QWidget):
         self.data_table.setModel(self.model)
         self.data_table.update()
 
-    def updateData(self, corr):
+    def updateData(self):
+
+        self.data_table.update()
+
+    def updateTable(self, corr):
 
         if corr is None:
             return

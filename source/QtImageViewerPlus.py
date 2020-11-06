@@ -81,6 +81,7 @@ class QtImageViewerPlus(QtImageViewer):
     mouseMoved = pyqtSignal(float, float)
     selectionChanged = pyqtSignal()
     selectionReset = pyqtSignal()
+    annotationsChanged = pyqtSignal()
 
     # custom signal
     updateInfoPanel = pyqtSignal(Blob)
@@ -580,10 +581,13 @@ class QtImageViewerPlus(QtImageViewer):
         """
         self.undo_data.addBlob(blob)
         #self.undo_data_operation['remove'].append(blob)
-        self.annotations.addBlob(blob)
+        #self.annotations.addBlob(blob)
+        self.project.addBlob(self.image, blob)
         self.drawBlob(blob)
         if selected:
             self.addToSelectedList(blob)
+
+        self.annotationsChanged.emit()
 
     def removeBlob(self, blob):
         """
@@ -592,10 +596,15 @@ class QtImageViewerPlus(QtImageViewer):
         self.removeFromSelectedList(blob)
         self.undrawBlob(blob)
         self.undo_data.removeBlob(blob)
-        self.annotations.removeBlob(blob)
+        #self.annotations.removeBlob(blob)
+        self.project.removeBlob(self.image, blob)
+
+        self.annotationsChanged.emit()
 
     def updateBlob(self, old_blob, new_blob, selected = False):
-        self.annotations.updateBlob(old_blob, new_blob)
+
+        #self.annotations.updateBlob(old_blob, new_blob)
+        self.project.updateBlob(self.image, old_blob, new_blob)
 
         self.removeFromSelectedList(old_blob)
         self.undrawBlob(old_blob)
@@ -605,6 +614,8 @@ class QtImageViewerPlus(QtImageViewer):
         self.drawBlob(new_blob)
         if selected:
             self.addToSelectedList(new_blob)
+
+        self.annotationsChanged.emit()
 
 
     def deleteSelectedBlobs(self):
