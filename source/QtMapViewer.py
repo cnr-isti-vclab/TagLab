@@ -41,18 +41,8 @@ class QtMapViewer(QGraphicsView):
         QGraphicsView.__init__(self)
 
         self.setStyleSheet("color: rgb(49,51,53)")
-
-        MIN_SIZE = 300
-        MAX_SIZE = 500
-
-        self.THUMB_SIZE = preferred_size
-
-        if self.THUMB_SIZE > MAX_SIZE:
-            self.THUMB_SIZE = MAX_SIZE
-
-        if self.THUMB_SIZE < MIN_SIZE:
-            self.THUMB_SIZE = MIN_SIZE
-
+        self.THUMB_WIDTH = preferred_size
+        self.THUMB_HEIGHT = 300
         self.BORDER_SIZE = 2
 
         # Image is displayed as a QPixmap in a QGraphicsScene attached to this QGraphicsView.
@@ -83,13 +73,10 @@ class QtMapViewer(QGraphicsView):
         self.overlay_image = QImage(self.HIGHLIGHT_RECT_WIDTH, self.HIGHLIGHT_RECT_HEIGHT, QImage.Format_ARGB32)
         self.overlay_image.fill(self.HIGHLIGHT_COLOR)
 
-        self.setFixedWidth(self.THUMB_SIZE)
-        self.setFixedHeight(self.THUMB_SIZE)
-
         self.initPixmapItem()
 
     def initPixmapItem(self):
-        self.pixmap = QPixmap(self.THUMB_SIZE, self.THUMB_SIZE)
+        self.pixmap = QPixmap(self.THUMB_WIDTH, self.THUMB_HEIGHT)
         self.pixmap.fill(QColor(40, 40, 40))
         self.imgwidth = self.pixmap.width()
         self.imgheight = self.pixmap.height()
@@ -102,7 +89,7 @@ class QtMapViewer(QGraphicsView):
 
     def setPixmap(self, pixmap):
         if pixmap is None:
-            qimg = QImage(self.THUMB_SIZE, self.THUMB_SIZE, QImage.Format_ARGB32)
+            qimg = QImage(self.THUMB_WIDTH, self.THUMB_HEIGHT, QImage.Format_ARGB32)
             qimg.fill(qRgba(40, 40, 40, 255))
             self.pixmap = QPixmap.fromImage(qimg)
         else:
@@ -138,11 +125,11 @@ class QtMapViewer(QGraphicsView):
 
         if image is None:
 
-            qimg = QImage(self.THUMB_SIZE, self.THUMB_SIZE, QImage.Format_ARGB32)
+            qimg = QImage(self.THUMB_WIDTH, self.THUMB_HEIGHT, QImage.Format_ARGB32)
             qimg.fill(qRgba(40, 40, 40, 255))
             self.pixmap = QPixmap.fromImage(qimg)
-            self.imgwidth = self.THUMB_SIZE
-            self.imgheight = self.THUMB_SIZE
+            self.imgwidth = self.THUMB_WIDTH
+            self.imgheight = self.THUMB_HEIGHT
 
         elif type(image) is QImage:
             imageARGB32 = image.convertToFormat(QImage.Format_ARGB32)

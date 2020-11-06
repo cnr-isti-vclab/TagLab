@@ -101,8 +101,7 @@ class TagLab(QWidget):
 
         logfile.info("[INFO] Initizialization begins..")
 
-        # MAP VIEWER preferred size (longest side)
-        self.MAP_VIEWER_SIZE = 400
+
 
         self.taglab_dir = os.getcwd()
         self.project = Project()         # current project
@@ -232,14 +231,6 @@ class TagLab(QWidget):
         self.activeviewer = None
         self.inactiveviewer = None
 
-        # MAP VIEWER
-        self.mapviewer = QtMapViewer(self.MAP_VIEWER_SIZE)
-        self.mapviewer.setPixmap(None)
-
-        self.viewerplus.viewUpdated[QRectF].connect(self.mapviewer.drawOverlayImage)
-        self.mapviewer.leftMouseButtonPressed[float, float].connect(self.viewerplus.center)
-        self.mapviewer.mouseMoveLeftPressed[float, float].connect(self.viewerplus.center)
-
         ###### LAYOUT MAIN VIEW
 
         layout_viewer = QVBoxLayout()
@@ -306,7 +297,28 @@ class TagLab(QWidget):
         #self.scroll_area_labels_panel.setWidgetResizable(True)
         self.scroll_area_labels_panel.setWidget(self.labels_widget)
 
+        groupbox_style = "QGroupBox\
+          {\
+              border: 2px solid rgb(40,40,40);\
+              border-radius: 0px;\
+              margin-top: 10px;\
+              margin-left: 0px;\
+              margin-right: 0px;\
+              padding-top: 5px;\
+              padding-left: 5px;\
+              padding-bottom: 5px;\
+              padding-right: 5px;\
+          }\
+          \
+          QGroupBox::title\
+          {\
+              subcontrol-origin: margin;\
+              subcontrol-position: top center;\
+              padding: 0 0px;\
+          }"
+
         self.groupbox_labels = QGroupBox("Labels")
+       # self.groupbox_labels.setStyleSheet("border: 2px solid rgb(40,40,40)")
 
         layout_groupbox = QVBoxLayout()
         layout_groupbox.addWidget(self.scroll_area_labels_panel)
@@ -318,6 +330,7 @@ class TagLab(QWidget):
         self.compare_panel.data_table.clicked.connect(self.showConnectionCluster)
 
         self.groupbox_comparison = QGroupBox("Comparison")
+       # self.groupbox_comparison.setStyleSheet(groupbox_style)
 
         layout_groupbox2 = QVBoxLayout()
         layout_groupbox2.addWidget(self.compare_panel)
@@ -373,9 +386,21 @@ class TagLab(QWidget):
         #layout_blobpanel.addWidget(self.editNote)
         groupbox_blobpanel.setLayout(layout_blobpanel)
         groupbox_blobpanel.setMaximumHeight(160)
+        #groupbox_blobpanel.setStyleSheet(groupbox_style)
 
         # INFO WIDGET
         self.infoWidget = QtInfoWidget(self)
+
+        # MAP VIEWER preferred size (longest side)
+        self.MAP_VIEWER_SIZE = self.labels_widget.width()
+
+        # MAP VIEWER
+        self.mapviewer = QtMapViewer(self.MAP_VIEWER_SIZE)
+        self.mapviewer.setPixmap(None)
+
+        self.viewerplus.viewUpdated[QRectF].connect(self.mapviewer.drawOverlayImage)
+        self.mapviewer.leftMouseButtonPressed[float, float].connect(self.viewerplus.center)
+        self.mapviewer.mouseMoveLeftPressed[float, float].connect(self.viewerplus.center)
 
         layout_labels = QVBoxLayout()
         self.mapviewer.setStyleSheet("background-color: rgb(40,40,40); border:none")
@@ -389,6 +414,7 @@ class TagLab(QWidget):
         layout_labels.setAlignment(self.mapviewer, Qt.AlignHCenter)
 
         self.groupbox_comparison.hide()
+        self.infoWidget.hide()
         self.compare_panel.setMinimumHeight(600)
 
         ##### MAIN LAYOUT
