@@ -83,7 +83,7 @@ class Correspondences(object):
             if id < 0: # born and dead result in orphaned
                 continue
             target = self.target.annotations.blobById(id)
-            row = [-1, target.id, 0.0, self.area_in_sq_cm(target.area, False), target.class_name, action, type]
+            row = [-1, target.id, 0.0, self.area_in_sq_cm(target.area, False), target.class_name, "born", type]
             df = pd.DataFrame([row], columns=self.data.columns)
             self.data = self.data.append(df)
 
@@ -91,7 +91,7 @@ class Correspondences(object):
             if id < 0:
                 continue
             source = self.source.annotations.blobById(id)
-            row = [ source.id, -1, self.area_in_sq_cm(source.area, True), 0.0, source.class_name, action, type]
+            row = [ source.id, -1, self.area_in_sq_cm(source.area, True), 0.0, source.class_name, "dead", type]
             df = pd.DataFrame([row], columns=self.data.columns)
             self.data = self.data.append(df)
 

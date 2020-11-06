@@ -81,7 +81,12 @@ class TableModel(QAbstractTableModel):
         # section is the index of the column/row.
         if role == Qt.DisplayRole:
             if orientation == Qt.Horizontal:
-                return str(self._data.columns[section])
+                head = str(self._data.columns[section])
+                if head == "Blob1":
+                    return "Id1"
+                if head == "Blob2":
+                    return "Id2"
+                return head
 
             if orientation == Qt.Vertical:
                 return str(self._data.index[section])
