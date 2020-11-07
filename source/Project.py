@@ -10,6 +10,8 @@ from source.Annotation import Annotation
 from source.Blob import Blob
 from source.Label import Label
 from source.Correspondences import Correspondences
+from source.Genet import Genet
+
 import pandas as pd
 
 
@@ -88,10 +90,10 @@ class ProjectEncoder(json.JSONEncoder):
             return obj.save()
         elif isinstance(obj, Correspondences):
             return obj.save()
+        elif isinstance(obj, Genet):
+            return obj.save()
 
         return json.JSONEncoder.default(self, obj)
-
-
 
 class Project(object):
 
@@ -136,7 +138,7 @@ class Project(object):
     def save(self, filename = None):
         #try:
         data = self.__dict__
-        str = json.dumps(data, cls=ProjectEncoder)
+        str = json.dumps(data, cls=ProjectEncoder, indent=1)
 
         if filename is None:
             filename = self.filename
@@ -179,8 +181,7 @@ class Project(object):
         image.annotations.addBlob(blob)
 
         # update correspondences
-        correspondences = self.findCorrespondences(image)
-        for corr in correspondences:
+        for corr in self.findCorrespondences(image):
             corr.addBlob(image, blob)
 
     def removeBlob(self, image, blob):
@@ -189,8 +190,7 @@ class Project(object):
         image.annotations.removeBlob(blob)
 
         # update correspondences
-        correspondences = self.findCorrespondences(image)
-        for corr in correspondences:
+        for corr in self.findCorrespondences(image):
             corr.removeBlob(image, blob)
 
     def updateBlob(self, image, old_blob, new_blob):
@@ -199,9 +199,18 @@ class Project(object):
         image.annotations.updateBlob(old_blob, new_blob)
 
         # update correspondences
-        correspondences = self.findCorrespondences(image)
-        for corr in correspondences:
+        for corr in self.findCorrespondences(image):
             corr.updateBlob(image, old_blob, new_blob)
+
+    def setBlobClass(self, image, blob, class_name):
+        blob.class_name = class_name
+        # THIS should be removed: the color comes from the labels!
+        blob.class_color = self.labels[blob.class_name].fill
+
+
+        for corr in self.findCorrespondences(image):
+            corr.setBlobClass(image, blob, class_name)
+
 
     def getImageFromId(self, id):
         for img in self.images:

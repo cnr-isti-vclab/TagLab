@@ -51,10 +51,32 @@ class Correspondences(object):
             self.set([], [blob])
 
     def removeBlob(self, image, blob):
+        if self.source == image:
+            self.data = self.data[self.data['Blob1'] != blob.id]
+        else:
+            self.data = self.data[self.data['Blob2'] != blob.id]
         pass
 
     def updateBlob(self, image, old_blob, new_blob):
-        pass
+        if old_blob.class_name != new_blob.class_name:
+            if self.source == image:
+                set(self, [new_blob], [])
+            else:
+                set(self, [], [new_blob])
+            return
+        if self.source == image:
+            self.data.loc[self.data["Blob1"] == old_blob.id, "Blob1"] = new_blob.id
+            self.data.loc[self.data["Blob1"] == old_blob.id, "Area1"] = self.area_in_sq_cm(new_blob.area, False)
+        else:
+            self.data.loc[self.data["Blob2"] == old_blob.id, "Blob2"] = new_blob.id
+            self.data.loc[self.data["Blob2"] == old_blob.id, "Area2"] = self.area_in_sq_cm(new_blob.area, False)
+
+    def setBlobClass(self, image, blob, class_name):
+        #break the correspondences
+        if self.source == image:
+            self.set([blob], [])
+        else:
+            self.set([], [blob])
 
     def set(self, sourceblobs, targetblobs):
 

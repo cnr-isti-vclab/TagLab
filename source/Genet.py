@@ -1,4 +1,3 @@
-from source.Project import Project
 from source.Blob import Blob
 
 #convenience class to update genet changes, no need to save anything, genet is stored in the Blobs.
@@ -14,9 +13,8 @@ from source.Blob import Blob
 
 class Genet:
 
-    def __init__(self, images, correspondences) {
-
-    }
+    def __init__(self, images, correspondences):
+        pass
 
     # update blob with a new genet first empty genet (starting from 1)
     def addBlob(self, blob):

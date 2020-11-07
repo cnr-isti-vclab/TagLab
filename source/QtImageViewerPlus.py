@@ -580,8 +580,6 @@ class QtImageViewerPlus(QtImageViewer):
         The only function to add annotations. will take care of undo and QGraphicItems.
         """
         self.undo_data.addBlob(blob)
-        #self.undo_data_operation['remove'].append(blob)
-        #self.annotations.addBlob(blob)
         self.project.addBlob(self.image, blob)
         self.drawBlob(blob)
         if selected:
@@ -626,21 +624,19 @@ class QtImageViewerPlus(QtImageViewer):
 
 
     def setBlobClass(self, blob, class_name):
-
         if blob.class_name == class_name:
             return
 
+        self.project.setBlobClass(self.image, blob, class_name)
         self.undo_data.setBlobClass(blob, class_name)
 
-        blob.class_name = class_name
-        #THIS should be removed: the color comes from the labels!
-        blob.class_color = self.project.labels[blob.class_name].fill
 
         brush = self.project.classBrushFromName(blob)
         blob.qpath_gitem.setBrush(brush)
 
         self.scene.invalidate()
 
+        self.annotationsChanged.emit()
 
 #UNDO STUFF
 #UNDO STUFF

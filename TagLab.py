@@ -1184,7 +1184,7 @@ class TagLab(QWidget):
             img_target_index = self.comboboxTargetImage.currentIndex()
             self.project.addCorrespondence(img_source_index, img_target_index, sel1, sel2)
             corr = self.project.getImagePairCorrespondences(img_source_index, img_target_index)
-            self.compare_panel.updateData(corr)
+            self.compare_panel.updateTable(corr)
 
             # highlight the correspondences just added and show it by scroll
             if len(sel1) > 0:
@@ -1230,7 +1230,7 @@ class TagLab(QWidget):
 
         self.viewerplus.resetSelection()
         self.viewerplus2.resetSelection()
-        self.compare_panel.updateData(corr)
+        self.compare_panel.updateTable(corr)
 
 
     @pyqtSlot()
