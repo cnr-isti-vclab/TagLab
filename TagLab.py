@@ -391,12 +391,8 @@ class TagLab(QWidget):
         # INFO WIDGET
         self.infoWidget = QtInfoWidget(self)
 
-        # MAP VIEWER preferred size (longest side)
-        self.MAP_VIEWER_SIZE = self.labels_widget.width()
-
         # MAP VIEWER
-        self.mapviewer = QtMapViewer(self.MAP_VIEWER_SIZE)
-        self.mapviewer.setPixmap(None)
+        self.mapviewer = QtMapViewer(350)
 
         self.viewerplus.viewUpdated[QRectF].connect(self.mapviewer.drawOverlayImage)
         self.mapviewer.leftMouseButtonPressed[float, float].connect(self.viewerplus.center)
@@ -2099,6 +2095,10 @@ class TagLab(QWidget):
         self.mapWidget.close()
         self.showImage(image)
 
+    def resizeEvent(self, event):
+
+        w = self.groupbox_labels.width()
+        self.mapviewer.setNewWidth(w)
 
     def showImage(self, image):
 
@@ -2117,8 +2117,8 @@ class TagLab(QWidget):
             index = self.project.images.index(image)
             self.updateComboboxSourceImage(index)
 
-            thumb = self.viewerplus.pixmap.scaled(self.MAP_VIEWER_SIZE, self.MAP_VIEWER_SIZE, Qt.KeepAspectRatio,
-                                                 Qt.SmoothTransformation)
+            w = self.mapviewer.width()
+            thumb = self.viewerplus.pixmap.scaled(w, w, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             self.mapviewer.setPixmap(thumb)
             self.mapviewer.setOpacity(0.5)
 

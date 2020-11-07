@@ -40,16 +40,12 @@ class QtMapViewer(QGraphicsView):
     def __init__(self, preferred_size):
         QGraphicsView.__init__(self)
 
-        self.setStyleSheet("color: rgb(49,51,53)")
-        self.THUMB_WIDTH = preferred_size
-        self.THUMB_HEIGHT = 300
-        self.BORDER_SIZE = 2
+        self.setStyleSheet("background-color: rgb(40,40,40); border:none")
+        self.BORDER = 10
 
         # Image is displayed as a QPixmap in a QGraphicsScene attached to this QGraphicsView.
         self.scene = QGraphicsScene()
         self.setScene(self.scene)
-
-
 
         # Image aspect ratio mode.
         self.aspectRatioMode = Qt.KeepAspectRatio
@@ -73,88 +69,44 @@ class QtMapViewer(QGraphicsView):
         self.overlay_image = QImage(self.HIGHLIGHT_RECT_WIDTH, self.HIGHLIGHT_RECT_HEIGHT, QImage.Format_ARGB32)
         self.overlay_image.fill(self.HIGHLIGHT_COLOR)
 
-        self.initPixmapItem()
+        self.pixmapitem = None
 
-    def initPixmapItem(self):
-        self.pixmap = QPixmap(self.THUMB_WIDTH, self.THUMB_HEIGHT)
-        self.pixmap.fill(QColor(40, 40, 40))
-        self.imgwidth = self.pixmap.width()
-        self.imgheight = self.pixmap.height()
+        self.setFixedWidth(preferred_size)
+        self.setFixedHeight(preferred_size)
 
-        # Store a local handle to the scene's current image pixmap.
-        self.pixmapitem = self.scene.addPixmap(self.pixmap)
+        self.imgwidth = 0
+        self.imgheight = 0
 
     def clear(self):
-        self.initPixmapItem()
+
+        if self.pixmapitem is not None:
+            self.scene.removeItem(self.pixmapitem)
+            self.pixmapitem = None
+
+    def setNewWidth(self, width):
+
+        self.setFixedWidth(width)
 
     def setPixmap(self, pixmap):
-        if pixmap is None:
-            qimg = QImage(self.THUMB_WIDTH, self.THUMB_HEIGHT, QImage.Format_ARGB32)
-            qimg.fill(qRgba(40, 40, 40, 255))
-            self.pixmap = QPixmap.fromImage(qimg)
-        else:
-            self.pixmap = pixmap
 
+        self.pixmap = pixmap
         self.imgwidth = self.pixmap.width()
         self.imgheight = self.pixmap.height()
-        self.pixmapitem.setPixmap(self.pixmap)
-        self.setSceneRect(QRectF(self.pixmap.rect()))
 
-        if self.imgwidth > self.imgheight:
-
-            aspectratio = self.imgheight / self.imgwidth
-            h = (int)(aspectratio * self.width())
-            self.setFixedHeight(h)
-
-        # calculate zoom factor
-        pixels_of_border = 10
-        zf1 = (self.geometry().width() - pixels_of_border) / self.imgwidth
-        zf2 = (self.geometry().height() - pixels_of_border) / self.imgheight
-
-        zf = min(zf1, zf2)
-        if zf > 1.0:
-            zf = 1.0
-
-        self.zoom_factor = zf
-
-        self.updateViewer()
-
-    def setImage(self, image):
-        """ Set the scene's current image (input image must be a QImage)
-        """
-
-        if image is None:
-
-            qimg = QImage(self.THUMB_WIDTH, self.THUMB_HEIGHT, QImage.Format_ARGB32)
-            qimg.fill(qRgba(40, 40, 40, 255))
-            self.pixmap = QPixmap.fromImage(qimg)
-            self.imgwidth = self.THUMB_WIDTH
-            self.imgheight = self.THUMB_HEIGHT
-
-        elif type(image) is QImage:
-            imageARGB32 = image.convertToFormat(QImage.Format_ARGB32)
-            self.pixmap = QPixmap.fromImage(imageARGB32)
-            self.imgwidth = image.width()
-            self.imgheight = image.height()
-        else:
-            raise RuntimeError("Argument must be a QImage.")
-
-        if self.hasImage():
-            self.pixmapitem.setPixmap(self.pixmap)
-        else:
+        if self.pixmapitem is None:
             self.pixmapitem = self.scene.addPixmap(self.pixmap)
+        else:
+            self.pixmapitem.setPixmap(self.pixmap)
 
-        # Set scene size to image size (!)
         self.setSceneRect(QRectF(self.pixmap.rect()))
 
         if self.imgwidth > self.imgheight:
-
             aspectratio = self.imgheight / self.imgwidth
             h = (int)(aspectratio * self.width())
             self.setFixedHeight(h)
 
         # calculate zoom factor
-        pixels_of_border = 10
+        pixels_of_border = self.BORDER
         zf1 = (self.geometry().width() - pixels_of_border) / self.imgwidth
         zf2 = (self.geometry().height() - pixels_of_border) / self.imgheight
 
@@ -163,18 +115,11 @@ class QtMapViewer(QGraphicsView):
             zf = 1.0
 
         self.zoom_factor = zf
-
         self.updateViewer()
 
     def setOpacity(self, opacity):
         self.opacity = opacity
 
-    #UNUSED
-    # def loadImageFromFile(self, fileName=""):
-    #     """ Load an image from file.
-    #     """
-    #     image = QImage(fileName)
-    #     self.setImage(image)
     @pyqtSlot(QRectF)
     def drawOverlayImage(self, rect):
 
@@ -222,12 +167,10 @@ class QtMapViewer(QGraphicsView):
         return [posx, posy]
 
     def resizeEvent(self, event):
-        """ Maintain current zoom on resize.
-        """
+        """ Maintain current zoom on resize."""
 
         if self.imgwidth > 0 and self.imgheight > 0:
-
-            pixels_of_border = 10
+            pixels_of_border = self.BORDER
             zf1 = (self.geometry().width() - pixels_of_border) / self.imgwidth
             zf2 = (self.geometry().height() - pixels_of_border) / self.imgheight
             zf = min(zf1, zf2)
@@ -235,36 +178,30 @@ class QtMapViewer(QGraphicsView):
                 zf = 1.0
 
             self.zoom_factor = zf
-
             self.updateViewer()
 
     def mousePressEvent(self, event):
 
         scenePos = self.mapToScene(event.pos())
+
         if event.button() == Qt.LeftButton:
             if self.panEnabled:
                 self.setDragMode(QGraphicsView.ScrollHandDrag)
 
             clippedCoords = self.clipScenePos(scenePos)
-
             clippedCoords[0] = clippedCoords[0] / self.imgwidth
             clippedCoords[1] = clippedCoords[1] / self.imgheight
-
             self.leftMouseButtonPressed.emit(clippedCoords[0], clippedCoords[1])
 
     def mouseMoveEvent(self, event):
 
         QGraphicsView.mouseMoveEvent(self, event)
-
         scenePos = self.mapToScene(event.pos())
 
         if event.buttons() == Qt.LeftButton:
-
             clippedCoords = self.clipScenePos(scenePos)
-
             clippedCoords[0] = clippedCoords[0] / self.imgwidth
             clippedCoords[1] = clippedCoords[1] / self.imgheight
-
             self.mouseMoveLeftPressed.emit(clippedCoords[0], clippedCoords[1])
 
 
