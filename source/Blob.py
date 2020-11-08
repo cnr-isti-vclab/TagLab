@@ -46,7 +46,6 @@ class Blob(object):
     """
 
     def __init__(self, region, offset_x, offset_y, id):
-
         self.version = 0
         self.id = int(id)
 
@@ -119,6 +118,8 @@ class Blob(object):
         # color of the class
         self.class_color = [128, 128, 128]
 
+        self.genet = None
+
         # note about the coral, i.e. damage type
         self.note = ""
 
@@ -154,6 +155,7 @@ class Blob(object):
         blob.id = self.id
         blob.version = self.version + 1
 
+        blob.genet = self.genet
         blob.class_name = self.class_name
 
         blob.deep_extreme_points = self.deep_extreme_points
