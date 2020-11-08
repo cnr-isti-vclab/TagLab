@@ -22,9 +22,8 @@ import os
 from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QImage, QImageReader, QPixmap, QIcon, qRgb, qRed, qGreen, qBlue
 from PyQt5.QtWidgets import QWidget, QMessageBox, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
-from source.Annotation import Annotation
 
-from source import utils
+from datetime import date
 
 class QtMapSettingsWidget(QWidget):
 
@@ -44,9 +43,9 @@ class QtMapSettingsWidget(QWidget):
         self.fields = {
             "name"            : {"name": "Map Name:"        , "value": "", "place": "Name of the map"        , "width": 300, "action": None },
             "rgb_filename"    : {"name": "RGB Image:"       , "value": "", "place": "Path of the rgb image"  , "width": 300, "action": self.chooseMapFile },
-            "depth_filename"  : {"name": "Depth Image:"     , "value": "", "place": "Path of the depth image", "width": 300, "action": self.choose3DMapFile },
+            "depth_filename"  : {"name": "Depth Image:"     , "value": "", "place": "Path of the depth image", "width": 300, "action": self.chooseDEMFile },
             "acquisition_date": {"name": "Acquisition Date:", "value": "", "place": "YYYY-MM-DD"             , "width": 150, "action": None },
-            "px_to_mm"        : {"name": "Pixel size (mm):"        , "value": "1.0", "place": ""                    , "width": 150, "action": None }
+            "px_to_mm"        : {"name": "Pixel size (mm):"        , "value": "", "place": ""                    , "width": 150, "action": None }
         }
         self.data = {}
 
@@ -110,7 +109,7 @@ class QtMapSettingsWidget(QWidget):
             self.fields["rgb_filename"]["edit"].setText(fileName)
 
     @pyqtSlot()
-    def choose3DMapFile(self):
+    def chooseDEMFile(self):
 
         filters = "Image (*.png *.tif *.tiff)"
         fileName, _ = QFileDialog.getOpenFileName(self, "Input 3D Map File", "", filters)
@@ -120,7 +119,6 @@ class QtMapSettingsWidget(QWidget):
     @pyqtSlot()
     def accept(self):
 
-        #TODO validate date
         for key, field in self.fields.items():
             self.data[key] = field["edit"].text()
 
@@ -145,6 +143,16 @@ class QtMapSettingsWidget(QWidget):
             msgBox.setText("The depth map file does not seems to exist.")
             msgBox.exec()
             return
+
+        # check validity of the acquisition date
+        txt = self.data["acquisition_date"]
+        try:
+            date.fromisoformat(txt)
+        except:
+            msgBox = QMessageBox()
+            msgBox.setText("Invalid date format. Please, enter the acquisition date as YYYY-MM-DD.")
+            msgBox.exec()
+
 
         # TODO: redundat check, remove it ?
         image_reader = QImageReader(rgb_filename)
