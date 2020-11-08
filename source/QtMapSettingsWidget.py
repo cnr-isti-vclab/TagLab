@@ -152,7 +152,7 @@ class QtMapSettingsWidget(QWidget):
             msgBox = QMessageBox()
             msgBox.setText("Invalid date format. Please, enter the acquisition date as YYYY-MM-DD.")
             msgBox.exec()
-
+            return
 
         # TODO: redundat check, remove it ?
         image_reader = QImageReader(rgb_filename)

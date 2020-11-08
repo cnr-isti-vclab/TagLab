@@ -2068,12 +2068,17 @@ class TagLab(QWidget):
         dir = QDir(os.getcwd())
 
         try:
+            
+            if self.mapWidget.data["px_to_mm"] == "":
+                pixel_scale = 1.0
+            else:
+                pixel_scale = self.mapWidget.data["px_to_mm"]
 
             image = Image(
-                            map_px_to_mm_factor = float(self.mapWidget.data['px_to_mm']),
+                            map_px_to_mm_factor = pixel_scale,
                             id = self.mapWidget.data['name'],
                             name = self.mapWidget.data['name'],
-                            metadata = { 'acquisition_date':  self.mapWidget.data['acquisition_date'] }
+                            acquisition_date=self.mapWidget.data['acquisition_date']
                           )
 
             # set RGB map
@@ -2092,7 +2097,9 @@ class TagLab(QWidget):
             msgBox.exec()
             return
 
-        self.project.images.append(image)
+        # add an image and its annotation to the project
+        self.project.addNewImage(image)
+
         self.updateImageSelectionMenu()
         self.mapWidget.close()
         self.showImage(image)
@@ -2335,7 +2342,7 @@ class TagLab(QWidget):
         if self.activeviewer is not None:
 
             histo_widget = QtHistogramWidget(self.activeviewer.annotations, self.labels_dictionary,
-                                             self.activeviewer.image.map_px_to_mm_factor, self.map_acquisition_date, self)
+                                             self.activeviewer.image.map_px_to_mm_factor, self.image.acquisition_date, self)
             histo_widget.setWindowModality(Qt.WindowModal)
             histo_widget.show()
 
@@ -2734,7 +2741,7 @@ class TagLab(QWidget):
 
         # append the annotated images to the current ones
         for annotated_image in project_to_append.images:
-            self.project.images.append(annotated_image)
+            self.project.addNewImage(annotated_image)
 
         QApplication.restoreOverrideCursor()
 

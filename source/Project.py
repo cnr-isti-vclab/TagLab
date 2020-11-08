@@ -13,7 +13,7 @@ from source.Correspondences import Correspondences
 from source.Genet import Genet
 
 import pandas as pd
-
+import datetime
 
 def loadProject(filename, labels_dict):
 
@@ -24,7 +24,6 @@ def loadProject(filename, labels_dict):
         data = json.load(f)
     except json.JSONDecodeError as e:
         raise Exception(str(e))
-
 
     if "Map File" in data:
         project = loadOldProject(data, labels_dict)
@@ -162,12 +161,24 @@ class Project(object):
         brush = QBrush(QColor(color[0], color[1], color[2], 200))
         return brush
 
-
     def isLabelVisible(self, id):
         if not id in self.labels:
             raise Exception("Unknown label: " + id)
 
         return self.labels[id].visible
+
+    def addNewImage(self, image):
+        """
+        Annotated images in the image list are sorted by date.
+        """
+        if not self.images:
+            # the image list is empty
+            self.images.append(image)
+        else:
+            image_list = self.images
+            image_list.append(image)
+            image_list.sort(key = lambda x: datetime.date.fromisoformat(x.acquisition_date))
+            self.images = image_list
 
     def findCorrespondences(self, image):
 
