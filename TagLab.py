@@ -2067,8 +2067,8 @@ class TagLab(QWidget):
 
         dir = QDir(os.getcwd())
 
-        #TODO validate date, and do it in the map_widget!
         try:
+
             image = Image(
                             map_px_to_mm_factor = float(self.mapWidget.data['px_to_mm']),
                             id = self.mapWidget.data['name'],
