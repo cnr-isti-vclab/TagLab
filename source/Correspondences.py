@@ -52,8 +52,10 @@ class Correspondences(object):
 
     def removeBlob(self, image, blob):
         if self.source == image:
+            self.set([blob], [])
             self.data = self.data[self.data['Blob1'] != blob.id]
         else:
+            self.set([], [blob])
             self.data = self.data[self.data['Blob2'] != blob.id]
         pass
 
