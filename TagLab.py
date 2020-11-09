@@ -882,6 +882,7 @@ class TagLab(QWidget):
             if flag_compute is True:
                 self.project.computeCorrespondences(img_source_index, img_target_index)
                 self.compare_panel.setTable(self.project, img_source_index, img_target_index)
+                self.setTool("MATCH")
 
 
     @pyqtSlot()
@@ -1532,10 +1533,6 @@ class TagLab(QWidget):
             if self.split_screen_flag == False:
                 self.enableSplitScreen()
 
-            # settings when MATCH tool is active
-            self.comboboxSourceImage.setEnabled(False)
-            self.comboboxTargetImage.setEnabled(False)
-
             self.groupbox_labels.hide()
             self.mapviewer.hide()
             self.groupbox_comparison.show()
@@ -1643,11 +1640,13 @@ class TagLab(QWidget):
             self.move()
             return
 
-        self.setTool("MATCH")
-
-        img_source_index = self.comboboxSourceImage.currentIndex()
-        img_target_index = self.comboboxTargetImage.currentIndex()
-        self.compare_panel.setTable(self.project, img_source_index, img_target_index)
+        if self.btnMatch.isChecked() is False:
+            self.setTool("MOVE")
+        else:
+            self.setTool("MATCH")
+            img_source_index = self.comboboxSourceImage.currentIndex()
+            img_target_index = self.comboboxTargetImage.currentIndex()
+            self.compare_panel.setTable(self.project, img_source_index, img_target_index)
 
 
     def updatePanelInfo(self, blob):
