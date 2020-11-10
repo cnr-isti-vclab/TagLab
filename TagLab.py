@@ -827,6 +827,8 @@ class TagLab(QWidget):
         for action in self.mapActionList:
             self.submenuEdit.removeAction(action)
 
+        self.mapActionList = []
+
         if not self.project.images:
             self.submenuEdit.setEnabled(False)
         else:
@@ -1702,11 +1704,11 @@ class TagLab(QWidget):
 
         if self.activeviewer.image.map_px_to_mm_factor == "":
             txt_perimeter = "Perimeter (px): "
-            txt_area = "Area (cm<sup>2</sup>)"
+            txt_area = "Area (px<sup>2</sup>)"
             factor = 1.0
         else:
             txt_perimeter = "Perimeter (cm): "
-            txt_area = "Area (px<sup>2</sup>)"
+            txt_area = "Area (cm<sup>2</sup>)"
             factor = float(self.activeviewer.image.map_px_to_mm_factor)
 
         cx = blob.centroid[0]
