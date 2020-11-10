@@ -69,6 +69,7 @@ class QtMapSettingsWidget(QWidget):
                 button = QPushButton("...")
                 button.setMaximumWidth(20)
                 button.clicked.connect(field["action"])
+                field["button"] = button
 
             layout = QHBoxLayout()
             layout.setAlignment(Qt.AlignLeft)
@@ -99,6 +100,13 @@ class QtMapSettingsWidget(QWidget):
         self.setWindowTitle("MAP SETTINGS")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
+    def disableRGBloading(self):
+        self.fields["rgb_filename"]["edit"].setEnabled(False)
+        self.fields["rgb_filename"]["button"].hide()
+
+    def enableRGBloading(self):
+        self.fields["rgb_filename"]["edit"].setEnabled(True)
+        self.fields["rgb_filename"]["button"].show()
 
     @pyqtSlot()
     def chooseMapFile(self):

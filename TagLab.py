@@ -464,6 +464,9 @@ class TagLab(QWidget):
         self.prev_area_rect = None
         self.prev_area = None
 
+        self.mapActionList = []
+        self.image2update = None
+
         # NETWORKS
         self.deepextreme_net = None
         self.classifier = None
@@ -726,6 +729,8 @@ class TagLab(QWidget):
         filemenu.addAction(saveAsAct)
         filemenu.addSeparator()
         filemenu.addAction(newMapAct)
+        self.submenuEdit = filemenu.addMenu("Edit Maps info")
+        self.submenuEdit.setEnabled(False)
         filemenu.addSeparator()
 
         for i in range(self.maxRecentFiles):
@@ -733,7 +738,7 @@ class TagLab(QWidget):
         self.separatorRecentFilesAct = filemenu.addSeparator()
         self.updateRecentFileActions()
 
-        submenuImport = filemenu.addMenu("Import")
+        submenuImport = filemenu.addMenu("Import Project")
         submenuImport.addAction(importAct)
         submenuImport.addAction(appendAct)
         filemenu.addSeparator()
@@ -818,7 +823,46 @@ class TagLab(QWidget):
 
         return menubar
 
+    def fillEditSubMenu(self):
 
+        for action in self.mapActionList:
+            self.submenuEdit.removeAction(action)
+
+        if not self.project.images:
+            self.submenuEdit.setEnabled(False)
+        else:
+            self.submenuEdit.setEnabled(True)
+            for image in self.project.images:
+                editMap = QAction(image.name)
+                self.submenuEdit.addAction(editMap)
+                self.submenuEdit.triggered[QAction].connect(self.editMapSettings)
+                self.mapActionList.append(editMap)
+
+    @pyqtSlot(QAction)
+    def editMapSettings(self, openMapAction):
+
+        index = self.mapActionList.index(openMapAction)
+        image = self.project.images[index]
+        if self.mapWidget is None:
+            self.mapWidget = QtMapSettingsWidget(parent=self)
+            self.mapWidget.setWindowModality(Qt.WindowModal)
+
+
+        self.mapWidget.fields["name"]["edit"].setText(image.name)
+
+        if len(image.channels) < 2:
+           self.mapWidget.fields["rgb_filename"]["edit"].setText(image.channels[0].filename)
+
+        else:
+            self.mapWidget.fields["rgb_filename"]["edit"].setText(image.channels[0].filename)
+            self.mapWidget.fields["depth_filename"]["edit"].setText(image.channels[1].filename)
+
+        self.mapWidget.fields["acquisition_date"]["edit"].setText(image.acquisition_date)
+        self.mapWidget.fields["px_to_mm"]["edit"].setText(str(image.map_px_to_mm_factor))
+        self.mapWidget.disableRGBloading()
+        self.image2update = image
+        self.mapWidget.accepted.connect(self.updateMapProperties)
+        self.mapWidget.show()
 
     @pyqtSlot()
     def switchDEM(self):
@@ -1488,6 +1532,7 @@ class TagLab(QWidget):
         self.comboboxSourceImage.clear()
         self.comboboxTargetImage.clear()
         self.resetPanelInfo()
+        self.fillEditSubMenu()
 
     def resetToolbar(self):
 
@@ -2056,6 +2101,8 @@ class TagLab(QWidget):
         else:
 
             # show it again
+            self.mapWidget.enableRGBloading()
+            self.mapWidget.accepted.connect(self.setMapProperties)
             if self.mapWidget.isHidden():
                 self.mapWidget.show()
 
@@ -2102,6 +2149,37 @@ class TagLab(QWidget):
         self.updateImageSelectionMenu()
         self.mapWidget.close()
         self.showImage(image)
+
+    @pyqtSlot()
+    def updateMapProperties(self):
+        dir = QDir(os.getcwd())
+
+        try:
+            image = self.image2update
+            if self.mapWidget.data["px_to_mm"] == "":
+                pixel_scale = 1.0
+            else:
+                pixel_scale = self.mapWidget.data["px_to_mm"]
+
+            image.map_px_to_mm_factor = float(pixel_scale)
+            image.name = self.mapWidget.data['name']
+            image.id = self.mapWidget.data['name']
+            image.acquisition_date = self.mapWidget.data['acquisition_date']
+            depth_filename = dir.relativeFilePath(self.mapWidget.data['depth_filename'])
+
+            if len(depth_filename) > 3:
+                image.addChannel(depth_filename, "DEM")
+
+        except Exception as e:
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("Error creating map:" + str(e))
+            msgBox.exec()
+            return
+
+        # add an image and its annotation to the project
+        self.updateImageSelectionMenu()
+        self.mapWidget.close()
 
     def resizeEvent(self, event):
 
@@ -2713,6 +2791,7 @@ class TagLab(QWidget):
         self.labels_widget.setLabels(self.project)
 
         self.updateImageSelectionMenu()
+        self.fillEditSubMenu()
 
         if self.timer is None:
             self.activateAutosave()
