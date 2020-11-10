@@ -152,8 +152,8 @@ class QtImageViewerPlus(QtImageViewer):
             self.drawBlob(blob)
 
         self.scene.invalidate()
-        self.tools.tools['RULER'].setPxToMM(image.map_px_to_mm_factor)
-        self.px_to_mm = image.map_px_to_mm_factor
+        self.tools.tools['RULER'].setPxToMM(image.pixelSize())
+        self.px_to_mm = image.pixelSize()
 
         self.setChannel(image.channels[channel_idx])
 

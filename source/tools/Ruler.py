@@ -12,10 +12,10 @@ class Ruler(Tool):
 
         self.CROSS_LINE_WIDTH = 2
         self.pick_style = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.cyan, 'size': 6}
-        self.map_px_to_mm_factor = None
+        self.px_to_mm_factor = None
 
     def setPxToMM(self, factor):
-        self.map_px_to_mm_factor = factor
+        self.px_to_mm_factor = factor
 
     def leftPressed(self, x, y, mods):
         points = self.pick_points.points
@@ -98,8 +98,8 @@ class Ruler(Tool):
 
         measurepx = np.sqrt(((x2 - x1) ** 2) + ((y2 - y1) ** 2))
 
-        if self.map_px_to_mm_factor is None:
+        if self.px_to_mm_factor is None:
             raise Exception("map_px to mm factor in ruler needs to be explicitly set")
         # conversion to cm
-        measure = measurepx * self.map_px_to_mm_factor / 10
+        measure = measurepx * self.px_to_mm_factor / 10
         return measure

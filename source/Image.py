@@ -37,6 +37,13 @@ class Image(object):
         self.metadata = metadata                  # this follows image_metadata_template, do we want to allow freedom to add custome values?
 
 
+    def pixelSize(self):
+
+        if self.map_px_to_mm_factor == "":
+            return 1.0
+        else:
+            return float(self.map_px_to_mm_factor)
+
     def loadGeoInfo(self, filename):
         """
         Update the georeferencing information.

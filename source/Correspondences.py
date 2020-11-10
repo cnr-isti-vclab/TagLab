@@ -21,9 +21,9 @@ class Correspondences(object):
     def area_in_sq_cm(self, area, is_source):
 
         if is_source:
-            area_sq_cm = area * self.source.map_px_to_mm_factor * self.source.map_px_to_mm_factor / 100.0
+            area_sq_cm = area * self.source.pixelSize() * self.source.pixelSize() / 100.0
         else:
-            area_sq_cm = area * self.target.map_px_to_mm_factor * self.target.map_px_to_mm_factor / 100.0
+            area_sq_cm = area * self.target.pixelSize() * self.target.pixelSize() / 100.0
 
         return area_sq_cm
 

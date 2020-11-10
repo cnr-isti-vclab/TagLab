@@ -110,7 +110,6 @@ class TagLab(QWidget):
         self.map_3D_filename = None    #refactor THIS!
         self.map_image_filename = None #"map.png"  #REFACTOR to project.map_filename
         self.map_acquisition_date = None #"YYYY-MM-DD"
-        self.map_px_to_mm_factor = 1.0
 
         self.recentFileActs = []  #refactor to self.maxRecentProjects
         self.maxRecentFiles = 4   #refactor to maxRecentProjects
@@ -1701,7 +1700,14 @@ class TagLab(QWidget):
         self.lblClass.setText(blob.class_name)
         self.lblClass.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
-        factor = self.activeviewer.image.map_px_to_mm_factor
+        if self.activeviewer.image.map_px_to_mm_factor == "":
+            txt_perimeter = "Perimeter (px): "
+            txt_area = "Area (cm<sup>2</sup>)"
+            factor = 1.0
+        else:
+            txt_perimeter = "Perimeter (cm): "
+            txt_area = "Area (px<sup>2</sup>)"
+            factor = float(self.activeviewer.image.map_px_to_mm_factor)
 
         cx = blob.centroid[0]
         cy = blob.centroid[1]
@@ -1710,15 +1716,13 @@ class TagLab(QWidget):
         self.lblCentroidValue.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         scaled_perimeter = blob.perimeter * factor / 10.0
-        txt = "Perimeter (cm): "
-        self.lblPerimeter.setText(txt)
+        self.lblPerimeter.setText(txt_perimeter)
         txt = "{:6.2f}".format(scaled_perimeter)
         self.lblPerimeterValue.setText(txt)
         self.lblPerimeterValue.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         scaled_area = blob.area * factor * factor / 100.0
-        txt = "Area (cm<sup>2</sup>)"
-        self.lblArea.setText(txt)
+        self.lblArea.setText(txt_area)
         txt = "{:6.2f}".format(scaled_area)
         self.lblAreaValue.setText(txt)
         self.lblAreaValue.setTextInteractionFlags(Qt.TextSelectableByMouse)
@@ -2114,14 +2118,9 @@ class TagLab(QWidget):
         dir = QDir(os.getcwd())
 
         try:
-            
-            if self.mapWidget.data["px_to_mm"] == "":
-                pixel_scale = 1.0
-            else:
-                pixel_scale = self.mapWidget.data["px_to_mm"]
 
             image = Image(
-                            map_px_to_mm_factor = pixel_scale,
+                            map_px_to_mm_factor = self.mapWidget.data["px_to_mm"],
                             id = self.mapWidget.data['name'],
                             name = self.mapWidget.data['name'],
                             acquisition_date=self.mapWidget.data['acquisition_date']
@@ -2156,12 +2155,8 @@ class TagLab(QWidget):
 
         try:
             image = self.image2update
-            if self.mapWidget.data["px_to_mm"] == "":
-                pixel_scale = 1.0
-            else:
-                pixel_scale = self.mapWidget.data["px_to_mm"]
 
-            image.map_px_to_mm_factor = float(pixel_scale)
+            image.map_px_to_mm_factor = self.mapWidget.data["px_to_mm"]
             image.name = self.mapWidget.data['name']
             image.id = self.mapWidget.data['name']
             image.acquisition_date = self.mapWidget.data['acquisition_date']
@@ -2384,7 +2379,7 @@ class TagLab(QWidget):
 
         if filename:
 
-            self.activeviewer.annotations.export_data_table_for_Scripps(self.activeviewer.image.map_px_to_mm_factor,filename)
+            self.activeviewer.annotations.export_data_table_for_Scripps(self.activeviewer.image.pixelSize(),filename)
 
             msgBox = QMessageBox(self)
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
@@ -2421,7 +2416,7 @@ class TagLab(QWidget):
         if self.activeviewer is not None:
 
             histo_widget = QtHistogramWidget(self.activeviewer.annotations, self.labels_dictionary,
-                                             self.activeviewer.image.map_px_to_mm_factor, self.image.acquisition_date, self)
+                                             self.activeviewer.image.pixelSize(), self.image.acquisition_date, self)
             histo_widget.setWindowModality(Qt.WindowModal)
             histo_widget.show()
 
@@ -2565,7 +2560,7 @@ class TagLab(QWidget):
             new_dataset.convert_colors_to_labels(target_classes, self.labels_dictionary)
             new_dataset.computeFrequencies(target_classes)
             target_scale_factor = self.newDatasetWidget.getTargetScale()
-            new_dataset.workingAreaCropAndRescale(self.activeviewer.image.map_px_to_mm_factor, target_scale_factor,self.activeviewer.image.working_area)
+            new_dataset.workingAreaCropAndRescale(self.activeviewer.image.pixelSize(), target_scale_factor,self.activeviewer.image.working_area)
 
             # create training, validation and test areas
 
@@ -2696,7 +2691,7 @@ class TagLab(QWidget):
             new_classifier["Average Norm."] = list(dataset_train.dataset_average)
             new_classifier["Num. Classes"] = dataset_train.num_classes
             new_classifier["Classes"] = list(dataset_train.dict_target)
-            new_classifier["Scale"] = self.map_px_to_mm_factor
+            new_classifier["Scale"] = self.activeviewer.image.pixelSize()
             self.available_classifiers.append(new_classifier)
             newconfig = dict()
             newconfig["Available Classifiers"] = self.available_classifiers
@@ -2895,7 +2890,7 @@ class TagLab(QWidget):
 
         classifier_selected = self.classifierWidget.selected()
         target_scale_factor = classifier_selected['Scale']
-        scale_factor = target_scale_factor / self.activeviewer.image.map_px_to_mm_factor
+        scale_factor = target_scale_factor / self.activeviewer.image.pixelSize()
 
         prev_area = self.prev_area
         width = max(513*scale_factor, prev_area[2])
@@ -2930,7 +2925,7 @@ class TagLab(QWidget):
         self.classifier.updateProgress.connect(self.progress_bar.setProgress)
 
         target_scale_factor = classifier_selected['Scale']
-        scale_factor = target_scale_factor / self.activeviewer.image.map_px_to_mm_factor
+        scale_factor = target_scale_factor / self.activeviewer.image.pixelSize()
         w_target = crop_image.width() *  scale_factor
         h_target = crop_image.height() * scale_factor
         input_crop_image = crop_image.scaled(w_target, h_target, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
@@ -3049,7 +3044,7 @@ class TagLab(QWidget):
 
                 orthomap = self.activeviewer.img_map
                 target_scale_factor = classifier_selected['Scale']
-                scale_factor = target_scale_factor / self.activeviewer.image.map_px_to_mm_factor
+                scale_factor = target_scale_factor / self.activeviewer.image.pixelSize()
 
                 w_target = orthomap.width() *  scale_factor
                 h_target = orthomap.height() * scale_factor
