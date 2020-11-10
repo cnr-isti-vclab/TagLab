@@ -123,25 +123,27 @@ class QtMapViewer(QGraphicsView):
     @pyqtSlot(QRectF)
     def drawOverlayImage(self, rect):
 
-        W = self.pixmap.width()
-        H = self.pixmap.height()
+        if self.pixmapitem is not None:
 
-        self.HIGHLIGHT_RECT_WIDTH = rect.width() * W
-        self.HIGHLIGHT_RECT_HEIGHT = rect.height() * H
-        self.HIGHLIGHT_RECT_POSX = rect.left() * W
-        self.HIGHLIGHT_RECT_POSY = rect.top() * H
-        self.overlay_image = QImage(self.HIGHLIGHT_RECT_WIDTH, self.HIGHLIGHT_RECT_HEIGHT, QImage.Format_ARGB32)
-        self.overlay_image.fill(self.HIGHLIGHT_COLOR)
+            W = self.pixmap.width()
+            H = self.pixmap.height()
 
-        if self.overlay_image.width() > 1:
-            pxmap = self.pixmap.copy()
-            p = QPainter()
-            p.begin(pxmap)
-            p.setOpacity(self.opacity)
-            p.drawImage(self.HIGHLIGHT_RECT_POSX, self.HIGHLIGHT_RECT_POSY, self.overlay_image)
-            p.end()
+            self.HIGHLIGHT_RECT_WIDTH = rect.width() * W
+            self.HIGHLIGHT_RECT_HEIGHT = rect.height() * H
+            self.HIGHLIGHT_RECT_POSX = rect.left() * W
+            self.HIGHLIGHT_RECT_POSY = rect.top() * H
+            self.overlay_image = QImage(self.HIGHLIGHT_RECT_WIDTH, self.HIGHLIGHT_RECT_HEIGHT, QImage.Format_ARGB32)
+            self.overlay_image.fill(self.HIGHLIGHT_COLOR)
 
-            self.pixmapitem.setPixmap(pxmap)
+            if self.overlay_image.width() > 1:
+                pxmap = self.pixmap.copy()
+                p = QPainter()
+                p.begin(pxmap)
+                p.setOpacity(self.opacity)
+                p.drawImage(self.HIGHLIGHT_RECT_POSX, self.HIGHLIGHT_RECT_POSY, self.overlay_image)
+                p.end()
+
+                self.pixmapitem.setPixmap(pxmap)
 
     def updateViewer(self):
         """ Show current zoom (if showing entire image, apply current aspect ratio mode).
