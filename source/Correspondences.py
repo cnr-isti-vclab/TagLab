@@ -18,6 +18,9 @@ class Correspondences(object):
         self.data = pd.DataFrame(data = correspondences, columns=['Blob1', 'Blob2', 'Area1', 'Area2', 'Class', 'Action', 'Split\Fuse'])
 
 
+    def updateAreas(self):
+        pass
+
     def area_in_sq_cm(self, area, is_source):
 
         if is_source:

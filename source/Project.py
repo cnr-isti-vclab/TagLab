@@ -256,14 +256,19 @@ class Project(object):
         corr = self.getImagePairCorrespondences(img_source_idx, img_target_idx)
         corr.set(blobs1, blobs2)
 
+    def updatePixelSizeInCorrespondences(self, image):
 
+        correspondences= self.findCorrespondences(image)
+        for corr in correspondences:
+            corr.updateAreas()
+    
     def computeCorrespondences(self, img_source_idx, img_target_idx):
         """
         Compute the correspondences between an image pair.
         """
 
-        conversion1 = self.images[img_source_idx].map_px_to_mm_factor
-        conversion2 = self.images[img_target_idx].map_px_to_mm_factor
+        conversion1 = self.images[img_source_idx].pixelSize()
+        conversion2 = self.images[img_target_idx].pixelSize()
 
         # switch form px to mm just for calculation (except areas that are in cm)
 
