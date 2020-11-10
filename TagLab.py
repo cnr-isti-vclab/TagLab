@@ -2167,6 +2167,7 @@ class TagLab(QWidget):
             image.acquisition_date = self.mapWidget.data['acquisition_date']
             depth_filename = dir.relativeFilePath(self.mapWidget.data['depth_filename'])
 
+
             if len(depth_filename) > 3:
                 image.addChannel(depth_filename, "DEM")
 
@@ -2179,6 +2180,7 @@ class TagLab(QWidget):
 
         # add an image and its annotation to the project
         self.updateImageSelectionMenu()
+        self.fillEditSubMenu()
         self.mapWidget.close()
 
     def resizeEvent(self, event):

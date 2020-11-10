@@ -62,7 +62,7 @@ def loadOldProject(data, labels_dict):
     image_name = image_name[:-4]
     image = Image(id=image_name)
     image.map_px_to_mm_factor = data["Map Scale"]
-    image.metadata['acquisition_date'] = data["Acquisition Date"]
+    image.acquisition_date = "1955-11-05"
     channel = Channel(filename=map_filename, type="RGB")
     image.channels.append(channel)
 
