@@ -24,8 +24,8 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QImage, QPixmap, qRgb, qRgba
 import numpy as np
 import cv2
-import math
 from skimage.draw import line
+import datetime
 
 def clampCoords(x, y, W, H):
 
@@ -40,6 +40,20 @@ def clampCoords(x, y, W, H):
 
     return (x, y)
 
+
+def isValidDate(txt):
+    """
+    Check if a date in the ISO format YYYY-MM-DD is valid.
+    """
+
+    valid = True
+
+    try:
+        datetime.date.fromisoformat(txt)
+    except:
+        valid = False
+
+    return valid
 
 def draw_open_polygon(r, c):
     r = np.round(r).astype(int)

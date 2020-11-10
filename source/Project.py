@@ -1,4 +1,6 @@
 import os
+import pandas as pd
+import datetime
 import json
 
 from PyQt5.QtCore import QDir
@@ -11,9 +13,7 @@ from source.Blob import Blob
 from source.Label import Label
 from source.Correspondences import Correspondences
 from source.Genet import Genet
-
-import pandas as pd
-import datetime
+from source import utils
 
 def loadProject(filename, labels_dict):
 
@@ -30,6 +30,8 @@ def loadProject(filename, labels_dict):
     else:
         project = Project(**data)
 
+    f.close()
+
     project.filename = filename
 
     # load geo-reference information
@@ -44,7 +46,24 @@ def loadProject(filename, labels_dict):
             im.id = "Map " + str(count)
         count += 1
 
-    f.close()
+    # ensure all maps have a name
+    count = 1
+    for im in project.images:
+        if im.name is None or im.name == "":
+            im.name = "noname{:02d}".format(count)
+        count += 1
+
+    # pixel size MUST BE a string
+    im.map_px_to_mm_factor = str(im.map_px_to_mm_factor)
+
+    # ensure all maps have an acquisition date
+    for im in project.images:
+        if not utils.isValidDate(im.acquisition_date):
+            im.acquisition_date = "1955-11-05"
+
+    # ensure the maps are ordered by the acquisition date
+    project.orderImagesByAcquisitionDate()
+
     return project
 
 
@@ -167,18 +186,22 @@ class Project(object):
 
         return self.labels[id].visible
 
+    def orderImagesByAcquisitionDate(self):
+        """
+        Order the image list by the acquisition date, from the oldest to the newest.
+        """
+        if self.images is not None:
+            if len(self.images) > 1:
+                image_list = self.images
+                image_list.sort(key=lambda x: datetime.date.fromisoformat(x.acquisition_date))
+                self.images = image_list
+
     def addNewImage(self, image):
         """
         Annotated images in the image list are sorted by date.
         """
-        if not self.images:
-            # the image list is empty
-            self.images.append(image)
-        else:
-            image_list = self.images
-            image_list.append(image)
-            image_list.sort(key = lambda x: datetime.date.fromisoformat(x.acquisition_date))
-            self.images = image_list
+        self.images.append(image)
+        self.orderImagesByAcquisitionDate()
 
     def findCorrespondences(self, image):
 

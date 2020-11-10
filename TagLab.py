@@ -101,8 +101,6 @@ class TagLab(QWidget):
 
         logfile.info("[INFO] Initizialization begins..")
 
-
-
         self.taglab_dir = os.getcwd()
         self.project = Project()         # current project
         self.last_image_loaded = None
@@ -848,15 +846,16 @@ class TagLab(QWidget):
             self.mapWidget = QtMapSettingsWidget(parent=self)
             self.mapWidget.setWindowModality(Qt.WindowModal)
 
-
         self.mapWidget.fields["name"]["edit"].setText(image.name)
 
-        if len(image.channels) < 2:
-           self.mapWidget.fields["rgb_filename"]["edit"].setText(image.channels[0].filename)
+        rgb_channel = image.getRGBChannel()
+        dem_channel = image.getDEMChannel()
 
+        self.mapWidget.fields["rgb_filename"]["edit"].setText(rgb_channel.filename)
+        if dem_channel is not None:
+            self.mapWidget.fields["depth_filename"]["edit"].setText(dem_channel.filename)
         else:
-            self.mapWidget.fields["rgb_filename"]["edit"].setText(image.channels[0].filename)
-            self.mapWidget.fields["depth_filename"]["edit"].setText(image.channels[1].filename)
+            self.mapWidget.fields["depth_filename"]["edit"].setText("")
 
         self.mapWidget.fields["acquisition_date"]["edit"].setText(image.acquisition_date)
         self.mapWidget.fields["px_to_mm"]["edit"].setText(str(image.map_px_to_mm_factor))
@@ -872,7 +871,6 @@ class TagLab(QWidget):
             return
 
         if self.activeviewer.channel is not None:
-
             if self.activeviewer.channel.type != "DEM":
                 index = -1
                 for i, channel in enumerate(self.activeviewer.image.channels):
@@ -2164,7 +2162,6 @@ class TagLab(QWidget):
             image.acquisition_date = self.mapWidget.data['acquisition_date']
             depth_filename = dir.relativeFilePath(self.mapWidget.data['depth_filename'])
 
-
             if len(depth_filename) > 3:
                 image.addChannel(depth_filename, "DEM")
 
@@ -2175,9 +2172,15 @@ class TagLab(QWidget):
             msgBox.exec()
             return
 
-        # add an image and its annotation to the project
+        # update the image order in case the acquisition date has been changed
+        self.project.orderImagesByAcquisitionDate()
+
+        # update the comboboxes to select the images
         self.updateImageSelectionMenu()
+
+        # update the edit map info submenu
         self.fillEditSubMenu()
+
         self.mapWidget.close()
 
     def resizeEvent(self, event):
@@ -2321,12 +2324,20 @@ class TagLab(QWidget):
         pxmap = pxmap.scaledToWidth(100)
         lbl1.setPixmap(pxmap)
 
-        lbl2 = QLabel("TagLab was created to support the activity of annotation and extraction of statistical data "
-                      "from ortho-maps of benthic communities.\n"
-                      "TagLab is an ongoing project of the Visual Computing Lab (http://vcg.isti.cnr.it)")
+        lbl2 = QLabel()
+        lbl2.setTextFormat(Qt.RichText)
+
+        txt = "<a href='http://taglab.isti.cnr.it' style='color: white; font-weight: bold; text-decoration: none'>" \
+              "TagLab</a> was created to support the activity of annotation and extraction of statistical data "\
+              "from ortho-maps of benthic communities.<br> TagLab is an ongoing project of the " \
+              "<a href='http://vcg.isti.cnr.it' style='color: white; font-weight: bold; text-decoration: none'>" \
+              "Visual Computing Lab</a>."
 
         lbl2.setWordWrap(True)
-        lbl2.setMinimumWidth(330)
+        lbl2.setMinimumWidth(500)
+        lbl2.setText(txt)
+        lbl2.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        lbl2.setOpenExternalLinks(True)
 
         layout = QHBoxLayout()
         layout.addWidget(lbl1)
@@ -2334,10 +2345,7 @@ class TagLab(QWidget):
 
         widget = QWidget(self)
         widget.setAutoFillBackground(True)
-        widget.setStyleSheet("background-color: rgba(60,60,65,100); color: white")
-        widget.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        widget.setMinimumWidth(430)
-        widget.setMinimumHeight(110)
+        widget.setStyleSheet("background-color: rgba(40,40,40,100); color: white")
         widget.setLayout(layout)
         widget.setWindowTitle("About")
         widget.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)

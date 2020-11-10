@@ -82,6 +82,21 @@ class Image(object):
 
         self.channels.append(Channel(filename, type))
 
+    def getRGBChannel(self):
+
+        for channel in self.channels:
+            if channel.type == "RGB":
+                return channel
+
+        return None
+
+    def getDEMChannel(self):
+
+        for channel in self.channels:
+            if channel.type == "DEM":
+                return channel
+
+        return None
 
     def save(self):
         data = self.__dict__.copy()
