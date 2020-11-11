@@ -845,6 +845,7 @@ class TagLab(QWidget):
         if self.mapWidget is None:
             self.mapWidget = QtMapSettingsWidget(parent=self)
             self.mapWidget.setWindowModality(Qt.WindowModal)
+            self.mapWidget.accepted.connect(self.updateMapProperties)
 
         self.mapWidget.fields["name"]["edit"].setText(image.name)
 
@@ -861,6 +862,7 @@ class TagLab(QWidget):
         self.mapWidget.fields["px_to_mm"]["edit"].setText(str(image.map_px_to_mm_factor))
         self.mapWidget.disableRGBloading()
         self.image2update = image
+        self.mapWidget.accepted.disconnect()
         self.mapWidget.accepted.connect(self.updateMapProperties)
         self.mapWidget.show()
 
@@ -2099,13 +2101,13 @@ class TagLab(QWidget):
             self.mapWidget = QtMapSettingsWidget(parent=self)
             self.mapWidget.setWindowModality(Qt.WindowModal)
             self.mapWidget.accepted.connect(self.setMapProperties)
-
             self.mapWidget.show()
 
         else:
 
             # show it again
             self.mapWidget.enableRGBloading()
+            self.mapWidget.accepted.disconnect()
             self.mapWidget.accepted.connect(self.setMapProperties)
             if self.mapWidget.isHidden():
                 self.mapWidget.show()
