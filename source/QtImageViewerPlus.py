@@ -168,11 +168,6 @@ class QtImageViewerPlus(QtImageViewer):
         self.tools.tools['RULER'].setPxToMM(self.image.pixelSize())
         self.px_to_mm = self.image.pixelSize()
 
-        # to improve
-        posx = self.horizontalScrollBar().value()
-        posy = self.verticalScrollBar().value()
-        self.setViewParameters(posx, posy, self.zoom_factor)
-
 
     def setChannel(self, channel, switch=False):
         """

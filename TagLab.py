@@ -2224,10 +2224,12 @@ class TagLab(QWidget):
         # check if the updated image is shown in the left viewer
         if self.viewerplus.image == image:
             self.viewerplus.updateImageProperties()
+            self.viewerplus.viewChanged()
 
         # check if the updated image is shown in the right viewer
         if self.viewerplus2.image == image:
             self.viewerplus2.updateImageProperties()
+            self.viewerplus2.viewChanged()
 
         if flag_pixel_size_changed:
             self.project.updatePixelSizeInCorrespondences(image)
