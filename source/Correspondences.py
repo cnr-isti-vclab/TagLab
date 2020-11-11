@@ -17,10 +17,6 @@ class Correspondences(object):
         self.threshold = 1.05
         self.data = pd.DataFrame(data = correspondences, columns=['Blob1', 'Blob2', 'Area1', 'Area2', 'Class', 'Action', 'Split\Fuse'])
 
-
-    def updateAreas(self):
-        pass
-
     def area_in_sq_cm(self, area, is_source):
 
         if is_source:
@@ -29,6 +25,18 @@ class Correspondences(object):
             area_sq_cm = area * self.target.pixelSize() * self.target.pixelSize() / 100.0
 
         return area_sq_cm
+
+    def updateAreas(self):
+
+        for index, row in self.data.iterrows():
+            id1 = int(row['Blob1'])
+            id2 = int(row['Blob2'])
+            blob1 = self.source.annotations.blobById(id1)
+            blob2 = self.target.annotations.blobById(id2)
+            if blob1 is not None:
+                self.data.loc[index, 'Area1'] = self.area_in_sq_cm(blob1.area, True)
+            if blob2 is not None:
+                self.data.loc[index, 'Area2'] = self.area_in_sq_cm(blob2.area, False)
 
     def save(self):
         return { "source": self.source.id, "target": self.target.id, "correspondences": self.data.values.tolist() }

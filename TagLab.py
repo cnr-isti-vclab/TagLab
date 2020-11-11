@@ -2174,10 +2174,15 @@ class TagLab(QWidget):
     def updateMapProperties(self):
         dir = QDir(os.getcwd())
 
+        flag_pixel_size_changed = False
+
         try:
             image = self.image2update
 
-            image.map_px_to_mm_factor = self.mapWidget.data["px_to_mm"]
+            if image.map_px_to_mm_factor != self.mapWidget.data["px_to_mm"]:
+                image.map_px_to_mm_factor = self.mapWidget.data["px_to_mm"]
+                flag_pixel_size_changed = True
+
             image.name = self.mapWidget.data['name']
             image.id = self.mapWidget.data['name']
             image.acquisition_date = self.mapWidget.data['acquisition_date']
@@ -2195,6 +2200,11 @@ class TagLab(QWidget):
 
         # update the image order in case the acquisition date has been changed
         self.project.orderImagesByAcquisitionDate()
+
+        # update map scale factor
+        if flag_pixel_size_changed:
+            self.project.updatePixelSizeInCorrespondences(image)
+            self.compare_panel.updateData()
 
         # update the comboboxes to select the images
         self.updateImageSelectionMenu()
