@@ -1167,7 +1167,7 @@ class TagLab(QWidget):
         self.viewerplus2.hide()
         self.comboboxTargetImage.hide()
 
-        #self.btnSplitScreen.setChecked(False)
+        self.btnSplitScreen.setChecked(False)
         self.split_screen_flag = False
 
 
@@ -1180,7 +1180,13 @@ class TagLab(QWidget):
             QApplication.setOverrideCursor(Qt.WaitCursor)
 
             index = self.comboboxSourceImage.currentIndex()
-            index_to_set = min(index, len(self.project.images) - 2)
+            if index < 0:
+                index = 0
+
+            if index <= len(self.project.images) - 2:
+                index_to_set = index
+            else:
+                index_to_set = index-1
 
             self.comboboxSourceImage.currentIndexChanged.disconnect()
             self.comboboxTargetImage.currentIndexChanged.disconnect()
@@ -1205,7 +1211,7 @@ class TagLab(QWidget):
         self.comboboxTargetImage.show()
         self.viewerplus.viewChanged()
 
-        #self.btnSplitScreen.setChecked(True)
+        self.btnSplitScreen.setChecked(True)
         self.split_screen_flag = True
 
     def createMatch(self):
@@ -1391,12 +1397,24 @@ class TagLab(QWidget):
         self.comboboxSourceImage.currentIndexChanged.disconnect()
         self.comboboxTargetImage.currentIndexChanged.disconnect()
 
+        index1 = self.comboboxSourceImage.currentIndex()
+        index2 = self.comboboxTargetImage.currentIndex()
+
+        if index1 < 1:
+            index1 = 0
+
+        if index2 < 1:
+            index2 = 0
+
+        # update the image names
         self.comboboxSourceImage.clear()
         self.comboboxTargetImage.clear()
-
         for image in self.project.images:
-            self.comboboxSourceImage.addItem(image.id)
-            self.comboboxTargetImage.addItem(image.id)
+            self.comboboxSourceImage.addItem(image.name)
+            self.comboboxTargetImage.addItem(image.name)
+
+        self.comboboxSourceImage.setCurrentIndex(index1)
+        self.comboboxTargetImage.setCurrentIndex(index2)
 
         self.comboboxSourceImage.currentIndexChanged.connect(self.sourceImageChanged)
         self.comboboxTargetImage.currentIndexChanged.connect(self.targetImageChanged)
@@ -1533,6 +1551,7 @@ class TagLab(QWidget):
         self.comboboxSourceImage.clear()
         self.comboboxTargetImage.clear()
         self.resetPanelInfo()
+        self.disableSplitScreen()
         self.fillEditSubMenu()
 
     def resetToolbar(self):
@@ -2272,6 +2291,7 @@ class TagLab(QWidget):
         filters = "ANNOTATION PROJECT (*.json)"
         filename, _ = QFileDialog.getOpenFileName(self, "Open a project", self.taglab_dir, filters)
         if filename:
+            self.disableSplitScreen()
             self.append(filename)
 
         self.updateImageSelectionMenu()
