@@ -395,6 +395,8 @@ class TagLab(QWidget):
         self.mapviewer.leftMouseButtonPressed[float, float].connect(self.viewerplus.center)
         self.mapviewer.mouseMoveLeftPressed[float, float].connect(self.viewerplus.center)
 
+        self.viewerplus2.viewUpdated[QRectF].connect(self.mapviewer.drawOverlayImage)
+
         layout_labels = QVBoxLayout()
         self.mapviewer.setStyleSheet("background-color: rgb(40,40,40); border:none")
         layout_labels.addWidget(self.infoWidget)
@@ -455,7 +457,6 @@ class TagLab(QWidget):
 
         self.viewerplus.viewHasChanged[float, float, float].connect(self.viewerplus2.setViewParameters)
         self.viewerplus2.viewHasChanged[float, float, float].connect(self.viewerplus.setViewParameters)
-        self.disableSplitScreen()
 
         self.viewerplus.customContextMenuRequested.connect(self.openContextMenu)
         self.viewerplus2.customContextMenuRequested.connect(self.openContextMenu)
@@ -486,6 +487,8 @@ class TagLab(QWidget):
 
         # autosave timer
         self.timer = None
+
+        self.disableSplitScreen()
 
         self.move()
 
@@ -1182,7 +1185,12 @@ class TagLab(QWidget):
             if splitScreenAction is not None:
                 splitScreenAction.setText("Enable Split Screen")
 
-        #self.groupbox_blobpanel.show()
+        # just inb case..
+        self.viewerplus2.viewUpdated[QRectF].connect(self.mapviewer.drawOverlayImage)
+
+        # disconnect all slots
+        self.viewerplus2.viewUpdated[QRectF].disconnect()
+
         self.btnSplitScreen.setChecked(False)
         self.split_screen_flag = False
 
@@ -1226,6 +1234,8 @@ class TagLab(QWidget):
         self.viewerplus2.show()
         self.comboboxTargetImage.show()
         self.viewerplus.viewChanged()
+
+        self.viewerplus2.viewUpdated[QRectF].connect(self.mapviewer.drawOverlayImage)
 
         if self.comparemenu is not None:
             splitScreenAction = self.comparemenu.actions()[0]
