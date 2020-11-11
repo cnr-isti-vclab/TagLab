@@ -420,6 +420,15 @@ class TagLab(QWidget):
         main_view_layout.setStretchFactor(layout_main_view, 8)
         main_view_layout.setStretchFactor(layout_labels, 3)
 
+        self.filemenu = None
+        self.submenuEdit = None
+        self.submenuExport = None
+        self.submenuImport = None
+        self.editmenu = None
+        self.comparemenu = None
+        self.demmenu = None
+        self.helpmenu = None
+
         self.menubar = self.createMenuBar()
 
         main_layout = QVBoxLayout()
@@ -461,6 +470,7 @@ class TagLab(QWidget):
         self.prev_area_rect = None
         self.prev_area = None
 
+        # menu options
         self.mapActionList = []
         self.image2update = None
 
@@ -703,7 +713,7 @@ class TagLab(QWidget):
         #aboutAct.setStatusTip("About")
         aboutAct.triggered.connect(self.about)
 
-        menubar = QMenuBar()
+        menubar = QMenuBar(self)
         menubar.setAutoFillBackground(True)
 
         styleMenuBar = "QMenuBar::item:selected{\
@@ -718,36 +728,36 @@ class TagLab(QWidget):
 
         menubar.setStyleSheet(styleMenuBar)
 
-        filemenu = menubar.addMenu("&File")
-        filemenu.setStyleSheet(styleMenu)
-        filemenu.addAction(newAct)
-        filemenu.addAction(openAct)
-        filemenu.addAction(saveAct)
-        filemenu.addAction(saveAsAct)
-        filemenu.addSeparator()
-        filemenu.addAction(newMapAct)
-        self.submenuEdit = filemenu.addMenu("Edit Maps info")
+        self.filemenu = menubar.addMenu("&File")
+        self.filemenu.setStyleSheet(styleMenu)
+        self.filemenu.addAction(newAct)
+        self.filemenu.addAction(openAct)
+        self.filemenu.addAction(saveAct)
+        self.filemenu.addAction(saveAsAct)
+        self.filemenu.addSeparator()
+        self.filemenu.addAction(newMapAct)
+        self.submenuEdit = self.filemenu.addMenu("Edit Maps info")
         self.submenuEdit.setEnabled(False)
-        filemenu.addSeparator()
+        self.filemenu.addSeparator()
 
         for i in range(self.maxRecentFiles):
-            filemenu.addAction(self.recentFileActs[i])
-        self.separatorRecentFilesAct = filemenu.addSeparator()
+            self.filemenu.addAction(self.recentFileActs[i])
+        self.separatorRecentFilesAct = self.filemenu.addSeparator()
         self.updateRecentFileActions()
 
-        submenuImport = filemenu.addMenu("Import Project")
-        submenuImport.addAction(importAct)
-        submenuImport.addAction(appendAct)
-        filemenu.addSeparator()
-        submenuExport = filemenu.addMenu("Export")
-        submenuExport.addAction(exportDataTableAct)
-        submenuExport.addAction(exportMapAct)
-        submenuExport.addAction(exportShapefilesAct)
-        submenuExport.addAction(exportGeoRefLabelMapAct)
-        submenuExport.addAction(exportHistogramAct)
-        submenuExport.addAction(exportTrainingDatasetAct)
-        filemenu.addSeparator()
-        filemenu.addAction(trainYourNetworkAct)
+        self.submenuImport = self.filemenu.addMenu("Import")
+        self.submenuImport.addAction(importAct)
+        self.submenuImport.addAction(appendAct)
+        self.filemenu.addSeparator()
+        self.submenuExport = self.filemenu.addMenu("Export")
+        self.submenuExport.addAction(exportDataTableAct)
+        self.submenuExport.addAction(exportMapAct)
+        self.submenuExport.addAction(exportShapefilesAct)
+        self.submenuExport.addAction(exportGeoRefLabelMapAct)
+        self.submenuExport.addAction(exportHistogramAct)
+        self.submenuExport.addAction(exportTrainingDatasetAct)
+        self.filemenu.addSeparator()
+        self.filemenu.addAction(trainYourNetworkAct)
 
         ###### DEM MENU
 
@@ -766,30 +776,30 @@ class TagLab(QWidget):
         switchDEMAct.setStatusTip("Switch between the image and the DEM")
         switchDEMAct.triggered.connect(self.switchDEM)
 
-        demmenu = menubar.addMenu("&DEM")
-        demmenu.setStyleSheet(styleMenu)
-        demmenu.addAction(calculateSurfaceAreaAct)
-        demmenu.addAction(exportClippedRasterAct)
-        demmenu.addAction(switchDEMAct)
+        self.demmenu = menubar.addMenu("&DEM")
+        self.demmenu.setStyleSheet(styleMenu)
+        self.demmenu.addAction(calculateSurfaceAreaAct)
+        self.demmenu.addAction(exportClippedRasterAct)
+        self.demmenu.addAction(switchDEMAct)
 
-        editmenu = menubar.addMenu("&Edit")
-        editmenu.setStyleSheet(styleMenu)
-        editmenu.addAction(undoAct)
-        editmenu.addAction(redoAct)
-        editmenu.addSeparator()
-        editmenu.addAction(self.assignAction)
-        editmenu.addAction(self.deleteAction)
-        editmenu.addSeparator()
-        editmenu.addAction(self.mergeAction)
-        editmenu.addAction(self.divideAction)
-        editmenu.addAction(self.subtractAction)
-        editmenu.addSeparator()
-        editmenu.addAction(self.refineAction)
-        editmenu.addAction(self.refineActionDilate)
-        editmenu.addAction(self.refineActionErode)
-        editmenu.addAction(self.fillAction)
+        self.editmenu = menubar.addMenu("&Edit")
+        self.editmenu.setStyleSheet(styleMenu)
+        self.editmenu.addAction(undoAct)
+        self.editmenu.addAction(redoAct)
+        self.editmenu.addSeparator()
+        self.editmenu.addAction(self.assignAction)
+        self.editmenu.addAction(self.deleteAction)
+        self.editmenu.addSeparator()
+        self.editmenu.addAction(self.mergeAction)
+        self.editmenu.addAction(self.divideAction)
+        self.editmenu.addAction(self.subtractAction)
+        self.editmenu.addSeparator()
+        self.editmenu.addAction(self.refineAction)
+        self.editmenu.addAction(self.refineActionDilate)
+        self.editmenu.addAction(self.refineActionErode)
+        self.editmenu.addAction(self.fillAction)
 
-        splitScreenAction = QAction("Split Screen", self)
+        splitScreenAction = QAction("Enable Split Screen", self)
         splitScreenAction.setShortcut('Alt+C')
         splitScreenAction.setStatusTip("Split screen")
         splitScreenAction.triggered.connect(self.toggleComparison)
@@ -806,17 +816,17 @@ class TagLab(QWidget):
         exportMatchLabels.setStatusTip("Export the current matches")
         exportMatchLabels.triggered.connect(self.exportMatches)
 
-        comparemenu = menubar.addMenu("&Comparison")
-        comparemenu.setStyleSheet(styleMenu)
-        comparemenu.addAction(splitScreenAction)
-        comparemenu.addAction(autoMatchLabels)
-        comparemenu.addAction(manualMatchLabels)
-        comparemenu.addAction(exportMatchLabels)
+        self.comparemenu = menubar.addMenu("&Comparison")
+        self.comparemenu.setStyleSheet(styleMenu)
+        self.comparemenu.addAction(splitScreenAction)
+        self.comparemenu.addAction(autoMatchLabels)
+        self.comparemenu.addAction(manualMatchLabels)
+        self.comparemenu.addAction(exportMatchLabels)
 
-        helpmenu = menubar.addMenu("&Help")
-        helpmenu.setStyleSheet(styleMenu)
-        helpmenu.addAction(helpAct)
-        helpmenu.addAction(aboutAct)
+        self.helpmenu = menubar.addMenu("&Help")
+        self.helpmenu.setStyleSheet(styleMenu)
+        self.helpmenu.addAction(helpAct)
+        self.helpmenu.addAction(aboutAct)
 
         return menubar
 
@@ -1167,6 +1177,11 @@ class TagLab(QWidget):
         self.viewerplus2.hide()
         self.comboboxTargetImage.hide()
 
+        if self.comparemenu is not None:
+            splitScreenAction = self.comparemenu.actions()[0]
+            if splitScreenAction is not None:
+                splitScreenAction.setText("Enable Split Screen")
+
         self.btnSplitScreen.setChecked(False)
         self.split_screen_flag = False
 
@@ -1210,6 +1225,11 @@ class TagLab(QWidget):
         self.viewerplus2.show()
         self.comboboxTargetImage.show()
         self.viewerplus.viewChanged()
+
+        if self.comparemenu is not None:
+            splitScreenAction = self.comparemenu.actions()[0]
+            if splitScreenAction is not None:
+                splitScreenAction.setText("Disable Split Screen")
 
         self.btnSplitScreen.setChecked(True)
         self.split_screen_flag = True
@@ -2165,8 +2185,8 @@ class TagLab(QWidget):
 
         # add an image and its annotation to the project
         self.project.addNewImage(image)
-
         self.updateImageSelectionMenu()
+        self.fillEditSubMenu()
         self.mapWidget.close()
         self.showImage(image)
 
@@ -2201,7 +2221,14 @@ class TagLab(QWidget):
         # update the image order in case the acquisition date has been changed
         self.project.orderImagesByAcquisitionDate()
 
-        # update map scale factor
+        # check if the updated image is shown in the left viewer
+        if self.viewerplus.image == image:
+            self.viewerplus.updateImageProperties()
+
+        # check if the updated image is shown in the right viewer
+        if self.viewerplus2.image == image:
+            self.viewerplus2.updateImageProperties()
+
         if flag_pixel_size_changed:
             self.project.updatePixelSizeInCorrespondences(image)
             self.compare_panel.updateData()
@@ -2400,12 +2427,15 @@ class TagLab(QWidget):
         if not filename:
             return
 
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+
         # -1, -1 means that the label map imported must not be rescaled
         created_blobs = self.activeviewer.annotations.import_label_map(filename, self.labels_dictionary, -1, -1)
         for blob in created_blobs:
             self.activeviewer.addBlob(blob, selected=False)
         self.activeviewer.saveUndo()
 
+        QApplication.restoreOverrideCursor()
 
     @pyqtSlot()
     def exportAnnAsDataTable(self):
