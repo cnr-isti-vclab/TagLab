@@ -193,7 +193,9 @@ class Project(object):
         if self.images is not None:
             if len(self.images) > 1:
                 image_list = self.images
-                image_list.sort(key=lambda x: datetime.date.fromisoformat(x.acquisition_date))
+#                image_list.sort(key=lambda x: datetime.date.fromisoformat(x.acquisition_date))
+                image_list.sort(key=lambda x: datetime.datetime.strptime(x.acquisition_date, '%Y-%m-%d'))
+
                 self.images = image_list
 
     def addNewImage(self, image):

@@ -47,9 +47,9 @@ def isValidDate(txt):
     """
 
     valid = True
-
     try:
-        datetime.date.fromisoformat(txt)
+        datetime.datetime.strptime(txt, '%Y-%m-%d')
+#        datetime.date.fromisoformat(txt)
     except:
         valid = False
 
