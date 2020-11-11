@@ -152,12 +152,22 @@ class QtImageViewerPlus(QtImageViewer):
             self.drawBlob(blob)
 
         self.scene.invalidate()
+
         self.tools.tools['RULER'].setPxToMM(image.pixelSize())
         self.px_to_mm = image.pixelSize()
-
         self.setChannel(image.channels[channel_idx])
 
         self.activated.emit()
+
+    def updateImageProperties(self):
+        """
+        The properties of the image have been changed. This function updates the viewer accordingly.
+        NOTE: In practice, only the pixel size needs to be updated.
+        """
+
+        self.tools.tools['RULER'].setPxToMM(self.image.pixelSize())
+        self.px_to_mm = self.image.pixelSize()
+
 
     def setChannel(self, channel, switch=False):
         """
