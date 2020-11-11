@@ -335,7 +335,7 @@ class TagLab(QWidget):
         self.groupbox_comparison.setLayout(layout_groupbox2)
 
         # BLOB INFO
-        groupbox_blobpanel = QGroupBox("Region Info")
+        self.groupbox_blobpanel = QGroupBox("Region Info")
         self.lblId = QLabel("Id: ")
         self.lblIdValue = QLabel(" ")
         self.lblCl = QLabel("Class: ")
@@ -381,8 +381,8 @@ class TagLab(QWidget):
         layout_blobpanel.addLayout(blobpanel_layoutH3)
         #layout_blobpanel.addWidget(lblNote)
         #layout_blobpanel.addWidget(self.editNote)
-        groupbox_blobpanel.setLayout(layout_blobpanel)
-        groupbox_blobpanel.setMaximumHeight(160)
+        self.groupbox_blobpanel.setLayout(layout_blobpanel)
+        self.groupbox_blobpanel.setMaximumHeight(160)
         #groupbox_blobpanel.setStyleSheet(groupbox_style)
 
         # INFO WIDGET
@@ -400,7 +400,7 @@ class TagLab(QWidget):
         layout_labels.addWidget(self.infoWidget)
         layout_labels.addWidget(self.groupbox_labels)
         layout_labels.addWidget(self.groupbox_comparison)
-        layout_labels.addWidget(groupbox_blobpanel)
+        layout_labels.addWidget(self.groupbox_blobpanel)
         layout_labels.addStretch()
         layout_labels.addWidget(self.mapviewer)
 
@@ -1182,6 +1182,7 @@ class TagLab(QWidget):
             if splitScreenAction is not None:
                 splitScreenAction.setText("Enable Split Screen")
 
+        #self.groupbox_blobpanel.show()
         self.btnSplitScreen.setChecked(False)
         self.split_screen_flag = False
 
@@ -1230,6 +1231,8 @@ class TagLab(QWidget):
             splitScreenAction = self.comparemenu.actions()[0]
             if splitScreenAction is not None:
                 splitScreenAction.setText("Disable Split Screen")
+
+        self.groupbox_blobpanel.hide()
 
         self.btnSplitScreen.setChecked(True)
         self.split_screen_flag = True
@@ -1619,7 +1622,6 @@ class TagLab(QWidget):
                 self.enableSplitScreen()
 
             self.groupbox_labels.hide()
-            self.mapviewer.hide()
             self.groupbox_comparison.show()
 
         else:
@@ -1628,7 +1630,6 @@ class TagLab(QWidget):
 
             self.groupbox_comparison.hide()
             self.groupbox_labels.show()
-            self.mapviewer.show()
 
 
     @pyqtSlot()
