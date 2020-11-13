@@ -20,7 +20,7 @@
 import os
 import math
 import numpy as np
-
+import pickle as pkl
 # PYTORCH
 import torch
 
@@ -79,15 +79,15 @@ class MapClassifier(QObject):
 
         network_name = os.path.join(models_dir, modelName)
 
-        classifier_pocillopora = DeepLab(backbone='resnet', output_stride=16, num_classes=self.nclasses)
-        classifier_pocillopora.load_state_dict(torch.load(network_name))
+        classifier = DeepLab(backbone='resnet', output_stride=16, num_classes=self.nclasses)
+        classifier.load_state_dict(torch.load(network_name))
 
-        classifier_pocillopora.eval()
+        classifier.eval()
 
-        return classifier_pocillopora
+        return classifier
 
 
-    def run(self, img_map, TILE_SIZE, AGGREGATION_WINDOW_SIZE, AGGREGATION_STEP):
+    def run(self, img_map, TILE_SIZE, AGGREGATION_WINDOW_SIZE, AGGREGATION_STEP, save_scores = False):
         """
 
         :param TILE_SIZE: Base tile. This corresponds to the INPUT SIZE of the network.
@@ -196,11 +196,10 @@ class MapClassifier(QObject):
                 if self.flagStopProcessing is True:
                     break
 
-                # preds_avg, preds_bayesian = self.aggregateScores(scores, tile_sz=TILE_SIZE,
-                #                                     center_window_size=AGGREGATION_WINDOW_SIZE, step=AGGREGATION_STEP)
 
                 preds_avg = self.aggregateScores(scores, tile_sz=TILE_SIZE,
                                                      center_window_size=AGGREGATION_WINDOW_SIZE, step=AGGREGATION_STEP)
+
 
                 values_t, predictions_t = torch.max(torch.from_numpy(preds_avg), 0)
                 preds = predictions_t.cpu().numpy()
@@ -213,6 +212,14 @@ class MapClassifier(QObject):
                 tilename = str(row) + "_" + str(col) + ".png"
                 filename = os.path.join(temp_dir, tilename)
                 utils.rgbToQImage(resimg).save(filename)
+
+                if save_scores is True:
+                    tilename = str(row) + "_" + str(col) + ".dat"
+                    filename = os.path.join(temp_dir, tilename)
+                    fileobject = open(filename, 'wb')
+                    pkl.dump(preds_avg, fileobject)
+                    fileobject.close()
+
 
                 self.processing_step += 1
                 self.updateProgress.emit( (100.0 * self.processing_step) / self.total_processing_steps )

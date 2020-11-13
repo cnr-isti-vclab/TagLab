@@ -174,7 +174,6 @@ class QtClassifierWidget(QWidget):
 
         self.groupPrew = QGroupBox("Check Classifier Prediction")
         self.groupPrew.setLayout(layoutPreview)
-        self.groupPrew.hide()
 
         self.btnCancel = QPushButton("Cancel")
         self.btnCancel.clicked.connect(self.close)

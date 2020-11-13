@@ -3060,28 +3060,27 @@ class TagLab(QWidget):
 
         classifier_selected = self.classifierWidget.selected()
         target_scale_factor = classifier_selected['Scale']
-        scale_factor = target_scale_factor / self.activeviewer.image.pixelSize()
+        scale_factor = target_scale_factor / self.activeviewer.image.map_px_to_mm_factor
 
         prev_area = self.prev_area
-        width = max(513*scale_factor, prev_area[2])
-        height = max(513*scale_factor, prev_area[3])
-        crop_image = self.activeviewer.img_map.copy(prev_area[1],prev_area[0],width, height)
+        width = max(513 * scale_factor, prev_area[2])
+        height = max(513 * scale_factor, prev_area[3])
+        crop_image = self.activeviewer.img_map.copy(prev_area[1], prev_area[0], width, height)
         self.classifierWidget.QPixmapRGB = QPixmap.fromImage(crop_image)
         size = self.classifierWidget.LABEL_SIZE
-        self.classifierWidget.QlabelRGB.setPixmap(self.classifierWidget.QPixmapRGB.scaled(QSize(size, size)))
+        self.classifierWidget.QlabelRGB.setPixmap(self.classifierWidget.QPixmapRGB.scaled(QSize(size, size), Qt.KeepAspectRatio))
 
     def applyPrev(self):
         """
         crop selected area and apply preview.
         """
-
         prev_area = self.prev_area
-        width = max(513, prev_area[2])
-        height = max(513, prev_area[3])
-        
+        top = prev_area[0] - 256
+        left = prev_area[1] - 256
+        width = max(513, prev_area[2]) +  256
+        height = max(513, prev_area[3]) + 256
 
-        crop_image = self.activeviewer.img_map.copy(prev_area[1], prev_area[0], width, height)
-
+        crop_image = self.activeviewer.img_map.copy(left, top, width, height)
 
 
         classifier_selected = self.classifierWidget.selected()
@@ -3095,7 +3094,7 @@ class TagLab(QWidget):
         self.classifier.updateProgress.connect(self.progress_bar.setProgress)
 
         target_scale_factor = classifier_selected['Scale']
-        scale_factor = target_scale_factor / self.activeviewer.image.pixelSize()
+        scale_factor = target_scale_factor / self.activeviewer.image.map_px_to_mm_factor
         w_target = crop_image.width() *  scale_factor
         h_target = crop_image.height() * scale_factor
         input_crop_image = crop_image.scaled(w_target, h_target, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
@@ -3105,13 +3104,13 @@ class TagLab(QWidget):
         self.progress_bar.setProgress(0.0)
         QApplication.processEvents()
 
-        self.classifier.run(input_crop_image, 1026, 513, 256)
+        self.classifier.run(input_crop_image, 1026, 513, 256, True)
 
 
 
     def showPrevArea(self):
         """
-        Show the working area of the current image.
+       Show the working area of the current image.
         """
 
         prev_area = self.prev_area
@@ -3131,6 +3130,7 @@ class TagLab(QWidget):
             else:
                 self.prev_area_rect.setVisible(True)
                 self.prev_area_rect.setRect(x, y, w, h)
+
 
     def hidePrevArea(self):
         self.prev_area_rect.setVisible(False)
