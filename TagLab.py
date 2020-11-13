@@ -185,16 +185,17 @@ class TagLab(QWidget):
 
         layout_tools.addStretch()
 
-        #CONTEXT MENU ACTIONS
-
+        # CONTEXT MENU ACTIONS
         self.assignAction       = self.newAction("Assign Class",            "A",   self.assignOperation)
         self.deleteAction       = self.newAction("Delete Labels",           "Del", self.deleteSelectedBlobs)
         self.mergeAction        = self.newAction("Merge Overlapped Labels", "M",   self.union)
         self.divideAction       = self.newAction("Divide Labels",           "D",   self.divide)
         self.subtractAction     = self.newAction("Subtract Labels",         "S",   self.subtract)
         self.refineAction       = self.newAction("Refine Border",           "R",   self.refineBorderOperation)
-        self.refineActionDilate = self.newAction("Refine Border Dilate",    "+",   self.refineBorderDilate)
-        self.refineActionErode  = self.newAction("Refine Border Erode",     "-",   self.refineBorderErode)
+        self.dilateAction       = self.newAction("Dilate Border",           "+",   self.dilate)
+        self.erodeAction        = self.newAction("Erode Border",            "-",   self.erode)
+        #self.refineActionDilate = self.newAction("Refine Border Dilate",    "+",   self.refineBorderDilate)
+        #self.refineActionErode  = self.newAction("Refine Border Erode",     "-",   self.refineBorderErode)
         self.fillAction         = self.newAction("Fill Label",              "F",   self.fillLabel)
 
 
@@ -532,8 +533,10 @@ class TagLab(QWidget):
         self.divideAction.setEnabled(nSelected > 1)
         self.subtractAction.setEnabled(nSelected > 1)
         self.refineAction.setEnabled(nSelected == 1)
-        self.refineActionDilate.setEnabled(nSelected == 1)
-        self.refineActionErode.setEnabled(nSelected == 1)
+        self.dilateAction.setEnabled(nSelected > 0)
+        self.erodeAction.setEnabled(nSelected > 0)
+        #self.refineActionDilate.setEnabled(nSelected == 1)
+        #self.refineActionErode.setEnabled(nSelected == 1)
         self.fillAction.setEnabled(nSelected > 0)
 
     def activateAutosave(self):
@@ -575,9 +578,10 @@ class TagLab(QWidget):
 
         menu.addSeparator()
         menu.addAction(self.refineAction)
-        menu.addAction(self.refineActionDilate)
-        menu.addAction(self.refineActionErode)
-
+        menu.addAction(self.dilateAction)
+        menu.addAction(self.erodeAction)
+        #menu.addAction(self.refineActionDilate)
+        #menu.addAction(self.refineActionErode)
         menu.addAction(self.fillAction)
 
         viewer = self.sender()
@@ -798,8 +802,10 @@ class TagLab(QWidget):
         self.editmenu.addAction(self.subtractAction)
         self.editmenu.addSeparator()
         self.editmenu.addAction(self.refineAction)
-        self.editmenu.addAction(self.refineActionDilate)
-        self.editmenu.addAction(self.refineActionErode)
+        self.editmenu.addAction(self.dilateAction)
+        self.editmenu.addAction(self.erodeAction)
+        #self.editmenu.addAction(self.refineActionDilate)
+        #self.editmenu.addAction(self.refineActionErode)
         self.editmenu.addAction(self.fillAction)
 
         splitScreenAction = QAction("Enable Split Screen", self)
@@ -1081,10 +1087,12 @@ class TagLab(QWidget):
             self.refineBorder()
 
         elif event.key() == Qt.Key_Plus:
-            self.refineBorderDilate()
+            self.dilate()
+            # self.refineBorderDilate()
 
         elif event.key() == Qt.Key_Minus:
-            self.refineBorderErode()
+            self.erode()
+            # self.refineBorderDilate()
 
         elif event.key() == Qt.Key_F:
             self.fillLabel()
@@ -1924,14 +1932,47 @@ class TagLab(QWidget):
                 view.updateBlob(selectedB, blobB, selected=False)
                 view.saveUndo()
 
-
-                pass
             logfile.info("[OP-DIVIDE] DIVIDE LABELS operation ends.")
 
         else:
 
             self.infoWidget.setInfoMessage("You need to select <em>two</em> blobs for DIVIDE operation.")
 
+    def dilate(self):
+        """
+        Dilate the selected blobs.
+        """
+        view = self.activeviewer
+        if view is None:
+            return
+
+        if len(view.selected_blobs) > 0:
+
+            blobs = view.selected_blobs
+            for blob in blobs:
+                blob_dilated = blob.copy()
+                blob_dilated.dilate(size=3)
+                view.updateBlob(blob, blob_dilated, selected=True)
+
+            view.saveUndo()
+
+    def erode(self):
+        """
+        Erode the selected blobs.
+        """
+        view = self.activeviewer
+        if view is None:
+            return
+
+        if len(view.selected_blobs) > 0:
+
+            blobs = view.selected_blobs
+            for blob in blobs:
+                blob_eroded = blob.copy()
+                blob_eroded.erode(size=3)
+                view.updateBlob(blob, blob_eroded, selected=True)
+
+            view.saveUndo()
 
     def dilateAndDivideNaive(self):
         """
