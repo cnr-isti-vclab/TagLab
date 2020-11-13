@@ -265,7 +265,8 @@ class Correspondences(object):
                     mask2 = Blob.getMask(blob2)
                     sizeblob2 = np.count_nonzero(mask2)
                     minblob = min(sizeblob1, sizeblob2)
-                    intersectionArea = np.count_nonzero(intersectMask(mask1, blob1.bbox, mask2, blob2.bbox))
+                    mask, bbox = intersectMask(mask1, blob1.bbox, mask2, blob2.bbox)
+                    intersectionArea = np.count_nonzero(mask)
 
                     if (intersectionArea < (0.6 * minblob)):
                         continue

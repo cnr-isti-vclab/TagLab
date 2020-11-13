@@ -213,19 +213,32 @@ class Annotation(QObject):
             return blob
         return None
 
-
     def subtract(self, blobA, blobB):
         """
-        Create a new blob that subtracting the second blob from the first one
+        Update the blobA subtracting the blobB from it
         """
         (mask, box) = Mask.subtract(blobA.getMask(), blobA.bbox, blobB.getMask(), blobB.bbox)
+
         if mask.any():
             # measure is brutally slower with non int types (factor 4), while byte&bool would be faster by 25%, conversion is fast.
             blobA.updateUsingMask(box, mask.astype(int))
             return True
         return False
 
+    def addingIntersection(self, blobA, blobB, blobC):
+        """
+        Update the blobA by adding to it the intersection between the blobB and the blobC
+        """
+        mask_intersect, bbox_intersect = Mask.intersectMask(blobB.getMask(), blobB.bbox, blobC.getMask(), blobC.bbox)
 
+        bbox = Mask.jointBox([blobA.bbox, bbox_intersect])
+        (mask, bbox) = Mask.jointMask(bbox, bbox)
+
+        Mask.paintMask(mask, bbox, blobA.getMask(), blobA.bbox, 1)
+        Mask.paintMask(mask, bbox, mask_intersect, bbox_intersect, 1)
+
+        if mask.any():
+            blobA.updateUsingMask(bbox, mask.astype(int))
 
     def cut(self, blob, lines):
         """

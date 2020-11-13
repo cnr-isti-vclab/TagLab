@@ -1058,6 +1058,8 @@ class TagLab(QWidget):
             trainwidget.setWindowModality(Qt.WindowModal)
             trainwidget.show()
 
+        elif event.key() == Qt.Key_Y:
+            self.dilateAndDivide()
 
         elif event.key() == Qt.Key_M:
             # MERGE OVERLAPPED BLOBS
@@ -1929,6 +1931,89 @@ class TagLab(QWidget):
         else:
 
             self.infoWidget.setInfoMessage("You need to select <em>two</em> blobs for DIVIDE operation.")
+
+
+    def dilateAndDivideNaive(self):
+        """
+        Two adjacent blobs are dilated and divided.
+        """
+        view = self.activeviewer
+        if view is None:
+            return
+
+        if len(view.selected_blobs) == 2:
+
+            selectedA = view.selected_blobs[0]
+            selectedB = view.selected_blobs[1]
+
+            #blobA and blobB and will be modified, make a copy!
+            blobA = selectedA.copy()
+            blobB = selectedB.copy()
+
+            blobA.dilate(size=4)
+            blobB.dilate(size=4)
+
+            intersects = view.annotations.subtract(blobA, blobB)
+
+            self.logBlobInfo(selectedA, "[OP-DIVIDE][BLOB-SELECTED]")
+            self.logBlobInfo(blobA, "[OP-DIVIDE][BLOB-EDITED]")
+            self.logBlobInfo(selectedB, "[OP-DIVIDE][BLOB-SELECTED]")
+            self.logBlobInfo(blobB, "[OP-DIVIDE][BLOB-EDITED]")
+
+            view.updateBlob(selectedA, blobA, selected=False)
+            view.updateBlob(selectedB, blobB, selected=False)
+            view.saveUndo()
+
+        else:
+
+            self.infoWidget.setInfoMessage("You need to select <em>two</em> blobs for this operation.")
+
+    def dilateAndDivide(self):
+        """
+        Two adjacent blobs are dilated and divided.
+        """
+        view = self.activeviewer
+        if view is None:
+            return
+
+        if len(view.selected_blobs) == 2:
+
+            selectedA = view.selected_blobs[0]
+            selectedB = view.selected_blobs[1]
+
+            #blobA and blobB and will be modified, make a copy!
+            blobA = selectedA.copy()
+            blobB = selectedB.copy()
+            blobAs = selectedA.copy()
+            blobAb = selectedA.copy()
+            blobBs = selectedB.copy()
+            blobBb = selectedB.copy()
+
+            blobAb.dilate(size=9)
+            blobBb.dilate(size=9)
+            blobAs.dilate(size=5)
+            blobBs.dilate(size=5)
+
+            # A = A U (B intersect C)
+            view.annotations.addingIntersection(blobA, blobAs, blobBb)
+            view.annotations.addingIntersection(blobB, blobBs, blobAb)
+
+            intersects = view.annotations.subtract(blobB, blobA)
+            if not intersects: #this means one blob B is inside blob A
+                intersects = view.annotations.subtract(blobA, blobB)
+
+            self.logBlobInfo(selectedA, "[OP-DIVIDE][BLOB-SELECTED]")
+            self.logBlobInfo(blobAs, "[OP-DIVIDE][BLOB-EDITED]")
+            self.logBlobInfo(selectedB, "[OP-DIVIDE][BLOB-SELECTED]")
+            self.logBlobInfo(blobBs, "[OP-DIVIDE][BLOB-EDITED]")
+
+            view.updateBlob(selectedA, blobA, selected=False)
+            view.updateBlob(selectedB, blobB, selected=False)
+            view.saveUndo()
+
+        else:
+
+            self.infoWidget.setInfoMessage("You need to select <em>two</em> blobs for this operation.")
 
     def refineBorderDilate(self):
 

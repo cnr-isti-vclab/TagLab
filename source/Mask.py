@@ -105,7 +105,10 @@ def intersectMask(dmask, dbox, smask, sbox):
     d = dmask[range[0] - dbox[0]:range[2] - dbox[0], range[1] - dbox[1]:range[3] - dbox[1]]
     s = smask[range[0] - sbox[0]:range[2] - sbox[0], range[1] - sbox[1]:range[3] - sbox[1]]
 
-    return d & s
+    box = [range[0], range[1], range[3] - range[1], range[2] - range[0]]
+
+    mask = d & s
+    return (mask, box)
 
 
 
@@ -130,5 +133,5 @@ def subtract(maskA, boxA, maskB, boxB):
     paintMask(mask, box, maskA, boxA, 1)
     paintMask(mask, box, maskB, boxB, 0)
 
-    regions = measure.regionprops(measure.label(mask))
+    #regions = measure.regionprops(measure.label(mask))
     return (mask, box)
