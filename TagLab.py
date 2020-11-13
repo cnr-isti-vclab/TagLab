@@ -136,7 +136,7 @@ class TagLab(QWidget):
         QPushButton:hover   { border: 1px solid rgb(255,100,100); }"""
 
 
-        self.btnMove        = self.newButton("move.png",     "Pan",                   flatbuttonstyle1, self.move)
+        self.btnMove        = self.newButton("move.png",     "Pan",                    flatbuttonstyle1, self.move)
         self.btnAssign      = self.newButton("bucket.png",   "Assign class",           flatbuttonstyle1, self.assign)
         self.btnEditBorder  = self.newButton("edit.png",     "Edit border",            flatbuttonstyle1, self.editBorder)
         self.btnCut         = self.newButton("scissors.png", "Cut segmentation",       flatbuttonstyle1, self.cut)
@@ -194,6 +194,7 @@ class TagLab(QWidget):
         self.refineAction       = self.newAction("Refine Border",           "R",   self.refineBorderOperation)
         self.dilateAction       = self.newAction("Dilate Border",           "+",   self.dilate)
         self.erodeAction        = self.newAction("Erode Border",            "-",   self.erode)
+        self.attachBoundariesAction = self.newAction("Attach Boundaries",   "-",   self.attachBoundaries)
         #self.refineActionDilate = self.newAction("Refine Border Dilate",    "+",   self.refineBorderDilate)
         #self.refineActionErode  = self.newAction("Refine Border Erode",     "-",   self.refineBorderErode)
         self.fillAction         = self.newAction("Fill Label",              "F",   self.fillLabel)
@@ -535,6 +536,7 @@ class TagLab(QWidget):
         self.refineAction.setEnabled(nSelected == 1)
         self.dilateAction.setEnabled(nSelected > 0)
         self.erodeAction.setEnabled(nSelected > 0)
+        self.attachBoundariesAction.setEnabled(nSelected == 2)
         #self.refineActionDilate.setEnabled(nSelected == 1)
         #self.refineActionErode.setEnabled(nSelected == 1)
         self.fillAction.setEnabled(nSelected > 0)
@@ -580,6 +582,7 @@ class TagLab(QWidget):
         menu.addAction(self.refineAction)
         menu.addAction(self.dilateAction)
         menu.addAction(self.erodeAction)
+        menu.addAction(self.attachBoundariesAction)
         #menu.addAction(self.refineActionDilate)
         #menu.addAction(self.refineActionErode)
         menu.addAction(self.fillAction)
@@ -804,6 +807,7 @@ class TagLab(QWidget):
         self.editmenu.addAction(self.refineAction)
         self.editmenu.addAction(self.dilateAction)
         self.editmenu.addAction(self.erodeAction)
+        self.editmenu.addAction(self.attachBoundariesAction)
         #self.editmenu.addAction(self.refineActionDilate)
         #self.editmenu.addAction(self.refineActionErode)
         self.editmenu.addAction(self.fillAction)
@@ -1064,8 +1068,8 @@ class TagLab(QWidget):
             trainwidget.setWindowModality(Qt.WindowModal)
             trainwidget.show()
 
-        elif event.key() == Qt.Key_Y:
-            self.dilateAndDivide()
+        elif event.key() == Qt.Key_B:
+            self.attachBoundaries()
 
         elif event.key() == Qt.Key_M:
             # MERGE OVERLAPPED BLOBS
@@ -1974,9 +1978,9 @@ class TagLab(QWidget):
 
             view.saveUndo()
 
-    def dilateAndDivideNaive(self):
+    def attachBoundaries(self):
         """
-        Two adjacent blobs are dilated and divided.
+        Two adjacent blobs are dilated and then divided.
         """
         view = self.activeviewer
         if view is None:
@@ -2009,9 +2013,9 @@ class TagLab(QWidget):
 
             self.infoWidget.setInfoMessage("You need to select <em>two</em> blobs for this operation.")
 
-    def dilateAndDivide(self):
+    def attachBoundaries2(self):
         """
-        Two adjacent blobs are dilated and divided.
+        Two adjacent blobs are dilated and then divided. Note that only the close part is dilated.
         """
         view = self.activeviewer
         if view is None:
