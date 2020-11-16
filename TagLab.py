@@ -27,8 +27,7 @@ import math
 import numpy as np
 
 from PyQt5.QtCore import Qt, QSize, QMargins, QDir, QPoint, QPointF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo, QModelIndex
-from PyQt5.QtGui import QPainterPath, QFont, QColor, QPolygonF, QImageReader, QImage, QPixmap, QIcon, QKeySequence, \
-    QPen, QBrush, qRgb, qRed, qGreen, qBlue
+from PyQt5.QtGui import QFontDatabase, QFont, QPixmap, QIcon, QKeySequence, QPen
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QFileDialog, QComboBox, QMenuBar, QMenu, QSizePolicy, QScrollArea, \
     QLabel, QToolButton, QPushButton, QSlider, \
     QMessageBox, QGroupBox, QHBoxLayout, QVBoxLayout, QTextEdit, QLineEdit, QGraphicsView, QAction, QGraphicsItem
@@ -3350,13 +3349,35 @@ if __name__ == '__main__':
 
     app.setStyleSheet("QToolTip {color: white; background-color: rgb(49,51,53); border: none; }")
 
-    # default font
-    font = QFont("Calibri")
+    # set the application font
+
+    QFD = QFontDatabase()
+    id1 = QFD.addApplicationFont("fonts/opensans/OpenSans-Regular.ttf")
+    if id1 == -1:
+        print("Failed to load application font..")
+        sys.exit(-2)
+
+    id2 = QFD.addApplicationFont("fonts/roboto/Roboto-Light.ttf")
+    if id2 == -1:
+        print("Failed to load application font..")
+        sys.exit(-2)
+
+    id3 = QFD.addApplicationFont("fonts/roboto/Roboto-Regular.ttf")
+    if id3 == -1:
+        print("Failed to load application font..")
+        sys.exit(-2)
+
+    print(QFontDatabase.applicationFontFamilies(id1))
+    print(QFontDatabase.applicationFontFamilies(id2))
+    print(QFontDatabase.applicationFontFamilies(id3))
+
+    font = QFont('Roboto')
     app.setFont(font)
 
     # Create the inspection tool
     tool = TagLab()
 
+    # create the main window - TagLab widget is the central widget
     mw = QMainWindow()
     mw.setCentralWidget(tool)
     mw.setStyleSheet("background-color: rgb(55,55,55); color: white")
