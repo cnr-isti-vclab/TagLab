@@ -457,6 +457,9 @@ class TagLab(QWidget):
         self.labels_widget.visibilityChanged.connect(self.viewerplus.updateVisibility)
         self.labels_widget.visibilityChanged.connect(self.viewerplus2.updateVisibility)
 
+        self.labels_widget.doubleClickLabel[str].connect(self.viewerplus.assignClass)
+        self.labels_widget.doubleClickLabel[str].connect(self.viewerplus2.assignClass)
+
         self.viewerplus.viewHasChanged[float, float, float].connect(self.viewerplus2.setViewParameters)
         self.viewerplus2.viewHasChanged[float, float, float].connect(self.viewerplus.setViewParameters)
 
