@@ -193,7 +193,7 @@ class TagLab(QWidget):
         self.refineAction       = self.newAction("Refine Border",           "R",   self.refineBorderOperation)
         self.dilateAction       = self.newAction("Dilate Border",           "+",   self.dilate)
         self.erodeAction        = self.newAction("Erode Border",            "-",   self.erode)
-        self.attachBoundariesAction = self.newAction("Attach Boundaries",   "-",   self.attachBoundaries)
+        self.attachBoundariesAction = self.newAction("Attach Boundaries",   "B",   self.attachBoundaries)
         #self.refineActionDilate = self.newAction("Refine Border Dilate",    "+",   self.refineBorderDilate)
         #self.refineActionErode  = self.newAction("Refine Border Erode",     "-",   self.refineBorderErode)
         self.fillAction         = self.newAction("Fill Label",              "F",   self.fillLabel)
