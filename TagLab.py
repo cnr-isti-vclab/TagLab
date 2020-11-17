@@ -3107,7 +3107,7 @@ class TagLab(QWidget):
 
         classifier_selected = self.classifierWidget.selected()
         target_scale_factor = classifier_selected['Scale']
-        scale_factor = target_scale_factor / self.activeviewer.image.map_px_to_mm_factor
+        scale_factor = target_scale_factor / self.activeviewer.image.pixelSize()
 
         prev_area = self.prev_area
         width = max(513 * scale_factor, prev_area[2])
@@ -3141,7 +3141,7 @@ class TagLab(QWidget):
         self.classifier.updateProgress.connect(self.progress_bar.setProgress)
 
         target_scale_factor = classifier_selected['Scale']
-        scale_factor = target_scale_factor / self.activeviewer.image.map_px_to_mm_factor
+        scale_factor = target_scale_factor / self.activeviewer.image.pixelSize()
         w_target = crop_image.width() *  scale_factor
         h_target = crop_image.height() * scale_factor
         input_crop_image = crop_image.scaled(w_target, h_target, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
@@ -3151,8 +3151,7 @@ class TagLab(QWidget):
         self.progress_bar.setProgress(0.0)
         QApplication.processEvents()
 
-        self.classifier.run(input_crop_image, 1026, 513, 256, True)
-
+        self.classifier.run(input_crop_image, 1026, 513, 256, working_area=[], save_scores=True)
 
 
     def showPrevArea(self):
