@@ -1195,6 +1195,7 @@ class TagLab(QWidget):
 
         self.viewerplus2.hide()
         self.comboboxTargetImage.hide()
+        self.groupbox_blobpanel.show()
 
         if self.comparemenu is not None:
             splitScreenAction = self.comparemenu.actions()[0]
@@ -2596,7 +2597,7 @@ class TagLab(QWidget):
 
         if filename:
 
-            self.activeviewer.annotations.export_data_table_for_Scripps(self.activeviewer.image.pixelSize(),filename)
+            self.activeviewer.annotations.export_data_table_for_Scripps(self.activeviewer.image.pixelSize(), filename)
 
             msgBox = QMessageBox(self)
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
@@ -2633,7 +2634,8 @@ class TagLab(QWidget):
         if self.activeviewer is not None:
 
             histo_widget = QtHistogramWidget(self.activeviewer.annotations, self.labels_dictionary,
-                                             self.activeviewer.image.pixelSize(), self.image.acquisition_date, self)
+                                             self.activeviewer.image.pixelSize(),
+                                             self.activeviewer.image.acquisition_date, self)
             histo_widget.setWindowModality(Qt.WindowModal)
             histo_widget.show()
 
@@ -3351,24 +3353,25 @@ if __name__ == '__main__':
     # set the application font
 
     QFD = QFontDatabase()
-    id1 = QFD.addApplicationFont("fonts/opensans/OpenSans-Regular.ttf")
-    if id1 == -1:
+    font_id1 = QFD.addApplicationFont("fonts/opensans/OpenSans-Regular.ttf")
+    if font_id1 == -1:
         print("Failed to load application font..")
         sys.exit(-2)
 
-    id2 = QFD.addApplicationFont("fonts/roboto/Roboto-Light.ttf")
-    if id2 == -1:
+    font_id2 = QFD.addApplicationFont("fonts/roboto/Roboto-Light.ttf")
+    if font_id2 == -1:
         print("Failed to load application font..")
         sys.exit(-2)
 
-    id3 = QFD.addApplicationFont("fonts/roboto/Roboto-Regular.ttf")
-    if id3 == -1:
+    font_id3 = QFD.addApplicationFont("fonts/roboto/Roboto-Regular.ttf")
+    if font_id3 == -1:
         print("Failed to load application font..")
         sys.exit(-2)
 
-    print(QFontDatabase.applicationFontFamilies(id1))
-    print(QFontDatabase.applicationFontFamilies(id2))
-    print(QFontDatabase.applicationFontFamilies(id3))
+    print("Available fonts:")
+    print(QFontDatabase.applicationFontFamilies(font_id1))
+    print(QFontDatabase.applicationFontFamilies(font_id2))
+    print(QFontDatabase.applicationFontFamilies(font_id3))
 
     font = QFont('Roboto')
     app.setFont(font)
