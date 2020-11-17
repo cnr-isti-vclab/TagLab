@@ -35,6 +35,7 @@ class QtLabelsWidget(QWidget):
     # custom signals
     visibilityChanged = pyqtSignal()
     activeLabelChanged = pyqtSignal(str)
+    doubleClickLabel = pyqtSignal(str)
 
     def __init__(self, parent=None):
         super(QtLabelsWidget, self).__init__(parent)
@@ -65,6 +66,7 @@ class QtLabelsWidget(QWidget):
 
 
     def addLabel(self, key, name):
+
         btnV = QPushButton()
         btnV.setProperty('key', key)
         btnV.setFlat(True)
@@ -151,8 +153,6 @@ class QtLabelsWidget(QWidget):
         self.lineeditClass[0].setStyleSheet("QLineEdit { border: 1px; font-weight: bold; color : white;}")
         self.active_label_name = self.lineeditClass[0].text()
 
-
-
     def eventFilter(self, object, event):
 
         if type(object) == QLineEdit and event.type() == QEvent.FocusIn :
@@ -163,9 +163,11 @@ class QtLabelsWidget(QWidget):
 
         if type(object) == QLineEdit and event.type() == QEvent.MouseButtonDblClick :
 
-            self.renameSelectedLabel(object)
+            label_name = object.text()
+            self.doubleClickLabel.emit(label_name)
 
         return False
+
 
     def setAllVisible(self):
         for label in self.labels.values():
@@ -250,22 +252,6 @@ class QtLabelsWidget(QWidget):
 
         self.active_label_name = lbl_clicked.property('key')
         self.activeLabelChanged.emit(self.active_label_name)
-
-    def renameSelectedLabel(self, lbl_clicked):
-
-        # reset the text of all the clickable labels
-        for lbl in self.lineeditClass:
-            lbl.setText(lbl.text())
-            lbl.setStyleSheet("QLineEdit { border: none; font-weight: normal; color : lightgray;}")
-            lbl.setReadOnly(True)
-
-        txt = lbl_clicked.text()
-        lbl_clicked.setText(txt)
-        #lbl_clicked.setReadOnly(False)
-        lbl.setReadOnly(False)
-        lbl_clicked.setStyleSheet("QLineEdit { border: 1 px; font-weight: bold; color : white;}")
-        lbl_clicked.setFocusPolicy(Qt.StrongFocus)
-        lbl_clicked.setFocus()
 
     def isClassVisible(self, key):
 

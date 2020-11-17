@@ -27,8 +27,7 @@ import math
 import numpy as np
 
 from PyQt5.QtCore import Qt, QSize, QMargins, QDir, QPoint, QPointF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo, QModelIndex
-from PyQt5.QtGui import QPainterPath, QFont, QColor, QPolygonF, QImageReader, QImage, QPixmap, QIcon, QKeySequence, \
-    QPen, QBrush, qRgb, qRed, qGreen, qBlue
+from PyQt5.QtGui import QFontDatabase, QFont, QPixmap, QIcon, QKeySequence, QPen
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QFileDialog, QComboBox, QMenuBar, QMenu, QSizePolicy, QScrollArea, \
     QLabel, QToolButton, QPushButton, QSlider, \
     QMessageBox, QGroupBox, QHBoxLayout, QVBoxLayout, QTextEdit, QLineEdit, QGraphicsView, QAction, QGraphicsItem
@@ -456,6 +455,9 @@ class TagLab(QWidget):
 
         self.labels_widget.visibilityChanged.connect(self.viewerplus.updateVisibility)
         self.labels_widget.visibilityChanged.connect(self.viewerplus2.updateVisibility)
+
+        self.labels_widget.doubleClickLabel[str].connect(self.viewerplus.assignClass)
+        self.labels_widget.doubleClickLabel[str].connect(self.viewerplus2.assignClass)
 
         self.viewerplus.viewHasChanged[float, float, float].connect(self.viewerplus2.setViewParameters)
         self.viewerplus2.viewHasChanged[float, float, float].connect(self.viewerplus.setViewParameters)
@@ -3105,7 +3107,7 @@ class TagLab(QWidget):
 
         classifier_selected = self.classifierWidget.selected()
         target_scale_factor = classifier_selected['Scale']
-        scale_factor = target_scale_factor / self.activeviewer.image.map_px_to_mm_factor
+        scale_factor = target_scale_factor / self.activeviewer.image.pixelSize()
 
         prev_area = self.prev_area
         width = max(513 * scale_factor, prev_area[2])
@@ -3139,7 +3141,7 @@ class TagLab(QWidget):
         self.classifier.updateProgress.connect(self.progress_bar.setProgress)
 
         target_scale_factor = classifier_selected['Scale']
-        scale_factor = target_scale_factor / self.activeviewer.image.map_px_to_mm_factor
+        scale_factor = target_scale_factor / self.activeviewer.image.pixelSize()
         w_target = crop_image.width() *  scale_factor
         h_target = crop_image.height() * scale_factor
         input_crop_image = crop_image.scaled(w_target, h_target, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
@@ -3149,8 +3151,7 @@ class TagLab(QWidget):
         self.progress_bar.setProgress(0.0)
         QApplication.processEvents()
 
-        self.classifier.run(input_crop_image, 1026, 513, 256, True)
-
+        self.classifier.run(input_crop_image, 1026, 513, 256, working_area=[], save_scores=True)
 
 
     def showPrevArea(self):
@@ -3347,13 +3348,35 @@ if __name__ == '__main__':
 
     app.setStyleSheet("QToolTip {color: white; background-color: rgb(49,51,53); border: none; }")
 
-    # default font
-    font = QFont("Calibri")
+    # set the application font
+
+    QFD = QFontDatabase()
+    id1 = QFD.addApplicationFont("fonts/opensans/OpenSans-Regular.ttf")
+    if id1 == -1:
+        print("Failed to load application font..")
+        sys.exit(-2)
+
+    id2 = QFD.addApplicationFont("fonts/roboto/Roboto-Light.ttf")
+    if id2 == -1:
+        print("Failed to load application font..")
+        sys.exit(-2)
+
+    id3 = QFD.addApplicationFont("fonts/roboto/Roboto-Regular.ttf")
+    if id3 == -1:
+        print("Failed to load application font..")
+        sys.exit(-2)
+
+    print(QFontDatabase.applicationFontFamilies(id1))
+    print(QFontDatabase.applicationFontFamilies(id2))
+    print(QFontDatabase.applicationFontFamilies(id3))
+
+    font = QFont('Roboto')
     app.setFont(font)
 
     # Create the inspection tool
     tool = TagLab()
 
+    # create the main window - TagLab widget is the central widget
     mw = QMainWindow()
     mw.setCentralWidget(tool)
     mw.setStyleSheet("background-color: rgb(55,55,55); color: white")

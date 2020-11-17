@@ -18,9 +18,9 @@
 # for more details.                                               
 
 import os
-import math
 import numpy as np
 import pickle as pkl
+
 # PYTORCH
 import torch
 
@@ -72,6 +72,11 @@ class MapClassifier(QObject):
         self.processing_step = 0
         self.total_processing_steps = 0
 
+        self.wa_top = 0
+        self.wa_left = 0
+        self.wa_width = 0
+        self.wa_height = 0
+
         self.temp_dir = "temp"
 
 
@@ -89,11 +94,10 @@ class MapClassifier(QObject):
         return classifier
 
 
-    def run(self, img_map, TILE_SIZE, AGGREGATION_WINDOW_SIZE, AGGREGATION_STEP, save_scores = False):
+    def run(self, img_map, TILE_SIZE, AGGREGATION_WINDOW_SIZE, AGGREGATION_STEP, working_area=[], save_scores = False):
         """
-
         :param TILE_SIZE: Base tile. This corresponds to the INPUT SIZE of the network.
-        :param AGGREGATION_WINDOW_SIZE: Size of the sub-windows to consider for the aggregation.
+        :param AGGREGATION_WINDOW_SIZE: Size of the center window considered for the aggregation.
         :param AGGREGATION_STEP: Step, in pixels, to calculate the different scores.
         :return:
         """
@@ -104,33 +108,35 @@ class MapClassifier(QObject):
             os.mkdir(self.temp_dir)
 
         # prepare for running..
-        STEP_SIZE = AGGREGATION_WINDOW_SIZE
-
         W = img_map.width()
         H = img_map.height()
 
         # top, left, width, height
-        working_area = [0, 0, W, H]
+        if not working_area:
+            working_area = [0, 0, W, H]
 
-        wa_top = working_area[0]
-        wa_left = working_area[1]
-        wa_width = working_area[2]
-        wa_height = working_area[3]
+        self.wa_top = working_area[0]
+        self.wa_left = working_area[1]
+        self.wa_width = working_area[2]
+        self.wa_height = working_area[3]
 
-        if wa_top < AGGREGATION_STEP:
-            wa_top = AGGREGATION_STEP
+        DELTA_CROP = int((TILE_SIZE - AGGREGATION_WINDOW_SIZE) / 2)
 
-        if wa_left < AGGREGATION_STEP:
-            wa_left = AGGREGATION_STEP
+        # clamping of the working area (just in case..)
+        if self.wa_top < 0:
+            self.wa_top = 0
 
-        if wa_left + wa_width >= W - AGGREGATION_STEP:
-            wa_width = W - AGGREGATION_STEP - wa_left - 1
+        if self.wa_left < 0:
+            self.wa_left = 0
 
-        if wa_top + wa_height >= H - AGGREGATION_STEP:
-            wa_height = H - AGGREGATION_STEP - wa_top - 1
+        if self.wa_left + self.wa_width >= W - AGGREGATION_STEP:
+            self.wa_width = W - AGGREGATION_STEP - self.wa_left - 1
 
-        tile_cols = int(wa_width / AGGREGATION_WINDOW_SIZE) + 1
-        tile_rows = int(wa_height / AGGREGATION_WINDOW_SIZE) + 1
+        if self.wa_top + self.wa_height >= H - AGGREGATION_STEP:
+            self.wa_height = H - AGGREGATION_STEP - self.wa_top - 1
+
+        tile_cols = int(self.wa_width / AGGREGATION_WINDOW_SIZE) + 1
+        tile_rows = int(self.wa_height / AGGREGATION_WINDOW_SIZE) + 1
 
         if torch.cuda.is_available():
             device = torch.device("cuda")
@@ -161,8 +167,8 @@ class MapClassifier(QObject):
                 for i in range(-1,2):
                     for j in range(-1,2):
 
-                        top = wa_top - AGGREGATION_STEP + row * STEP_SIZE + i * AGGREGATION_STEP
-                        left = wa_left - AGGREGATION_STEP + col * STEP_SIZE + j * AGGREGATION_STEP
+                        top = self.wa_top - DELTA_CROP + row * AGGREGATION_WINDOW_SIZE + i * AGGREGATION_STEP
+                        left = self.wa_left - DELTA_CROP + col * AGGREGATION_WINDOW_SIZE + j * AGGREGATION_STEP
                         cropimg = utils.cropQImage(img_map, [top, left, TILE_SIZE, TILE_SIZE])
                         img_np = utils.qimageToNumpyArray(cropimg)
 
@@ -215,7 +221,6 @@ class MapClassifier(QObject):
                 filename = os.path.join(self.temp_dir, tilename)
                 utils.rgbToQImage(resimg).save(filename)
 
-
                 if save_scores is True:
                     tilename = str(row) + "_" + str(col) + ".dat"
                     filename = os.path.join(self.temp_dir, tilename)
@@ -223,28 +228,28 @@ class MapClassifier(QObject):
                     pkl.dump(preds_avg, fileobject)
                     fileobject.close()
 
-
                 self.processing_step += 1
                 self.updateProgress.emit( (100.0 * self.processing_step) / self.total_processing_steps )
                 QCoreApplication.processEvents()
 
-        self.assembletiles(W, H, tile_rows, tile_cols, AGGREGATION_WINDOW_SIZE, wa_top, wa_left, wa_width, wa_height,
-                      ass_scores= save_scores)
+        self.assembleTiles(W, H, tile_rows, tile_cols, AGGREGATION_WINDOW_SIZE, ass_scores= save_scores)
         torch.cuda.empty_cache()
         del self.net
         self.net = None
 
 
-    def assembletiles(self, W,H, tile_rows, tile_cols, AGGREGATION_WINDOW_SIZE, wa_top, wa_left,wa_width, wa_height, ass_scores = False):
+    def assembleTiles(self, W, H, tile_rows, tile_cols, AGGREGATION_WINDOW_SIZE, ass_scores = False):
 
         # put tiles together
-        qimglabel = QImage(W, H, QImage.Format_RGB32)
 
         xoffset = 0
         yoffset = 0
 
-        painter = QPainter(qimglabel)
+        W = AGGREGATION_WINDOW_SIZE * tile_cols
+        H = AGGREGATION_WINDOW_SIZE * tile_rows
+
         if ass_scores is True:
+            AWS = AGGREGATION_WINDOW_SIZE
             assembled_scores = np.zeros((self.nclasses, H, W))
             for r in range(tile_rows):
                 for c in range(tile_cols):
@@ -255,27 +260,21 @@ class MapClassifier(QObject):
                     scores = pkl.load(fileobject)
                     fileobject.close()
 
-                    xoffset = wa_left + c * AGGREGATION_WINDOW_SIZE
-                    yoffset = wa_top + r * AGGREGATION_WINDOW_SIZE
+                    xoffset = c * AGGREGATION_WINDOW_SIZE
+                    yoffset = r * AGGREGATION_WINDOW_SIZE
 
-                    W_prime = AGGREGATION_WINDOW_SIZE
-                    H_prime = AGGREGATION_WINDOW_SIZE
+                    assembled_scores[:, yoffset: yoffset + AWS, xoffset: xoffset + AWS] = scores[:, 0:AWS, 0:AWS]
 
-                    if xoffset + W_prime > wa_left + wa_width - 1:
-                        W_prime = wa_width - xoffset - 1
-
-                    if yoffset + H_prime > wa_top + wa_height - 1:
-                        H_prime = wa_height - yoffset - 1
-
-
-                    assembled_scores[:, yoffset: yoffset + H_prime, xoffset: xoffset + W_prime] = scores[:, 0:H_prime, 0:W_prime]
+            working_area_scores = np.zeros((self.nclasses, self.wa_height, self.wa_width))
+            working_area_scores = assembled_scores[:, 0:self.wa_height, self.wa_width]
 
             filename = os.path.join(self.temp_dir, "assembled_scores.dat")
             fileobject = open(filename, 'wb')
-            pkl.dump(assembled_scores, fileobject)
+            pkl.dump(working_area_scores, fileobject)
             fileobject.close()
 
-
+        qimglabel = QImage(W, H, QImage.Format_RGB32)
+        painter = QPainter(qimglabel)
 
         for r in range(tile_rows):
             for c in range(tile_cols):
@@ -283,38 +282,19 @@ class MapClassifier(QObject):
                 filename = os.path.join(self.temp_dir, tilename)
                 qimg = QImage(filename)
 
-                xoffset = wa_left + c * AGGREGATION_WINDOW_SIZE
-                yoffset = wa_top + r * AGGREGATION_WINDOW_SIZE
+                xoffset = c * AGGREGATION_WINDOW_SIZE
+                yoffset = r * AGGREGATION_WINDOW_SIZE
 
-                cut = False
-
-
-                W_prime = AGGREGATION_WINDOW_SIZE
-                H_prime = AGGREGATION_WINDOW_SIZE
-
-
-                if xoffset + W_prime > wa_left + wa_width - 1:
-                    W_prime = wa_width - xoffset - 1
-                    cut = True
-
-                if yoffset + H_prime > wa_top + wa_height - 1:
-                    H_prime = wa_height - yoffset - 1
-                    cut = True
-
-                if cut is True:
-                    qimg2 = qimg.copy(0, 0, W_prime, H_prime)
-                    painter.drawImage(xoffset, yoffset, qimg2)
-                else:
-                    painter.drawImage(xoffset, yoffset, qimg)
-
+                painter.drawImage(xoffset, yoffset, qimg)
 
         # detach the qimglabel otherwise the Qt EXPLODES when memory is free
         painter.end()
 
+        # the classified area can exceed the working area
+        qimgworkingarea = qimglabel.copy(0, 0, self.wa_width, self.wa_height)
+
         labelfile = os.path.join(self.temp_dir, "labelmap.png")
-        qimglabel.save(labelfile)
-
-
+        qimgworkingarea.save(labelfile)
 
     def stopProcessing(self):
 
