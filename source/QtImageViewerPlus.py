@@ -89,7 +89,7 @@ class QtImageViewerPlus(QtImageViewer):
     activated = pyqtSignal()
     newSelection = pyqtSignal()
 
-    def __init__(self):
+    def __init__(self, taglab_dir):
         QtImageViewer.__init__(self)
 
         self.logfile = None #MUST be inited in Taglab.py
@@ -98,7 +98,7 @@ class QtImageViewerPlus(QtImageViewer):
         self.channel = None
         self.annotations = Annotation()
         self.selected_blobs = []
-
+        self.taglab_dir = taglab_dir
         self.tools = Tools(self)
         self.tools.createTools()
 
@@ -187,14 +187,14 @@ class QtImageViewerPlus(QtImageViewer):
             QApplication.restoreOverrideCursor()
 
         if img.isNull():
-            (channel.filename, filter) = QFileDialog.getOpenFileName(self, "Couldn't find the map, please select it:",
+            (filename, filter) = QFileDialog.getOpenFileName(self, "Couldn't find the map, please select it:",
                                                                        QFileInfo(channel.filename).dir().path(),
                                                                        "Image Files (*.png *.jpg)")
-            dir = QDir(os.getcwd())
-            self.map_image_filename = dir.relativeFilePath(channel.filename)
-            img = QImage(channel.filename)
+            dir = QDir(self.taglab_dir)
+            channel.filename = dir.relativeFilePath(filename)
+            img = channel.loadData()
             if img.isNull():
-                raise Exception("Could not load or find the image: " + channel.filename)
+                raise Exception("Could not load or find the image: " + filename)
 
         if switch:
             self.setChannelImg(img, self.zoom_factor)
