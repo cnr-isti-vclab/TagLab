@@ -74,7 +74,8 @@ import logging
 
 # configure the logger
 now = datetime.datetime.now()
-LOG_FILENAME = "tool" + now.strftime("%Y-%m-%d-%H-%M") + ".log"
+#LOG_FILENAME = "tool" + now.strftime("%Y-%m-%d-%H-%M") + ".log"
+LOG_FILENAME = "TagLab.log"
 logging.basicConfig(level=logging.DEBUG, filemode='w', filename=LOG_FILENAME, format = '%(asctime)s %(levelname)-8s %(message)s')
 logfile = logging.getLogger("tool-logger")
 
@@ -846,7 +847,7 @@ class TagLab(QWidget):
 
         return menubar
 
-    def fillEditSubMenu(self):
+    def updateEditSubMenu(self):
 
         for action in self.mapActionList:
             self.submenuEdit.removeAction(action)
@@ -1605,7 +1606,7 @@ class TagLab(QWidget):
         self.comboboxTargetImage.clear()
         self.resetPanelInfo()
         self.disableSplitScreen()
-        self.fillEditSubMenu()
+        self.updateEditSubMenu()
 
     def resetToolbar(self):
 
@@ -2333,7 +2334,7 @@ class TagLab(QWidget):
         # add an image and its annotation to the project
         self.project.addNewImage(image)
         self.updateImageSelectionMenu()
-        self.fillEditSubMenu()
+        self.updateEditSubMenu()
         self.mapWidget.close()
         self.showImage(image)
 
@@ -2387,7 +2388,7 @@ class TagLab(QWidget):
         self.updateImageSelectionMenu()
 
         # update the edit map info submenu
-        self.fillEditSubMenu()
+        self.updateEditSubMenu()
 
         self.mapWidget.close()
 
@@ -2482,8 +2483,9 @@ class TagLab(QWidget):
             self.append(filename)
 
         self.updateImageSelectionMenu()
-
+        self.updateEditSubMenu()
         self.showImage(self.project.images[-1])
+
 
     @pyqtSlot()
     def help(self):
@@ -3011,7 +3013,7 @@ class TagLab(QWidget):
         self.labels_widget.setLabels(self.project)
 
         self.updateImageSelectionMenu()
-        self.fillEditSubMenu()
+        self.updateEditSubMenu()
 
         if self.timer is None:
             self.activateAutosave()
