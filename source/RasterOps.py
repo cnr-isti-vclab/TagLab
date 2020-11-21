@@ -60,11 +60,12 @@ def write_shapefile(blobs, georef_filename, out_shp):
     colors = []
 
     for blob in blobs:
-        polygon = createPolygon(blob, transform)
-        ids.append(blob.id)
-        classnames.append(blob.class_name)
-        colors.append('#%02X%02X%02X' % tuple(blob.class_color))
-        polygons.append(polygon)
+        if blob.qpath_gitem.isVisible():
+            polygon = createPolygon(blob, transform)
+            ids.append(blob.id)
+            classnames.append(blob.class_name)
+            colors.append('#%02X%02X%02X' % tuple(blob.class_color))
+            polygons.append(polygon)
 
     # Now convert them to a shapefile with OGR
     outDriver = ogr.GetDriverByName('Esri Shapefile')

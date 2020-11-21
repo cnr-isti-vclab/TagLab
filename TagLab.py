@@ -74,7 +74,8 @@ import logging
 
 # configure the logger
 now = datetime.datetime.now()
-LOG_FILENAME = "tool" + now.strftime("%Y-%m-%d-%H-%M") + ".log"
+#LOG_FILENAME = "tool" + now.strftime("%Y-%m-%d-%H-%M") + ".log"
+LOG_FILENAME = "TagLab.log"
 logging.basicConfig(level=logging.DEBUG, filemode='w', filename=LOG_FILENAME, format = '%(asctime)s %(levelname)-8s %(message)s')
 logfile = logging.getLogger("tool-logger")
 
@@ -203,7 +204,7 @@ class TagLab(QWidget):
 
 
         # main viewer
-        self.viewerplus = QtImageViewerPlus()
+        self.viewerplus = QtImageViewerPlus(self.taglab_dir)
         self.viewerplus.logfile = logfile
         self.viewerplus.viewUpdated.connect(self.updateViewInfo)
         self.viewerplus.activated.connect(self.setActiveViewer)
@@ -213,7 +214,7 @@ class TagLab(QWidget):
         self.viewerplus.selectionReset.connect(self.resetPanelInfo)
 
         # secondary viewer in SPLIT MODE
-        self.viewerplus2 = QtImageViewerPlus()
+        self.viewerplus2 = QtImageViewerPlus(self.taglab_dir)
         self.viewerplus2.logfile = logfile
         self.viewerplus2.viewUpdated.connect(self.updateViewInfo)
         self.viewerplus2.activated.connect(self.setActiveViewer)
@@ -659,7 +660,7 @@ class TagLab(QWidget):
 
         ### IMPORT
 
-        appendAct = QAction("Add Annotations from Another Project", self)
+        appendAct = QAction("Add Another Project", self)
         appendAct.setStatusTip("Add to the current project the annotated images of another project")
         appendAct.triggered.connect(self.importAnnotations)
 
@@ -783,16 +784,17 @@ class TagLab(QWidget):
         exportClippedRasterAct.setStatusTip("Export a raster clipped using visible annotations")
         exportClippedRasterAct.triggered.connect(self.exportClippedRaster)
 
-        switchDEMAct = QAction("Switch image/DEM", self)
+        switchDEMAct = QAction("Switch RGB/DEM", self)
         # exportShapefilesAct.setShortcut('Ctrl+??')
         switchDEMAct.setStatusTip("Switch between the image and the DEM")
         switchDEMAct.triggered.connect(self.switchDEM)
 
         self.demmenu = menubar.addMenu("&DEM")
         self.demmenu.setStyleSheet(styleMenu)
+        self.demmenu.addAction(switchDEMAct)
         self.demmenu.addAction(calculateSurfaceAreaAct)
         self.demmenu.addAction(exportClippedRasterAct)
-        self.demmenu.addAction(switchDEMAct)
+
 
         self.editmenu = menubar.addMenu("&Edit")
         self.editmenu.setStyleSheet(styleMenu)
@@ -845,7 +847,7 @@ class TagLab(QWidget):
 
         return menubar
 
-    def fillEditSubMenu(self):
+    def updateEditSubMenu(self):
 
         for action in self.mapActionList:
             self.submenuEdit.removeAction(action)
@@ -899,20 +901,22 @@ class TagLab(QWidget):
 
         if self.activeviewer.channel is not None:
             if self.activeviewer.channel.type != "DEM":
-                index = -1
-                for i, channel in enumerate(self.activeviewer.image.channels):
-                    if channel.type == "DEM":
-                        index = i
+                channel = self.activeviewer.image.getDEMChannel()
+                if channel is None:
+                   box = QMessageBox()
+                   box.setText("DEM not found!")
+                   box.exec()
+                   return
 
-                if index == -1:
+                self.activeviewer.setChannel(channel)
+            else:
+                channel = self.activeviewer.image.getRGBChannel()
+                if channel is None:
                     box = QMessageBox()
-                    box.setText("DEM not found!")
+                    box.setText("RGB not found!")
                     box.exec()
                     return
-
-                self.activeviewer.setChannel(self.activeviewer.image.channels[i])
-            else:
-                self.activeviewer.setChannel(self.activeviewer.image.channels[0])
+                self.activeviewer.setChannel(channel)
 
 
     @pyqtSlot()
@@ -1602,7 +1606,7 @@ class TagLab(QWidget):
         self.comboboxTargetImage.clear()
         self.resetPanelInfo()
         self.disableSplitScreen()
-        self.fillEditSubMenu()
+        self.updateEditSubMenu()
 
     def resetToolbar(self):
 
@@ -2300,7 +2304,7 @@ class TagLab(QWidget):
     @pyqtSlot()
     def setMapProperties(self):
 
-        dir = QDir(os.getcwd())
+        dir = QDir(self.taglab_dir)
 
         try:
 
@@ -2330,13 +2334,14 @@ class TagLab(QWidget):
         # add an image and its annotation to the project
         self.project.addNewImage(image)
         self.updateImageSelectionMenu()
-        self.fillEditSubMenu()
+        self.updateEditSubMenu()
         self.mapWidget.close()
         self.showImage(image)
 
     @pyqtSlot()
     def updateMapProperties(self):
-        dir = QDir(os.getcwd())
+
+        dir = QDir(self.taglab_dir)
 
         flag_pixel_size_changed = False
 
@@ -2383,7 +2388,7 @@ class TagLab(QWidget):
         self.updateImageSelectionMenu()
 
         # update the edit map info submenu
-        self.fillEditSubMenu()
+        self.updateEditSubMenu()
 
         self.mapWidget.close()
 
@@ -2478,8 +2483,9 @@ class TagLab(QWidget):
             self.append(filename)
 
         self.updateImageSelectionMenu()
-
+        self.updateEditSubMenu()
         self.showImage(self.project.images[-1])
+
 
     @pyqtSlot()
     def help(self):
@@ -3007,7 +3013,7 @@ class TagLab(QWidget):
         self.labels_widget.setLabels(self.project)
 
         self.updateImageSelectionMenu()
-        self.fillEditSubMenu()
+        self.updateEditSubMenu()
 
         if self.timer is None:
             self.activateAutosave()
