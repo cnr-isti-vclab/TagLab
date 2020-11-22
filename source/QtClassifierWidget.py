@@ -199,6 +199,19 @@ class QtClassifierWidget(QWidget):
         self.setWindowTitle("SELECT CLASSIFIER")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
+
+    def setRGBPreview(self, image):
+
+        self.QPixmapRGB = QPixmap.fromImage(image)
+        size = self.LABEL_SIZE
+        self.QlabelRGB.setPixmap(self.QPixmapRGB.scaled(QSize(size, size), Qt.KeepAspectRatio))
+
+    def setLabelPreview(self, image):
+
+        self.QPixmapPred = QPixmap.fromImage(image)
+        size = self.LABEL_SIZE
+        self.QlabelPred.setPixmap(self.QPixmapPred.scaled(QSize(size, size), Qt.KeepAspectRatio))
+
     @pyqtSlot(int)
     def classifierChanged(self, index):
 

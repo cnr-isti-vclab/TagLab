@@ -3103,9 +3103,7 @@ class TagLab(QWidget):
             self.classifierWidget.btnChooseArea.clicked.connect(self.enablePrevArea)
             self.classifierWidget.btnCancel.clicked.connect(self.disablePrevArea)
             self.classifierWidget.closed.connect(self.disablePrevArea)
-            self.activeviewer.tools.tools["WORKINGAREA"].released.connect(self.cropPrev)
             self.classifierWidget.btnPrev.clicked.connect(self.applyPrev)
-            self.activeviewer.tools.tools["WORKINGAREA"].rectChanged.connect(self.updatePrevArea)
 
         self.showPrevArea()
         self.classifierWidget.show()
@@ -3121,29 +3119,17 @@ class TagLab(QWidget):
         width = max(513 * scale_factor, prev_area[2])
         height = max(513 * scale_factor, prev_area[3])
         crop_image = self.activeviewer.img_map.copy(prev_area[1], prev_area[0], width, height)
-        self.classifierWidget.QPixmapRGB = QPixmap.fromImage(crop_image)
-        size = self.classifierWidget.LABEL_SIZE
-        self.classifierWidget.QlabelRGB.setPixmap(self.classifierWidget.QPixmapRGB.scaled(QSize(size, size), Qt.KeepAspectRatio))
+
+        self.classifierWidget.setRGBPreview(crop_image)
+
+        self.disablePrevArea()
 
     def applyPrev(self):
         """
         crop selected area and apply preview.
         """
-        prev_area = self.prev_area
         classifier_selected = self.classifierWidget.selected()
         target_scale_factor = classifier_selected['Scale']
-        scale_factor = target_scale_factor / self.activeviewer.image.pixelSize()
-
-        top = int(prev_area[0] - 256/scale_factor)
-        left = int(prev_area[1] - 256/scale_factor)
-        width = int(max(513, prev_area[2]) + 256/scale_factor)
-        height = int(max(513, prev_area[3]) + 256/scale_factor)
-
-        crop_image = self.activeviewer.img_map.copy(left, top, width, height)
-        w_target = crop_image.width() * scale_factor
-        h_target = crop_image.height() * scale_factor
-        input_crop_image = crop_image.scaled(w_target, h_target, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
-
 
         # free GPU memory
         self.resetNetworks()
@@ -3154,14 +3140,20 @@ class TagLab(QWidget):
         self.classifier = MapClassifier(classifier_selected, self.labels_dictionary)
         self.classifier.updateProgress.connect(self.progress_bar.setProgress)
 
+        self.progress_bar.hidePerc()
+        self.progress_bar.setMessage("Initialization..")
+
+        self.classifier.setup(self.activeviewer.img_map, self.activeviewer.image.pixelSize(), target_scale_factor,
+                              working_area=self.prev_area, padding=256)
 
         self.progress_bar.showPerc()
         self.progress_bar.setMessage("Classification: ")
         self.progress_bar.setProgress(0.0)
         QApplication.processEvents()
 
-        self.classifier.run(input_crop_image, 1026, 513, 256, working_area=[256, 256, w_target-512, h_target-512 ], save_scores=True)
+        #self.classifier.run(1026, 513, 256, save_scores=True)
 
+        self.deleteProgressBar()
 
     def showPrevArea(self):
         """
@@ -3201,10 +3193,19 @@ class TagLab(QWidget):
     @pyqtSlot()
     def enablePrevArea(self):
         self.activeviewer.setTool("WORKINGAREA")
+        self.activeviewer.tools.tools["WORKINGAREA"].released.connect(self.cropPrev)
+        self.activeviewer.tools.tools["WORKINGAREA"].rectChanged.connect(self.updatePrevArea)
 
     @pyqtSlot()
     def disablePrevArea(self):
         self.activeviewer.setTool("MOVE")
+
+        WA_tool = self.activeviewer.tools.tools["WORKINGAREA"]
+        if WA_tool.receivers(WA_tool.released) > 0:
+            WA_tool.released.disconnect()
+        if WA_tool.receivers(WA_tool.rectChanged) > 0:
+            WA_tool.rectChanged.disconnect()
+
         self.hidePrevArea()
 
 
@@ -3216,7 +3217,7 @@ class TagLab(QWidget):
         # free GPU memory
         self.resetNetworks()
 
-        # delete classifier widget
+        # delete classifier
         if self.classifier:
             del self.classifier
             self.classifier = None

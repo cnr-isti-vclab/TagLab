@@ -298,7 +298,6 @@ class QtImageViewerPlus(QtImageViewer):
             self.resetSelection()
 
         if tool == "WORKINGAREA":
-
             QApplication.setOverrideCursor(Qt.CrossCursor)
 
         if tool == "WATERSHED":
