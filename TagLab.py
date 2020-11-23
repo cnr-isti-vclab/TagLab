@@ -3104,9 +3104,11 @@ class TagLab(QWidget):
             self.classifierWidget.btnCancel.clicked.connect(self.disablePrevArea)
             self.classifierWidget.closed.connect(self.disablePrevArea)
             self.classifierWidget.btnPrev.clicked.connect(self.applyPrev)
+            self.classifierWidget.sliderScores.valueChanged.connect(self.showScores)
 
         self.showPrevArea()
         self.classifierWidget.show()
+
 
     @pyqtSlot()
     def cropPrev(self):
@@ -3151,9 +3153,19 @@ class TagLab(QWidget):
         self.progress_bar.setProgress(0.0)
         QApplication.processEvents()
 
-        #self.classifier.run(1026, 513, 256, save_scores=True)
+        self.classifier.run(1026, 513, 256, save_scores=True)
+        self.classifier.loadScores()
+        self.showScores()
 
         self.deleteProgressBar()
+
+    def showScores(self):
+
+        tresh = self.classifier.sliderScores.value()/100.0
+        
+        outimg = self.classifier.classify()
+        self.classifierWidget.setLabelPreview(outimg)
+
 
     def showPrevArea(self):
         """
@@ -3181,6 +3193,11 @@ class TagLab(QWidget):
 
     def hidePrevArea(self):
         self.prev_area_rect.setVisible(False)
+
+
+
+
+
 
     @pyqtSlot(int, int, int, int)
     def updatePrevArea(self, x, y, width, height):
@@ -3309,7 +3326,7 @@ class TagLab(QWidget):
                     msgBox = QMessageBox()
                     msgBox.setWindowTitle(self.TAGLAB_VERSION)
                     msgBox.setText(
-                        "Automatic classification is finished. TagLab will be close. Please, click ok and save the project.")
+                    "Automatic classification is finished. TagLab will be close. Please, click ok and save the project.")
                     msgBox.exec()
 
                     self.saveAsProject()

@@ -71,6 +71,7 @@ class MapClassifier(QObject):
         self.flagStopProcessing = False
         self.processing_step = 0
         self.total_processing_steps = 0
+        self.scores = None
 
         self.scale_factor = 1.0
         self.input_image = None
@@ -120,8 +121,8 @@ class MapClassifier(QObject):
 
         self.wa_top = self.padding
         self.wa_left = self.padding
-        self.wa_width = w_target - 2*self.padding
-        self.wa_height = h_target - 2*self.padding
+        self.wa_width = int(w_target - 2*self.padding)
+        self.wa_height = int(h_target - 2*self.padding)
 
 
     def run(self, TILE_SIZE, AGGREGATION_WINDOW_SIZE, AGGREGATION_STEP, save_scores = False):
@@ -237,6 +238,17 @@ class MapClassifier(QObject):
         self.net = None
 
 
+
+    def loadScores(self):
+
+        filename = os.path.join(self.temp_dir, "assembled_scores.dat")
+        fileobject = open(filename, 'rb')
+        self.scores = pkl.load(fileobject)
+        fileobject.close()
+
+
+
+
     def assembleTiles(self, tile_rows, tile_cols, AGGREGATION_WINDOW_SIZE, ass_scores = False):
 
         # put tiles together
@@ -265,7 +277,7 @@ class MapClassifier(QObject):
                     assembled_scores[:, yoffset: yoffset + AWS, xoffset: xoffset + AWS] = scores[:, 0:AWS, 0:AWS]
 
             working_area_scores = np.zeros((self.nclasses, self.wa_height, self.wa_width))
-            working_area_scores = assembled_scores[:, 0:self.wa_height, self.wa_width]
+            working_area_scores = assembled_scores[:, 0:self.wa_height, 0: self.wa_width]
 
             filename = os.path.join(self.temp_dir, "assembled_scores.dat")
             fileobject = open(filename, 'wb')
@@ -295,12 +307,12 @@ class MapClassifier(QObject):
         labelfile = os.path.join(self.temp_dir, "labelmap.png")
         qimgworkingarea.save(labelfile)
 
-    def classify(self, scores):
+    def classify(self):
         """
-        Given the output scores (H x W x C) it returns the label map.
+        Given the output scores (C x H x W) it returns the label map.
         """
 
-        predictions = np.argmax(scores, 0)
+        predictions = np.argmax(self.scores, 0)
 
         resimg = np.zeros((predictions.shape[0], predictions.shape[1], 3), dtype='uint8')
         for label_index in range(self.nclasses):
@@ -308,7 +320,7 @@ class MapClassifier(QObject):
 
         qimg = utils.rgbToQImage(resimg)
         w = qimg.width() / self.scale_factor
-        h = qimg.heigth() / self.scale_factor
+        h = qimg.height() / self.scale_factor
         outimg = qimg.scaled(w, h, Qt.IgnoreAspectRatio, Qt.FastTransformation)
         return outimg
 

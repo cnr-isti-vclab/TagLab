@@ -137,26 +137,26 @@ class QtClassifierWidget(QWidget):
         layoutTiles.addWidget(self.QlabelPred)
 
 
-        self.QlabelThresh = QLabel("Predition Threshold:")
-        self.QlabelThreshValue= QLabel("0.0")
+        self.QlabelThresh = QLabel("Uncertainty Threshold:")
+        self.QlabelThreshValue = QLabel("0.0")
 
         SLIDER_WIDTH = 200
 
-        self.sliderTolerance = QSlider(Qt.Horizontal)
-        self.sliderTolerance.setFocusPolicy(Qt.StrongFocus)
-        self.sliderTolerance.setMinimumWidth(SLIDER_WIDTH)
-        self.sliderTolerance.setMinimum(0)
-        self.sliderTolerance.setMaximum(100)
-        self.sliderTolerance.setValue(0)
-        self.sliderTolerance.setTickInterval(5)
-        self.sliderTolerance.setAutoFillBackground(True)
-        self.sliderTolerance.valueChanged.connect(self.sliderToleranceChanged)
+        self.sliderScores = QSlider(Qt.Horizontal)
+        self.sliderScores.setFocusPolicy(Qt.StrongFocus)
+        self.sliderScores.setMinimumWidth(SLIDER_WIDTH)
+        self.sliderScores.setMinimum(0)
+        self.sliderScores.setMaximum(50)
+        self.sliderScores.setValue(0)
+        self.sliderScores.setTickInterval(20)
+        self.sliderScores.setAutoFillBackground(True)
+        self.sliderScores.valueChanged.connect(self.sliderScoresChanged)
 
 
         layoutSlider = QHBoxLayout()
         layoutSlider.setAlignment(Qt.AlignTop)
         layoutSlider.addWidget(self.QlabelThreshValue)
-        layoutSlider.addWidget(self.sliderTolerance)
+        layoutSlider.addWidget(self.sliderScores)
 
         layoutThreshold = QVBoxLayout()
         layoutThreshold.setAlignment(Qt.AlignTop)
@@ -241,16 +241,12 @@ class QtClassifierWidget(QWidget):
 
 
     @pyqtSlot()
-    def sliderToleranceChanged(self):
-        pass
-        # # update tolerance value
-        # newvalue = self.sliderTolerance.value()
-        # str1 = "Tolerance {}".format(newvalue)
-        # self.lblTolerance.setText(str1)
-        # self.tolerance = newvalue
-        #
-        # # update the preview
-        # self.preview()
+    def sliderScoresChanged(self):
+
+        # update tolerance value
+        newvalue = self.sliderScores.value()/100.0
+        str1 = "{:.2f}".format(newvalue)
+        self.QlabelThreshValue.setText(str1)
 
 
     def closeEvent(self, event):
