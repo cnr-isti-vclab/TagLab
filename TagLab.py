@@ -3161,9 +3161,8 @@ class TagLab(QWidget):
 
     def showScores(self):
 
-        tresh = self.classifier.sliderScores.value()/100.0
-        
-        outimg = self.classifier.classify()
+        tresh = self.classifierWidget.sliderScores.value()/100.0
+        outimg = self.classifier.classify(tresh)
         self.classifierWidget.setLabelPreview(outimg)
 
 

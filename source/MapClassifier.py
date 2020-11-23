@@ -307,15 +307,26 @@ class MapClassifier(QObject):
         labelfile = os.path.join(self.temp_dir, "labelmap.png")
         qimgworkingarea.save(labelfile)
 
-    def classify(self):
+    def classify(self, tresh):
         """
         Given the output scores (C x H x W) it returns the label map.
         """
 
+        scoresCopy= self.scores.copy()
         predictions = np.argmax(self.scores, 0)
+        mymax= np.max(self.scores,0)
+
+        for i in range(self.nclasses):
+            scoresCopy[i, predictions == i] = 0.0
+
+        delta = mymax - np.max(scoresCopy, 0)
+        uncMatrix = delta < tresh
+
+        predictions[uncMatrix] = self.nclasses
+        self.label_colors.append([255, 255, 255])
 
         resimg = np.zeros((predictions.shape[0], predictions.shape[1], 3), dtype='uint8')
-        for label_index in range(self.nclasses):
+        for label_index in range(self.nclasses + 1):
             resimg[predictions == label_index, :] = self.label_colors[label_index]
 
         qimg = utils.rgbToQImage(resimg)
