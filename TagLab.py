@@ -3108,7 +3108,7 @@ class TagLab(QWidget):
 
         self.showPrevArea()
         self.classifierWidget.show()
-
+        self.classifierWidget.disableSliders()
 
     @pyqtSlot()
     def cropPrev(self):
@@ -3160,6 +3160,8 @@ class TagLab(QWidget):
         self.deleteProgressBar()
 
     def showScores(self):
+
+        self.classifierWidget.enableSliders()
 
         tresh = self.classifierWidget.sliderScores.value()/100.0
         outimg = self.classifier.classify(tresh)
