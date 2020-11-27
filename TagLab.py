@@ -121,6 +121,7 @@ class TagLab(QWidget):
         self.classifierWidget = None
         self.newDatasetWidget = None
         self.trainYourNetworkWidget = None
+        self.trainResultsWidget = None
         self.progress_bar = None
 
         ##### TOP LAYOUT
@@ -479,6 +480,10 @@ class TagLab(QWidget):
         # menu options
         self.mapActionList = []
         self.image2update = None
+
+        # training results
+        self.classifier_name = None
+        self.dataset_train = None
 
         # NETWORKS
         self.deepextreme_net = None
@@ -1053,26 +1058,9 @@ class TagLab(QWidget):
         elif event.key() == Qt.Key_Delete:
             self.deleteSelectedBlobs()
 
-
         elif event.key() == Qt.Key_X:
 
-            biologicalsplitCM = np.array([
-                [0.902, 0.021, 0.009, 0.044, 0.018, 0.006],
-                [0.072, 0.916, 0.002, 0.006, 0.003, 0.002],
-                [0.086, 0.016, 0.886, 0.004, 0.008, 0.000],
-                [0.044, 0.002, 0.001, 0.943, 0.008, 0.001],
-                [0.032, 0.004, 0.007, 0.040, 0.917, 0.000],
-                [0.197, 0.008, 0.003, 0.038, 0.034, 0.720]
-            ])
-
-            for i in range(50):
-                train_loss_values = np.random.random(50)
-                val_loss_values = np.random.random(50)
-
-            metrics = {"Accuracy": 0.2, "JaccardScore": 0.1, 'NormConfMatrix': biologicalsplitCM}
-            trainwidget = QtTrainingResultsWidget(metrics, train_loss_values, val_loss_values, "C:\\temp\\test\\images", "C:\\temp\\test\\labels", "C:\\temp\\predictions", parent=self)
-            trainwidget.setWindowModality(Qt.WindowModal)
-            trainwidget.show()
+            pass
 
         elif event.key() == Qt.Key_B:
             self.attachBoundaries()
@@ -1596,7 +1584,10 @@ class TagLab(QWidget):
         self.classifierWidget = None
         self.newDatasetWidget = None
         self.trainYourNetworkWidget = None
+        self.trainResultsWidget = None
         self.progress_bar = None
+        self.classifier_name = None
+        self.dataset_train_info = None
         self.project = Project()
         self.project.importLabelsFromConfiguration(self.labels_dictionary)
         self.last_image_loaded = None
@@ -2858,7 +2849,7 @@ class TagLab(QWidget):
         # GO TRAINING GO...
         nepochs = self.trainYourNetworkWidget.getEpochs()
         lr = self.trainYourNetworkWidget.getLR()
-        L2 = self.trainYourNetworkWidget.getL2()
+        L2 = self.trainYourNetworkWidget.getWeightDecay()
         batch_size = self.trainYourNetworkWidget.getBatchSize()
 
         classifier_name = self.trainYourNetworkWidget.editClassifierName.text()
@@ -2874,7 +2865,7 @@ class TagLab(QWidget):
         images_dir_val = os.path.join(val_folder, "images")
         labels_dir_val = os.path.join(val_folder, "labels")
 
-        dataset_train, train_loss_values, val_loss_values = training.trainingNetwork(images_dir_train, labels_dir_train,
+        dataset_train_info, train_loss_values, val_loss_values = training.trainingNetwork(images_dir_train, labels_dir_train,
                         images_dir_val, labels_dir_val,
                         self.labels_dictionary, target_classes, num_classes,
                         save_network_as=network_filename, classifier_name=classifier_name,
@@ -2901,31 +2892,47 @@ class TagLab(QWidget):
         QApplication.processEvents()
 
         metrics = training.testNetwork(images_dir_test, labels_dir_test, dictionary=self.labels_dictionary,
-                                       target_classes=target_classes, dataset_train=dataset_train,
+                                       target_classes=target_classes, dataset_train=dataset_train_info,
                                        network_filename=network_filename, output_folder=output_folder)
+
+        #info about the classifier created
+        self.classifier_name = classifier_name
+        self.dataset_train_info = dataset_train_info
 
         self.deleteProgressBar()
         self.deleteTrainYourNetworkWidget()
 
-        txt = "Accuracy: {:.3f} mIoU: {:.3f}\nDo you want to save this new classifier?".format(metrics['Accuracy'], metrics['JaccardScore'])
-        confirm_training = QtTrainingResultsWidget(metrics, train_loss_values, val_loss_values, images_dir_test, labels_dir_test, output_folder)
+        self.trainResultsWidget = QtTrainingResultsWidget(metrics, train_loss_values, val_loss_values, images_dir_test, labels_dir_test, output_folder)
+        self.trainResultsWidget.btnConfirm.clicked.connect(self.confirmTraining)
+        self.trainResultsWidget.setAttribute(Qt.WA_DeleteOnClose)
+        self.trainResultsWidget.setWindowModality(Qt.WindowModal)
+        self.trainResultsWidget.show()
 
-        if confirm_training == QMessageBox.Yes:
-            new_classifier = dict()
-            new_classifier["Classifier Name"] = classifier_name
-            new_classifier["Average Norm."] = list(dataset_train.dataset_average)
-            new_classifier["Num. Classes"] = dataset_train.num_classes
-            new_classifier["Classes"] = list(dataset_train.dict_target)
-            new_classifier["Scale"] = self.activeviewer.image.pixelSize()
-            self.available_classifiers.append(new_classifier)
-            newconfig = dict()
-            newconfig["Available Classifiers"] = self.available_classifiers
-            newconfig["Labels"] = self.labels_dictionary
-            str = json.dumps(newconfig)
-            newconfig_filename = os.path.join(self.taglab_dir, "newconfig.json")
-            f = open(newconfig_filename, "w")
-            f.write(str)
-            f.close()
+    @pyqtSlot()
+    def confirmTraining(self):
+        """
+        It saves the classifier created with the Train-Your-Network feature.
+        """
+
+        new_classifier = dict()
+        new_classifier["Classifier Name"] = self.classifier_name
+        new_classifier["Average Norm."] = list(self.dataset_train_info.dataset_average)
+        new_classifier["Num. Classes"] = self.dataset_train_info.num_classes
+        new_classifier["Classes"] = list(self.dataset_train_info.dict_target)
+        new_classifier["Scale"] = self.activeviewer.image.pixelSize()
+        self.available_classifiers.append(new_classifier)
+        newconfig = dict()
+        newconfig["Available Classifiers"] = self.available_classifiers
+        newconfig["Labels"] = self.labels_dictionary
+        str = json.dumps(newconfig)
+        newconfig_filename = os.path.join(self.taglab_dir, "newconfig.json")
+        f = open(newconfig_filename, "w")
+        f.write(str)
+        f.close()
+
+        self.trainResultsWidget.close()
+        self.trainResultsWidget = None
+
 
     @pyqtSlot()
     def trainYourNetwork(self):
