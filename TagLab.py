@@ -58,10 +58,12 @@ from source.QtNewDatasetWidget import QtNewDatasetWidget
 from source.QtTrainingResultsWidget import QtTrainingResultsWidget
 from source.QtTYNWidget import QtTYNWidget
 from source.QtComparePanel import QtComparePanel
+from source.QtProjectWidget import QtProjectWidget
 from source.Project import Project, loadProject
 from source.Image import Image
 from source.MapClassifier import MapClassifier
 from source.NewDataset import NewDataset
+
 from source import utils
 
 # training modules
@@ -120,6 +122,7 @@ class TagLab(QWidget):
         self.mapWidget = None
         self.classifierWidget = None
         self.newDatasetWidget = None
+        self.editProjectWidget = None
         self.trainYourNetworkWidget = None
         self.trainResultsWidget = None
         self.progress_bar = None
@@ -645,6 +648,11 @@ class TagLab(QWidget):
         openAct.setStatusTip("Open an existing project")
         openAct.triggered.connect(self.openProject)
 
+        editAct = QAction("Edit Project...", self)
+        editAct.setShortcut('Ctrl+E')
+        editAct.setStatusTip("Edit current project")
+        editAct.triggered.connect(self.editProject)
+
         saveAct = QAction("Save Project", self)
         saveAct.setShortcut('Ctrl+S')
         saveAct.setStatusTip("Save current project")
@@ -750,6 +758,7 @@ class TagLab(QWidget):
         self.filemenu.setStyleSheet(styleMenu)
         self.filemenu.addAction(newAct)
         self.filemenu.addAction(openAct)
+        self.filemenu.addAction(editAct)
         self.filemenu.addAction(saveAct)
         self.filemenu.addAction(saveAsAct)
         self.filemenu.addSeparator()
@@ -2269,6 +2278,21 @@ class TagLab(QWidget):
 
         self.infoWidget.setInfoMessage("TagLab has been reset. To continue open an existing project or load a map.")
         logfile.info("[PROJECT] A new project has been setup.")
+
+    @pyqtSlot()
+    def editProject(self):
+        if self.editProjectWidget is None:
+
+            self.editProjectWidget = QtProjectWidget(self.project, parent=self)
+            self.editProjectWidget.setWindowModality(Qt.WindowModal)
+            self.editProjectWidget.show()
+
+        else:
+            # show it again
+            self.editProjectWidget.project = self.project
+            self.editProjectWidget.populateMapList()
+            if self.editProjectWidget.isHidden():
+                self.editProjectWidget.show()
 
  # REFACTOR load project properties
     @pyqtSlot()

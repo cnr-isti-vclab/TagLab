@@ -1,4 +1,5 @@
-# TagLab                                               
+
+# TagLab
 # A semi-automatic segmentation tool                                    
 #
 # Copyright(C) 2019                                         
