@@ -41,11 +41,15 @@ class CreateCrack(Tool):
 
         new_blobs = self.viewerplus.crackWidget.apply()
         self.blobInfo.emit(self.viewerplus.selected_blobs[0], "[TOOL][CREATECRACK][BLOB-SELECTED]")
-        self.viewerplus.removeBlob(self.viewerplus.selected_blobs[0])
-        for blob in new_blobs:
-            self.viewerplus.addBlob(blob, selected=True)
-            self.blobInfo.emit(blob, "[TOOL][CREATECRACK][BLOB-EDITED]")
+        #self.viewerplus.removeBlob(self.viewerplus.selected_blobs[0])
 
+        if len(new_blobs) == 1:
+            self.viewerplus.updateBlob(self.viewerplus.selected_blobs[0], new_blobs[0])
+        else:
+            for blob in new_blobs:
+                self.viewerplus.addBlob(blob, selected=True)
+
+        self.blobInfo.emit(blob, "[TOOL][CREATECRACK][BLOB-EDITED]")
         self.viewerplus.saveUndo()
         self.crackCancel()
 
