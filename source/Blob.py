@@ -271,21 +271,23 @@ class Blob(object):
 
         if number_of_contours > 1:
 
-            # search the longest contour
-            npoints_max = 0
+            # search the contour with the largest bounding box (area)
+            max_area = 0
             longest = 0
             for i, contour in enumerate(contours):
-                npoints = contour.shape[0]
-                if npoints > npoints_max:
-                    npoints_max = npoints
+                cbox = Mask.pointsBox(contour, 0)
+                area = cbox[2]*cbox[3]
+                if area > max_area:
+                    max_area = area
                     longest = i
 
-            npoints_max = 0
+            max_area = 0
             inner_longest = 0
             for i, contour in enumerate(inner_contours):
-                npoints = contour.shape[0]
-                if npoints > npoints_max:
-                    npoints_max = npoints
+                cbox = Mask.pointsBox(contour, 0)
+                area = cbox[2]*cbox[3]
+                if area > max_area:
+                    max_area = area
                     inner_longest = i
 
             # divide the contours in OUTER contour and INNER contours

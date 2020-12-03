@@ -47,6 +47,7 @@ class CreateCrack(Tool):
             self.viewerplus.updateBlob(self.viewerplus.selected_blobs[0], new_blobs[0])
             self.blobInfo.emit(new_blobs[0], "[TOOL][CREATECRACK][BLOB-EDITED]")
         else:
+            self.viewerplus.removeBlob(self.viewerplus.selected_blobs[0])
             for blob in new_blobs:
                 self.viewerplus.addBlob(blob, selected=True)
                 self.blobInfo.emit(blob, "[TOOL][CREATECRACK][BLOB-EDITED]")
