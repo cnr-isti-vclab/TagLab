@@ -55,7 +55,6 @@ Under MacOS and Linux, also __*cmake*__ and a C++ compiler must be installed.
 Just click on the "Clone or Download" button at the top of this page and unzip the whole package in a folder of your choice.
 
 ### Step 2: Install all the dependencies
-
 Then, open a shell (not python prompt!), change directory to the TagLab main directory and run:
 
 ```
@@ -64,20 +63,35 @@ python3 install.py
 or, on Windows:
 
 ```
-python3.exe install.py
+python.exe install.py
 ```
 
 The script will automatically install the remaining libraries required by TagLab and download the network weights.
 If NVIDIA CUDA Toolkit is not supported by your machine, the script will ask to install the cpu version.
-You can bypass this step and force to install the cpu version by running
+You can bypass this step and force to install the cpu version directly by running
 ```
 python3 install.py cpu
 ```
 or, on Windows:
 
 ```
-python3.exe install.py cpu
+python.exe install.py cpu
 ```
 
 ### Step 3: Run
-Open a python prompt and just start `TagLab.py`, the tool will start and you can try to open the sample that you can find in the `projects` folder. 
+Just start `TagLab.py` from a command shell or your preferred Python IDE.
+
+From a command shell simply write:
+
+```
+python3 taglab.py
+```
+or, on Windows:
+
+```
+python.exe taglab.py```
+```
+
+To test if TagLab works, try to open the sample project available in the `projects` folder. 
+
+
