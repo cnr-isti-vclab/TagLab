@@ -330,6 +330,7 @@ class TagLab(QWidget):
         # COMPARE PANEL
         self.compare_panel = QtComparePanel()
         self.compare_panel.filterChanged[str].connect(self.updateVisibleMatches)
+        self.compare_panel.areaModeChanged[str].connect(self.updateAreaMode)
         self.compare_panel.data_table.clicked.connect(self.showConnectionCluster)
 
         self.groupbox_comparison = QGroupBox("Comparison")
@@ -1403,7 +1404,7 @@ class TagLab(QWidget):
 
         self.compare_panel.selectRows(rows)
 
-
+    @pyqtSlot(str)
     def updateVisibleMatches(self, type):
 
         if self.activeviewer.tools.tool == "MATCH":
@@ -1426,6 +1427,25 @@ class TagLab(QWidget):
                 self.viewerplus.setBlobVisible(b, b.id in sourceblobs)
             for b in self.viewerplus2.annotations.seg_blobs:
                 self.viewerplus2.setBlobVisible(b, b.id in targetblobs)
+
+    @pyqtSlot(str)
+    def updateAreaMode(self, type):
+        """
+        Update the area values of the current correspondence table.
+        If area mode is 'surface area' the surface values are shown in the current correspondences table,
+        otherwise the standard area values.
+        """
+
+        if self.activeviewer.tools.tool == "MATCH":
+            img_source_index = self.comboboxSourceImage.currentIndex()
+            img_target_index = self.comboboxTargetImage.currentIndex()
+            correspondences = self.project.getImagePairCorrespondences(img_source_index, img_target_index)
+
+            if type == "surface area":
+                correspondences.updateAreas(use_surface_area=True)
+            else:
+                correspondences.updateAreas(use_surface_area=False)
+
 
     @pyqtSlot()
     def undo(self):
@@ -2417,7 +2437,12 @@ class TagLab(QWidget):
             self.viewerplus2.viewChanged()
 
         if flag_pixel_size_changed:
-            self.project.updatePixelSizeInCorrespondences(image)
+            area_mode = self.compare_panel.getAreaMode()
+            if area_mode == "surface area":
+                self.project.updatePixelSizeInCorrespondences(image, True)
+            else:
+                self.project.updatePixelSizeInCorrespondences(image, False)
+
             self.compare_panel.updateData()
 
         # update the comboboxes to select the images

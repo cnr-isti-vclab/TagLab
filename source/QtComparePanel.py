@@ -32,6 +32,15 @@ class TableModel(QAbstractTableModel):
     def __init__(self, data):
         super(TableModel, self).__init__()
         self._data = data
+        self.surface_area_mode_enabled = False
+
+    def enableSurfaceAreaMode(self):
+
+        self.surface_area_mode_enabled = True
+
+    def disableSurfaceAreaMode(self):
+
+        self.surface_area_mode_enabled = False
 
     def data(self, index, role):
 
@@ -86,6 +95,13 @@ class TableModel(QAbstractTableModel):
                     return "Id1"
                 if head == "Blob2":
                     return "Id2"
+
+                if head == "Area1" and self.surface_area_mode_enabled:
+                    return "S. Area1"
+
+                if head == "Area2" and self.surface_area_mode_enabled:
+                    return "S. Area2"
+
                 return head
 
             if orientation == Qt.Vertical:
@@ -149,6 +165,7 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
 class QtComparePanel(QWidget):
 
     filterChanged = pyqtSignal(str)
+    areaModeChanged = pyqtSignal(str)
 
     def __init__(self, parent=None):
         super(QtComparePanel, self).__init__(parent)
@@ -183,9 +200,18 @@ class QtComparePanel(QWidget):
         self.comboboxFilter.addItem("Grow")
         self.comboboxFilter.addItem("Shrink")
 
+        lblAreaMode = QLabel("Compare: ")
+        self.comboboxAreaMode = QComboBox()
+        self.comboboxAreaMode.setMinimumWidth(80)
+        self.comboboxAreaMode.addItem("Area")
+        self.comboboxAreaMode.addItem("Surface Area")
+
         filter_layout = QHBoxLayout()
         filter_layout.addWidget(lblFilter)
         filter_layout.addWidget(self.comboboxFilter)
+        filter_layout.addStretch()
+        filter_layout.addWidget(lblAreaMode)
+        filter_layout.addWidget(self.comboboxAreaMode)
         filter_layout.addStretch()
 
         layout = QVBoxLayout()
@@ -197,6 +223,7 @@ class QtComparePanel(QWidget):
         self.data = None
 
         self.comboboxFilter.currentTextChanged.connect(self.changeFilter)
+        self.comboboxAreaMode.currentTextChanged.connect(self.changeAreaMode)
 
 
     def setTable(self, project, img1idx, img2idx):
@@ -276,6 +303,10 @@ class QtComparePanel(QWidget):
             column = self.data_table.columnAt(value)
             self.data_table.scrollTo(self.data_table.model().index(rows[0], column))
 
+    def getAreaMode(self):
+
+        return self.comboboxAreaMode.currentText().lower()
+
     @pyqtSlot(QModelIndex)
     def getData(self, index):
 
@@ -284,6 +315,19 @@ class QtComparePanel(QWidget):
         #row = index.row()
         #self.data_table.model().index(row, column).data()
 
+
+    @pyqtSlot(str)
+    def changeAreaMode(self, txt):
+
+        if txt == "Area":
+            self.model.disableSurfaceAreaMode()
+        else:
+            self.model.enableSurfaceAreaMode()
+
+        self.data_table.resizeColumnsToContents()
+        self.data_table.update()
+
+        self.areaModeChanged.emit(txt.lower())
 
     @pyqtSlot(str)
     def changeFilter(self, txt):

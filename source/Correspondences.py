@@ -26,7 +26,27 @@ class Correspondences(object):
 
         return area_sq_cm
 
-    def updateAreas(self):
+    def updateAreas(self, use_surface_area=False):
+
+        for index, row in self.data.iterrows():
+            id1 = int(row['Blob1'])
+            id2 = int(row['Blob2'])
+            blob1 = self.source.annotations.blobById(id1)
+            blob2 = self.target.annotations.blobById(id2)
+
+            if blob1 is not None:
+                area_pixel = blob1.area
+                if use_surface_area:
+                    area_pixel = blob1.surface_area
+                self.data.loc[index, 'Area1'] = self.area_in_sq_cm(area_pixel, True)
+
+            if blob2 is not None:
+                area_pixel = blob2.area
+                if use_surface_area:
+                    area_pixel = blob2.surface_area
+                self.data.loc[index, 'Area2'] = self.area_in_sq_cm(area_pixel, False)
+
+    def setSurfaceAreaValues(self):
 
         for index, row in self.data.iterrows():
             id1 = int(row['Blob1'])
