@@ -1,4 +1,5 @@
-# TagLab                                               
+
+# TagLab
 # A semi-automatic segmentation tool                                    
 #
 # Copyright(C) 2019                                         
@@ -31,7 +32,7 @@ class QtNewDatasetWidget(QWidget):
         super(QtNewDatasetWidget, self).__init__(parent)
 
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
-        TEXT_SPACE = 130
+        TEXT_SPACE = 150
         LINEWIDTH = 300
 
         ###########################################################

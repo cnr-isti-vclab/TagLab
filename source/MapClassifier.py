@@ -71,7 +71,11 @@ class MapClassifier(QObject):
         self.flagStopProcessing = False
         self.processing_step = 0
         self.total_processing_steps = 0
+        self.scores = None
 
+        self.scale_factor = 1.0
+        self.input_image = None
+        self.padding = 0
         self.wa_top = 0
         self.wa_left = 0
         self.wa_width = 0
@@ -93,8 +97,35 @@ class MapClassifier(QObject):
 
         return classifier
 
+    def setup(self, img_map, pixel_size, target_scale, working_area=[], padding=0):
+        """
+        Initialize the image to classify.
+        """
 
-    def run(self, img_map, TILE_SIZE, AGGREGATION_WINDOW_SIZE, AGGREGATION_STEP, working_area=[], save_scores = False):
+        self.scale_factor = target_scale / pixel_size
+        self.padding = padding
+
+        # padding the working area (taking into account the scaling factor)
+        top = int(working_area[0] - self.padding/self.scale_factor)
+        left = int(working_area[1] - self.padding/self.scale_factor)
+        width = int(max(513, working_area[2]) + (2*self.padding)/self.scale_factor)
+        height = int(max(513, working_area[3]) + (2*self.padding)/self.scale_factor)
+
+        # crop the input image
+        crop_image = img_map.copy(left, top, width, height)
+
+        # rescale the input image
+        w_target = crop_image.width() * self.scale_factor
+        h_target = crop_image.height() * self.scale_factor
+        self.input_image = crop_image.scaled(w_target, h_target, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+
+        self.wa_top = self.padding
+        self.wa_left = self.padding
+        self.wa_width = int(w_target - 2*self.padding)
+        self.wa_height = int(h_target - 2*self.padding)
+
+
+    def run(self, TILE_SIZE, AGGREGATION_WINDOW_SIZE, AGGREGATION_STEP, save_scores = False):
         """
         :param TILE_SIZE: Base tile. This corresponds to the INPUT SIZE of the network.
         :param AGGREGATION_WINDOW_SIZE: Size of the center window considered for the aggregation.
@@ -103,38 +134,11 @@ class MapClassifier(QObject):
         """
 
         # create a temporary folder to store the processing
-
         if not os.path.exists(self.temp_dir):
             os.mkdir(self.temp_dir)
 
         # prepare for running..
-        W = img_map.width()
-        H = img_map.height()
-
-        # top, left, width, height
-        if not working_area:
-            working_area = [0, 0, W, H]
-
-        self.wa_top = working_area[0]
-        self.wa_left = working_area[1]
-        self.wa_width = working_area[2]
-        self.wa_height = working_area[3]
-
         DELTA_CROP = int((TILE_SIZE - AGGREGATION_WINDOW_SIZE) / 2)
-
-        # clamping of the working area (just in case..)
-        if self.wa_top < 0:
-            self.wa_top = 0
-
-        if self.wa_left < 0:
-            self.wa_left = 0
-
-        if self.wa_left + self.wa_width >= W - AGGREGATION_STEP:
-            self.wa_width = W - AGGREGATION_STEP - self.wa_left - 1
-
-        if self.wa_top + self.wa_height >= H - AGGREGATION_STEP:
-            self.wa_height = H - AGGREGATION_STEP - self.wa_top - 1
-
         tile_cols = int(self.wa_width / AGGREGATION_WINDOW_SIZE) + 1
         tile_rows = int(self.wa_height / AGGREGATION_WINDOW_SIZE) + 1
 
@@ -169,8 +173,8 @@ class MapClassifier(QObject):
 
                         top = self.wa_top - DELTA_CROP + row * AGGREGATION_WINDOW_SIZE + i * AGGREGATION_STEP
                         left = self.wa_left - DELTA_CROP + col * AGGREGATION_WINDOW_SIZE + j * AGGREGATION_STEP
-                        cropimg = utils.cropQImage(img_map, [top, left, TILE_SIZE, TILE_SIZE])
-                        img_np = utils.qimageToNumpyArray(cropimg)
+                        tileimg = utils.cropQImage(self.input_image, [top, left, TILE_SIZE, TILE_SIZE])
+                        img_np = utils.qimageToNumpyArray(tileimg)
 
                         img_np = img_np.astype(np.float32)
                         img_np = img_np / 255.0
@@ -200,20 +204,16 @@ class MapClassifier(QObject):
                             self.updateProgress.emit( (100.0 * self.processing_step) / self.total_processing_steps )
                             QCoreApplication.processEvents()
 
-
                 if self.flagStopProcessing is True:
                     break
 
-
                 preds_avg = self.aggregateScores(scores, tile_sz=TILE_SIZE,
                                                      center_window_size=AGGREGATION_WINDOW_SIZE, step=AGGREGATION_STEP)
-
 
                 values_t, predictions_t = torch.max(torch.from_numpy(preds_avg), 0)
                 preds = predictions_t.cpu().numpy()
 
                 resimg = np.zeros((preds.shape[0], preds.shape[1], 3), dtype='uint8')
-
                 for label_index in range(self.nclasses):
                     resimg[preds == label_index, :] = self.label_colors[label_index]
 
@@ -232,13 +232,24 @@ class MapClassifier(QObject):
                 self.updateProgress.emit( (100.0 * self.processing_step) / self.total_processing_steps )
                 QCoreApplication.processEvents()
 
-        self.assembleTiles(W, H, tile_rows, tile_cols, AGGREGATION_WINDOW_SIZE, ass_scores= save_scores)
+        self.assembleTiles(tile_rows, tile_cols, AGGREGATION_WINDOW_SIZE, ass_scores= save_scores)
         torch.cuda.empty_cache()
         del self.net
         self.net = None
 
 
-    def assembleTiles(self, W, H, tile_rows, tile_cols, AGGREGATION_WINDOW_SIZE, ass_scores = False):
+
+    def loadScores(self):
+
+        filename = os.path.join(self.temp_dir, "assembled_scores.dat")
+        fileobject = open(filename, 'rb')
+        self.scores = pkl.load(fileobject)
+        fileobject.close()
+
+
+
+
+    def assembleTiles(self, tile_rows, tile_cols, AGGREGATION_WINDOW_SIZE, ass_scores = False):
 
         # put tiles together
 
@@ -266,7 +277,7 @@ class MapClassifier(QObject):
                     assembled_scores[:, yoffset: yoffset + AWS, xoffset: xoffset + AWS] = scores[:, 0:AWS, 0:AWS]
 
             working_area_scores = np.zeros((self.nclasses, self.wa_height, self.wa_width))
-            working_area_scores = assembled_scores[:, 0:self.wa_height, self.wa_width]
+            working_area_scores = assembled_scores[:, 0:self.wa_height, 0: self.wa_width]
 
             filename = os.path.join(self.temp_dir, "assembled_scores.dat")
             fileobject = open(filename, 'wb')
@@ -295,6 +306,34 @@ class MapClassifier(QObject):
 
         labelfile = os.path.join(self.temp_dir, "labelmap.png")
         qimgworkingarea.save(labelfile)
+
+    def classify(self, tresh):
+        """
+        Given the output scores (C x H x W) it returns the label map.
+        """
+
+        scoresCopy= self.scores.copy()
+        predictions = np.argmax(self.scores, 0)
+        mymax= np.max(self.scores,0)
+
+        for i in range(self.nclasses):
+            scoresCopy[i, predictions == i] = 0.0
+
+        delta = mymax - np.max(scoresCopy, 0)
+        uncMatrix = delta < tresh
+
+        predictions[uncMatrix] = self.nclasses
+        self.label_colors.append([255, 255, 255])
+
+        resimg = np.zeros((predictions.shape[0], predictions.shape[1], 3), dtype='uint8')
+        for label_index in range(self.nclasses + 1):
+            resimg[predictions == label_index, :] = self.label_colors[label_index]
+
+        qimg = utils.rgbToQImage(resimg)
+        w = qimg.width() / self.scale_factor
+        h = qimg.height() / self.scale_factor
+        outimg = qimg.scaled(w, h, Qt.IgnoreAspectRatio, Qt.FastTransformation)
+        return outimg
 
     def stopProcessing(self):
 

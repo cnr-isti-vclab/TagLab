@@ -37,11 +37,13 @@ class QtTrainingResultsWidget(QWidget):
         self.lblAccuracy = QLabel("Accuracy:")
         self.lblmIoU= QLabel("mIoU:")
 
-        self.editAccuracy = QLineEdit(str(metrics["Accuracy"]))
+        txt = "{:.3f}".format(metrics['Accuracy'])
+        self.editAccuracy = QLineEdit(txt)
         self.editAccuracy.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
         self.editAccuracy.setReadOnly(True)
         self.editAccuracy.setFixedWidth(self.LINEWIDTH)
-        self.editmIoU = QLineEdit(str(metrics["JaccardScore"]))
+        txt = "{:.3f}".format(metrics['JaccardScore'])
+        self.editmIoU = QLineEdit(txt)
         self.editmIoU.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
         self.editmIoU.setReadOnly(True)
         self.editmIoU.setFixedWidth(self.LINEWIDTH)
@@ -176,6 +178,17 @@ class QtTrainingResultsWidget(QWidget):
         group_pred.setStyleSheet(groupbox_style)
         group_pred.setLayout(layoutPredictions)
 
+        ############################################################### BUTTONS LAYOUT
+
+        buttons_layout = QHBoxLayout()
+        self.btnCancel = QPushButton("Cancel")
+        self.btnCancel.clicked.connect(self.close)
+        self.btnConfirm = QPushButton("Confirm")
+        buttons_layout.setAlignment(Qt.AlignRight)
+        buttons_layout.addStretch()
+        buttons_layout.addWidget(self.btnCancel)
+        buttons_layout.addWidget(self.btnConfirm)
+
         ############################################################### FINAL LAYOUT
 
         layoutFirstRow = QHBoxLayout()
@@ -186,7 +199,7 @@ class QtTrainingResultsWidget(QWidget):
         layoutFinal = QVBoxLayout()
         layoutFinal.addLayout(layoutFirstRow)
         layoutFinal.addWidget(group_pred)
-
+        layoutFinal.addLayout(buttons_layout)
         self.setLayout(layoutFinal)
 
         self.setWindowTitle("Training Results")
@@ -315,23 +328,15 @@ class QtTrainingResultsWidget(QWidget):
 
         n_epochs = len(self.train_loss_data)
 
-        # make the values of training and validation comparable
-        validation_loss_values = []
-        for i in range(n_epochs):
-
-            if i % 2 == 0:
-                validation_loss_values.append(self.val_loss_data[int(i/2)])
-            else:
-                avg = (self.val_loss_data[int(i/2)] + self.val_loss_data[int(i/2)+1]) / 2.0
-                validation_loss_values.append(avg)
-
         fig = plt.figure()
         fig.set_size_inches(10, 6.0)
         plt.grid(axis="x")
         plt.xticks(np.arange(0, n_epochs, 5))
 
+        x = np.arange(1, n_epochs, 2)
+        plt.plot(x, self.val_loss_data, label='Validation Loss')
+
         x = np.arange(0, n_epochs)
-        plt.plot(x, validation_loss_values, label='Validation Loss')
         plt.plot(x, self.train_loss_data, label='Training Loss')
 
         plt.xlabel('Epoch')
@@ -339,6 +344,3 @@ class QtTrainingResultsWidget(QWidget):
         plt.legend()
 
         self.pxmapTG = utils.figureToQPixmap(fig, dpi=180, width=self.TG_WIDTH, height=self.TG_HEIGHT)
-
-
-

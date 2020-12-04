@@ -33,7 +33,7 @@ class QtTYNWidget(QWidget):
 
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
 
-        TEXT_SPACE = 165
+        TEXT_SPACE = 180
 
         ###### Labels
 
@@ -253,5 +253,9 @@ class QtTYNWidget(QWidget):
 
     def getWeightDecay(self):
 
-        return float(self.editDecay.text())
+        return float(self.editL2.text())
+
+    def getBatchSize(self):
+
+        return int(self.editBatchSize.text())
 

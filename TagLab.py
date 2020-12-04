@@ -58,10 +58,12 @@ from source.QtNewDatasetWidget import QtNewDatasetWidget
 from source.QtTrainingResultsWidget import QtTrainingResultsWidget
 from source.QtTYNWidget import QtTYNWidget
 from source.QtComparePanel import QtComparePanel
+from source.QtProjectWidget import QtProjectWidget
 from source.Project import Project, loadProject
 from source.Image import Image
 from source.MapClassifier import MapClassifier
 from source.NewDataset import NewDataset
+
 from source import utils
 
 # training modules
@@ -120,7 +122,9 @@ class TagLab(QWidget):
         self.mapWidget = None
         self.classifierWidget = None
         self.newDatasetWidget = None
+        self.editProjectWidget = None
         self.trainYourNetworkWidget = None
+        self.trainResultsWidget = None
         self.progress_bar = None
 
         ##### TOP LAYOUT
@@ -351,16 +355,20 @@ class TagLab(QWidget):
         blobpanel_layoutH1.addStretch()
 
 
-        self.lblPerimeter = QLabel("Perimeter: ")
+        self.lblPerimeter = QLabel("Perimeter:")
         self.lblPerimeterValue = QLabel(" ")
-        self.lblArea = QLabel("Area: ")
+        self.lblArea = QLabel("Area:")
         self.lblAreaValue = QLabel(" ")
+        self.lblSurfaceArea = QLabel("Surf. area:")
+        self.lblSurfaceAreaValue = QLabel(" ")
         blobpanel_layoutH2 = QHBoxLayout()
         blobpanel_layoutH2.setSpacing(6)
         blobpanel_layoutH2.addWidget(self.lblPerimeter)
         blobpanel_layoutH2.addWidget(self.lblPerimeterValue)
         blobpanel_layoutH2.addWidget(self.lblArea)
         blobpanel_layoutH2.addWidget(self.lblAreaValue)
+        blobpanel_layoutH2.addWidget(self.lblSurfaceArea)
+        blobpanel_layoutH2.addWidget(self.lblSurfaceAreaValue)
         blobpanel_layoutH2.addStretch()
 
         self.lblCentroid = QLabel("Centroid (px): ")
@@ -479,6 +487,10 @@ class TagLab(QWidget):
         # menu options
         self.mapActionList = []
         self.image2update = None
+
+        # training results
+        self.classifier_name = None
+        self.dataset_train = None
 
         # NETWORKS
         self.deepextreme_net = None
@@ -640,6 +652,11 @@ class TagLab(QWidget):
         openAct.setStatusTip("Open an existing project")
         openAct.triggered.connect(self.openProject)
 
+        editAct = QAction("Edit Project...", self)
+        editAct.setShortcut('Ctrl+E')
+        editAct.setStatusTip("Edit current project")
+        editAct.triggered.connect(self.editProject)
+
         saveAct = QAction("Save Project", self)
         saveAct.setShortcut('Ctrl+S')
         saveAct.setStatusTip("Save current project")
@@ -745,6 +762,7 @@ class TagLab(QWidget):
         self.filemenu.setStyleSheet(styleMenu)
         self.filemenu.addAction(newAct)
         self.filemenu.addAction(openAct)
+        self.filemenu.addAction(editAct)
         self.filemenu.addAction(saveAct)
         self.filemenu.addAction(saveAsAct)
         self.filemenu.addSeparator()
@@ -1053,26 +1071,9 @@ class TagLab(QWidget):
         elif event.key() == Qt.Key_Delete:
             self.deleteSelectedBlobs()
 
-
         elif event.key() == Qt.Key_X:
 
-            biologicalsplitCM = np.array([
-                [0.902, 0.021, 0.009, 0.044, 0.018, 0.006],
-                [0.072, 0.916, 0.002, 0.006, 0.003, 0.002],
-                [0.086, 0.016, 0.886, 0.004, 0.008, 0.000],
-                [0.044, 0.002, 0.001, 0.943, 0.008, 0.001],
-                [0.032, 0.004, 0.007, 0.040, 0.917, 0.000],
-                [0.197, 0.008, 0.003, 0.038, 0.034, 0.720]
-            ])
-
-            for i in range(50):
-                train_loss_values = np.random.random(50)
-                val_loss_values = np.random.random(50)
-
-            metrics = {"Accuracy": 0.2, "JaccardScore": 0.1, 'NormConfMatrix': biologicalsplitCM}
-            trainwidget = QtTrainingResultsWidget(metrics, train_loss_values, val_loss_values, "C:\\temp\\test\\images", "C:\\temp\\test\\labels", "C:\\temp\\predictions", parent=self)
-            trainwidget.setWindowModality(Qt.WindowModal)
-            trainwidget.show()
+            pass
 
         elif event.key() == Qt.Key_B:
             self.attachBoundaries()
@@ -1596,7 +1597,10 @@ class TagLab(QWidget):
         self.classifierWidget = None
         self.newDatasetWidget = None
         self.trainYourNetworkWidget = None
+        self.trainResultsWidget = None
         self.progress_bar = None
+        self.classifier_name = None
+        self.dataset_train_info = None
         self.project = Project()
         self.project.importLabelsFromConfiguration(self.labels_dictionary)
         self.last_image_loaded = None
@@ -1774,12 +1778,14 @@ class TagLab(QWidget):
         self.lblClass.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         if self.activeviewer.image.map_px_to_mm_factor == "":
-            txt_perimeter = "Perimeter (px): "
-            txt_area = "Area (px<sup>2</sup>)"
+            txt_perimeter = "Perimeter (px):"
+            txt_area = "Area (px<sup>2</sup>):"
+            txt_surface_area = "Surf. area (px<sup>2</sup>):"
             factor = 1.0
         else:
-            txt_perimeter = "Perimeter (cm): "
-            txt_area = "Area (cm<sup>2</sup>)"
+            txt_perimeter = "Perimeter (cm):"
+            txt_area = "Area (cm<sup>2</sup>):"
+            txt_surface_area = "Surf. area (cm<sup>2</sup>):"
             factor = float(self.activeviewer.image.map_px_to_mm_factor)
 
         cx = blob.centroid[0]
@@ -1788,17 +1794,30 @@ class TagLab(QWidget):
         self.lblCentroidValue.setText(txt)
         self.lblCentroidValue.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
+        # perimeter
         scaled_perimeter = blob.perimeter * factor / 10.0
         self.lblPerimeter.setText(txt_perimeter)
         txt = "{:6.2f}".format(scaled_perimeter)
         self.lblPerimeterValue.setText(txt)
         self.lblPerimeterValue.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
+        # area
         scaled_area = blob.area * factor * factor / 100.0
         self.lblArea.setText(txt_area)
         txt = "{:6.2f}".format(scaled_area)
         self.lblAreaValue.setText(txt)
         self.lblAreaValue.setTextInteractionFlags(Qt.TextSelectableByMouse)
+
+        # surface area
+        self.lblSurfaceArea.setText(txt_surface_area)
+        if self.activeviewer:
+            if self.activeviewer.image.hasDEM():
+                scaled_area = blob.surface_area * factor * factor / 100.0
+                txt = "{:6.2f}".format(scaled_area)
+                self.lblSurfaceAreaValue.setText(txt)
+                self.lblSurfaceAreaValue.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            else:
+                self.lblSurfaceAreaValue.setText("n.a.")
 
     @pyqtSlot()
     def resetPanelInfo(self):
@@ -1813,7 +1832,9 @@ class TagLab(QWidget):
         txtA = "Area (cm<sup>2</sup>):"
         self.lblArea.setText(txtA)
         self.lblAreaValue.setText(txt)
-
+        txtS = "Surf. area (cm<sup>2</sup>):"
+        self.lblSurfaceArea.setText(txtS)
+        self.lblSurfaceAreaValue.setText(txt)
 
     def deleteSelectedBlobs(self):
         if self.viewerplus.tools.tool == 'MATCH':
@@ -2278,6 +2299,21 @@ class TagLab(QWidget):
 
         self.infoWidget.setInfoMessage("TagLab has been reset. To continue open an existing project or load a map.")
         logfile.info("[PROJECT] A new project has been setup.")
+
+    @pyqtSlot()
+    def editProject(self):
+        if self.editProjectWidget is None:
+
+            self.editProjectWidget = QtProjectWidget(self.project, parent=self)
+            self.editProjectWidget.setWindowModality(Qt.WindowModal)
+            self.editProjectWidget.show()
+
+        else:
+            # show it again
+            self.editProjectWidget.project = self.project
+            self.editProjectWidget.populateMapList()
+            if self.editProjectWidget.isHidden():
+                self.editProjectWidget.show()
 
  # REFACTOR load project properties
     @pyqtSlot()
@@ -2858,7 +2894,7 @@ class TagLab(QWidget):
         # GO TRAINING GO...
         nepochs = self.trainYourNetworkWidget.getEpochs()
         lr = self.trainYourNetworkWidget.getLR()
-        L2 = self.trainYourNetworkWidget.getL2()
+        L2 = self.trainYourNetworkWidget.getWeightDecay()
         batch_size = self.trainYourNetworkWidget.getBatchSize()
 
         classifier_name = self.trainYourNetworkWidget.editClassifierName.text()
@@ -2874,7 +2910,7 @@ class TagLab(QWidget):
         images_dir_val = os.path.join(val_folder, "images")
         labels_dir_val = os.path.join(val_folder, "labels")
 
-        dataset_train, train_loss_values, val_loss_values = training.trainingNetwork(images_dir_train, labels_dir_train,
+        dataset_train_info, train_loss_values, val_loss_values = training.trainingNetwork(images_dir_train, labels_dir_train,
                         images_dir_val, labels_dir_val,
                         self.labels_dictionary, target_classes, num_classes,
                         save_network_as=network_filename, classifier_name=classifier_name,
@@ -2901,31 +2937,47 @@ class TagLab(QWidget):
         QApplication.processEvents()
 
         metrics = training.testNetwork(images_dir_test, labels_dir_test, dictionary=self.labels_dictionary,
-                                       target_classes=target_classes, dataset_train=dataset_train,
+                                       target_classes=target_classes, dataset_train=dataset_train_info,
                                        network_filename=network_filename, output_folder=output_folder)
+
+        #info about the classifier created
+        self.classifier_name = classifier_name
+        self.dataset_train_info = dataset_train_info
 
         self.deleteProgressBar()
         self.deleteTrainYourNetworkWidget()
 
-        txt = "Accuracy: {:.3f} mIoU: {:.3f}\nDo you want to save this new classifier?".format(metrics['Accuracy'], metrics['JaccardScore'])
-        confirm_training = QtTrainingResultsWidget(metrics, train_loss_values, val_loss_values, images_dir_test, labels_dir_test, output_folder)
+        self.trainResultsWidget = QtTrainingResultsWidget(metrics, train_loss_values, val_loss_values, images_dir_test, labels_dir_test, output_folder)
+        self.trainResultsWidget.btnConfirm.clicked.connect(self.confirmTraining)
+        self.trainResultsWidget.setAttribute(Qt.WA_DeleteOnClose)
+        self.trainResultsWidget.setWindowModality(Qt.WindowModal)
+        self.trainResultsWidget.show()
 
-        if confirm_training == QMessageBox.Yes:
-            new_classifier = dict()
-            new_classifier["Classifier Name"] = classifier_name
-            new_classifier["Average Norm."] = list(dataset_train.dataset_average)
-            new_classifier["Num. Classes"] = dataset_train.num_classes
-            new_classifier["Classes"] = list(dataset_train.dict_target)
-            new_classifier["Scale"] = self.activeviewer.image.pixelSize()
-            self.available_classifiers.append(new_classifier)
-            newconfig = dict()
-            newconfig["Available Classifiers"] = self.available_classifiers
-            newconfig["Labels"] = self.labels_dictionary
-            str = json.dumps(newconfig)
-            newconfig_filename = os.path.join(self.taglab_dir, "newconfig.json")
-            f = open(newconfig_filename, "w")
-            f.write(str)
-            f.close()
+    @pyqtSlot()
+    def confirmTraining(self):
+        """
+        It saves the classifier created with the Train-Your-Network feature.
+        """
+
+        new_classifier = dict()
+        new_classifier["Classifier Name"] = self.classifier_name
+        new_classifier["Average Norm."] = list(self.dataset_train_info.dataset_average)
+        new_classifier["Num. Classes"] = self.dataset_train_info.num_classes
+        new_classifier["Classes"] = list(self.dataset_train_info.dict_target)
+        new_classifier["Scale"] = self.activeviewer.image.pixelSize()
+        self.available_classifiers.append(new_classifier)
+        newconfig = dict()
+        newconfig["Available Classifiers"] = self.available_classifiers
+        newconfig["Labels"] = self.labels_dictionary
+        str = json.dumps(newconfig)
+        newconfig_filename = os.path.join(self.taglab_dir, "newconfig.json")
+        f = open(newconfig_filename, "w")
+        f.write(str)
+        f.close()
+
+        self.trainResultsWidget.close()
+        self.trainResultsWidget = None
+
 
     @pyqtSlot()
     def trainYourNetwork(self):
@@ -3103,12 +3155,12 @@ class TagLab(QWidget):
             self.classifierWidget.btnChooseArea.clicked.connect(self.enablePrevArea)
             self.classifierWidget.btnCancel.clicked.connect(self.disablePrevArea)
             self.classifierWidget.closed.connect(self.disablePrevArea)
-            self.activeviewer.tools.tools["WORKINGAREA"].released.connect(self.cropPrev)
             self.classifierWidget.btnPrev.clicked.connect(self.applyPrev)
-            self.activeviewer.tools.tools["WORKINGAREA"].rectChanged.connect(self.updatePrevArea)
+            self.classifierWidget.sliderScores.valueChanged.connect(self.showScores)
 
         self.showPrevArea()
         self.classifierWidget.show()
+        self.classifierWidget.disableSliders()
 
     @pyqtSlot()
     def cropPrev(self):
@@ -3121,24 +3173,18 @@ class TagLab(QWidget):
         width = max(513 * scale_factor, prev_area[2])
         height = max(513 * scale_factor, prev_area[3])
         crop_image = self.activeviewer.img_map.copy(prev_area[1], prev_area[0], width, height)
-        self.classifierWidget.QPixmapRGB = QPixmap.fromImage(crop_image)
-        size = self.classifierWidget.LABEL_SIZE
-        self.classifierWidget.QlabelRGB.setPixmap(self.classifierWidget.QPixmapRGB.scaled(QSize(size, size), Qt.KeepAspectRatio))
+
+        self.classifierWidget.setRGBPreview(crop_image)
+
+        self.disablePrevArea()
 
     def applyPrev(self):
         """
         crop selected area and apply preview.
         """
-        prev_area = self.prev_area
-        top = prev_area[0] - 256
-        left = prev_area[1] - 256
-        width = max(513, prev_area[2]) +  256
-        height = max(513, prev_area[3]) + 256
-
-        crop_image = self.activeviewer.img_map.copy(left, top, width, height)
-
-
         classifier_selected = self.classifierWidget.selected()
+        target_scale_factor = classifier_selected['Scale']
+
         # free GPU memory
         self.resetNetworks()
         self.setupProgressBar()
@@ -3148,18 +3194,30 @@ class TagLab(QWidget):
         self.classifier = MapClassifier(classifier_selected, self.labels_dictionary)
         self.classifier.updateProgress.connect(self.progress_bar.setProgress)
 
-        target_scale_factor = classifier_selected['Scale']
-        scale_factor = target_scale_factor / self.activeviewer.image.pixelSize()
-        w_target = crop_image.width() *  scale_factor
-        h_target = crop_image.height() * scale_factor
-        input_crop_image = crop_image.scaled(w_target, h_target, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+        self.progress_bar.hidePerc()
+        self.progress_bar.setMessage("Initialization..")
+
+        self.classifier.setup(self.activeviewer.img_map, self.activeviewer.image.pixelSize(), target_scale_factor,
+                              working_area=self.prev_area, padding=256)
 
         self.progress_bar.showPerc()
         self.progress_bar.setMessage("Classification: ")
         self.progress_bar.setProgress(0.0)
         QApplication.processEvents()
 
-        self.classifier.run(input_crop_image, 1026, 513, 256, working_area=[], save_scores=True)
+        self.classifier.run(1026, 513, 256, save_scores=True)
+        self.classifier.loadScores()
+        self.showScores()
+
+        self.deleteProgressBar()
+
+    def showScores(self):
+
+        self.classifierWidget.enableSliders()
+
+        tresh = self.classifierWidget.sliderScores.value()/100.0
+        outimg = self.classifier.classify(tresh)
+        self.classifierWidget.setLabelPreview(outimg)
 
 
     def showPrevArea(self):
@@ -3189,6 +3247,11 @@ class TagLab(QWidget):
     def hidePrevArea(self):
         self.prev_area_rect.setVisible(False)
 
+
+
+
+
+
     @pyqtSlot(int, int, int, int)
     def updatePrevArea(self, x, y, width, height):
 
@@ -3200,10 +3263,19 @@ class TagLab(QWidget):
     @pyqtSlot()
     def enablePrevArea(self):
         self.activeviewer.setTool("WORKINGAREA")
+        self.activeviewer.tools.tools["WORKINGAREA"].released.connect(self.cropPrev)
+        self.activeviewer.tools.tools["WORKINGAREA"].rectChanged.connect(self.updatePrevArea)
 
     @pyqtSlot()
     def disablePrevArea(self):
         self.activeviewer.setTool("MOVE")
+
+        WA_tool = self.activeviewer.tools.tools["WORKINGAREA"]
+        if WA_tool.receivers(WA_tool.released) > 0:
+            WA_tool.released.disconnect()
+        if WA_tool.receivers(WA_tool.rectChanged) > 0:
+            WA_tool.rectChanged.disconnect()
+
         self.hidePrevArea()
 
 
@@ -3215,7 +3287,7 @@ class TagLab(QWidget):
         # free GPU memory
         self.resetNetworks()
 
-        # delete classifier widget
+        # delete classifier
         if self.classifier:
             del self.classifier
             self.classifier = None
@@ -3307,7 +3379,7 @@ class TagLab(QWidget):
                     msgBox = QMessageBox()
                     msgBox.setWindowTitle(self.TAGLAB_VERSION)
                     msgBox.setText(
-                        "Automatic classification is finished. TagLab will be close. Please, click ok and save the project.")
+                    "Automatic classification is finished. TagLab will be close. Please, click ok and save the project.")
                     msgBox.exec()
 
                     self.saveAsProject()

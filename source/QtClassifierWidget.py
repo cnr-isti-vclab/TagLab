@@ -20,7 +20,7 @@
 import os
 
 from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal
-from PyQt5.QtGui import QImage, QPixmap, QIcon, qRgb, qRed, qGreen, qBlue
+from PyQt5.QtGui import QPainter, QImage, QPixmap, QIcon, qRgb, qRed, qGreen, qBlue
 from PyQt5.QtWidgets import QSlider,QGroupBox, QWidget, QDialog, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
 from source.Annotation import Annotation
 
@@ -136,32 +136,50 @@ class QtClassifierWidget(QWidget):
         layoutTiles.addWidget(self.QlabelRGB)
         layoutTiles.addWidget(self.QlabelPred)
 
+        self.QlabelThresh = QLabel("Uncertainty Threshold:")
+        self.QlabelThreshValue = QLabel("0.0")
 
-        self.QlabelThresh = QLabel("Predition Threshold:")
-        self.QlabelThreshValue= QLabel("0.0")
+        self.QlabelTransparency = QLabel("Transparency:")
+        self.QlabelTransparencyValue = QLabel("50.0")
+
 
         SLIDER_WIDTH = 200
 
-        self.sliderTolerance = QSlider(Qt.Horizontal)
-        self.sliderTolerance.setFocusPolicy(Qt.StrongFocus)
-        self.sliderTolerance.setMinimumWidth(SLIDER_WIDTH)
-        self.sliderTolerance.setMinimum(0)
-        self.sliderTolerance.setMaximum(100)
-        self.sliderTolerance.setValue(0)
-        self.sliderTolerance.setTickInterval(5)
-        self.sliderTolerance.setAutoFillBackground(True)
-        self.sliderTolerance.valueChanged.connect(self.sliderToleranceChanged)
+        self.sliderScores = QSlider(Qt.Horizontal)
+        self.sliderScores.setFocusPolicy(Qt.StrongFocus)
+        self.sliderScores.setMinimumWidth(SLIDER_WIDTH)
+        self.sliderScores.setMinimum(0)
+        self.sliderScores.setMaximum(50)
+        self.sliderScores.setValue(0)
+        self.sliderScores.setTickInterval(20)
+        self.sliderScores.setAutoFillBackground(True)
+        self.sliderScores.valueChanged.connect(self.sliderScoresChanged)
 
+        layoutSliderScores = QHBoxLayout()
+        layoutSliderScores.addWidget(self.QlabelThreshValue)
+        layoutSliderScores.addWidget(self.sliderScores)
 
-        layoutSlider = QHBoxLayout()
-        layoutSlider.setAlignment(Qt.AlignTop)
-        layoutSlider.addWidget(self.QlabelThreshValue)
-        layoutSlider.addWidget(self.sliderTolerance)
+        self.sliderTransparency = QSlider(Qt.Horizontal)
+        self.sliderTransparency.setFocusPolicy(Qt.StrongFocus)
+        self.sliderTransparency.setMinimumWidth(SLIDER_WIDTH)
+        self.sliderTransparency.setMinimum(0)
+        self.sliderTransparency.setMaximum(100)
+        self.sliderTransparency.setValue(50)
+        self.sliderTransparency.setTickInterval(20)
+        self.sliderTransparency.setAutoFillBackground(True)
+        self.sliderTransparency.valueChanged.connect(self.sliderTransparencyChanged)
+
+        layoutSliderTransparency = QHBoxLayout()
+        layoutSliderTransparency.addWidget(self.QlabelTransparencyValue)
+        layoutSliderTransparency.addWidget(self.sliderTransparency)
 
         layoutThreshold = QVBoxLayout()
         layoutThreshold.setAlignment(Qt.AlignTop)
         layoutThreshold.addWidget(self.QlabelThresh)
-        layoutThreshold.addLayout(layoutSlider)
+        layoutThreshold.addLayout(layoutSliderScores)
+        layoutThreshold.setSpacing(20)
+        layoutThreshold.addWidget(self.QlabelTransparency)
+        layoutThreshold.addLayout(layoutSliderTransparency)
 
         layoutPred= QHBoxLayout()
         layoutPred.addLayout(layoutTiles)
@@ -171,10 +189,9 @@ class QtClassifierWidget(QWidget):
         layoutPreview.addLayout(layoutButtons)
         layoutPreview.addLayout(layoutPred)
 
-
         self.groupPrew = QGroupBox("Check Classifier Prediction")
         self.groupPrew.setLayout(layoutPreview)
-        self.groupPrew.hide()
+        #self.groupPrew.hide()
 
         self.btnCancel = QPushButton("Cancel")
         self.btnCancel.clicked.connect(self.close)
@@ -195,9 +212,39 @@ class QtClassifierWidget(QWidget):
         layoutV.setSpacing(3)
         self.setLayout(layoutV)
 
-
         self.setWindowTitle("SELECT CLASSIFIER")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
+
+        self.rgb_image = None
+        self.labelimage = None
+
+    def setRGBPreview(self, image):
+
+        self.QPixmapRGB = QPixmap.fromImage(image)
+        self.rgb_image = image.convertToFormat(QImage.Format_ARGB32_Premultiplied)
+        size = self.LABEL_SIZE
+        self.QlabelRGB.setPixmap(self.QPixmapRGB.scaled(QSize(size, size), Qt.KeepAspectRatio))
+
+    def setLabelPreview(self, image):
+
+        self.labelimage = image
+        self.updateLabelPreview()
+
+    def updateLabelPreview(self):
+
+        opacity = self.sliderTransparency.value() / 100.0
+
+        backimg = self.rgb_image.copy(0, 0, self.rgb_image.width(), self.rgb_image.height())
+        painter = QPainter()
+        painter.begin(backimg)
+        painter.setCompositionMode(QPainter.CompositionMode_Overlay)
+        painter.setOpacity(opacity)
+        painter.drawImage(0, 0, self.labelimage)
+        painter.end()
+
+        self.QPixmapPred = QPixmap.fromImage(backimg)
+        size = self.LABEL_SIZE
+        self.QlabelPred.setPixmap(self.QPixmapPred.scaled(QSize(size, size), Qt.KeepAspectRatio))
 
     @pyqtSlot(int)
     def classifierChanged(self, index):
@@ -226,19 +273,33 @@ class QtClassifierWidget(QWidget):
         txt = "R = {0:.2f}, G = {1:.2f}, B = {2:.2f} ".format(avgcolor_list[0]*255.0, avgcolor_list[1]*255.0, avgcolor_list[2]*255.0)
         return txt
 
+    @pyqtSlot()
+    def sliderScoresChanged(self):
+
+        # update tolerance value
+        newvalue = self.sliderScores.value()/100.0
+        txt = "{:.2f}".format(newvalue)
+        self.QlabelThreshValue.setText(txt)
 
     @pyqtSlot()
-    def sliderToleranceChanged(self):
-        pass
-        # # update tolerance value
-        # newvalue = self.sliderTolerance.value()
-        # str1 = "Tolerance {}".format(newvalue)
-        # self.lblTolerance.setText(str1)
-        # self.tolerance = newvalue
-        #
-        # # update the preview
-        # self.preview()
+    def sliderTransparencyChanged(self):
 
+        # update transparency value
+        newvalue = self.sliderTransparency.value()
+        txt = "{:.0f}%".format(newvalue)
+        self.QlabelTransparencyValue.setText(txt)
+
+        self.updateLabelPreview()
+
+    def enableSliders(self):
+
+        self.sliderScores.setEnabled(True)
+        self.sliderTransparency.setEnabled(True)
+
+    def disableSliders(self):
+
+        self.sliderScores.setEnabled(False)
+        self.sliderTransparency.setEnabled(False)
 
     def closeEvent(self, event):
         self.closed.emit()

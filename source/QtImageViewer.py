@@ -45,8 +45,8 @@ class QtImageViewer(QGraphicsView):
 
         # zoom is always active
         self.zoom_factor = 1.0
-        self.ZOOM_FACTOR_MIN = 0.02
-        self.ZOOM_FACTOR_MAX = 10.0
+        self.ZOOM_FACTOR_MIN = 0.5
+        self.ZOOM_FACTOR_MAX = 16.0
 
         self.px_to_mm = 1.0
 

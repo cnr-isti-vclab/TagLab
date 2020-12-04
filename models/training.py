@@ -107,7 +107,7 @@ def evaluateNetwork(dataset, dataloader, loss_to_use, CEloss, w_for_GDL, tversky
 
     ypred_list = []
     ytrue_list = []
-    loss_values = []
+    loss_values_per_iter = []
     with torch.no_grad():
         for k, data in enumerate(dataloader):
 
@@ -125,12 +125,12 @@ def evaluateNetwork(dataset, dataloader, loss_to_use, CEloss, w_for_GDL, tversky
             values, predictions_t = torch.max(outputs, 1)
 
             if loss_to_use == "NONE":
-                loss_values.append(0.0)
+                loss_values_per_iter.append(0.0)
             else:
                 loss = computeLoss(loss_to_use, CEloss, w_for_GDL, tversky_loss_alpha, tversky_loss_beta,
                                    focal_tversky_gamma, epoch, epochs_switch, epochs_transition, labels_batch, outputs)
 
-                loss_values.append(loss.item())
+                loss_values_per_iter.append(loss.item())
 
             pred_cpu = predictions_t.cpu()
             labels_cpu = labels_batch.cpu()
@@ -154,8 +154,6 @@ def evaluateNetwork(dataset, dataloader, loss_to_use, CEloss, w_for_GDL, tversky
                     imgfilename = os.path.join(savefolder, names[i])
                     dataset.saveClassificationResult(batch_images[i].cpu(), outputs[i].cpu(), imgfilename)
 
-    mean_loss = sum(loss_values) / len(loss_values)
-
     jaccard_s = 0.0
 
     if flag_compute_mIoU:
@@ -178,6 +176,8 @@ def evaluateNetwork(dataset, dataloader, loss_to_use, CEloss, w_for_GDL, tversky
     accuracy = float(pixels_correct) / float(pixels_total)
 
     metrics = {'ConfMatrix': CM, 'NormConfMatrix': CMnorm, 'Accuracy': accuracy, 'JaccardScore': jaccard_s}
+
+    mean_loss = sum(loss_values_per_iter) / len(loss_values_per_iter)
 
     return metrics, mean_loss
 
@@ -266,19 +266,14 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
 
     print("NETWORK USED: DEEPLAB V3+")
 
-    if os.path.exists(save_network_as):
-        net = DeepLab(backbone='resnet', output_stride=16, num_classes=output_classes)
-        net.load_state_dict(torch.load(save_network_as))
-        print("Checkpoint loaded.")
-    else:
-        ###### SETUP THE NETWORK #####
-        net = DeepLab(backbone='resnet', output_stride=16, num_classes=output_classes)
-        state = torch.load("models/deeplab-resnet.pth.tar")
-        # RE-INIZIALIZE THE CLASSIFICATION LAYER WITH THE RIGHT NUMBER OF CLASSES, DON'T LOAD WEIGHTS OF THE CLASSIFICATION LAYER
-        new_dictionary = state['state_dict']
-        del new_dictionary['decoder.last_conv.8.weight']
-        del new_dictionary['decoder.last_conv.8.bias']
-        net.load_state_dict(state['state_dict'], strict=False)
+    ###### SETUP THE NETWORK #####
+    net = DeepLab(backbone='resnet', output_stride=16, num_classes=output_classes)
+    state = torch.load("models/deeplab-resnet.pth.tar")
+    # RE-INIZIALIZE THE CLASSIFICATION LAYER WITH THE RIGHT NUMBER OF CLASSES, DON'T LOAD WEIGHTS OF THE CLASSIFICATION LAYER
+    new_dictionary = state['state_dict']
+    del new_dictionary['decoder.last_conv.8.weight']
+    del new_dictionary['decoder.last_conv.8.bias']
+    net.load_state_dict(state['state_dict'], strict=False)
 
     # OPTIMIZER
     if optimiz == "SGD":
@@ -330,12 +325,17 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
     print("Training Network")
     num_iter = 0
     total_iter = epochs * int(len(datasetTrain) / dataloaderTrain.batch_size)
+
+    # mean loss value per-epoch
+    loss_values_train = []
+    loss_values_val = []
+
     for epoch in range(epochs):
 
         net.train()
         optimizer.zero_grad()
 
-        loss_values = []
+        loss_values_per_iter = []
         for i, minibatch in enumerate(dataloaderTrain):
 
             txt = "Training - Iterations " + str(num_iter + 1) + "/" + str(total_iter)
@@ -366,10 +366,12 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
                 optimizer.zero_grad()
 
             print(epoch, i, loss.item())
-            loss_values.append(loss.item())
+            loss_values_per_iter.append(loss.item())
 
-        mean_loss_train = sum(loss_values) / len(loss_values)
+        mean_loss_train = sum(loss_values_per_iter) / len(loss_values_per_iter)
         print("Epoch: %d , Mean loss = %f" % (epoch, mean_loss_train))
+
+        loss_values_train.append(mean_loss_train)
 
         ### VALIDATION ###
         if epoch > 0 and (epoch+1) % validation_frequency == 0:
@@ -382,8 +384,8 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
                                                          output_classes, net, flag_compute_mIoU=False)
             accuracy = metrics_val['Accuracy']
             jaccard_score = metrics_val['JaccardScore']
-
             scheduler.step(mean_loss_val)
+            loss_values_val.append(mean_loss_val)
 
             accuracy_training = 0.0
             jaccard_training = 0.0
@@ -417,7 +419,7 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
     print("***** TRAINING FINISHED *****")
     print("BEST ACCURACY REACHED ON THE VALIDATION SET: %.3f " % best_accuracy)
 
-    return datasetTrain
+    return datasetTrain, loss_values_train, loss_values_val
 
 
 def testNetwork(images_folder, labels_folder, dictionary, target_classes, dataset_train,

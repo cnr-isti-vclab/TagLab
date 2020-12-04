@@ -49,23 +49,22 @@ class Blob(object):
         self.version = 0
         self.id = int(id)
 
-        if region == None:     # AN EMPTY BLOB IS CREATED..
-            self.area = 0.0
-            self.perimeter = 0.0
-            self.centroid = np.zeros((2))
-            self.bbox = np.zeros((4))
+        self.area = 0.0
+        self.surface_area = 0.0
+        self.perimeter = 0.0
+        self.centroid = np.zeros((2))
+        self.bbox = np.zeros((4))
 
-            # placeholder; empty contour
-            self.contour = np.zeros((2, 2))
-            self.inner_contours = []
-            self.qpath = None
-            self.qpath_gitem = None
+        # placeholder; empty contour
+        self.contour = np.zeros((2, 2))
+        self.inner_contours = []
+        self.qpath = None
+        self.qpath_gitem = None
 
-            self.instance_name = "noname"
-            self.blob_name = "noname"
-            self.id = 0
+        self.instance_name = "noname"
+        self.blob_name = "noname"
 
-        else:
+        if region:
 
             # extract properties
 
@@ -140,6 +139,7 @@ class Blob(object):
         blob = Blob(None, 0, 0, 0)
 
         blob.area = self.area
+        blob.surface_area = self.surface_area
         blob.perimeter = self.perimeter
         blob.centroid = self.centroid
         blob.bbox = self.bbox
@@ -271,21 +271,23 @@ class Blob(object):
 
         if number_of_contours > 1:
 
-            # search the longest contour
-            npoints_max = 0
+            # search the contour with the largest bounding box (area)
+            max_area = 0
             longest = 0
             for i, contour in enumerate(contours):
-                npoints = contour.shape[0]
-                if npoints > npoints_max:
-                    npoints_max = npoints
+                cbox = Mask.pointsBox(contour, 0)
+                area = cbox[2]*cbox[3]
+                if area > max_area:
+                    max_area = area
                     longest = i
 
-            npoints_max = 0
+            max_area = 0
             inner_longest = 0
             for i, contour in enumerate(inner_contours):
-                npoints = contour.shape[0]
-                if npoints > npoints_max:
-                    npoints_max = npoints
+                cbox = Mask.pointsBox(contour, 0)
+                area = cbox[2]*cbox[3]
+                if area > max_area:
+                    max_area = area
                     inner_longest = i
 
             # divide the contours in OUTER contour and INNER contours

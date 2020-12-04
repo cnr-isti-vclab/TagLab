@@ -84,8 +84,20 @@ class Image(object):
 
         self.channels.append(Channel(filename, type))
 
-    def getRGBChannel(self):
+    def hasDEM(self):
+        """
+        It returns True if the image has a DEM channel, False otherwise.
+        """
+        for channel in self.channels:
+            if channel.type == "DEM":
+                return True
 
+        return False
+
+    def getRGBChannel(self):
+        """
+        It returns the RGB channel.
+        """
         for channel in self.channels:
             if channel.type == "RGB":
                 return channel
@@ -93,7 +105,9 @@ class Image(object):
         return None
 
     def getDEMChannel(self):
-
+        """
+        It returns the DEM channel.
+        """
         for channel in self.channels:
             if channel.type == "DEM":
                 return channel

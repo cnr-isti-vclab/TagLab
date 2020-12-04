@@ -298,7 +298,6 @@ class QtImageViewerPlus(QtImageViewer):
             self.resetSelection()
 
         if tool == "WORKINGAREA":
-
             QApplication.setOverrideCursor(Qt.CrossCursor)
 
         if tool == "WATERSHED":
@@ -471,9 +470,13 @@ class QtImageViewerPlus(QtImageViewer):
 
         if self.zoomEnabled:
 
+            view_pos = event.pos()
+            scene_pos = self.mapToScene(view_pos)
+            self.centerOn(scene_pos)
+
+
             pt = event.angleDelta()
 
-            #self.zoom_factor = self.zoom_factor + pt.y() / 2400.0
             #uniform zoom.
             self.zoom_factor = self.zoom_factor*pow(pow(2, 1/2), pt.y()/100);
             if self.zoom_factor < self.ZOOM_FACTOR_MIN:
@@ -481,7 +484,14 @@ class QtImageViewerPlus(QtImageViewer):
             if self.zoom_factor > self.ZOOM_FACTOR_MAX:
                 self.zoom_factor = self.ZOOM_FACTOR_MAX
 
-            self.updateViewer()
+            self.resetTransform()
+            self.scale(self.zoom_factor, self.zoom_factor)
+
+            delta = self.mapToScene(view_pos) - self.mapToScene(self.viewport().rect().center())
+            self.centerOn(scene_pos - delta)
+
+            self.invalidateScene()
+            #self.updateViewer()
 
         # PAY ATTENTION !! THE WHEEL INTERACT ALSO WITH THE SCROLL BAR !!
         #QGraphicsView.wheelEvent(self, event)

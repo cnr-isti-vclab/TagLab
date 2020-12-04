@@ -205,6 +205,10 @@ class Project(object):
         self.images.append(image)
         self.orderImagesByAcquisitionDate()
 
+    def deleteImage(self, image):
+        self.images = [i for i in self.images if i != image]
+        self.correspondences = {key: corr for key, corr in self.correspondences.items() if corr.source != image and corr.target != image}
+
     def findCorrespondences(self, image):
 
         corresps = list(filter(lambda i, image=image: i.source == image or i.target == image,
