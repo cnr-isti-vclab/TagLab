@@ -141,7 +141,7 @@ class QtNewDatasetWidget(QWidget):
         layoutV.addLayout(layoutH3)
         self.setLayout(layoutV)
 
-        self.setWindowTitle("Export New Dataset - Settings")
+        self.setWindowTitle("Export New Training Dataset - Settings")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
     @pyqtSlot()
