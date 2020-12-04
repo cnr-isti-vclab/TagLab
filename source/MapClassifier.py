@@ -105,6 +105,9 @@ class MapClassifier(QObject):
         self.scale_factor = target_scale / pixel_size
         self.padding = padding
 
+        if not working_area:
+            working_area = [0, 0, img_map.width(), img_map.height()]
+
         # padding the working area (taking into account the scaling factor)
         top = int(working_area[0] - self.padding/self.scale_factor)
         left = int(working_area[1] - self.padding/self.scale_factor)

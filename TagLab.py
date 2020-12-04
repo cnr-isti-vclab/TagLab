@@ -3338,14 +3338,11 @@ class TagLab(QWidget):
                 self.progress_bar.setMessage("Map rescaling..")
                 QApplication.processEvents()
 
-                orthomap = self.activeviewer.img_map
+                orthoimage = self.activeviewer.img_map
                 target_scale_factor = classifier_selected['Scale']
-                scale_factor = target_scale_factor / self.activeviewer.image.pixelSize()
-
-                w_target = orthomap.width() *  scale_factor
-                h_target = orthomap.height() * scale_factor
-
-                input_orthomap = orthomap.scaled(w_target, h_target, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+                self.classifier.setup(orthoimage, self.activeviewer.image.pixelSize(),
+                                      target_scale_factor,
+                                      working_area=[], padding=256)
 
                 self.progress_bar.showPerc()
                 self.progress_bar.setMessage("Classification: ")
@@ -3355,7 +3352,7 @@ class TagLab(QWidget):
                 # runs the classifier
                 self.infoWidget.setInfoMessage("Automatic classification is running..")
 
-                self.classifier.run(input_orthomap, 768, 512, 128)
+                self.classifier.run(768, 512, 128)
 
                 if self.classifier.flagStopProcessing is False:
 
@@ -3367,7 +3364,7 @@ class TagLab(QWidget):
                     filename = os.path.join("temp", "labelmap.png")
 
                     created_blobs = self.activeviewer.annotations.import_label_map(filename, self.labels_dictionary,
-                                                                                   orthomap.width(), orthomap.height())
+                                                                                   orthoimage.width(), orthoimage.height())
                     for blob in created_blobs:
                         self.viewerplus.addBlob(blob, selected=False)
 
