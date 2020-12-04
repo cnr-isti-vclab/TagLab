@@ -167,8 +167,4 @@ def calculateAreaUsingSlope(depth_filename, blobs):
         bottom = top + blob.bbox[3]
         slope_crop = slope[top:bottom, left:right]
         surface_area = (non_null / abs(np.cos(np.radians(slope_crop)))).sum()
-        # surface_area = ((area_px*non_null/(abs(np.cos(np.radians(slope_crop))))).sum())/10**2
-        blob.area = surface_area
-
-         # volume = (array * (area_px*non_null)).sum()*10**6
-
+        blob.surface_area = surface_area

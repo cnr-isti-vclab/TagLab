@@ -355,16 +355,20 @@ class TagLab(QWidget):
         blobpanel_layoutH1.addStretch()
 
 
-        self.lblPerimeter = QLabel("Perimeter: ")
+        self.lblPerimeter = QLabel("Perimeter:")
         self.lblPerimeterValue = QLabel(" ")
-        self.lblArea = QLabel("Area: ")
+        self.lblArea = QLabel("Area:")
         self.lblAreaValue = QLabel(" ")
+        self.lblSurfaceArea = QLabel("Surf. area:")
+        self.lblSurfaceAreaValue = QLabel(" ")
         blobpanel_layoutH2 = QHBoxLayout()
         blobpanel_layoutH2.setSpacing(6)
         blobpanel_layoutH2.addWidget(self.lblPerimeter)
         blobpanel_layoutH2.addWidget(self.lblPerimeterValue)
         blobpanel_layoutH2.addWidget(self.lblArea)
         blobpanel_layoutH2.addWidget(self.lblAreaValue)
+        blobpanel_layoutH2.addWidget(self.lblSurfaceArea)
+        blobpanel_layoutH2.addWidget(self.lblSurfaceAreaValue)
         blobpanel_layoutH2.addStretch()
 
         self.lblCentroid = QLabel("Centroid (px): ")
@@ -1774,12 +1778,14 @@ class TagLab(QWidget):
         self.lblClass.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         if self.activeviewer.image.map_px_to_mm_factor == "":
-            txt_perimeter = "Perimeter (px): "
-            txt_area = "Area (px<sup>2</sup>)"
+            txt_perimeter = "Perimeter (px):"
+            txt_area = "Area (px<sup>2</sup>):"
+            txt_surface_area = "Surf. area (px<sup>2</sup>):"
             factor = 1.0
         else:
-            txt_perimeter = "Perimeter (cm): "
-            txt_area = "Area (cm<sup>2</sup>)"
+            txt_perimeter = "Perimeter (cm):"
+            txt_area = "Area (cm<sup>2</sup>):"
+            txt_surface_area = "Surf. area (cm<sup>2</sup>):"
             factor = float(self.activeviewer.image.map_px_to_mm_factor)
 
         cx = blob.centroid[0]
@@ -1788,17 +1794,30 @@ class TagLab(QWidget):
         self.lblCentroidValue.setText(txt)
         self.lblCentroidValue.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
+        # perimeter
         scaled_perimeter = blob.perimeter * factor / 10.0
         self.lblPerimeter.setText(txt_perimeter)
         txt = "{:6.2f}".format(scaled_perimeter)
         self.lblPerimeterValue.setText(txt)
         self.lblPerimeterValue.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
+        # area
         scaled_area = blob.area * factor * factor / 100.0
         self.lblArea.setText(txt_area)
         txt = "{:6.2f}".format(scaled_area)
         self.lblAreaValue.setText(txt)
         self.lblAreaValue.setTextInteractionFlags(Qt.TextSelectableByMouse)
+
+        # surface area
+        self.lblSurfaceArea.setText(txt_surface_area)
+        if self.activeviewer:
+            if self.activeviewer.image.hasDEM():
+                scaled_area = blob.surface_area * factor * factor / 100.0
+                txt = "{:6.2f}".format(scaled_area)
+                self.lblSurfaceAreaValue.setText(txt)
+                self.lblSurfaceAreaValue.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            else:
+                self.lblSurfaceAreaValue.setText("n.a.")
 
     @pyqtSlot()
     def resetPanelInfo(self):
@@ -1813,7 +1832,9 @@ class TagLab(QWidget):
         txtA = "Area (cm<sup>2</sup>):"
         self.lblArea.setText(txtA)
         self.lblAreaValue.setText(txt)
-
+        txtS = "Surf. area (cm<sup>2</sup>):"
+        self.lblSurfaceArea.setText(txtS)
+        self.lblSurfaceAreaValue.setText(txt)
 
     def deleteSelectedBlobs(self):
         if self.viewerplus.tools.tool == 'MATCH':

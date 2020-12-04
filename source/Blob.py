@@ -49,23 +49,22 @@ class Blob(object):
         self.version = 0
         self.id = int(id)
 
-        if region == None:     # AN EMPTY BLOB IS CREATED..
-            self.area = 0.0
-            self.perimeter = 0.0
-            self.centroid = np.zeros((2))
-            self.bbox = np.zeros((4))
+        self.area = 0.0
+        self.surface_area = 0.0
+        self.perimeter = 0.0
+        self.centroid = np.zeros((2))
+        self.bbox = np.zeros((4))
 
-            # placeholder; empty contour
-            self.contour = np.zeros((2, 2))
-            self.inner_contours = []
-            self.qpath = None
-            self.qpath_gitem = None
+        # placeholder; empty contour
+        self.contour = np.zeros((2, 2))
+        self.inner_contours = []
+        self.qpath = None
+        self.qpath_gitem = None
 
-            self.instance_name = "noname"
-            self.blob_name = "noname"
-            self.id = 0
+        self.instance_name = "noname"
+        self.blob_name = "noname"
 
-        else:
+        if region:
 
             # extract properties
 
@@ -140,6 +139,7 @@ class Blob(object):
         blob = Blob(None, 0, 0, 0)
 
         blob.area = self.area
+        blob.surface_area = self.surface_area
         blob.perimeter = self.perimeter
         blob.centroid = self.centroid
         blob.bbox = self.bbox
