@@ -2651,7 +2651,7 @@ class TagLab(QWidget):
     def exportAnnAsMap(self):
 
         if self.activeviewer:
-            if self.activeviewer.image:
+            if not self.activeviewer.image:
                 box = QMessageBox()
                 box.setText("A map is needed to export labels. Load a map or a project.")
                 box.exec()
