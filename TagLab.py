@@ -762,7 +762,7 @@ class TagLab(QWidget):
         self.filemenu.setStyleSheet(styleMenu)
         self.filemenu.addAction(newAct)
         self.filemenu.addAction(openAct)
-        self.filemenu.addAction(editAct)
+        #self.filemenu.addAction(editAct)
         self.filemenu.addAction(saveAct)
         self.filemenu.addAction(saveAsAct)
         self.filemenu.addSeparator()
