@@ -285,11 +285,11 @@ class Project(object):
         corr = self.getImagePairCorrespondences(img_source_idx, img_target_idx)
         corr.set(blobs1, blobs2)
 
-    def updatePixelSizeInCorrespondences(self, image):
+    def updatePixelSizeInCorrespondences(self, image, flag_surface_area):
 
         correspondences= self.findCorrespondences(image)
         for corr in correspondences:
-            corr.updateAreas()
+            corr.updateAreas(use_surface_area=flag_surface_area)
     
     def computeCorrespondences(self, img_source_idx, img_target_idx):
         """
