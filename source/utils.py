@@ -121,9 +121,6 @@ def floatmapToQImage(floatmap, nodata = float('NaN')):
 
     h = floatmap.shape[0]
     w = floatmap.shape[1]
-    qimg = QImage(w, h, QImage.Format_RGB32)
-
-    qimg.fill(qRgb(0,0,0))
 
     fmap = floatmap.copy()
     max_value = np.max(fmap)

@@ -94,25 +94,17 @@ class Image(object):
 
         return False
 
-    def getRGBChannel(self):
-        """
-        It returns the RGB channel.
-        """
+    def getChannel(self, type):
         for channel in self.channels:
-            if channel.type == "RGB":
+            if channel.type == type:
                 return channel
-
         return None
+
+    def getRGBChannel(self):
+        return self.getChannel("RGB")
 
     def getDEMChannel(self):
-        """
-        It returns the DEM channel.
-        """
-        for channel in self.channels:
-            if channel.type == "DEM":
-                return channel
-
-        return None
+        return self.getChannel("DEM")
 
     def save(self):
         data = self.__dict__.copy()

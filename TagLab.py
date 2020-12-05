@@ -2391,7 +2391,14 @@ class TagLab(QWidget):
             image.name = self.mapWidget.data['name']
             image.id = self.mapWidget.data['name']
             image.acquisition_date = self.mapWidget.data['acquisition_date']
+            rgb_filename = dir.relativeFilePath(self.mapWidget.data['rgb_filename'])
             depth_filename = dir.relativeFilePath(self.mapWidget.data['depth_filename'])
+
+            image.channels = []
+            if len(rgb_filename) <= 3:
+                raise ValueError("You need to specify an RGB map")
+            else:
+                image.addChannel(rgb_filename, "RGB")
 
             if len(depth_filename) > 3:
                 image.addChannel(depth_filename, "DEM")
@@ -2408,11 +2415,17 @@ class TagLab(QWidget):
 
         # check if the updated image is shown in the left viewer
         if self.viewerplus.image == image:
+            type = self.viewerplus.channel.type
+            channel = image.getChannel(type) or image.getChannel("RGB")
+            self.viewerplus.setChannel(channel)
             self.viewerplus.updateImageProperties()
             self.viewerplus.viewChanged()
 
         # check if the updated image is shown in the right viewer
         if self.viewerplus2.image == image:
+            type = self.viewerplus2.channel.type
+            channel = image.getChannel(type) or image.getChannel("RGB")
+            self.viewerplus2.setChannel(channel)
             self.viewerplus2.updateImageProperties()
             self.viewerplus2.viewChanged()
 
