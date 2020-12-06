@@ -2615,17 +2615,17 @@ class TagLab(QWidget):
 
         # BIG taglab icon
         pxmap = QPixmap(os.path.join("icons", "taglab100px.png"))
-        pxmap = pxmap.scaledToWidth(100)
+        pxmap = pxmap.scaledToWidth(160)
         lbl1.setPixmap(pxmap)
 
         lbl2 = QLabel()
         lbl2.setTextFormat(Qt.RichText)
 
-        txt = "<a href='http://taglab.isti.cnr.it' style='color: white; font-weight: bold; text-decoration: none'>" \
+        txt = "<b>{:s}</b> <p><a href='http://taglab.isti.cnr.it' style='color: white; font-weight: bold; text-decoration: none'>" \
               "TagLab</a> was created to support the activity of annotation and extraction of statistical data "\
-              "from ortho-maps of benthic communities.<br> TagLab is an ongoing project of the " \
+              "from ortho-images of benthic communities. TagLab is an ongoing project of the " \
               "<a href='http://vcg.isti.cnr.it' style='color: white; font-weight: bold; text-decoration: none'>" \
-              "Visual Computing Lab</a>."
+              "Visual Computing Lab</a>.</p>".format(self.TAGLAB_VERSION)
 
         lbl2.setWordWrap(True)
         lbl2.setMinimumWidth(500)
@@ -3511,6 +3511,8 @@ if __name__ == '__main__':
 
     # create the main window - TagLab widget is the central widget
     mw = QMainWindow()
+    title = tool.TAGLAB_VERSION
+    mw.setWindowTitle(title)
     mw.setCentralWidget(tool)
     mw.setStyleSheet("background-color: rgb(55,55,55); color: white")
     mw.showMaximized()
