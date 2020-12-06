@@ -803,14 +803,14 @@ class TagLab(QWidget):
         exportClippedRasterAct.setStatusTip("Export a raster clipped using visible annotations")
         exportClippedRasterAct.triggered.connect(self.exportClippedRaster)
 
-        switchDEMAct = QAction("Switch RGB/DEM", self)
+        switchAct = QAction("Switch RGB/DEM", self)
         # exportShapefilesAct.setShortcut('Ctrl+??')
-        switchDEMAct.setStatusTip("Switch between the image and the DEM")
-        switchDEMAct.triggered.connect(self.switchDEM)
+        switchAct.setStatusTip("Switch between the image and the DEM")
+        switchAct.triggered.connect(self.switch)
 
         self.demmenu = menubar.addMenu("&DEM")
         self.demmenu.setStyleSheet(styleMenu)
-        self.demmenu.addAction(switchDEMAct)
+        self.demmenu.addAction(switchAct)
         self.demmenu.addAction(calculateSurfaceAreaAct)
         self.demmenu.addAction(exportClippedRasterAct)
 
@@ -836,7 +836,7 @@ class TagLab(QWidget):
         self.editmenu.addAction(self.fillAction)
 
         splitScreenAction = QAction("Enable Split Screen", self)
-        splitScreenAction.setShortcut('Alt+C')
+        splitScreenAction.setShortcut('Alt+S')
         splitScreenAction.setStatusTip("Split screen")
         splitScreenAction.triggered.connect(self.toggleComparison)
 
@@ -912,31 +912,38 @@ class TagLab(QWidget):
         self.mapWidget.accepted.connect(self.updateMapProperties)
         self.mapWidget.show()
 
-    @pyqtSlot()
-    def switchDEM(self):
-
-        if self.activeviewer is None:
-            return
-
-        if self.activeviewer.channel is not None:
-            if self.activeviewer.channel.type != "DEM":
-                channel = self.activeviewer.image.getDEMChannel()
+    def toggleRGBDEM(self, viewer):
+        """
+        Ask to the given viewer to switch between RGB channel and DEM channel.
+        """
+        if viewer.channel is not None:
+            if viewer.channel.type != "DEM":
+                channel = viewer.image.getDEMChannel()
                 if channel is None:
                    box = QMessageBox()
                    box.setText("DEM not found!")
                    box.exec()
                    return
 
-                self.activeviewer.setChannel(channel)
+                viewer.setChannel(channel, switch=True)
             else:
-                channel = self.activeviewer.image.getRGBChannel()
+                channel = viewer.image.getRGBChannel()
                 if channel is None:
                     box = QMessageBox()
                     box.setText("RGB not found!")
                     box.exec()
                     return
-                self.activeviewer.setChannel(channel)
+                viewer.setChannel(channel, switch=True)
 
+    @pyqtSlot()
+    def switch(self):
+        """
+        Switch between the RGB and the DEM channel.
+        """
+
+        self.toggleRGBDEM(self.viewerplus)
+        if self.split_screen_flag:
+            self.toggleRGBDEM(self.viewerplus2)
 
     @pyqtSlot()
     def autoCorrespondences(self):
@@ -1059,7 +1066,7 @@ class TagLab(QWidget):
         elif event.key() == Qt.Key_S and modifiers & Qt.ControlModifier:
             self.save()
 
-        elif event.key() == Qt.Key_C and modifiers & Qt.AltModifier:
+        elif event.key() == Qt.Key_S and modifiers & Qt.AltModifier:
 
             if self.split_screen_flag is True:
                 self.disableSplitScreen()
@@ -1085,7 +1092,7 @@ class TagLab(QWidget):
 
         elif event.key() == Qt.Key_C:
             # TOGGLE RGB/DEPTH CHANNELS
-            self.switchDEM()
+            self.switch()
 
         elif event.key() == Qt.Key_S:
             # SUBTRACTION BETWEEN TWO BLOBS (A = A / B), THEN BLOB B IS DELETED
