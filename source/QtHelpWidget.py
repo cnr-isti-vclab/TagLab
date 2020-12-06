@@ -139,6 +139,6 @@ class QtHelpWidget(QWidget):
         layoutF.setSpacing(3)
         self.setLayout(layoutF)
 
-        self.setWindowTitle("HELP")
+        self.setWindowTitle("Help")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 

@@ -96,7 +96,7 @@ class QtMapSettingsWidget(QWidget):
         layoutV.addLayout(buttons_layout)
         self.setLayout(layoutV)
 
-        self.setWindowTitle("MAP SETTINGS")
+        self.setWindowTitle("Map Settings")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
     def disableRGBloading(self):

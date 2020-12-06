@@ -127,7 +127,7 @@ class QtHistogramWidget(QWidget):
         layoutV.setSpacing(3)
         self.setLayout(layoutV)
 
-        self.setWindowTitle("CREATE AND EXPORT HISTOGRAM")
+        self.setWindowTitle("Create and Export Histogram")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
         self.adjustSize()
