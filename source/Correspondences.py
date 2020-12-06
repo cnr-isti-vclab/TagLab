@@ -31,6 +31,7 @@ class Correspondences(object):
         for index, row in self.data.iterrows():
             id1 = int(row['Blob1'])
             id2 = int(row['Blob2'])
+            action = row['Action']
             blob1 = self.source.annotations.blobById(id1)
             blob2 = self.target.annotations.blobById(id2)
 
@@ -38,13 +39,24 @@ class Correspondences(object):
                 area_pixel = blob1.area
                 if use_surface_area:
                     area_pixel = blob1.surface_area
-                self.data.loc[index, 'Area1'] = self.area_in_sq_cm(area_pixel, True)
+                area1 = self.area_in_sq_cm(area_pixel, True)
+                self.data.loc[index, 'Area1'] = area1
 
             if blob2 is not None:
                 area_pixel = blob2.area
                 if use_surface_area:
                     area_pixel = blob2.surface_area
-                self.data.loc[index, 'Area2'] = self.area_in_sq_cm(area_pixel, False)
+                area2 = self.area_in_sq_cm(area_pixel, False)
+                self.data.loc[index, 'Area2'] = area2
+
+            # update grow/shrink information
+            if action == "grow" or action == "shrink" or action == "same":
+                if area2 > area1*self.threshold:
+                    self.data.loc[index, 'Action'] = "grow"
+                elif area2 < area1 / self.threshold:
+                    self.data.loc[index, 'Action'] = "shrink"
+                else:
+                    self.data.loc[index, 'Action'] = "same"
 
     def setSurfaceAreaValues(self):
 
