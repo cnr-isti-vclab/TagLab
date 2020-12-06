@@ -100,10 +100,23 @@ class Image(object):
                 return channel
         return None
 
+    def getChannelIndex(self, channel):
+        try:
+            index = self.channels.index(channel)
+            return index
+        except:
+            return -1
+
     def getRGBChannel(self):
+        """
+        It returns the RGB channel (if exists).
+        """
         return self.getChannel("RGB")
 
     def getDEMChannel(self):
+        """
+        It returns the DEM channel (if exists).
+        """
         return self.getChannel("DEM")
 
     def save(self):

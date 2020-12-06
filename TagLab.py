@@ -1453,6 +1453,8 @@ class TagLab(QWidget):
             else:
                 correspondences.updateAreas(use_surface_area=False)
 
+            self.compare_panel.data_table.update()
+
 
     @pyqtSlot()
     def undo(self):
@@ -3067,6 +3069,8 @@ class TagLab(QWidget):
         if self.activeviewer is None:
             return
 
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+
         # get the file name of the Tiff which stores the depth
         input_tiff = ""
         if self.activeviewer.image is not None:
@@ -3083,6 +3087,11 @@ class TagLab(QWidget):
         georef_filename = self.activeviewer.image.georef_filename
         blobs = self.activeviewer.annotations.seg_blobs
         rasterops.calculateAreaUsingSlope(input_tiff, blobs)
+
+        QApplication.restoreOverrideCursor()
+
+        current_area_mode = self.compare_panel.comboboxAreaMode.currentText()
+        self.updateAreaMode(current_area_mode.lower())
 
     def load(self, filename):
         """
