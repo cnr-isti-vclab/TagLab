@@ -212,7 +212,7 @@ class QtClassifierWidget(QWidget):
         layoutV.setSpacing(3)
         self.setLayout(layoutV)
 
-        self.setWindowTitle("SELECT CLASSIFIER")
+        self.setWindowTitle("Select Classifier")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
         self.rgb_image = None

@@ -330,6 +330,7 @@ class TagLab(QWidget):
         # COMPARE PANEL
         self.compare_panel = QtComparePanel()
         self.compare_panel.filterChanged[str].connect(self.updateVisibleMatches)
+        self.compare_panel.areaModeChanged[str].connect(self.updateAreaMode)
         self.compare_panel.data_table.clicked.connect(self.showConnectionCluster)
 
         self.groupbox_comparison = QGroupBox("Comparison")
@@ -802,14 +803,14 @@ class TagLab(QWidget):
         exportClippedRasterAct.setStatusTip("Export a raster clipped using visible annotations")
         exportClippedRasterAct.triggered.connect(self.exportClippedRaster)
 
-        switchDEMAct = QAction("Switch RGB/DEM", self)
+        switchAct = QAction("Switch RGB/DEM", self)
         # exportShapefilesAct.setShortcut('Ctrl+??')
-        switchDEMAct.setStatusTip("Switch between the image and the DEM")
-        switchDEMAct.triggered.connect(self.switchDEM)
+        switchAct.setStatusTip("Switch between the image and the DEM")
+        switchAct.triggered.connect(self.switch)
 
         self.demmenu = menubar.addMenu("&DEM")
         self.demmenu.setStyleSheet(styleMenu)
-        self.demmenu.addAction(switchDEMAct)
+        self.demmenu.addAction(switchAct)
         self.demmenu.addAction(calculateSurfaceAreaAct)
         self.demmenu.addAction(exportClippedRasterAct)
 
@@ -835,7 +836,7 @@ class TagLab(QWidget):
         self.editmenu.addAction(self.fillAction)
 
         splitScreenAction = QAction("Enable Split Screen", self)
-        splitScreenAction.setShortcut('Alt+C')
+        splitScreenAction.setShortcut('Alt+S')
         splitScreenAction.setStatusTip("Split screen")
         splitScreenAction.triggered.connect(self.toggleComparison)
 
@@ -911,31 +912,38 @@ class TagLab(QWidget):
         self.mapWidget.accepted.connect(self.updateMapProperties)
         self.mapWidget.show()
 
-    @pyqtSlot()
-    def switchDEM(self):
-
-        if self.activeviewer is None:
-            return
-
-        if self.activeviewer.channel is not None:
-            if self.activeviewer.channel.type != "DEM":
-                channel = self.activeviewer.image.getDEMChannel()
+    def toggleRGBDEM(self, viewer):
+        """
+        Ask to the given viewer to switch between RGB channel and DEM channel.
+        """
+        if viewer.channel is not None:
+            if viewer.channel.type != "DEM":
+                channel = viewer.image.getDEMChannel()
                 if channel is None:
                    box = QMessageBox()
                    box.setText("DEM not found!")
                    box.exec()
                    return
 
-                self.activeviewer.setChannel(channel)
+                viewer.setChannel(channel, switch=True)
             else:
-                channel = self.activeviewer.image.getRGBChannel()
+                channel = viewer.image.getRGBChannel()
                 if channel is None:
                     box = QMessageBox()
                     box.setText("RGB not found!")
                     box.exec()
                     return
-                self.activeviewer.setChannel(channel)
+                viewer.setChannel(channel, switch=True)
 
+    @pyqtSlot()
+    def switch(self):
+        """
+        Switch between the RGB and the DEM channel.
+        """
+
+        self.toggleRGBDEM(self.viewerplus)
+        if self.split_screen_flag:
+            self.toggleRGBDEM(self.viewerplus2)
 
     @pyqtSlot()
     def autoCorrespondences(self):
@@ -1058,7 +1066,7 @@ class TagLab(QWidget):
         elif event.key() == Qt.Key_S and modifiers & Qt.ControlModifier:
             self.save()
 
-        elif event.key() == Qt.Key_C and modifiers & Qt.AltModifier:
+        elif event.key() == Qt.Key_S and modifiers & Qt.AltModifier:
 
             if self.split_screen_flag is True:
                 self.disableSplitScreen()
@@ -1084,7 +1092,7 @@ class TagLab(QWidget):
 
         elif event.key() == Qt.Key_C:
             # TOGGLE RGB/DEPTH CHANNELS
-            self.switchDEM()
+            self.switch()
 
         elif event.key() == Qt.Key_S:
             # SUBTRACTION BETWEEN TWO BLOBS (A = A / B), THEN BLOB B IS DELETED
@@ -1403,7 +1411,7 @@ class TagLab(QWidget):
 
         self.compare_panel.selectRows(rows)
 
-
+    @pyqtSlot(str)
     def updateVisibleMatches(self, type):
 
         if self.activeviewer.tools.tool == "MATCH":
@@ -1426,6 +1434,27 @@ class TagLab(QWidget):
                 self.viewerplus.setBlobVisible(b, b.id in sourceblobs)
             for b in self.viewerplus2.annotations.seg_blobs:
                 self.viewerplus2.setBlobVisible(b, b.id in targetblobs)
+
+    @pyqtSlot(str)
+    def updateAreaMode(self, type):
+        """
+        Update the area values of the current correspondence table.
+        If area mode is 'surface area' the surface values are shown in the current correspondences table,
+        otherwise the standard area values.
+        """
+
+        if self.activeviewer.tools.tool == "MATCH":
+            img_source_index = self.comboboxSourceImage.currentIndex()
+            img_target_index = self.comboboxTargetImage.currentIndex()
+            correspondences = self.project.getImagePairCorrespondences(img_source_index, img_target_index)
+
+            if type == "surface area":
+                correspondences.updateAreas(use_surface_area=True)
+            else:
+                correspondences.updateAreas(use_surface_area=False)
+
+            self.compare_panel.data_table.update()
+
 
     @pyqtSlot()
     def undo(self):
@@ -2391,7 +2420,14 @@ class TagLab(QWidget):
             image.name = self.mapWidget.data['name']
             image.id = self.mapWidget.data['name']
             image.acquisition_date = self.mapWidget.data['acquisition_date']
+            rgb_filename = dir.relativeFilePath(self.mapWidget.data['rgb_filename'])
             depth_filename = dir.relativeFilePath(self.mapWidget.data['depth_filename'])
+
+            image.channels = []
+            if len(rgb_filename) <= 3:
+                raise ValueError("You need to specify an RGB map")
+            else:
+                image.addChannel(rgb_filename, "RGB")
 
             if len(depth_filename) > 3:
                 image.addChannel(depth_filename, "DEM")
@@ -2408,16 +2444,27 @@ class TagLab(QWidget):
 
         # check if the updated image is shown in the left viewer
         if self.viewerplus.image == image:
+            type = self.viewerplus.channel.type
+            channel = image.getChannel(type) or image.getChannel("RGB")
+            self.viewerplus.setChannel(channel)
             self.viewerplus.updateImageProperties()
             self.viewerplus.viewChanged()
 
         # check if the updated image is shown in the right viewer
         if self.viewerplus2.image == image:
+            type = self.viewerplus2.channel.type
+            channel = image.getChannel(type) or image.getChannel("RGB")
+            self.viewerplus2.setChannel(channel)
             self.viewerplus2.updateImageProperties()
             self.viewerplus2.viewChanged()
 
         if flag_pixel_size_changed:
-            self.project.updatePixelSizeInCorrespondences(image)
+            area_mode = self.compare_panel.getAreaMode()
+            if area_mode == "surface area":
+                self.project.updatePixelSizeInCorrespondences(image, True)
+            else:
+                self.project.updatePixelSizeInCorrespondences(image, False)
+
             self.compare_panel.updateData()
 
         # update the comboboxes to select the images
@@ -2568,17 +2615,17 @@ class TagLab(QWidget):
 
         # BIG taglab icon
         pxmap = QPixmap(os.path.join("icons", "taglab100px.png"))
-        pxmap = pxmap.scaledToWidth(100)
+        pxmap = pxmap.scaledToWidth(160)
         lbl1.setPixmap(pxmap)
 
         lbl2 = QLabel()
         lbl2.setTextFormat(Qt.RichText)
 
-        txt = "<a href='http://taglab.isti.cnr.it' style='color: white; font-weight: bold; text-decoration: none'>" \
+        txt = "<b>{:s}</b> <p><a href='http://taglab.isti.cnr.it' style='color: white; font-weight: bold; text-decoration: none'>" \
               "TagLab</a> was created to support the activity of annotation and extraction of statistical data "\
-              "from ortho-maps of benthic communities.<br> TagLab is an ongoing project of the " \
+              "from ortho-images of benthic communities. TagLab is an ongoing project of the " \
               "<a href='http://vcg.isti.cnr.it' style='color: white; font-weight: bold; text-decoration: none'>" \
-              "Visual Computing Lab</a>."
+              "Visual Computing Lab</a>.</p>".format(self.TAGLAB_VERSION)
 
         lbl2.setWordWrap(True)
         lbl2.setMinimumWidth(500)
@@ -2650,24 +2697,25 @@ class TagLab(QWidget):
     @pyqtSlot()
     def exportAnnAsMap(self):
 
-        if self.last_image_loaded is None:
-            box = QMessageBox()
-            box.setText("A map is needed to export labels. Load a map or a project.")
-            box.exec()
-            return
+        if self.activeviewer:
+            if not self.activeviewer.image:
+                box = QMessageBox()
+                box.setText("A map is needed to export labels. Load a map or a project.")
+                box.exec()
+                return
 
-        filters = "PNG (*.png) ;; All Files (*)"
-        filename, _ = QFileDialog.getSaveFileName(self, "Output file", "", filters)
+            filters = "PNG (*.png) ;; All Files (*)"
+            filename, _ = QFileDialog.getSaveFileName(self, "Output file", "", filters)
 
-        if filename:
-            size = QSize(self.activeviewer.image.width, self.activeviewer.image.height)
-            self.activeviewer.annotations.export_image_data_for_Scripps(size, filename, self.labels_dictionary)
+            if filename:
+                size = QSize(self.activeviewer.image.width, self.activeviewer.image.height)
+                self.activeviewer.annotations.export_image_data_for_Scripps(size, filename, self.labels_dictionary)
 
-            msgBox = QMessageBox(self)
-            msgBox.setWindowTitle(self.TAGLAB_VERSION)
-            msgBox.setText("Map exported successfully!")
-            msgBox.exec()
-            return
+                msgBox = QMessageBox(self)
+                msgBox.setWindowTitle(self.TAGLAB_VERSION)
+                msgBox.setText("Map exported successfully!")
+                msgBox.exec()
+                return
 
 
     @pyqtSlot()
@@ -3021,6 +3069,8 @@ class TagLab(QWidget):
         if self.activeviewer is None:
             return
 
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+
         # get the file name of the Tiff which stores the depth
         input_tiff = ""
         if self.activeviewer.image is not None:
@@ -3037,6 +3087,11 @@ class TagLab(QWidget):
         georef_filename = self.activeviewer.image.georef_filename
         blobs = self.activeviewer.annotations.seg_blobs
         rasterops.calculateAreaUsingSlope(input_tiff, blobs)
+
+        QApplication.restoreOverrideCursor()
+
+        current_area_mode = self.compare_panel.comboboxAreaMode.currentText()
+        self.updateAreaMode(current_area_mode.lower())
 
     def load(self, filename):
         """
@@ -3338,14 +3393,11 @@ class TagLab(QWidget):
                 self.progress_bar.setMessage("Map rescaling..")
                 QApplication.processEvents()
 
-                orthomap = self.activeviewer.img_map
+                orthoimage = self.activeviewer.img_map
                 target_scale_factor = classifier_selected['Scale']
-                scale_factor = target_scale_factor / self.activeviewer.image.pixelSize()
-
-                w_target = orthomap.width() *  scale_factor
-                h_target = orthomap.height() * scale_factor
-
-                input_orthomap = orthomap.scaled(w_target, h_target, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+                self.classifier.setup(orthoimage, self.activeviewer.image.pixelSize(),
+                                      target_scale_factor,
+                                      working_area=[], padding=256)
 
                 self.progress_bar.showPerc()
                 self.progress_bar.setMessage("Classification: ")
@@ -3355,7 +3407,7 @@ class TagLab(QWidget):
                 # runs the classifier
                 self.infoWidget.setInfoMessage("Automatic classification is running..")
 
-                self.classifier.run(input_orthomap, 768, 512, 128)
+                self.classifier.run(768, 512, 128)
 
                 if self.classifier.flagStopProcessing is False:
 
@@ -3367,7 +3419,7 @@ class TagLab(QWidget):
                     filename = os.path.join("temp", "labelmap.png")
 
                     created_blobs = self.activeviewer.annotations.import_label_map(filename, self.labels_dictionary,
-                                                                                   orthomap.width(), orthomap.height())
+                                                                                   orthoimage.width(), orthoimage.height())
                     for blob in created_blobs:
                         self.viewerplus.addBlob(blob, selected=False)
 
@@ -3459,6 +3511,8 @@ if __name__ == '__main__':
 
     # create the main window - TagLab widget is the central widget
     mw = QMainWindow()
+    title = tool.TAGLAB_VERSION
+    mw.setWindowTitle(title)
     mw.setCentralWidget(tool)
     mw.setStyleSheet("background-color: rgb(55,55,55); color: white")
     mw.showMaximized()

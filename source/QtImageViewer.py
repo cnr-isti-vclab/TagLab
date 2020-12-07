@@ -77,6 +77,8 @@ class QtImageViewer(QGraphicsView):
             self.pixmap = QPixmap.fromImage(imageARGB32)
             self.imgwidth = img.width()
             self.imgheight = img.height()
+            if self.imgheight:
+                self.ZOOM_FACTOR_MIN = min(1.0 * self.width() / self.imgwidth, 1.0 * self.height() / self.imgheight)
         else:
             raise RuntimeError("Argument must be a QImage.")
 
@@ -213,6 +215,8 @@ class QtImageViewer(QGraphicsView):
     def resizeEvent(self, event):
         """ Maintain current zoom on resize.
         """
+        if self.imgheight:
+            self.ZOOM_FACTOR_MIN = min(1.0 * self.width() / self.imgwidth, 1.0 * self.height() / self.imgheight)
         self.updateViewer()
 
     @pyqtSlot(float, float)
