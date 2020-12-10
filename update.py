@@ -7,6 +7,16 @@ import zipfile
 import shutil
 import subprocess
 
+#directories that will be replaced or merged during the update
+to_merge_directories = ['models', 'sample']
+to_replace_directories = ['coraline', 'docs', 'fonts', 'icons', 'source']
+# note:
+# - all the other directories present in the main directory will be left
+# - the update may create other directories that are not listed here
+# - all the files (non-directories) in the main directory are deleted and replaced
+#   except all the files named '.*'. Old version of 'config.json' will be saved
+#   saved as 'config.json.bak'
+
 osused = platform.system()
 
 github_repo = 'alemuntoni/TagLab/'
@@ -61,16 +71,26 @@ if need_to_update:
 
     print('Downloaded file is: ' + downloaded_file)
 
+    ###TODO: copy config.json in a tmp directory
+
     # Remove all files from TagLab folder
     for filename in os.listdir('.'):
-        file_path = os.path.join('.', filename)
-        try:
-            if os.path.isfile(file_path) or os.path.islink(file_path):
-                os.unlink(file_path)
-            elif os.path.isdir(file_path):
-                shutil.rmtree(file_path)
-        except Exception as e:
-            print('Failed to delete %s. Reason: %s' % (file_path, e))
+        if filename in to_replace_directories:
+            file_path = os.path.join('.', filename)
+            try:
+                if os.path.isdir(file_path):
+                    shutil.rmtree(file_path)
+            except Exception as e:
+                print('Failed to delete %s. Reason: %s' % (file_path, e))
+
+    for filename in os.listdir('.'):
+        if not filename.startswith('.'): ####CHECK
+            file_path = os.path.join('.', filename)
+            try:
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)
+            except Exception as e:
+                print('Failed to delete %s. Reason: %s' % (file_path, e))
 
     #extract zip
     with zipfile.ZipFile(downloaded_file, 'r') as zip_ref:
