@@ -6,19 +6,19 @@ import tempfile
 import zipfile
 import shutil
 import subprocess
+from distutils.dir_util import copy_tree
 
-#directories that will be replaced or merged during the update
-to_merge_directories = ['models', 'sample']
+#directories that will be replaced during the update
 to_replace_directories = ['coraline', 'docs', 'fonts', 'icons', 'source', '.github']
 # note:
-# - all the other directories present in the main directory will be left
+# - all the other directories present in the main directory will be left (and merged if it's the case)
 # - the update may create other directories that are not listed here
 # - all the files (non-directories) in the main directory are replaced.
 # - Old version of 'config.json' will be saved as 'config.json.bak'
 
 osused = platform.system()
 
-github_repo = 'alemuntoni/TagLab/'
+github_repo = 'cnr-isti-vclab/TagLab/'
 base_repo = 'https://github.com/' + github_repo
 raw_link = 'https://raw.githubusercontent.com/' + github_repo + 'main/TAGLAB_VERSION'
 
@@ -69,8 +69,8 @@ if need_to_update:
     shutil.copyfile('config.json', 'config.json.bak')
 
     # Remove directories from TagLab folder
-    for filename in os.listdir('.'):
-        if filename in to_replace_directories:
+    for file_name in os.listdir('.'):
+        if file_name in to_replace_directories:
             file_path = os.path.join('.', filename)
             try:
                 if os.path.isdir(file_path):
@@ -89,7 +89,11 @@ if need_to_update:
     file_names = os.listdir(source_dir)
 
     for file_name in file_names:
-        shutil.move(os.path.join(source_dir, file_name), os.path.join(target_dir, file_name))
+        file_path = os.path.join(source_dir, file_name)
+        if (os.path.isdir(file_path)):
+            copy_tree(file_path, os.path.join(target_dir, file_name))
+        else:
+            shutil.move(os.path.join(source_dir, file_name), os.path.join(target_dir, file_name))
 
     shutil.rmtree(source_dir)
 
