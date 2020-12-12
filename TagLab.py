@@ -2611,15 +2611,17 @@ class TagLab(QWidget):
     @pyqtSlot()
     def about(self):
 
-        lbl1 = QLabel()
+        icon = QLabel()
 
         # BIG taglab icon
         pxmap = QPixmap(os.path.join("icons", "taglab100px.png"))
         pxmap = pxmap.scaledToWidth(160)
-        lbl1.setPixmap(pxmap)
+        icon.setPixmap(pxmap)
+        icon.setStyleSheet("QLabel {padding: 5px; }");
 
-        lbl2 = QLabel()
-        lbl2.setTextFormat(Qt.RichText)
+
+        content = QLabel()
+        content.setTextFormat(Qt.RichText)
 
         txt = "<b>{:s}</b> <p><a href='http://taglab.isti.cnr.it' style='color: white; font-weight: bold; text-decoration: none'>" \
               "TagLab</a> was created to support the activity of annotation and extraction of statistical data "\
@@ -2627,15 +2629,16 @@ class TagLab(QWidget):
               "<a href='http://vcg.isti.cnr.it' style='color: white; font-weight: bold; text-decoration: none'>" \
               "Visual Computing Lab</a>.</p>".format(self.TAGLAB_VERSION)
 
-        lbl2.setWordWrap(True)
-        lbl2.setMinimumWidth(500)
-        lbl2.setText(txt)
-        lbl2.setTextInteractionFlags(Qt.TextBrowserInteraction)
-        lbl2.setOpenExternalLinks(True)
+        content.setWordWrap(True)
+        content.setMinimumWidth(500)
+        content.setText(txt)
+        content.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        content.setStyleSheet("QLabel {padding: 10px; }");
+        content.setOpenExternalLinks(True)
 
         layout = QHBoxLayout()
-        layout.addWidget(lbl1)
-        layout.addWidget(lbl2)
+        layout.addWidget(icon)
+        layout.addWidget(content)
 
         widget = QWidget(self)
         widget.setAutoFillBackground(True)
