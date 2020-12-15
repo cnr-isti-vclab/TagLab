@@ -516,10 +516,6 @@ class Annotation(QObject):
 
         return selected_blob
 
-
-
-
-
     ###########################################################################
     ### IMPORT / EXPORT
 
@@ -564,8 +560,7 @@ class Annotation(QObject):
             samecolor = np.all(subimage == rgb, axis=-1)
             subimage[border & samecolor] = [0, 0, 0]
 
-        labelimg = QImage(image.data, w, h, w*3, QImage.Format_RGB888)
-
+        labelimg = utils.rgbToQImage(image)
         return labelimg
 
     def import_label_map(self, filename, labels_info, w_target, h_target, create_holes=False):

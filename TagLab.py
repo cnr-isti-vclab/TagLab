@@ -2771,7 +2771,7 @@ class TagLab(QWidget):
             box.exec()
             return
 
-        filters = "Tiff (*.png) ;; All Files (*)"
+        filters = "Tiff (*.tif) ;; All Files (*)"
         output_filename, _ = QFileDialog.getSaveFileName(self, "Output GeoTiff", "", filters)
 
         if output_filename:
@@ -2779,7 +2779,8 @@ class TagLab(QWidget):
             label_map_img = self.activeviewer.annotations.create_label_map(size, self.labels_dictionary)
             label_map_np = utils.qimageToNumpyArray(label_map_img)
             georef_filename = self.activeviewer.image.georef_filename
-            rasterops.saveGeorefLabelMap(label_map_np, georef_filename, output_filename)
+            outfilename = os.path.splitext(output_filename)[0]
+            rasterops.saveGeorefLabelMap(label_map_np, georef_filename, outfilename)
 
             msgBox = QMessageBox(self)
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
