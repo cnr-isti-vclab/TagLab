@@ -25,6 +25,7 @@ import shutil
 import json
 import math
 import numpy as np
+import urllib
 
 from PyQt5.QtCore import Qt, QSize, QMargins, QDir, QPoint, QPointF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo, QModelIndex
 from PyQt5.QtGui import QFontDatabase, QFont, QPixmap, QIcon, QKeySequence, QPen
@@ -90,9 +91,16 @@ class TagLab(QWidget):
 
         self.setStyleSheet("background-color: rgb(55,55,55); color: white")
 
+        current_version, need_to_update = self.checkNewVersion()
+        if need_to_update:
+            print("New version available. Please, launch update.py")
+            sys.exit(0)
+
         ##### DATA INITIALIZATION AND SETUP #####
 
-        self.TAGLAB_VERSION = "TagLab 0.2"
+        self.TAGLAB_VERSION = "TagLab " + current_version
+
+        print(self.TAGLAB_VERSION)
 
         # LOAD CONFIGURATION FILE
 
@@ -509,6 +517,42 @@ class TagLab(QWidget):
         self.disableSplitScreen()
 
         self.move()
+
+    def checkNewVersion(self):
+
+        github_repo = 'cnr-isti-vclab/TagLab/'
+        base_repo = 'https://github.com/' + github_repo
+        raw_link = 'https://raw.githubusercontent.com/' + github_repo + 'main/TAGLAB_VERSION'
+
+        # read offline version
+        f_off_version = open("TAGLAB_VERSION", "r")
+        taglab_offline_version = f_off_version.read()
+
+        #print('Raw link: ' + raw_link)
+        f_online_version = urllib.request.urlopen(raw_link)
+        taglab_online_version = f_online_version.read().decode('utf-8')
+
+        offline_spl_version = taglab_offline_version.split('.')
+        online_spl_version = taglab_online_version.split('.')
+
+        #print('offline: ' + str(offline_spl_version))
+        #print('online: ' + str(online_spl_version))
+
+        # Check if I need to update TagLab
+        need_to_update = False
+        i = 0
+        while i < len(online_spl_version) and not need_to_update:
+            if (not (i < len(offline_spl_version))):
+                need_to_update = True
+            else:
+                if (int(online_spl_version[i]) > int(offline_spl_version[i])):
+                    need_to_update = True
+                elif (int(online_spl_version[i]) < int(offline_spl_version[i])):
+                    need_to_update = False
+                    break
+            i = i + 1
+
+        return taglab_offline_version, need_to_update
 
 
     #just to make the code less verbose
@@ -3497,11 +3541,6 @@ if __name__ == '__main__':
     if font_id3 == -1:
         print("Failed to load application font..")
         sys.exit(-2)
-
-    print("Available fonts:")
-    print(QFontDatabase.applicationFontFamilies(font_id1))
-    print(QFontDatabase.applicationFontFamilies(font_id2))
-    print(QFontDatabase.applicationFontFamilies(font_id3))
 
     font = QFont('Roboto')
     app.setFont(font)
