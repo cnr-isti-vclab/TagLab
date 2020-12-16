@@ -1293,11 +1293,10 @@ class TagLab(QWidget):
             self.comboboxTargetImage.setCurrentIndex(index_to_set + 1)
 
             self.viewerplus.clear()
-            self.viewerplus.setProject(self.project)
-            self.viewerplus.setImage(self.project.images[index_to_set])
-
             self.viewerplus2.clear()
+            self.viewerplus.setProject(self.project)
             self.viewerplus2.setProject(self.project)
+            self.viewerplus.setImage(self.project.images[index_to_set])
             self.viewerplus2.setImage(self.project.images[index_to_set + 1])
 
             self.comboboxSourceImage.currentIndexChanged.connect(self.sourceImageChanged)
