@@ -1403,7 +1403,7 @@ class TagLab(QWidget):
 
         scale = self.viewerplus2.px_to_mm
         if center is True and len(targetboxes) > 0:
-            box = Mask.jointBox(targetboxes)
+            box = Mask.jointBox(sourceboxes + targetboxes)
             x = box[1] + box[2] / 2
             y = box[0] + box[3] / 2
             self.viewerplus2.centerOn(x, y)
