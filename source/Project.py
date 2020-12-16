@@ -15,9 +15,9 @@ from source.Correspondences import Correspondences
 from source.Genet import Genet
 from source import utils
 
-def loadProject(filename, labels_dict):
+def loadProject(taglab_working_dir, filename, labels_dict):
 
-    dir = QDir(os.getcwd())
+    dir = QDir(taglab_working_dir)
     filename = dir.relativeFilePath(filename)
     f = open(filename, "r")
     try:
@@ -26,7 +26,7 @@ def loadProject(filename, labels_dict):
         raise Exception(str(e))
 
     if "Map File" in data:
-        project = loadOldProject(data, labels_dict)
+        project = loadOldProject(taglab_working_dir, data, labels_dict)
     else:
         project = Project(**data)
 
@@ -66,16 +66,15 @@ def loadProject(filename, labels_dict):
 
     return project
 
-
 # NOTE: old project NEEDS a pre-defined label dictionary
-def loadOldProject(data, labels_dict):
+def loadOldProject(taglab_working_dir, data, labels_dict):
 
     project = Project()
     project.importLabelsFromConfiguration(labels_dict)
     map_filename = data["Map File"]
 
     #convert to relative paths in case:
-    dir = QDir(os.getcwd())
+    dir = QDir(taglab_working_dir)
     map_filename = dir.relativeFilePath(map_filename)
     image_name = os.path.basename(map_filename)
     image_name = image_name[:-4]

@@ -2614,7 +2614,7 @@ class TagLab(QWidget):
         lbl1 = QLabel()
 
         # BIG taglab icon
-        pxmap = QPixmap(os.path.join("icons", "taglab100px.png"))
+        pxmap = QPixmap(os.path.join("icons", "taglab240px.png"))
         pxmap = pxmap.scaledToWidth(160)
         lbl1.setPixmap(pxmap)
 
@@ -3102,7 +3102,7 @@ class TagLab(QWidget):
         self.resetAll()
 
         try:
-            self.project = loadProject(filename, self.labels_dictionary)
+            self.project = loadProject(self.taglab_dir, filename, self.labels_dictionary)
         except Exception as e:
             msgBox = QMessageBox()
             msgBox.setText("The json project contains an error:\n {0}\n\nPlease contact us.".format(str(e)))
@@ -3139,7 +3139,7 @@ class TagLab(QWidget):
         QApplication.setOverrideCursor(Qt.WaitCursor)
 
         try:
-            project_to_append = loadProject(filename, self.labels_dictionary)
+            project_to_append = loadProject(self.taglab_dir, filename, self.labels_dictionary)
         except Exception as e:
             msgBox = QMessageBox()
             msgBox.setText("The json project contains an error:\n {0}\n\nPlease contact us.".format(str(e)))
