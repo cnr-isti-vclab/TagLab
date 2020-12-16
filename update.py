@@ -13,8 +13,7 @@ to_replace_directories = ['coraline', 'docs', 'fonts', 'icons', 'source', '.gith
 # note:
 # - all the other directories present in the main directory will be left (and merged if it's the case)
 # - the update may create other directories that are not listed here
-# - all the files (non-directories) in the main directory are replaced.
-# - Old version of 'config.json' will be saved as 'config.json.bak'
+# - all the files (non-directories) in the main directory are replaced, except 'config.json'.
 
 osused = platform.system()
 
@@ -92,7 +91,7 @@ if need_to_update:
         file_path = os.path.join(source_dir, file_name)
         if (os.path.isdir(file_path)):
             copy_tree(file_path, os.path.join(target_dir, file_name))
-        else:
+        elif(file_name != 'config.json'):
             shutil.move(os.path.join(source_dir, file_name), os.path.join(target_dir, file_name))
 
     shutil.rmtree(source_dir)
