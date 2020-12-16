@@ -1,0 +1,35 @@
+name: CreateRelease
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'New TagLab Version'
+        required: true
+        default: '0.1.2'
+
+jobs:
+  update_version:
+    name: Update Version
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+    - name: Update TAGLAB_VERSION
+      run: |
+        echo ${{ github.event.inputs.version }} | tr -d '\n'> TAGLAB_VERSION
+    - name: Commit change
+      uses: stefanzweifel/git-auto-commit-action@v4.1.1
+      with:
+        commit_message: Update TAGLAB_VERSION to ${{ github.event.inputs.version }}
+    - name: Publish Release
+      id: create_release
+      uses: actions/create-release@v1.0.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ github.event.inputs.version }}
+        release_name: 'TagLab v${{ github.event.inputs.version }}'
+        draft: false
+        prerelease: false
