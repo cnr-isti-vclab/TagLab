@@ -660,6 +660,5 @@ class Annotation(QObject):
 
 
     def export_image_data_for_Scripps(self, size, filename, labels_info):
-
         label_map = self.create_label_map(size, labels_info)
-        label_map.save(filename)
+        label_map.save(filename, 'png')

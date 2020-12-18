@@ -2752,6 +2752,9 @@ class TagLab(QWidget):
             filename, _ = QFileDialog.getSaveFileName(self, "Output file", "", filters)
 
             if filename:
+                if not filename.endswith('.png'):
+                    filename += '.png'
+
                 size = QSize(self.activeviewer.image.width, self.activeviewer.image.height)
                 self.activeviewer.annotations.export_image_data_for_Scripps(size, filename, self.labels_dictionary)
 
