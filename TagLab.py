@@ -161,7 +161,7 @@ class TagLab(QWidget):
 
 
         self.btnRuler       = self.newButton("ruler.png",    "Measure tool",          flatbuttonstyle1, self.ruler)
-        self.btnDeepExtreme = self.newButton("dexter.png",   "4-click segmentation",  flatbuttonstyle2, self.deepExtreme)
+        self.btnDeepExtreme = self.newButton("dexter.png",   "4-clicks segmentation",  flatbuttonstyle2, self.deepExtreme)
         self.btnAutoClassification = self.newButton("auto.png", "Fully automatic classification", flatbuttonstyle2, self.selectClassifier)
 
         # Split Screen operation removed from the toolbar
@@ -1175,8 +1175,8 @@ class TagLab(QWidget):
         elif event.key() == Qt.Key_4:
             # ACTIVATE "EDIT BORDER" TOOL
             self.editBorder()
-
         elif event.key() == Qt.Key_5:
+
             # ACTIVATE "CUT SEGMENTATION" TOOL
             self.cut()
 
@@ -1184,9 +1184,9 @@ class TagLab(QWidget):
             # ACTIVATE "CREATE CRACK" TOOL
             self.createCrack()
 
-        elif event.key() == Qt.Key_7:
-            # ACTIVATE "SPLIT BLOB" TOOL
-            self.splitBlob()
+        # elif event.key() == Qt.Key_7:
+        #     # ACTIVATE "SPLIT BLOB" TOOL
+        #     self.splitBlob()
 
         elif event.key() == Qt.Key_8:
             # ACTIVATE "RULER" TOOL
@@ -1196,13 +1196,6 @@ class TagLab(QWidget):
             # ACTIVATE "4-CLICK" TOOL
             self.deepExtreme()
 
-        # elif event.key() == Qt.Key_H:
-        #     # ACTIVATE THE "HOLE" TOOL
-        #     self.hole()            # APPLY DEEP EXTREME (IF FOUR POINTS HAVE BEEN SELECTED)
-        #             elif self.tool_used == "DEEPEXTREME" and self.pick_points_number == 4:
-        #
-        #                 self.segmentWithDeepExtreme()
-        #                 self.resetPickPoints()
 
         elif event.key() == Qt.Key_4:
             # ACTIVATE "DEEP EXTREME" TOOL
@@ -1664,6 +1657,9 @@ class TagLab(QWidget):
         self.viewerplus.clear()
         self.viewerplus2.clear()
         self.mapviewer.clear()
+        self.viewerplus.resetTools()
+        self.viewerplus2.resetTools()
+
 
         # RE-INITIALIZATION
         self.mapWidget = None
@@ -1756,12 +1752,12 @@ class TagLab(QWidget):
         self.setTool("CREATECRACK")
 
 
-    @pyqtSlot()
-    def splitBlob(self):
-        """
-        Activate the tool "Split Blob".
-        """
-        self.setTool("SPLITBLOB")
+    # @pyqtSlot()
+    # def splitBlob(self):
+    #     """
+    #     Activate the tool "Split Blob".
+    #     """
+    #     self.setTool("SPLITBLOB")
 
     @pyqtSlot()
     def assign(self):
@@ -2367,6 +2363,7 @@ class TagLab(QWidget):
     def newProject(self):
 
         self.resetAll()
+
 
         self.setProjectTitle("NONE")
 
