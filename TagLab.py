@@ -2362,6 +2362,7 @@ class TagLab(QWidget):
     def newProject(self):
 
         self.resetAll()
+        self.setTool("MOVE")
 
 
         self.setProjectTitle("NONE")
@@ -2980,8 +2981,6 @@ class TagLab(QWidget):
         labels_folder = os.path.join(labels_folder, "labels")
         target_classes = CoralsDataset.importClassesFromDataset(labels_folder, self.labels_dictionary)
         num_classes = len(target_classes)
-
-        print(target_classes)
 
         # GO TRAINING GO...
         nepochs = self.trainYourNetworkWidget.getEpochs()
