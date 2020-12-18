@@ -65,7 +65,7 @@ if need_to_update:
 
     print('Downloaded file is: ' + downloaded_file)
 
-    shutil.copyfile('config.json', 'config.json.bak')
+    #shutil.copyfile('config.json', 'config.json.bak')
 
     # Remove directories from TagLab folder
     for file_name in os.listdir('.'):
