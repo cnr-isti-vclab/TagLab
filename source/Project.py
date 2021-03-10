@@ -123,14 +123,13 @@ class ProjectEncoder(json.JSONEncoder):
         elif isinstance(obj, Correspondences):
             return obj.save()
         elif isinstance(obj, Genet):
-            return obj.save()
-
+            return {}
         return json.JSONEncoder.default(self, obj)
 
 class Project(object):
 
     def __init__(self, filename=None, labels={}, images=[], correspondences=None,
-                 spatial_reference_system=None, metadata={}, image_metadata_template={}):
+                 spatial_reference_system=None, metadata={}, image_metadata_template={}, genet={}):
 
         self.filename = None                                             #filename with path of the project json
         self.labels = { key: Label(**value) for key, value in labels.items() }
@@ -147,6 +146,8 @@ class Project(object):
                 target = correspondences[key]['target']
                 self.correspondences[key] = Correspondences(self.getImageFromId(source), self.getImageFromId(target))
                 self.correspondences[key].fillTable(correspondences[key]['correspondences'])
+
+        self.genet = Genet(self)
 
         self.spatial_reference_system = spatial_reference_system        #if None we assume coordinates in pixels (but Y is up or down?!)
         self.metadata = metadata                                        # project metadata => keyword -> value

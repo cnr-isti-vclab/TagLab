@@ -172,6 +172,7 @@ class TagLab(QWidget):
         self.btnAutoMatch = self.newButton("automatch.png", "Compute automatic matches", flatbuttonstyle1, self.autoCorrespondences)
         self.btnMatch = self.newButton("manualmatch.png", "Add manual matches ", flatbuttonstyle1, self.matchTool)
 
+
         # NOTE: Automatic matches button is not checkable
         self.btnAutoMatch.setCheckable(False)
 
@@ -896,12 +897,18 @@ class TagLab(QWidget):
         exportMatchLabels.setStatusTip("Export the current matches")
         exportMatchLabels.triggered.connect(self.exportMatches)
 
+        autoGenetLabels = QAction("Compute genets", self)
+        autoGenetLabels.setStatusTip("Compute connected components of correspondences")
+        autoGenetLabels.triggered.connect(self.updateGenets)
+
+
         self.comparemenu = menubar.addMenu("&Comparison")
         self.comparemenu.setStyleSheet(styleMenu)
         self.comparemenu.addAction(splitScreenAction)
         self.comparemenu.addAction(autoMatchLabels)
         self.comparemenu.addAction(manualMatchLabels)
         self.comparemenu.addAction(exportMatchLabels)
+        self.comparemenu.addAction(autoGenetLabels)
 
         self.helpmenu = menubar.addMenu("&Help")
         self.helpmenu.setStyleSheet(styleMenu)
@@ -988,6 +995,10 @@ class TagLab(QWidget):
         self.toggleRGBDEM(self.viewerplus)
         if self.split_screen_flag:
             self.toggleRGBDEM(self.viewerplus2)
+
+    @pyqtSlot()
+    def updateGenets(self):
+        self.project.genet.updateGenets()
 
     @pyqtSlot()
     def autoCorrespondences(self):

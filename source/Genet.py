@@ -10,15 +10,156 @@ from source.Blob import Blob
 #blob properties -> plugin attach to a specific set of properties.
 #must be able to deal when properties are present.
 
+from source.Mask import jointBox;
 
 class Genet:
 
-    def __init__(self, images, correspondences):
+    def __init__(self, project):
+        self.project = project;
         pass
+
+    # check all blobs and all corrispondences and compute the connected components.
+    # will preserve existing genets ids, if possible
+    #assign all genets to the first map.
+    #propagate all genets to the second map (ensure consistency.
+
+
+    def updateGenets(self):
+        #this array will be used for remapping when enforcing connected components
+        genets = []
+
+        #assign remap for blobs with assigned genets
+        # for img in self.project.images:
+        #     for b in img.annotations.seg_blobs:
+        #         if hasattr(b, 'genet') and b.genet is not None:
+        #             while len(genets) <= b.genet:
+        #                 genets.append(len(genets))
+        #             genets[b.genet] = b.genet
+        #             print("Image ", img.name, "Blob ", b.id, " has genet ", b.genet)
+
+        #assign genets to blobs with no assigned genet
+        count = len(genets)
+        for img in self.project.images:
+            sorted_blobs = sorted(img.annotations.seg_blobs, key=lambda x: x.id)
+            for b in sorted_blobs:
+                #if hasattr(b, 'genet') == False or b.genet is None:
+                b.genet = count
+                genets.append(count)
+                count += 1
+                print("Image ", img.name, "Blob ", b.id, " has genet ", b.genet)
+
+        #remap all the correspondending blobs using genets[]
+        for corrs in self.project.correspondences.values():
+            for index, row in corrs.data.iterrows():
+                id1 = int(row['Blob1'])
+                id2 = int(row['Blob2'])
+                if id1 == -1 or id2 == -1:  #born or dead corals
+                    continue
+                blob1 = corrs.source.annotations.blobById(id1)
+                blob2 = corrs.target.annotations.blobById(id2)
+
+                while blob1.genet != genets[blob1.genet]:
+                    blob1.genet = genets[blob1.genet]
+
+                if blob1.genet != blob2.genet:
+                    print("Genet: ", blob2.genet, "mapped to", blob1.genet)
+
+                    g = blob2.genet
+                    while True: #if g is remapped also those needs to be remapped
+                        destination = genets[g]
+                        genets[g] = blob1.genet
+                        if destination == g:
+                            break
+                        g = destination
+
+        for img in self.project.images:
+            for b in img.annotations.seg_blobs:
+                while b.genet != genets[b.genet]:  #follow the link to the
+                    b.genet = genets[b.genet]
+                print("Image ", img.name, "Blob ", b.id, " has genet ", b.genet)
+
+        self.exportSVG()
+
+    #ox and oy are the origin of bbox of the blob, dx and dy is a translation in svg.
+    def path(self, contour, ox, oy, scale, dx, dy):
+        path = ""
+        first = True
+        for i in range(contour.shape[0]):
+            if first:
+                path += " M "
+                first = False
+            else:
+                path += " L "
+
+            x = (contour[i, 0] - ox) * scale + dx
+            y = (contour[i, 1] - oy) * scale + dy
+            path += str(round(x, 1)) + " " + str(round(y, 1))
+        return path
+
+    def exportSVG(self):
+        #remap genets to lines and find bbox per genet.
+        lines = {}
+
+        for img in self.project.images:
+            for blob in img.annotations.seg_blobs:
+                if not blob.genet in lines:
+                    lines[blob.genet] = { 'box': blob.bbox }
+                else:
+                    line = lines[blob.genet]['box']
+                    line = jointBox([line, blob.bbox])
+
+        #compact and sort lines.
+        count = 0
+        for g in sorted(lines.keys()):
+            lines[g]['row'] = count
+            count += 1
+
+        print(lines)
+
+
+        svg = "<svg>"
+        column = 0
+        y = 0
+        vpadding = hpadding = 30
+        side = 200
+        for img in self.project.images:
+            for blob in img.annotations.seg_blobs:
+                line = lines[blob.genet]
+                box = line['box']
+                row = line['row']
+                scale = side / max(box[2], box[3])
+                dx = column*(side + hpadding)
+                dy =    row*(side + vpadding)
+
+                svg += '<path data-image="' + img.name + '" data-id="' + str(blob.id) + '" d="'
+                svg += self.path(blob.contour, box[1], box[0], scale, dx, dy)
+                # first  = True
+                # for i in range(blob.contour.shape[0]):
+                #     if first:
+                #         svg += " M "
+                #         first = False
+                #     else:
+                #         svg += " L "
+                #
+                #     #x = (blob.contour[i, 0] - box[1])*scale
+                #     #y = (blob.contour[i, 1] - box[0])*scale
+                #     x = (blob.contour[i, 0] - box[1])*scale + column*(side + hpadding)
+                #     y = (blob.contour[i, 1] - box[0])*scale +
+                #     svg += str(round(x, 1)) + " " + str(round(y,1))
+
+                for inner in blob.inner_contours:
+                    svg += self.path(inner, box[1], box[0], scale, dx, dy)
+
+                svg += '"></path>\n'
+
+            column += 1
+        svg += "</svg>"
+        print(svg)
 
     # update blob with a new genet first empty genet (starting from 1)
     def addBlob(self, blob):
         return 1
+
     #a blob was removed update genet
     def removeBlob(self, image_id, blob):
         #if not genet, retunr
