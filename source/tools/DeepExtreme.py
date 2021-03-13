@@ -102,8 +102,8 @@ class DeepExtreme(Tool):
             pred = np.transpose(outputs.data.numpy()[0, ...], (1, 2, 0))
             pred = 1 / (1 + np.exp(-pred))
             pred = np.squeeze(pred)
-            img_test = utils.floatmapToQImage(pred*255.0)
-            img_test.save("prediction.png")
+            #img_test = utils.floatmapToQImage(pred*255.0)
+            #img_test.save("prediction.png")
             result = helpers.crop2fullmask(pred, bbox, im_size=img.shape[:2], zero_pad=True, relax=pad) > thres
 
 
