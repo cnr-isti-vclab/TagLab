@@ -14,6 +14,9 @@ class Tool(QObject):
     def leftPressed(self, x, y, mods = None):
         pass
 
+    def rightPressed(self, x, y, mods = None):
+        pass
+
     def mouseMove(self, x, y):
         pass
 

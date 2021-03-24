@@ -48,6 +48,7 @@ class Blob(object):
     def __init__(self, region, offset_x, offset_y, id):
         self.version = 0
         self.id = int(id)
+        self.id_item = None
 
         self.area = 0.0
         self.surface_area = 0.0

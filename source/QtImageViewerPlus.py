@@ -294,8 +294,13 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.tools.setTool(tool)
 
-        if tool in ["FREEHAND", "RULER", "DEEPEXTREME"] or (tool in ["CUT", "EDITBORDER"] and len(self.selected_blobs) > 1):
+        if tool in ["FREEHAND", "RULER", "DEEPEXTREME"] or (tool in ["CUT", "EDITBORDER", "RITM"] and len(self.selected_blobs) > 1):
             self.resetSelection()
+
+        if tool == "RITM":
+            self.setContextMenuPolicy(Qt.NoContextMenu)
+        else:
+            self.setContextMenuPolicy(Qt.CustomContextMenu)
 
         if tool == "WORKINGAREA":
             QApplication.setOverrideCursor(Qt.CrossCursor)
@@ -373,7 +378,7 @@ class QtImageViewerPlus(QtImageViewer):
 
             if (self.panEnabled and not (mods & Qt.ShiftModifier)) or (mods & Qt.ControlModifier):
                 self.setDragMode(QGraphicsView.ScrollHandDrag)
-            elif self.tools.tool == "MATCH":
+            elif self.tools.tool == "MATCH" or self.tools.tool == "RITM":
                 self.tools.leftPressed(x, y, mods)
 
             elif mods & Qt.ShiftModifier:
@@ -390,8 +395,11 @@ class QtImageViewerPlus(QtImageViewer):
         #     self.setDragMode(QGraphicsView.ScrollHandDrag)
 
         if event.button() == Qt.RightButton:
-            clippedCoords = self.clipScenePos(scenePos)
-            self.rightMouseButtonPressed.emit(clippedCoords[0], clippedCoords[1])
+            (x, y) = self.clipScenePos(scenePos)
+            if self.tools.tool == "RITM":
+                self.tools.rightPressed(x, y, mods)
+            else:
+                self.rightMouseButtonPressed.emit(x, y)
 
         QGraphicsView.mousePressEvent(self, event)
 
@@ -676,6 +684,11 @@ class QtImageViewerPlus(QtImageViewer):
         self.undo_data.saveUndo()
 
     def undo(self):
+
+        if self.tools.tool == "RITM":
+            self.tools.tools["RITM"].undo_click()
+            return
+
         operation = self.undo_data.undo()
         if operation is None:
             return
