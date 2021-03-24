@@ -128,6 +128,8 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.setContextMenuPolicy(Qt.CustomContextMenu)
 
+        self.transparency_value = 0.5
+
         self.refine_grow = 0.0 #maybe should in in tools
         self.refine_original_mask = None
         self.refine_original_blob = None
@@ -242,6 +244,7 @@ class QtImageViewerPlus(QtImageViewer):
 
         blob.qpath_gitem = self.scene.addPath(blob.qpath, pen, brush)
         blob.qpath_gitem.setZValue(1)
+        blob.qpath_gitem.setOpacity(self.transparency_value)
 
         font_size = 12
         blob.id_item = TextItem(str(blob.id),  QFont("Calibri", font_size, QFont.Bold))
@@ -254,7 +257,6 @@ class QtImageViewerPlus(QtImageViewer):
 
         #blob.id_item.setDefaultTextColor(Qt.white)
         #blob.id_item.setFlag(QGraphicsItem.ItemIgnoresTransformations)
-        #blob.qpath_gitem.setOpacity(self.transparency_value)
 
 
     def undrawBlob(self, blob):
@@ -267,7 +269,7 @@ class QtImageViewerPlus(QtImageViewer):
 
 
     def applyTransparency(self, value):
-        self.transparency_value = value / 100.0
+        self.transparency_value = 1.0 - (value / 100.0)
         # current annotations
         for blob in self.annotations.seg_blobs:
             blob.qpath_gitem.setOpacity(self.transparency_value)

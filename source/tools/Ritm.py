@@ -295,6 +295,7 @@ class Ritm(Tool):
 
         blob.qpath_gitem = scene.addPath(blob.qpath, pen, brush)
         blob.qpath_gitem.setZValue(1)
+        blob.qpath_gitem.setOpacity(self.viewerplus.transparency_value)
 
     def undrawBlob(self, blob):
         # get the scene
