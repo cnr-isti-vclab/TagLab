@@ -211,6 +211,7 @@ class Ritm(Tool):
             self.viewerplus.addBlob(blob, selected=True)
             self.blobInfo.emit(blob, "[TOOL][RITM][BLOB-CREATED]")
         self.viewerplus.saveUndo()
+        self.viewerplus.resetSelection()
 
         self.current_blobs = []
         self.clicker.reset_clicks()
@@ -227,6 +228,9 @@ class Ritm(Tool):
             self.work_area_item = None
 
     def reset(self):
+        """
+        Reset all the information. Called when ESCAPE is pressed.
+        """
 
         self.resetNetwork()
 
