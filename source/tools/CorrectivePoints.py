@@ -10,7 +10,7 @@ class CorrectivePoints(object):
         self.positive_points = []
         self.negative_points = []
         self.markers = []
-        self.RADIUS = 5
+        self.RADIUS = 7
         self.scene = scene
         self.pos_neg_clicks = []
 
@@ -25,24 +25,26 @@ class CorrectivePoints(object):
 
         if positive:
             self.positive_points.append(np.array([x, y]))
-            pen = QPen(Qt.green)
             brush = QBrush(Qt.SolidPattern)
             brush.setColor(Qt.green)
             self.pos_neg_clicks.append("positive")
         else:
             self.negative_points.append(np.array([x, y]))
-            pen = QPen(Qt.red)
             brush = QBrush(Qt.SolidPattern)
             brush.setColor(Qt.red)
             self.pos_neg_clicks.append("negative")
 
+        pen = QPen(Qt.white)
+        pen.setWidth(1)
+        pen.setCosmetic(True)
         point = self.scene.addEllipse(x, y, self.RADIUS, self.RADIUS, pen, brush)
         point.setZValue(5)
         self.markers.append(point)
 
     def removeLastPoint(self):
 
-        last_click_type = self.pos_neg_clicks.pop()
+        if len(self.pos_neg_clicks) > 0:
+            last_click_type = self.pos_neg_clicks.pop()
 
         if last_click_type == "positive":
             if len(self.positive_points) > 0:

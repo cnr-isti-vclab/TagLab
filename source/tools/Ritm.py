@@ -132,8 +132,12 @@ class Ritm(Tool):
                 self.viewerplus.resetSelection()
                 self.viewerplus.removeBlob(self.blob_to_correct)
                 if self.work_area_mask is not None:
+                    qimg = maskToQImage(self.work_area_mask)
+                    qimg.save("C:\\temp\\before.png")
                     paintMask(self.work_area_mask, self.work_area_bbox, self.blob_to_correct.getMask(),
                             self.blob_to_correct.bbox, 0)
+                    qimg = maskToQImage(self.work_area_mask)
+                    qimg.save("C:\\temp\\after.png")
 
             mask = self.blob_to_correct.getMask()
 
@@ -230,10 +234,14 @@ class Ritm(Tool):
         # finalize created blobs
         for blob in self.current_blobs:
             self.viewerplus.addBlob(blob, selected=True)
+            if self.blob_to_correct is not None:
+                self.viewerplus.setBlobClass(blob, self.blob_to_correct.class_name)
             self.blobInfo.emit(blob, "[TOOL][RITM][BLOB-CREATED]")
         self.viewerplus.saveUndo()
         self.viewerplus.resetSelection()
 
+        self.init_mask = None
+        self.blob_to_correct = None
         self.current_blobs = []
         self.clicker.reset_clicks()
         self.points.reset()
@@ -259,7 +267,9 @@ class Ritm(Tool):
         # re-add the blob removed
         if self.blob_to_correct is not None:
             self.viewerplus.addBlob(self.blob_to_correct)
+            self.blob_to_correct = None
 
+        self.init_mask = None
         self.undrawAllBlobs()
         self.clicker.reset_clicks()
         self.points.reset()
@@ -282,7 +292,10 @@ class Ritm(Tool):
         pen.setWidth(2)
         pen.setCosmetic(True)
 
-        brush = QBrush(Qt.NoBrush)
+        if self.blob_to_correct is None:
+            brush = QBrush(Qt.NoBrush)
+        else:
+            brush = self.viewerplus.project.classBrushFromName(self.blob_to_correct)
 
         blob.qpath_gitem = scene.addPath(blob.qpath, pen, brush)
         blob.qpath_gitem.setZValue(1)
