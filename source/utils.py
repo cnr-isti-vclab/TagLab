@@ -183,42 +183,6 @@ def figureToQPixmap(fig, dpi, width, height):
 
     return pxmap
 
-def prepareForDeepExtreme(image_map, four_points, pad_max):
-    """
-    Crop the image map (QImage) and return a NUMPY array containing it.
-    It returns also the coordinates of the bounding box on the cropped image.
-    """
-
-    left = four_points[:, 0].min() - pad_max
-    right = four_points[:, 0].max() + pad_max
-    top = four_points[:, 1].min() - pad_max
-    bottom = four_points[:, 1].max() + pad_max
-    h = bottom - top
-    w = right - left
-
-    image_cropped = cropQImage(image_map, [top, left, w, h])
-
-    fmt = image_cropped.format()
-    assert(fmt == QImage.Format_RGB32)
-
-    arr = np.zeros((h, w, 3), dtype=np.uint8)
-
-    bits = image_cropped.bits()
-    bits.setsize(int(h*w*4))
-    arrtemp = np.frombuffer(bits, np.uint8).copy()
-    arrtemp = np.reshape(arrtemp, [h, w, 4])
-    arr[:, :, 0] = arrtemp[:, :, 2]
-    arr[:, :, 1] = arrtemp[:, :, 1]
-    arr[:, :, 2] = arrtemp[:, :, 0]
-
-    # update four point
-    four_points_updated = np.zeros((4,2), dtype=np.int)
-    four_points_updated[:, 0] = four_points[:, 0] - left
-    four_points_updated[:, 1] = four_points[:, 1] - top
-
-    return (arr, four_points_updated)
-
-
 def cropQImage(qimage_map, bbox):
 
     left = bbox[1]
