@@ -76,7 +76,8 @@ class QtMapViewer(QGraphicsView):
 
         self.imgwidth = 0
         self.imgheight = 0
-
+        self.PREFERRED_SIZE = preferred_size
+        
     def clear(self):
 
         if self.pixmapitem is not None:
@@ -103,7 +104,10 @@ class QtMapViewer(QGraphicsView):
         if self.imgwidth > self.imgheight:
             aspectratio = self.imgheight / self.imgwidth
             h = (int)(aspectratio * self.width())
+            if h > self.PREFERRED_SIZE:
+                h = self.PREFERRED_SIZE
             self.setFixedHeight(h)
+
 
         # calculate zoom factor
         pixels_of_border = self.BORDER

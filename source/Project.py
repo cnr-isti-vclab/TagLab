@@ -3,8 +3,9 @@ import pandas as pd
 import datetime
 import json
 
-from PyQt5.QtCore import QDir
+from PyQt5.QtCore import QDir, QFileInfo
 from PyQt5.QtGui import QBrush, QColor
+from PyQt5.QtWidgets import QFileDialog
 
 from source.Image import Image
 from source.Channel import Channel
@@ -14,6 +15,7 @@ from source.Label import Label
 from source.Correspondences import Correspondences
 from source.Genet import Genet
 from source import utils
+
 
 def loadProject(taglab_working_dir, filename, labels_dict):
 
@@ -33,6 +35,19 @@ def loadProject(taglab_working_dir, filename, labels_dict):
     f.close()
 
     project.filename = filename
+
+    # check if a file exist for each image and each channel
+
+    for image in project.images:
+        for channel in image.channels:
+            if not os.path.exists(channel.filename):
+                (filename, filter) = QFileDialog.getOpenFileName(None, "Couldn't find "+ channel.filename + " please select it:", taglab_working_dir,
+                                                                 "Image Files (*.png *.jpg *.tif)")
+                dir = QDir(taglab_working_dir)
+                if image.georef_filename == channel.filename:
+                   image.georef_filename = dir.relativeFilePath(filename)
+
+                channel.filename = dir.relativeFilePath(filename)
 
     # load geo-reference information
     for im in project.images:

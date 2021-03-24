@@ -326,6 +326,9 @@ class QtImageViewerPlus(QtImageViewer):
         else:
             self.disablePan()
 
+        if tool == "MATCH":
+            self.enablePan()
+
     def resetTools(self):
         self.tools.resetTools()
         self.showCrossair = False

@@ -528,7 +528,7 @@ class Annotation(QObject):
         w = size.width()
         h = size.height()
 
-        imagebox = [0, 0, w, h]
+        imagebox = [0, 0, h, w]
         image = np.zeros([h, w, 3], np.uint8)
 
         for i, blob in enumerate(self.seg_blobs):
@@ -544,8 +544,9 @@ class Annotation(QObject):
             mask = blob.getMask().astype(bool)  #bool is required for bitmask indexing
             box = blob.bbox
             (box[2], box[3]) = (box[3] + box[0], box[2] + box[1])
+            #box is now startx,starty,endx,endy
 
-            #extract common parts of mask and image (mask might be partly outside of the image
+            #range is the interection of box and imagebox
             range = [max(box[0], imagebox[0]), max(box[1], imagebox[1]), min(box[2], imagebox[2]), min(box[3], imagebox[3])]
             subimage = image[range[0] - imagebox[0]:range[2] - imagebox[0], range[1] - imagebox[1]:range[3] - imagebox[1]]
             submask = mask[range[0] - box[0]:range[2] - box[0], range[1] - box[1]:range[3] - box[1]]
@@ -660,6 +661,5 @@ class Annotation(QObject):
 
 
     def export_image_data_for_Scripps(self, size, filename, labels_info):
-
         label_map = self.create_label_map(size, labels_info)
-        label_map.save(filename)
+        label_map.save(filename, 'png')

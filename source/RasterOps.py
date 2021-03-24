@@ -155,16 +155,34 @@ def calculateAreaUsingSlope(depth_filename, blobs):
     """'Outputs areas as number of pixels"""
 
     slope = exportSlope(depth_filename, 'slope.tif')
+    height= slope.shape[0]
+    width = slope.shape[1]
 
     # filter out null values and jumps
     slope[slope > 87] = 0
 
     for blob in blobs:
-        non_null = blob.getMask()
-        top = blob.bbox[0]
-        left = blob.bbox[1]
-        right = left + blob.bbox[2]
-        bottom = top + blob.bbox[3]
+        blob_copy= blob.copy()
+        if blob_copy.bbox[0] < 0:
+           blob_copy.bbox[3] = blob_copy.bbox[0] + blob_copy.bbox[3]
+           blob_copy.bbox[0] = 0
+
+        if blob_copy.bbox[1] < 0:
+            blob_copy.bbox[2] = blob_copy.bbox[0] + blob_copy.bbox[2]
+            blob_copy.bbox[1] = 0
+
+        if blob_copy.bbox[1] + blob_copy.bbox[2] > width - 1:
+           blob_copy.bbox[2] = width - 1 - blob_copy.bbox[1]
+
+        if blob_copy.bbox[0] + blob_copy.bbox[3] > height-1:
+            blob_copy.bbox[3] = height - 1 - blob_copy.bbox[0]
+
+        non_null = blob_copy.getMask()
+        top = blob_copy.bbox[0]
+        left = blob_copy.bbox[1]
+        right = left + blob_copy.bbox[2]
+        bottom = top + blob_copy.bbox[3]
+
         slope_crop = slope[top:bottom, left:right]
         surface_area = (non_null / abs(np.cos(np.radians(slope_crop)))).sum()
         blob.surface_area = surface_area

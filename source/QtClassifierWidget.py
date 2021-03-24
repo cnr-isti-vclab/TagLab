@@ -212,6 +212,9 @@ class QtClassifierWidget(QWidget):
         layoutV.setSpacing(3)
         self.setLayout(layoutV)
 
+        self.QlabelThresh.hide()
+        self.QlabelThreshValue.hide()
+
         self.setWindowTitle("Select Classifier")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
@@ -295,11 +298,13 @@ class QtClassifierWidget(QWidget):
 
         self.sliderScores.setEnabled(True)
         self.sliderTransparency.setEnabled(True)
+        self.sliderScores.hide()
 
     def disableSliders(self):
 
         self.sliderScores.setEnabled(False)
         self.sliderTransparency.setEnabled(False)
+        self.sliderScores.hide()
 
     def closeEvent(self, event):
         self.closed.emit()

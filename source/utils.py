@@ -183,7 +183,7 @@ def figureToQPixmap(fig, dpi, width, height):
 
     return pxmap
 
-def prepareForDeepExtreme(qimage_map, four_points, pad_max):
+def prepareForDeepExtreme(image_map, four_points, pad_max):
     """
     Crop the image map (QImage) and return a NUMPY array containing it.
     It returns also the coordinates of the bounding box on the cropped image.
@@ -193,20 +193,17 @@ def prepareForDeepExtreme(qimage_map, four_points, pad_max):
     right = four_points[:, 0].max() + pad_max
     top = four_points[:, 1].min() - pad_max
     bottom = four_points[:, 1].max() + pad_max
+    h = bottom - top
+    w = right - left
 
-    (xmin, ymin) = clampCoords(left, top, qimage_map.width(), qimage_map.height())
-    (xmax, ymax) = clampCoords(right, bottom, qimage_map.width(), qimage_map.height())
+    image_cropped = cropQImage(image_map, [top, left, w, h])
 
-    w = xmax - xmin
-    h = ymax - ymin
-    qimage_cropped = qimage_map.copy(xmin, ymin, w, h)
-
-    fmt = qimage_cropped.format()
+    fmt = image_cropped.format()
     assert(fmt == QImage.Format_RGB32)
 
     arr = np.zeros((h, w, 3), dtype=np.uint8)
 
-    bits = qimage_cropped.bits()
+    bits = image_cropped.bits()
     bits.setsize(int(h*w*4))
     arrtemp = np.frombuffer(bits, np.uint8).copy()
     arrtemp = np.reshape(arrtemp, [h, w, 4])
@@ -216,8 +213,8 @@ def prepareForDeepExtreme(qimage_map, four_points, pad_max):
 
     # update four point
     four_points_updated = np.zeros((4,2), dtype=np.int)
-    four_points_updated[:, 0] = four_points[:, 0] - xmin
-    four_points_updated[:, 1] = four_points[:, 1] - ymin
+    four_points_updated[:, 0] = four_points[:, 0] - left
+    four_points_updated[:, 1] = four_points[:, 1] - top
 
     return (arr, four_points_updated)
 
@@ -254,42 +251,3 @@ def qimageToNumpyArray(qimg):
 
     return arr
 
-def prepareLabelForDeepExtreme(qimage_map, four_points, pad_max):
-    """
-    Crop the image map (QImage) and return a NUMPY array containing it.
-    It returns also the coordinates of the bounding box on the cropped image.
-    """
-
-    left = four_points[:, 0].min() - pad_max
-    right = four_points[:, 0].max() + pad_max
-    top = four_points[:, 1].min() - pad_max
-    bottom = four_points[:, 1].max() + pad_max
-
-    (xmin, ymin) = clampCoords(left, top, qimage_map.width(), qimage_map.height())
-    (xmax, ymax) = clampCoords(right, bottom, qimage_map.width(), qimage_map.height())
-
-    w = xmax - xmin
-    h = ymax - ymin
-    qimage_cropped = qimage_map.copy(xmin, ymin, w, h)
-
-    fmt = qimage_cropped.format()
-    assert(fmt == QImage.Format_RGB32)
-
-    arr = np.zeros((h, w, 1), dtype=np.uint8)
-
-    bits = qimage_cropped.bits()
-    bits.setsize(int(h*w*4))
-    arrtemp = np.frombuffer(bits, np.uint8).copy()
-    arrtemp = np.reshape(arrtemp, [h, w, 4])
-
-    for y in range(h):
-        for x in range(w):
-            if arrtemp[y, x, 2] != 0 or arrtemp[y, x, 1] != 0 or arrtemp[y, x, 0] != 0:
-                arr[y, x] = 1
-
-    # update four point
-    four_points_updated = np.zeros((4,2), dtype=np.int)
-    four_points_updated[:, 0] = four_points[:, 0] - xmin
-    four_points_updated[:, 1] = four_points[:, 1] - ymin
-
-    return (arr, four_points_updated)

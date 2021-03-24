@@ -2374,6 +2374,7 @@ class TagLab(QWidget):
     def newProject(self):
 
         self.resetAll()
+        self.setTool("MOVE")
 
 
         self.setProjectTitle("NONE")
@@ -2763,6 +2764,9 @@ class TagLab(QWidget):
             filename, _ = QFileDialog.getSaveFileName(self, "Output file", "", filters)
 
             if filename:
+                if not filename.endswith('.png'):
+                    filename += '.png'
+
                 size = QSize(self.activeviewer.image.width, self.activeviewer.image.height)
                 self.activeviewer.annotations.export_image_data_for_Scripps(size, filename, self.labels_dictionary)
 
@@ -2992,8 +2996,6 @@ class TagLab(QWidget):
         labels_folder = os.path.join(labels_folder, "labels")
         target_classes = CoralsDataset.importClassesFromDataset(labels_folder, self.labels_dictionary)
         num_classes = len(target_classes)
-
-        print(target_classes)
 
         # GO TRAINING GO...
         nepochs = self.trainYourNetworkWidget.getEpochs()
