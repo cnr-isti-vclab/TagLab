@@ -132,12 +132,8 @@ class Ritm(Tool):
                 self.viewerplus.resetSelection()
                 self.viewerplus.removeBlob(self.blob_to_correct)
                 if self.work_area_mask is not None:
-                    qimg = maskToQImage(self.work_area_mask)
-                    qimg.save("C:\\temp\\before.png")
                     paintMask(self.work_area_mask, self.work_area_bbox, self.blob_to_correct.getMask(),
                             self.blob_to_correct.bbox, 0)
-                    qimg = maskToQImage(self.work_area_mask)
-                    qimg.save("C:\\temp\\after.png")
 
             mask = self.blob_to_correct.getMask()
 
