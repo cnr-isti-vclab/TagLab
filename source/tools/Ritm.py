@@ -5,7 +5,7 @@ from PyQt5.QtGui import QPen, QBrush
 from source.tools.Tool import Tool
 from source.Mask import paintMask
 from source.utils import qimageToNumpyArray
-from source.utils import cropQImage, floatmapToQImage
+from source.utils import cropQImage, maskToQImage, floatmapToQImage
 
 import os
 import numpy as np
@@ -31,6 +31,7 @@ class Ritm(Tool):
         self.current_blobs = []
         self.blob_to_correct = None
         self.work_area_bbox = [0, 0, 0, 0]
+        self.work_area_mask = None
         self.work_area_item = None
         self.states = []
 
@@ -73,49 +74,72 @@ class Ritm(Tool):
             self.predictor.set_states(prev_state)
             self.segment(save_status=False)
 
+    def createWorkAreaMask(self):
+
+        w = self.work_area_bbox[2]
+        h = self.work_area_bbox[3]
+        self.work_area_mask = np.zeros((h,w), dtype=np.int32)
+        for blob in self.viewerplus.image.annotations.seg_blobs:
+            mask = blob.getMask()
+            paintMask(self.work_area_mask, self.work_area_bbox, mask, blob.bbox, 1)
+
+    def initializeWorkArea(self):
+        rect_map = self.viewerplus.viewportToScene()
+        self.work_area_bbox = [round(rect_map.top()), round(rect_map.left()),
+                               round(rect_map.width()), round(rect_map.height())]
+        image_crop = cropQImage(self.viewerplus.img_map, self.work_area_bbox)
+        input_image = qimageToNumpyArray(image_crop)
+        self.predictor.set_input_image(input_image)
+        self.createWorkAreaMask()
+        brush = QBrush(Qt.NoBrush)
+        pen = QPen(Qt.DashLine)
+        pen.setWidth(2)
+        pen.setColor(Qt.white)
+        pen.setCosmetic(True)
+        x = self.work_area_bbox[1]
+        y = self.work_area_bbox[0]
+        w = self.work_area_bbox[2]
+        h = self.work_area_bbox[3]
+        self.work_area_item = self.viewerplus.scene.addRect(x, y, w, h, pen, brush)
+        self.work_area_item.setZValue(3)
+
+    def intersectionWithExistingBlobs(self, blob):
+        bigmask = self.work_area_mask.copy()
+        pixels_before = np.count_nonzero(bigmask)
+        mask = blob.getMask()
+        pixels = np.count_nonzero(mask)
+        paintMask(bigmask, self.work_area_bbox, mask, blob.bbox, 0)
+        pixels_after = np.count_nonzero(bigmask)
+        perc_intersect = ((pixels_before - pixels_after) * 100.0) / pixels
+
+        if perc_intersect > 90.0:
+            return True
+        else:
+            return False
+
     def prepareInput(self):
 
         nclicks = self.points.nclicks()
 
         if nclicks == 1 and self.work_area_bbox[2] == 0 and self.work_area_bbox[3] == 0:
-            # input image
-            rect_map = self.viewerplus.viewportToScene()
-            self.work_area_bbox = [round(rect_map.top()), round(rect_map.left()),
-                             round(rect_map.width()), round(rect_map.height())]
-            image_crop = cropQImage(self.viewerplus.img_map, self.work_area_bbox)
-            input_image = qimageToNumpyArray(image_crop)
-            self.predictor.set_input_image(input_image)
-            image_crop.save("C:\\temp\\crop.png")
+            # the work area is assigned as the input image of the network
+            self.initializeWorkArea()
 
-            brush = QBrush(Qt.NoBrush)
-            pen = QPen(Qt.DashLine)
-            pen.setWidth(2)
-            pen.setColor(Qt.white)
-            pen.setCosmetic(True)
-            x = self.work_area_bbox[1]
-            y = self.work_area_bbox[0]
-            w = self.work_area_bbox[2]
-            h = self.work_area_bbox[3]
-            self.work_area_item = self.viewerplus.scene.addRect(x, y, w, h, pen, brush)
-            self.work_area_item.setZValue(3)
-
-        # prev mask
+        # init mask
         if nclicks == 1 and len(self.viewerplus.selected_blobs) > 0:
             if self.blob_to_correct is None:
                 self.blob_to_correct = self.viewerplus.selected_blobs[0]
                 self.viewerplus.resetSelection()
                 self.viewerplus.removeBlob(self.blob_to_correct)
+                if self.work_area_mask is not None:
+                    paintMask(self.work_area_mask, self.work_area_bbox, self.blob_to_correct.getMask(),
+                            self.blob_to_correct.bbox, 0)
 
             mask = self.blob_to_correct.getMask()
 
-            self.init_mask = np.zeros((input_image.shape[0], input_image.shape[1]), dtype=np.int32)
-
+            self.init_mask = np.zeros((self.work_area_bbox[3], self.work_area_bbox[2]), dtype=np.int32)
             paintMask(self.init_mask, self.work_area_bbox, mask, self.blob_to_correct.bbox, 1)
             self.init_mask = self.init_mask.astype(np.float32)
-
-            qimg = floatmapToQImage(self.init_mask.astype(np.float32))
-            qimg.save("C:\\temp\\initmask.png")
-
             self.init_mask = torch.from_numpy(self.init_mask).unsqueeze(0).unsqueeze(0)
             self.init_mask = self.init_mask.to(self.device)
         else:
@@ -149,9 +173,6 @@ class Ritm(Tool):
             self.states.append(self.predictor.get_states())
         pred = self.predictor.get_prediction(self.clicker, prev_mask=self.init_mask)
 
-        qimg = floatmapToQImage(pred)
-        qimg.save("C:\\temp\\predictions.png")
-
         segm_mask = pred > 0.5
         segm_mask = 255 * segm_mask.astype(np.int32)
 
@@ -162,9 +183,9 @@ class Ritm(Tool):
         blobs = self.viewerplus.annotations.blobsFromMask(segm_mask, self.work_area_bbox[1], self.work_area_bbox[0], 1000)
 
         for blob in blobs:
-            self.drawBlob(blob)
-
-        self.current_blobs = blobs
+            if self.intersectionWithExistingBlobs(blob) is False:
+                self.drawBlob(blob)
+                self.current_blobs.append(blob)
 
         self.infoMessage.emit("Segmentation done.")
         self.log.emit("[TOOL][RITM] Segmentation ends.")
@@ -223,6 +244,7 @@ class Ritm(Tool):
         The reset of the working area causes also the re-initialization of the RITM.
         """
         self.work_area_bbox = [0, 0, 0, 0]
+        self.work_area_mask = None
         if self.work_area_item is not None:
             self.viewerplus.scene.removeItem(self.work_area_item)
             self.work_area_item = None
