@@ -90,18 +90,16 @@ def showMaskAndCurve(mask, bbox, curve, fig_number):
 
 def maskToQImage(mask):
 
-    h = mask.shape[0]
-    w = mask.shape[1]
-    qimg = QImage(w, h, QImage.Format_RGB32)
-    qimg.fill(qRgb(0, 0, 0))
+    maskrgb = np.zeros((mask.shape[0], mask.shape[1], 3))
+    maskrgb[:,:,0] = mask
+    maskrgb[:,:,1] = mask
+    maskrgb[:,:,2] = mask
+    maskrgb = maskrgb * 255
+    maskrgb = maskrgb.astype(np.uint8)
 
-    for y in range(h):
-        for x in range(w):
-
-            if mask[y, x] == 1:
-                qimg.setPixel(x, y, qRgb(255, 255, 255))
-
+    qimg = rgbToQImage(maskrgb)
     return qimg
+
 
 def labelsToQImage(mask):
 
