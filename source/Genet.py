@@ -163,6 +163,10 @@ class Genet:
         y = 0
         vpadding = hpadding = 30
         side = 200
+
+        for g in range(0, count):
+            svg += '<text font-size="20px" x="' + str(-150) + '" y="' + str(g*(side + vpadding) + 80) + '">genet: ' + str(g) + '</text>'
+
         for img in self.project.images:
             for blob in img.annotations.seg_blobs:
                 line = lines[blob.genet]
@@ -173,6 +177,7 @@ class Genet:
                 dy =    row*(side + vpadding)
 
                 brush = self.project.classBrushFromName(blob)
+                svg += '<text x="' + str(dx) + '" y="' + str(dy) + '">id: ' + str(blob.id) + '</text>'
                 svg += '<path fill="' + brush.color().name() + '" data-image="' + img.name + '" data-id="' + str(blob.id) + '" d="'
                 svg += self.path(blob.contour, box[1], box[0], scale, dx, dy)
                 # first  = True
