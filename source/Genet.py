@@ -46,7 +46,7 @@ class Genet:
                 b.genet = count
                 genets.append(count)
                 count += 1
-                print("Image ", img.name, "Blob ", b.id, " has genet ", b.genet)
+                #print("Image ", img.name, "Blob ", b.id, " has genet ", b.genet)
 
         #remap all the correspondending blobs using genets[]
         for corrs in self.project.correspondences.values():
@@ -62,7 +62,7 @@ class Genet:
                     blob1.genet = genets[blob1.genet]
 
                 if blob1.genet != blob2.genet:
-                    print("Genet: ", blob2.genet, "mapped to", blob1.genet)
+                    #print("Genet: ", blob2.genet, "mapped to", blob1.genet)
 
                     g = blob2.genet
                     while True: #if g is remapped also those needs to be remapped
@@ -76,9 +76,8 @@ class Genet:
             for b in img.annotations.seg_blobs:
                 while b.genet != genets[b.genet]:  #follow the link to the
                     b.genet = genets[b.genet]
-                print("Image ", img.name, "Blob ", b.id, " has genet ", b.genet)
+                #print("Image ", img.name, "Blob ", b.id, " has genet ", b.genet)
 
-        self.exportSVG()
 
     #ox and oy are the origin of bbox of the blob, dx and dy is a translation in svg.
     def path(self, contour, ox, oy, scale, dx, dy):
@@ -96,7 +95,51 @@ class Genet:
             path += str(round(x, 1)) + " " + str(round(y, 1))
         return path
 
-    def exportSVG(self):
+    def exportCSV(self, filename):
+        fields = ['genet']
+        for img in self.project.images:
+            fields.append(img.name + " blobs")
+            fields.append(img.name + " area")
+
+        lines = {}
+
+        for img in self.project.images:
+            for blob in img.annotations.seg_blobs:
+                if not blob.genet in lines:
+                    lines[blob.genet] = { }
+
+        data = []
+        #compact and sort lines.
+        count = 0
+        for g in sorted(lines.keys()):
+            lines[g]['row'] = count
+            count += 1
+            row = [None] * len(fields)
+            row[0] = g
+            data.append(row)
+
+        count = 1
+        for img in self.project.images:
+            for blob in img.annotations.seg_blobs:
+                line = lines[blob.genet]
+                row = line['row']
+                data[row][count] = blob.id
+                if not data[row][count+1]:
+                    data[row][count+1] = blob.area
+                else:
+                    data[row][count+1] += blob.area
+            count += 2
+
+        import csv
+
+        with open(filename, mode='w') as file:
+            writer = csv.writer(file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            writer.writerow(fields)
+            for line in data:
+                writer.writerow(line)
+
+
+    def exportSVG(self, filename):
         #remap genets to lines and find bbox per genet.
         lines = {}
 
@@ -105,8 +148,7 @@ class Genet:
                 if not blob.genet in lines:
                     lines[blob.genet] = { 'box': blob.bbox }
                 else:
-                    line = lines[blob.genet]['box']
-                    line = jointBox([line, blob.bbox])
+                    lines[blob.genet]['box'] = jointBox([lines[blob.genet]['box'], blob.bbox])
 
         #compact and sort lines.
         count = 0
@@ -114,7 +156,6 @@ class Genet:
             lines[g]['row'] = count
             count += 1
 
-        print(lines)
 
 
         svg = "<svg>"
@@ -131,7 +172,8 @@ class Genet:
                 dx = column*(side + hpadding)
                 dy =    row*(side + vpadding)
 
-                svg += '<path data-image="' + img.name + '" data-id="' + str(blob.id) + '" d="'
+                brush = self.project.classBrushFromName(blob)
+                svg += '<path fill="' + brush.color().name() + '" data-image="' + img.name + '" data-id="' + str(blob.id) + '" d="'
                 svg += self.path(blob.contour, box[1], box[0], scale, dx, dy)
                 # first  = True
                 # for i in range(blob.contour.shape[0]):
@@ -154,7 +196,10 @@ class Genet:
 
             column += 1
         svg += "</svg>"
-        print(svg)
+        f = open(filename, "w")
+        f.write(svg)
+        f.close()
+
 
     # update blob with a new genet first empty genet (starting from 1)
     def addBlob(self, blob):

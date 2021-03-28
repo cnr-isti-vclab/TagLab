@@ -897,9 +897,13 @@ class TagLab(QWidget):
         exportMatchLabels.setStatusTip("Export the current matches")
         exportMatchLabels.triggered.connect(self.exportMatches)
 
-        autoGenetLabels = QAction("Compute genets", self)
-        autoGenetLabels.setStatusTip("Compute connected components of correspondences")
-        autoGenetLabels.triggered.connect(self.updateGenets)
+        exportGenetSVG = QAction("Export genet shapes", self)
+        exportGenetSVG.setStatusTip("Export genets history of corals in SVG.")
+        exportGenetSVG.triggered.connect(self.exportGenetSVG)
+
+        exportGenetCSV = QAction("Export genet data", self)
+        exportGenetCSV.setStatusTip("Export genets history of corals in CSV")
+        exportGenetCSV.triggered.connect(self.exportGenetCSV)
 
 
         self.comparemenu = menubar.addMenu("&Comparison")
@@ -908,7 +912,9 @@ class TagLab(QWidget):
         self.comparemenu.addAction(autoMatchLabels)
         self.comparemenu.addAction(manualMatchLabels)
         self.comparemenu.addAction(exportMatchLabels)
-        self.comparemenu.addAction(autoGenetLabels)
+
+        self.comparemenu.addAction(exportGenetSVG)
+        self.comparemenu.addAction(exportGenetCSV)
 
         self.helpmenu = menubar.addMenu("&Help")
         self.helpmenu.setStyleSheet(styleMenu)
@@ -997,8 +1003,25 @@ class TagLab(QWidget):
             self.toggleRGBDEM(self.viewerplus2)
 
     @pyqtSlot()
-    def updateGenets(self):
+    def exportGenetSVG(self):
+        filters = "SVG (*.svg)"
+        filename, _ = QFileDialog.getSaveFileName(self, "Save genet shapes in SVG", self.taglab_dir, filters)
+        if not filename:
+            return
+
         self.project.genet.updateGenets()
+        self.project.genet.exportSVG(filename)
+
+    @pyqtSlot()
+    def exportGenetCSV(self):
+        filters = "CSV (*.csv)"
+        filename, _ = QFileDialog.getSaveFileName(self, "Save genet data in CSV", self.taglab_dir, filters)
+        if not filename:
+            return
+
+        self.project.genet.updateGenets()
+        self.project.genet.exportCSV(filename)
+
 
     @pyqtSlot()
     def autoCorrespondences(self):
