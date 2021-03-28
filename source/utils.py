@@ -90,18 +90,16 @@ def showMaskAndCurve(mask, bbox, curve, fig_number):
 
 def maskToQImage(mask):
 
-    h = mask.shape[0]
-    w = mask.shape[1]
-    qimg = QImage(w, h, QImage.Format_RGB32)
-    qimg.fill(qRgb(0, 0, 0))
+    maskrgb = np.zeros((mask.shape[0], mask.shape[1], 3))
+    maskrgb[:,:,0] = mask
+    maskrgb[:,:,1] = mask
+    maskrgb[:,:,2] = mask
+    maskrgb = maskrgb * 255
+    maskrgb = maskrgb.astype(np.uint8)
 
-    for y in range(h):
-        for x in range(w):
-
-            if mask[y, x] == 1:
-                qimg.setPixel(x, y, qRgb(255, 255, 255))
-
+    qimg = rgbToQImage(maskrgb)
     return qimg
+
 
 def labelsToQImage(mask):
 
@@ -182,42 +180,6 @@ def figureToQPixmap(fig, dpi, width, height):
     pxmap = QPixmap.fromImage(qimg)
 
     return pxmap
-
-def prepareForDeepExtreme(image_map, four_points, pad_max):
-    """
-    Crop the image map (QImage) and return a NUMPY array containing it.
-    It returns also the coordinates of the bounding box on the cropped image.
-    """
-
-    left = four_points[:, 0].min() - pad_max
-    right = four_points[:, 0].max() + pad_max
-    top = four_points[:, 1].min() - pad_max
-    bottom = four_points[:, 1].max() + pad_max
-    h = bottom - top
-    w = right - left
-
-    image_cropped = cropQImage(image_map, [top, left, w, h])
-
-    fmt = image_cropped.format()
-    assert(fmt == QImage.Format_RGB32)
-
-    arr = np.zeros((h, w, 3), dtype=np.uint8)
-
-    bits = image_cropped.bits()
-    bits.setsize(int(h*w*4))
-    arrtemp = np.frombuffer(bits, np.uint8).copy()
-    arrtemp = np.reshape(arrtemp, [h, w, 4])
-    arr[:, :, 0] = arrtemp[:, :, 2]
-    arr[:, :, 1] = arrtemp[:, :, 1]
-    arr[:, :, 2] = arrtemp[:, :, 0]
-
-    # update four point
-    four_points_updated = np.zeros((4,2), dtype=np.int)
-    four_points_updated[:, 0] = four_points[:, 0] - left
-    four_points_updated[:, 1] = four_points[:, 1] - top
-
-    return (arr, four_points_updated)
-
 
 def cropQImage(qimage_map, bbox):
 
