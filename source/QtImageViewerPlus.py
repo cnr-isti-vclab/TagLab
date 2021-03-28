@@ -128,6 +128,8 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.setContextMenuPolicy(Qt.CustomContextMenu)
 
+        self.transparency_value = 0.5
+
         self.refine_grow = 0.0 #maybe should in in tools
         self.refine_original_mask = None
         self.refine_original_blob = None
@@ -242,6 +244,7 @@ class QtImageViewerPlus(QtImageViewer):
 
         blob.qpath_gitem = self.scene.addPath(blob.qpath, pen, brush)
         blob.qpath_gitem.setZValue(1)
+        blob.qpath_gitem.setOpacity(self.transparency_value)
 
         font_size = 12
         blob.id_item = TextItem(str(blob.id),  QFont("Calibri", font_size, QFont.Bold))
@@ -254,7 +257,6 @@ class QtImageViewerPlus(QtImageViewer):
 
         #blob.id_item.setDefaultTextColor(Qt.white)
         #blob.id_item.setFlag(QGraphicsItem.ItemIgnoresTransformations)
-        #blob.qpath_gitem.setOpacity(self.transparency_value)
 
 
     def undrawBlob(self, blob):
@@ -267,7 +269,7 @@ class QtImageViewerPlus(QtImageViewer):
 
 
     def applyTransparency(self, value):
-        self.transparency_value = value / 100.0
+        self.transparency_value = 1.0 - (value / 100.0)
         # current annotations
         for blob in self.annotations.seg_blobs:
             blob.qpath_gitem.setOpacity(self.transparency_value)
@@ -294,8 +296,13 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.tools.setTool(tool)
 
-        if tool in ["FREEHAND", "RULER", "DEEPEXTREME"] or (tool in ["CUT", "EDITBORDER"] and len(self.selected_blobs) > 1):
+        if tool in ["FREEHAND", "RULER", "DEEPEXTREME"] or (tool in ["CUT", "EDITBORDER", "RITM"] and len(self.selected_blobs) > 1):
             self.resetSelection()
+
+        if tool == "RITM":
+            self.setContextMenuPolicy(Qt.NoContextMenu)
+        else:
+            self.setContextMenuPolicy(Qt.CustomContextMenu)
 
         if tool == "WORKINGAREA":
             QApplication.setOverrideCursor(Qt.CrossCursor)
@@ -376,7 +383,7 @@ class QtImageViewerPlus(QtImageViewer):
 
             if (self.panEnabled and not (mods & Qt.ShiftModifier)) or (mods & Qt.ControlModifier):
                 self.setDragMode(QGraphicsView.ScrollHandDrag)
-            elif self.tools.tool == "MATCH":
+            elif self.tools.tool == "MATCH" or self.tools.tool == "RITM":
                 self.tools.leftPressed(x, y, mods)
 
             elif mods & Qt.ShiftModifier:
@@ -393,8 +400,11 @@ class QtImageViewerPlus(QtImageViewer):
         #     self.setDragMode(QGraphicsView.ScrollHandDrag)
 
         if event.button() == Qt.RightButton:
-            clippedCoords = self.clipScenePos(scenePos)
-            self.rightMouseButtonPressed.emit(clippedCoords[0], clippedCoords[1])
+            (x, y) = self.clipScenePos(scenePos)
+            if self.tools.tool == "RITM":
+                self.tools.rightPressed(x, y, mods)
+            else:
+                self.rightMouseButtonPressed.emit(x, y)
 
         QGraphicsView.mousePressEvent(self, event)
 
@@ -679,6 +689,11 @@ class QtImageViewerPlus(QtImageViewer):
         self.undo_data.saveUndo()
 
     def undo(self):
+
+        if self.tools.tool == "RITM":
+            self.tools.tools["RITM"].undo_click()
+            return
+
         operation = self.undo_data.undo()
         if operation is None:
             return

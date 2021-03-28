@@ -3,6 +3,7 @@ from PyQt5.QtCore import Qt
 from source.tools.PickPoints import PickPoints
 from source.tools.EditPoints import EditPoints
 from source.tools.Scribbles import Scribbles
+from source.tools.CorrectivePoints import CorrectivePoints
 
 
 from source.tools.CreateCrack import CreateCrack
@@ -16,6 +17,7 @@ from source.tools.Ruler import Ruler
 from source.tools.DeepExtreme import DeepExtreme
 from source.tools.Match import Match
 from source.tools.WorkingArea import WorkingArea
+from source.tools.Ritm import Ritm
 
 
 
@@ -29,6 +31,7 @@ class Tools(object):
         self.pick_points = PickPoints(self.scene)
         self.edit_points = EditPoints(self.scene)
         self.scribbles = Scribbles(self.scene)
+        self.corrective_points = CorrectivePoints(self.scene)
 
         self.CROSS_LINE_WIDTH = 2
         self.extreme_pick_style = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.red,  'size': 6}
@@ -49,7 +52,8 @@ class Tools(object):
             "RULER": Ruler(self.viewerplus, self.pick_points),
             "DEEPEXTREME": DeepExtreme(self.viewerplus, self.pick_points),
             "MATCH": Match(self.viewerplus),
-            "WORKINGAREA": WorkingArea(self.viewerplus,self.pick_points)
+            "WORKINGAREA": WorkingArea(self.viewerplus, self.pick_points),
+            "RITM": Ritm(self.viewerplus, self.corrective_points)
         }
         # connect infomessage, log, blobinfo for   all tools with self.infoWidget.setInfoMessage(
 
@@ -58,11 +62,16 @@ class Tools(object):
         self.tool = tool
 
     def resetTools(self):
+
         self.pick_points.reset()
         self.edit_points.reset()
         self.scribbles.reset()
+        self.corrective_points.reset()
 
         self.scene.invalidate(self.scene.sceneRect())
+
+        self.tools["DEEPEXTREME"].reset()
+        self.tools["RITM"].reset()
 
         if self.viewerplus.crackWidget is not None:
             self.viewerplus.crackWidget.close()
@@ -79,6 +88,10 @@ class Tools(object):
         if self.tool == "MOVE":
             return
         self.tools[self.tool].leftPressed(x, y, mods)
+
+    def rightPressed(self, x, y, mods = None):
+        if self.tool == "RITM":
+            self.tools[self.tool].rightPressed(x, y, mods)
 
     def mouseMove(self, x, y):
         if self.tool == "MOVE":

@@ -92,6 +92,7 @@ class TagLab(QWidget):
         self.setStyleSheet("background-color: rgb(55,55,55); color: white")
 
         current_version, need_to_update = self.checkNewVersion()
+        need_to_update = False
         if need_to_update:
             print("New version available. Please, launch update.py")
             sys.exit(0)
@@ -162,6 +163,7 @@ class TagLab(QWidget):
 
         self.btnRuler       = self.newButton("ruler.png",    "Measure tool",          flatbuttonstyle1, self.ruler)
         self.btnDeepExtreme = self.newButton("dexter.png",   "4-clicks segmentation",  flatbuttonstyle2, self.deepExtreme)
+        self.btnRitm        = self.newButton("ritm.png",     "Interactive click-based segmentation", flatbuttonstyle2, self.ritm)
         self.btnAutoClassification = self.newButton("auto.png", "Fully automatic classification", flatbuttonstyle2, self.selectClassifier)
 
         # Split Screen operation removed from the toolbar
@@ -180,6 +182,7 @@ class TagLab(QWidget):
         layout_tools.setSpacing(0)
         layout_tools.addWidget(self.btnMove)
         layout_tools.addWidget(self.btnDeepExtreme)
+        layout_tools.addWidget(self.btnRitm)
         layout_tools.addWidget(self.btnFreehand)
         layout_tools.addWidget(self.btnAssign)
         #layout_tools.addWidget(self.btnWatershed)
@@ -618,7 +621,6 @@ class TagLab(QWidget):
 
     # call by pressing right button
     def openContextMenu(self, position):
-
 
         menu = QMenu(self)
         menu.setAutoFillBackground(True)
@@ -1726,6 +1728,7 @@ class TagLab(QWidget):
         self.btnCreateCrack.setChecked(False)
         #self.btnSplitBlob.setChecked(False)
         self.btnDeepExtreme.setChecked(False)
+        self.btnRitm.setChecked(False)
         self.btnMatch.setChecked(False)
         self.btnAutoClassification.setChecked(False)
 
@@ -1741,7 +1744,8 @@ class TagLab(QWidget):
             "WATERSHED":   ["Watershed",   self.btnWatershed],
             "RULER"      : ["Ruler"      , self.btnRuler],
             "DEEPEXTREME": ["4-click"    , self.btnDeepExtreme],
-            "MATCH"      : ["Match"      , self.btnMatch]
+            "MATCH"      : ["Match"      , self.btnMatch],
+            "RITM"       : ["Ritm"       , self.btnRitm]
         }
         newtool = tools[tool]
         self.resetToolbar()
@@ -1842,6 +1846,14 @@ class TagLab(QWidget):
         extreme of the corals and confirm the points by pressing SPACE.
         """
         self.setTool("DEEPEXTREME")
+
+    @pyqtSlot()
+    def ritm(self):
+        """
+        Activate the "Interactive click-based segmentation" tool.
+        The segmentation is performed by adding positive or negative clicks.
+        """
+        self.setTool("RITM")
 
     @pyqtSlot()
     def matchTool(self):
