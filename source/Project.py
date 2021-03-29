@@ -197,8 +197,9 @@ class Project(object):
 
     def isLabelVisible(self, id):
         if not id in self.labels:
-            raise Exception("Unknown label: " + id)
+            print("WARNING! Unknown label: " + id)
 
+        lbl = self.labels.get(id)
         return self.labels[id].visible
 
     def orderImagesByAcquisitionDate(self):
