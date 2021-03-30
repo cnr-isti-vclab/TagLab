@@ -91,6 +91,9 @@ class DeepExtreme(Tool):
 
         pad = 50
         thres = 0.8
+        #gpu_id = 0
+        #device = torch.device("cuda:" + str(gpu_id) if torch.cuda.is_available() else "cpu")
+        #self.deepextreme_net.to(device)
 
         extreme_points_to_use = np.asarray(self.pick_points.points).astype(int)
         pad_extreme = 100
