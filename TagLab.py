@@ -355,16 +355,18 @@ class TagLab(QWidget):
 
         # BLOB INFO
         self.groupbox_blobpanel = QGroupBox("Region Info")
-        self.lblId = QLabel("Id: ")
-        self.lblIdValue = QLabel(" ")
-        self.lblCl = QLabel("Class: ")
+        self.lblIdValue = QLabel(" ")    
         self.lblClass = QLabel("Empty")
+        self.lblGenetValue = QLabel("")
 
         blobpanel_layoutH1 = QHBoxLayout()
-        blobpanel_layoutH1.addWidget(self.lblId)
+        blobpanel_layoutH1.addWidget(QLabel("Id: "))
         blobpanel_layoutH1.addWidget(self.lblIdValue)
-        blobpanel_layoutH1.addWidget(self.lblCl)
+        blobpanel_layoutH1.addWidget(QLabel("Class: "))
         blobpanel_layoutH1.addWidget(self.lblClass)
+        blobpanel_layoutH1.addWidget(QLabel("Genet: "))
+        blobpanel_layoutH1.addWidget(self.lblGenetValue)
+
         blobpanel_layoutH1.addStretch()
 
 
@@ -1890,6 +1892,8 @@ class TagLab(QWidget):
         self.lblIdValue.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.lblClass.setText(blob.class_name)
         self.lblClass.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.lblGenetValue.setText("" if blob.genet == None else str(blob.genet))
+        self.lblGenetValue.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         if self.activeviewer.image.map_px_to_mm_factor == "":
             txt_perimeter = "Perimeter (px):"
@@ -1938,6 +1942,7 @@ class TagLab(QWidget):
 
         self.lblIdValue.setText("")
         self.lblClass.setText("")
+        self.lblGenetValue.setText("")
         txt = " "
         self.lblCentroidValue.setText(txt)
         txtP = "Perimeter (cm):"
