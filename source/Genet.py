@@ -168,36 +168,32 @@ class Genet:
             svg += '<text font-size="20px" x="' + str(-150) + '" y="' + str(g*(side + vpadding) + 80) + '">genet: ' + str(g) + '</text>'
 
         for img in self.project.images:
+            dx = column*(side + hpadding)
+
+            svg += '<text text-anchor="middle" text-length="' + str(side) + '"  x="' + str(dx + side/2) + '" y="' + str(-150) + '"> ' + \
+                '<tspan x="' + str(dx + side/2) + '" font-size="22px" dy="1.2em">' + str(img.name) + "</tspan>" + \
+                '<tspan x="' + str(dx + side/2) + '" font-size="18px" dy="1.6em">' + img.acquisition_date + '</tspan></text>'
+
             for blob in img.annotations.seg_blobs:
                 line = lines[blob.genet]
                 box = line['box']
                 row = line['row']
                 scale = side / max(box[2], box[3])
-                dx = column*(side + hpadding)
                 dy =    row*(side + vpadding)
 
                 brush = self.project.classBrushFromName(blob)
-                svg += '<text x="' + str(dx) + '" y="' + str(dy) + '">id: ' + str(blob.id) + '</text>'
+
                 svg += '<path fill="' + brush.color().name() + '" data-image="' + img.name + '" data-id="' + str(blob.id) + '" d="'
                 svg += self.path(blob.contour, box[1], box[0], scale, dx, dy)
-                # first  = True
-                # for i in range(blob.contour.shape[0]):
-                #     if first:
-                #         svg += " M "
-                #         first = False
-                #     else:
-                #         svg += " L "
-                #
-                #     #x = (blob.contour[i, 0] - box[1])*scale
-                #     #y = (blob.contour[i, 1] - box[0])*scale
-                #     x = (blob.contour[i, 0] - box[1])*scale + column*(side + hpadding)
-                #     y = (blob.contour[i, 1] - box[0])*scale +
-                #     svg += str(round(x, 1)) + " " + str(round(y,1))
 
                 for inner in blob.inner_contours:
                     svg += self.path(inner, box[1], box[0], scale, dx, dy)
 
                 svg += '"></path>\n'
+                b = blob.bbox
+                cx = (b[1] + b[2]/2 - box[1])*scale + dx - 4
+                cy = (b[0] + b[3]/2 - box[0])*scale + dy + 6
+                svg += '<text font-size="11px" x="' + str(cx) + '" y="' + str(cy) + '">' + str(blob.id) + '</text>'
 
             column += 1
         svg += "</svg>"
