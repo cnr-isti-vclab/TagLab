@@ -92,6 +92,13 @@ class Ritm(Tool):
         rect_map = self.viewerplus.viewportToScene()
         self.work_area_bbox = [round(rect_map.top()), round(rect_map.left()),
                                round(rect_map.width()), round(rect_map.height())]
+
+        print(self.work_area_bbox[2]*self.work_area_bbox[3])
+
+        if self.work_area_bbox[2]*self.work_area_bbox[3] > 4000000:
+
+            return False
+
         image_crop = cropQImage(self.viewerplus.img_map, self.work_area_bbox)
         input_image = qimageToNumpyArray(image_crop)
 
@@ -108,6 +115,7 @@ class Ritm(Tool):
         h = self.work_area_bbox[3]
         self.work_area_item = self.viewerplus.scene.addRect(x, y, w, h, pen, brush)
         self.work_area_item.setZValue(3)
+        return True
 
     def createWorkAreaMask(self):
 
@@ -135,10 +143,11 @@ class Ritm(Tool):
     def prepareInput(self):
 
         nclicks = self.points.nclicks()
+        validArea = True
 
         if nclicks == 1 and self.work_area_bbox[2] == 0 and self.work_area_bbox[3] == 0:
             # the work area is assigned as the input image of the network
-            self.initializeWorkArea()
+            validArea= self.initializeWorkArea()
 
         # init mask
         if nclicks == 1 and len(self.viewerplus.selected_blobs) > 0:
@@ -174,6 +183,8 @@ class Ritm(Tool):
             click = clicker.Click(is_positive=False, coords=(y, x))
             self.clicker.add_click(click)
 
+        return validArea
+
     def segment(self, save_status=True):
 
 
@@ -183,45 +194,48 @@ class Ritm(Tool):
 
         self.loadNetwork()
 
-        self.prepareInput()
+        if self.prepareInput() is True:
 
-        if save_status:
-            self.states.append(self.predictor.get_states())
-        pred = self.predictor.get_prediction(self.clicker, prev_mask=self.init_mask)
+            if save_status:
+                self.states.append(self.predictor.get_states())
+            pred = self.predictor.get_prediction(self.clicker, prev_mask=self.init_mask)
 
-        segm_mask = pred > 0.5
-        segm_mask = segm_mask.astype(np.int32)
-        offsetx= self.work_area_bbox[1]
-        offsety=self.work_area_bbox[0]
+            segm_mask = pred > 0.5
+            segm_mask = segm_mask.astype(np.int32)
+            offsetx= self.work_area_bbox[1]
+            offsety=self.work_area_bbox[0]
 
-        # this handle corrections by fusing the new segm_mask with the one of the object to correct
-        if self.blob_to_correct is not None:
-            bbox_to_correct = self.blob_to_correct.bbox
-            mask_to_correct = self.blob_to_correct.getMask()
-            joint_mask = jointMask(bbox_to_correct, self.work_area_bbox)
-            paintMask(joint_mask[0], joint_mask[1], mask_to_correct, bbox_to_correct, 1)
-            replaceMask(joint_mask[0], joint_mask[1], segm_mask, self.work_area_bbox)
-            offsetx= joint_mask[1][1]
-            offsety=joint_mask[1][0]
-            segm_mask = joint_mask[0]
+            # this handle corrections by fusing the new segm_mask with the one of the object to correct
+            if self.blob_to_correct is not None:
+                bbox_to_correct = self.blob_to_correct.bbox
+                mask_to_correct = self.blob_to_correct.getMask()
+                joint_mask = jointMask(bbox_to_correct, self.work_area_bbox)
+                paintMask(joint_mask[0], joint_mask[1], mask_to_correct, bbox_to_correct, 1)
+                replaceMask(joint_mask[0], joint_mask[1], segm_mask, self.work_area_bbox)
+                offsetx= joint_mask[1][1]
+                offsety=joint_mask[1][0]
+                segm_mask = joint_mask[0]
 
-        segm_mask = segm_mask*255
-        torch.cuda.empty_cache()
+            segm_mask = segm_mask*255
+            torch.cuda.empty_cache()
 
-        self.undrawAllBlobs()
+            self.undrawAllBlobs()
 
-        blobs = self.viewerplus.annotations.blobsFromMask(segm_mask, offsetx, offsety, 1000)
+            blobs = self.viewerplus.annotations.blobsFromMask(segm_mask, offsetx, offsety, 1000)
 
-        for blob in blobs:
-            if self.intersectionWithExistingBlobs(blob) is False:
-                self.drawBlob(blob)
-                self.current_blobs.append(blob)
+            for blob in blobs:
+                if self.intersectionWithExistingBlobs(blob) is False:
+                    self.drawBlob(blob)
+                    self.current_blobs.append(blob)
 
-        self.infoMessage.emit("Segmentation done.")
+            self.infoMessage.emit("Segmentation done.")
+
+        else:
+            print('The working area is too large, please go closer.')
+            self.reset()
+
         self.log.emit("[TOOL][RITM] Segmentation ends.")
-
         QApplication.restoreOverrideCursor()
-
     def loadNetwork(self):
 
         if self.ritm_net is None:
