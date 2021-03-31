@@ -45,6 +45,10 @@ class CorrectivePoints(object):
 
     def removeLastPoint(self):
 
+        number_of_clicks = self.nclicks()
+        if number_of_clicks == 0:
+            return
+
         if len(self.pos_neg_clicks) > 0:
             last_click_type = self.pos_neg_clicks.pop()
 

@@ -35,11 +35,25 @@ class Ritm(Tool):
         self.work_area_item = None
         self.states = []
 
+
+    def checkPointPosition(self, x, y):
+
+        if self.work_area_bbox[2]==0 and self.work_area_bbox[3]==0:
+            return True
+        if x <= self.work_area_bbox[1] or x>= self.work_area_bbox[1]+self.work_area_bbox[2]:
+            return False
+        if y <= self.work_area_bbox[0] or y>= self.work_area_bbox[0] + self.work_area_bbox[3]:
+            return False
+
+        return True
+
+
     def leftPressed(self, x, y, mods):
+
 
         if mods & Qt.ShiftModifier:
             points = self.points.positive_points
-            if len(points) < self.MAX_POINTS:
+            if len(points) < self.MAX_POINTS and self.checkPointPosition(x,y) is True:
                 self.points.addPoint(x, y, positive=True)
                 message = "[TOOL][RITM] New positive point added (" + str(len(points)) + ")"
                 self.log.emit(message)
@@ -52,7 +66,7 @@ class Ritm(Tool):
 
         if mods & Qt.ShiftModifier:
             points = self.points.negative_points
-            if len(points) < self.MAX_POINTS:
+            if len(points) < self.MAX_POINTS and self.checkPointPosition(x,y) is True:
                 self.points.addPoint(x, y, positive=False)
                 message = "[TOOL][RITM] New negative point added (" + str(len(points)) + ")"
                 self.log.emit(message)
