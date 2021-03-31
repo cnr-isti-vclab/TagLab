@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QPen, QBrush
 
 from source.tools.Tool import Tool
-from source.Mask import paintMask
+from source.Mask import paintMask, jointBox, jointMask, replaceMask
 from source.utils import qimageToNumpyArray
 from source.utils import cropQImage, maskToQImage, floatmapToQImage
 
@@ -23,15 +23,15 @@ class Ritm(Tool):
         self.ritm_net = None
         self.MAX_POINTS = 10
 
-        self.clicker = clicker.Clicker()
+        self.clicker = clicker.Clicker() #handles clicked point (original code of ritm)
         self.predictor = None
         self.predictor_params = {'brs_mode': 'NoBRS'}
         self.init_mask = None
         self.device = None
         self.current_blobs = []
-        self.blob_to_correct = None
+        self.blob_to_correct = None  # selected blob
         self.work_area_bbox = [0, 0, 0, 0]
-        self.work_area_mask = None
+        self.work_area_mask = None   # to not overlap old segmented regions
         self.work_area_item = None
         self.states = []
 
@@ -47,7 +47,6 @@ class Ritm(Tool):
                 # apply segmentation
                 self.segment()
 
-                self.last_click = "positive"
 
     def rightPressed(self, x, y, mods):
 
@@ -61,8 +60,6 @@ class Ritm(Tool):
                 # apply segmentation
                 self.segment()
 
-                self.last_click = "negative"
-
     def undo_click(self):
         self.points.removeLastPoint()
         nclicks = self.points.nclicks()
@@ -74,21 +71,16 @@ class Ritm(Tool):
             self.predictor.set_states(prev_state)
             self.segment(save_status=False)
 
-    def createWorkAreaMask(self):
-
-        w = self.work_area_bbox[2]
-        h = self.work_area_bbox[3]
-        self.work_area_mask = np.zeros((h,w), dtype=np.int32)
-        for blob in self.viewerplus.image.annotations.seg_blobs:
-            mask = blob.getMask()
-            paintMask(self.work_area_mask, self.work_area_bbox, mask, blob.bbox, 1)
 
     def initializeWorkArea(self):
+        # if image_crop is too big it must be rescaled otherwise the image is too big and the ritm goes out of memory
+
         rect_map = self.viewerplus.viewportToScene()
         self.work_area_bbox = [round(rect_map.top()), round(rect_map.left()),
                                round(rect_map.width()), round(rect_map.height())]
         image_crop = cropQImage(self.viewerplus.img_map, self.work_area_bbox)
         input_image = qimageToNumpyArray(image_crop)
+
         self.predictor.set_input_image(input_image)
         self.createWorkAreaMask()
         brush = QBrush(Qt.NoBrush)
@@ -102,6 +94,15 @@ class Ritm(Tool):
         h = self.work_area_bbox[3]
         self.work_area_item = self.viewerplus.scene.addRect(x, y, w, h, pen, brush)
         self.work_area_item.setZValue(3)
+
+    def createWorkAreaMask(self):
+
+        w = self.work_area_bbox[2]
+        h = self.work_area_bbox[3]
+        self.work_area_mask = np.zeros((h,w), dtype=np.int32)
+        for blob in self.viewerplus.image.annotations.seg_blobs:
+            mask = blob.getMask()
+            paintMask(self.work_area_mask, self.work_area_bbox, mask, blob.bbox, 1)
 
     def intersectionWithExistingBlobs(self, blob):
         bigmask = self.work_area_mask.copy()
@@ -161,6 +162,7 @@ class Ritm(Tool):
 
     def segment(self, save_status=True):
 
+
         QApplication.setOverrideCursor(Qt.WaitCursor)
         self.infoMessage.emit("Segmentation is ongoing..")
         self.log.emit("[TOOL][DEEPEXTREME] Segmentation begins..")
@@ -174,13 +176,27 @@ class Ritm(Tool):
         pred = self.predictor.get_prediction(self.clicker, prev_mask=self.init_mask)
 
         segm_mask = pred > 0.5
-        segm_mask = 255 * segm_mask.astype(np.int32)
+        segm_mask = segm_mask.astype(np.int32)
+        offsetx= self.work_area_bbox[1]
+        offsety=self.work_area_bbox[0]
 
+        # this handle corrections by fusing the new segm_mask with the one of the object to correct
+        if self.blob_to_correct is not None:
+            bbox_to_correct = self.blob_to_correct.bbox
+            mask_to_correct = self.blob_to_correct.getMask()
+            joint_mask = jointMask(bbox_to_correct, self.work_area_bbox)
+            paintMask(joint_mask[0], joint_mask[1], mask_to_correct, bbox_to_correct, 1)
+            replaceMask(joint_mask[0], joint_mask[1], segm_mask, self.work_area_bbox)
+            offsetx= joint_mask[1][1]
+            offsety=joint_mask[1][0]
+            segm_mask = joint_mask[0]
+
+        segm_mask = segm_mask*255
         torch.cuda.empty_cache()
 
         self.undrawAllBlobs()
 
-        blobs = self.viewerplus.annotations.blobsFromMask(segm_mask, self.work_area_bbox[1], self.work_area_bbox[0], 1000)
+        blobs = self.viewerplus.annotations.blobsFromMask(segm_mask, offsetx, offsety, 1000)
 
         for blob in blobs:
             if self.intersectionWithExistingBlobs(blob) is False:

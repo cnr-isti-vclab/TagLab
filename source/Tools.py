@@ -40,7 +40,7 @@ class Tools(object):
         self.crackWidget = None
 
     def createTools(self):
-        # TOOLS
+        # TOOLS - create all the tools
         self.tools = {
             "CREATECRACK": CreateCrack(self.viewerplus),
             "SPLITBLOB": SplitBlob(self.viewerplus, self.pick_points),

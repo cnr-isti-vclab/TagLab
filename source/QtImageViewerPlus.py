@@ -18,7 +18,7 @@
 # for more details.                                               
 
 """ PyQt image viewer widget for a QPixmap in a QGraphicsView scene with mouse zooming and panning.
-    The viewer has also drawing capabilities.
+    The viewer has also drawing capabilities (differently from QTimage viewer).
 """
 
 import os.path

@@ -7,6 +7,8 @@ from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsItem, QGraphic
 class CorrectivePoints(object):
     def __init__(self, scene):
         # DATA FOR THE INTERACTIVE CLICK-BASED SEGMENTATION (POSITIVE AND NEGATIVE CLICKS)
+        # markers = displayed points on scene
+        # pos_neg_clicks = sign of clicked point in order (for the undo operation)
         self.positive_points = []
         self.negative_points = []
         self.markers = []
@@ -58,5 +60,5 @@ class CorrectivePoints(object):
             self.scene.removeItem(marker)
 
     def nclicks(self):
-
+        # total number of clicked points
         return len(self.positive_points) + len(self.negative_points)

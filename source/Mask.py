@@ -88,6 +88,26 @@ def paintMask(dmask, dbox, smask, sbox, value):
         d[:] = d | s
 
 
+def replaceMask(dmask, dbox, smask, sbox):
+    #this take a destination mask and an overlapping source mask and replace the portion covered by the source mask in the destination mask
+
+    # range is [minx, miny, maxx, maxy], absolute ranges
+    drange = [dbox[0], dbox[1], dbox[0] + dbox[3], dbox[1] + dbox[2]]
+    srange = [sbox[0], sbox[1], sbox[0] + sbox[3], sbox[1] + sbox[2]]
+
+    #intersection
+    range = [ max(drange[0], srange[0]), max(drange[1], srange[1]), min(drange[2], srange[2]),  min(drange[3], srange[3])]
+    #check for intersection
+    if range[2] <= range[0] or range[3] <= range[1]:
+        return
+
+    #compute local ranges
+    d = dmask[range[0] - dbox[0]:range[2] - dbox[0], range[1] - dbox[1]:range[3] - dbox[1]]
+    s = smask[range[0] - sbox[0]:range[2] - sbox[0], range[1] - sbox[1]:range[3] - sbox[1]]
+
+    d[:] = s
+
+
 def intersectMask(dmask, dbox, smask, sbox):
 
     # range is [minx, miny, maxx, maxy], absolute ranges
