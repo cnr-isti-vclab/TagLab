@@ -2994,7 +2994,7 @@ class TagLab(QWidget):
 
             flag_save = self.newDatasetWidget.checkTiles.isChecked()
             if flag_save:
-                new_dataset.save_samples("tiles_cutted.png", show_tiles=True, show_areas=True, radii=None)
+                new_dataset.save_samples("tiles_exported.png", show_tiles=True, show_areas=True, radii=None)
 
             # export the tiles
             self.progress_bar.setMessage("Export new dataset (export tiles)..")
