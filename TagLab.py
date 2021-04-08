@@ -149,7 +149,7 @@ class TagLab(QWidget):
         QPushButton:hover   { border: 1px solid rgb(255,100,100); }"""
 
 
-        self.btnMove        = self.newButton("move.png",     "Pan",                    flatbuttonstyle1, self.move)
+        self.btnMove        = self.newButton("move.png",     "Move",                    flatbuttonstyle1, self.move)
         self.btnAssign      = self.newButton("bucket.png",   "Assign class",           flatbuttonstyle1, self.assign)
         self.btnEditBorder  = self.newButton("edit.png",     "Edit border",            flatbuttonstyle1, self.editBorder)
         self.btnCut         = self.newButton("scissors.png", "Cut segmentation",       flatbuttonstyle1, self.cut)
@@ -163,7 +163,7 @@ class TagLab(QWidget):
 
         self.btnRuler       = self.newButton("ruler.png",    "Measure tool",          flatbuttonstyle1, self.ruler)
         self.btnDeepExtreme = self.newButton("dexter.png",   "4-clicks segmentation",  flatbuttonstyle2, self.deepExtreme)
-        self.btnRitm        = self.newButton("ritm.png",     "Interactive click-based segmentation", flatbuttonstyle2, self.ritm)
+        self.btnRitm        = self.newButton("ritm.png",     "Positive/negative clicks segmentation", flatbuttonstyle2, self.ritm)
         self.btnAutoClassification = self.newButton("auto.png", "Fully automatic classification", flatbuttonstyle2, self.selectClassifier)
 
         # Split Screen operation removed from the toolbar
@@ -731,8 +731,8 @@ class TagLab(QWidget):
         appendAct.setStatusTip("Add to the current project the annotated images of another project")
         appendAct.triggered.connect(self.importAnnotations)
 
-        importAct = QAction("Import Label Map", self)
-        importAct.setStatusTip("Import a label map")
+        importAct = QAction("Import Label Image", self)
+        importAct.setStatusTip("Import a Label Image")
         importAct.triggered.connect(self.importLabelMap)
 
 
@@ -743,24 +743,24 @@ class TagLab(QWidget):
         exportDataTableAct.setStatusTip("Export current annotations as CSV table")
         exportDataTableAct.triggered.connect(self.exportAnnAsDataTable)
 
-        exportMapAct = QAction("Export Annotations as Map", self)
+        exportMapAct = QAction("Export Annotations as a Label Image", self)
         #exportMapAct.setShortcut('Ctrl+??')
-        exportMapAct.setStatusTip("Export current annotations as a map")
+        exportMapAct.setStatusTip("Export current annotations as a Label Image")
         exportMapAct.triggered.connect(self.exportAnnAsMap)
 
-        exportHistogramAct = QAction("Export Histograms", self)
+        exportHistogramAct = QAction("Export Histogram", self)
         # exportHistogramAct.setShortcut('Ctrl+??')
-        exportHistogramAct.setStatusTip("Export histograms of current annotations")
+        exportHistogramAct.setStatusTip("Export Histogram")
         exportHistogramAct.triggered.connect(self.exportHistogramFromAnn)
 
-        exportShapefilesAct = QAction("Export as Shapefiles", self)
+        exportShapefilesAct = QAction("Export as Shapefile", self)
         # exportShapefilesAct.setShortcut('Ctrl+??')
-        exportShapefilesAct.setStatusTip("Export current annotations as shapefiles")
+        exportShapefilesAct.setStatusTip("Export current annotations as shapefile")
         exportShapefilesAct.triggered.connect(self.exportAnnAsShapefiles)
 
         exportGeoRefLabelMapAct = QAction("Export Annotations as a GeoTiff", self)
         # exportShapefilesAct.setShortcut('Ctrl+??')
-        exportGeoRefLabelMapAct.setStatusTip("Create a label map and export it as a GeoTiff")
+        exportGeoRefLabelMapAct.setStatusTip("Create a label image and export it as a GeoTiff")
         exportGeoRefLabelMapAct.triggered.connect(self.exportGeoRefLabelMap)
 
         exportTrainingDatasetAct = QAction("Export New Training Dataset", self)
