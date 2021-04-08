@@ -119,7 +119,7 @@ class QtClassifierWidget(QWidget):
         layoutButtons.addWidget(self.btnChooseArea)
         layoutButtons.addWidget(self.btnPrev)
 
-        self.LABEL_SIZE = 500
+        self.LABEL_SIZE = 600
 
         self.QlabelRGB = QLabel("")
         self.QPixmapRGB = QPixmap(self.LABEL_SIZE, self.LABEL_SIZE)
@@ -141,6 +141,7 @@ class QtClassifierWidget(QWidget):
 
         self.QlabelTransparency = QLabel("Transparency:")
         self.QlabelTransparencyValue = QLabel("50.0")
+
 
         SLIDER_WIDTH = 200
 
@@ -234,11 +235,12 @@ class QtClassifierWidget(QWidget):
 
     def updateLabelPreview(self):
 
-        opacity = 1.0 - (self.sliderTransparency.value() / 100.0)
+        opacity = self.sliderTransparency.value() / 100.0
 
         backimg = self.rgb_image.copy(0, 0, self.rgb_image.width(), self.rgb_image.height())
         painter = QPainter()
         painter.begin(backimg)
+        painter.setCompositionMode(QPainter.CompositionMode_Overlay)
         painter.setOpacity(opacity)
         painter.drawImage(0, 0, self.labelimage)
         painter.end()
