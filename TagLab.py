@@ -2994,7 +2994,7 @@ class TagLab(QWidget):
 
             flag_save = self.newDatasetWidget.checkTiles.isChecked()
             if flag_save:
-                new_dataset.save_samples("tiles_cutted.png", show_tiles=True, show_areas=True, radii=None)
+                new_dataset.save_samples("tiles_exported.png", show_tiles=True, show_areas=True, radii=None)
 
             # export the tiles
             self.progress_bar.setMessage("Export new dataset (export tiles)..")
@@ -3303,6 +3303,8 @@ class TagLab(QWidget):
             self.classifierWidget.setAttribute(Qt.WA_DeleteOnClose)
             self.classifierWidget.btnApply.clicked.connect(self.applyClassifier)
             self.classifierWidget.setWindowModality(Qt.NonModal)
+            qrect = self.viewerplus.geometry()
+            self.classifierWidget.move(qrect.top() + 20, qrect.left() + 20)
             self.classifierWidget.show()
             self.classifierWidget.btnChooseArea.clicked.connect(self.enablePrevArea)
             self.classifierWidget.btnCancel.clicked.connect(self.disablePrevArea)
@@ -3380,7 +3382,7 @@ class TagLab(QWidget):
         prev_area = self.prev_area
 
         if prev_area is not None:
-            workingAreaStyle = QPen(Qt.white, 5, Qt.DashLine)
+            workingAreaStyle = QPen(Qt.white, 2, Qt.DashLine)
             workingAreaStyle.setCosmetic(True)
 
             x = prev_area[1]
