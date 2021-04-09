@@ -235,19 +235,17 @@ class QtClassifierWidget(QWidget):
 
     def updateLabelPreview(self):
 
-        opacity = self.sliderTransparency.value() / 100.0
-
-        backimg = self.rgb_image.copy(0, 0, self.rgb_image.width(), self.rgb_image.height())
-        painter = QPainter()
-        painter.begin(backimg)
-        painter.setCompositionMode(QPainter.CompositionMode_Overlay)
-        painter.setOpacity(opacity)
-        painter.drawImage(0, 0, self.labelimage)
-        painter.end()
-
-        self.QPixmapPred = QPixmap.fromImage(backimg)
-        size = self.LABEL_SIZE
-        self.QlabelPred.setPixmap(self.QPixmapPred.scaled(QSize(size, size), Qt.KeepAspectRatio))
+        if self.rgb_image is not None and self.labelimage is not None:
+            opacity = 1.0 - (self.sliderTransparency.value() / 100.0)
+            backimg = self.rgb_image.copy(0, 0, self.rgb_image.width(), self.rgb_image.height())
+            painter = QPainter()
+            painter.begin(backimg)
+            painter.setOpacity(opacity)
+            painter.drawImage(0, 0, self.labelimage)
+            painter.end()
+            self.QPixmapPred = QPixmap.fromImage(backimg)
+            size = self.LABEL_SIZE
+            self.QlabelPred.setPixmap(self.QPixmapPred.scaled(QSize(size, size), Qt.KeepAspectRatio))
 
     @pyqtSlot(int)
     def classifierChanged(self, index):

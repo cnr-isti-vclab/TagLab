@@ -3296,19 +3296,20 @@ class TagLab(QWidget):
         if self.available_classifiers == "None":
             self.btnAutoClassification.setChecked(False)
         else:
-            if self.prev_area is None:
-                self.prev_area = [0, 0, 0, 0]
 
-            self.classifierWidget = QtClassifierWidget(self.available_classifiers, parent=self)
-            self.classifierWidget.setAttribute(Qt.WA_DeleteOnClose)
-            self.classifierWidget.btnApply.clicked.connect(self.applyClassifier)
-            self.classifierWidget.setWindowModality(Qt.NonModal)
-            self.classifierWidget.show()
-            self.classifierWidget.btnChooseArea.clicked.connect(self.enablePrevArea)
-            self.classifierWidget.btnCancel.clicked.connect(self.disablePrevArea)
-            self.classifierWidget.closed.connect(self.disablePrevArea)
-            self.classifierWidget.btnPrev.clicked.connect(self.applyPrev)
-            self.classifierWidget.sliderScores.valueChanged.connect(self.showScores)
+            if self.classifierWidget is None:
+                self.classifierWidget = QtClassifierWidget(self.available_classifiers, parent=self)
+                self.classifierWidget.setAttribute(Qt.WA_DeleteOnClose)
+                self.classifierWidget.btnApply.clicked.connect(self.applyClassifier)
+                self.classifierWidget.setWindowModality(Qt.NonModal)
+                self.classifierWidget.show()
+                self.classifierWidget.btnChooseArea.clicked.connect(self.enablePrevArea)
+                self.classifierWidget.btnCancel.clicked.connect(self.disablePrevArea)
+                self.classifierWidget.closed.connect(self.disablePrevArea)
+                self.classifierWidget.btnPrev.clicked.connect(self.applyPrev)
+                self.classifierWidget.sliderScores.valueChanged.connect(self.showScores)
+                self.prev_area = None
+
 
         self.showPrevArea()
         self.classifierWidget.show()
@@ -3328,40 +3329,48 @@ class TagLab(QWidget):
 
         self.classifierWidget.setRGBPreview(crop_image)
 
-        self.disablePrevArea()
+        WA_tool = self.activeviewer.tools.tools["WORKINGAREA"]
+        if WA_tool.receivers(WA_tool.released) > 0:
+            WA_tool.released.disconnect()
+        if WA_tool.receivers(WA_tool.rectChanged) > 0:
+            WA_tool.rectChanged.disconnect()
+
+        QApplication.setOverrideCursor(Qt.ArrowCursor)
 
     def applyPrev(self):
         """
         crop selected area and apply preview.
         """
-        classifier_selected = self.classifierWidget.selected()
-        target_scale_factor = classifier_selected['Scale']
 
-        # free GPU memory
-        self.resetNetworks()
-        self.setupProgressBar()
+        if self.prev_area is not None:
+            classifier_selected = self.classifierWidget.selected()
+            target_scale_factor = classifier_selected['Scale']
 
-        QApplication.processEvents()
+            # free GPU memory
+            self.resetNetworks()
+            self.setupProgressBar()
 
-        self.classifier = MapClassifier(classifier_selected, self.labels_dictionary)
-        self.classifier.updateProgress.connect(self.progress_bar.setProgress)
+            QApplication.processEvents()
 
-        self.progress_bar.hidePerc()
-        self.progress_bar.setMessage("Initialization..")
+            self.classifier = MapClassifier(classifier_selected, self.labels_dictionary)
+            self.classifier.updateProgress.connect(self.progress_bar.setProgress)
 
-        self.classifier.setup(self.activeviewer.img_map, self.activeviewer.image.pixelSize(), target_scale_factor,
-                              working_area=self.prev_area, padding=256)
+            self.progress_bar.hidePerc()
+            self.progress_bar.setMessage("Initialization..")
 
-        self.progress_bar.showPerc()
-        self.progress_bar.setMessage("Classification: ")
-        self.progress_bar.setProgress(0.0)
-        QApplication.processEvents()
+            self.classifier.setup(self.activeviewer.img_map, self.activeviewer.image.pixelSize(), target_scale_factor,
+                                  working_area=self.prev_area, padding=256)
 
-        self.classifier.run(1026, 513, 256, save_scores=True)
-        self.classifier.loadScores()
-        self.showScores()
+            self.progress_bar.showPerc()
+            self.progress_bar.setMessage("Classification: ")
+            self.progress_bar.setProgress(0.0)
+            QApplication.processEvents()
 
-        self.deleteProgressBar()
+            self.classifier.run(1026, 513, 256, save_scores=True)
+            self.classifier.loadScores()
+            self.showScores()
+
+            self.deleteProgressBar()
 
     def showScores(self):
 
@@ -3380,7 +3389,7 @@ class TagLab(QWidget):
         prev_area = self.prev_area
 
         if prev_area is not None:
-            workingAreaStyle = QPen(Qt.white, 5, Qt.DashLine)
+            workingAreaStyle = QPen(Qt.white, 2, Qt.DashLine)
             workingAreaStyle.setCosmetic(True)
 
             x = prev_area[1]
@@ -3392,16 +3401,7 @@ class TagLab(QWidget):
                 self.prev_area_rect = self.activeviewer.scene.addRect(x, y, w, h, workingAreaStyle)
                 self.prev_area_rect.setZValue(5)
             else:
-                self.prev_area_rect.setVisible(True)
                 self.prev_area_rect.setRect(x, y, w, h)
-
-
-    def hidePrevArea(self):
-        self.prev_area_rect.setVisible(False)
-
-
-
-
 
 
     @pyqtSlot(int, int, int, int)
@@ -3420,7 +3420,7 @@ class TagLab(QWidget):
 
     @pyqtSlot()
     def disablePrevArea(self):
-        self.activeviewer.setTool("MOVE")
+        self.prev_area = None
 
         WA_tool = self.activeviewer.tools.tools["WORKINGAREA"]
         if WA_tool.receivers(WA_tool.released) > 0:
@@ -3428,7 +3428,12 @@ class TagLab(QWidget):
         if WA_tool.receivers(WA_tool.rectChanged) > 0:
             WA_tool.rectChanged.disconnect()
 
-        self.hidePrevArea()
+        if self.prev_area_rect is not None:
+            self.activeviewer.scene.removeItem(self.prev_area_rect)
+            self.prev_area_rect = None
+
+        self.setTool("MOVE")
+        self.classifierWidget = None
 
 
     def resetAutomaticClassification(self):
