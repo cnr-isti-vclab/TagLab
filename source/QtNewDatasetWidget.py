@@ -40,7 +40,7 @@ class QtNewDatasetWidget(QWidget):
         self.lblDatasetFolder = QLabel("Dataset folder: ")
         self.lblDatasetFolder.setFixedWidth(TEXT_SPACE)
         self.lblDatasetFolder.setAlignment(Qt.AlignRight)
-        self.lblWorkingArea = QLabel("Working Area: ")
+        self.lblWorkingArea = QLabel("Working area: ")
         self.lblWorkingArea.setFixedWidth(TEXT_SPACE)
         self.lblWorkingArea.setAlignment(Qt.AlignRight)
 
