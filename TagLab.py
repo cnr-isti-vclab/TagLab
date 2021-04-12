@@ -901,6 +901,10 @@ class TagLab(QWidget):
         exportMatchLabels.setStatusTip("Export the current matches")
         exportMatchLabels.triggered.connect(self.exportMatches)
 
+        computeGenets = QAction("Compute genets", self)
+        computeGenets.setStatusTip("Compute genet information.")
+        computeGenets.triggered.connect(self.computeGenets)
+
         exportGenetSVG = QAction("Export genet shapes", self)
         exportGenetSVG.setStatusTip("Export genets history of corals in SVG.")
         exportGenetSVG.triggered.connect(self.exportGenetSVG)
@@ -917,6 +921,8 @@ class TagLab(QWidget):
         self.comparemenu.addAction(manualMatchLabels)
         self.comparemenu.addAction(exportMatchLabels)
 
+        self.comparemenu.addSeparator()
+        self.comparemenu.addAction(computeGenets);
         self.comparemenu.addAction(exportGenetSVG)
         self.comparemenu.addAction(exportGenetCSV)
 
@@ -1005,6 +1011,10 @@ class TagLab(QWidget):
         self.toggleRGBDEM(self.viewerplus)
         if self.split_screen_flag:
             self.toggleRGBDEM(self.viewerplus2)
+
+    @pyqtSlot()
+    def computeGenets(self):
+        self.project.genet.updateGenets()
 
     @pyqtSlot()
     def exportGenetSVG(self):
