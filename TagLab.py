@@ -92,7 +92,6 @@ class TagLab(QWidget):
         self.setStyleSheet("background-color: rgb(55,55,55); color: white")
 
         current_version, need_to_update = self.checkNewVersion()
-        need_to_update = False
         if need_to_update:
             print("New version available. Please, launch update.py")
             sys.exit(0)
@@ -355,7 +354,7 @@ class TagLab(QWidget):
 
         # BLOB INFO
         self.groupbox_blobpanel = QGroupBox("Region Info")
-        self.lblIdValue = QLabel(" ")    
+        self.lblIdValue = QLabel(" ")
         self.lblClass = QLabel("Empty")
         self.lblGenetValue = QLabel("")
 
@@ -892,7 +891,7 @@ class TagLab(QWidget):
         autoMatchLabels = QAction("Compute automatic matches", self)
         autoMatchLabels.setStatusTip("Match labels between two maps automatically")
         autoMatchLabels.triggered.connect(self.autoCorrespondences)
-        
+
         manualMatchLabels = QAction("Add manual matches", self)
         manualMatchLabels.setStatusTip("Add manual matches")
         manualMatchLabels.triggered.connect(self.matchTool)
