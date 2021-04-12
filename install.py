@@ -216,38 +216,26 @@ else:
     os.remove(this_directory + '/' + filename_gdal)
     os.remove(this_directory + '/' + filename_rasterio)
 
-# download models
+# check for other networks
+print('Downloading networks...')
 base_url = 'http://taglab.isti.cnr.it/models/'
 from os import path
 import urllib.request
 this_directory = path.abspath(path.dirname(__file__))
+net_file_names = ['dextr_corals.pth', 'deeplab-resnet.pth.tar', 'ritm_corals.pth']
 
-filename_dextr_corals = 'dextr_corals.pth'
-dextr_corals_file = Path('models/' + filename_dextr_corals)
-if not dextr_corals_file.is_file(): #if file not exists
-    try:
-        url_dextr = base_url + filename_dextr_corals
-        print('Downloading ' + url_dextr + '...')
-        opener = urllib.request.build_opener()
-        opener.addheaders = [('User-agent', 'Mozilla/5.0')]
-        urllib.request.install_opener(opener)
-        urllib.request.urlretrieve(url_dextr, 'models/' + filename_dextr_corals)
-    except:
-        raise Exception("Cannot download " + filename_dextr_corals + ".")
-else:
-    print(filename_dextr_corals + ' already exists.')
-
-filename_deeplab = 'deeplab-resnet.pth.tar'
-deeplab_file = Path('models/' + filename_dextr_corals)
-if not deeplab_file.is_file(): #if file not exists
-    try:
-        url_deeplab = base_url + filename_deeplab
-        print('Downloading ' + url_deeplab + '...')
-        opener = urllib.request.build_opener()
-        opener.addheaders = [('User-agent', 'Mozilla/5.0')]
-        urllib.request.install_opener(opener)
-        urllib.request.urlretrieve(url_deeplab, this_directory + '/models/' + filename_deeplab)
-    except:
-        raise Exception("Cannot download " + filename_deeplab + ".")
-else:
-    print(filename_deeplab + ' already exists.')
+for net_name in net_file_names:
+    filename_dextr_corals = 'dextr_corals.pth'
+    net_file = Path('models/' + net_name)
+    if not net_file.is_file(): #if file not exists
+        try:
+            url_dextr = base_url + net_name
+            print('Downloading ' + url_dextr + '...')
+            opener = urllib.request.build_opener()
+            opener.addheaders = [('User-agent', 'Mozilla/5.0')]
+            urllib.request.install_opener(opener)
+            urllib.request.urlretrieve(url_dextr, 'models/' + net_name)
+        except:
+            raise Exception("Cannot download " + net_name + ".")
+    else:
+        print(net_name + ' already exists.')

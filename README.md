@@ -4,7 +4,7 @@ TagLab was created to support the activity of annotation and extraction of stati
 
 ![ScreenShot](screenshot.jpg)
 
-  
+
 ## Interaction
 TagLab allows to :
 
@@ -16,7 +16,7 @@ TagLab allows to :
 - refine the incorrect borders automatically with the Refine operation or manually with the 'Edit Border' tool
 - tracking coral changes in different time intervals
 - import depth information of the seafloor
-- import GeoTiff 
+- import GeoTiff
 - draw coral internal cracks with the 'Create Crack' tool
 - make freehand measurements or measure the distance between centroids (Ruler tool).
 - save the annotations (as polygons) and import them into a new project
@@ -92,6 +92,28 @@ or, on Windows:
 python.exe taglab.py```
 ```
 
-To test if TagLab works correctly, try to open the sample project available in the `projects` folder. 
+To test if TagLab works correctly, try to open the sample project available in the `projects` folder.
 
+## Updating TagLab
 
+If you already installed TagLab and you need to update to a new version, you can just run the `update.py` script:
+
+```
+python3 update.py
+```
+or, on Windows:
+
+```
+python.exe update.py```
+```
+
+The script will automatically update TagLab to the newest version available in this repository.
+
+### Updating from 2.0
+
+If you are updating TagLab from 2.0 version, in order to download also the new networks, please run the `update.py` script twice:
+
+```
+python3 update.py
+python3 update.py
+```

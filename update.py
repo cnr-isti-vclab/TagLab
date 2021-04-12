@@ -7,6 +7,7 @@ import zipfile
 import shutil
 import subprocess
 from distutils.dir_util import copy_tree
+from pathlib import Path
 
 #directories that will be replaced during the update
 to_replace_directories = ['coraline', 'docs', 'fonts', 'icons', 'source', '.github']
@@ -49,8 +50,6 @@ while i < len(online_spl_version) and not need_to_update:
             break
     i=i+1
 
-
-print('Need to update: ' + str(need_to_update))
 
 if need_to_update:
     # File to download
@@ -114,3 +113,29 @@ if need_to_update:
         except OSError:
             raise Exception('Cmake not found. Coraline library cannot be compiled. Please install cmake '
                             'first.\nInstallation aborted.')
+else:
+    print('No need to update: TagLab is already up to date.')
+
+# check for other networks
+print('Downloading networks...')
+base_url = 'http://taglab.isti.cnr.it/models/'
+from os import path
+import urllib.request
+this_directory = path.abspath(path.dirname(__file__))
+net_file_names = ['dextr_corals.pth', 'deeplab-resnet.pth.tar', 'ritm_corals.pth']
+
+for net_name in net_file_names:
+    filename_dextr_corals = 'dextr_corals.pth'
+    net_file = Path('models/' + net_name)
+    if not net_file.is_file(): #if file not exists
+        try:
+            url_dextr = base_url + net_name
+            print('Downloading ' + url_dextr + '...')
+            opener = urllib.request.build_opener()
+            opener.addheaders = [('User-agent', 'Mozilla/5.0')]
+            urllib.request.install_opener(opener)
+            urllib.request.urlretrieve(url_dextr, 'models/' + net_name)
+        except:
+            raise Exception("Cannot download " + net_name + ".")
+    else:
+        print(net_name + ' already exists.')
