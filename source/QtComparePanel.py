@@ -18,7 +18,7 @@
 # for more details.                                               
 from PyQt5.QtCore import Qt, QAbstractTableModel, QItemSelectionModel, QSortFilterProxyModel, QRegExp, QModelIndex, pyqtSlot, pyqtSignal
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QHeaderView, QComboBox, QLabel, QTableView, \
-    QHBoxLayout, QVBoxLayout, QAbstractItemView, QStyleOptionViewItem, QStyledItemDelegate
+    QHBoxLayout, QVBoxLayout, QAbstractItemView, QStyledItemDelegate, QAction, QMenu
 from PyQt5.QtGui import QColor
 from pathlib import Path
 import math
@@ -49,12 +49,12 @@ class TableModel(QAbstractTableModel):
             # if index.column() == 0 or index.column() == 1:
             #     return "" if math.isnan(value) else str(value)
 
-            if index.column() == 0 or index.column() == 1:
+            if index.column() == 0 or index.column() == 1 or index.column() == 2:
                 if value < 0:
                     return ""
 
             # format floating point values
-            if index.column() == 2 or index.column() == 3:
+            if index.column() == 3 or index.column() == 4:
                 txt = "{:.2f}".format(value)
             else:
                 txt = str(value)
@@ -62,7 +62,7 @@ class TableModel(QAbstractTableModel):
             return txt
 
         if role == Qt.TextAlignmentRole:
-            if index.column() < 4:
+            if index.column() < 5:
                 return Qt.AlignRight | Qt.AlignVCenter
 
         if role == Qt.BackgroundRole:
@@ -87,6 +87,7 @@ class TableModel(QAbstractTableModel):
         return self._data.shape[1]
 
     def headerData(self, section, orientation, role):
+
         # section is the index of the column/row.
         if role == Qt.DisplayRole:
             if orientation == Qt.Horizontal:
@@ -111,7 +112,7 @@ class TableModel(QAbstractTableModel):
 
         value = self._data.iloc[index.row(), index.column()]
 
-        if index.column() == 5 or index.column() == 6:
+        if index.column() == 6 or index.column() == 7:
             return QAbstractTableModel.flags(self, index) | Qt.ItemIsEditable
         else:
             return QAbstractTableModel.flags(self, index)
@@ -129,14 +130,14 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
         cb = QComboBox(parent)
         column = index.column()
 
-        if column == 5:
+        if column == 6:
             cb.addItem("born")
             cb.addItem("gone")
             cb.addItem("grow")
             cb.addItem("same")
             cb.addItem("shrink")
             cb.addItem("n/s")
-        elif column == 6:
+        elif column == 7:
             cb.addItem("none")
             cb.addItem("fuse")
             cb.addItem("split")
@@ -222,9 +223,87 @@ class QtComparePanel(QWidget):
         self.correspondences = None
         self.data = None
 
+        self.setContextMenuPolicy(Qt.CustomContextMenu)
+
+        self.areasAction = QAction("Area", self)
+        self.areasAction.setCheckable(True)
+        self.areasAction.setChecked(True)
+        self.areasAction.triggered.connect(self.toggleAreaColumns)
+        self.classAction = QAction("Class", self)
+        self.classAction.setCheckable(True)
+        self.classAction.setChecked(True)
+        self.classAction.triggered.connect(self.toggleClassColumn)
+        self.actionAction = QAction("Action", self)
+        self.actionAction.setCheckable(True)
+        self.actionAction.setChecked(True)
+        self.actionAction.triggered.connect(self.toggleActionColumn)
+        self.fuseAction = QAction("Split/Fuse", self)
+        self.fuseAction.setCheckable(True)
+        self.fuseAction.setChecked(True)
+        self.fuseAction.triggered.connect(self.toggleFuseColumn)
+
+        self.customContextMenuRequested.connect(self.openContextMenu)
+
         self.comboboxFilter.currentTextChanged.connect(self.changeFilter)
         self.comboboxAreaMode.currentTextChanged.connect(self.changeAreaMode)
 
+    def openContextMenu(self, position):
+
+        menu = QMenu(self)
+        menu.setAutoFillBackground(True)
+
+        str = "QMenu::item:selected{\
+            background-color: rgb(110, 110, 120);\
+            color: rgb(255, 255, 255);\
+            } QMenu::item:disabled { color:rgb(150, 150, 150); }"
+
+        menu.setStyleSheet(str)
+
+        menu.addAction(self.areasAction)
+        menu.addAction(self.classAction)
+        menu.addAction(self.actionAction)
+        menu.addAction(self.fuseAction)
+
+        viewer = self.sender()
+        action = menu.exec_(viewer.mapToGlobal(position))
+
+    def toggleAreaColumns(self):
+
+        if not self.areasAction.isChecked():
+            self.data_table.horizontalHeader().hideSection(3)
+            self.data_table.horizontalHeader().hideSection(4)
+        else:
+            self.data_table.horizontalHeader().showSection(3)
+            self.data_table.horizontalHeader().showSection(4)
+
+        self.data_table.update()
+
+    def toggleClassColumn(self):
+
+        if not self.classAction.isChecked():
+            self.data_table.horizontalHeader().hideSection(5)
+        else:
+            self.data_table.horizontalHeader().showSection(5)
+
+        self.data_table.update()
+
+    def toggleActionColumn(self):
+
+        if not self.actionAction.isChecked():
+            self.data_table.horizontalHeader().hideSection(6)
+        else:
+            self.data_table.horizontalHeader().showSection(6)
+
+        self.data_table.update()
+
+    def toggleFuseColumn(self):
+
+        if not self.fuseAction.isChecked():
+            self.data_table.horizontalHeader().hideSection(7)
+        else:
+            self.data_table.horizontalHeader().showSection(7)
+
+        self.data_table.update()
 
     def setTable(self, project, img1idx, img2idx):
 
@@ -250,6 +329,11 @@ class QtComparePanel(QWidget):
         self.data_table.setItemDelegateForColumn(5, self.combodelegate1)
         self.data_table.setItemDelegateForColumn(6, self.combodelegate2)
         self.data_table.setEditTriggers(QAbstractItemView.DoubleClicked)
+
+        if self.correspondences.isGenetInfoAvailable():
+            self.data_table.horizontalHeader().showSection(0)
+        else:
+            self.data_table.horizontalHeader().hideSection(0)
 
         self.data_table.update()
 
@@ -288,6 +372,11 @@ class QtComparePanel(QWidget):
         self.model._data = corr.data
         self.sortfilter.endResetModel()
         self.model.endResetModel()
+
+        if corr.isGenetInfoAvailable():
+            self.data_table.horizontalHeader().showSection(0)
+        else:
+            self.data_table.horizontalHeader().hideSection(0)
 
         self.data_table.update()
 

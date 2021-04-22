@@ -231,6 +231,15 @@ class Project(object):
                                self.correspondences.values()))
         return corresps
 
+    def updateGenets(self, img_source_idx, img_target_idx):
+        """
+        Update the genets information in (1) the regions and (2) in the correspondences' table
+        """
+        self.genet.updateGenets()
+        corr = self.getImagePairCorrespondences(img_source_idx, img_target_idx)
+        corr.updateGenets()
+        return corr
+
     def addBlob(self, image, blob):
 
         # update image annotations
@@ -259,14 +268,13 @@ class Project(object):
             corr.updateBlob(image, old_blob, new_blob)
 
     def setBlobClass(self, image, blob, class_name):
+
         blob.class_name = class_name
         # THIS should be removed: the color comes from the labels!
         blob.class_color = self.labels[blob.class_name].fill
 
-
         for corr in self.findCorrespondences(image):
             corr.setBlobClass(image, blob, class_name)
-
 
     def getImageFromId(self, id):
         for img in self.images:

@@ -1013,7 +1013,11 @@ class TagLab(QWidget):
 
     @pyqtSlot()
     def computeGenets(self):
-        self.project.genet.updateGenets()
+
+        img_source_index = self.comboboxSourceImage.currentIndex()
+        img_target_index = self.comboboxTargetImage.currentIndex()
+        updated_corresp = self.project.updateGenets(img_source_index, img_target_index)
+        self.compare_panel.updateTable(updated_corresp)
 
     @pyqtSlot()
     def exportGenetSVG(self):
@@ -1171,7 +1175,6 @@ class TagLab(QWidget):
             self.deleteSelectedBlobs()
 
         elif event.key() == Qt.Key_X:
-
             pass
 
         elif event.key() == Qt.Key_B:

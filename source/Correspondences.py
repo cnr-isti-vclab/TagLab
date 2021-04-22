@@ -15,7 +15,7 @@ class Correspondences(object):
         self.dead = []
         self.born = []
         self.threshold = 1.05
-        self.data = pd.DataFrame(data = correspondences, columns=['Blob1', 'Blob2', 'Area1', 'Area2', 'Class', 'Action', 'Split\Fuse'])
+        self.data = pd.DataFrame(data = correspondences, columns=['Genet', 'Blob1', 'Blob2', 'Area1', 'Area2', 'Class', 'Action', 'Split\Fuse'])
 
     def area_in_sq_cm(self, area, is_source):
 
@@ -25,6 +25,28 @@ class Correspondences(object):
             area_sq_cm = area * self.target.pixelSize() * self.target.pixelSize() / 100.0
 
         return area_sq_cm
+
+    def isGenetInfoAvailable(self):
+
+        if self.data.loc[1, 'Genet'] >= 0:
+            return True
+        else:
+            return False
+
+    def updateGenets(self):
+
+        for index, row in self.data.iterrows():
+            id1 = int(row['Blob1'])
+            id2 = int(row['Blob2'])
+            blob1 = self.source.annotations.blobById(id1)
+            blob2 = self.target.annotations.blobById(id2)
+
+            if blob1 is not None:
+                if blob1.genet is not None:
+                    self.data.loc[index, 'Genet'] = blob1.genet
+            else:
+                if blob2.genet is not None:
+                    self.data.loc[index, 'Genet'] = blob2.genet
 
     def updateAreas(self, use_surface_area=False):
 
@@ -81,6 +103,11 @@ class Correspondences(object):
         """
         Fill the table from a list of correspondences.
         """
+
+        if len(lst[0]) == 7:
+            # genet information is missing..
+            for ll in lst:
+                ll.insert(0, -1)
 
         columns = self.data.columns
         self.data = pd.DataFrame(lst, columns=columns)
@@ -162,7 +189,7 @@ class Correspondences(object):
             if id < 0: # born and dead result in orphaned
                 continue
             target = self.target.annotations.blobById(id)
-            row = [-1, target.id, 0.0, self.area_in_sq_cm(target.area, False), target.class_name, "born", type]
+            row = [-1, -1, target.id, 0.0, self.area_in_sq_cm(target.area, False), target.class_name, "born", type]
             df = pd.DataFrame([row], columns=self.data.columns)
             self.data = self.data.append(df)
 
@@ -170,19 +197,19 @@ class Correspondences(object):
             if id < 0:
                 continue
             source = self.source.annotations.blobById(id)
-            row = [ source.id, -1, self.area_in_sq_cm(source.area, True), 0.0, source.class_name, "dead", type]
+            row = [-1, source.id, -1, self.area_in_sq_cm(source.area, True), 0.0, source.class_name, "dead", type]
             df = pd.DataFrame([row], columns=self.data.columns)
             self.data = self.data.append(df)
 
         if len(sourceblobs) == 0:
             target = targetblobs[0]
-            row = [-1, target.id, 0.0, self.area_in_sq_cm(target.area, False), target.class_name, action, type]
+            row = [-1, -1, target.id, 0.0, self.area_in_sq_cm(target.area, False), target.class_name, action, type]
             df = pd.DataFrame([row], columns=self.data.columns)
             self.data = self.data.append(df)
 
         elif len(targetblobs) == 0:
             source = sourceblobs[0]
-            row = [source.id, -1, self.area_in_sq_cm(source.area, True), 0, source.class_name, action, type]
+            row = [-1, source.id, -1, self.area_in_sq_cm(source.area, True), 0.0, source.class_name, action, type]
             df = pd.DataFrame([row], columns=self.data.columns)
             self.data = self.data.append(df)
 
@@ -199,7 +226,7 @@ class Correspondences(object):
                         target_area = self.area_in_sq_cm(target.area, False)
 
                     class_name = source.class_name if source.id >= 0 else target.class_name
-                    row = [source.id, target.id, source_area, target_area, class_name, action, type]
+                    row = [-1, source.id, target.id, source_area, target_area, class_name, action, type]
                     df = pd.DataFrame([row], columns=self.data.columns)
                     self.data = self.data.append(df)
 
@@ -265,13 +292,13 @@ class Correspondences(object):
 
         for i in set(dead):
             blob = self.source.annotations.blobById(i)
-            row = [blob.id, -1, self.area_in_sq_cm(blob.area, True), 0.0, blob.class_name, "dead", "none"]
+            row = [-1, blob.id, -1, self.area_in_sq_cm(blob.area, True), 0.0, blob.class_name, "dead", "none"]
             df = pd.DataFrame([row], columns=self.data.columns)
             self.data = self.data.append(df)
 
         for i in set(born):
             blob = self.target.annotations.blobById(i)
-            row = [-1, blob.id, 0.0, self.area_in_sq_cm(blob.area, False), blob.class_name, "dead", "none"]
+            row = [-1, -1, blob.id, 0.0, self.area_in_sq_cm(blob.area, False), blob.class_name, "dead", "none"]
             df = pd.DataFrame([row], columns=self.data.columns)
             self.data = self.data.append(df)
 
@@ -303,13 +330,13 @@ class Correspondences(object):
                     if (intersectionArea < (0.6 * minblob)):
                         continue
                     if (sizeblob2 > sizeblob1 * self.threshold):
-                        self.correspondences.append([blob1.id, blob2.id, blob1.area, blob2.area, blob1.class_name, 'grow', 'none'])
+                        self.correspondences.append([-1, blob1.id, blob2.id, blob1.area, blob2.area, blob1.class_name, 'grow', 'none'])
 
                     elif (sizeblob2 < sizeblob1 / self.threshold):
-                        self.correspondences.append([blob1.id, blob2.id, blob1.area, blob2.area, blob1.class_name, 'shrink', 'none'])
+                        self.correspondences.append([-1, blob1.id, blob2.id, blob1.area, blob2.area, blob1.class_name, 'shrink', 'none'])
 
                     else:
-                        self.correspondences.append([blob1.id, blob2.id, blob1.area, blob2.area, blob1.class_name, 'same', 'none'])
+                        self.correspondences.append([-1, blob1.id, blob2.id, blob1.area, blob2.area, blob1.class_name, 'same', 'none'])
 
 
         # operates on the correspondences found and update them
