@@ -64,6 +64,7 @@ from source.Project import Project, loadProject
 from source.Image import Image
 from source.MapClassifier import MapClassifier
 from source.NewDataset import NewDataset
+from source.QtGridWidget import QtGridWidget
 
 from source import utils
 
@@ -169,6 +170,12 @@ class TagLab(QWidget):
         self.pxmapSeparator = QPixmap("icons/separator.png")
         self.labelSeparator = QLabel()
         self.labelSeparator.setPixmap(self.pxmapSeparator.scaled(QSize(35, 30)))
+        self.btnCreateGrid = self.newButton("grid.png", "Create Grid",  flatbuttonstyle1, self.createGrid)
+        self.btnToggleGrid = self.newButton("grid-eye.png", "Toggle Grid", flatbuttonstyle1, self.toggleGrid)
+        self.pxmapSeparator2 = QPixmap("icons/separator.png")
+        self.labelSeparator2 = QLabel()
+        self.labelSeparator2.setPixmap(self.pxmapSeparator2.scaled(QSize(35, 30)))
+
         self.btnSplitScreen = self.newButton("split.png", "Split screen", flatbuttonstyle1, self.toggleComparison)
         self.btnAutoMatch = self.newButton("automatch.png", "Compute automatic matches", flatbuttonstyle1, self.autoCorrespondences)
         self.btnMatch = self.newButton("manualmatch.png", "Add manual matches ", flatbuttonstyle1, self.matchTool)
@@ -191,9 +198,14 @@ class TagLab(QWidget):
         #layout_tools.addWidget(self.btnSplitBlob)
         layout_tools.addWidget(self.btnRuler)
         layout_tools.addWidget(self.btnAutoClassification)
-        layout_tools.addSpacing(5)
+        layout_tools.addSpacing(3)
         layout_tools.addWidget(self.labelSeparator)
-        layout_tools.addSpacing(5)
+        layout_tools.addSpacing(3)
+        layout_tools.addWidget(self.btnCreateGrid)
+        layout_tools.addWidget(self.btnToggleGrid)
+        layout_tools.addSpacing(3)
+        layout_tools.addWidget(self.labelSeparator2)
+        layout_tools.addSpacing(3)
         layout_tools.addWidget(self.btnSplitScreen)
         layout_tools.addWidget(self.btnAutoMatch)
         layout_tools.addWidget(self.btnMatch)
@@ -216,7 +228,6 @@ class TagLab(QWidget):
 
 
         # VIEWERPLUS
-
 
         # main viewer
         self.viewerplus = QtImageViewerPlus(self.taglab_dir)
@@ -491,8 +502,9 @@ class TagLab(QWidget):
         # SWITCH IMAGES
         self.current_image_index = 0
 
-        # Graphis Item of the working area
+        # Graphics Item of the working area
         self.working_area_rect = None
+
 
         # Graphis Item of the prev area
         self.prev_area_rect = None
@@ -1013,11 +1025,7 @@ class TagLab(QWidget):
 
     @pyqtSlot()
     def computeGenets(self):
-
-        img_source_index = self.comboboxSourceImage.currentIndex()
-        img_target_index = self.comboboxTargetImage.currentIndex()
-        updated_corresp = self.project.updateGenets(img_source_index, img_target_index)
-        self.compare_panel.updateTable(updated_corresp)
+        self.project.genet.updateGenets()
 
     @pyqtSlot()
     def exportGenetSVG(self):
@@ -1091,6 +1099,20 @@ class TagLab(QWidget):
                 for key,corr in self.project.correspondences.items():
                     filename = filename.replace('.csv','')
                     corr.data.to_csv(filename + '_' + key + '.csv', index=False)
+
+    @pyqtSlot()
+    def toggleGrid(self):
+        pass
+
+    @pyqtSlot()
+    def createGrid(self):
+        self.gridWidget = QtGridWidget(self.activeviewer, self)
+        self.gridWidget.setWindowModality(Qt.ApplicationModal)
+        self.gridWidget.show()
+
+
+        # if self.activeviewer.image.grid is not None:
+        # #    pass
 
 
     @pyqtSlot()
@@ -1175,6 +1197,7 @@ class TagLab(QWidget):
             self.deleteSelectedBlobs()
 
         elif event.key() == Qt.Key_X:
+
             pass
 
         elif event.key() == Qt.Key_B:
