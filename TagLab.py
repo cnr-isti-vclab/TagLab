@@ -1025,7 +1025,11 @@ class TagLab(QWidget):
 
     @pyqtSlot()
     def computeGenets(self):
-        self.project.genet.updateGenets()
+
+        img_source_index = self.comboboxSourceImage.currentIndex()
+        img_target_index = self.comboboxTargetImage.currentIndex()
+        updated_corresp = self.project.updateGenets(img_source_index, img_target_index)
+        self.compare_panel.updateTable(updated_corresp)
 
     @pyqtSlot()
     def exportGenetSVG(self):
@@ -1107,9 +1111,8 @@ class TagLab(QWidget):
     @pyqtSlot()
     def createGrid(self):
         self.gridWidget = QtGridWidget(self.activeviewer, self)
-        self.gridWidget.setWindowModality(Qt.ApplicationModal)
+        self.gridWidget.setWindowModality(Qt.NonModal)
         self.gridWidget.show()
-
 
         # if self.activeviewer.image.grid is not None:
         # #    pass

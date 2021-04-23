@@ -38,22 +38,28 @@ class QtGridWidget(QWidget):
         self.setMinimumWidth(300)
         self.setMinimumHeight(100)
 
+        self.viewerplus = viewerplus
+        self.pixels_to_meters = viewerplus.image.pixelSize() / 1000.0
+        self.width_m = self.pixelsToMeters(viewerplus.image.width)
+        self.height_m = self.pixelsToMeters(viewerplus.image.height)
+
+        self.posx_m = 0.0
+        self.posy_m = 0.0
+
         self.grid = Grid(viewerplus)
 
-        TEXT_SPACE = 100
+        TEXT_WIDTH = 100
 
         self.fields = {
-            "width": {"name": "Width:", "value": "10000", "place": "Width of your grid (m)", "width": 300 ,"action": None},
+            "width": {"name": "Width (m):", "value": str(self.width_m), "place": "Width of your grid (m)", "width": 200 ,"action": None},
 
-            "height": {"name": "Height:", "value": "10000", "place": "Height of your grid (m)", "width": 300, "action": None},
+            "height": {"name": "Height (m):", "value": str(self.height_m), "place": "Height of your grid (m)", "width": 200, "action": None},
 
-            "number_cell_y": {"name": "Rows:", "value": "8", "place": "Number of horizontal cells", "width": 300, "action": None},
+            "number_cell_y": {"name": "Rows:", "value": "8", "place": "Number of horizontal cells", "width": 200, "action": None},
 
-            "number_cell_x": {"name": "Columns :", "value": "8", "place": "Number of vertical cells", "width": 300,  "action": None},
+            "number_cell_x": {"name": "Columns :", "value": "8", "place": "Number of vertical cells", "width": 200,  "action": None},
 
-            "Position": {"name": "Position:", "value": " ", "place": "(0,0)", "width": 150,
-                              "action": self.setPosition}
-
+            "position": {"name": "Position:", "value": " ", "place": "(0,0)", "width": 200, "action": self.toggleSetPosition}
         }
         self.data = {}
 
@@ -61,9 +67,9 @@ class QtGridWidget(QWidget):
 
         for key, field in self.fields.items():
             label = QLabel(field["name"])
-            label.setFixedWidth(TEXT_SPACE)
+            label.setFixedWidth(TEXT_WIDTH)
             label.setAlignment(Qt.AlignRight)
-            label.setMinimumWidth(150)
+            label.setMinimumWidth(TEXT_WIDTH)
 
             edit = QLineEdit(field["value"])
             edit.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
@@ -75,9 +81,12 @@ class QtGridWidget(QWidget):
             button = None
             if field["action"] is not None:
                 button = QPushButton("")
-                button.setMaximumWidth(20)
-                button.clicked.connect(field["action"])
+                button.setFixedWidth(30)
+                button.setFixedHeight(30)
                 field["button"] = button
+                button.setCheckable(True)
+                button.setChecked(False)
+                button.clicked.connect(field["action"])
 
             layout = QHBoxLayout()
             layout.setAlignment(Qt.AlignLeft)
@@ -90,12 +99,12 @@ class QtGridWidget(QWidget):
 
 
         WorkingAreaIcon = QIcon("icons\\select_area.png")
-        self.fields["Position"]["button"].setIcon(WorkingAreaIcon)
+        self.fields["position"]["button"].setIcon(WorkingAreaIcon)
 
         buttons_layout = QHBoxLayout()
 
         self.btnCancel = QPushButton("Cancel")
-        self.btnCancel.clicked.connect(self.close)
+        self.btnCancel.clicked.connect(self.beforeClose)
         self.btnApply = QPushButton("Apply")
         self.btnApply.clicked.connect(self.accept)
 
@@ -113,30 +122,56 @@ class QtGridWidget(QWidget):
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
         self.setGrid()
-        self.fields["width"]["edit"].textChanged.connect(self.setGrid)
-        self.fields["height"]["edit"].textChanged.connect(self.setGrid)
-        self.fields["number_cell_x"]["edit"].textChanged.connect(self.setGrid)
-        self.fields["number_cell_y"]["edit"].textChanged.connect(self.setGrid)
+
+        # connections
+        self.fields["width"]["edit"].editingFinished.connect(self.setGrid)
+        self.fields["height"]["edit"].editingFinished.connect(self.setGrid)
+        self.fields["number_cell_x"]["edit"].editingFinished.connect(self.setGrid)
+        self.fields["number_cell_y"]["edit"].editingFinished.connect(self.setGrid)
+
+    def pixelsToMeters(self, px):
+        return round(px * self.pixels_to_meters, 3)
+
+    def metersToPixels(self, m):
+        return round(m / self.pixels_to_meters)
 
     @pyqtSlot()
     def setGrid(self):
         for key, field in self.fields.items():
             self.data[key] = field["edit"].text()
-        self.grid.setGrid(int(self.data["width"]), int(self.data["height"]), int(self.data["number_cell_x"]), int(self.data["number_cell_y"]))
 
+        w = self.metersToPixels(float(self.data["width"]))
+        h = self.metersToPixels(float(self.data["height"]))
+        self.grid.setGrid(w, h, int(self.data["number_cell_x"]), int(self.data["number_cell_y"]))
 
+    @pyqtSlot(float, float)
+    def setGridPosition(self, x, y):
 
+        txt = "({:.3f},{:.3f})".format(x, y)
+        self.fields["position"]["edit"].setText(txt)
+
+        self.grid.setGridPosition(x, y)
 
     @pyqtSlot()
-    def setPosition(self):
-        pass
+    def toggleSetPosition(self):
+
+        button = self.fields["position"]["button"]
+
+        if button.isChecked():
+            self.viewerplus.leftMouseButtonPressed[float, float].connect(self.setGridPosition)
+        else:
+            self.viewerplus.leftMouseButtonPressed[float, float].disconnect()
+
+    @pyqtSlot()
+    def beforeClose(self):
+
+        self.grid.delete_grid()
+        self.close()
 
     @pyqtSlot()
     def accept(self):
 
-        for key, field in self.fields.items():
-            self.data[key] = field["edit"].text()
-
         self.accepted.emit()
         self.close()
+
 

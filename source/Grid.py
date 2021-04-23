@@ -15,19 +15,17 @@ class Grid:
         self.height = 0
         self.nrow = 0
         self.ncol = 0
+        self.offx = 0
+        self.offy = 0
+
         self.scene = viewerplus.scene
+
         self.cell_values = None
         self.dict_notes = {}
 
         self.grid_lines = []
 
-
-
     def setGrid(self, width, height, nrow, ncol):
-
-        if self.grid_lines:
-           self.delete_grid()
-           self.grid_lines = []
 
         self.width = width
         self.height = height
@@ -36,33 +34,46 @@ class Grid:
 
         # cells values
         self.cell_values = np.zeros((self.nrow, self.ncol))
+
         # cells dictionary notes
         self.dict_notes = {}
-
         positions = [(i, j) for i in range(self.nrow) for j in range(self.ncol)]
         for k in positions:
             self.dict_notes[k] = ""
 
+        if self.grid_lines:
+           self.delete_grid()
+           self.grid_lines = []
+
         self.draw_grid()
 
+    def setGridPosition(self, posx, posy):
+
+        self.offx = posx
+        self.offy = posy
+
+        for line in self.grid_lines:
+            line.setPos(self.offx, self.offy)
 
     def draw_grid(self):
         
-        cell_width = self.height / self.nrow
-        cell_height = self.width / self.ncol
+        cell_width = self.width / self.ncol
+        cell_height = self.height / self.nrow
 
         pen = QPen(Qt.red, 2, Qt.SolidLine)
         pen.setCosmetic(True)
 
         for x in range(0, self.nrow + 1):
             xc = x * cell_width
-            self.grid_lines.append(self.scene.addLine(xc, 0, xc, self.height, pen))
+            line = self.scene.addLine(xc, 0, xc, self.height, pen)
+            line.setPos(self.offx, self.offy)
+            self.grid_lines.append(line)
 
         for y in range(0, self.ncol + 1):
             yc = y * cell_height
-            self.grid_lines.append(self.scene.addLine(0, yc, self.width, yc, pen))
-
-
+            line = self.scene.addLine(0, yc, self.width, yc, pen)
+            line.setPos(self.offx, self.offy)
+            self.grid_lines.append(line)
 
     def set_visible(self, visible=True):
         for line in self.grid_lines:

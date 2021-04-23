@@ -379,8 +379,9 @@ class QtImageViewerPlus(QtImageViewer):
 
         if event.button() == Qt.LeftButton:
             (x, y) = self.clipScenePos(scenePos)
-            #used from area selection and pen drawing,
+            self.leftMouseButtonPressed.emit(x, y)
 
+            #used from area selection and pen drawing,
             if (self.panEnabled and not (mods & Qt.ShiftModifier)) or (mods & Qt.ControlModifier):
                 self.setDragMode(QGraphicsView.ScrollHandDrag)
             elif self.tools.tool == "MATCH" or self.tools.tool == "RITM":
@@ -392,8 +393,6 @@ class QtImageViewerPlus(QtImageViewer):
 
             else:
                 self.tools.leftPressed(x, y)
-                #self.leftMouseButtonPressed.emit(clippedCoords[0], clippedCoords[1])
-
 
         # PANNING IS ALWAYS POSSIBLE WITH WHEEL BUTTON PRESSED (!)
         # if event.button() == Qt.MiddleButton:
