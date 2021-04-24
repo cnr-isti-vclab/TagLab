@@ -308,6 +308,9 @@ class Project(object):
 
         corr = self.getImagePairCorrespondences(img_source_idx, img_target_idx)
         corr.set(blobs1, blobs2)
+        self.genet.updateGenets()
+        corr.updateGenets()
+
 
     def updatePixelSizeInCorrespondences(self, image, flag_surface_area):
 
@@ -350,5 +353,9 @@ class Project(object):
         corr.correspondence = []
         corr.dead = []
         corr.born =[]
+
+        self.project.genet.updateGenets()
+        corr.updateGenets()
+
 
 
