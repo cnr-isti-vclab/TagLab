@@ -1399,8 +1399,8 @@ class TagLab(QWidget):
             sel2 = self.viewerplus2.selected_blobs
 
             # this should not happen at all
-            if len(sel1) > 1 and len(sel2) > 1:
-                return
+            #if len(sel1) > 1 and len(sel2) > 1:
+            #    return
 
             if len(sel1) == 0 and len(sel2) == 0:
                 return
