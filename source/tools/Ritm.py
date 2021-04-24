@@ -1,5 +1,5 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QMessageBox
 from PyQt5.QtGui import QPen, QBrush
 
 from source.tools.Tool import Tool
@@ -74,6 +74,9 @@ class Ritm(Tool):
                 # apply segmentation
                 self.segment()
 
+    def hasPoints(self):
+        return self.points.nclicks() > 0
+
     def undo_click(self):
         self.points.removeLastPoint()
         nclicks = self.points.nclicks()
@@ -93,10 +96,8 @@ class Ritm(Tool):
         self.work_area_bbox = [round(rect_map.top()), round(rect_map.left()),
                                round(rect_map.width()), round(rect_map.height())]
 
-        print(self.work_area_bbox[2]*self.work_area_bbox[3])
-
+        #TODO  needs a warning
         if self.work_area_bbox[2]*self.work_area_bbox[3] > 4000000:
-
             return False
 
         image_crop = cropQImage(self.viewerplus.img_map, self.work_area_bbox)
@@ -192,7 +193,9 @@ class Ritm(Tool):
         self.infoMessage.emit("Segmentation is ongoing..")
         self.log.emit("[TOOL][DEEPEXTREME] Segmentation begins..")
 
-        self.loadNetwork()
+        if not self.loadNetwork():
+            QApplication.restoreOverrideCursor()
+            return
 
         if self.prepareInput() is True:
 
@@ -236,6 +239,7 @@ class Ritm(Tool):
 
         self.log.emit("[TOOL][RITM] Segmentation ends.")
         QApplication.restoreOverrideCursor()
+
     def loadNetwork(self):
 
         if self.ritm_net is None:
@@ -253,11 +257,19 @@ class Ritm(Tool):
 
             self.device = device
 
-            self.ritm_net = utils.load_is_model(model_path, device, cpu_dist_maps=False)
-            self.ritm_net.to(device)
+            try:
+                self.ritm_net = utils.load_is_model(model_path, device, cpu_dist_maps=False)
+                self.ritm_net.to(device)
+                # initialize predictor
+                self.predictor = get_predictor(self.ritm_net, device=device, **self.predictor_params)
 
-            # initialize predictor
-            self.predictor = get_predictor(self.ritm_net, device=device, **self.predictor_params)
+            except Exception as e:
+                box = QMessageBox()
+                box.setText("Could not load the Ritm network. You might need to run update.py.")
+                box.exec()
+                return False
+
+        return True
 
     def resetNetwork(self):
 

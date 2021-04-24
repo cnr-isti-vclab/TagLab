@@ -468,6 +468,16 @@ class QtImageViewerPlus(QtImageViewer):
         if event.button() == Qt.LeftButton:
             self.selectOp(scenePos.x(), scenePos.y())
 
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Shift and self.tools.tool == "RITM":
+            QApplication.setOverrideCursor(Qt.CrossCursor)
+        super().keyPressEvent(event)
+
+
+    def keyReleaseEvent(self, event):
+        if event.key() == Qt.Key_Shift:
+            QApplication.restoreOverrideCursor()
+        super().keyPressEvent(event)
 
     def wheelEvent(self, event):
         """ Zoom in/zoom out.
@@ -689,7 +699,7 @@ class QtImageViewerPlus(QtImageViewer):
 
     def undo(self):
 
-        if self.tools.tool == "RITM":
+        if self.tools.tool == "RITM" and self.tools.tools["RITM"].hasPoints():
             self.tools.tools["RITM"].undo_click()
             return
 
