@@ -427,7 +427,7 @@ class QtComparePanel(QWidget):
         if txt == 'All':
             self.sortfilter.setFilterRegExp(QRegExp())
         else:
-            self.sortfilter.setFilterKeyColumn(5)
+            self.sortfilter.setFilterKeyColumn(6)
             self.sortfilter.setFilterRegExp(txt.lower())
             self.sortfilter.setFilterRole(Qt.DisplayRole)
 
