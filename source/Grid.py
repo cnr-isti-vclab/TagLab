@@ -9,7 +9,7 @@ from PyQt5.QtGui import QFontDatabase, QFont, QPixmap, QIcon, QKeySequence, QPen
 
 class Grid:
 
-    def __init__(self, viewerplus):
+    def __init__(self):
 
         self.width = 0
         self.height = 0
@@ -18,12 +18,16 @@ class Grid:
         self.offx = 0
         self.offy = 0
 
-        self.scene = viewerplus.scene
+        self.scene = None
 
         self.cell_values = None
         self.dict_notes = {}
 
-        self.grid_lines = []
+        self.grid_rects = []
+
+    def setScene(self, scene):
+
+        self.scene = scene
 
     def setGrid(self, width, height, nrow, ncol):
 
@@ -41,53 +45,71 @@ class Grid:
         for k in positions:
             self.dict_notes[k] = ""
 
-        if self.grid_lines:
-           self.delete_grid()
-           self.grid_lines = []
-
-        self.draw_grid()
-
     def setGridPosition(self, posx, posy):
 
         self.offx = posx
         self.offy = posy
 
-        for line in self.grid_lines:
-            line.setPos(self.offx, self.offy)
+        for rect in self.grid_rects:
+            rect.setPos(self.offx, self.offy)
 
-    def draw_grid(self):
+    def drawGrid(self):
         
         cell_width = self.width / self.ncol
         cell_height = self.height / self.nrow
 
-        pen = QPen(Qt.red, 2, Qt.SolidLine)
-        pen.setCosmetic(True)
+        pen_red = QPen(Qt.red, 2, Qt.SolidLine)
+        pen_red.setCosmetic(True)
+        pen_green = QPen(Qt.green, 2, Qt.SolidLine)
+        pen_green.setCosmetic(True)
+        pen_blue = QPen(Qt.blue, 2, Qt.SolidLine)
+        pen_blue.setCosmetic(True)
 
-        for x in range(0, self.nrow + 1):
-            xc = x * cell_width
-            line = self.scene.addLine(xc, 0, xc, self.height, pen)
-            line.setPos(self.offx, self.offy)
-            self.grid_lines.append(line)
+        for c in range(0, self.ncol):
+            for r in range(0, self.nrow):
+                xc = c * cell_width
+                yc = r * cell_height
 
-        for y in range(0, self.ncol + 1):
-            yc = y * cell_height
-            line = self.scene.addLine(0, yc, self.width, yc, pen)
-            line.setPos(self.offx, self.offy)
-            self.grid_lines.append(line)
+                value = self.cell_values[r, c]
 
-    def set_visible(self, visible=True):
-        for line in self.grid_lines:
-            line.setVisible(visible)
+                if value == 0:
+                    rect = self.scene.addRect(xc, yc, cell_width-1, cell_height-1, pen=pen_red)
+                elif value == 1:
+                    rect = self.scene.addRect(xc, yc, cell_width-1, cell_height-1, pen=pen_blue)
+                elif value == 2:
+                    rect = self.scene.addRect(xc, yc, cell_width-1, cell_height-1, pen=pen_green)
 
-    def delete_grid(self):
-        for line in self.grid_lines:
-            self.scene.removeItem(line)
-        del self.grid_lines[:]
+                rect.setPos(self.offx, self.offy)
+                self.grid_rects.append(rect)
 
-    def set_opacity(self, opacity):
+    def setVisible(self, visible=True):
+        for rect in self.grid_rects:
+            rect.setVisible(visible)
 
-        for line in self.grid_lines:
-            line.setOpacity(opacity)
+    def undrawGrid(self):
+        for rect in self.grid_rects:
+            self.scene.removeItem(rect)
+        del self.grid_rects[:]
+
+    def setOpacity(self, opacity):
+
+        for rect in self.grid_rects:
+            rect.setOpacity(opacity)
+
+    def changeCellState(self, x, y):
+
+        cell_width = self.width / self.ncol
+        cell_height = self.height / self.nrow
+
+        print(x, y)
+
+        c = int(x / cell_width)
+        r = int(y / cell_height)
+
+        self.cell_values[r, c] = (self.cell_values[r, c] + 1) % 3
+
+        self.undrawGrid()
+        self.drawGrid()
 
     def cellState(self):
         # mark cell as unseen, uncomplete, complete

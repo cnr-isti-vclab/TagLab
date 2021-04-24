@@ -102,6 +102,8 @@ class QtImageViewerPlus(QtImageViewer):
         self.tools = Tools(self)
         self.tools.createTools()
 
+        self.grid_active = False
+
         self.undo_data = Undo()
 
         self.dragSelectionStart = None
@@ -112,7 +114,6 @@ class QtImageViewerPlus(QtImageViewer):
         # Set scrollbar
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-
 
         # DRAWING SETTINGS
         self.border_pen = QPen(Qt.black, 3)
@@ -135,6 +136,8 @@ class QtImageViewerPlus(QtImageViewer):
         self.refine_original_blob = None
 
         self.active_label = None
+
+        self.setFocusPolicy(Qt.StrongFocus)
 
     def setProject(self, project):
 
@@ -194,7 +197,11 @@ class QtImageViewerPlus(QtImageViewer):
                                                                        "Image Files (*.png *.jpg)")
             dir = QDir(self.taglab_dir)
             channel.filename = dir.relativeFilePath(filename)
+
+            QApplication.setOverrideCursor(Qt.WaitCursor)
             img = channel.loadData()
+            QApplication.restoreOverrideCursor()
+
             if img.isNull():
                 raise Exception("Could not load or find the image: " + filename)
 
@@ -223,6 +230,23 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.annotations = Annotation()
 
+    def enableGrid(self):
+        if self.image.grid is not None:
+            self.image.grid.setVisible(True)
+            self.grid_active = True
+        else:
+            self.grid_active = False
+
+    def disableGrid(self):
+        if self.image.grid is not None:
+            self.image.grid.setVisible(False)
+        self.grid_active = False
+
+    def toggleGrid(self):
+        if self.grid_active is False:
+            self.enableGrid()
+        else:
+            self.disableGrid()
 
     def drawBlob(self, blob, prev=False):
         # if it has just been created remove the current graphics item in order to set it again
@@ -365,8 +389,13 @@ class QtImageViewerPlus(QtImageViewer):
             self.newSelection.emit()
         self.logfile.info("[SELECTION][DOUBLE-CLICK] Selection ends.")
 
+    def updateCell(self):
 
-#MOUSE EVENTS
+        pos = self.mapFromGlobal(self.cursor().pos())
+        scenePos = self.mapToScene(pos)
+        self.image.grid.changeCellState(scenePos.x(), scenePos.y())
+
+### MOUSE EVENTS
 
     def mousePressEvent(self, event):
         """ Start mouse pan or zoom mode.

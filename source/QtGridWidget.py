@@ -46,7 +46,7 @@ class QtGridWidget(QWidget):
         self.posx_m = 0.0
         self.posy_m = 0.0
 
-        self.grid = Grid(viewerplus)
+        self.grid = Grid()
 
         TEXT_WIDTH = 100
 
@@ -106,7 +106,7 @@ class QtGridWidget(QWidget):
         self.btnCancel = QPushButton("Cancel")
         self.btnCancel.clicked.connect(self.beforeClose)
         self.btnApply = QPushButton("Apply")
-        self.btnApply.clicked.connect(self.accept)
+        self.btnApply.clicked.connect(self.apply)
 
         buttons_layout.setAlignment(Qt.AlignRight)
         buttons_layout.addStretch()
@@ -121,6 +121,7 @@ class QtGridWidget(QWidget):
         self.setWindowTitle("Grid Settings")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
+        self.grid.setScene(self.viewerplus.scene)
         self.setGrid()
 
         # connections
@@ -142,7 +143,9 @@ class QtGridWidget(QWidget):
 
         w = self.metersToPixels(float(self.data["width"]))
         h = self.metersToPixels(float(self.data["height"]))
+        self.grid.undrawGrid()
         self.grid.setGrid(w, h, int(self.data["number_cell_x"]), int(self.data["number_cell_y"]))
+        self.grid.drawGrid()
 
     @pyqtSlot(float, float)
     def setGridPosition(self, x, y):
@@ -165,11 +168,11 @@ class QtGridWidget(QWidget):
     @pyqtSlot()
     def beforeClose(self):
 
-        self.grid.delete_grid()
+        self.grid.undrawGrid()
         self.close()
 
     @pyqtSlot()
-    def accept(self):
+    def apply(self):
 
         self.accepted.emit()
         self.close()

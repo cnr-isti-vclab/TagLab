@@ -170,8 +170,8 @@ class TagLab(QWidget):
         self.pxmapSeparator = QPixmap("icons/separator.png")
         self.labelSeparator = QLabel()
         self.labelSeparator.setPixmap(self.pxmapSeparator.scaled(QSize(35, 30)))
-        self.btnCreateGrid = self.newButton("grid.png", "Create Grid",  flatbuttonstyle1, self.createGrid)
-        self.btnToggleGrid = self.newButton("grid-eye.png", "Toggle Grid", flatbuttonstyle1, self.toggleGrid)
+        self.btnCreateGrid = self.newButton("grid.png", "Create grid",  flatbuttonstyle1, self.createGrid)
+        self.btnToggleGrid = self.newButton("grid-eye.png", "Toggle grid", flatbuttonstyle1, self.toggleGrid)
         self.pxmapSeparator2 = QPixmap("icons/separator.png")
         self.labelSeparator2 = QLabel()
         self.labelSeparator2.setPixmap(self.pxmapSeparator2.scaled(QSize(35, 30)))
@@ -1106,17 +1106,38 @@ class TagLab(QWidget):
 
     @pyqtSlot()
     def toggleGrid(self):
-        pass
+
+        self.activeviewer.toggleGrid()
 
     @pyqtSlot()
     def createGrid(self):
+        """
+        Create a new grid. This special grid is used to better supervise the annotation work.
+        """
+
+        if len(self.project.images) < 1:
+            return
+
+        if self.activeviewer.image.grid is not None:
+            reply = QMessageBox.question(self, self.TAGLAB_VERSION,
+                                     "Would you like to clear the existing <em>annotation grid</em> and create a new one?",
+                                     QMessageBox.Yes | QMessageBox.No)
+            if reply == QMessageBox.No:
+                return
+
         self.gridWidget = QtGridWidget(self.activeviewer, self)
         self.gridWidget.setWindowModality(Qt.NonModal)
         self.gridWidget.show()
+        self.gridWidget.accepted.connect(self.assignGrid)
 
-        # if self.activeviewer.image.grid is not None:
-        # #    pass
-
+    @pyqtSlot()
+    def assignGrid(self):
+        """
+        Assign the grid created to the corresponding image.
+        """
+        self.activeviewer.image.grid = self.gridWidget.grid
+        self.resetToolbar()
+        self.activeviewer.disableGrid()
 
     @pyqtSlot()
     def toggleComparison(self):
@@ -1235,6 +1256,10 @@ class TagLab(QWidget):
 
         elif event.key() == Qt.Key_F:
             self.fillLabel()
+
+        elif event.key() == Qt.Key_W:
+
+            self.activeviewer.updateCell()
 
         elif event.key() == Qt.Key_1:
             # ACTIVATE "MOVE" TOOL
@@ -1769,6 +1794,7 @@ class TagLab(QWidget):
         #self.btnSplitBlob.setChecked(False)
         self.btnDeepExtreme.setChecked(False)
         self.btnRitm.setChecked(False)
+        self.btnCreateGrid.setChecked(False)
         self.btnMatch.setChecked(False)
         self.btnAutoClassification.setChecked(False)
 

@@ -1,7 +1,9 @@
 from source.Channel import Channel
 from source.Blob import Blob
 from source.Annotation import Annotation
+from source.Grid import Grid
 import rasterio as rio
+
 
 class Image(object):
     def __init__(self, rect = [0.0, 0.0, 0.0, 0.0],
@@ -36,6 +38,7 @@ class Image(object):
         self.georef_filename = georef_filename    # image file (GeoTiff) contained the georeferencing information
         self.metadata = metadata                  # this follows image_metadata_template, do we want to allow freedom to add custome values?
 
+        self.grid = None
 
     def pixelSize(self):
 
