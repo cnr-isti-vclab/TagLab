@@ -307,7 +307,7 @@ class Annotation(QObject):
 #            return
 
         #TODO this should be moved to a function!
-        area_th = 2
+        area_th = 500
         created_blobs = []
         first = True
         label_image = measure.label(mask, connectivity=1)
