@@ -392,7 +392,7 @@ class Correspondences(object):
         for id in missing:
             index = all_blobs.index(id)
             if blobs1[index].class_name != 'Empty':
-                self.dead.append([id, -1,  blobs1[index].area, 0.0, blobs1[index].class_name, 'dead', 'none'])
+                self.dead.append([-1, id, -1,  blobs1[index].area, 0.0, blobs1[index].class_name, 'dead', 'none'])
 
 
     def assignBorn(self, blobs2):
@@ -417,5 +417,5 @@ class Correspondences(object):
         for id in missing:
             index = all_blobs.index(id)
             if blobs2[index].class_name != 'Empty':
-                self.born.append([-1, id, 0.0, blobs2[index].area, blobs2[index].class_name, 'born', 'none'])
+                self.born.append([-1, -1, id, 0.0, blobs2[index].area, blobs2[index].class_name, 'born', 'none'])
 

@@ -354,7 +354,7 @@ class Project(object):
         corr.dead = []
         corr.born =[]
 
-        self.project.genet.updateGenets()
+        self.genet.updateGenets()
         corr.updateGenets()
 
 
