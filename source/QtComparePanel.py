@@ -14,14 +14,13 @@
 # This program is distributed in the hope that it will be useful,           
 # but WITHOUT ANY WARRANTY; without even the implied warranty of            
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the             
-#GNU General Public License (http://www.gnu.org/licenses/gpl.txt)          
+# GNU General Public License (http://www.gnu.org/licenses/gpl.txt)
 # for more details.                                               
 from PyQt5.QtCore import Qt, QAbstractTableModel, QItemSelectionModel, QSortFilterProxyModel, QRegExp, QModelIndex, pyqtSlot, pyqtSignal
-from PyQt5.QtWidgets import QWidget, QSizePolicy, QHeaderView, QComboBox, QLabel, QTableView, \
+from PyQt5.QtWidgets import QWidget, QSizePolicy, QComboBox, QLabel, QTableView, \
     QHBoxLayout, QVBoxLayout, QAbstractItemView, QStyledItemDelegate, QAction, QMenu
 from PyQt5.QtGui import QColor
 from pathlib import Path
-import math
 
 path = Path(__file__).parent.absolute()
 imdir = str(path)
@@ -152,7 +151,7 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
         # get the index of the text in the combobox that matches the current
         # value of the item const
         currentText = index.data()
-        cbIndex = cb.findText(currentText);
+        cbIndex = cb.findText(currentText)
         # if it is valid, adjust the combobox
         if cbIndex >= 0:
             cb.setCurrentIndex(cbIndex)
@@ -247,6 +246,10 @@ class QtComparePanel(QWidget):
         self.comboboxFilter.currentTextChanged.connect(self.changeFilter)
         self.comboboxAreaMode.currentTextChanged.connect(self.changeAreaMode)
 
+        self.sourceImg = None
+        self.targetImg = None
+        self.sortfilter = None
+
     def openContextMenu(self, position):
 
         menu = QMenu(self)
@@ -307,13 +310,20 @@ class QtComparePanel(QWidget):
 
     def setTable(self, project, img1idx, img2idx):
 
-        self.correspondences = project.getImagePairCorrespondences(img1idx, img2idx)
-
         self.sourceImg = project.images[img1idx]
         self.targetImg = project.images[img2idx]
+
+        n_receivers = self.sourceImg.annotations.receivers(self.sourceImg.annotations.blobUpdated)
+        if n_receivers > 1:
+            self.sourceImg.annotations.blobUpdated.disconnect()
+        n_receivers = self.targetImg.annotations.receivers(self.targetImg.annotations.blobUpdated)
+        if n_receivers > 1:
+            self.targetImg.annotations.blobUpdated.disconnect()
+
         self.sourceImg.annotations.blobUpdated.connect(self.sourceBlobUpdated)
         self.targetImg.annotations.blobUpdated.connect(self.targetBlobUpdated)
 
+        self.correspondences = project.getImagePairCorrespondences(img1idx, img2idx)
         self.data = self.correspondences.data
 
         self.model = TableModel(self.data)

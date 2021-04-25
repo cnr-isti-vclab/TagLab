@@ -1029,7 +1029,10 @@ class TagLab(QWidget):
         img_source_index = self.comboboxSourceImage.currentIndex()
         img_target_index = self.comboboxTargetImage.currentIndex()
         updated_corresp = self.project.updateGenets(img_source_index, img_target_index)
-        self.compare_panel.updateTable(updated_corresp)
+        if self.compare_panel.correspondances is None:
+            self.compare_panel.setTable(self.project, img_source_index, img_target_index)
+        else:
+            self.compare_panel.updateTable(updated_corresp)
 
     @pyqtSlot()
     def exportGenetSVG(self):
@@ -1419,7 +1422,7 @@ class TagLab(QWidget):
         Create a new match and add it to the correspondences table.
         """
 
-        if self.split_screen_flag == True:
+        if self.split_screen_flag is True:
             sel1 = self.viewerplus.selected_blobs
             sel2 = self.viewerplus2.selected_blobs
 
@@ -1433,8 +1436,12 @@ class TagLab(QWidget):
             img_source_index = self.comboboxSourceImage.currentIndex()
             img_target_index = self.comboboxTargetImage.currentIndex()
             self.project.addCorrespondence(img_source_index, img_target_index, sel1, sel2)
-            corr = self.project.getImagePairCorrespondences(img_source_index, img_target_index)
-            self.compare_panel.updateTable(corr)
+
+            if self.compare_panel.correspondences is None:
+                self.setTable(self.project, img_source_index, img_target_index)
+            else:
+                corr = self.project.getImagePairCorrespondences(img_source_index, img_target_index)
+                self.compare_panel.updateTable(corr)
 
             # highlight the correspondences just added and show it by scroll
             if len(sel1) > 0:
@@ -1480,7 +1487,11 @@ class TagLab(QWidget):
 
         self.viewerplus.resetSelection()
         self.viewerplus2.resetSelection()
-        self.compare_panel.updateTable(corr)
+
+        if self.compare_panel.correspondences is not None:
+            self.compare_panel.setTable(self.project, img_source_index, img_target_index)
+        else:
+            self.compare_panel.updateTable(corr)
 
 
     @pyqtSlot()

@@ -232,6 +232,10 @@ class QtImageViewerPlus(QtImageViewer):
 
     def enableGrid(self):
         if self.image.grid is not None:
+            if not self.image.grid.grid_rects:
+                # the grid has never been drawn
+                self.image.grid.setScene(self.viewerplus.scene)
+                self.image.grid.drawGrid()
             self.image.grid.setVisible(True)
             self.grid_active = True
         else:
