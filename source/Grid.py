@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import  QWidget,QGridLayout,QApplication
 
 import numpy as np
 from PyQt5.QtCore import Qt, QSize, QMargins, QDir, QPoint, QPointF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo, QModelIndex
-from PyQt5.QtGui import QFontDatabase, QFont, QPixmap, QIcon, QKeySequence, QPen
+from PyQt5.QtGui import QFontDatabase, QFont, QPixmap, QIcon, QKeySequence, QPen, QBrush, qRgba, QColor
 
 class Grid:
 
@@ -58,12 +58,17 @@ class Grid:
         cell_width = self.width / self.ncol
         cell_height = self.height / self.nrow
 
-        pen_red = QPen(Qt.red, 2, Qt.SolidLine)
-        pen_red.setCosmetic(True)
-        pen_green = QPen(Qt.green, 2, Qt.SolidLine)
-        pen_green.setCosmetic(True)
-        pen_blue = QPen(Qt.blue, 2, Qt.SolidLine)
-        pen_blue.setCosmetic(True)
+        pen_white = QPen(Qt.white, 2, Qt.SolidLine)
+        pen_white.setCosmetic(True)
+
+        brush = QBrush(Qt.SolidPattern)
+        brush.setColor(QColor(255, 255, 255, 0))
+
+        brush25 = QBrush(Qt.DiagCrossPattern)
+        brush25.setColor(QColor(255, 255, 255, 200))
+
+        brush50 = QBrush(Qt.SolidPattern)
+        brush50.setColor(QColor(255, 255, 255, 125))
 
         for c in range(0, self.ncol):
             for r in range(0, self.nrow):
@@ -73,11 +78,11 @@ class Grid:
                 value = self.cell_values[r, c]
 
                 if value == 0:
-                    rect = self.scene.addRect(xc, yc, cell_width-1, cell_height-1, pen=pen_red)
+                    rect = self.scene.addRect(xc, yc, cell_width-1, cell_height-1, pen=pen_white, brush=brush)
                 elif value == 1:
-                    rect = self.scene.addRect(xc, yc, cell_width-1, cell_height-1, pen=pen_blue)
+                    rect = self.scene.addRect(xc, yc, cell_width-1, cell_height-1, pen=pen_white, brush=brush25)
                 elif value == 2:
-                    rect = self.scene.addRect(xc, yc, cell_width-1, cell_height-1, pen=pen_green)
+                    rect = self.scene.addRect(xc, yc, cell_width-1, cell_height-1, pen=pen_white, brush=brush50)
 
                 rect.setPos(self.offx, self.offy)
                 self.grid_rects.append(rect)
@@ -101,10 +106,8 @@ class Grid:
         cell_width = self.width / self.ncol
         cell_height = self.height / self.nrow
 
-        print(x, y)
-
-        c = int(x / cell_width)
-        r = int(y / cell_height)
+        c = int((x - self.offx)/ cell_width)
+        r = int((y - self.offy) / cell_height)
 
         self.cell_values[r, c] = (self.cell_values[r, c] + 1) % 3
 

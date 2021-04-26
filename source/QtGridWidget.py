@@ -59,7 +59,7 @@ class QtGridWidget(QWidget):
 
             "number_cell_x": {"name": "Columns :", "value": "8", "place": "Number of vertical cells", "width": 200,  "action": None},
 
-            "position": {"name": "Position:", "value": " ", "place": "(0,0)", "width": 200, "action": self.toggleSetPosition}
+            "position": {"name": "Position:", "value": "(0,0)", "place": "Pick the top-left point", "width": 200, "action": self.toggleSetPosition}
         }
         self.data = {}
 
@@ -174,6 +174,9 @@ class QtGridWidget(QWidget):
     @pyqtSlot()
     def apply(self):
 
+        button = self.fields["position"]["button"]
+        if button.isChecked():
+             self.viewerplus.leftMouseButtonPressed[float, float].disconnect()
         self.accepted.emit()
         self.close()
 

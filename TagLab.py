@@ -1140,7 +1140,9 @@ class TagLab(QWidget):
         """
         self.activeviewer.image.grid = self.gridWidget.grid
         self.resetToolbar()
-        self.activeviewer.disableGrid()
+        self.btnToggleGrid.setChecked(True)
+        self.toggleGrid()
+        self.gridWidget = None
 
     @pyqtSlot()
     def toggleComparison(self):
