@@ -1459,7 +1459,8 @@ class TagLab(QWidget):
         img_source_index = self.comboboxSourceImage.currentIndex()
         img_target_index = self.comboboxTargetImage.currentIndex()
         corr = self.project.getImagePairCorrespondences(img_source_index, img_target_index)
-        row = corr.data.iloc[indexes[0].row()]
+        index = self.compare_panel.sortfilter.mapToSource(indexes[0]);
+        row = corr.data.iloc[index.row()]
         blob1id = row['Blob1']
         blob2id = row['Blob2']
 

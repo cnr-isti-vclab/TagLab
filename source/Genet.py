@@ -42,11 +42,9 @@ class Genet:
         for img in self.project.images:
             sorted_blobs = sorted(img.annotations.seg_blobs, key=lambda x: x.id)
             for b in sorted_blobs:
-                #if hasattr(b, 'genet') == False or b.genet is None:
                 b.genet = count
                 genets.append(count)
                 count += 1
-                #print("Image ", img.name, "Blob ", b.id, " has genet ", b.genet)
 
         #remap all the correspondending blobs using genets[]
         for corrs in self.project.correspondences.values():
