@@ -355,24 +355,24 @@ class Correspondences(object):
 
         mylist = []
         for i in range(0, len(self.correspondences)):
-            mylist.append(int(self.correspondences[i][0]))
+            mylist.append(int(self.correspondences[i][1]))
         splitted = sorted(set([i for i in mylist if mylist.count(i) > 1]))
 
         for i in range(0, len(self.correspondences)):
-            if int(self.correspondences[i][0]) in splitted:
-                self.correspondences[i][6] = 'split'
+            if int(self.correspondences[i][1]) in splitted:
+                self.correspondences[i][7] = 'split'
 
 
     def assignFuse(self):
 
         mylist = []
         for i in range(0, len(self.correspondences)):
-            mylist.append(int(self.correspondences[i][1]))
+            mylist.append(int(self.correspondences[i][2]))
         fused = sorted(set([i for i in mylist if mylist.count(i) > 1]))
 
         for i in range(0, len(self.correspondences)):
-            if int(self.correspondences[i][1]) in fused:
-                self.correspondences[i][6] = 'fuse'
+            if int(self.correspondences[i][2]) in fused:
+                self.correspondences[i][7] = 'fuse'
 
 
     def assignDead(self, blobs1):
@@ -388,7 +388,7 @@ class Correspondences(object):
             all_blobs.append(int(blobs1[i].id))
 
         for j in range(0, len(self.correspondences)):
-            existing.append(int(self.correspondences[j][0]))
+            existing.append(int(self.correspondences[j][1]))
 
         missing = [i for i in all_blobs if i not in existing]
 
@@ -413,7 +413,7 @@ class Correspondences(object):
             all_blobs.append(int(blobs2[i].id))
 
         for j in range(0, len(self.correspondences)):
-            existing.append(int(self.correspondences[j][1]))
+            existing.append(int(self.correspondences[j][2]))
 
         missing = [i for i in all_blobs if i not in existing]
 
