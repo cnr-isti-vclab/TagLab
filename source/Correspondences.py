@@ -28,6 +28,9 @@ class Correspondences(object):
 
     def isGenetInfoAvailable(self):
 
+        if len(self.data.index) < 2:
+            return False
+
         if self.data.loc[1, 'Genet'] >= 0:
             return True
         else:

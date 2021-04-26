@@ -294,9 +294,11 @@ class Project(object):
             # create a new correspondences table
             self.correspondences = {}
             self.correspondences[key] = Correspondences(self.images[img_source_idx], self.images[img_target_idx])
-        elif not key in self.correspondences:
-            # create a new correspondences table
-            self.correspondences[key] = Correspondences(self.images[img_source_idx], self.images[img_target_idx])
+        else:
+            corr = self.correspondences.get(key)
+            if corr is None:
+                # create a new correspondences table
+                self.correspondences[key] = Correspondences(self.images[img_source_idx], self.images[img_target_idx])
 
         return self.correspondences[key]
 

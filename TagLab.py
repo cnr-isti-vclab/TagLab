@@ -1029,7 +1029,7 @@ class TagLab(QWidget):
         img_source_index = self.comboboxSourceImage.currentIndex()
         img_target_index = self.comboboxTargetImage.currentIndex()
         updated_corresp = self.project.updateGenets(img_source_index, img_target_index)
-        if self.compare_panel.correspondances is None:
+        if self.compare_panel.correspondences is None:
             self.compare_panel.setTable(self.project, img_source_index, img_target_index)
         else:
             self.compare_panel.updateTable(updated_corresp)
