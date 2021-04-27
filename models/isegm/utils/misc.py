@@ -1,9 +1,6 @@
 import torch
 import numpy as np
 
-from .log import logger
-
-
 def get_dims_with_exclusion(dim, exclude=None):
     dims = list(range(dim))
     if exclude is not None:

@@ -135,6 +135,7 @@ class TagLab(QWidget):
         self.trainYourNetworkWidget = None
         self.trainResultsWidget = None
         self.progress_bar = None
+        self.gridWidget = None
 
         ##### TOP LAYOUT
 
@@ -510,7 +511,6 @@ class TagLab(QWidget):
         # Graphics Item of the working area
         self.working_area_rect = None
 
-
         # Graphis Item of the prev area
         self.prev_area_rect = None
         self.prev_area = None
@@ -676,6 +676,9 @@ class TagLab(QWidget):
     # call by pressing right button
     def openContextMenu(self, position):
 
+        if len(self.project.images) == 0:
+            return
+
         menu = QMenu(self)
         menu.setAutoFillBackground(True)
 
@@ -684,9 +687,7 @@ class TagLab(QWidget):
             color: rgb(255, 255, 255);\
             } QMenu::item:disabled { color:rgb(150, 150, 150); }"
 
-
         menu.setStyleSheet(str)
-
 
         menu.addAction(self.markEmpty)
         menu.addAction(self.markIncomplete)
@@ -716,7 +717,6 @@ class TagLab(QWidget):
 
         viewer = self.sender()
         action = menu.exec_(viewer.mapToGlobal(position))
-
 
     def setProjectTitle(self, project_name):
 
@@ -1186,10 +1186,11 @@ class TagLab(QWidget):
                 self.activeviewer.disableGrid()
                 self.btnToggleGrid.setChecked(False)
 
-        self.gridWidget = QtGridWidget(self.activeviewer, self)
-        self.gridWidget.setWindowModality(Qt.NonModal)
-        self.gridWidget.show()
-        self.gridWidget.accepted.connect(self.assignGrid)
+        if self.gridWidget is None:
+            self.gridWidget = QtGridWidget(self.activeviewer, self)
+            self.gridWidget.setWindowModality(Qt.NonModal)
+            self.gridWidget.show()
+            self.gridWidget.accepted.connect(self.assignGrid)
 
     @pyqtSlot()
     def assignGrid(self):
@@ -1831,7 +1832,6 @@ class TagLab(QWidget):
         self.mapviewer.clear()
         self.viewerplus.resetTools()
         self.viewerplus2.resetTools()
-
 
         # RE-INITIALIZATION
         self.mapWidget = None

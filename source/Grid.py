@@ -5,7 +5,8 @@ from PyQt5.QtWidgets import  QWidget,QGridLayout,QApplication
 
 import numpy as np
 from PyQt5.QtCore import Qt, QSize, QMargins, QDir, QPoint, QPointF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo, QModelIndex
-from PyQt5.QtGui import QFontDatabase, QFont, QPixmap, QIcon, QKeySequence, QPen, QBrush, qRgba, QColor
+from PyQt5.QtGui import QFontDatabase, QFont, QPen, QBrush, QColor
+from PyQt5.QtWidgets import QGraphicsItem, QGraphicsTextItem
 
 class Grid:
 
@@ -21,9 +22,22 @@ class Grid:
         self.scene = None
 
         self.cell_values = None
-        self.dict_notes = {}
+        self.notes = {}
 
         self.grid_rects = []
+
+    def save(self):
+
+        dict_to_save = {}
+
+        dict_to_save["width"] = self.width
+        dict_to_save["height"] = self.height
+        dict_to_save["nrow"] = self.nrow
+        dict_to_save["ncol"] = self.ncol
+        dict_to_save["offx"] = self.offx
+        dict_to_save["offy"] = self.offy
+
+        return dict_to_save
 
     def setScene(self, scene):
 
@@ -102,8 +116,10 @@ class Grid:
             rect.setOpacity(opacity)
 
     def changeCellState(self, x, y, state):
-
-
+        """
+        Assign the cell indexed by the x,y coordinates the given state.
+        If state is None the cell cycles between the different states.
+        """
         cell_width = self.width / self.ncol
         cell_height = self.height / self.nrow
 
@@ -118,11 +134,14 @@ class Grid:
         self.undrawGrid()
         self.drawGrid()
 
+    def addNote(self, x, y, txt):
 
-    def addNote(self, x, y, state):
-        pass
-
-
+        font = QFont("Calibri", 12)
+        text_item = self.scene.addText(txt, font)
+        text_item.setDefaultTextColor(Qt.white)
+        text_item.setPos(x, y)
+        text_item.setFlags(QGraphicsItem.ItemIsMovable | QGraphicsItem.ItemIsFocusable)
+        text_item.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextEditable)
 
     def cellColor(self):
         pass

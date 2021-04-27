@@ -122,6 +122,8 @@ class ProjectEncoder(json.JSONEncoder):
             return obj.save()
         elif isinstance(obj, Correspondences):
             return obj.save()
+        elif isinstance(obj, Grid):
+            return obj.save()
         elif isinstance(obj, Genet):
             return {}
         return json.JSONEncoder.default(self, obj)

@@ -64,29 +64,27 @@ class TextItem(QGraphicsSimpleTextItem):
         return QRectF(b.x()-b.width()/2.0, b.y()-b.height()/2.0, b.width(), b.height())
 
 
-
-
 class NoteWidget(QPlainTextEdit):
+
+    editFinishing = pyqtSignal()
 
     def __init__(self, parent):
         super(QPlainTextEdit, self).__init__(parent)
 
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        self.setMinimumWidth(300)
-        self.setMinimumHeight(100)
+        self.setFixedWidth(200)
+        self.setFixedHeight(60)
         self.setWordWrapMode(True)
         self.autoFillBackground()
-
-
+        self.setWindowTitle("Enter note below and press TAB")
+        self.setWindowFlags(Qt.ToolTip | Qt.CustomizeWindowHint | Qt.WA_Hover)
 
     def keyPressEvent(self, event):
-        QPlainTextEdit.keyPressEvent(self, event)
         if event.key() == Qt.Key_Tab:
-            self.parent.dealMessage()
-
-
-
+            self.editFinishing.emit()
+        else:
+            QPlainTextEdit.keyPressEvent(self, event)
 
 
 #TODO: crackwidget uses qimageviewerplus to draw an image.
@@ -165,7 +163,9 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.active_label = None
 
-        self.setFocusPolicy(Qt.StrongFocus)
+        self.noteWidget = NoteWidget(self)
+        self.noteWidget.editFinishing.connect(self.addNoteToGrid)
+        self.noteWidget.hide()
 
     def setProject(self, project):
 
@@ -427,12 +427,14 @@ class QtImageViewerPlus(QtImageViewer):
         scenePos = self.mapToScene(pos)
         self.image.grid.changeCellState(scenePos.x(), scenePos.y(), state)
 
-
     def addNote(self):
-        pos = self.cursor().pos()
-        self.myNote= NoteWidget(self)
-        self.myNote.move(pos)
-
+        """
+        Insert the node to add.
+        """
+        if self.image.grid is not None and self.grid_active is True:
+            pos = self.mapFromGlobal(self.cursor().pos())
+            scenePos = self.mapToScene(pos)
+            self.image.grid.addNote(scenePos.x(), scenePos.y(), "Enter note..")
 
 ### MOUSE EVENTS
 
@@ -563,7 +565,6 @@ class QtImageViewerPlus(QtImageViewer):
             view_pos = event.pos()
             scene_pos = self.mapToScene(view_pos)
             self.centerOn(scene_pos)
-
 
             pt = event.angleDelta()
 
