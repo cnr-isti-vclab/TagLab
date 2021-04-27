@@ -213,6 +213,13 @@ class TagLab(QWidget):
         layout_tools.addStretch()
 
         # CONTEXT MENU ACTIONS
+
+        self.markEmpty = self.newAction("Mark cell as empty",  "",   self.markEmptyOperation)
+        self.markIncomplete = self.newAction("Mark cell as incomplete", "",   self.markIncompleteOperation)
+        self.markComplete = self.newAction("Mark cell as complete", "",   self.markCompleteOperation)
+        self.addNote = self.newAction("Add/edit note", "",   self.addNoteOperation)
+        self.removeNote= self.newAction("Remove/edit note",  "",   self.removeNoteOperation)
+
         self.assignAction       = self.newAction("Assign Class",            "A",   self.assignOperation)
         self.deleteAction       = self.newAction("Delete Labels",           "Del", self.deleteSelectedBlobs)
         self.mergeAction        = self.newAction("Merge Overlapped Labels", "M",   self.union)
@@ -222,8 +229,6 @@ class TagLab(QWidget):
         self.dilateAction       = self.newAction("Dilate Border",           "+",   self.dilate)
         self.erodeAction        = self.newAction("Erode Border",            "-",   self.erode)
         self.attachBoundariesAction = self.newAction("Attach Boundaries",   "B",   self.attachBoundaries)
-        #self.refineActionDilate = self.newAction("Refine Border Dilate",    "+",   self.refineBorderDilate)
-        #self.refineActionErode  = self.newAction("Refine Border Erode",     "-",   self.refineBorderErode)
         self.fillAction         = self.newAction("Fill Label",              "F",   self.fillLabel)
 
 
@@ -604,6 +609,21 @@ class TagLab(QWidget):
 
     @pyqtSlot()
     def updateEditActions(self):
+
+        if self.btnToggleGrid.isChecked():
+            self.markEmpty.setVisible(True)
+            self.markComplete.setVisible(True)
+            self.markIncomplete.setVisible(True)
+            self.addNote.setVisible(True)
+            self.removeNote.setVisible(True)
+
+        else:
+            self.markEmpty.setVisible(False)
+            self.markComplete.setVisible(False)
+            self.markIncomplete.setVisible(False)
+            self.addNote.setVisible(False)
+            self.removeNote.setVisible(False)
+
         nSelected = len(self.viewerplus.selected_blobs) + len(self.viewerplus2.selected_blobs)
         self.assignAction.setEnabled(nSelected > 0)
         self.deleteAction.setEnabled(nSelected > 0)
@@ -614,14 +634,35 @@ class TagLab(QWidget):
         self.dilateAction.setEnabled(nSelected > 0)
         self.erodeAction.setEnabled(nSelected > 0)
         self.attachBoundariesAction.setEnabled(nSelected == 2)
-        #self.refineActionDilate.setEnabled(nSelected == 1)
-        #self.refineActionErode.setEnabled(nSelected == 1)
         self.fillAction.setEnabled(nSelected > 0)
 
-    def activateAutosave(self):
 
+    @pyqtSlot()
+    def markEmptyOperation(self):
+        self.activeviewer.updateCellState(0)
+
+    @pyqtSlot()
+    def markIncompleteOperation(self):
+        self.activeviewer.updateCellState(1)
+
+    @pyqtSlot()
+    def markCompleteOperation(self):
+        self.activeviewer.updateCellState(2)
+
+
+    @pyqtSlot()
+    def addNoteOperation(self):
+        self.activeviewer.addNote()
+
+
+
+    @pyqtSlot()
+    def removeNoteOperation(self):
         pass
 
+
+    def activateAutosave(self):
+        pass
         # self.timer = QTimer(self)
         # self.timer.timeout.connect(self.autosave)
         # #self.timer.start(1800000)  # save every 3 minute
@@ -643,7 +684,17 @@ class TagLab(QWidget):
             color: rgb(255, 255, 255);\
             } QMenu::item:disabled { color:rgb(150, 150, 150); }"
 
+
         menu.setStyleSheet(str)
+
+
+        menu.addAction(self.markEmpty)
+        menu.addAction(self.markIncomplete)
+        menu.addAction(self.markComplete)
+        menu.addAction(self.addNote)
+        menu.addAction(self.removeNote)
+
+        menu.addSeparator()
 
         menu.addAction(self.assignAction)
         menu.addAction(self.deleteAction)
@@ -1111,6 +1162,7 @@ class TagLab(QWidget):
     def toggleGrid(self):
 
         self.activeviewer.toggleGrid()
+        self.updateEditActions()
 
     @pyqtSlot()
     def createGrid(self):
@@ -1122,11 +1174,17 @@ class TagLab(QWidget):
             return
 
         if self.activeviewer.image.grid is not None:
+
             reply = QMessageBox.question(self, self.TAGLAB_VERSION,
-                                     "Would you like to clear the existing <em>annotation grid</em> and create a new one?",
+                                     "Would you like to remove the existing <em>grid</em> and create a new one?",
                                      QMessageBox.Yes | QMessageBox.No)
             if reply == QMessageBox.No:
+                self.btnCreateGrid.setChecked(False)
                 return
+            else:
+                self.activeviewer.image.grid.undrawGrid()
+                self.activeviewer.disableGrid()
+                self.btnToggleGrid.setChecked(False)
 
         self.gridWidget = QtGridWidget(self.activeviewer, self)
         self.gridWidget.setWindowModality(Qt.NonModal)
@@ -1262,9 +1320,9 @@ class TagLab(QWidget):
         elif event.key() == Qt.Key_F:
             self.fillLabel()
 
-        elif event.key() == Qt.Key_W:
+        elif event.key() == Qt.Key_G:
 
-            self.activeviewer.updateCell()
+            self.activeviewer.updateCellState(None)
 
         elif event.key() == Qt.Key_1:
             # ACTIVATE "MOVE" TOOL
@@ -2788,6 +2846,7 @@ class TagLab(QWidget):
         pxmap = pxmap.scaledToWidth(160)
         icon.setPixmap(pxmap)
         icon.setStyleSheet("QLabel {padding: 5px; }");
+
 
 
         content = QLabel()

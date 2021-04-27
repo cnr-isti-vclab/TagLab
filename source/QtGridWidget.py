@@ -98,7 +98,7 @@ class QtGridWidget(QWidget):
             layoutV.addLayout(layout)
 
 
-        WorkingAreaIcon = QIcon("icons\\select_area.png")
+        WorkingAreaIcon = QIcon("icons\\corner.png")
         self.fields["position"]["button"].setIcon(WorkingAreaIcon)
 
         buttons_layout = QHBoxLayout()

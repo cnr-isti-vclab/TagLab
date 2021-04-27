@@ -24,7 +24,7 @@
 import os.path
 from PyQt5.QtCore import Qt, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
 from PyQt5.QtGui import QImage, QPixmap, QPainter, QPainterPath, QPen, QImageReader, QFont
-from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QFileDialog, QGraphicsItem, QGraphicsSimpleTextItem
+from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QFileDialog, QGraphicsItem, QGraphicsSimpleTextItem, QPlainTextEdit,QSizePolicy
 
 from source.Undo import Undo
 from source.Project import Project
@@ -45,6 +45,9 @@ import random as rnd
 # 3: selected blobs
 # 4: selected blobs text
 # 5: pick points and tools
+
+
+
 class TextItem(QGraphicsSimpleTextItem):
     def __init__(self, text, font):
         QGraphicsSimpleTextItem.__init__(self)
@@ -56,9 +59,34 @@ class TextItem(QGraphicsSimpleTextItem):
         super().paint(painter, option, widget)
         painter.translate(-self.boundingRect().topLeft())
 
-    def boundingRect(self ):
+    def boundingRect(self):
         b = super().boundingRect()
         return QRectF(b.x()-b.width()/2.0, b.y()-b.height()/2.0, b.width(), b.height())
+
+
+
+
+class NoteWidget(QPlainTextEdit):
+
+    def __init__(self, parent):
+        super(QPlainTextEdit, self).__init__(parent)
+
+        self.setStyleSheet("background-color: rgb(40,40,40); color: white")
+        self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+        self.setMinimumWidth(300)
+        self.setMinimumHeight(100)
+        self.setWordWrapMode(True)
+        self.autoFillBackground()
+
+
+
+    def keyPressEvent(self, event):
+        QPlainTextEdit.keyPressEvent(self, event)
+        if event.key() == Qt.Key_Tab:
+            self.parent.dealMessage()
+
+
+
 
 
 #TODO: crackwidget uses qimageviewerplus to draw an image.
@@ -393,11 +421,18 @@ class QtImageViewerPlus(QtImageViewer):
             self.newSelection.emit()
         self.logfile.info("[SELECTION][DOUBLE-CLICK] Selection ends.")
 
-    def updateCell(self):
+    def updateCellState(self, state):
 
         pos = self.mapFromGlobal(self.cursor().pos())
         scenePos = self.mapToScene(pos)
-        self.image.grid.changeCellState(scenePos.x(), scenePos.y())
+        self.image.grid.changeCellState(scenePos.x(), scenePos.y(), state)
+
+
+    def addNote(self):
+        pos = self.cursor().pos()
+        self.myNote= NoteWidget(self)
+        self.myNote.move(pos)
+
 
 ### MOUSE EVENTS
 

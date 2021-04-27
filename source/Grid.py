@@ -101,7 +101,8 @@ class Grid:
         for rect in self.grid_rects:
             rect.setOpacity(opacity)
 
-    def changeCellState(self, x, y):
+    def changeCellState(self, x, y, state):
+
 
         cell_width = self.width / self.ncol
         cell_height = self.height / self.nrow
@@ -109,27 +110,18 @@ class Grid:
         c = int((x - self.offx)/ cell_width)
         r = int((y - self.offy) / cell_height)
 
-        self.cell_values[r, c] = (self.cell_values[r, c] + 1) % 3
+        if state is None:
+            self.cell_values[r, c] = (self.cell_values[r, c] + 1) % 3
+        else:
+            self.cell_values[r, c] = state
 
         self.undrawGrid()
         self.drawGrid()
 
-    def cellState(self):
-        # mark cell as unseen, uncomplete, complete
 
-        positions = [(i, j) for i in range(self.nrow) for j in range(self.ncol)]
-        for position, value in zip(positions, self.cell_values):
-            if value == 0:
-                pass
-            if value == 1:
-                pass
-            if value == 2:
-                pass
+    def addNote(self, x, y, state):
+        pass
 
-    def noteState(self):
-        positions = [(i, j) for i in range(self.nrow) for j in range(self.ncol)]
-        for k in positions:
-            self.dict_notes[k] = ""
 
 
     def cellColor(self):
