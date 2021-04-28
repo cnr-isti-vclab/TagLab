@@ -34,6 +34,7 @@ class Grid:
 
         self.scene = None
         self.cell_values = None
+        self.text_items = []
         self.notes = []
         self.grid_rects = []
 
@@ -49,6 +50,7 @@ class Grid:
         dict_to_save["offx"] = self.offx
         dict_to_save["offy"] = self.offy
         dict_to_save["cell_values"] = self.cell_values.tolist()
+        dict_to_save["notes"] = self.notes
 
         return dict_to_save
 
@@ -61,7 +63,7 @@ class Grid:
         self.offx = dict["offx"]
         self.offy = dict["offy"]
         self.cell_values = np.asarray(dict["cell_values"])
-
+        self.notes = dict["notes"]
 
     def setScene(self, scene):
 
@@ -77,12 +79,6 @@ class Grid:
         # cells values
         self.cell_values = np.zeros((self.nrow, self.ncol))
 
-        # cells dictionary notes
-        self.dict_notes = {}
-        positions = [(i, j) for i in range(self.nrow) for j in range(self.ncol)]
-        for k in positions:
-            self.dict_notes[k] = ""
-
     def setGridPosition(self, posx, posy):
 
         self.offx = posx
@@ -92,41 +88,60 @@ class Grid:
             rect.setPos(self.offx, self.offy)
 
     def drawGrid(self):
+
+        if self.scene is not None:
         
-        cell_width = self.width / self.ncol
-        cell_height = self.height / self.nrow
+            cell_width = self.width / self.ncol
+            cell_height = self.height / self.nrow
 
-        pen_white = QPen(Qt.white, 2, Qt.SolidLine)
-        pen_white.setCosmetic(True)
+            pen_white = QPen(Qt.white, 2, Qt.SolidLine)
+            pen_white.setCosmetic(True)
 
-        brush = QBrush(Qt.SolidPattern)
-        brush.setColor(QColor(255, 255, 255, 0))
+            brush = QBrush(Qt.SolidPattern)
+            brush.setColor(QColor(255, 255, 255, 0))
 
-        brush25 = QBrush(Qt.DiagCrossPattern)
-        brush25.setColor(QColor(255, 255, 255, 200))
+            brush25 = QBrush(Qt.DiagCrossPattern)
+            brush25.setColor(QColor(255, 255, 255, 200))
 
-        brush50 = QBrush(Qt.SolidPattern)
-        brush50.setColor(QColor(255, 255, 255, 125))
+            brush50 = QBrush(Qt.SolidPattern)
+            brush50.setColor(QColor(255, 255, 255, 125))
 
-        for c in range(0, self.ncol):
-            for r in range(0, self.nrow):
-                xc = c * cell_width
-                yc = r * cell_height
+            # create cells' rectangles
+            for c in range(0, self.ncol):
+                for r in range(0, self.nrow):
+                    xc = c * cell_width
+                    yc = r * cell_height
 
-                value = self.cell_values[r, c]
+                    value = self.cell_values[r, c]
 
-                if value == 0:
-                    rect = self.scene.addRect(xc, yc, cell_width-1, cell_height-1, pen=pen_white, brush=brush)
-                elif value == 1:
-                    rect = self.scene.addRect(xc, yc, cell_width-1, cell_height-1, pen=pen_white, brush=brush25)
-                elif value == 2:
-                    rect = self.scene.addRect(xc, yc, cell_width-1, cell_height-1, pen=pen_white, brush=brush50)
+                    if value == 0:
+                        rect = self.scene.addRect(xc, yc, cell_width-1, cell_height-1, pen=pen_white, brush=brush)
+                    elif value == 1:
+                        rect = self.scene.addRect(xc, yc, cell_width-1, cell_height-1, pen=pen_white, brush=brush25)
+                    elif value == 2:
+                        rect = self.scene.addRect(xc, yc, cell_width-1, cell_height-1, pen=pen_white, brush=brush50)
 
-                rect.setPos(self.offx, self.offy)
-                self.grid_rects.append(rect)
+                    rect.setPos(self.offx, self.offy)
+                    self.grid_rects.append(rect)
 
-        for note in self.notes:
-            self.scene.addItem(note)
+            # create text graphics item to visualize the notes
+            font = QFont("Roboto", 15)
+            for note in self.notes:
+
+                x = note["x"]
+                y = note["y"]
+                txt = note["txt"]
+
+                text_item = MyGText()
+                self.scene.addItem(text_item)
+                text_item.setPlainText(txt)
+                text_item.setFont(font)
+                text_item.setDefaultTextColor(Qt.white)
+                text_item.setPos(x, y)
+                text_item.setFlags(QGraphicsItem.ItemIsMovable | QGraphicsItem.ItemIsFocusable)
+                text_item.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextEditable)
+                self.text_items.append(text_item)
+                #text_item.focusOut.connect(self.isEmpty)
 
     def setVisible(self, visible=True):
         for rect in self.grid_rects:
@@ -137,8 +152,9 @@ class Grid:
             self.scene.removeItem(rect)
         del self.grid_rects[:]
 
-        for note in self.notes:
-            self.scene.removeItem(note)
+        for text_item in self.text_items:
+            self.scene.removeItem(text_item)
+        del self.text_items[:]
 
     def setOpacity(self, opacity):
 
@@ -166,23 +182,15 @@ class Grid:
 
     def addNote(self, x, y, txt):
 
-        font = QFont("Robota", 15)
-        text_item = MyGText()
-        text_item.setPlainText(txt)
-        text_item.setFont(font)
-        text_item.setDefaultTextColor(Qt.white)
-        text_item.setPos(x, y)
-        text_item.setFlags(QGraphicsItem.ItemIsMovable | QGraphicsItem.ItemIsFocusable)
-        text_item.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextEditable)
-        self.notes.append(text_item)
-        self.scene.addItem(text_item)
-       # text_item.focusOut.connect(self.isEmpty)
+        note_dict = { "x": x, "y": y, "txt": txt}
+        self.notes.append(note_dict)
+        self.drawGrid()
 
     @pyqtSlot()
     def isEmpty(self):
-        # text_item = self.sender
 
-         pass
+        # text_item = self.sender
+        pass
 
 
 
