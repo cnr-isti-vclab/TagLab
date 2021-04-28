@@ -15,6 +15,7 @@ from source.Label import Label
 from source.Correspondences import Correspondences
 from source.Genet import Genet
 from source import utils
+from source.Grid import Grid
 
 
 def loadProject(taglab_working_dir, filename, labels_dict):

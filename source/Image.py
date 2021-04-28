@@ -9,18 +9,20 @@ class Image(object):
     def __init__(self, rect = [0.0, 0.0, 0.0, 0.0],
         map_px_to_mm_factor = 1.0, width = None, height = None, channels = [], id = None, name = None,
         acquisition_date = "",
-        georef_filename = "", workspace = [], metadata = {}, annotations = {}, working_area = []):
+        georef_filename = "", workspace = [], metadata = {}, annotations = {}, grid = {}, working_area = []):
 
         #we have to select a standanrd enforced!
         #in image standard (x, y, width height)
         #in numpy standard (y, x, height, width) #no the mixed format we use now I REFUSE to use it.
         #in range np format: (top, left, bottom, right)
         #in GIS standard (bottom, left, top, right)
-        self.rect = rect       #coordinates of the image. (in the spatial reference system)
+
+
+        self.rect = rect                                         #coordinates of the image. (in the spatial reference system)
         self.map_px_to_mm_factor = map_px_to_mm_factor           #if we have a references system we should be able to recover this numner
-                                                # otherwise we need to specify it.
+                                                                # otherwise we need to specify it.
         self.width = width
-        self.height = height                        #in pixels!
+        self.height = height                                     #in pixels!
 
         self.annotations = Annotation()
         for data in annotations:
@@ -38,7 +40,12 @@ class Image(object):
         self.georef_filename = georef_filename    # image file (GeoTiff) contained the georeferencing information
         self.metadata = metadata                  # this follows image_metadata_template, do we want to allow freedom to add custome values?
 
-        self.grid = None
+        if grid:
+            self.grid = Grid()
+            self.grid.fromDict(grid)
+        else:
+            self.grid = None
+
 
     def pixelSize(self):
 

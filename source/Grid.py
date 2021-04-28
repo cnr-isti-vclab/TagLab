@@ -4,9 +4,22 @@ from pprint import pprint
 from PyQt5.QtWidgets import  QWidget,QGridLayout,QApplication
 
 import numpy as np
-from PyQt5.QtCore import Qt, QSize, QMargins, QDir, QPoint, QPointF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo, QModelIndex
+from PyQt5.QtCore import Qt, QSize, QMargins, QDir, QPoint, QPointF, QRectF, QTimer, pyqtSlot, pyqtSignal, QObject, QSettings, QFileInfo, QModelIndex
 from PyQt5.QtGui import QFontDatabase, QFont, QPen, QBrush, QColor
 from PyQt5.QtWidgets import QGraphicsItem, QGraphicsTextItem
+
+
+class MyGText(QGraphicsTextItem):
+
+    focusOut = pyqtSignal()
+
+    def __init__(self, parent=None, scene=None):
+        super(QGraphicsTextItem, self).__init__(parent, scene)
+
+    def focusOutEvent(self, event):
+        self.focusOut.emit()
+        QGraphicsTextItem.focusOutEvent(self,event)
+
 
 class Grid:
 
@@ -20,11 +33,10 @@ class Grid:
         self.offy = 0
 
         self.scene = None
-
         self.cell_values = None
-        self.notes = {}
-
+        self.notes = []
         self.grid_rects = []
+
 
     def save(self):
 
@@ -36,8 +48,20 @@ class Grid:
         dict_to_save["ncol"] = self.ncol
         dict_to_save["offx"] = self.offx
         dict_to_save["offy"] = self.offy
+        dict_to_save["cell_values"] = self.cell_values.tolist()
 
         return dict_to_save
+
+    def fromDict(self, dict):
+
+        self.width = dict["width"]
+        self.height = dict["height"]
+        self.nrow = dict["nrow"]
+        self.ncol = dict["ncol"]
+        self.offx = dict["offx"]
+        self.offy = dict["offy"]
+        self.cell_values = np.asarray(dict["cell_values"])
+
 
     def setScene(self, scene):
 
@@ -101,6 +125,9 @@ class Grid:
                 rect.setPos(self.offx, self.offy)
                 self.grid_rects.append(rect)
 
+        for note in self.notes:
+            self.scene.addItem(note)
+
     def setVisible(self, visible=True):
         for rect in self.grid_rects:
             rect.setVisible(visible)
@@ -109,6 +136,9 @@ class Grid:
         for rect in self.grid_rects:
             self.scene.removeItem(rect)
         del self.grid_rects[:]
+
+        for note in self.notes:
+            self.scene.removeItem(note)
 
     def setOpacity(self, opacity):
 
@@ -136,15 +166,25 @@ class Grid:
 
     def addNote(self, x, y, txt):
 
-        font = QFont("Calibri", 12)
-        text_item = self.scene.addText(txt, font)
+        font = QFont("Robota", 15)
+        text_item = MyGText()
+        text_item.setPlainText(txt)
+        text_item.setFont(font)
         text_item.setDefaultTextColor(Qt.white)
         text_item.setPos(x, y)
         text_item.setFlags(QGraphicsItem.ItemIsMovable | QGraphicsItem.ItemIsFocusable)
         text_item.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextEditable)
+        self.notes.append(text_item)
+        self.scene.addItem(text_item)
+       # text_item.focusOut.connect(self.isEmpty)
 
-    def cellColor(self):
-        pass
+    @pyqtSlot()
+    def isEmpty(self):
+        # text_item = self.sender
+
+         pass
+
+
 
 
 

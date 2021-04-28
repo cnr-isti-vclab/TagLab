@@ -1160,7 +1160,6 @@ class TagLab(QWidget):
 
     @pyqtSlot()
     def toggleGrid(self):
-
         self.activeviewer.toggleGrid()
         self.updateEditActions()
 
@@ -1827,6 +1826,12 @@ class TagLab(QWidget):
 
     def resetAll(self):
 
+        self.viewerplus.removeGrid()
+        self.viewerplus2.removeGrid()
+        if self.gridWidget is not None:
+            self.gridWidget.beforeClose()
+            self.gridWidget = None
+
         self.viewerplus.clear()
         self.viewerplus2.clear()
         self.mapviewer.clear()
@@ -1834,6 +1839,7 @@ class TagLab(QWidget):
         self.viewerplus2.resetTools()
 
         # RE-INITIALIZATION
+
         self.mapWidget = None
         self.classifierWidget = None
         self.newDatasetWidget = None
@@ -2550,10 +2556,7 @@ class TagLab(QWidget):
 
         self.resetAll()
         self.setTool("MOVE")
-
-
         self.setProjectTitle("NONE")
-
         self.infoWidget.setInfoMessage("TagLab has been reset. To continue open an existing project or load a map.")
         logfile.info("[PROJECT] A new project has been setup.")
 

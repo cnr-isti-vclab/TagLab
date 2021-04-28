@@ -150,7 +150,10 @@ class QtGridWidget(QWidget):
     @pyqtSlot(float, float)
     def setGridPosition(self, x, y):
 
-        txt = "({:.3f},{:.3f})".format(x, y)
+        xm = self.pixelsToMeters(x)
+        ym = self.pixelsToMeters(y)
+
+        txt = "({:.3f},{:.3f})".format(xm, ym)
         self.fields["position"]["edit"].setText(txt)
 
         self.grid.setGridPosition(x, y)

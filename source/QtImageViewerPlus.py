@@ -160,12 +160,7 @@ class QtImageViewerPlus(QtImageViewer):
         self.refine_grow = 0.0 #maybe should in in tools
         self.refine_original_mask = None
         self.refine_original_blob = None
-
         self.active_label = None
-
-        self.noteWidget = NoteWidget(self)
-        self.noteWidget.editFinishing.connect(self.addNoteToGrid)
-        self.noteWidget.hide()
 
     def setProject(self, project):
 
@@ -262,7 +257,7 @@ class QtImageViewerPlus(QtImageViewer):
         if self.image.grid is not None:
             if not self.image.grid.grid_rects:
                 # the grid has never been drawn
-                self.image.grid.setScene(self.viewerplus.scene)
+                self.image.grid.setScene(self.scene)
                 self.image.grid.drawGrid()
             self.image.grid.setVisible(True)
             self.grid_active = True
@@ -279,6 +274,14 @@ class QtImageViewerPlus(QtImageViewer):
             self.enableGrid()
         else:
             self.disableGrid()
+
+    def removeGrid(self):
+
+        if self.image is not None:
+           if self.image.grid is not None:
+               self.image.grid.undrawGrid()
+               self.image.grid = None
+
 
     def drawBlob(self, blob, prev=False):
         # if it has just been created remove the current graphics item in order to set it again
