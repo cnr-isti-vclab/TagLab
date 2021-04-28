@@ -40,45 +40,6 @@ from skimage.filters import gaussian
 from source.Blob import Blob
 import source.Mask as Mask
 
-#refactor: remove groups
-class Group(object):
-
-    def __init__(self, blobs, id):
-
-        # list of the blobs that form this group
-        self.blobs = []
-        for blob in blobs:
-            self.blobs.append(blob)
-
-        for blob in blobs:
-
-            blob.group = self
-
-        # centroid of the group
-        sumx = 0.0
-        sumy = 0.0
-        n = 0
-        for blob in self.blobs:
-            blob_mask = blob.getMask()
-            for y in range(blob_mask.shape[0]):
-                for x in range(blob_mask.shape[1]):
-                    if blob_mask[y, x] == 1:
-                        sumx += float(x + blob.bbox[1])
-                        sumy += float(y + blob.bbox[0])
-                        n += 1
-
-        cx = sumx / n
-        cy = sumy / n
-
-        self.centroid = np.zeros((2))
-        self.centroid[0] = cx
-        self.centroid[1] = cy
-
-        # update instance name for each blob
-        for blob in self.blobs:
-            blob.instace_name = "coral-group-" + str(id)
-
-
 #refactor: change name to annotationS
 class Annotation(QObject):
     """
@@ -93,23 +54,12 @@ class Annotation(QObject):
         # list of all blobs
         self.seg_blobs = []
 
-        # list of all groups
-        self.groups = []
-
         #relative weight of depth map for refine borders
         #refactor: this is to be saved and loaded in qsettings
         self.refine_depth_weight = 0.0
         self.refine_conservative = 0.1
 
 #        self.undo = Undo()                       #not saved
-
-    #refactor: remove this
-    def addGroup(self, blobs):
-
-        id = len(self.groups)
-        group = Group(blobs, id+1)
-        self.groups.append(group)
-        return group
 
     def addBlob(self, blob):
         used = [blob.id for blob in self.seg_blobs]
@@ -171,25 +121,6 @@ class Annotation(QObject):
             if id not in used:
                 return id
         return len(used)
-
-    def removeGroup(self, group):
-
-        # the blobs no more belong to this group
-        for blob in group.blobs:
-            blob.group = None
-            blob.instace_name = "coral" + str(blob.id)
-
-        # remove from the list of the groups
-        index = self.groups.index(group)
-        del self.groups[index]
-
-
-
-    #refactor: move this function to Blob class!
-    def as_dict(self, i):
-
-        blob = self.seg_blobs[i]
-        return {'coral name': blob.blob_name, 'group name': blob.group, 'class name': blob.class_name, ' centroid ': blob.centroid, 'coral area': blob.area, 'coral perimeter': blob.perimeter}
 
     def union(self, blobs):
         """

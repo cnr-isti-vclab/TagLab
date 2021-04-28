@@ -16,7 +16,6 @@ class Label(object):
         self.border = border
         self.visible = True
 
-
     def save(self):
 
         return self.__dict__
