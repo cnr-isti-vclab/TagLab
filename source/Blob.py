@@ -132,7 +132,7 @@ class Blob(object):
         # QGraphicsItem associated with the pixmap mask
         self.pxmap_mask_gitem = None
 
-        # membership group (if any)
+        # membership group (if any)  # NOT USED(!)
         self.group = None
 
 
