@@ -143,8 +143,10 @@ class Grid(QObject):
                 text_item.setPos(x, y)
                 text_item.setFlags(QGraphicsItem.ItemIsMovable | QGraphicsItem.ItemIsFocusable)
                 text_item.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextEditable)
+                text_item.setZValue(10)
+                text_item.focusOut.connect(self.updateNotes)
                 self.text_items.append(text_item)
-         
+
 
     def setVisible(self, visible=True):
         for rect in self.grid_rects:
@@ -188,6 +190,30 @@ class Grid(QObject):
         note_dict = { "x": x, "y": y, "txt": txt}
         self.notes.append(note_dict)
         self.drawGrid()
+
+    @pyqtSlot()
+    def updateNotes(self):
+        """
+        When a text note is moved or edited the corresponding information are update here
+        """
+
+        text_item = self.sender()
+
+        pos = text_item.pos()
+        new_x = pos.x()
+        new_y = pos.y()
+        new_text = text_item.toPlainText()
+
+        index = self.text_items.index(text_item)
+        if new_text == "":
+            # remove the note since no text has been inserted
+            del self.notes[index]
+        else:
+            # get the corresponding note information and update it
+            note = self.notes[index]
+            note["x"] = new_x
+            note["y"] = new_y
+            note["txt"] = new_text
 
 
 

@@ -219,7 +219,6 @@ class TagLab(QWidget):
         self.markIncomplete = self.newAction("Mark cell as incomplete", "",   self.markIncompleteOperation)
         self.markComplete = self.newAction("Mark cell as complete", "",   self.markCompleteOperation)
         self.addNote = self.newAction("Add/edit note", "",   self.addNoteOperation)
-        self.removeNote= self.newAction("Remove/edit note",  "",   self.removeNoteOperation)
 
         self.assignAction       = self.newAction("Assign Class",            "A",   self.assignOperation)
         self.deleteAction       = self.newAction("Delete Labels",           "Del", self.deleteSelectedBlobs)
@@ -615,14 +614,11 @@ class TagLab(QWidget):
             self.markComplete.setVisible(True)
             self.markIncomplete.setVisible(True)
             self.addNote.setVisible(True)
-            self.removeNote.setVisible(True)
-
         else:
             self.markEmpty.setVisible(False)
             self.markComplete.setVisible(False)
             self.markIncomplete.setVisible(False)
             self.addNote.setVisible(False)
-            self.removeNote.setVisible(False)
 
         nSelected = len(self.viewerplus.selected_blobs) + len(self.viewerplus2.selected_blobs)
         self.assignAction.setEnabled(nSelected > 0)
@@ -1847,6 +1843,7 @@ class TagLab(QWidget):
         self.mapviewer.clear()
         self.viewerplus.resetTools()
         self.viewerplus2.resetTools()
+        self.resetToolbar()
 
         # RE-INITIALIZATION
 
@@ -1883,6 +1880,9 @@ class TagLab(QWidget):
         self.btnDeepExtreme.setChecked(False)
         self.btnRitm.setChecked(False)
         self.btnCreateGrid.setChecked(False)
+        self.viewerplus.disableGrid()
+        self.viewerplus2.disableGrid()
+        self.btnToggleGrid.setChecked(False)
         self.btnMatch.setChecked(False)
         self.btnAutoClassification.setChecked(False)
 

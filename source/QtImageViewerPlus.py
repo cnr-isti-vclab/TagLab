@@ -265,8 +265,9 @@ class QtImageViewerPlus(QtImageViewer):
             self.grid_active = False
 
     def disableGrid(self):
-        if self.image.grid is not None:
-            self.image.grid.setVisible(False)
+        if self.image is not None:
+            if self.image.grid is not None:
+                self.image.grid.setVisible(False)
         self.grid_active = False
 
     def toggleGrid(self):
@@ -281,6 +282,8 @@ class QtImageViewerPlus(QtImageViewer):
            if self.image.grid is not None:
                self.image.grid.undrawGrid()
                self.image.grid = None
+
+        self.grid_active = False
 
 
     def drawBlob(self, blob, prev=False):
