@@ -390,7 +390,7 @@ class QtImageViewerPlus(QtImageViewer):
         else:
             self.disablePan()
 
-        if tool == "MATCH":
+        if tool == "MATCH" or tool == "RITM":
             self.enablePan()
 
     def resetTools(self):
