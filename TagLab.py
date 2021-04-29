@@ -1190,6 +1190,16 @@ class TagLab(QWidget):
             self.gridWidget.setWindowModality(Qt.NonModal)
             self.gridWidget.show()
             self.gridWidget.accepted.connect(self.assignGrid)
+            self.gridWidget.btnCancel.clicked.connect(self.cancelGrid)
+
+
+    @pyqtSlot()
+    def cancelGrid(self):
+        self.gridWidget.grid.undrawGrid()
+        self.gridWidget.close()
+        self.gridWidget = None
+        self.resetToolbar()
+
 
     @pyqtSlot()
     def assignGrid(self):

@@ -104,7 +104,7 @@ class QtGridWidget(QWidget):
         buttons_layout = QHBoxLayout()
 
         self.btnCancel = QPushButton("Cancel")
-        self.btnCancel.clicked.connect(self.beforeClose)
+
         self.btnApply = QPushButton("Apply")
         self.btnApply.clicked.connect(self.apply)
 
@@ -119,7 +119,7 @@ class QtGridWidget(QWidget):
         self.setLayout(layoutV)
 
         self.setWindowTitle("Grid Settings")
-        self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
+        self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint| Qt.WindowTitleHint)
 
         self.grid.setScene(self.viewerplus.scene)
         self.setGrid()
@@ -168,11 +168,6 @@ class QtGridWidget(QWidget):
         else:
             self.viewerplus.leftMouseButtonPressed[float, float].disconnect()
 
-    @pyqtSlot()
-    def beforeClose(self):
-
-        self.grid.undrawGrid()
-        self.close()
 
     @pyqtSlot()
     def apply(self):

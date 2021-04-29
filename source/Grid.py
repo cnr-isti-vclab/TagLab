@@ -21,9 +21,10 @@ class MyGText(QGraphicsTextItem):
         QGraphicsTextItem.focusOutEvent(self,event)
 
 
-class Grid:
+class Grid(QObject):
 
-    def __init__(self):
+    def __init__(self, parent=None):
+        super(QObject, self).__init__(parent)
 
         self.width = 0
         self.height = 0
@@ -90,6 +91,8 @@ class Grid:
     def drawGrid(self):
 
         if self.scene is not None:
+
+            self.undrawGrid()
         
             cell_width = self.width / self.ncol
             cell_height = self.height / self.nrow
@@ -136,12 +139,12 @@ class Grid:
                 self.scene.addItem(text_item)
                 text_item.setPlainText(txt)
                 text_item.setFont(font)
-                text_item.setDefaultTextColor(Qt.white)
+                text_item.setDefaultTextColor(Qt.black)
                 text_item.setPos(x, y)
                 text_item.setFlags(QGraphicsItem.ItemIsMovable | QGraphicsItem.ItemIsFocusable)
                 text_item.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextEditable)
                 self.text_items.append(text_item)
-                #text_item.focusOut.connect(self.isEmpty)
+         
 
     def setVisible(self, visible=True):
         for rect in self.grid_rects:
@@ -186,11 +189,6 @@ class Grid:
         self.notes.append(note_dict)
         self.drawGrid()
 
-    @pyqtSlot()
-    def isEmpty(self):
-
-        # text_item = self.sender
-        pass
 
 
 
