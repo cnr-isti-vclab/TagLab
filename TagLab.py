@@ -650,13 +650,6 @@ class TagLab(QWidget):
     def addNoteOperation(self):
         self.activeviewer.addNote()
 
-
-
-    @pyqtSlot()
-    def removeNoteOperation(self):
-        pass
-
-
     def activateAutosave(self):
         pass
         # self.timer = QTimer(self)
@@ -689,7 +682,6 @@ class TagLab(QWidget):
         menu.addAction(self.markIncomplete)
         menu.addAction(self.markComplete)
         menu.addAction(self.addNote)
-        menu.addAction(self.removeNote)
 
         menu.addSeparator()
 
