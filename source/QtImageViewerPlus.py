@@ -246,6 +246,7 @@ class QtImageViewerPlus(QtImageViewer):
         self.selected_blobs = []
         self.selectionChanged.emit()
         self.undo_data = Undo()
+        self.disableGrid()
 
         for blob in self.annotations.seg_blobs:
             self.undrawBlob(blob)
@@ -275,16 +276,16 @@ class QtImageViewerPlus(QtImageViewer):
             self.enableGrid()
         else:
             self.disableGrid()
-
-    def removeGrid(self):
-
-        if self.image is not None:
-           if self.image.grid is not None:
-               self.image.grid.undrawGrid()
-               self.image.grid = None
-
-        self.grid_active = False
-
+    #
+    # def removeGrid(self):
+    #
+    #     if self.image is not None:
+    #        if self.image.grid is not None:
+    #            self.image.grid.undrawGrid()
+    #            self.image.grid = None
+    #
+    #     self.grid_active = False
+    #
 
     def drawBlob(self, blob, prev=False):
         # if it has just been created remove the current graphics item in order to set it again

@@ -1734,6 +1734,7 @@ class TagLab(QWidget):
             return
 
         self.viewerplus.clear()
+        self.btnToggleGrid.setChecked(False)
 
         # target and source image cannot be the same !!
         index2 = self.comboboxTargetImage.currentIndex()
@@ -1758,6 +1759,7 @@ class TagLab(QWidget):
             return
 
         self.viewerplus2.clear()
+        self.btnToggleGrid.setChecked(False)
 
         # target and source image cannot be the same !!
         index1 = self.comboboxSourceImage.currentIndex()
@@ -1824,8 +1826,6 @@ class TagLab(QWidget):
 
     def resetAll(self):
 
-        self.viewerplus.removeGrid()
-        self.viewerplus2.removeGrid()
         if self.gridWidget is not None:
             self.gridWidget.beforeClose()
             self.gridWidget = None

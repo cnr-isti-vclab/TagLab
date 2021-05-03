@@ -152,6 +152,9 @@ class Grid(QObject):
         for rect in self.grid_rects:
             rect.setVisible(visible)
 
+        for note in self.text_items:
+            note.setVisible(visible)
+
     def undrawGrid(self):
         for rect in self.grid_rects:
             self.scene.removeItem(rect)
