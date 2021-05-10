@@ -52,7 +52,6 @@ from source.QtLabelsWidget import QtLabelsWidget
 from source.QtInfoWidget import QtInfoWidget
 from source.QtHelpWidget import QtHelpWidget
 from source.QtProgressBarCustom import QtProgressBarCustom
-from source.QtCrackWidget import QtCrackWidget
 from source.QtHistogramWidget import QtHistogramWidget
 from source.QtClassifierWidget import QtClassifierWidget
 from source.QtNewDatasetWidget import QtNewDatasetWidget
@@ -192,7 +191,7 @@ class TagLab(QWidget):
         layout_tools.addWidget(self.btnRitm)
         layout_tools.addWidget(self.btnFreehand)
         layout_tools.addWidget(self.btnAssign)
-        #layout_tools.addWidget(self.btnWatershed)
+        layout_tools.addWidget(self.btnWatershed)
         layout_tools.addWidget(self.btnEditBorder)
         layout_tools.addWidget(self.btnCut)
         layout_tools.addWidget(self.btnCreateCrack)
