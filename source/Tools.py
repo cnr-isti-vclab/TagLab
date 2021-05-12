@@ -11,6 +11,7 @@ from source.tools.SplitBlob import SplitBlob
 from source.tools.Assign import Assign
 from source.tools.EditBorder import EditBorder
 from source.tools.Watershed import Watershed
+from source.tools.BricksSegmentation import BricksSegmentation
 from source.tools.Cut import Cut
 from source.tools.Freehand import Freehand
 from source.tools.Ruler import Ruler
@@ -49,6 +50,7 @@ class Tools(object):
             "CUT": Cut(self.viewerplus, self.edit_points),
             "FREEHAND": Freehand(self.viewerplus, self.edit_points),
             "WATERSHED": Watershed(self.viewerplus, self.scribbles),
+            "BRICKS": BricksSegmentation(self.viewerplus),
             "RULER": Ruler(self.viewerplus, self.pick_points),
             "DEEPEXTREME": DeepExtreme(self.viewerplus, self.pick_points),
             "MATCH": Match(self.viewerplus),
@@ -73,15 +75,21 @@ class Tools(object):
         self.tools["DEEPEXTREME"].reset()
         self.tools["RITM"].reset()
 
-        if self.viewerplus.crackWidget is not None:
-            self.viewerplus.crackWidget.close()
-        self.viewerplus.crackWidget = None
-
         if self.tool == "AUTOCLASS":
             self.corals_classifier.stopProcessing()
 
         if self.tool == "WATERSHED":
             self.current_blobs = []
+
+        # close crack widget
+        if self.viewerplus.crackWidget is not None:
+            self.viewerplus.crackWidget.close()
+        self.viewerplus.crackWidget = None
+
+        # close bricks widget
+        if self.viewerplus.bricksWidget is not None:
+            self.viewerplus.bricksWidget.close()
+        self.viewerplus.bricksWidget = None
 
     #logfile, annotations, selecttion, activelabelbname, undo
     def leftPressed(self, x, y, mods = None):

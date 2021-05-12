@@ -5,12 +5,12 @@ from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QFileDi
 
 class QtImageViewer(QGraphicsView):
     """
-    PyQt image viewer widget w
-    QGraphicsView handles a scene composed by an image plus shapes (rectangles, polygons, blobs).
+    Basic PyQt image viewer with pan and zoom capabilities.
     The input image (it must be a QImage) is internally converted into a QPixmap.
     """
-    viewUpdated = pyqtSignal(QRectF)       #region visible in percentage
-    viewHasChanged = pyqtSignal(float, float, float) #posx, posy, posz
+
+    viewUpdated = pyqtSignal(QRectF)                  # region visible in percentage
+    viewHasChanged = pyqtSignal(float, float, float)  # posx, posy, posz
 
     def __init__(self):
         QGraphicsView.__init__(self)
@@ -63,7 +63,6 @@ class QtImageViewer(QGraphicsView):
         self.resetTransform()
         self.setMouseTracking(True)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
-        #self.setContextMenuPolicy(Qt.CustomContextMenu)
 
     def setImg(self, img, zoomf=0.0):
         """
@@ -150,7 +149,6 @@ class QtImageViewer(QGraphicsView):
     def disableZoom(self):
         self.zoomEnabled = False
 
-
     def viewportToScene(self):
         #check
         topleft = self.mapToScene(self.viewport().rect().topLeft())
@@ -174,7 +172,6 @@ class QtImageViewer(QGraphicsView):
 
         return (xc, yc)
 
-        # UNUSED
     def setOpacity(self, opacity):
         self.opacity = opacity
 
@@ -195,8 +192,6 @@ class QtImageViewer(QGraphicsView):
         p.end()
 
         self.pixmapitem.setPixmap(pxmap)
-
-
 
     def clipScenePos(self, scenePosition):
         posx = scenePosition.x()
@@ -238,3 +233,47 @@ class QtImageViewer(QGraphicsView):
 
         self.horizontalScrollBar().setValue(posx * zf)
         self.verticalScrollBar().setValue(posy * zf)
+
+    def mousePressEvent(self, event):
+        """
+        Begin panning (if enable)
+        """
+        if event.button() == Qt.LeftButton:
+            if self.panEnabled:
+                self.setDragMode(QGraphicsView.ScrollHandDrag)
+
+        QGraphicsView.mousePressEvent(self, event)
+
+    def mouseReleaseEvent(self, event):
+        """
+        Stop mouse pan.
+        """
+        QGraphicsView.mouseReleaseEvent(self, event)
+        if event.button() == Qt.LeftButton:
+            self.setDragMode(QGraphicsView.NoDrag)
+
+    def wheelEvent(self, event):
+        """
+        Zoom in/zoom out.
+        """
+        if self.zoomEnabled:
+
+            view_pos = event.pos()
+            scene_pos = self.mapToScene(view_pos)
+            self.centerOn(scene_pos)
+
+            pt = event.angleDelta()
+
+            self.zoom_factor = self.zoom_factor*pow(pow(2, 1/2), pt.y()/100)
+            if self.zoom_factor < self.ZOOM_FACTOR_MIN:
+                self.zoom_factor = self.ZOOM_FACTOR_MIN
+            if self.zoom_factor > self.ZOOM_FACTOR_MAX:
+                self.zoom_factor = self.ZOOM_FACTOR_MAX
+
+            self.resetTransform()
+            self.scale(self.zoom_factor, self.zoom_factor)
+
+            delta = self.mapToScene(view_pos) - self.mapToScene(self.viewport().rect().center())
+            self.centerOn(scene_pos - delta)
+
+            self.invalidateScene()
