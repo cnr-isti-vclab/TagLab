@@ -24,7 +24,8 @@ class BricksSegmentation(Tool):
 
         bricksWidget = self.viewerplus.bricksWidget
         if bricksWidget is None:
-            bricksWidget = QtBricksWidget(self.viewerplus.img_map, blob, parent=self.viewerplus)
+            pixel_size = self.viewerplus.image.pixelSize()
+            bricksWidget = QtBricksWidget(self.viewerplus.img_map, pixel_size, blob, parent=self.viewerplus)
             bricksWidget.setWindowModality(Qt.WindowModal)
             bricksWidget.btnCancel.clicked.connect(self.bricksCancel)
             bricksWidget.btnApply.clicked.connect(self.bricksApply)
@@ -41,6 +42,9 @@ class BricksSegmentation(Tool):
     def bricksApply(self):
 
         new_blobs = self.viewerplus.bricksWidget.apply()
+        if new_blobs is None:
+            return
+
         self.blobInfo.emit(self.viewerplus.selected_blobs[0], "[TOOL][CREATECRACK][BLOB-SELECTED]")
 
         self.viewerplus.removeBlob(self.viewerplus.selected_blobs[0])

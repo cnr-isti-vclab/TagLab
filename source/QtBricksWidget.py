@@ -19,14 +19,14 @@
 
 from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QPainter, QPen, QBrush, QImage, QIntValidator
-from PyQt5.QtWidgets import QApplication, QWidget, QMessageBox, QSizePolicy, QSlider, QLabel, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout
+from PyQt5.QtWidgets import QApplication, QWidget, QProgressBar, QMessageBox, QSizePolicy, QSlider, QLabel, \
+    QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout
 from source.QtImageViewer import QtImageViewer
 from source.Annotation import Annotation
 from skimage import measure
 from skimage import feature
 from skimage import morphology
 from scipy import ndimage as ndi
-from skimage.transform import probabilistic_hough_line
 import os
 import numpy as np
 import cv2
@@ -43,10 +43,12 @@ class QtBricksWidget(QWidget):
 
     closeBricksWidget = pyqtSignal()
 
-    def __init__(self, orthoimage, macroarea_blob, parent=None):
+    def __init__(self, orthoimage, pixel_size, macroarea_blob, parent=None):
         super(QtBricksWidget, self).__init__(parent)
 
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
+
+        self.pixel_size = pixel_size  # in mm
 
         # put the background outside the selected macroarea
         self.orthoimage_cropped = cropQImage(orthoimage, macroarea_blob.bbox)
@@ -108,9 +110,6 @@ class QtBricksWidget(QWidget):
 
         self.EDGE_SIGMA_MINVALUE = 1.0
         self.EDGE_SIGMA_MAXVALUE = 10.0
-        
-        self.blur_strength = self.BLUR_STRENGTH_MINVALUE + 0.2 * (self.BLUR_STRENGTH_MAXVALUE - self.BLUR_STRENGTH_MINVALUE)
-        self.edge_sigma = self.EDGE_SIGMA_MINVALUE + 0.15 * (self.EDGE_SIGMA_MAXVALUE - self.EDGE_SIGMA_MINVALUE)
 
         self.sliderBlurStrength = QSlider(Qt.Horizontal)
         self.sliderBlurStrength.setFocusPolicy(Qt.StrongFocus)
@@ -131,6 +130,11 @@ class QtBricksWidget(QWidget):
         self.sliderEdgeSigma.setTickInterval(5)
         self.sliderEdgeSigma.setAutoFillBackground(True)
         self.sliderEdgeSigma.valueChanged.connect(self.sliderEdgeSigmaChanged)
+
+        value = self.sliderBlurStrength.value()
+        self.blur_strength = self.BLUR_STRENGTH_MINVALUE + (value / 100.0) * (self.BLUR_STRENGTH_MAXVALUE - self.BLUR_STRENGTH_MINVALUE)
+        value = self.sliderEdgeSigma.value()
+        self.edge_sigma = self.EDGE_SIGMA_MINVALUE + (value / 100.0) * (self.EDGE_SIGMA_MAXVALUE - self.EDGE_SIGMA_MINVALUE)
 
         self.lblBlurStrength = QLabel("Blur strength: 20")
         self.lblBlurStrength.setAutoFillBackground(True)
@@ -188,12 +192,20 @@ class QtBricksWidget(QWidget):
         layoutButtons.addWidget(self.btnCancel)
         layoutButtons.addWidget(self.btnApply)
 
+        self.progress_bar = QProgressBar(self)
+        self.progress_bar.setMinimumWidth(300)
+        self.progress_bar.setFixedHeight(20)
+        self.progress_bar.setAutoFillBackground(True)
+
         layout = QVBoxLayout()
         layout.addLayout(layoutTop)
+        layout.addWidget(self.progress_bar)
         layout.addWidget(self.viewer)
         layout.addLayout(layoutButtons)
         layout.setSpacing(10)
         self.setLayout(layout)
+
+        self.progress_bar.hide()
 
         self.viewer.setImg(self.orthoimage_cropped)
 
@@ -209,14 +221,16 @@ class QtBricksWidget(QWidget):
         self.edges = None
         self.seeds = None
         self.seg_bricks = []
+        self.min_width = 0
+        self.max_width = 0
+        self.min_heihgt = 0
+        self.max_height = 0
 
     def keyPressEvent(self, event):
 
+        # ESCAPE reset the current operation, so it closes the widget
         if event.key() == Qt.Key_Escape:
-
-            # RESET CURRENT OPERATION
             self.closeBricksWidget.emit()
-
 
     @pyqtSlot()
     def sliderBlurStrengthChanged(self):
@@ -238,11 +252,40 @@ class QtBricksWidget(QWidget):
         self.lblEdgeSigma.setText(txt)
         self.edge_sigma = newvalue
 
+    def setupBricksSize(self):
+        """
+        Cpnnvert the bricks' size (in cm) to pixels and check if all the values have been inserted.
+        """
+
+        txt = self.editMinW.text()
+        if txt == "":
+            return False
+        else:
+            self.min_width = int((int(txt) * 10.0) / self.pixel_size)
+
+        txt = self.editMaxW.text()
+        if txt == "":
+            return False
+        else:
+            self.max_width = int((int(txt) * 10.0) / self.pixel_size)
+
+        txt = self.editMinH.text()
+        if txt == "":
+            return False
+        else:
+            self.min_height = int((int(txt) * 10.0) / self.pixel_size)
+
+        txt = self.editMaxH.text()
+        if txt == "":
+            return False
+        else:
+            self.max_height = int((int(txt) * 10.0) / self.pixel_size)
+
+        return True
+
     def seedExtraction(self, input_image):
 
-        min_width = int(self.editMinW.text())
-
-        size = min_width
+        size = self.min_width
         image = qimageToNumpyArray(input_image)
 
         # denoise
@@ -294,18 +337,18 @@ class QtBricksWidget(QWidget):
 
         annotations = Annotation()
 
-        w_min = int(self.editMinW.text())
-        h_min = int(self.editMinH.text())
-        w_max = int(self.editMaxW.text())
-        h_max = int(self.editMaxH.text())
-
         # for each seed create segment a brick using RITM
-        i = 0
+
+        self.progress_bar.show()
+        self.progress_bar.reset()
+        self.progress_bar.setMinimum(0)
+        self.progress_bar.setMaximum(len(self.seeds))
+        self.progress_bar.setValue(0)
+
         self.seg_bricks = []
-        for seed in self.seeds:
+        for i, seed in enumerate(self.seeds):
 
             # crop image
-
             bbox = [seed[0]-160, seed[1]-240, 480, 320]
             crop_image = cropImage(input_image, bbox)
             self.predictor.set_input_image(crop_image)
@@ -317,21 +360,21 @@ class QtBricksWidget(QWidget):
 
             # generate positive clicks
             y = 160
-            x = 240 - w_min / 2
+            x = 240 - self.min_width / 2
             click = clicker.Click(is_positive=True, coords=(y, x))
             self.clicker.add_click(click)
 
             y = 160
-            x = 240 + w_min / 2
+            x = 240 + self.min_width / 2
             click = clicker.Click(is_positive=True, coords=(y, x))
             self.clicker.add_click(click)
 
-            y = 160 - h_min / 2
+            y = 160 - self.min_height / 2
             x = 240
             click = clicker.Click(is_positive=True, coords=(y, x))
             self.clicker.add_click(click)
 
-            y = 160 + h_min / 2
+            y = 160 + self.min_height / 2
             x = 240
             click = clicker.Click(is_positive=True, coords=(y, x))
             self.clicker.add_click(click)
@@ -372,20 +415,25 @@ class QtBricksWidget(QWidget):
             offsety = self.macroarea_blob.bbox[0] + bbox[0]
             offsetx = self.macroarea_blob.bbox[1] + bbox[1]
 
-            area_min = float(self.editMinW.text()) * float(self.editMinH.text())
+            area_min = self.min_width * self.min_height * 5.0
             blobs = annotations.blobsFromMask(segm_mask, offsetx, offsety, area_min)
 
-            area_max = float(self.editMaxW.text()) * float(self.editMaxH.text())
+            area_max = self.max_width * self.max_height
             for blob in blobs:
                 if blob.area < area_max:
                     self.seg_bricks.append(blob)
 
-            i = i + 1
-            perc = float(i) / len(self.seeds)
-            print(perc)
+            self.progress_bar.setValue(i)
 
     @pyqtSlot()
     def preview(self):
+
+        if self.setupBricksSize() is not True:
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle("Bricks segmentation")
+            msgBox.setText("Please, enter the minimum and maximum size of the bricks.")
+            msgBox.exec()
+            return
 
         self.seedExtraction(self.orthoimage_cropped)
 
@@ -405,6 +453,13 @@ class QtBricksWidget(QWidget):
 
 
     def apply(self):
+
+        if self.setupBricksSize() is not True:
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle("Bricks segmentation")
+            msgBox.setText("Please, enter the minimum and maximum size of the bricks.")
+            msgBox.exec()
+            return
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
         self.seedExtraction(self.orthoimage_cropped)
