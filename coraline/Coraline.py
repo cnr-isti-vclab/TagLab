@@ -27,6 +27,16 @@ if lib!=None:
 
 #import numpy as np
 
+def mutual(img, linewidth = 30, gaussian = 5, nbins = 16, extension = 1):
+	if lib is None:
+		raise Exception("Coraline library (libcoraline.so, coraline.dll) not found.")
+
+	w = img.shape[1]
+	h = img.shape[0]
+
+	lib.Coraline_mutual(C.c_void_p(img.ctypes.data),  C.c_int(w), C.c_int(h),
+	                      C.c_int(linewidth), C.c_float(gaussian), C.c_int(nbins), C.c_int(extension))
+
 def segment(img, depth, mask, clippoints, l = 0, conservative = 0.1, grow = 0, radius = 30, depth_weight = 0.0):
 	if lib is None:
 		raise Exception("Coraline library (libcoraline.so, coraline.dll) not found.")
@@ -123,6 +133,7 @@ def segment(img, depth, mask, clippoints, l = 0, conservative = 0.1, grow = 0, r
 
 #mask = np.zeros((100,100))
 #image =  np.zeros((100, 100))
+#mutual(image, 100, 100)
 #coraline = Coraline(image, mask)
 #mask = coraline.segment()
 #print(mask)

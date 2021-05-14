@@ -225,7 +225,12 @@ class Annotation(QObject):
                 origin = np.array([box[1], box[0]])
                 clippoints = clippoints - origin
         try:
-            from coraline.Coraline import segment
+            from coraline.Coraline import segment, mutual
+            #rgb_weights = [0.2989, 0.5870, 0.1140]
+            #gray = np.dot(img[...,:3], rgb_weights).astype(np.uint8)
+            #mutual(gray)
+            #a = utils.floatmapToQImage(gray.astype(float))
+            #a.save("test.png")
             segment(img, depth, mask, clippoints, 0.0, conservative=self.refine_conservative, grow=grow, radius=30, depth_weight = self.refine_depth_weight)
 
         except Exception as e:
