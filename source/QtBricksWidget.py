@@ -143,12 +143,12 @@ class QtBricksWidget(QWidget):
 
         self.lblEdgeThreshold = QLabel("Edge threshold: 20")
         self.lblEdgeThreshold.setAutoFillBackground(True)
-        txt = "Edge threshold: {:.3f}".format(self.edge_threshold)
+        txt = " Edge threshold: {:.3f} ".format(self.edge_threshold)
         self.lblEdgeThreshold.setText(txt)
 
         BUTTON_SIZE = 60
         self.setStyleSheet("QPushButton:checked { background-color: rgb(80,80,80); }")
-        self.lblBricksType = QLabel("Bricks type:")
+        self.lblBricksType = QLabel("Bricks type: ")
         self.lblBricksType.setAutoFillBackground(True)
         self.btnRectangularShape = QPushButton("")
         self.btnRectangularShape.setFixedWidth(BUTTON_SIZE+2)
@@ -284,7 +284,7 @@ class QtBricksWidget(QWidget):
         # update value
         newvalue = float(self.sliderEdgeThreshold.value())
         newvalue = self.EDGE_TH_MINVALUE + (newvalue / 100.0) * (self.EDGE_TH_MAXVALUE - self.EDGE_TH_MINVALUE)
-        txt = "Edge threshold: {:.3f}".format(newvalue)
+        txt = " Edge threshold: {:.3f} ".format(newvalue)
         self.lblEdgeThreshold.setText(txt)
         self.edge_threshold = newvalue
 
