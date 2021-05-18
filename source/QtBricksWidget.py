@@ -18,7 +18,7 @@
 # for more details.                                               
 
 from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal
-from PyQt5.QtGui import QPainter, QPen, QBrush, QImage, QIntValidator
+from PyQt5.QtGui import QPainter, QPen, QBrush, QIcon, QImage, QIntValidator
 from PyQt5.QtWidgets import QApplication, QWidget, QProgressBar, QMessageBox, QSizePolicy, QSlider, QLabel, \
     QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout
 from source.QtImageViewer import QtImageViewer
@@ -30,13 +30,12 @@ from scipy import ndimage as ndi
 import os
 import numpy as np
 import cv2
-import matplotlib.pyplot as plt
 import torch
 from models.isegm.inference import clicker
 from models.isegm.inference.predictors import get_predictor
 from models.isegm.inference import utils
-from source.utils import cropQImage, cropImage, qimageToNumpyArray, maskToQImage, rgbToQImage
-from source.Mask import paintMask
+from source.utils import cropQImage, cropImage, qimageToNumpyArray, maskToQImage, rgbToQImage, floatmapToQImage
+from source.Mask import checkIntersection, intersectMask, paintMask
 import random
 
 class QtBricksWidget(QWidget):
@@ -105,58 +104,82 @@ class QtBricksWidget(QWidget):
         layoutSize.addLayout(l3)
         layoutSize.addLayout(l4)
 
-        self.BLUR_STRENGTH_MINVALUE = 10.0
-        self.BLUR_STRENGTH_MAXVALUE = 150.0
+        # self.BLUR_STRENGTH_MINVALUE = 10.0
+        # self.BLUR_STRENGTH_MAXVALUE = 150.0
+        #
+        # self.sliderBlurStrength = QSlider(Qt.Horizontal)
+        # self.sliderBlurStrength.setFocusPolicy(Qt.StrongFocus)
+        # self.sliderBlurStrength.setMinimumWidth(SLIDER_WIDTH)
+        # self.sliderBlurStrength.setMinimum(1)
+        # self.sliderBlurStrength.setMaximum(100)
+        # self.sliderBlurStrength.setValue(10)
+        # self.sliderBlurStrength.setTickInterval(5)
+        # self.sliderBlurStrength.setAutoFillBackground(True)
+        # self.sliderBlurStrength.valueChanged.connect(self.sliderBlurStrengthChanged)
+        #
+        # value = self.sliderBlurStrength.value()
+        # self.blur_strength = self.BLUR_STRENGTH_MINVALUE + (value / 100.0) * (self.BLUR_STRENGTH_MAXVALUE - self.BLUR_STRENGTH_MINVALUE)
+        #
+        # self.lblBlurStrength = QLabel("Blur strength: 20")
+        # self.lblBlurStrength.setAutoFillBackground(True)
+        # txt = "Blur strength: {:.3f}".format(self.blur_strength)
+        # self.lblBlurStrength.setText(txt)
 
-        self.EDGE_SIGMA_MINVALUE = 1.0
-        self.EDGE_SIGMA_MAXVALUE = 10.0
+        self.EDGE_TH_MINVALUE = 1.0
+        self.EDGE_TH_MAXVALUE = 10.0
 
-        self.sliderBlurStrength = QSlider(Qt.Horizontal)
-        self.sliderBlurStrength.setFocusPolicy(Qt.StrongFocus)
-        self.sliderBlurStrength.setMinimumWidth(SLIDER_WIDTH)
-        self.sliderBlurStrength.setMinimum(1)
-        self.sliderBlurStrength.setMaximum(100)
-        self.sliderBlurStrength.setValue(10)
-        self.sliderBlurStrength.setTickInterval(5)
-        self.sliderBlurStrength.setAutoFillBackground(True)
-        self.sliderBlurStrength.valueChanged.connect(self.sliderBlurStrengthChanged)
+        self.sliderEdgeThreshold = QSlider(Qt.Horizontal)
+        self.sliderEdgeThreshold.setFocusPolicy(Qt.StrongFocus)
+        self.sliderEdgeThreshold.setMinimumWidth(SLIDER_WIDTH)
+        self.sliderEdgeThreshold.setMinimum(1)
+        self.sliderEdgeThreshold.setMaximum(100)
+        self.sliderEdgeThreshold.setValue(10)
+        self.sliderEdgeThreshold.setTickInterval(5)
+        self.sliderEdgeThreshold.setAutoFillBackground(True)
+        self.sliderEdgeThreshold.valueChanged.connect(self.sliderEdgeThresholdChanged)
 
-        self.sliderEdgeSigma = QSlider(Qt.Horizontal)
-        self.sliderEdgeSigma.setFocusPolicy(Qt.StrongFocus)
-        self.sliderEdgeSigma.setMinimumWidth(SLIDER_WIDTH)
-        self.sliderEdgeSigma.setMinimum(1)
-        self.sliderEdgeSigma.setMaximum(100)
-        self.sliderEdgeSigma.setValue(10)
-        self.sliderEdgeSigma.setTickInterval(5)
-        self.sliderEdgeSigma.setAutoFillBackground(True)
-        self.sliderEdgeSigma.valueChanged.connect(self.sliderEdgeSigmaChanged)
+        value = self.sliderEdgeThreshold.value()
+        self.edge_threshold = self.EDGE_TH_MINVALUE + (value / 100.0) * (self.EDGE_TH_MAXVALUE - self.EDGE_TH_MINVALUE)
 
-        value = self.sliderBlurStrength.value()
-        self.blur_strength = self.BLUR_STRENGTH_MINVALUE + (value / 100.0) * (self.BLUR_STRENGTH_MAXVALUE - self.BLUR_STRENGTH_MINVALUE)
-        value = self.sliderEdgeSigma.value()
-        self.edge_sigma = self.EDGE_SIGMA_MINVALUE + (value / 100.0) * (self.EDGE_SIGMA_MAXVALUE - self.EDGE_SIGMA_MINVALUE)
+        self.lblEdgeThreshold = QLabel("Edge threshold: 20")
+        self.lblEdgeThreshold.setAutoFillBackground(True)
+        txt = "Edge threshold: {:.3f}".format(self.edge_threshold)
+        self.lblEdgeThreshold.setText(txt)
 
-        self.lblBlurStrength = QLabel("Blur strength: 20")
-        self.lblBlurStrength.setAutoFillBackground(True)
-        txt = "Blur strength: {:.3f}".format(self.blur_strength)
-        self.lblBlurStrength.setText(txt)
-
-        self.lblEdgeSigma = QLabel("Edge sigma: 20")
-        self.lblEdgeSigma.setAutoFillBackground(True)
-        txt = "Edge sigma: {:.3f}".format(self.edge_sigma)
-        self.lblEdgeSigma.setText(txt)
-
-        layoutFilterLabels = QVBoxLayout()
-        layoutFilterLabels.addWidget(self.lblBlurStrength)
-        layoutFilterLabels.addWidget(self.lblEdgeSigma)
-
-        layoutFilterSliders = QVBoxLayout()
-        layoutFilterSliders.addWidget(self.sliderBlurStrength)
-        layoutFilterSliders.addWidget(self.sliderEdgeSigma)
+        BUTTON_SIZE = 60
+        self.setStyleSheet("QPushButton:checked { background-color: rgb(80,80,80); }")
+        self.lblBricksType = QLabel("Bricks type:")
+        self.lblBricksType.setAutoFillBackground(True)
+        self.btnRectangularShape = QPushButton("")
+        self.btnRectangularShape.setFixedWidth(BUTTON_SIZE+2)
+        self.btnRectangularShape.setFixedHeight(BUTTON_SIZE+2)
+        iconRectangularShape = QIcon("icons/bricks-type-rectangular-shape.png")
+        self.btnRectangularShape.setIcon(iconRectangularShape)
+        self.btnRectangularShape.setIconSize(QSize(BUTTON_SIZE,BUTTON_SIZE))
+        self.btnRectangularShape.setCheckable(True)
+        self.btnRectangularShape.setChecked(True)
+        self.btnRectangularShape.clicked.connect(self.setRectangularShapedBricks)
+        self.btnIrregularShape = QPushButton("")
+        self.btnIrregularShape.setFixedWidth(BUTTON_SIZE+2)
+        self.btnIrregularShape.setFixedHeight(BUTTON_SIZE+2)
+        iconIrregularShape = QIcon("icons/bricks-type-irregular-shape.png")
+        self.btnIrregularShape.setIcon(iconIrregularShape)
+        self.btnIrregularShape.setIconSize(QSize(BUTTON_SIZE,BUTTON_SIZE))
+        self.btnIrregularShape.setCheckable(True)
+        self.btnIrregularShape.setChecked(False)
+        self.btnIrregularShape.clicked.connect(self.setIrregularShapedBricks)
+        self.rectangular_shape = True
 
         layoutFilter = QHBoxLayout()
-        layoutFilter.addLayout(layoutFilterLabels)
-        layoutFilter.addLayout(layoutFilterSliders)
+        layoutFilter.addWidget(self.lblBricksType)
+        layoutFilter.setSpacing(2)
+        layoutFilter.addWidget(self.btnRectangularShape)
+        layoutFilter.addWidget(self.btnIrregularShape)
+        layoutFilter.addSpacing(10)
+        layoutFilter.addWidget(self.lblEdgeThreshold)
+        layoutFilter.setSpacing(2)
+        layoutFilter.addWidget(self.sliderEdgeThreshold)
+        layoutFilter.setSpacing(0)
 
         layoutParams = QVBoxLayout()
         layoutParams.addLayout(layoutSize)
@@ -219,6 +242,7 @@ class QtBricksWidget(QWidget):
         self.init_mask = None
         self.clicker = clicker.Clicker()  # handles clicked point (original code of RITM)
         self.edges = None
+        self.edges_mutual = None
         self.seeds = None
         self.seg_bricks = []
         self.min_width = 0
@@ -233,28 +257,40 @@ class QtBricksWidget(QWidget):
             self.closeBricksWidget.emit()
 
     @pyqtSlot()
-    def sliderBlurStrengthChanged(self):
-
-        # update value
-        newvalue = float(self.sliderBlurStrength.value())
-        newvalue = self.BLUR_STRENGTH_MINVALUE + (newvalue / 100.0) * (self.BLUR_STRENGTH_MAXVALUE - self.BLUR_STRENGTH_MINVALUE)
-        txt = "Blur strength: {:.3f}".format(newvalue)
-        self.lblBlurStrength.setText(txt)
-        self.blur_strength = newvalue
+    def setRectangularShapedBricks(self):
+        self.btnRectangularShape.setChecked(True)
+        self.btnIrregularShape.setChecked(False)
+        self.rectangular_shape = True
 
     @pyqtSlot()
-    def sliderEdgeSigmaChanged(self):
+    def setIrregularShapedBricks(self):
+        self.btnRectangularShape.setChecked(False)
+        self.btnIrregularShape.setChecked(True)
+        self.rectangular_shape = False
+
+    # @pyqtSlot()
+    # def sliderBlurStrengthChanged(self):
+    #
+    #     # update value
+    #     newvalue = float(self.sliderBlurStrength.value())
+    #     newvalue = self.BLUR_STRENGTH_MINVALUE + (newvalue / 100.0) * (self.BLUR_STRENGTH_MAXVALUE - self.BLUR_STRENGTH_MINVALUE)
+    #     txt = "Blur strength: {:.3f}".format(newvalue)
+    #     self.lblBlurStrength.setText(txt)
+    #     self.blur_strength = newvalue
+
+    @pyqtSlot()
+    def sliderEdgeThresholdChanged(self):
 
         # update value
-        newvalue = float(self.sliderEdgeSigma.value())
-        newvalue = self.EDGE_SIGMA_MINVALUE + (newvalue / 100.0) * (self.EDGE_SIGMA_MAXVALUE - self.EDGE_SIGMA_MINVALUE)
-        txt = "Edge sigma: {:.3f}".format(newvalue)
-        self.lblEdgeSigma.setText(txt)
-        self.edge_sigma = newvalue
+        newvalue = float(self.sliderEdgeThreshold.value())
+        newvalue = self.EDGE_TH_MINVALUE + (newvalue / 100.0) * (self.EDGE_TH_MAXVALUE - self.EDGE_TH_MINVALUE)
+        txt = "Edge threshold: {:.3f}".format(newvalue)
+        self.lblEdgeThreshold.setText(txt)
+        self.edge_threshold = newvalue
 
     def setupBricksSize(self):
         """
-        Cpnnvert the bricks' size (in cm) to pixels and check if all the values have been inserted.
+        Cpnvert the bricks' size (in cm) to pixels and check if all the values have been inserted.
         """
 
         txt = self.editMinW.text()
@@ -285,17 +321,29 @@ class QtBricksWidget(QWidget):
 
     def seedExtraction(self, input_image):
 
-        size = self.min_width
+        size = int(self.min_width / 2)
         image = qimageToNumpyArray(input_image)
 
         # denoise
-        blurred = cv2.bilateralFilter(image, 3, self.blur_strength, 30)
+        blurred = cv2.bilateralFilter(image, 3, 30, 30)
 
         # posterization
         blurred2 = cv2.pyrMeanShiftFiltering(blurred, 3, 40, maxLevel=1)
 
         gray = cv2.cvtColor(blurred2, cv2.COLOR_BGR2GRAY)
-        self.edges = feature.canny(gray, sigma=self.edge_sigma)
+
+        # edges extraction
+        if self.rectangular_shape is False:
+            self.edges = feature.canny(gray, sigma=self.edge_threshold)
+        else:
+            from coraline.Coraline import mutual
+            if self.edges_mutual is None:
+                print("Edge computation begins..")
+                mutual(gray, linewidth=self.min_width, extension=20)
+                self.edges_mutual = gray
+                print("Edge computation ends")
+            self.edges = self.edges_mutual > self.edge_threshold * 10.0
+
         clean = morphology.remove_small_objects(self.edges, 50, connectivity=4)
         distance = ndi.distance_transform_edt(~clean)
 
@@ -353,56 +401,19 @@ class QtBricksWidget(QWidget):
             crop_image = cropImage(input_image, bbox)
             self.predictor.set_input_image(crop_image)
 
-            qimg = rgbToQImage(crop_image)
-
             # create clicks
             self.clicker.reset_clicks()
 
             # generate positive clicks
             y = 160
-            x = 240 - self.min_width / 2
+            x = 240 - 5
             click = clicker.Click(is_positive=True, coords=(y, x))
             self.clicker.add_click(click)
 
             y = 160
-            x = 240 + self.min_width / 2
+            x = 240 + 5
             click = clicker.Click(is_positive=True, coords=(y, x))
             self.clicker.add_click(click)
-
-            y = 160 - self.min_height / 2
-            x = 240
-            click = clicker.Click(is_positive=True, coords=(y, x))
-            self.clicker.add_click(click)
-
-            y = 160 + self.min_height / 2
-            x = 240
-            click = clicker.Click(is_positive=True, coords=(y, x))
-            self.clicker.add_click(click)
-
-            # generate negative clicks
-            # pen = QPen(Qt.white)
-            # brush = QBrush(Qt.red)
-            # painter = QPainter(qimg)
-            # painter.setBrush(brush)
-            # painter.setPen(pen)
-            #
-            # neg_counter = 0
-            # for j in range(100):
-            #
-            #     x = random.randint(0, 480)
-            #     y = random.randint(0, 320)
-            #
-            #     if abs(x - 240) > w_max and abs(y - 160) > h_max and neg_counter < 10:
-            #         painter.drawEllipse(x, y, 5, 5)
-            #         click = clicker.Click(is_positive=False, coords=(y, x))
-            #         self.clicker.add_click(click)
-            #         neg_counter = neg_counter + 1
-            #
-            # brush.setColor(Qt.green)
-            # painter.setBrush(brush)
-            # painter.drawEllipse(240, 160, 5, 5)
-            # painter.end()
-            # qimg.save("C:\\temp\\punti.png")
 
             self.init_mask = None
             pred = self.predictor.get_prediction(self.clicker, prev_mask=self.init_mask)
@@ -415,15 +426,85 @@ class QtBricksWidget(QWidget):
             offsety = self.macroarea_blob.bbox[0] + bbox[0]
             offsetx = self.macroarea_blob.bbox[1] + bbox[1]
 
-            area_min = self.min_width * self.min_height * 5.0
+            area_min = 0.0
             blobs = annotations.blobsFromMask(segm_mask, offsetx, offsety, area_min)
 
-            area_max = self.max_width * self.max_height
             for blob in blobs:
-                if blob.area < area_max:
+                if blob.bbox[2] > self.min_width and blob.bbox[3] > self.min_height and \
+                        blob.bbox[2] < self.max_width and blob.bbox[3] < self.max_height:
+                    blob.class_name = "Pocillopora"
                     self.seg_bricks.append(blob)
 
             self.progress_bar.setValue(i)
+            QApplication.processEvents()
+
+        self.removeOverlappingBlobs()
+
+    def removeOverlappingBlobs(self):
+
+        blobs = self.seg_bricks.copy()
+
+        widths = []
+        heights = []
+        for blob in blobs:
+            widths.append(blob.bbox[2])
+            heights.append(blob.bbox[3])
+
+        widths = np.asarray(widths)
+        heights = np.asarray(heights)
+
+        print("MINW: ", np.min(widths))
+        print("MAXW: ", np.max(widths))
+        print("MINH: ", np.min(heights))
+        print("MAXH: ", np.max(heights))
+        print("MEANW: ", np.mean(widths))
+        print("MEANH: ", np.mean(heights))
+        print("MEDIANW: ", np.median(widths))
+        print("MEDIANH: ", np.median(heights))
+
+        medianw = np.median(widths)
+        medianh = np.median(heights)
+
+        for blob in blobs:
+
+            if not (blob in self.seg_bricks):
+                continue
+
+            bbox = blob.bbox
+            mask = blob.getMask()
+            npixel = np.count_nonzero(mask)
+
+            intersected_blobs = []
+            for blob2 in self.seg_bricks:
+                if blob != blob2 and checkIntersection(bbox, blob2.bbox) is True:
+                    mask2 = blob2.getMask()
+                    npixel2 = np.count_nonzero(mask2)
+                    (imask, ibbox) = intersectMask(mask, bbox, mask2, blob2.bbox)
+                    npixeli = np.count_nonzero(imask)
+
+                    overlap12 = npixeli / npixel
+                    overlap21 = npixeli / npixel2
+                    overlap = max(overlap12, overlap21)
+
+                    if overlap > 0.15:
+                        intersected_blobs.append(blob2)
+
+            num_intersections = len(intersected_blobs)
+
+            if num_intersections > 0:
+                intersected_blobs.append(blob)
+
+                diff_min = 10000000
+                blob_to_keep = None
+                for blobO in intersected_blobs:
+                    diff = abs(blobO.bbox[2] - medianw) + abs(blobO.bbox[3] - medianh)
+                    if diff < diff_min:
+                        diff_min = diff
+                        blob_to_keep = blobO
+
+                for blobO in intersected_blobs:
+                    if blobO != blob_to_keep:
+                        self.seg_bricks.remove(blobO)
 
     @pyqtSlot()
     def preview(self):

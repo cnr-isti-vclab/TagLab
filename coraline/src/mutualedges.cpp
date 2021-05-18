@@ -33,7 +33,6 @@ float MutualEdges::mutual(vector<float> &histo, int nbins) {
 	}
 	m /= n;
 
-	cout << "M: " << m << endl;
 	return float(m);
 }
 
@@ -87,7 +86,6 @@ void MutualEdges::detect(uint8_t *output) {
 	for(int y = pad; y < h - pad; y++) {
 
 		for(int x = pad; x < w - pad; x++) {
-			cout << int(img[x + y*w]) << " ";
 			float vfit = vfitness(x, y);
 			float hfit = hfitness(x, y);
 			for(int i = -extension; i < extension; i++) {
@@ -99,9 +97,8 @@ void MutualEdges::detect(uint8_t *output) {
 			min = std::min(min, fit);
 			max = std::max(max, fit);
 		}
-		cout << endl;
 	}
-	cout << "Min max: " << min << " " << max << endl;
+
 	for(size_t i = 0; i < fitness.size(); i++) {
 		float f = 255*(fitness[i] - min)/(max - min);
 		output[i] = int(floor(f));
