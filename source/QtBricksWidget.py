@@ -323,14 +323,16 @@ class QtBricksWidget(QWidget):
 
         size = int(self.min_width / 2)
         image = qimageToNumpyArray(input_image)
+        #
+        # # denoise
+        # blurred = cv2.bilateralFilter(image, 3, 30, 30)
+        #
+        # # posterization
+        # blurred2 = cv2.pyrMeanShiftFiltering(blurred, 3, 40, maxLevel=1)
 
-        # denoise
-        blurred = cv2.bilateralFilter(image, 3, 30, 30)
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-        # posterization
-        blurred2 = cv2.pyrMeanShiftFiltering(blurred, 3, 40, maxLevel=1)
 
-        gray = cv2.cvtColor(blurred2, cv2.COLOR_BGR2GRAY)
 
         # edges extraction
         if self.rectangular_shape is False:
@@ -339,10 +341,15 @@ class QtBricksWidget(QWidget):
             from coraline.Coraline import mutual
             if self.edges_mutual is None:
                 print("Edge computation begins..")
-                mutual(gray, linewidth=self.min_width, extension=20)
-                self.edges_mutual = gray
+                w= gray.shape[1]
+                h= gray.shape[0]
+                gray_padded = np.zeros((h + (self.max_height*2), w+(self.max_width *2)), dtype=np.uint8)
+                gray_padded[self.max_height:self.max_height +h,  self.max_width:self.max_width+ w] = gray[0:h, 0:w]
+                mutual(gray_padded, linewidth=self.min_width, extension=20)
+                self.edges_mutual = gray_padded[self.max_height:self.max_height +h,self.max_width:self.max_width+ w]
                 print("Edge computation ends")
             self.edges = self.edges_mutual > self.edge_threshold * 10.0
+
 
         clean = morphology.remove_small_objects(self.edges, 50, connectivity=4)
         distance = ndi.distance_transform_edt(~clean)
@@ -415,6 +422,35 @@ class QtBricksWidget(QWidget):
             click = clicker.Click(is_positive=True, coords=(y, x))
             self.clicker.add_click(click)
 
+
+            # generate negative clicks
+
+            y = 160
+            x = 240 - int(self.max_width*0.7)
+            if x > 0:
+                click = clicker.Click(is_positive=False, coords=(y, x))
+                self.clicker.add_click(click)
+
+            y = 160
+            x = 240 + int(self.max_width*0.7)
+            if x < 479:
+                click = clicker.Click(is_positive=False, coords=(y, x))
+                self.clicker.add_click(click)
+
+            y = 160 - int(self.max_height*0.7)
+            x = 240
+            if y > 0:
+                click = clicker.Click(is_positive=False, coords=(y, x))
+                self.clicker.add_click(click)
+
+
+            y = 160 + int(self.max_height*0.7)
+            x = 240
+            if y < 319:
+                click = clicker.Click(is_positive=False, coords=(y, x))
+                self.clicker.add_click(click)
+
+
             self.init_mask = None
             pred = self.predictor.get_prediction(self.clicker, prev_mask=self.init_mask)
 
@@ -432,7 +468,7 @@ class QtBricksWidget(QWidget):
             for blob in blobs:
                 if blob.bbox[2] > self.min_width and blob.bbox[3] > self.min_height and \
                         blob.bbox[2] < self.max_width and blob.bbox[3] < self.max_height:
-                    blob.class_name = "Pocillopora"
+                    blob.class_name = self.macroarea_blob.class_name
                     self.seg_bricks.append(blob)
 
             self.progress_bar.setValue(i)
