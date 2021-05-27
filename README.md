@@ -89,7 +89,7 @@ python3 taglab.py
 or, on Windows:
 
 ```
-python.exe taglab.py```
+python.exe taglab.py
 ```
 
 To test if TagLab works correctly, try to open the sample project available in the `projects` folder.
