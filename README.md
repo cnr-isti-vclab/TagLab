@@ -104,7 +104,7 @@ python3 update.py
 or, on Windows:
 
 ```
-python.exe update.py```
+python.exe update.py
 ```
 
 The script will automatically update TagLab to the newest version available in this repository.
