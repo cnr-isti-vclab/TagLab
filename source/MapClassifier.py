@@ -103,29 +103,30 @@ class MapClassifier(QObject):
         """
 
         self.scale_factor = target_scale / pixel_size
-        self.padding = padding
 
         if not working_area:
             working_area = [0, 0, img_map.width(), img_map.height()]
 
         # padding the working area (taking into account the scaling factor)
-        top = int(working_area[0] - self.padding/self.scale_factor)
-        left = int(working_area[1] - self.padding/self.scale_factor)
-        width = int(max(513, working_area[2]) + (2*self.padding)/self.scale_factor)
-        height = int(max(513, working_area[3]) + (2*self.padding)/self.scale_factor)
+        self.padding = round(padding * self.scale_factor)
+        top = int(working_area[0] - self.padding)
+        left = int(working_area[1] - self.padding)
+        width = int(max(513, working_area[2]) + 2*self.padding)
+        height = int(max(513, working_area[3]) + 2*self.padding)
 
         # crop the input image
         crop_image = img_map.copy(left, top, width, height)
 
-        # rescale the input image
-        w_target = crop_image.width() * self.scale_factor
-        h_target = crop_image.height() * self.scale_factor
+        # scale the input image
+        w_target = round(crop_image.width() / self.scale_factor)
+        h_target = round(crop_image.height() / self.scale_factor)
         self.input_image = crop_image.scaled(w_target, h_target, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
 
+        self.padding = round(self.padding / self.scale_factor)
         self.wa_top = self.padding
         self.wa_left = self.padding
-        self.wa_width = int(w_target - 2*self.padding)
-        self.wa_height = int(h_target - 2*self.padding)
+        self.wa_width = round(w_target - 2*self.padding)
+        self.wa_height = round(h_target - 2*self.padding)
 
 
     def run(self, TILE_SIZE, AGGREGATION_WINDOW_SIZE, AGGREGATION_STEP, save_scores = False):
@@ -178,6 +179,11 @@ class MapClassifier(QObject):
                         left = self.wa_left - DELTA_CROP + col * AGGREGATION_WINDOW_SIZE + j * AGGREGATION_STEP
                         tileimg = utils.cropQImage(self.input_image, [top, left, TILE_SIZE, TILE_SIZE])
                         img_np = utils.qimageToNumpyArray(tileimg)
+
+                        if i == 0 and j == 0:
+                            tilename = "RGB_" + str(row) + "_" + str(col) + ".png"
+                            filename = os.path.join(self.temp_dir, tilename)
+                            tileimg.save(filename)
 
                         img_np = img_np.astype(np.float32)
                         img_np = img_np / 255.0
@@ -240,8 +246,6 @@ class MapClassifier(QObject):
         del self.net
         self.net = None
 
-
-
     def loadScores(self):
 
         filename = os.path.join(self.temp_dir, "assembled_scores.dat")
@@ -249,15 +253,9 @@ class MapClassifier(QObject):
         self.scores = pkl.load(fileobject)
         fileobject.close()
 
-
-
-
     def assembleTiles(self, tile_rows, tile_cols, AGGREGATION_WINDOW_SIZE, ass_scores = False):
 
         # put tiles together
-
-        xoffset = 0
-        yoffset = 0
 
         W = AGGREGATION_WINDOW_SIZE * tile_cols
         H = AGGREGATION_WINDOW_SIZE * tile_rows
@@ -333,8 +331,8 @@ class MapClassifier(QObject):
             resimg[predictions == label_index, :] = self.label_colors[label_index]
 
         qimg = utils.rgbToQImage(resimg)
-        w = qimg.width() / self.scale_factor
-        h = qimg.height() / self.scale_factor
+        w = qimg.width() * self.scale_factor
+        h = qimg.height() * self.scale_factor
         outimg = qimg.scaled(w, h, Qt.IgnoreAspectRatio, Qt.FastTransformation)
         return outimg
 

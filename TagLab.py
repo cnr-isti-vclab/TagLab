@@ -3651,7 +3651,7 @@ class TagLab(QWidget):
                 # runs the classifier
                 self.infoWidget.setInfoMessage("Automatic classification is running..")
 
-                self.classifier.run(768, 512, 128)
+                self.classifier.run(1026, 513, 256)
 
                 if self.classifier.flagStopProcessing is False:
 
