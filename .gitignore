@@ -2,7 +2,7 @@
 models/deeplab-resnet.pth.tar
 models/DEEPLAB_lr=5e-05_L2=0.0005_100_moorea_rescaled_pocillopora_dead.net
 models/DEEPLAB_lr=5e-05_L2=0.0005_60_moorea_rescaled_pocillopora.net
-models/dextr_corals.pth
+models/*.pth
 models/Pocillopora.net
 models/Porites.net
 models/Pocillopora_Porite_Montipora3.net
@@ -24,6 +24,7 @@ install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
 _deps
+.DS_Store
 
 #Python gitignore (https://github.com/github/gitignore/blob/master/Python.gitignore)
 # Byte-compiled / optimized / DLL files

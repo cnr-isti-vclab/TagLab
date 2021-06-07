@@ -26,6 +26,7 @@ import json
 import math
 import numpy as np
 import urllib
+import platform
 
 from PyQt5.QtCore import Qt, QSize, QMargins, QDir, QPoint, QPointF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo, QModelIndex
 from PyQt5.QtGui import QFontDatabase, QFont, QPixmap, QIcon, QKeySequence, QPen
@@ -3725,25 +3726,25 @@ if __name__ == '__main__':
     app.setStyleSheet("QToolTip {color: white; background-color: rgb(49,51,53); border: none; }")
 
     # set the application font
+    if platform.system() != "Darwin":
+        QFD = QFontDatabase()
+        font_id1 = QFD.addApplicationFont("fonts/opensans/OpenSans-Regular.ttf")
+        if font_id1 == -1:
+            print("Failed to load application font..")
+            sys.exit(-2)
 
-    QFD = QFontDatabase()
-    font_id1 = QFD.addApplicationFont("fonts/opensans/OpenSans-Regular.ttf")
-    if font_id1 == -1:
-        print("Failed to load application font..")
-        sys.exit(-2)
+        font_id2 = QFD.addApplicationFont("fonts/roboto/Roboto-Light.ttf")
+        if font_id2 == -1:
+            print("Failed to load application font..")
+            sys.exit(-2)
 
-    font_id2 = QFD.addApplicationFont("fonts/roboto/Roboto-Light.ttf")
-    if font_id2 == -1:
-        print("Failed to load application font..")
-        sys.exit(-2)
+        font_id3 = QFD.addApplicationFont("fonts/roboto/Roboto-Regular.ttf")
+        if font_id3 == -1:
+            print("Failed to load application font..")
+            sys.exit(-2)
 
-    font_id3 = QFD.addApplicationFont("fonts/roboto/Roboto-Regular.ttf")
-    if font_id3 == -1:
-        print("Failed to load application font..")
-        sys.exit(-2)
-
-    font = QFont('Roboto')
-    app.setFont(font)
+        font = QFont('Roboto')
+        app.setFont(font)
 
     # Create the inspection tool
     tool = TagLab()
