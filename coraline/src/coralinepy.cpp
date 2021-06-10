@@ -1,4 +1,5 @@
 #include "coraline.h"
+#include "mutualedges.h"
 #include "string.h"
 #include <iostream>
 #include <algorithm>
@@ -14,6 +15,23 @@ using namespace std;
 #endif 
 
 extern "C" {
+	CORALINE_EXPORT_C void Coraline_mutual(uchar *img, int w, int h, int linewidth = 30, float gaussian = 5, int nbins = 16, int extension = 1) {
+		MutualEdges *edges = new MutualEdges;;
+		edges->img = img;
+		edges->w = w;
+		edges->h = h;
+		edges->linewidth = linewidth;
+		edges->gaussian = gaussian;
+		edges->nbins = nbins;
+		edges->extension = extension;
+
+		uint8_t *output =new uint8_t[w*h];
+		edges->detect(output);
+		memcpy(img, output,  (size_t)w * (size_t)h);
+
+		delete []output;
+		delete edges;
+	}
 
 	CORALINE_EXPORT_C void Coraline_segment(uchar* img, float *depth, uchar* mask, int w, int h, int *clippoints, int nclips, float lambda = 0.0, float conservative = 1.0, float grow = 0.0, float radius = 30, float depth_weight = 0.0f) {
 		Coraline* coraline = new Coraline(img, mask, w, h);

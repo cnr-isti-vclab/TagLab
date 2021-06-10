@@ -11,7 +11,8 @@ SOURCES += \
         src/coralinepy.cpp \
         src/getopt.cpp \
         src/main.cpp \
-        src/maxflow/graph.cpp
+        src/maxflow/graph.cpp \
+    src/mutualedges.cpp
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -21,7 +22,8 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 HEADERS += \
     src/coraline.h \
     src/getopt.h \
-    src/maxflow/graph.h
+    src/maxflow/graph.h \
+    src/mutualedges.h
 
 DISTFILES += \
     Coraline.py

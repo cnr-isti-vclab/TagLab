@@ -26,7 +26,6 @@ from skimage import measure
 from skimage.filters import sobel
 from scipy import ndimage as ndi
 from PyQt5.QtGui import QPainter, QImage, QPen, QBrush, QColor, qRgb
-from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtCore import Qt, QObject, pyqtSignal
 from skimage.color import rgb2gray
 from skimage.draw import polygon_perimeter
@@ -35,8 +34,7 @@ from source import utils
 
 import pandas as pd
 from scipy import ndimage as ndi
-from skimage.morphology import watershed, flood, binary_dilation, binary_erosion
-from skimage.filters import gaussian
+from skimage.morphology import watershed, binary_dilation, binary_erosion
 from source.Blob import Blob
 import source.Mask as Mask
 
@@ -227,7 +225,12 @@ class Annotation(QObject):
                 origin = np.array([box[1], box[0]])
                 clippoints = clippoints - origin
         try:
-            from coraline.Coraline import segment
+            from coraline.Coraline import segment, mutual
+            #rgb_weights = [0.2989, 0.5870, 0.1140]
+            #gray = np.dot(img[...,:3], rgb_weights).astype(np.uint8)
+            #mutual(gray)
+            #a = utils.floatmapToQImage(gray.astype(float))
+            #a.save("test.png")
             segment(img, depth, mask, clippoints, 0.0, conservative=self.refine_conservative, grow=grow, radius=30, depth_weight = self.refine_depth_weight)
 
         except Exception as e:
@@ -279,46 +282,6 @@ class Annotation(QObject):
         labels = watershed((-distance+100*edges)/2, markers, mask=mask)
         created_blobs = []
         for region in measure.regionprops(labels):
-                b = Blob(region, box[1], box[0], self.getFreeId())
-                b.class_color = blob.class_color
-                b.class_name = blob.class_name
-                created_blobs.append(b)
-
-        return created_blobs
-
-
-    def createCrack(self, blob, input_arr, x, y, tolerance, preview=True):
-
-        """
-        Given a inner blob point (x,y), the function use it as a seed for a paint butcket tool and create
-        a correspondent blob hole
-        """
-
-
-        box = blob.bbox
-        x_crop = x - box[1]
-        y_crop = y - box[0]
-
-        input_arr = gaussian(input_arr, 2)
-        # input_arr = segmentation.inverse_gaussian_gradient(input_arr, alpha=1, sigma=1)
-
-        blob_mask = blob.getMask()
-
-        crack_mask = flood(input_arr, (int(y_crop), int(x_crop)), tolerance=tolerance).astype(int)
-        cracked_blob = np.logical_and((blob_mask > 0), (crack_mask < 1))
-        cracked_blob = cracked_blob.astype(int)
-
-        if preview:
-            return cracked_blob
-
-        regions = measure.regionprops(measure.label(cracked_blob))
-
-        area_th = 1000
-        created_blobs = []
-
-        for region in regions:
-            if region.area > area_th:
-                id = len(self.seg_blobs)
                 b = Blob(region, box[1], box[0], self.getFreeId())
                 b.class_color = blob.class_color
                 b.class_name = blob.class_name

@@ -53,7 +53,6 @@ from source.QtLabelsWidget import QtLabelsWidget
 from source.QtInfoWidget import QtInfoWidget
 from source.QtHelpWidget import QtHelpWidget
 from source.QtProgressBarCustom import QtProgressBarCustom
-from source.QtCrackWidget import QtCrackWidget
 from source.QtHistogramWidget import QtHistogramWidget
 from source.QtClassifierWidget import QtClassifierWidget
 from source.QtNewDatasetWidget import QtNewDatasetWidget
@@ -151,21 +150,21 @@ class TagLab(QWidget):
         QPushButton:hover   { border: 1px solid rgb(255,100,100); }"""
 
 
-        self.btnMove        = self.newButton("move.png",     "Move",                    flatbuttonstyle1, self.move)
-        self.btnAssign      = self.newButton("bucket.png",   "Assign class",           flatbuttonstyle1, self.assign)
-        self.btnEditBorder  = self.newButton("edit.png",     "Edit border",            flatbuttonstyle1, self.editBorder)
-        self.btnCut         = self.newButton("scissors.png", "Cut segmentation",       flatbuttonstyle1, self.cut)
-        self.btnFreehand    = self.newButton("pencil.png",   "Freehand segmentation",  flatbuttonstyle1, self.freehandSegmentation)
-        self.btnCreateCrack = self.newButton("crack.png",    "Create crack",           flatbuttonstyle1, self.createCrack)
-        self.btnWatershed   = self.newButton("brush.png",    "Watershed segmentation", flatbuttonstyle1, self.watershedSegmentation)
+        self.btnMove               = self.newButton("move.png",     "Move",                   flatbuttonstyle1, self.move)
+        self.btnAssign             = self.newButton("bucket.png",   "Assign class",           flatbuttonstyle1, self.assign)
+        self.btnEditBorder         = self.newButton("edit.png",     "Edit border",            flatbuttonstyle1, self.editBorder)
+        self.btnCut                = self.newButton("scissors.png", "Cut segmentation",       flatbuttonstyle1, self.cut)
+        self.btnFreehand           = self.newButton("pencil.png",   "Freehand segmentation",  flatbuttonstyle1, self.freehandSegmentation)
+        self.btnCreateCrack        = self.newButton("crack.png",    "Create crack",           flatbuttonstyle1, self.createCrack)
+        self.btnWatershed          = self.newButton("brush.png",    "Watershed segmentation", flatbuttonstyle1, self.watershedSegmentation)
+        self.btnBricksSegmentation = self.newButton("brick.png",    "Bricks segmentation",    flatbuttonstyle2, self.bricksSegmentation)
 
         # Split blob operation removed from the toolbar
         # self.btnSplitBlob   = self.newButton("split.png",    "Split Blob",            flatbuttonstyle1, self.splitBlob)
 
-
-        self.btnRuler       = self.newButton("ruler.png",    "Measure tool",          flatbuttonstyle1, self.ruler)
-        self.btnDeepExtreme = self.newButton("dexter.png",   "4-clicks segmentation",  flatbuttonstyle2, self.deepExtreme)
-        self.btnRitm        = self.newButton("ritm.png",     "Positive/negative clicks segmentation", flatbuttonstyle2, self.ritm)
+        self.btnRuler         = self.newButton("ruler.png",    "Measure tool",           flatbuttonstyle1, self.ruler)
+        self.btnDeepExtreme   = self.newButton("dexter.png",   "4-clicks segmentation",  flatbuttonstyle2, self.deepExtreme)
+        self.btnRitm          = self.newButton("ritm.png",     "Positive/negative clicks segmentation", flatbuttonstyle2, self.ritm)
         self.btnAutoClassification = self.newButton("auto.png", "Fully automatic classification", flatbuttonstyle2, self.selectClassifier)
 
         # Split Screen operation removed from the toolbar
@@ -193,7 +192,8 @@ class TagLab(QWidget):
         layout_tools.addWidget(self.btnRitm)
         layout_tools.addWidget(self.btnFreehand)
         layout_tools.addWidget(self.btnAssign)
-        #layout_tools.addWidget(self.btnWatershed)
+        layout_tools.addWidget(self.btnWatershed)
+        layout_tools.addWidget(self.btnBricksSegmentation)
         layout_tools.addWidget(self.btnEditBorder)
         layout_tools.addWidget(self.btnCut)
         layout_tools.addWidget(self.btnCreateCrack)
@@ -1867,6 +1867,7 @@ class TagLab(QWidget):
         self.btnCut.setChecked(False)
         self.btnFreehand.setChecked(False)
         self.btnWatershed.setChecked(False)
+        self.btnBricksSegmentation.setChecked(False)
         self.btnRuler.setChecked(False)
         self.btnCreateCrack.setChecked(False)
         #self.btnSplitBlob.setChecked(False)
@@ -1881,18 +1882,19 @@ class TagLab(QWidget):
 
     def setTool(self, tool):
         tools = {
-            "MOVE"       : ["Pan"       , self.btnMove],
-            "CREATECRACK": ["Crack"      , self.btnCreateCrack],
-            #"SPLITBLOB"  : ["Split Blob" , self.btnSplitBlob],
-            "ASSIGN"     : ["Assign"     , self.btnAssign],
-            "EDITBORDER" : ["Edit Border", self.btnEditBorder],
-            "CUT"        : ["Cut"        , self.btnCut],
-            "FREEHAND"   : ["Freehand"   , self.btnFreehand],
-            "WATERSHED":   ["Watershed",   self.btnWatershed],
-            "RULER"      : ["Ruler"      , self.btnRuler],
-            "DEEPEXTREME": ["4-click"    , self.btnDeepExtreme],
-            "MATCH"      : ["Match"      , self.btnMatch],
-            "RITM"       : ["Ritm"       , self.btnRitm]
+            "MOVE"         : ["Pan"          , self.btnMove],
+            "CREATECRACK"  : ["Crack"        , self.btnCreateCrack],
+            #"SPLITBLOB"   : ["Split Blob"   , self.btnSplitBlob],
+            "ASSIGN"       : ["Assign"       , self.btnAssign],
+            "EDITBORDER"   : ["Edit Border"  , self.btnEditBorder],
+            "CUT"          : ["Cut"          , self.btnCut],
+            "FREEHAND"     : ["Freehand"     , self.btnFreehand],
+            "WATERSHED"    : ["Watershed"    , self.btnWatershed],
+            "BRICKS":        ["Bricks",        self.btnBricksSegmentation],
+            "RULER"        : ["Ruler"        , self.btnRuler],
+            "DEEPEXTREME"  : ["4-click"      , self.btnDeepExtreme],
+            "MATCH"        : ["Match"        , self.btnMatch],
+            "RITM"         : ["Ritm"         , self.btnRitm]
         }
         newtool = tools[tool]
         self.resetToolbar()
@@ -1980,6 +1982,13 @@ class TagLab(QWidget):
         self.setTool("WATERSHED")
 
     @pyqtSlot()
+    def bricksSegmentation(self):
+        """
+        Activate the tool to segment single bricks element.
+        """
+        self.setTool("BRICKS")
+
+    @pyqtSlot()
     def ruler(self):
         """
         Activate the "ruler" tool. The tool allows to measure the distance between two points or between two blob centroids.
@@ -2045,11 +2054,15 @@ class TagLab(QWidget):
             txt_area = "Area (px<sup>2</sup>):"
             txt_surface_area = "Surf. area (px<sup>2</sup>):"
             factor = 1.0
+            scaled_perimeter = blob.perimeter
+            scaled_area = blob.area
         else:
             txt_perimeter = "Perimeter (cm):"
             txt_area = "Area (cm<sup>2</sup>):"
             txt_surface_area = "Surf. area (cm<sup>2</sup>):"
             factor = float(self.activeviewer.image.map_px_to_mm_factor)
+            scaled_perimeter = blob.perimeter * factor / 10.0
+            scaled_area = blob.area * factor * factor / 100.0
 
         cx = blob.centroid[0]
         cy = blob.centroid[1]
@@ -2058,14 +2071,12 @@ class TagLab(QWidget):
         self.lblCentroidValue.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         # perimeter
-        scaled_perimeter = blob.perimeter * factor / 10.0
         self.lblPerimeter.setText(txt_perimeter)
         txt = "{:6.2f}".format(scaled_perimeter)
         self.lblPerimeterValue.setText(txt)
         self.lblPerimeterValue.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         # area
-        scaled_area = blob.area * factor * factor / 100.0
         self.lblArea.setText(txt_area)
         txt = "{:6.2f}".format(scaled_area)
         self.lblAreaValue.setText(txt)

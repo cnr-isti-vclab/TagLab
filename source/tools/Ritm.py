@@ -285,9 +285,15 @@ class Ritm(Tool):
 
         # finalize created blobs
         for blob in self.current_blobs:
+            
+            if self.blob_to_correct is not None:           
+                blob.id = self.blob_to_correct.id
+
+            #order is important: first add then setblob class!
             self.viewerplus.addBlob(blob, selected=True)
             if self.blob_to_correct is not None:
                 self.viewerplus.setBlobClass(blob, self.blob_to_correct.class_name)
+
             self.blobInfo.emit(blob, "[TOOL][RITM][BLOB-CREATED]")
         self.viewerplus.saveUndo()
         self.viewerplus.resetSelection()

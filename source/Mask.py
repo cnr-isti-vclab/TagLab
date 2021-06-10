@@ -108,6 +108,24 @@ def replaceMask(dmask, dbox, smask, sbox):
     d[:] = s
 
 
+def checkIntersection(bbox1, bbox2):
+    """
+    Check if bbox1 and bbox intersects.
+    """
+
+    # range is [minx, miny, maxx, maxy], absolute ranges
+    range1 = [bbox1[0], bbox1[1], bbox1[0] + bbox1[3], bbox1[1] + bbox1[2]]
+    range2 = [bbox2[0], bbox2[1], bbox2[0] + bbox2[3], bbox2[1] + bbox2[2]]
+
+    # intersection
+    range = [max(range1[0], range2[0]), max(range1[1], range2[1]), min(range1[2], range2[2]), min(range1[3], range2[3])]
+
+    # check for intersection
+    if range[2] <= range[0] or range[3] <= range[1]:
+        return False
+    else:
+        return True
+
 def intersectMask(dmask, dbox, smask, sbox):
 
     # range is [minx, miny, maxx, maxy], absolute ranges

@@ -152,6 +152,7 @@ class QtImageViewerPlus(QtImageViewer):
         self.showCrossair = False
         self.mouseCoords = QPointF(0, 0)
         self.crackWidget = None
+        self.bricksWidget = None
 
         self.setContextMenuPolicy(Qt.CustomContextMenu)
 

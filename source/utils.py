@@ -192,6 +192,48 @@ def cropQImage(qimage_map, bbox):
 
     return qimage_cropped
 
+def cropImage(img, bbox):
+    """
+    Copy the given mask inside the box used to crop the plot.
+    Both joint_box and bbox are n map coordinates.
+    """
+
+    w_img = img.shape[1]
+    h_img = img.shape[0]
+
+    w = bbox[2]
+    h = bbox[3]
+    crop = np.zeros((h, w, 3), dtype=np.uint8)
+
+    dest_offx = 0
+    dest_offy = 0
+    source_offx = bbox[1]
+    source_offy = bbox[0]
+    source_w = w
+    source_h = h
+
+    if bbox[0] < 0:
+        source_offy = 0
+        dest_offy = -bbox[0]
+        source_h = h - dest_offy
+
+    if bbox[1] < 0:
+        source_offx = 0
+        dest_offx = -bbox[1]
+        source_w = w - dest_offx
+
+    if bbox[1] + bbox[2] >= w_img:
+        dest_offx = 0
+        source_w = w_img - source_offx
+
+    if bbox[0] + bbox[3] >= h_img:
+        dest_offy = 0
+        source_h = h_img - source_offy
+
+    crop[dest_offy:dest_offy+source_h, dest_offx:dest_offx+source_w, :] = \
+        img[source_offy:source_offy+source_h, source_offx:source_offx+source_w, :]
+
+    return crop
 
 def qimageToNumpyArray(qimg):
 
@@ -212,4 +254,3 @@ def qimageToNumpyArray(qimg):
     arr[:, :, 2] = arrtemp[:, :, 0]
 
     return arr
-

@@ -11,6 +11,7 @@ SET(MAXFLOW_SOURCE_PATH src/maxflow)
 
 SET(LIB_HEADERS
 	${CORALINE_SOURCE_PATH}/coraline.h
+	${CORALINE_SOURCE_PATH}/mutualedges.h
 	${MAXFLOW_SOURCE_PATH}/block.h
 	${MAXFLOW_SOURCE_PATH}/graph.h
 	${MAXFLOW_SOURCE_PATH}/graph.cpp
@@ -18,6 +19,7 @@ SET(LIB_HEADERS
 
 SET(LIB_SOURCES
 	${CORALINE_SOURCE_PATH}/coraline.cpp
+	${CORALINE_SOURCE_PATH}/mutualedges.cpp
 	${CORALINE_SOURCE_PATH}/coralinepy.cpp
 	${CORALINE_SOURCE_PATH}/maxflow.cpp
 )
