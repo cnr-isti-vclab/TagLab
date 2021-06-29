@@ -20,6 +20,7 @@
 import os
 import numpy as np
 import pickle as pkl
+import cv2
 
 # PYTORCH
 import torch
@@ -35,6 +36,7 @@ from PyQt5.QtCore import QCoreApplication, Qt, QObject, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QPainter, QImage, QColor, QPixmap, qRgb, qRed, qGreen, qBlue
 
 from source import utils
+
 
 class MapClassifier(QObject):
     """
@@ -116,11 +118,13 @@ class MapClassifier(QObject):
 
         # crop the input image
         crop_image = img_map.copy(left, top, width, height)
+        self.input_image = utils.qimageToNumpyArray(crop_image)
 
         # scale the input image
         w_target = round(crop_image.width() / self.scale_factor)
         h_target = round(crop_image.height() / self.scale_factor)
-        self.input_image = crop_image.scaled(w_target, h_target, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+
+        self.input_image = cv2.resize(self.input_image, dsize=(w_target, h_target), interpolation=cv2.INTER_CUBIC)
 
         self.padding = round(self.padding / self.scale_factor)
         self.wa_top = self.padding
@@ -177,13 +181,15 @@ class MapClassifier(QObject):
 
                         top = self.wa_top - DELTA_CROP + row * AGGREGATION_WINDOW_SIZE + i * AGGREGATION_STEP
                         left = self.wa_left - DELTA_CROP + col * AGGREGATION_WINDOW_SIZE + j * AGGREGATION_STEP
-                        tileimg = utils.cropQImage(self.input_image, [top, left, TILE_SIZE, TILE_SIZE])
-                        img_np = utils.qimageToNumpyArray(tileimg)
 
-                        if i == 0 and j == 0:
-                            tilename = "RGB_" + str(row) + "_" + str(col) + ".png"
-                            filename = os.path.join(self.temp_dir, tilename)
-                            tileimg.save(filename)
+
+                        img_np = utils.cropImage(self.input_image, [top, left, TILE_SIZE, TILE_SIZE])
+
+                        # if i == 0 and j == 0:
+                        #     tilename = "RGB_" + str(row) + "_" + str(col) + ".png"
+                        #     filename = os.path.join(self.temp_dir, tilename)
+                        #     tile =utils.rgbToQImage(img_np)
+                        #     tile.save(filename)
 
                         img_np = img_np.astype(np.float32)
                         img_np = img_np / 255.0

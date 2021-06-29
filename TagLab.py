@@ -2914,7 +2914,8 @@ class TagLab(QWidget):
         QApplication.setOverrideCursor(Qt.WaitCursor)
 
         # -1, -1 means that the label map imported must not be rescaled
-        created_blobs = self.activeviewer.annotations.import_label_map(filename, self.labels_dictionary, -1, -1)
+        created_blobs = self.activeviewer.annotations.import_label_map(filename, self.labels_dictionary, self.activeviewer.img_map.width(),
+                                                                       self.activeviewer.img_map.height())
         for blob in created_blobs:
             self.activeviewer.addBlob(blob, selected=False)
         self.activeviewer.saveUndo()
