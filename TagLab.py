@@ -551,7 +551,11 @@ class TagLab(QWidget):
         taglab_offline_version = f_off_version.read()
 
         #print('Raw link: ' + raw_link)
-        f_online_version = urllib.request.urlopen(raw_link)
+        try:
+            f_online_version = urllib.request.urlopen(raw_link)
+        except:
+            return taglab_offline_version, False
+            
         taglab_online_version = f_online_version.read().decode('utf-8')
 
         offline_spl_version = taglab_offline_version.split('.')
