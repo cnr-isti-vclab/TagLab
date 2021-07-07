@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QApplication, QMessageBox
 from PyQt5.QtGui import QPen, QBrush
 
 from source.tools.Tool import Tool
-from source.Mask import paintMask, jointBox, jointMask, replaceMask
+from source.Mask import paintMask, jointBox, jointMask, replaceMask, checkIntersection
 from source.utils import qimageToNumpyArray
 from source.utils import cropQImage, maskToQImage, floatmapToQImage
 
@@ -124,8 +124,9 @@ class Ritm(Tool):
         h = self.work_area_bbox[3]
         self.work_area_mask = np.zeros((h,w), dtype=np.int32)
         for blob in self.viewerplus.image.annotations.seg_blobs:
-            mask = blob.getMask()
-            paintMask(self.work_area_mask, self.work_area_bbox, mask, blob.bbox, 1)
+            if checkIntersection(self.work_area_bbox, blob.bbox):
+                mask = blob.getMask()
+                paintMask(self.work_area_mask, self.work_area_bbox, mask, blob.bbox, 1)
 
     def intersectionWithExistingBlobs(self, blob):
         bigmask = self.work_area_mask.copy()
@@ -148,14 +149,14 @@ class Ritm(Tool):
 
         if nclicks == 1 and self.work_area_bbox[2] == 0 and self.work_area_bbox[3] == 0:
             # the work area is assigned as the input image of the network
-            validArea= self.initializeWorkArea()
+            validArea = self.initializeWorkArea()
 
         # init mask
         if nclicks == 1 and len(self.viewerplus.selected_blobs) > 0:
             if self.blob_to_correct is None:
                 self.blob_to_correct = self.viewerplus.selected_blobs[0]
                 self.viewerplus.resetSelection()
-                self.viewerplus.removeBlob(self.blob_to_correct)
+                self.viewerplus.undrawBlob(self.blob_to_correct) #removeBlob(self.blob_to_correct)
                 if self.work_area_mask is not None:
                     paintMask(self.work_area_mask, self.work_area_bbox, self.blob_to_correct.getMask(),
                             self.blob_to_correct.bbox, 0)
@@ -286,13 +287,16 @@ class Ritm(Tool):
         # finalize created blobs
         for blob in self.current_blobs:
             
-            if self.blob_to_correct is not None:           
+            if self.blob_to_correct is not None:
+                self.viewerplus.removeBlob(self.blob_to_correct)
                 blob.id = self.blob_to_correct.id
+                blob.class_name = self.blob_to_correct.class_name
 
             #order is important: first add then setblob class!
+            self.undrawBlob(blob)
             self.viewerplus.addBlob(blob, selected=True)
-            if self.blob_to_correct is not None:
-                self.viewerplus.setBlobClass(blob, self.blob_to_correct.class_name)
+            #if self.blob_to_correct is not None:
+            #    self.viewerplus.setBlobClass(blob, self.blob_to_correct.class_name)
 
             self.blobInfo.emit(blob, "[TOOL][RITM][BLOB-CREATED]")
         self.viewerplus.saveUndo()
@@ -324,7 +328,8 @@ class Ritm(Tool):
 
         # re-add the blob removed
         if self.blob_to_correct is not None:
-            self.viewerplus.addBlob(self.blob_to_correct)
+            #self.viewerplus.addBlob(self.blob_to_correct)
+            self.viewerplus.drawBlob(self.blob_to_correct)
             self.blob_to_correct = None
 
         self.init_mask = None
