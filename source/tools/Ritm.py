@@ -192,7 +192,7 @@ class Ritm(Tool):
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
         self.infoMessage.emit("Segmentation is ongoing..")
-        self.log.emit("[TOOL][DEEPEXTREME] Segmentation begins..")
+        self.log.emit("[TOOL][RITM] Segmentation begins..")
 
         if not self.loadNetwork():
             QApplication.restoreOverrideCursor()
@@ -285,12 +285,14 @@ class Ritm(Tool):
         """
 
         # finalize created blobs
+        message = "[TOOL][RITM][BLOB-CREATED]"
         for blob in self.current_blobs:
             
             if self.blob_to_correct is not None:
                 self.viewerplus.removeBlob(self.blob_to_correct)
                 blob.id = self.blob_to_correct.id
                 blob.class_name = self.blob_to_correct.class_name
+                message = "[TOOL][RITM][BLOB-EDITED]"
 
             #order is important: first add then setblob class!
             self.undrawBlob(blob)
@@ -298,7 +300,8 @@ class Ritm(Tool):
             #if self.blob_to_correct is not None:
             #    self.viewerplus.setBlobClass(blob, self.blob_to_correct.class_name)
 
-            self.blobInfo.emit(blob, "[TOOL][RITM][BLOB-CREATED]")
+            self.blobInfo.emit(blob, message)
+
         self.viewerplus.saveUndo()
         self.viewerplus.resetSelection()
 

@@ -833,3 +833,18 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.updateVisibility()
 
+    @pyqtSlot(str)
+    def logMessage(self, message):
+
+        self.logfile.info(message)
+
+    @pyqtSlot(Blob, str)
+    def logBlobInfo(self, blob, msg):
+
+        message1 = msg + " Blob_id={:d} Blob_name={:s} class={:s}".format(blob.id, blob.blob_name, blob.class_name)
+        message2 = msg + " top={:.1f} left={:.1f} width={:.1f} height={:.1f}".format(blob.bbox[0], blob.bbox[1], blob.bbox[2], blob.bbox[3])
+        message3 = msg + " Area= {:.4f} , Perimeter= {:.4f}".format(blob.area, blob.perimeter)
+
+        self.logfile.info(message1)
+        self.logfile.info(message2)
+        self.logfile.info(message3)
