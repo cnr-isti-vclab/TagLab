@@ -63,12 +63,9 @@ if flag_install_pythorch_cpu == False and osused != 'Darwin':
             flag_install_pythorch_cpu = True
         else:
             raise Exception('Installation aborted. Install a proper NVCC version or set the pythorch CPU version.')
-elif osused == 'Darwin' and flag_install_pythorch_cpu == True:
-    ans = input('Something is wrong with NVCC. Do you want to install the CPU version of pythorch? [Y/n]')
-    if ans == "Y":
-        flag_install_pythorch_cpu = True
-    else:
-        raise Exception('Installation aborted. Install a proper NVCC version or set the pythorch CPU version.')
+elif osused == 'Darwin':
+    flag_install_pythorch_cpu = True
+    print('NVCC not supported on MacOS. Installing cpu version automatically...')
 
 
 if flag_install_pythorch_cpu==True:
@@ -131,6 +128,27 @@ gdal_package = 'gdal==' + gdal_version
 if osused != 'Windows':
     try:
         out = subprocess.check_output(['cmake', '--version'])
+        if out[0] != 0:
+            if osused == 'Darwin':
+                print('Trying to install cmake...')
+                from subprocess import STDOUT, check_call
+                import os
+                try:
+                    check_call(['brew', 'install', 'cmake'],
+                               stdout=open(os.devnull, 'wb'), stderr=STDOUT)
+                except:
+                    raise Exception('Impossible to install cmake through homebrew. Please install manually cmake before running '
+                                    'this script.\nInstallation aborted.')
+            elif osused == 'Linux':
+                print('Trying to install cmake...')
+                from subprocess import STDOUT, check_call
+                import os
+                try:
+                    check_call(['sudo', 'apt-get', 'install', '-y', 'cmake'],
+                               stdout=open(os.devnull, 'wb'), stderr=STDOUT)
+                except:
+                    raise Exception('Impossible to install cmake. Please install manually cmake before running '
+                                    'this script.\nInstallation aborted.')
         os.chdir('coraline')
         result = subprocess.getstatusoutput('cmake .')
         if result[0] == 0:
