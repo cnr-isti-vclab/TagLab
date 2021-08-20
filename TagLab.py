@@ -1332,41 +1332,40 @@ class TagLab(QWidget):
             self.move()
 
         elif event.key() == Qt.Key_2:
-            # ACTIVATE "ASSIGN" TOOL
-            self.assign()
-
-        elif event.key() == Qt.Key_3:
-            # ACTIVATE "FREEHAND" TOOL
-            self.freehandSegmentation()
-
-        elif event.key() == Qt.Key_4:
-            # ACTIVATE "EDIT BORDER" TOOL
-            self.editBorder()
-        elif event.key() == Qt.Key_5:
-
-            # ACTIVATE "CUT SEGMENTATION" TOOL
-            self.cut()
-
-        elif event.key() == Qt.Key_6:
-            # ACTIVATE "CREATE CRACK" TOOL
-            self.createCrack()
-
-        # elif event.key() == Qt.Key_7:
-        #     # ACTIVATE "SPLIT BLOB" TOOL
-        #     self.splitBlob()
-
-        elif event.key() == Qt.Key_8:
-            # ACTIVATE "RULER" TOOL
-            self.ruler()
-
-        elif event.key() == Qt.Key_9:
             # ACTIVATE "4-CLICK" TOOL
             self.deepExtreme()
 
+        elif event.key() == Qt.Key_3:
+            # ACTIVATE "POSITIVE/NEGATIVE CLICK" TOOL
+            self.ritm()
 
         elif event.key() == Qt.Key_4:
-            # ACTIVATE "DEEP EXTREME" TOOL
-            self.deepExtreme()
+            # ACTIVATE "FREEHAND" TOOL
+            self.freehandSegmentation()
+
+        elif event.key() == Qt.Key_5:
+            # ACTIVATE "ASSIGN" TOOL
+            self.assign()
+
+        elif event.key() == Qt.Key_6:
+            # ACTIVATE "EDIT BORDER" TOOL
+            self.editBorder()
+
+        elif event.key() == Qt.Key_7:
+            # ACTIVATE "CUT SEGMENTATION" TOOL
+            self.cut()
+
+        elif event.key() == Qt.Key_8:
+            # ACTIVATE "CREATE CRACK" TOOL
+            self.createCrack()
+
+        elif event.key() == Qt.Key_9:
+            # ACTIVATE "RULER" TOOL
+            self.ruler()
+
+        elif event.key() == Qt.Key_0:
+            # FULLY AUTOMATIC SEGMENTATION
+            self.selectClassifier()
 
         #elif event.key() == Qt.Key_P:
         #    self.drawDeepExtremePoints()
@@ -3449,6 +3448,10 @@ class TagLab(QWidget):
         """
 
         if self.activeviewer is None:
+            self.move()
+            return
+
+        if self.activeviewer.image is None:
             self.move()
             return
 
