@@ -96,14 +96,21 @@ class Ritm(Tool):
         self.work_area_bbox = [round(rect_map.top()), round(rect_map.left()),
                                round(rect_map.width()), round(rect_map.height())]
 
-        #TODO  needs a warning
-        if self.work_area_bbox[2]*self.work_area_bbox[3] > 4000000:
-            return False
 
         image_crop = cropQImage(self.viewerplus.img_map, self.work_area_bbox)
         input_image = qimageToNumpyArray(image_crop)
 
-        self.predictor.set_input_image(input_image)
+        oom = False
+        try:
+            self.predictor.set_input_image(input_image)
+        except RuntimeError:  # Out of memory
+            oom = True
+
+        if oom:
+            print('CUDA out of memory. Try to zoom less ')
+            return False
+
+
         self.createWorkAreaMask()
         brush = QBrush(Qt.NoBrush)
         pen = QPen(Qt.DashLine)
@@ -202,37 +209,47 @@ class Ritm(Tool):
 
             if save_status:
                 self.states.append(self.predictor.get_states())
-            pred = self.predictor.get_prediction(self.clicker, prev_mask=self.init_mask)
 
-            segm_mask = pred > 0.5
-            segm_mask = segm_mask.astype(np.int32)
-            offsetx= self.work_area_bbox[1]
-            offsety=self.work_area_bbox[0]
+            oom = False
+            try:
+                pred = self.predictor.get_prediction(self.clicker, prev_mask=self.init_mask)
+            except RuntimeError:  # Out of memory
+                oom = True
+            if oom:
+                self.reset()
+                print('CUDA out of memory. Try to zoom less ')
 
-            # this handle corrections by fusing the new segm_mask with the one of the object to correct
-            if self.blob_to_correct is not None:
-                bbox_to_correct = self.blob_to_correct.bbox
-                mask_to_correct = self.blob_to_correct.getMask()
-                joint_mask = jointMask(bbox_to_correct, self.work_area_bbox)
-                paintMask(joint_mask[0], joint_mask[1], mask_to_correct, bbox_to_correct, 1)
-                replaceMask(joint_mask[0], joint_mask[1], segm_mask, self.work_area_bbox)
-                offsetx= joint_mask[1][1]
-                offsety=joint_mask[1][0]
-                segm_mask = joint_mask[0]
+            else:
 
-            segm_mask = segm_mask*255
-            torch.cuda.empty_cache()
+                segm_mask = pred > 0.5
+                segm_mask = segm_mask.astype(np.int32)
+                offsetx= self.work_area_bbox[1]
+                offsety=self.work_area_bbox[0]
 
-            self.undrawAllBlobs()
+                # this handle corrections by fusing the new segm_mask with the one of the object to correct
+                if self.blob_to_correct is not None:
+                    bbox_to_correct = self.blob_to_correct.bbox
+                    mask_to_correct = self.blob_to_correct.getMask()
+                    joint_mask = jointMask(bbox_to_correct, self.work_area_bbox)
+                    paintMask(joint_mask[0], joint_mask[1], mask_to_correct, bbox_to_correct, 1)
+                    replaceMask(joint_mask[0], joint_mask[1], segm_mask, self.work_area_bbox)
+                    offsetx= joint_mask[1][1]
+                    offsety=joint_mask[1][0]
+                    segm_mask = joint_mask[0]
 
-            blobs = self.viewerplus.annotations.blobsFromMask(segm_mask, offsetx, offsety, 1000)
+                segm_mask = segm_mask*255
+                torch.cuda.empty_cache()
 
-            for blob in blobs:
-                if self.intersectionWithExistingBlobs(blob) is False:
-                    self.drawBlob(blob)
-                    self.current_blobs.append(blob)
+                self.undrawAllBlobs()
 
-            self.infoMessage.emit("Segmentation done.")
+                blobs = self.viewerplus.annotations.blobsFromMask(segm_mask, offsetx, offsety, 1000)
+
+                for blob in blobs:
+                    if self.intersectionWithExistingBlobs(blob) is False:
+                        self.drawBlob(blob)
+                        self.current_blobs.append(blob)
+
+                self.infoMessage.emit("Segmentation done.")
 
         else:
             print('The working area is too large, please go closer.')
