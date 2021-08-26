@@ -2117,6 +2117,9 @@ class TagLab(QWidget):
     def deleteSelectedBlobs(self):
         if self.viewerplus.tools.tool == 'MATCH':
             self.deleteMatch()
+        #disable delete blobs while creating new ones
+        elif self.viewerplus.tools.tool == 'RITM' and self.viewerplus.tools.tools['RITM'].work_area_bbox[2] > 0:
+             return False
         else:
             self.activeviewer.deleteSelectedBlobs()
             logfile.info("[OP-DELETE] Selected blobs has been DELETED")
