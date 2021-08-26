@@ -1,9 +1,9 @@
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QApplication, QMessageBox
 from PyQt5.QtGui import QPen, QBrush
 
 from source.tools.Tool import Tool
-from source.Mask import paintMask, jointBox, jointMask, replaceMask, checkIntersection
+from source.Mask import paintMask, jointBox, jointMask, replaceMask, checkIntersection, intersectMask
 from source.utils import qimageToNumpyArray
 from source.utils import cropQImage, maskToQImage, floatmapToQImage
 
@@ -17,8 +17,10 @@ from models.isegm.inference.predictors import get_predictor
 from models.isegm.inference import utils
 
 class Ritm(Tool):
+
     def __init__(self, viewerplus, corrective_points):
         super(Ritm, self).__init__(viewerplus)
+
         self.points = corrective_points
         self.ritm_net = None
         self.MAX_POINTS = 10
@@ -123,6 +125,8 @@ class Ritm(Tool):
         h = self.work_area_bbox[3]
         self.work_area_item = self.viewerplus.scene.addRect(x, y, w, h, pen, brush)
         self.work_area_item.setZValue(3)
+        #self.workingAreaIsActive.emit()
+
         return True
 
     def createWorkAreaMask(self):
@@ -144,10 +148,7 @@ class Ritm(Tool):
         pixels_after = np.count_nonzero(bigmask)
         perc_intersect = ((pixels_before - pixels_after) * 100.0) / pixels
 
-        if perc_intersect > 90.0:
-            return True
-        else:
-            return False
+        return perc_intersect
 
     def prepareInput(self):
 
@@ -234,7 +235,7 @@ class Ritm(Tool):
                     paintMask(joint_mask[0], joint_mask[1], mask_to_correct, bbox_to_correct, 1)
                     replaceMask(joint_mask[0], joint_mask[1], segm_mask, self.work_area_bbox)
                     offsetx= joint_mask[1][1]
-                    offsety=joint_mask[1][0]
+                    offsety= joint_mask[1][0]
                     segm_mask = joint_mask[0]
 
                 segm_mask = segm_mask*255
@@ -245,9 +246,30 @@ class Ritm(Tool):
                 blobs = self.viewerplus.annotations.blobsFromMask(segm_mask, offsetx, offsety, 1000)
 
                 for blob in blobs:
-                    if self.intersectionWithExistingBlobs(blob) is False:
-                        self.drawBlob(blob)
-                        self.current_blobs.append(blob)
+                    if self.intersectionWithExistingBlobs(blob) < 90.0:
+                       self.current_blobs.append(blob)
+
+                if self.blob_to_correct is not None:
+                    mask_to_correct = self.blob_to_correct.getMask()
+                    box_to_correct = self.blob_to_correct.bbox
+                    biggest_blob = None
+                    biggest_intersection = -1.0
+
+                    for blob in self.current_blobs:
+                        intersection = intersectMask(mask_to_correct, box_to_correct , blob.getMask(), blob.bbox)
+                        if intersection is None:
+                           intersecting_pixels = 0
+                        else:
+                           intersecting_pixels = np.count_nonzero(intersection[0])
+
+                        if intersecting_pixels > biggest_intersection:
+                           biggest_intersection = intersecting_pixels
+                           biggest_blob = blob
+
+                    self.current_blobs = [biggest_blob]
+
+                for blob in self.current_blobs:
+                    self.drawBlob(blob)
 
                 self.infoMessage.emit("Segmentation done.")
 
@@ -298,7 +320,7 @@ class Ritm(Tool):
 
     def apply(self):
         """
-        Confirm the result and allows to segment another object.
+        Confirm the result and allow to segment another object.
         """
 
         # finalize created blobs
