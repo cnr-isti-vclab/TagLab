@@ -107,6 +107,9 @@ class Correspondences(object):
         Fill the table from a list of correspondences.
         """
 
+        if not lst:
+            return
+
         if len(lst[0]) == 7:
             # genet information is missing..
             for ll in lst:
