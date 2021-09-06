@@ -192,6 +192,7 @@ class Grid(QObject):
 
         note_dict = { "x": x, "y": y, "txt": txt}
         self.notes.append(note_dict)
+
         self.drawGrid()
 
     @pyqtSlot()
@@ -208,9 +209,11 @@ class Grid(QObject):
         new_text = text_item.toPlainText()
 
         index = self.text_items.index(text_item)
-        if new_text == "":
-            # remove the note since no text has been inserted
-            del self.notes[index]
+        if new_text == "": # remove the note since no text has been inserted
+            try:
+                del self.notes[index]
+            except:
+                pass
         else:
             # get the corresponding note information and update it
             note = self.notes[index]

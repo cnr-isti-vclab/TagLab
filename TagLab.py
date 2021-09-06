@@ -29,7 +29,7 @@ import urllib
 import platform
 
 from PyQt5.QtCore import Qt, QSize, QMargins, QDir, QPoint, QPointF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo, QModelIndex
-from PyQt5.QtGui import QFontDatabase, QFont, QPixmap, QIcon, QKeySequence, QPen
+from PyQt5.QtGui import QFontDatabase, QFont, QPixmap, QIcon, QKeySequence, QPen, QImageReader
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QFileDialog, QComboBox, QMenuBar, QMenu, QSizePolicy, QScrollArea, \
     QLabel, QToolButton, QPushButton, QSlider, \
     QMessageBox, QGroupBox, QHBoxLayout, QVBoxLayout, QTextEdit, QLineEdit, QGraphicsView, QAction, QGraphicsItem
@@ -1010,6 +1010,7 @@ class TagLab(QWidget):
 
         index = self.mapActionList.index(openMapAction)
         image = self.project.images[index]
+
         if self.mapWidget is None:
             self.mapWidget = QtMapSettingsWidget(parent=self)
             self.mapWidget.setWindowModality(Qt.WindowModal)
@@ -1028,7 +1029,7 @@ class TagLab(QWidget):
 
         self.mapWidget.fields["acquisition_date"]["edit"].setText(image.acquisition_date)
         self.mapWidget.fields["px_to_mm"]["edit"].setText(str(image.map_px_to_mm_factor))
-        self.mapWidget.disableRGBloading()
+        self.mapWidget.enableRGBloading()
         self.image2update = image
         self.mapWidget.accepted.disconnect()
         self.mapWidget.accepted.connect(self.updateMapProperties)
@@ -2124,7 +2125,6 @@ class TagLab(QWidget):
             self.activeviewer.deleteSelectedBlobs()
             logfile.info("[OP-DELETE] Selected blobs has been DELETED")
 
-
 #OPERATIONS
 
     def assignOperation(self):
@@ -2668,20 +2668,21 @@ class TagLab(QWidget):
                 image.map_px_to_mm_factor = self.mapWidget.data["px_to_mm"]
                 flag_pixel_size_changed = True
 
+
             image.name = self.mapWidget.data['name']
             image.id = self.mapWidget.data['name']
             image.acquisition_date = self.mapWidget.data['acquisition_date']
             rgb_filename = dir.relativeFilePath(self.mapWidget.data['rgb_filename'])
             depth_filename = dir.relativeFilePath(self.mapWidget.data['depth_filename'])
 
-            image.channels = []
+
             if len(rgb_filename) <= 3:
                 raise ValueError("You need to specify an RGB map")
             else:
-                image.addChannel(rgb_filename, "RGB")
+                image.updateChannel(rgb_filename, "RGB")
 
             if len(depth_filename) > 3:
-                image.addChannel(depth_filename, "DEM")
+                image.updateChannel(depth_filename, "DEM")
 
         except Exception as e:
             msgBox = QMessageBox()

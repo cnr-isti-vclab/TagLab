@@ -94,6 +94,29 @@ class Image(object):
 
         self.channels.append(Channel(filename, type))
 
+
+    def updateChannel(self, filename, type):
+
+        img = rio.open(filename)
+
+        # check image size consistency (all the channels must have the same size)
+        if self.width is not None and self.height is not None:
+            if self.width != img.width or self.height != img.height:
+                raise Exception("Size of the images is not consistent! It is " + str(img.width) + "x" +
+                                str(img.height) + ", should have been: " + str(self.width) + "x" + str(self.height))
+                return
+
+        if img.crs is not None:
+            # this image contains georeference information
+            self.georef_filename = filename
+
+        for index,channel in enumerate(self.channels):
+            if channel.type == type:
+               self.channels[index] = Channel(filename, type)
+
+
+
+
     def hasDEM(self):
         """
         It returns True if the image has a DEM channel, False otherwise.
