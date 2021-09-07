@@ -507,7 +507,7 @@ class Annotation(QObject):
     def export_data_table_for_Scripps(self, scale_factor, filename):
 
         # create a list of properties
-        properties = ['Blob id','Class name', 'Centroid x', 'Centroid y', 'Coral area', 'Coral perimeter', 'Coral note']
+        properties = ['Blob id','Class name', 'Centroid x', 'Centroid y', 'Coral area', 'Coral surf area', 'Genet id', 'Coral perimeter', 'Coral note']
 
         # create a list of instances
         name_list = []
@@ -522,11 +522,12 @@ class Annotation(QObject):
         number_of_seg = len(name_list)
         class_name = []
         blob_id = np.zeros(number_of_seg)
+        genet_id = np.zeros(number_of_seg)
         centroid_x = np.zeros(number_of_seg)
         centroid_y = np.zeros(number_of_seg)
         coral_area = np.zeros(number_of_seg)
+        coral_surf_area = np.zeros(number_of_seg)
         coral_perimeter = np.zeros(number_of_seg)
-        coral_maximum_diameter = np.zeros(number_of_seg)
         coral_note = []
 
         for i, blob in enumerate(visible_blobs):
@@ -539,15 +540,23 @@ class Annotation(QObject):
             coral_perimeter[i] = round(blob.perimeter*scale_factor / 10,1)
             coral_note.append(blob.note)
 
+            if blob.surface_area > 0.0:
+               coral_surf_area[i] = round(blob.surface_area * (scale_factor) * (scale_factor) / 100, 2)
+
+            if blob.genet is not None:
+               genet_id[i] = blob.genet
 
         # create a dictionary
         dic = {
             'Blob id' : blob_id,
             'Class name': class_name,
+            'Genet id': genet_id,
             'Centroid x': centroid_x,
             'Centroid y': centroid_y,
             'Coral area': coral_area,
-            'Coral perimeter': coral_perimeter}
+            'Coral surf area': coral_surf_area,
+            'Coral perimeter': coral_perimeter,
+            'Coral note': coral_note}
 
         # create dataframe
         df = pd.DataFrame(dic, columns=properties)

@@ -409,22 +409,21 @@ class TagLab(QWidget):
         blobpanel_layoutH3.addWidget(self.lblCentroidValue)
         blobpanel_layoutH3.addStretch()
 
-  #      lblNote = QLabel("Note:")
-  #      self.editNote = QTextEdit()
-  #       self.editNote.setMinimumWidth(100)
-  #       self.editNote.setMaximumHeight(50)
-  #       self.editNote.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
-  #       self.editNote.textChanged.connect(self.noteChanged)
+        lblNote = QLabel("Note:")
+        self.editNote = QTextEdit()
+        self.editNote.setMinimumWidth(100)
+        self.editNote.setMaximumHeight(50)
+        self.editNote.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
+        self.editNote.textChanged.connect(self.noteChanged)
 
         layout_blobpanel = QVBoxLayout()
         layout_blobpanel.addLayout(blobpanel_layoutH1)
         layout_blobpanel.addLayout(blobpanel_layoutH2)
         layout_blobpanel.addLayout(blobpanel_layoutH3)
-        #layout_blobpanel.addWidget(lblNote)
-        #layout_blobpanel.addWidget(self.editNote)
+        layout_blobpanel.addWidget(lblNote)
+        layout_blobpanel.addWidget(self.editNote)
         self.groupbox_blobpanel.setLayout(layout_blobpanel)
-        self.groupbox_blobpanel.setMaximumHeight(160)
-        #groupbox_blobpanel.setStyleSheet(groupbox_style)
+        # groupbox_blobpanel.setStyleSheet(groupbox_style)
 
         # INFO WIDGET
         self.infoWidget = QtInfoWidget(self)
@@ -2043,6 +2042,12 @@ class TagLab(QWidget):
             img_target_index = self.comboboxTargetImage.currentIndex()
             self.compare_panel.setTable(self.project, img_source_index, img_target_index)
 
+    @pyqtSlot()
+    def noteChanged(self):
+
+        if len(self.activeviewer.selected_blobs) > 0:
+            for blob in self.activeviewer.selected_blobs:
+                blob.note = self.editNote.toPlainText()
 
     def updatePanelInfo(self, blob):
 
@@ -2096,6 +2101,9 @@ class TagLab(QWidget):
                 self.lblSurfaceAreaValue.setTextInteractionFlags(Qt.TextSelectableByMouse)
             else:
                 self.lblSurfaceAreaValue.setText("n.a.")
+        # note
+        self.editNote.setPlainText(blob.note)
+
 
     @pyqtSlot()
     def resetPanelInfo(self):

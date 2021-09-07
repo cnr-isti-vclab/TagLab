@@ -27,7 +27,7 @@ from scipy import ndimage as ndi
 from PyQt5.QtGui import QPainterPath, QPolygonF, QImage, QPixmap, qRgba
 from PyQt5.QtCore import QPointF
 
-from skimage.morphology import square, flood, flood_fill, binary_dilation, binary_erosion
+from skimage.morphology import square, binary_dilation, binary_erosion
 from skimage.measure import points_in_poly
 from skimage.draw import polygon_perimeter, polygon
 import cv2
@@ -160,8 +160,8 @@ class Blob(object):
         blob.class_name = self.class_name
 
         blob.deep_extreme_points = self.deep_extreme_points
+        blob.note = self.note
 
-        self.note = ""
         self.qimg_mask = None
         self.pxmap_mask = None
         self.pxmap_mask_gitem = None
