@@ -17,6 +17,27 @@ from source.Genet import Genet
 from source import utils
 from source.Grid import Grid
 
+def checkDictionaryConsisteny(dict_config, dict):
+    """
+    Check the consistency between two labels' dictionaries.
+    """
+    # check for color consistency between labels
+    for key in dict_config.keys():
+        index = dict.get(key)
+        if index is not None:
+            config_color = dict_config[key]
+            project_color = dict[key].fill
+            if config_color != project_color:
+                msg = "WARNING!! Inconsistent color for label '" + key + "'.\nDictionary color is " + repr(config_color) + ".\nProject color is " + repr(project_color) + " ."
+                print(msg)
+
+    # check for labels present in the project dictionary but not present in config.json
+    for key in dict.keys():
+        index = dict_config.get(key)
+        if index is None and key != 'Empty':
+            msg = "Label '" + key + "' is missing in the configuration. To correctly handle this class add it manually to 'config.json' ."
+            print(msg)
+
 
 def loadProject(taglab_working_dir, filename, labels_dict):
 
@@ -33,6 +54,9 @@ def loadProject(taglab_working_dir, filename, labels_dict):
     else:
         project = Project(**data)
         #force config dictionary
+
+        checkDictionaryConsisteny(labels_dict, project.labels)
+
         project.importLabelsFromConfiguration(labels_dict)
 
     f.close()
