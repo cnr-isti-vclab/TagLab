@@ -32,8 +32,11 @@ def loadProject(taglab_working_dir, filename, labels_dict):
         project = loadOldProject(taglab_working_dir, data, labels_dict)
     else:
         project = Project(**data)
+        #force config dictionary
+        project.importLabelsFromConfiguration(labels_dict)
 
     f.close()
+
 
     project.filename = filename
 
