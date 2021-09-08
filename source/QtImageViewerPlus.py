@@ -23,7 +23,7 @@
 
 import os.path
 from PyQt5.QtCore import Qt, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
-from PyQt5.QtGui import QImage, QPixmap, QPainter, QPainterPath, QPen, QImageReader, QFont
+from PyQt5.QtGui import QImage, QPixmap, QPainter, QPainterPath, QPen, QImageReader, QFont, QBrush
 from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QFileDialog, QGraphicsItem, QGraphicsSimpleTextItem, QPlainTextEdit,QSizePolicy
 
 from source.Undo import Undo
@@ -143,11 +143,10 @@ class QtImageViewerPlus(QtImageViewer):
 
         # DRAWING SETTINGS
         self.border_pen = QPen(Qt.black, 3)
-        #        pen.setJoinStyle(Qt.MiterJoin)
-        #        pen.setCapStyle(Qt.RoundCap)
         self.border_pen.setCosmetic(True)
         self.border_selected_pen = QPen(Qt.white, 3)
         self.border_selected_pen.setCosmetic(True)
+
 
         self.showCrossair = False
         self.mouseCoords = QPointF(0, 0)
@@ -277,7 +276,34 @@ class QtImageViewerPlus(QtImageViewer):
             self.enableGrid()
         else:
             self.disableGrid()
-    #
+
+
+    @pyqtSlot(int)
+    def toggleFill(self, checked):
+
+        if checked == 0:
+            for blob in self.annotations.seg_blobs:
+                blob.qpath_gitem.setBrush(QBrush(Qt.NoBrush))
+        else:
+            for blob in self.annotations.seg_blobs:
+                brush = self.project.classBrushFromName(blob)
+                blob.qpath_gitem.setBrush(brush)
+
+
+
+    @pyqtSlot(int)
+    def toggleBorders(self, checked):
+
+        if checked == 0:
+           for blob in self.annotations.seg_blobs:
+                blob.qpath_gitem.setPen(QPen(Qt.NoPen))
+
+        else:
+            for blob in self.annotations.seg_blobs:
+                pen = self.border_selected_pen if blob in self.selected_blobs else self.border_pen
+                blob.qpath_gitem.setPen(pen)
+
+
     # def removeGrid(self):
     #
     #     if self.image is not None:
@@ -289,6 +315,7 @@ class QtImageViewerPlus(QtImageViewer):
     #
 
     def drawBlob(self, blob, prev=False):
+
         # if it has just been created remove the current graphics item in order to set it again
         if blob.qpath_gitem is not None:
             self.scene.removeItem(blob.qpath_gitem)
@@ -299,13 +326,9 @@ class QtImageViewerPlus(QtImageViewer):
             blob.id_item = None
 
         blob.setupForDrawing()
+        pen = self.border_selected_pen if blob in self.selected_blobs else self.border_pen
 
-        if prev is True:
-            pen = self.border_pen_for_appended_blobs
-        else:
-            pen = self.border_selected_pen if blob in self.selected_blobs else self.border_pen
         brush = self.project.classBrushFromName(blob)
-
         blob.qpath_gitem = self.scene.addPath(blob.qpath, pen, brush)
         blob.qpath_gitem.setZValue(1)
         blob.qpath_gitem.setOpacity(self.transparency_value)
@@ -319,8 +342,7 @@ class QtImageViewerPlus(QtImageViewer):
         blob.id_item.setBrush(Qt.white)
         blob.id_item.setOpacity(0.8)
 
-        #blob.id_item.setDefaultTextColor(Qt.white)
-        #blob.id_item.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+
 
 
     def undrawBlob(self, blob):
@@ -337,6 +359,8 @@ class QtImageViewerPlus(QtImageViewer):
         # current annotations
         for blob in self.annotations.seg_blobs:
             blob.qpath_gitem.setOpacity(self.transparency_value)
+
+
 
     #used for crossair cursor
     def drawForeground(self, painter, rect):

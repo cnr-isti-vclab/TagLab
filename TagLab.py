@@ -31,7 +31,7 @@ import platform
 from PyQt5.QtCore import Qt, QSize, QMargins, QDir, QPoint, QPointF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo, QModelIndex
 from PyQt5.QtGui import QFontDatabase, QFont, QPixmap, QIcon, QKeySequence, QPen, QImageReader
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QFileDialog, QComboBox, QMenuBar, QMenu, QSizePolicy, QScrollArea, \
-    QLabel, QToolButton, QPushButton, QSlider, \
+    QLabel, QToolButton, QPushButton, QSlider, QCheckBox, \
     QMessageBox, QGroupBox, QHBoxLayout, QVBoxLayout, QTextEdit, QLineEdit, QGraphicsView, QAction, QGraphicsItem
 
 # PYTORCH
@@ -264,42 +264,63 @@ class TagLab(QWidget):
 
         ###### LAYOUT MAIN VIEW
 
-        layout_viewer = QVBoxLayout()
         self.comboboxSourceImage = QComboBox()
-        self.comboboxSourceImage.setMinimumWidth(180)
+        self.comboboxSourceImage.setMinimumWidth(200)
         self.comboboxTargetImage = QComboBox()
-        self.comboboxTargetImage.setMinimumWidth(180)
+        self.comboboxTargetImage.setMinimumWidth(200)
 
         self.comboboxSourceImage.currentIndexChanged.connect(self.sourceImageChanged)
         self.comboboxTargetImage.currentIndexChanged.connect(self.targetImageChanged)
 
         self.lblSlider = QLabel("Transparency: 0%")
-        self.sliderTrasparency = QSlider(Qt.Horizontal)
-        self.sliderTrasparency.setFocusPolicy(Qt.StrongFocus)
-        self.sliderTrasparency.setMinimumWidth(200)
-        self.sliderTrasparency.setStyleSheet(slider_style2)
-        self.sliderTrasparency.setMinimum(0)
-        self.sliderTrasparency.setMaximum(100)
-        self.sliderTrasparency.setValue(0)
-        self.sliderTrasparency.setTickInterval(10)
-        self.sliderTrasparency.valueChanged[int].connect(self.sliderTrasparencyChanged)
+        self.sliderTransparency = QSlider(Qt.Horizontal)
+        self.sliderTransparency.setFocusPolicy(Qt.StrongFocus)
+        self.sliderTransparency.setMinimumWidth(200)
+        self.sliderTransparency.setStyleSheet(slider_style2)
+        self.sliderTransparency.setMinimum(0)
+        self.sliderTransparency.setMaximum(100)
+        self.sliderTransparency.setValue(0)
+        self.sliderTransparency.setTickInterval(10)
+        self.sliderTransparency.valueChanged[int].connect(self.sliderTransparencyChanged)
+
+        self.checkBoxFill = QCheckBox("Fill")
+        self.checkBoxFill.setChecked(True)
+        self.checkBoxFill.setMinimumWidth(20)
+        self.checkBoxFill.stateChanged[int].connect(self.viewerplus.toggleFill)
+        self.checkBoxFill.stateChanged[int].connect(self.viewerplus2.toggleFill)
+
+        self.checkBoxBorders = QCheckBox("Borders")
+        self.checkBoxBorders.setChecked(True)
+        self.checkBoxBorders.setMinimumWidth(20)
+        self.checkBoxBorders.stateChanged[int].connect(self.viewerplus.toggleBorders)
+        self.checkBoxBorders.stateChanged[int].connect(self.viewerplus2.toggleBorders)
+
+        self.checkBoxGrid = QCheckBox("Grid")
+        self.checkBoxGrid.setMinimumWidth(20)
+
 
         self.labelZoomInfo = QLabel("100%")
         self.labelMouseLeftInfo = QLabel("0")
         self.labelMouseTopInfo = QLabel("0")
-        self.labelZoomInfo.setFixedWidth(70)
-        self.labelMouseLeftInfo.setFixedWidth(70)
-        self.labelMouseTopInfo.setFixedWidth(70)
+        self.labelZoomInfo.setMinimumWidth(70)
+        self.labelMouseLeftInfo.setMinimumWidth(70)
+        self.labelMouseTopInfo.setMinimumWidth(70)
 
-        layout_slider = QHBoxLayout()
-        layout_slider.addWidget(QLabel("Map name:"))
-        layout_slider.addWidget(self.comboboxSourceImage)
-        layout_slider.addWidget(self.comboboxTargetImage)
-        layout_slider.addWidget(self.lblSlider)
-        layout_slider.addWidget(self.sliderTrasparency)
-        layout_slider.addWidget(self.labelZoomInfo)
-        layout_slider.addWidget(self.labelMouseLeftInfo)
-        layout_slider.addWidget(self.labelMouseTopInfo)
+        layout_header = QHBoxLayout()
+        layout_header.addWidget(QLabel("Map:  "))
+        layout_header.addWidget(self.comboboxSourceImage)
+        layout_header.addWidget(self.comboboxTargetImage)
+        layout_header.addStretch()
+        layout_header.addWidget(self.lblSlider)
+        layout_header.addWidget(self.sliderTransparency)
+        layout_header.addStretch()
+        layout_header.addWidget(self.checkBoxFill)
+        layout_header.addWidget(self.checkBoxBorders)
+        layout_header.addWidget(self.checkBoxGrid)
+        layout_header.addStretch()
+        layout_header.addWidget(self.labelZoomInfo)
+        layout_header.addWidget(self.labelMouseLeftInfo)
+        layout_header.addWidget(self.labelMouseTopInfo)
 
 
         layout_viewers = QHBoxLayout()
@@ -308,7 +329,7 @@ class TagLab(QWidget):
 
         layout_main_view = QVBoxLayout()
         layout_main_view.setSpacing(1)
-        layout_main_view.addLayout(layout_slider)
+        layout_main_view.addLayout(layout_header)
         layout_main_view.addLayout(layout_viewers)
 
         ##### LAYOUT - labels + blob info + navigation map
@@ -376,37 +397,40 @@ class TagLab(QWidget):
         self.lblGenetValue = QLabel("")
 
         blobpanel_layoutH1 = QHBoxLayout()
-        blobpanel_layoutH1.addWidget(QLabel("Id: "))
-        blobpanel_layoutH1.addWidget(self.lblIdValue)
-        blobpanel_layoutH1.addWidget(QLabel("Class: "))
-        blobpanel_layoutH1.addWidget(self.lblClass)
         blobpanel_layoutH1.addWidget(QLabel("Genet: "))
         blobpanel_layoutH1.addWidget(self.lblGenetValue)
+        blobpanel_layoutH1.addWidget(QLabel("  Id: "))
+        blobpanel_layoutH1.addWidget(self.lblIdValue)
+        blobpanel_layoutH1.addWidget(QLabel("  Class: "))
+        blobpanel_layoutH1.addWidget(self.lblClass)
+
 
         blobpanel_layoutH1.addStretch()
 
 
-        self.lblPerimeter = QLabel("Perimeter:")
+        self.lblPerimeter = QLabel("  Perimeter: ")
         self.lblPerimeterValue = QLabel(" ")
-        self.lblArea = QLabel("Area:")
+        self.lblArea = QLabel("Area: ")
         self.lblAreaValue = QLabel(" ")
-        self.lblSurfaceArea = QLabel("Surf. area:")
+        self.lblSurfaceArea = QLabel("  Surf. area: ")
         self.lblSurfaceAreaValue = QLabel(" ")
-        blobpanel_layoutH2 = QHBoxLayout()
-        blobpanel_layoutH2.setSpacing(6)
-        blobpanel_layoutH2.addWidget(self.lblPerimeter)
-        blobpanel_layoutH2.addWidget(self.lblPerimeterValue)
-        blobpanel_layoutH2.addWidget(self.lblArea)
-        blobpanel_layoutH2.addWidget(self.lblAreaValue)
-        blobpanel_layoutH2.addWidget(self.lblSurfaceArea)
-        blobpanel_layoutH2.addWidget(self.lblSurfaceAreaValue)
-        blobpanel_layoutH2.addStretch()
-
         self.lblCentroid = QLabel("Centroid (px): ")
         self.lblCentroidValue = QLabel(" ")
+
+
+        blobpanel_layoutH2 = QHBoxLayout()
+        blobpanel_layoutH2.setSpacing(6)
+        blobpanel_layoutH2.addWidget(self.lblCentroid)
+        blobpanel_layoutH2.addWidget(self.lblCentroidValue)
+        blobpanel_layoutH2.addWidget(self.lblPerimeter)
+        blobpanel_layoutH2.addWidget(self.lblPerimeterValue)
+        blobpanel_layoutH2.addStretch()
+
         blobpanel_layoutH3 = QHBoxLayout()
-        blobpanel_layoutH3.addWidget(self.lblCentroid)
-        blobpanel_layoutH3.addWidget(self.lblCentroidValue)
+        blobpanel_layoutH3.addWidget(self.lblArea)
+        blobpanel_layoutH3.addWidget(self.lblAreaValue)
+        blobpanel_layoutH3.addWidget(self.lblSurfaceArea)
+        blobpanel_layoutH3.addWidget(self.lblSurfaceAreaValue)
         blobpanel_layoutH3.addStretch()
 
         lblNote = QLabel("Note:")
@@ -485,7 +509,7 @@ class TagLab(QWidget):
         #################################
 
         # set default opacity
-        self.sliderTrasparency.setValue(50)
+        self.sliderTransparency.setValue(50)
         self.transparency_value = 0.5
 
         # EVENTS
@@ -1782,7 +1806,7 @@ class TagLab(QWidget):
 
 
     @pyqtSlot()
-    def sliderTrasparencyChanged(self):
+    def sliderTransparencyChanged(self):
         #TODO should be (self, value) as the signal is supposed to send a value!
         value = self.sender().value()
         # update transparency value
@@ -2055,20 +2079,20 @@ class TagLab(QWidget):
         self.lblIdValue.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.lblClass.setText(blob.class_name)
         self.lblClass.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        self.lblGenetValue.setText("" if blob.genet == None else str(blob.genet))
+        self.lblGenetValue.setText("n.a." if blob.genet == None else str(blob.genet))
         self.lblGenetValue.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         if self.activeviewer.image.map_px_to_mm_factor == "":
-            txt_perimeter = "Perimeter (px):"
+            txt_perimeter = "  Perimeter (px):"
             txt_area = "Area (px<sup>2</sup>):"
-            txt_surface_area = "Surf. area (px<sup>2</sup>):"
+            txt_surface_area = "  Surf. area (px<sup>2</sup>):"
             factor = 1.0
             scaled_perimeter = blob.perimeter
             scaled_area = blob.area
         else:
-            txt_perimeter = "Perimeter (cm):"
+            txt_perimeter = "  Perimeter (cm):"
             txt_area = "Area (cm<sup>2</sup>):"
-            txt_surface_area = "Surf. area (cm<sup>2</sup>):"
+            txt_surface_area = "  Surf. area (cm<sup>2</sup>):"
             factor = float(self.activeviewer.image.map_px_to_mm_factor)
             scaled_perimeter = blob.perimeter * factor / 10.0
             scaled_area = blob.area * factor * factor / 100.0
@@ -2113,13 +2137,13 @@ class TagLab(QWidget):
         self.lblGenetValue.setText("")
         txt = " "
         self.lblCentroidValue.setText(txt)
-        txtP = "Perimeter (cm):"
+        txtP = "  Perimeter (cm):"
         self.lblPerimeter.setText(txtP)
         self.lblPerimeterValue.setText(txt)
         txtA = "Area (cm<sup>2</sup>):"
         self.lblArea.setText(txtA)
         self.lblAreaValue.setText(txt)
-        txtS = "Surf. area (cm<sup>2</sup>):"
+        txtS = "  Surf. area (cm<sup>2</sup>):"
         self.lblSurfaceArea.setText(txtS)
         self.lblSurfaceAreaValue.setText(txt)
 
