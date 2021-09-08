@@ -3407,7 +3407,6 @@ class TagLab(QWidget):
         if len(self.project.images) > 0:
             self.showImage(self.project.images[0])
 
-        self.project.importLabelsFromConfiguration(self.labels_dictionary)
         self.labels_widget.setLabels(self.project)
 
         self.updateImageSelectionMenu()

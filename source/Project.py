@@ -5,7 +5,7 @@ import json
 
 from PyQt5.QtCore import QDir, QFileInfo
 from PyQt5.QtGui import QBrush, QColor
-from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QFileDialog, QMessageBox
 
 from source.Image import Image
 from source.Channel import Channel
@@ -21,6 +21,10 @@ def checkDictionaryConsisteny(dict_config, dict):
     """
     Check the consistency between two labels' dictionaries.
     """
+
+    messages = ""
+    inconsistencies = 0
+
     # check for color consistency between labels
     for key in dict_config.keys():
         index = dict.get(key)
@@ -28,15 +32,22 @@ def checkDictionaryConsisteny(dict_config, dict):
             config_color = dict_config[key]
             project_color = dict[key].fill
             if config_color != project_color:
-                msg = "WARNING!! Inconsistent color for label '" + key + "'.\nDictionary color is " + repr(config_color) + ".\nProject color is " + repr(project_color) + " ."
-                print(msg)
+                msg = "\n" + str(inconsistencies) + ") Inconsistent color for label '" + key + "'.\nDictionary color is " + repr(config_color) + ".\nProject color is " + repr(project_color) + " ."
+                messages += msg
+                inconsistencies += 1
 
     # check for labels present in the project dictionary but not present in config.json
     for key in dict.keys():
         index = dict_config.get(key)
         if index is None and key != 'Empty':
-            msg = "Label '" + key + "' is missing in the configuration. To correctly handle this class add it manually to 'config.json' ."
-            print(msg)
+            msg = "\n" + str(inconsistencies) + ") Label '" + key + "' is missing in the configuration. To correctly handle this class add it manually to 'config.json' ."
+            messages += msg
+            inconsistencies += 1
+
+    box = QMessageBox()
+    box.setWindowTitle("WARNING!! Dictionary inconsistencies.")
+    box.setText(messages)
+    box.exec()
 
 
 def loadProject(taglab_working_dir, filename, labels_dict):
@@ -53,14 +64,12 @@ def loadProject(taglab_working_dir, filename, labels_dict):
         project = loadOldProject(taglab_working_dir, data, labels_dict)
     else:
         project = Project(**data)
+
         #force config dictionary
-
         checkDictionaryConsisteny(labels_dict, project.labels)
-
         project.importLabelsFromConfiguration(labels_dict)
 
     f.close()
-
 
     project.filename = filename
 
