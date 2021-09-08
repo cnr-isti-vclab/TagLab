@@ -99,6 +99,15 @@ if osused == 'Linux':
         print('GDAL version installed: ' + output)
     else:
         raise Exception('Impossible to access to gdal-config binary.\nInstallation aborted.')
+    print('Trying to install libxcb-xinerama0...')
+    from subprocess import STDOUT, check_call
+    import os
+    try:
+        check_call(['sudo', 'apt-get', 'install', '-y', 'libxcb-xinerama0'],
+                   stdout=open(os.devnull, 'wb'), stderr=STDOUT)
+    except:
+        print('Impossible to install libxcb-xinerama0. If TagLab does not start, please install manually libxcb-xinerama0.')
+
 elif osused == 'Darwin':
     result = subprocess.getstatusoutput('gdal-config --version')
     output = result[1]
