@@ -189,10 +189,13 @@ class QtMapViewer(QGraphicsView):
     def mousePressEvent(self, event):
 
         scenePos = self.mapToScene(event.pos())
+        if self.imgwidth == 0 or self.imgheight == 0:
+            return
 
         if event.button() == Qt.LeftButton:
             if self.panEnabled:
                 self.setDragMode(QGraphicsView.ScrollHandDrag)
+
 
             clippedCoords = self.clipScenePos(scenePos)
             clippedCoords[0] = clippedCoords[0] / self.imgwidth
@@ -204,6 +207,8 @@ class QtMapViewer(QGraphicsView):
         QGraphicsView.mouseMoveEvent(self, event)
         scenePos = self.mapToScene(event.pos())
 
+        if self.imgwidth == 0 or self.imgheight == 0:
+            return
         if event.buttons() == Qt.LeftButton:
             clippedCoords = self.clipScenePos(scenePos)
             clippedCoords[0] = clippedCoords[0] / self.imgwidth
