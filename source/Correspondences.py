@@ -133,7 +133,8 @@ class Correspondences(object):
         else:
             self.set([], [blob])
             self.data = self.data[self.data['Blob2'] != blob.id]
-        pass
+
+        self.data.reset_index(drop=True, inplace=True)
 
     def updateBlob(self, image, old_blob, new_blob):
         if old_blob.class_name != new_blob.class_name:

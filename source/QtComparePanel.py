@@ -340,10 +340,10 @@ class QtComparePanel(QWidget):
         self.data_table.setItemDelegateForColumn(6, self.combodelegate2)
         self.data_table.setEditTriggers(QAbstractItemView.DoubleClicked)
 
-        if self.correspondences.isGenetInfoAvailable():
-            self.data_table.horizontalHeader().showSection(0)
-        else:
-            self.data_table.horizontalHeader().hideSection(0)
+#        if self.correspondences.isGenetInfoAvailable():
+        self.data_table.horizontalHeader().showSection(0)
+#        else:
+#            self.data_table.horizontalHeader().hideSection(0)
 
         self.data_table.update()
 
@@ -383,10 +383,10 @@ class QtComparePanel(QWidget):
         self.sortfilter.endResetModel()
         self.model.endResetModel()
 
-        if corr.isGenetInfoAvailable():
-            self.data_table.horizontalHeader().showSection(0)
-        else:
-            self.data_table.horizontalHeader().hideSection(0)
+#        if corr.isGenetInfoAvailable():
+        self.data_table.horizontalHeader().showSection(0)
+#        else:
+#            self.data_table.horizontalHeader().hideSection(0)
 
         self.data_table.update()
 
