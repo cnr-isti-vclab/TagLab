@@ -32,7 +32,7 @@ from PyQt5.QtCore import Qt, QSize, QMargins, QDir, QPoint, QPointF, QRectF, QTi
 from PyQt5.QtGui import QFontDatabase, QFont, QPixmap, QIcon, QKeySequence, QPen, QImageReader
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QFileDialog, QComboBox, QMenuBar, QMenu, QSizePolicy, QScrollArea, \
     QLabel, QToolButton, QPushButton, QSlider, QCheckBox, \
-    QMessageBox, QGroupBox, QHBoxLayout, QVBoxLayout, QTextEdit, QLineEdit, QGraphicsView, QAction, QGraphicsItem
+    QMessageBox, QGroupBox, QHBoxLayout, QVBoxLayout, QSplitter, QTextEdit, QAction
 
 # PYTORCH
 try:
@@ -462,15 +462,17 @@ class TagLab(QWidget):
         self.viewerplus2.viewUpdated[QRectF].connect(self.mapviewer.drawOverlayImage)
 
         layout_labels = QVBoxLayout()
+        #layout_labels = QSplitter()
+        #layout_labels.setOrientation(Qt.Vertical)
         self.mapviewer.setStyleSheet("background-color: rgb(40,40,40); border:none")
         layout_labels.addWidget(self.infoWidget)
         layout_labels.addWidget(self.groupbox_labels)
         layout_labels.addWidget(self.groupbox_comparison)
         layout_labels.addWidget(self.groupbox_blobpanel)
-        layout_labels.addStretch()
+        #layout_labels.addStretch()
         layout_labels.addWidget(self.mapviewer)
 
-        layout_labels.setAlignment(self.mapviewer, Qt.AlignHCenter)
+        #layout_labels.setAlignment(self.mapviewer, Qt.AlignHCenter)
 
         self.groupbox_comparison.hide()
         self.infoWidget.hide()
@@ -480,8 +482,22 @@ class TagLab(QWidget):
 
         main_view_layout = QHBoxLayout()
         main_view_layout.addLayout(layout_tools)
-        main_view_layout.addLayout(layout_main_view)
-        main_view_layout.addLayout(layout_labels)
+
+        main_view_splitter = QSplitter()
+        widget_main_view = QWidget()
+        widget_main_view.setLayout(layout_main_view)
+        main_view_splitter.addWidget(widget_main_view)
+
+        widget_labels = QWidget()
+        widget_labels.setLayout(layout_labels)
+        main_view_splitter.addWidget(widget_labels)
+        #main_view_layout.addLayout(layout_labels)
+    
+
+        #widget_labels = QWidget()
+        #widget_labels.setLayout(layout_labels)
+        #main_view_splitter.addWidget
+        main_view_layout.addWidget(main_view_splitter)
 
         main_view_layout.setStretchFactor(layout_main_view, 8)
         main_view_layout.setStretchFactor(layout_labels, 3)
@@ -2759,10 +2775,10 @@ class TagLab(QWidget):
 
         self.mapWidget.close()
 
-    def resizeEvent(self, event):
-
-        w = self.groupbox_labels.width()
-        self.mapviewer.setNewWidth(w)
+#    def resizeEvent(self, event):
+#        pass
+        #w = self.groupbox_labels.width()
+        #self.mapviewer.setNewWidth(w)
 
     def showImage(self, image):
 
