@@ -2946,7 +2946,7 @@ class TagLab(QWidget):
             return
 
         filters = "Image (*.png *.jpg)"
-        filename, _ = QFileDialog.getOpenFileName(self, "Input Map File", "", filters)
+        filename, _ = QFileDialog.getOpenFileName(self, "Input Label Map File", "", filters)
         if not filename:
             return
 
