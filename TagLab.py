@@ -32,7 +32,7 @@ from PyQt5.QtCore import Qt, QSize, QMargins, QDir, QPoint, QPointF, QRectF, QTi
 from PyQt5.QtGui import QFontDatabase, QFont, QPixmap, QIcon, QKeySequence, QPen, QImageReader
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QFileDialog, QComboBox, QMenuBar, QMenu, QSizePolicy, QScrollArea, \
     QLabel, QToolButton, QPushButton, QSlider, QCheckBox, \
-    QMessageBox, QGroupBox, QHBoxLayout, QVBoxLayout, QSplitter, QTextEdit, QAction
+    QMessageBox, QGroupBox, QLayout, QHBoxLayout, QVBoxLayout, QFrame, QDockWidget, QTextEdit, QAction
 
 # PYTORCH
 try:
@@ -83,7 +83,7 @@ LOG_FILENAME = "TagLab.log"
 logging.basicConfig(level=logging.DEBUG, filemode='w', filename=LOG_FILENAME, format = '%(asctime)s %(levelname)-8s %(message)s')
 logfile = logging.getLogger("tool-logger")
 
-class TagLab(QWidget):
+class TagLab(QMainWindow):
 
     def __init__(self, parent=None):
         super(TagLab, self).__init__(parent)
@@ -326,6 +326,8 @@ class TagLab(QWidget):
         layout_viewers = QHBoxLayout()
         layout_viewers.addWidget(self.viewerplus)
         layout_viewers.addWidget(self.viewerplus2)
+        layout_viewers.setStretchFactor(self.viewerplus, 1)
+        layout_viewers.setStretchFactor(self.viewerplus2, 1)
 
         layout_main_view = QVBoxLayout()
         layout_main_view.setSpacing(1)
@@ -369,7 +371,7 @@ class TagLab(QWidget):
               padding: 0 0px;\
           }"
 
-        self.groupbox_labels = QGroupBox("Labels")
+        self.groupbox_labels = QGroupBox()
        # self.groupbox_labels.setStyleSheet("border: 2px solid rgb(40,40,40)")
 
         layout_groupbox = QVBoxLayout()
@@ -382,7 +384,7 @@ class TagLab(QWidget):
         self.compare_panel.areaModeChanged[str].connect(self.updateAreaMode)
         self.compare_panel.data_table.clicked.connect(self.showConnectionCluster)
 
-        self.groupbox_comparison = QGroupBox("Comparison")
+        self.groupbox_comparison = QGroupBox()
        # self.groupbox_comparison.setStyleSheet(groupbox_style)
 
         layout_groupbox2 = QVBoxLayout()
@@ -391,7 +393,7 @@ class TagLab(QWidget):
         self.groupbox_comparison.setLayout(layout_groupbox2)
 
         # BLOB INFO
-        self.groupbox_blobpanel = QGroupBox("Region Info")
+        self.groupbox_blobpanel = QGroupBox()
         self.lblIdValue = QLabel(" ")
         self.lblClass = QLabel("Empty")
         self.lblGenetValue = QLabel("")
@@ -405,7 +407,7 @@ class TagLab(QWidget):
         blobpanel_layoutH1.addWidget(self.lblClass)
 
 
-        blobpanel_layoutH1.addStretch()
+        #blobpanel_layoutH1.addStretch()
 
 
         self.lblPerimeter = QLabel("  Perimeter: ")
@@ -441,12 +443,15 @@ class TagLab(QWidget):
         self.editNote.textChanged.connect(self.noteChanged)
 
         layout_blobpanel = QVBoxLayout()
+        #layout_blobpanel.setSizeConstraint(QVBoxLayout.SetFixedSize)
         layout_blobpanel.addLayout(blobpanel_layoutH1)
         layout_blobpanel.addLayout(blobpanel_layoutH2)
         layout_blobpanel.addLayout(blobpanel_layoutH3)
         layout_blobpanel.addWidget(lblNote)
         layout_blobpanel.addWidget(self.editNote)
         self.groupbox_blobpanel.setLayout(layout_blobpanel)
+        self.groupbox_blobpanel.setMaximumHeight(200)
+
         # groupbox_blobpanel.setStyleSheet(groupbox_style)
 
         # INFO WIDGET
@@ -458,49 +463,51 @@ class TagLab(QWidget):
         self.viewerplus.viewUpdated[QRectF].connect(self.mapviewer.drawOverlayImage)
         self.mapviewer.leftMouseButtonPressed[float, float].connect(self.viewerplus.center)
         self.mapviewer.mouseMoveLeftPressed[float, float].connect(self.viewerplus.center)
-
+        self.mapviewer.setStyleSheet("background-color: rgb(40,40,40); border:none")
         self.viewerplus2.viewUpdated[QRectF].connect(self.mapviewer.drawOverlayImage)
 
-        layout_labels = QVBoxLayout()
-        #layout_labels = QSplitter()
-        #layout_labels.setOrientation(Qt.Vertical)
-        self.mapviewer.setStyleSheet("background-color: rgb(40,40,40); border:none")
-        layout_labels.addWidget(self.infoWidget)
-        layout_labels.addWidget(self.groupbox_labels)
-        layout_labels.addWidget(self.groupbox_comparison)
-        layout_labels.addWidget(self.groupbox_blobpanel)
-        #layout_labels.addStretch()
-        layout_labels.addWidget(self.mapviewer)
 
+        #DOCK
+        self.infodock = QDockWidget("Info", self)
+        self.infodock.setWidget(self.infoWidget)
+
+        self.labelsdock = QDockWidget("Labels", self)
+        self.labelsdock.setWidget(self.groupbox_labels)
+
+        self.comparisondock = QDockWidget("Comparison", self)
+        self.comparisondock.setWidget(self.groupbox_comparison)
+
+        self.blobdock = QDockWidget("Region info", self)
+        self.blobdock.setWidget(self.groupbox_blobpanel)
+        self.blobdock.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Minimum)
+        self.groupbox_blobpanel.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Minimum)
+
+
+        self.mapdock = QDockWidget("Map", self)
+        self.mapdock.setWidget(self.mapviewer)
+
+        for dock in (self.infodock, self.labelsdock, self.comparisondock, self.blobdock, self.mapdock):
+            dock.setAllowedAreas(Qt.RightDockWidgetArea)
+            self.addDockWidget(Qt.RightDockWidgetArea, dock)
+
+        self.setDockOptions(self.AnimatedDocks)
         #layout_labels.setAlignment(self.mapviewer, Qt.AlignHCenter)
 
-        self.groupbox_comparison.hide()
-        self.infoWidget.hide()
+        self.comparisondock.hide()
+
+        self.infodock.hide()
         self.compare_panel.setMinimumHeight(600)
 
         ##### MAIN LAYOUT
 
-        main_view_layout = QHBoxLayout()
-        main_view_layout.addLayout(layout_tools)
+        central_widget_layout = QHBoxLayout()
+        central_widget_layout.addLayout(layout_tools)
+        central_widget_layout.addLayout(layout_main_view)
 
-        main_view_splitter = QSplitter()
-        widget_main_view = QWidget()
-        widget_main_view.setLayout(layout_main_view)
-        main_view_splitter.addWidget(widget_main_view)
-
-        widget_labels = QWidget()
-        widget_labels.setLayout(layout_labels)
-        main_view_splitter.addWidget(widget_labels)
-        #main_view_layout.addLayout(layout_labels)
-    
-
-        #widget_labels = QWidget()
-        #widget_labels.setLayout(layout_labels)
-        #main_view_splitter.addWidget
-        main_view_layout.addWidget(main_view_splitter)
-
-        main_view_layout.setStretchFactor(layout_main_view, 8)
-        main_view_layout.setStretchFactor(layout_labels, 3)
+        #main_view_splitter = QSplitter()
+        central_widget = QWidget()
+        central_widget.setLayout(central_widget_layout)
+        self.setCentralWidget(central_widget)
 
         self.filemenu = None
         self.submenuEdit = None
@@ -511,13 +518,16 @@ class TagLab(QWidget):
         self.demmenu = None
         self.helpmenu = None
 
-        self.menubar = self.createMenuBar()
+        self.setMenuBar(self.createMenuBar())
 
-        main_layout = QVBoxLayout()
-        main_layout.addWidget(self.menubar)
-        main_layout.addLayout(main_view_layout)
+        viewMenu = self.menuBar().addMenu("&View");
+        
+        viewMenu.addAction(self.labelsdock.toggleViewAction())
+        #viewMenu.addAction(self.infodock.toggleViewAction())
+        viewMenu.addAction(self.blobdock.toggleViewAction())
+        viewMenu.addAction(self.mapdock.toggleViewAction())
+        viewMenu.addAction(self.comparisondock.toggleViewAction())
 
-        self.setLayout(main_layout)
 
         self.setProjectTitle("NONE")
 
@@ -1451,7 +1461,7 @@ class TagLab(QWidget):
 
         self.viewerplus2.hide()
         self.comboboxTargetImage.hide()
-        self.groupbox_blobpanel.show()
+        self.blobdock.show()
 
         if self.comparemenu is not None:
             splitScreenAction = self.comparemenu.actions()[0]
@@ -1514,7 +1524,7 @@ class TagLab(QWidget):
             if splitScreenAction is not None:
                 splitScreenAction.setText("Disable Split Screen")
 
-        self.groupbox_blobpanel.hide()
+        self.blobdock.hide()
 
         self.btnSplitScreen.setChecked(True)
         self.split_screen_flag = True
@@ -1954,15 +1964,13 @@ class TagLab(QWidget):
             if self.split_screen_flag == False:
                 self.enableSplitScreen()
 
-            self.groupbox_labels.hide()
-            self.groupbox_comparison.show()
-
+            self.labelsdock.hide()
+            self.comparisondock.show()
         else:
-
             # settings when MATCH tool is disactive
 
-            self.groupbox_comparison.hide()
-            self.groupbox_labels.show()
+            self.comparisondock.hide()
+            self.labelsdock.show()
 
 
     @pyqtSlot()
