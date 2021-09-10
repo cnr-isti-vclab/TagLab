@@ -420,8 +420,14 @@ class QtImageViewerPlus(QtImageViewer):
             self.enablePan()
 
     def resetTools(self):
+
         self.tools.resetTools()
-        self.showCrossair = False
+
+        if self.tools.tool == "DEEPEXTREME":
+            self.showCrossair = True
+        else:
+            self.showCrossair = False
+
         self.scene.invalidate(self.scene.sceneRect())
         self.setDragMode(QGraphicsView.NoDrag)
 
