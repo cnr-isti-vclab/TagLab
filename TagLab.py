@@ -3803,6 +3803,10 @@ if __name__ == '__main__':
 
     app.setStyleSheet("QToolTip {color: white; background-color: rgb(49,51,53); border: none; }")
 
+    app.setStyleSheet("QMainWindow::separator { width:5px; height:5px; color: red; }" + 
+        "QMainWindow::separator:hover { background: #888; }" + 
+        "QDockWidget::close-button, QDockWidget::float-button { background:#fff; }")
+
     # set the application font
     if platform.system() != "Darwin":
         QFD = QFontDatabase()
