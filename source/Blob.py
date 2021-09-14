@@ -422,7 +422,7 @@ class Blob(object):
         for inner_contour in self.inner_contours:
             qpoly_inner = QPolygonF()
             for i in range(inner_contour.shape[0]):
-                qpoly_inner << QPointF(inner_contour[i, 0], inner_contour[i, 1])
+                qpoly_inner << QPointF(inner_contour[i, 0] + 0.5, inner_contour[i, 1] + 0.5)
 
             path_inner = QPainterPath()
             path_inner.addPolygon(qpoly_inner)

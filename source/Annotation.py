@@ -191,6 +191,7 @@ class Annotation(QObject):
 
             if original[y][x] == 0:
                 continue
+            #the point in points were painted with zeros and we need to assign to some label (we pick the largest of the neighbors
             largest = 0
             largest = max(label_image[y+1][x], largest)
             largest = max(label_image[y-1][x], largest)
