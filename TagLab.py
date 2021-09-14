@@ -1312,12 +1312,13 @@ class TagLab(QMainWindow):
         logfile.info(msg)
 
         if event.key() == Qt.Key_Escape:
-            if self.activeviewer is not None:
+            for viewer in (self.viewerplus, self.viewerplus2):
+            #if self.activeviewer is not None:
             # RESET CURRENT OPERATION
-                self.activeviewer.resetSelection()
-                self.activeviewer.resetTools()
+                viewer.resetSelection()
+                viewer.resetTools()
 
-                message = "[TOOL][" + self.activeviewer.tools.tool + "] Current operation has been canceled."
+                message = "[TOOL][" + viewer.tools.tool + "] Current operation has been canceled."
                 logfile.info(message)
 
         elif event.key() == Qt.Key_S and modifiers & Qt.ControlModifier:
