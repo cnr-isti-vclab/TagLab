@@ -44,10 +44,11 @@ def checkDictionaryConsisteny(dict_config, dict):
             messages += msg
             inconsistencies += 1
 
-    box = QMessageBox()
-    box.setWindowTitle("WARNING!! Dictionary inconsistencies.")
-    box.setText(messages)
-    box.exec()
+    if inconsistencies > 0:
+        box = QMessageBox()
+        box.setWindowTitle("WARNING!! Dictionary inconsistencies.")
+        box.setText(messages)
+        box.exec()
 
 
 def loadProject(taglab_working_dir, filename, labels_dict):
