@@ -195,6 +195,10 @@ class Correspondences(object):
         for id in targetorphaned:
             if id < 0: # born and dead result in orphaned
                 continue
+            #we need to check if the orphaned has other relationships.
+            relatives = self.data[self.data['Blob2'] == id]
+            if len(relatives):
+                continue
             target = self.target.annotations.blobById(id)
             row = [-1, -1, target.id, 0.0, self.area_in_sq_cm(target.area, False), target.class_name, "born", type]
             df = pd.DataFrame([row], columns=self.data.columns)
@@ -202,6 +206,10 @@ class Correspondences(object):
 
         for id in sourceorphaned:
             if id < 0:
+                continue
+            #we need to check if the orphaned has other relationships.
+            relatives = self.data[self.data['Blob1'] == id]
+            if len(relatives):
                 continue
             source = self.source.annotations.blobById(id)
             row = [-1, source.id, -1, self.area_in_sq_cm(source.area, True), 0.0, source.class_name, "dead", type]
