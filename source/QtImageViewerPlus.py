@@ -460,10 +460,10 @@ class QtImageViewerPlus(QtImageViewer):
         self.logfile.info("[SELECTION][DOUBLE-CLICK] Selection ends.")
 
     def updateCellState(self, state):
-
-        pos = self.mapFromGlobal(self.cursor().pos())
-        scenePos = self.mapToScene(pos)
-        self.image.grid.changeCellState(scenePos.x(), scenePos.y(), state)
+        if self.imag.grid is not None:
+            pos = self.mapFromGlobal(self.cursor().pos())
+            scenePos = self.mapToScene(pos)
+            self.image.grid.changeCellState(scenePos.x(), scenePos.y(), state)
 
     def addNote(self):
         """

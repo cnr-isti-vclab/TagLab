@@ -183,6 +183,7 @@ class QtComparePanel(QWidget):
         self.data_table.setSelectionMode(QAbstractItemView.MultiSelection)
         self.data_table.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.data_table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.data_table.setSortingEnabled(True)
 
         self.model = None
         self.data = None
@@ -393,14 +394,14 @@ class QtComparePanel(QWidget):
     def selectRows(self, rows):
         self.data_table.clearSelection()
 
-        indexes = [self.model.index(r, 0) for r in rows]
+        indexes = [self.sortfilter.mapFromSource(self.model.index(r, 0)) for r in rows]
         mode = QItemSelectionModel.Select | QItemSelectionModel.Rows
         [self.data_table.selectionModel().select(index, mode) for index in indexes]
 
         if len(rows) > 0:
             value = self.data_table.horizontalScrollBar().value()
             column = self.data_table.columnAt(value)
-            self.data_table.scrollTo(self.data_table.model().index(rows[0], column))
+            self.data_table.scrollTo(self.data_table.model().index(indexes[0].column(), column))
 
     def getAreaMode(self):
 
