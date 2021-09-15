@@ -809,6 +809,10 @@ class QtImageViewerPlus(QtImageViewer):
         if self.tools.tool == "RITM" and self.tools.tools["RITM"].hasPoints():
             self.tools.tools["RITM"].undo_click()
             return
+        
+        if self.tools.tool in ["FREEHAND", "CUT", "EDITBORDER"]:
+            if self.tools.tools["EDITBORDER"].edit_points.undo():
+                return
 
         operation = self.undo_data.undo()
         if operation is None:
