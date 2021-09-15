@@ -372,7 +372,7 @@ class TagLab(QMainWindow):
           }"
 
         self.groupbox_labels = QGroupBox()
-       # self.groupbox_labels.setStyleSheet("border: 2px solid rgb(40,40,40)")
+        self.groupbox_labels.setStyleSheet("border: 2px solid rgb(255,40,40); padding: 0px;")
 
         layout_groupbox = QVBoxLayout()
         layout_groupbox.addWidget(self.scroll_area_labels_panel)
@@ -470,17 +470,22 @@ class TagLab(QMainWindow):
         #DOCK
         self.infodock = QDockWidget("Info", self)
         self.infodock.setWidget(self.infoWidget)
+        self.infoWidget.setStyleSheet("padding: 0px")
 
         self.labelsdock = QDockWidget("Labels", self)
         self.labelsdock.setWidget(self.groupbox_labels)
+        self.groupbox_labels.setStyleSheet("padding: 0px")
 
         self.comparisondock = QDockWidget("Comparison", self)
         self.comparisondock.setWidget(self.groupbox_comparison)
+        self.groupbox_comparison.setStyleSheet("padding: 0px")
+
 
         self.blobdock = QDockWidget("Region info", self)
         self.blobdock.setWidget(self.groupbox_blobpanel)
         self.blobdock.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Minimum)
         self.groupbox_blobpanel.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Minimum)
+        self.groupbox_blobpanel.setStyleSheet("padding: 0px")
 
 
         self.mapdock = QDockWidget("Map", self)

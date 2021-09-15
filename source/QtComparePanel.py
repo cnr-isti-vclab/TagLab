@@ -18,7 +18,7 @@
 # for more details.                                               
 from PyQt5.QtCore import Qt, QAbstractTableModel, QItemSelectionModel, QSortFilterProxyModel, QRegExp, QModelIndex, pyqtSlot, pyqtSignal
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QComboBox, QLabel, QTableView, \
-    QHBoxLayout, QVBoxLayout, QAbstractItemView, QStyledItemDelegate, QAction, QMenu
+    QHBoxLayout, QVBoxLayout, QAbstractItemView, QStyledItemDelegate, QAction, QMenu, QToolButton, QGridLayout, QLineEdit
 from PyQt5.QtGui import QColor
 from pathlib import Path
 
@@ -191,7 +191,6 @@ class QtComparePanel(QWidget):
         self.combodelegate1 = ComboBoxItemDelegate(self.data_table)
         self.combodelegate2 = ComboBoxItemDelegate(self.data_table)
 
-        lblFilter = QLabel("Filter: ")
         self.comboboxFilter = QComboBox()
         self.comboboxFilter.setMinimumWidth(80)
         self.comboboxFilter.addItem("All")
@@ -201,22 +200,52 @@ class QtComparePanel(QWidget):
         self.comboboxFilter.addItem("Grow")
         self.comboboxFilter.addItem("Shrink")
 
-        lblAreaMode = QLabel("Compare: ")
         self.comboboxAreaMode = QComboBox()
         self.comboboxAreaMode.setMinimumWidth(80)
         self.comboboxAreaMode.addItem("Area")
         self.comboboxAreaMode.addItem("Surface Area")
 
-        filter_layout = QHBoxLayout()
-        filter_layout.addWidget(lblFilter)
-        filter_layout.addWidget(self.comboboxFilter)
-        filter_layout.addStretch()
-        filter_layout.addWidget(lblAreaMode)
-        filter_layout.addWidget(self.comboboxAreaMode)
-        filter_layout.addStretch()
+        self.searchId1 = QLineEdit()
+        self.searchId1.textChanged.connect(lambda text: self.selectById(text, True))
+        self.searchId2 = QLineEdit()
+        self.searchId2.textChanged.connect(lambda text: self.selectById(text, False))
 
+#https://stackoverflow.com/questions/32476006/how-to-make-an-expandable-collapsable-section-widget-in-qt
+        
+        filter_layout = QGridLayout()
+        filter_layout.addWidget(QLabel("Filter: "), 0, 0, Qt.AlignRight)
+        filter_layout.addWidget(self.comboboxFilter, 0, 1)
+        filter_layout.addWidget(QLabel("Compare: "), 0, 2)
+        filter_layout.addWidget(self.comboboxAreaMode, 0, 3)
+        filter_layout.addWidget(QLabel("Search Id1: "), 1, 0)
+        filter_layout.addWidget(self.searchId1, 1, 1)
+        filter_layout.addWidget(QLabel("Search Id2: "), 1, 2)
+        filter_layout.addWidget(self.searchId2, 1, 3)
+
+
+        self.searchWidget =QWidget()
+        self.searchWidget.hide()
+        #self.searchWidget.setStyleSheet("QLabel { text-align: right; }")
+        self.searchWidget.setLayout(filter_layout)
+        
+        searchButton = QToolButton(self)
+        searchButton.setStyleSheet("QToolButton { border: none; }")
+        searchButton.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        searchButton.setArrowType(Qt.ArrowType.RightArrow)
+        searchButton.setText("Search and filter")
+        searchButton.setCheckable(True)
+        searchButton.setChecked(False)
+
+        def animate(checked):
+            arrow_type = Qt.DownArrow if checked else Qt.RightArrow
+            searchButton.setArrowType(arrow_type)
+            self.searchWidget.setVisible(checked)
+
+        searchButton.clicked.connect(animate)
+        
         layout = QVBoxLayout()
-        layout.addLayout(filter_layout)
+        layout.addWidget(searchButton)
+        layout.addWidget(self.searchWidget)
         layout.addWidget(self.data_table)
         self.setLayout(layout)
 
@@ -225,22 +254,39 @@ class QtComparePanel(QWidget):
 
         self.setContextMenuPolicy(Qt.CustomContextMenu)
 
+        self.genetAction = QAction("Genet", self)
+        self.genetAction.setCheckable(True)
+        self.genetAction.setChecked(True)
+        self.genetAction.triggered.connect(
+            lambda checked: self.data_table.horizontalHeader().setSectionHidden(0, not checked))
+
         self.areasAction = QAction("Area", self)
         self.areasAction.setCheckable(True)
         self.areasAction.setChecked(True)
-        self.areasAction.triggered.connect(self.toggleAreaColumns)
+        self.areasAction.triggered.connect(
+            lambda checked:
+                (self.data_table.horizontalHeader().setSectionHidden(3, not checked),
+                self.data_table.horizontalHeader().setSectionHidden(4, not checked)))
+
         self.classAction = QAction("Class", self)
         self.classAction.setCheckable(True)
         self.classAction.setChecked(True)
-        self.classAction.triggered.connect(self.toggleClassColumn)
+        self.classAction.triggered.connect(
+            lambda checked: self.data_table.horizontalHeader().setSectionHidden(5, not checked))
+
         self.actionAction = QAction("Action", self)
         self.actionAction.setCheckable(True)
         self.actionAction.setChecked(True)
-        self.actionAction.triggered.connect(self.toggleActionColumn)
+        self.actionAction.triggered.connect(
+            lambda checked: self.data_table.horizontalHeader().setSectionHidden(6, not checked))
+
+
         self.fuseAction = QAction("Split/Fuse", self)
         self.fuseAction.setCheckable(True)
         self.fuseAction.setChecked(True)
-        self.fuseAction.triggered.connect(self.toggleFuseColumn)
+        self.fuseAction.triggered.connect(
+            lambda checked: self.data_table.horizontalHeader().setSectionHidden(7, not checked))
+
 
         self.customContextMenuRequested.connect(self.openContextMenu)
 
@@ -262,7 +308,7 @@ class QtComparePanel(QWidget):
             } QMenu::item:disabled { color:rgb(150, 150, 150); }"
 
         menu.setStyleSheet(str)
-
+        menu.addAction(self.genetAction)
         menu.addAction(self.areasAction)
         menu.addAction(self.classAction)
         menu.addAction(self.actionAction)
@@ -271,46 +317,10 @@ class QtComparePanel(QWidget):
         viewer = self.sender()
         action = menu.exec_(viewer.mapToGlobal(position))
 
-    def toggleAreaColumns(self):
-
-        if not self.areasAction.isChecked():
-            self.data_table.horizontalHeader().hideSection(3)
-            self.data_table.horizontalHeader().hideSection(4)
-        else:
-            self.data_table.horizontalHeader().showSection(3)
-            self.data_table.horizontalHeader().showSection(4)
-
-        self.data_table.update()
-
-    def toggleClassColumn(self):
-
-        if not self.classAction.isChecked():
-            self.data_table.horizontalHeader().hideSection(5)
-        else:
-            self.data_table.horizontalHeader().showSection(5)
-
-        self.data_table.update()
-
-    def toggleActionColumn(self):
-
-        if not self.actionAction.isChecked():
-            self.data_table.horizontalHeader().hideSection(6)
-        else:
-            self.data_table.horizontalHeader().showSection(6)
-
-        self.data_table.update()
-
-    def toggleFuseColumn(self):
-
-        if not self.fuseAction.isChecked():
-            self.data_table.horizontalHeader().hideSection(7)
-        else:
-            self.data_table.horizontalHeader().showSection(7)
-
-        self.data_table.update()
-
     def setTable(self, project, img1idx, img2idx):
-
+        self.project = project
+        self.img1idx = img1idx
+        self.img2idx = img2idx
         self.sourceImg = project.images[img1idx]
         self.targetImg = project.images[img2idx]
 
@@ -341,11 +351,7 @@ class QtComparePanel(QWidget):
         self.data_table.setItemDelegateForColumn(6, self.combodelegate2)
         self.data_table.setEditTriggers(QAbstractItemView.DoubleClicked)
 
-#        if self.correspondences.isGenetInfoAvailable():
         self.data_table.horizontalHeader().showSection(0)
-#        else:
-#            self.data_table.horizontalHeader().hideSection(0)
-
         self.data_table.update()
 
         self.data_table.setStyleSheet("QHeaderView::section { background-color: rgb(40,40,40) }")
@@ -384,12 +390,17 @@ class QtComparePanel(QWidget):
         self.sortfilter.endResetModel()
         self.model.endResetModel()
 
-#        if corr.isGenetInfoAvailable():
         self.data_table.horizontalHeader().showSection(0)
-#        else:
-#            self.data_table.horizontalHeader().hideSection(0)
-
         self.data_table.update()
+
+    def selectById(self, text, isSource):
+        try:
+            blobid = int(text)
+        except:
+            return
+        corr = self.project.getImagePairCorrespondences(self.img1idx, self.img2idx)
+        sourcecluster, targetcluster, rows = corr.findCluster(blobid, isSource)
+        self.selectRows(rows)
 
     def selectRows(self, rows):
         self.data_table.clearSelection()
