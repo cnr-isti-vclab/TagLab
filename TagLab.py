@@ -257,6 +257,10 @@ class TagLab(QMainWindow):
 
         self.viewerplus.newSelection.connect(self.showMatch)
         self.viewerplus2.newSelection.connect(self.showMatch)
+        #when updating classes
+        self.viewerplus.externalAnnotationsChanged.connect(self.viewerplus2.scene.invalidate)
+        self.viewerplus2.externalAnnotationsChanged.connect(self.viewerplus.scene.invalidate)
+
 
         #last activated viewerplus: redirect here context menu commands and keyboard commands
         self.activeviewer = None

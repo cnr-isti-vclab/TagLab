@@ -16,6 +16,7 @@ class Genet:
 
     def __init__(self, project):
         self.project = project;
+        self.updateGenets()
         pass
 
     # check all blobs and all corrispondences and compute the connected components.

@@ -149,14 +149,7 @@ class Correspondences(object):
         else:
             self.data.loc[self.data["Blob2"] == old_blob.id, "Blob2"] = new_blob.id
             self.data.loc[self.data["Blob2"] == old_blob.id, "Area2"] = self.area_in_sq_cm(new_blob.area, False)
-
-    def setBlobClass(self, image, blob, class_name):
-        #break the correspondences
-        if self.source == image:
-            self.set([blob], [])
-        else:
-            self.set([], [blob])
-
+ 
     def set(self, sourceblobs, targetblobs):
 
         #assumes one oth the two list has 1 blob only.

@@ -513,6 +513,9 @@ class Blob(object):
             self.inner_contours.append(np.asarray(c))
 
         self.deep_extreme_points = np.asarray(dict["deep_extreme_points"])
+        #for the moment we just update genets on load.
+#        if "genet" in dict:
+#            self.genet = dict["genet"]
         self.class_name = dict["class name"]
         self.class_color = dict["class color"]
         self.instance_name = dict["instance name"]
@@ -544,6 +547,7 @@ class Blob(object):
 
         dict["deep_extreme_points"] = self.deep_extreme_points.tolist()
 
+#        dict["genet"] = self.genet
         dict["class name"] = self.class_name
         dict["class color"] = self.class_color
 

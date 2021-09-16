@@ -313,9 +313,6 @@ class Project(object):
         # THIS should be removed: the color comes from the labels!
         blob.class_color = self.labels[blob.class_name].fill
 
-        for corr in self.findCorrespondences(image):
-            corr.setBlobClass(image, blob, class_name)
-
     def getImageFromId(self, id):
         for img in self.images:
             if img.id == id:

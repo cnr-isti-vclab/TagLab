@@ -107,7 +107,7 @@ class QtImageViewerPlus(QtImageViewer):
     mouseMoved = pyqtSignal(float, float)
     selectionChanged = pyqtSignal()
     selectionReset = pyqtSignal()
-    annotationsChanged = pyqtSignal()
+    externalAnnotationsChanged = pyqtSignal()
 
     # custom signal
     updateInfoPanel = pyqtSignal(Blob)
@@ -734,8 +734,6 @@ class QtImageViewerPlus(QtImageViewer):
         if selected:
             self.addToSelectedList(blob)
 
-        self.annotationsChanged.emit()
-
     def removeBlob(self, blob):
         """
         The only function to remove annotations.
@@ -745,8 +743,6 @@ class QtImageViewerPlus(QtImageViewer):
         self.undo_data.removeBlob(blob)
         #self.annotations.removeBlob(blob)
         self.project.removeBlob(self.image, blob)
-
-        self.annotationsChanged.emit()
 
     def updateBlob(self, old_blob, new_blob, selected = False):
 
@@ -761,8 +757,6 @@ class QtImageViewerPlus(QtImageViewer):
         self.drawBlob(new_blob)
         if selected:
             self.addToSelectedList(new_blob)
-
-        self.annotationsChanged.emit()
 
 
     def deleteSelectedBlobs(self):
@@ -782,21 +776,22 @@ class QtImageViewerPlus(QtImageViewer):
             blob.qpath_gitem.setBrush(brush)
 
         self.scene.invalidate()
-        self.annotationsChanged.emit()
+        self.externalAnnotationsChanged.emit()
 
     def setBlobClass(self, blob, class_name):
 
         if blob.class_name == class_name:
             return
-
-        self.project.setBlobClass(self.image, blob, class_name)
+        #first store the old value in undo
         self.undo_data.setBlobClass(blob, class_name)
+        self.project.setBlobClass(self.image, blob, class_name)
 
-        brush = self.project.classBrushFromName(blob)
-        blob.qpath_gitem.setBrush(brush)
+        if blob.qpath_gitem:
+            brush = self.project.classBrushFromName(blob)
+            blob.qpath_gitem.setBrush(brush)
 
-        self.scene.invalidate()
-        self.annotationsChanged.emit()
+            self.scene.invalidate()
+            self.externalAnnotationsChanged.emit()
 
 #UNDO STUFF
 #UNDO STUFF
@@ -836,7 +831,9 @@ class QtImageViewerPlus(QtImageViewer):
         for (blob, class_name) in operation['class']:
             blob.class_name = class_name
             brush = self.project.classBrushFromName(blob)
-            blob.qpath_gitem.setBrush(brush)
+            #this might apply to blobs NOT in this image (or rendered)
+            if blob.qpath_gitem:
+                blob.qpath_gitem.setBrush(brush)
 
         self.updateVisibility()
 

@@ -17,14 +17,31 @@ class Assign(Tool):
             return #do nothing, no label is set
 
         selected_blob = self.viewerplus.annotations.clickedBlob(x, y)
+        if selected_blob is None:
+            return
 
-        if selected_blob is not None:
-            self.viewerplus.addToSelectedList(selected_blob)
-            for blob in self.viewerplus.selected_blobs:
+        self.viewerplus.addToSelectedList(selected_blob)
+
+        genets = set()
+        for blob in self.viewerplus.selected_blobs:
+            if blob.genet is not None and blob.genet >= 0:
+                genets.add(blob.genet)
+            else:
                 self.viewerplus.setBlobClass(blob, self.active_label)
 
-            message ="[TOOL][ASSIGN] Blob(s) assigned ({:d}) (CLASS={:s}).".format(len(self.viewerplus.selected_blobs), self.active_label)
-            self.viewerplus.logfile.info(message)
+        project = self.viewerplus.project
+        for image in project.images:
+            blobs = [blob for blob in image.annotations.seg_blobs if blob.genet in genets]
+            for blob in blobs:
+                self.viewerplus.setBlobClass(blob, self.active_label)
 
-            self.viewerplus.saveUndo()
-            self.viewerplus.resetSelection()
+#            if image == self.viewerplus2.image //we need to update also the other viewer!!!!
+#            2) l'undo ha lo stesso problema, posso aggiungere i blob ma devono essere fatti per ogni immagine.
+
+
+
+        message ="[TOOL][ASSIGN] Blob(s) assigned ({:d}) (CLASS={:s}).".format(len(self.viewerplus.selected_blobs), self.active_label)
+        self.viewerplus.logfile.info(message)
+
+        self.viewerplus.saveUndo()
+        self.viewerplus.resetSelection()

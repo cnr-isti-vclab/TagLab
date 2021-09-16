@@ -83,6 +83,9 @@ class Annotation(QObject):
                 return blob
         return None
 
+    def blobByGenet(self, genet):
+        return [blob for blob in self.seg_blobs if blob.genet == genet]
+
     def save(self):
         return self.seg_blobs
         #data = []
