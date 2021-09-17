@@ -113,7 +113,7 @@ class Genet:
         for g in sorted(lines.keys()):
             lines[g]['row'] = count
             count += 1
-            row = [None] * len(fields)
+            row = [""] * len(fields)
             row[0] = g
             data.append(row)
 
@@ -122,11 +122,8 @@ class Genet:
             for blob in img.annotations.seg_blobs:
                 line = lines[blob.genet]
                 row = line['row']
-                data[row][count] = blob.id
-                if not data[row][count+1]:
-                    data[row][count+1] = blob.area
-                else:
-                    data[row][count+1] += blob.area
+                data[row][count] += str(blob.id) + " "
+                data[row][count+1] += str(blob.area) + " "
             count += 2
 
         import csv
