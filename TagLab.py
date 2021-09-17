@@ -3005,7 +3005,7 @@ class TagLab(QMainWindow):
             return
 
         filters = "CSV (*.csv) ;; All Files (*)"
-        filename, _ = QFileDialog.getSaveFileName(self, "Output file", "", filters)
+        filename, _ = QFileDialog.getSaveFileName(self, "Output file", self.activeviewer.image.name + ".csv", filters)
 
         if filename:
 

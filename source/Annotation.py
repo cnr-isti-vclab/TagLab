@@ -525,8 +525,8 @@ class Annotation(QObject):
 
         number_of_seg = len(name_list)
         class_name = []
-        blob_id = np.zeros(number_of_seg)
-        genet_id = np.zeros(number_of_seg)
+        blob_id = np.zeros(number_of_seg, int)
+        genet_id = np.zeros(number_of_seg, int)
         centroid_x = np.zeros(number_of_seg)
         centroid_y = np.zeros(number_of_seg)
         coral_area = np.zeros(number_of_seg)
