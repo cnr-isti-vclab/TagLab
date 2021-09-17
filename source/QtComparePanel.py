@@ -42,9 +42,16 @@ class TableModel(QAbstractTableModel):
         self.surface_area_mode_enabled = False
 
     def data(self, index, role):
+        if role == Qt.TextAlignmentRole:
+            if index.column() < 5:
+                return Qt.AlignRight | Qt.AlignVCenter
+
+        if role == Qt.BackgroundRole:
+            return QColor(40, 40, 40)
+
+        value = self._data.iloc[index.row(), index.column()]
 
         if role == Qt.DisplayRole:
-            value = self._data.iloc[index.row(), index.column()]
             # if index.column() == 0 or index.column() == 1:
             #     return "" if math.isnan(value) else str(value)
 
@@ -54,18 +61,18 @@ class TableModel(QAbstractTableModel):
 
             # format floating point values
             if index.column() == 3 or index.column() == 4:
-                txt = "{:.2f}".format(value)
+                txt = "{:.1f}".format(value) if value > 0 else ""
             else:
                 txt = str(value)
 
             return txt
-
-        if role == Qt.TextAlignmentRole:
+        
+        if role == Qt.UserRole:
             if index.column() < 5:
-                return Qt.AlignRight | Qt.AlignVCenter
+                return float(value)
+            return str(value)
 
-        if role == Qt.BackgroundRole:
-            return QColor(40, 40, 40)
+
 
     def setData(self, index, value, role):
 
@@ -340,6 +347,7 @@ class QtComparePanel(QWidget):
         self.model = TableModel(self.data)
         self.sortfilter = QSortFilterProxyModel(self)
         self.sortfilter.setSourceModel(self.model)
+        self.sortfilter.setSortRole(Qt.UserRole)
         self.data_table.setModel(self.sortfilter)
 
         self.data_table.setVisible(False)
@@ -398,6 +406,7 @@ class QtComparePanel(QWidget):
             blobid = int(text)
         except:
             return
+
         corr = self.project.getImagePairCorrespondences(self.img1idx, self.img2idx)
         sourcecluster, targetcluster, rows = corr.findCluster(blobid, isSource)
         self.selectRows(rows)
@@ -407,12 +416,13 @@ class QtComparePanel(QWidget):
 
         indexes = [self.sortfilter.mapFromSource(self.model.index(r, 0)) for r in rows]
         mode = QItemSelectionModel.Select | QItemSelectionModel.Rows
-        [self.data_table.selectionModel().select(index, mode) for index in indexes]
+        for index in indexes:
+            self.data_table.selectionModel().select(index, mode)
 
         if len(rows) > 0:
             value = self.data_table.horizontalScrollBar().value()
             column = self.data_table.columnAt(value)
-            self.data_table.scrollTo(self.data_table.model().index(indexes[0].column(), column))
+            self.data_table.scrollTo(self.data_table.model().index(indexes[0].row(), column))
 
     def getAreaMode(self):
 

@@ -60,19 +60,21 @@ class Correspondences(object):
             blob1 = self.source.annotations.blobById(id1)
             blob2 = self.target.annotations.blobById(id2)
 
+            area1 = 0
             if blob1 is not None:
                 area_pixel = blob1.area
                 if use_surface_area:
                     area_pixel = blob1.surface_area
                 area1 = self.area_in_sq_cm(area_pixel, True)
-                self.data.loc[index, 'Area1'] = area1
+            self.data.loc[index, 'Area1'] = area1
 
+            area2 = 0
             if blob2 is not None:
                 area_pixel = blob2.area
                 if use_surface_area:
                     area_pixel = blob2.surface_area
                 area2 = self.area_in_sq_cm(area_pixel, False)
-                self.data.loc[index, 'Area2'] = area2
+            self.data.loc[index, 'Area2'] = area2
 
             # update grow/shrink information
             if action == "grow" or action == "shrink" or action == "same":
@@ -117,6 +119,9 @@ class Correspondences(object):
 
         columns = self.data.columns
         self.data = pd.DataFrame(lst, columns=columns)
+        #this is needed to ensure consistency between blob data and correspondences data (WHICH SHOULD NOT BE REPLICATED!!!!)
+        self.updateAreas()
+
         self.sort_data()
 
     def addBlob(self, image, blob):

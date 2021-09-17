@@ -782,7 +782,6 @@ class QtImageViewerPlus(QtImageViewer):
 
         if blob.class_name == class_name:
             return
-        #first store the old value in undo
         self.undo_data.setBlobClass(blob, class_name)
         self.project.setBlobClass(self.image, blob, class_name)
 
