@@ -3241,6 +3241,12 @@ class TagLab(QMainWindow):
             tilename = os.path.splitext(self.activeviewer.image.name)[0]
             new_dataset.export_tiles(basename=basename, tilename=tilename, labels_info=self.labels_dictionary)
 
+            # save the target scale factor
+            target_scale_factor_file = os.path.join(basename, "target-scale-factor.txt")
+            fl = open(target_scale_factor_file, "w")
+            fl.write(str(target_scale_factor))
+            fl.close()
+
             self.deleteProgressBar()
             self.deleteNewDatasetWidget()
 
@@ -3345,7 +3351,15 @@ class TagLab(QMainWindow):
         new_classifier["Average Norm."] = list(self.dataset_train_info.dataset_average)
         new_classifier["Num. Classes"] = self.dataset_train_info.num_classes
         new_classifier["Classes"] = list(self.dataset_train_info.dict_target)
-        new_classifier["Scale"] = self.activeviewer.image.pixelSize()
+
+        # read the target scale factor
+        target_scale_factor_file = os.path.join(self.trainResultsWidget.dataset_folder, "target-scale-factor.txt")
+        fl = open(target_scale_factor_file, "r")
+        line = fl.readline()
+        fl.close()
+        target_scale_factor = float(line)
+
+        new_classifier["Scale"] = target_scale_factor
         self.available_classifiers.append(new_classifier)
         newconfig = dict()
         newconfig["Available Classifiers"] = self.available_classifiers
