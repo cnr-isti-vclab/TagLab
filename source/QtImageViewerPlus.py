@@ -128,7 +128,7 @@ class QtImageViewerPlus(QtImageViewer):
         self.tools = Tools(self)
         self.tools.createTools()
 
-        self.grid_active = False
+        self.show_grid = False
 
         self.undo_data = Undo()
 
@@ -246,7 +246,7 @@ class QtImageViewerPlus(QtImageViewer):
         self.selected_blobs = []
         self.selectionChanged.emit()
         self.undo_data = Undo()
-        self.disableGrid()
+        self.hideGrid()
 
         for blob in self.annotations.seg_blobs:
             self.undrawBlob(blob)
@@ -254,28 +254,33 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.annotations = Annotation()
 
-    def enableGrid(self):
+    def showGrid(self):
+
         if self.image.grid is not None:
             if not self.image.grid.grid_rects:
                 # the grid has never been drawn
                 self.image.grid.setScene(self.scene)
                 self.image.grid.drawGrid()
             self.image.grid.setVisible(True)
-            self.grid_active = True
+            self.show_grid = True
         else:
-            self.grid_active = False
+            self.show_grid = False
 
-    def disableGrid(self):
+    def hideGrid(self):
+
         if self.image is not None:
             if self.image.grid is not None:
                 self.image.grid.setVisible(False)
-        self.grid_active = False
 
-    def toggleGrid(self):
-        if self.grid_active is False:
-            self.enableGrid()
+        self.show_grid = False
+
+    @pyqtSlot(int)
+    def toggleGrid(self, check):
+
+        if check == 0:
+            self.hideGrid()
         else:
-            self.disableGrid()
+            self.showGrid()
 
 
     @pyqtSlot(int)
@@ -302,17 +307,6 @@ class QtImageViewerPlus(QtImageViewer):
             for blob in self.annotations.seg_blobs:
                 pen = self.border_selected_pen if blob in self.selected_blobs else self.border_pen
                 blob.qpath_gitem.setPen(pen)
-
-
-    # def removeGrid(self):
-    #
-    #     if self.image is not None:
-    #        if self.image.grid is not None:
-    #            self.image.grid.undrawGrid()
-    #            self.image.grid = None
-    #
-    #     self.grid_active = False
-    #
 
     def drawBlob(self, blob, prev=False):
 
@@ -460,7 +454,8 @@ class QtImageViewerPlus(QtImageViewer):
         self.logfile.info("[SELECTION][DOUBLE-CLICK] Selection ends.")
 
     def updateCellState(self, state):
-        if self.imag.grid is not None:
+
+        if self.image.grid is not None and self.show_grid is True:
             pos = self.mapFromGlobal(self.cursor().pos())
             scenePos = self.mapToScene(pos)
             self.image.grid.changeCellState(scenePos.x(), scenePos.y(), state)
@@ -469,7 +464,7 @@ class QtImageViewerPlus(QtImageViewer):
         """
         Insert the node to add.
         """
-        if self.image.grid is not None and self.grid_active is True:
+        if self.image.grid is not None and self.show_grid is True:
             pos = self.mapFromGlobal(self.cursor().pos())
             scenePos = self.mapToScene(pos)
             self.image.grid.addNote(scenePos.x(), scenePos.y(), "Enter note..")

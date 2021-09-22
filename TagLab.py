@@ -29,7 +29,7 @@ import urllib
 import platform
 
 from PyQt5.QtCore import Qt, QSize, QMargins, QDir, QPoint, QPointF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo, QModelIndex
-from PyQt5.QtGui import QFontDatabase, QFont, QPixmap, QIcon, QKeySequence, QPen, QImageReader
+from PyQt5.QtGui import QFontDatabase, QFont, QPixmap, QIcon, QKeySequence, QPen, QImageReader, QImage
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QFileDialog, QComboBox, QMenuBar, QMenu, QSizePolicy, QScrollArea, \
     QLabel, QToolButton, QPushButton, QSlider, QCheckBox, \
     QMessageBox, QGroupBox, QLayout, QHBoxLayout, QVBoxLayout, QFrame, QDockWidget, QTextEdit, QAction
@@ -124,7 +124,6 @@ class TagLab(QMainWindow):
         self.maxRecentFiles = 4   #refactor to maxRecentProjects
         self.separatorRecentFilesAct = None    #refactor to separatorRecentFiles
 
-
         ##### INTERFACE #####
         #####################
 
@@ -172,7 +171,7 @@ class TagLab(QMainWindow):
         self.labelSeparator = QLabel()
         self.labelSeparator.setPixmap(self.pxmapSeparator.scaled(QSize(35, 30)))
         self.btnCreateGrid = self.newButton("grid.png", "Create grid",  flatbuttonstyle1, self.createGrid)
-        self.btnToggleGrid = self.newButton("grid-eye.png", "Toggle grid", flatbuttonstyle1, self.toggleGrid)
+        self.btnGrid = self.newButton("grid-eye.png", "Active/disactive grid operations", flatbuttonstyle1, self.toggleGrid)
         self.pxmapSeparator2 = QPixmap("icons/separator.png")
         self.labelSeparator2 = QLabel()
         self.labelSeparator2.setPixmap(self.pxmapSeparator2.scaled(QSize(35, 30)))
@@ -204,7 +203,7 @@ class TagLab(QMainWindow):
         layout_tools.addWidget(self.labelSeparator)
         layout_tools.addSpacing(3)
         layout_tools.addWidget(self.btnCreateGrid)
-        layout_tools.addWidget(self.btnToggleGrid)
+        layout_tools.addWidget(self.btnGrid)
         layout_tools.addSpacing(3)
         layout_tools.addWidget(self.labelSeparator2)
         layout_tools.addSpacing(3)
@@ -301,7 +300,8 @@ class TagLab(QMainWindow):
 
         self.checkBoxGrid = QCheckBox("Grid")
         self.checkBoxGrid.setMinimumWidth(20)
-
+        self.checkBoxGrid.stateChanged[int].connect(self.viewerplus.toggleGrid)
+        self.checkBoxGrid.stateChanged[int].connect(self.viewerplus2.toggleGrid)
 
         self.labelZoomInfo = QLabel("100%")
         self.labelMouseLeftInfo = QLabel("0")
@@ -672,7 +672,7 @@ class TagLab(QMainWindow):
     @pyqtSlot()
     def updateEditActions(self):
 
-        if self.btnToggleGrid.isChecked():
+        if self.btnGrid.isChecked():
             self.markEmpty.setVisible(True)
             self.markComplete.setVisible(True)
             self.markIncomplete.setVisible(True)
@@ -711,7 +711,9 @@ class TagLab(QMainWindow):
 
     @pyqtSlot()
     def addNoteOperation(self):
-        self.activeviewer.addNote()
+
+        if self.btnGrid.isChecked():
+            self.activeviewer.addNote()
 
     def activateAutosave(self):
         pass
@@ -1212,7 +1214,11 @@ class TagLab(QMainWindow):
 
     @pyqtSlot()
     def toggleGrid(self):
-        self.activeviewer.toggleGrid()
+
+        if self.btnGrid.isChecked():
+            self.activeviewer.showGrid()
+            self.checkBoxGrid.setChecked(True)
+
         self.updateEditActions()
 
     @pyqtSlot()
@@ -1222,6 +1228,7 @@ class TagLab(QMainWindow):
         """
 
         if len(self.project.images) < 1:
+            self.btnCreateGrid.setChecked(False)
             return
 
         if self.activeviewer.image.grid is not None:
@@ -1234,8 +1241,8 @@ class TagLab(QMainWindow):
                 return
             else:
                 self.activeviewer.image.grid.undrawGrid()
-                self.activeviewer.disableGrid()
-                self.btnToggleGrid.setChecked(False)
+                self.activeviewer.hideGrid()
+                self.btnGrid.setChecked(False)
 
         if self.gridWidget is None:
             self.gridWidget = QtGridWidget(self.activeviewer, self)
@@ -1260,8 +1267,8 @@ class TagLab(QMainWindow):
         """
         self.activeviewer.image.grid = self.gridWidget.grid
         self.resetToolbar()
-        self.btnToggleGrid.setChecked(True)
-        self.toggleGrid()
+        self.activeviewer.showGrid()
+        self.checkBoxGrid.setChecked(True)
         self.gridWidget = None
 
     @pyqtSlot()
@@ -1385,7 +1392,8 @@ class TagLab(QMainWindow):
 
         elif event.key() == Qt.Key_G:
 
-            self.activeviewer.updateCellState(None)
+            if self.btnGrid.isChecked():
+                self.activeviewer.updateCellState(None)
 
         elif event.key() == Qt.Key_1:
             # ACTIVATE "MOVE" TOOL
@@ -1798,7 +1806,7 @@ class TagLab(QMainWindow):
             return
 
         self.viewerplus.clear()
-        self.btnToggleGrid.setChecked(False)
+        self.btnGrid.setChecked(False)
 
         # target and source image cannot be the same !!
         index2 = self.comboboxTargetImage.currentIndex()
@@ -1823,7 +1831,7 @@ class TagLab(QMainWindow):
             return
 
         self.viewerplus2.clear()
-        self.btnToggleGrid.setChecked(False)
+        self.btnGrid.setChecked(False)
 
         # target and source image cannot be the same !!
         index1 = self.comboboxSourceImage.currentIndex()
@@ -1937,9 +1945,9 @@ class TagLab(QMainWindow):
         self.btnDeepExtreme.setChecked(False)
         self.btnRitm.setChecked(False)
         self.btnCreateGrid.setChecked(False)
-        self.viewerplus.disableGrid()
-        self.viewerplus2.disableGrid()
-        self.btnToggleGrid.setChecked(False)
+        self.viewerplus.hideGrid()
+        self.viewerplus2.hideGrid()
+        self.btnGrid.setChecked(False)
         self.btnMatch.setChecked(False)
         self.btnAutoClassification.setChecked(False)
 
