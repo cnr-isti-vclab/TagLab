@@ -256,15 +256,16 @@ class QtImageViewerPlus(QtImageViewer):
 
     def showGrid(self):
 
-        if self.image.grid is not None:
-            if not self.image.grid.grid_rects:
-                # the grid has never been drawn
-                self.image.grid.setScene(self.scene)
-                self.image.grid.drawGrid()
-            self.image.grid.setVisible(True)
-            self.show_grid = True
-        else:
-            self.show_grid = False
+        if self.image is not None:
+            if self.image.grid is not None:
+                if not self.image.grid.grid_rects:
+                    # the grid has never been drawn
+                    self.image.grid.setScene(self.scene)
+                    self.image.grid.drawGrid()
+                self.image.grid.setVisible(True)
+                self.show_grid = True
+            else:
+                self.show_grid = False
 
     def hideGrid(self):
 
