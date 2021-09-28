@@ -14,6 +14,7 @@ class QtTrainingResultsWidget(QWidget):
     def __init__(self, metrics, train_loss_data, val_loss_data, image_folder, label_folder, prediction_folder, parent=None):
         super(QtTrainingResultsWidget, self).__init__(parent)
 
+        self.dataset_folder = os.path.dirname(prediction_folder)
         self.image_folder = image_folder
         self.label_folder=label_folder
         self.prediction_folder = prediction_folder
