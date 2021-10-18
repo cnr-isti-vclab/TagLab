@@ -297,8 +297,10 @@ class Annotation(QObject):
     def editBorder(self, blob, lines):
         points = [blob.drawLine(line) for line in lines]
 
-        if points is None or len(points) == 0:
+        if points is None or len(points) == 0 or all(len(p) == 0 for p in points):
             return
+
+        print(points)
 
         # compute the box for the outer contour
         intersected = False
