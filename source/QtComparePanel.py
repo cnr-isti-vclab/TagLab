@@ -342,6 +342,8 @@ class QtComparePanel(QWidget):
         self.targetImg.annotations.blobUpdated.connect(self.targetBlobUpdated)
 
         self.correspondences = project.getImagePairCorrespondences(img1idx, img2idx)
+        self.correspondences.updateAreas();
+
         self.data = self.correspondences.data
 
         self.model = TableModel(self.data)

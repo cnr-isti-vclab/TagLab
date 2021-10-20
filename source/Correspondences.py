@@ -60,6 +60,8 @@ class Correspondences(object):
             blob1 = self.source.annotations.blobById(id1)
             blob2 = self.target.annotations.blobById(id2)
 
+            self.data.loc[index, 'Class'] = blob1.class_name if blob1 is not None else blob2.class_name;
+
             area1 = 0
             if blob1 is not None:
                 area_pixel = blob1.area
