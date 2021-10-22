@@ -60,7 +60,10 @@ class Correspondences(object):
             blob1 = self.source.annotations.blobById(id1)
             blob2 = self.target.annotations.blobById(id2)
 
-            self.data.loc[index, 'Class'] = blob1.class_name if blob1 is not None else blob2.class_name;
+            if blob1 is None and blob2 is None:
+                print("BOOM")
+
+            self.data.loc[index, 'Class'] = blob1.class_name if blob1 is not None else blob2.class_name
 
             area1 = 0
             if blob1 is not None:
@@ -106,6 +109,25 @@ class Correspondences(object):
 
         self.data.sort_values(by=['Action', 'Blob1', 'Blob2'], inplace=True, ignore_index=True)
 
+    def checkTable(self):
+        """
+        Table may contain inconsistencies. This function check and remove them.
+        """
+
+        inconsistencies = False
+        current_table = self.data.copy()
+        for index, row in current_table.iterrows():
+            id1 = int(row['Blob1'])
+            id2 = int(row['Blob2'])
+            blob1 = self.source.annotations.blobById(id1)
+            blob2 = self.target.annotations.blobById(id2)
+
+            if blob1 is None and blob2 is None:
+                self.data.drop(index, inplace=True)
+                inconsistencies = True
+
+        return inconsistencies
+
     def fillTable(self, lst):
         """
         Fill the table from a list of correspondences.
@@ -121,6 +143,9 @@ class Correspondences(object):
 
         columns = self.data.columns
         self.data = pd.DataFrame(lst, columns=columns)
+
+        self.checkTable()
+
         #this is needed to ensure consistency between blob data and correspondences data (WHICH SHOULD NOT BE REPLICATED!!!!)
         self.updateAreas()
 
