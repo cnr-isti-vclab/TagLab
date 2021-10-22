@@ -209,7 +209,17 @@ class Project(object):
 
 
     def save(self, filename = None):
-        #try:
+
+        # check inconsistencies. They can be caused by bugs during the regions update/editing
+        if self.correspondences is not None:
+            for key in self.correspondences.keys():
+                if self.correspondences[key].checkTable() is True:
+                    # there are inconsistencies, THIS MUST BE NOTIFIED
+                    msgBox = QMessageBox()
+                    msgBox.setWindowTitle("INCONSISTENT CORRESPONDENCES")
+                    msgBox.setText("Inconsistent correspondences has been found !!\nPlease, Notify this problem to the TagLab developers.")
+                    msgBox.exec()
+
         data = self.__dict__
         str = json.dumps(data, cls=ProjectEncoder, indent=1)
 
