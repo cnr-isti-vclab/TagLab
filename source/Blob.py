@@ -509,7 +509,7 @@ class Blob(object):
 
         #inner_contours = dict["inner contours"]
         self.contour = self.toContour(dict["contour"])
-        inner_contours = self.toContour(dict["inner contours"])
+        inner_contours = dict["inner contours"]
         self.inner_contours = []
         for c in inner_contours:
             #self.inner_contours.append(np.asarray(c))
@@ -541,6 +541,7 @@ class Blob(object):
         return d
 
     def toContour(self, p):
+        print(p)
         if type(p) is 'str':
             p = map(int, p.split(' '))
         c = np.asarray(p)
