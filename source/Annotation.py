@@ -566,7 +566,7 @@ class Annotation(QObject):
 
         # create dataframe
         df = pd.DataFrame(dic, columns=properties)
-        df.to_csv(filename, sep='\t', index=False)
+        df.to_csv(filename, sep=',', index=False)
 
 
     def export_image_data_for_Scripps(self, size, filename, labels_info):
