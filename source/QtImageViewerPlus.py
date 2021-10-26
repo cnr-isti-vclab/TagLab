@@ -391,7 +391,6 @@ class QtImageViewerPlus(QtImageViewer):
             QApplication.setOverrideCursor(Qt.CrossCursor)
 
         if tool == "WATERSHED":
-
             self.tools.tools["WATERSHED"].scribbles.setScaleFactor(self.zoom_factor)
 
             label_info = self.project.labels.get(self.active_label)
@@ -406,13 +405,11 @@ class QtImageViewerPlus(QtImageViewer):
         else:
             self.showCrossair = False
 
-        if tool == "MOVE":
+        # WHEN panning is active or not
+        if tool == "MOVE" or tool == "MATCH" or tool == "RITM":
             self.enablePan()
         else:
             self.disablePan()
-
-        if tool == "MATCH" or tool == "RITM":
-            self.enablePan()
 
     def resetTools(self):
 
@@ -573,14 +570,15 @@ class QtImageViewerPlus(QtImageViewer):
             self.selectOp(scenePos.x(), scenePos.y())
 
     def keyPressEvent(self, event):
+
         if event.key() == Qt.Key_Shift and self.tools.tool == "RITM":
             QApplication.setOverrideCursor(Qt.CrossCursor)
+
         super().keyPressEvent(event)
 
-
     def keyReleaseEvent(self, event):
-        if event.key() == Qt.Key_Shift:
-            QApplication.restoreOverrideCursor()
+        if event.key() == Qt.Key_Shift and self.tools.tool == "RITM":
+            QApplication.setOverrideCursor(Qt.ArrowCursor)
         super().keyPressEvent(event)
 
     def wheelEvent(self, event):

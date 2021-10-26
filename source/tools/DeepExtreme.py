@@ -80,8 +80,10 @@ class DeepExtreme(Tool):
         return (arr, four_points_updated)
 
     def segmentWithDeepExtreme(self):
+
         if not self.viewerplus.img_map:
             return
+
         QApplication.setOverrideCursor(Qt.WaitCursor)
         self.infoMessage.emit("Segmentation is ongoing..")
         self.log.emit("[TOOL][DEEPEXTREME] Segmentation begins..")

@@ -2832,13 +2832,13 @@ class TagLab(QMainWindow):
 
             self.infoWidget.setInfoMessage("The map has been successfully loading.")
 
+            QApplication.restoreOverrideCursor()
+
         except Exception as e:
             msgBox = QMessageBox()
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
             msgBox.setText("Error loading map:" + str(e))
             msgBox.exec()
-
-        QApplication.restoreOverrideCursor()
 
 
     @pyqtSlot()
@@ -3416,8 +3416,6 @@ class TagLab(QMainWindow):
         if self.activeviewer is None:
             return
 
-        QApplication.setOverrideCursor(Qt.WaitCursor)
-
         # get the file name of the Tiff which stores the depth
         input_tiff = ""
         if self.activeviewer.image is not None:
@@ -3430,6 +3428,8 @@ class TagLab(QMainWindow):
             box.setText("DEM not found! You need a DEM to compute the surface area.")
             box.exec()
             return
+
+        QApplication.setOverrideCursor(Qt.WaitCursor)
 
         georef_filename = self.activeviewer.image.georef_filename
         blobs = self.activeviewer.annotations.seg_blobs
@@ -3445,8 +3445,9 @@ class TagLab(QMainWindow):
         Load a previously saved projects.
         """
 
-        QApplication.setOverrideCursor(Qt.WaitCursor)
         self.resetAll()
+
+        QApplication.setOverrideCursor(Qt.WaitCursor)
 
         try:
             self.project = loadProject(self.taglab_dir, filename, self.labels_dictionary)
@@ -3457,6 +3458,7 @@ class TagLab(QMainWindow):
             return
 
         QApplication.restoreOverrideCursor()
+
         self.setProjectTitle(self.project.filename)
 
         # show the first map present in project
@@ -3507,7 +3509,6 @@ class TagLab(QMainWindow):
         """
         QApplication.setOverrideCursor(Qt.WaitCursor)
         self.project.save()
-
         QApplication.restoreOverrideCursor()
 
         if self.timer is None:

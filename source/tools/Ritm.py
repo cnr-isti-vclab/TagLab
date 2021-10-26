@@ -197,14 +197,14 @@ class Ritm(Tool):
 
     def segment(self, save_status=True):
 
-
-        QApplication.setOverrideCursor(Qt.WaitCursor)
         self.infoMessage.emit("Segmentation is ongoing..")
         self.log.emit("[TOOL][RITM] Segmentation begins..")
 
+        QApplication.setOverrideCursor(Qt.WaitCursor)
         if not self.loadNetwork():
-            QApplication.restoreOverrideCursor()
             return
+
+        QApplication.restoreOverrideCursor()
 
         if self.prepareInput() is True:
 
@@ -278,7 +278,6 @@ class Ritm(Tool):
             self.reset()
 
         self.log.emit("[TOOL][RITM] Segmentation ends.")
-        QApplication.restoreOverrideCursor()
 
     def loadNetwork(self):
 
