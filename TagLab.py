@@ -171,7 +171,7 @@ class TagLab(QMainWindow):
         self.labelSeparator = QLabel()
         self.labelSeparator.setPixmap(self.pxmapSeparator.scaled(QSize(35, 30)))
         self.btnCreateGrid = self.newButton("grid.png", "Create grid",  flatbuttonstyle1, self.createGrid)
-        self.btnGrid = self.newButton("grid-eye.png", "Active/disactive grid operations", flatbuttonstyle1, self.toggleGrid)
+        self.btnGrid = self.newButton("grid-edit.png", "Active/disactive grid operations", flatbuttonstyle1, self.toggleGrid)
         self.pxmapSeparator2 = QPixmap("icons/separator.png")
         self.labelSeparator2 = QLabel()
         self.labelSeparator2.setPixmap(self.pxmapSeparator2.scaled(QSize(35, 30)))
