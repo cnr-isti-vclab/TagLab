@@ -48,6 +48,7 @@ import source.Mask as Mask
 import source.RasterOps as rasterops
 from source.QtImageViewerPlus import QtImageViewerPlus
 from source.QtMapViewer import QtMapViewer
+from source.QtSettingsWidget import QtSettingsWidget
 from source.QtMapSettingsWidget import QtMapSettingsWidget
 from source.QtLabelsWidget import QtLabelsWidget
 from source.QtInfoWidget import QtInfoWidget
@@ -102,6 +103,11 @@ class TagLab(QMainWindow):
         self.TAGLAB_VERSION = "TagLab " + current_version
 
         print(self.TAGLAB_VERSION)
+
+        # SETTINGS
+
+        self.settings_widget = QtSettingsWidget()
+        self.settings_widget.loadSettings()
 
         # LOAD CONFIGURATION FILE
 
@@ -592,7 +598,7 @@ class TagLab(QMainWindow):
         logfile.info("[INFO] Inizialization finished!")
 
         # autosave timer
-        self.timer = None
+        self.timer = QTimer(self)
 
         self.disableSplitScreen()
 
@@ -715,12 +721,23 @@ class TagLab(QMainWindow):
         if self.btnGrid.isChecked():
             self.activeviewer.addNote()
 
-    def activateAutosave(self):
-        pass
-        # self.timer = QTimer(self)
-        # self.timer.timeout.connect(self.autosave)
-        # #self.timer.start(1800000)  # save every 3 minute
-        # self.timer.start(600000)  # save every 3 minute
+    def setAutosave(self, interval):
+        """
+        Set autosave interval. Interval is in seconds. If interval is zero or negative the autosave is disabled.
+        """
+
+        if interval > 0:
+
+            # disconnect, just in case..
+            try:
+                self.timer.timeout.disconnect()
+            except:
+                pass
+
+            self.timer.timeout.connect(self.autosave)
+            self.timer.start(interval * 1000)   # interval is in seconds
+        else:
+            self.timer.stop()
 
     @pyqtSlot()
     def autosave(self):
@@ -1065,6 +1082,18 @@ class TagLab(QMainWindow):
                 self.submenuEdit.triggered[QAction].connect(self.editMapSettings)
                 self.mapActionList.append(editMap)
 
+
+    @pyqtSlot(str)
+    def researchFieldChanged(self, str):
+
+        self.setResearchField(str)
+
+    def setResearchField(self):
+        pass
+
+
+
+
     @pyqtSlot(QAction)
     def editMapSettings(self, openMapAction):
 
@@ -1355,7 +1384,8 @@ class TagLab(QMainWindow):
 
         elif event.key() == Qt.Key_X:
 
-            pass
+            self.settings_widget.setWindowModality(Qt.WindowModal)
+            self.settings_widget.show()
 
         elif event.key() == Qt.Key_B:
             self.attachBoundaries()

@@ -506,11 +506,14 @@ class Blob(object):
         self.area = dict["area"]
         self.perimeter = dict["perimeter"]
 
-        self.contour = np.asarray(dict["contour"])
+
+        #inner_contours = dict["inner contours"]
+        self.contour = self.toContour(dict["contour"])
         inner_contours = dict["inner contours"]
         self.inner_contours = []
         for c in inner_contours:
-            self.inner_contours.append(np.asarray(c))
+            #self.inner_contours.append(np.asarray(c))
+            self.inner_contours.append(self.toContour(c))
 
         self.deep_extreme_points = np.asarray(dict["deep_extreme_points"])
         #for the moment we just update genets on load.
@@ -526,6 +529,31 @@ class Blob(object):
     def save(self):
         return self.toDict()
 
+    def toPoints(self, c):
+
+        #return c.tolist()
+        d = (c * 10).astype(int)
+        d = np.diff(d, axis=0, prepend=[[0, 0]])
+        d = np.reshape(d, -1)
+        d = np.char.mod('%d', d)
+        # combine to a string
+        d = " ".join(d)
+        return d
+
+    def toContour(self, p):
+        print(p)
+        if type(p) is 'str':
+            p = map(int, p.split(' '))
+        c = np.asarray(p)
+        print(c.shape)
+        if len(c.shape) == 2:
+            return c
+        c = np.reshape(c, (-1, 2))
+        c = np.cumsum(c, axis=0)
+        c = c / 10.0
+        return c
+
+
     def toDict(self):
         """
         Get the blob information as a dictionary.
@@ -539,11 +567,13 @@ class Blob(object):
         dict["area"] = self.area
         dict["perimeter"] = self.perimeter
 
-        dict["contour"] = self.contour.tolist()
+        #dict["contour"] = self.contour.tolist()
+        dict["contour"] = self.toPoints(self.contour)
 
         dict["inner contours"] = []
         for c in self.inner_contours:
-            dict["inner contours"].append(c.tolist())
+            #dict["inner contours"].append(c.tolist())
+            dict["inner contours"].append(self.toPoints(c))
 
         dict["deep_extreme_points"] = self.deep_extreme_points.tolist()
 
