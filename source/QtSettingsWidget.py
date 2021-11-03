@@ -28,15 +28,21 @@ from source.Grid import Grid
 
 class generalSettingsWidget(QWidget):
 
-    def __init__(self, parent=None):
+    researchFieldChanged = pyqtSignal(str)
+    autosaveInfoChanged = pyqtSignal(int)
+
+    def __init__(self, settings, parent=None):
         super(generalSettingsWidget, self).__init__(parent)
+
+        self.settings = settings
 
         self.autosave_interval = 0  #autosave disabled
 
         self.checkbox_autosave = QCheckBox("Autosave")
-        self.edit_autosave_interval = QLineEdit("300")
+        self.spinbox_autosave_interval = QSpinBox()
+        self.spinbox_autosave_interval.setRange(5, 15)
         self.lbl_autosave_1 = QLabel("Every ")
-        self.lbl_autosave_2 = QLabel(" seconds.")
+        self.lbl_autosave_2 = QLabel(" minutes.")
 
         self.lbl_research_field = QLabel("Research field :  ")
         self.combo_research_field = QComboBox()
@@ -53,7 +59,7 @@ class generalSettingsWidget(QWidget):
         layout_H2 = QHBoxLayout()
         layout_H2.addWidget(self.checkbox_autosave)
         layout_H2.addWidget(self.lbl_autosave_1)
-        layout_H2.addWidget(self.edit_autosave_interval)
+        layout_H2.addWidget(self.spinbox_autosave_interval)
         layout_H2.addWidget(self.lbl_autosave_2)
         layout_H2.addStretch()
 
@@ -63,26 +69,47 @@ class generalSettingsWidget(QWidget):
 
         self.setLayout(layout)
 
+        self.combo_research_field.currentTextChanged.connect(self.setResearchField)
         self.checkbox_autosave.stateChanged.connect(self.autosaveChanged)
+        self.spinbox_autosave_interval.valueChanged.connect(self.autosaveIntervalChanged)
 
     @pyqtSlot(int)
     def autosaveChanged(self, status):
 
         if self.checkbox_autosave.isChecked() is False:
             self.lbl_autosave_1.setDisabled(True)
-            self.edit_autosave_interval.setDisabled(True)
+            self.spinbox_autosave_interval.setDisabled(True)
             self.lbl_autosave_2.setDisabled(True)
+
+            self.settings.setValue("autosave-interval", 0)
+
+            self.autosaveInfoChanged.emit(0)  # 0 means that the autosave should be disabled
         else:
             self.lbl_autosave_1.setEnabled(True)
-            self.edit_autosave_interval.setEnabled(True)
+            self.spinbox_autosave_interval.setEnabled(True)
             self.lbl_autosave_2.setEnabled(True)
+
+            self.settings.setValue("autosave-interval", self.spinbox_autosave_interval.value())
+
+            self.autosaveInfoChanged.emit(self.spinbox_autosave_interval.value())
+
+    @pyqtSlot(int)
+    def autosaveIntervalChanged(self, value):
+
+        self.settings.setValue("autosave-interval", self.spinbox_autosave_interval.value())
+
+        self.autosaveInfoChanged.emit(value)
 
     def setResearchField(self, field):
 
         if field == "Marine Ecology/Biology":
             self.combo_research_field.setCurrentIndex(0)
+            self.settings.setValue("research-field", self.combo_research_field.currentText())
+            self.researchFieldChanged.emit(self.combo_research_field.currentText())
         elif field == "Architectural Heritage":
             self.combo_research_field.setCurrentIndex(1)
+            self.settings.setValue("research-field", self.combo_research_field.currentText())
+            self.researchFieldChanged.emit(self.combo_research_field.currentText())
 
     def researchField(self):
 
@@ -93,13 +120,15 @@ class generalSettingsWidget(QWidget):
         if interval == 0:
             self.checkbox_autosave.setChecked(False)
             self.lbl_autosave_1.setDisabled(True)
-            self.edit_autosave_interval.setDisabled(True)
+            self.spinbox_autosave_interval.setDisabled(True)
             self.lbl_autosave_2.setDisabled(True)
         else:
             self.checkbox_autosave.setChecked(True)
             self.lbl_autosave_1.setEnabled(True)
-            self.edit_autosave_interval.setEnabled(True)
+            self.spinbxo_autosave_interval.setEnabled(True)
             self.lbl_autosave_2.setEnabled(True)
+
+        self.settings.setValue("autosave-interval", interval)
 
     def autosaveInterval(self):
 
@@ -111,10 +140,13 @@ class generalSettingsWidget(QWidget):
 
 class drawingSettingsWidget(QWidget):
 
-    drawingSettingsChanged = pyqtSignal()
+    borderPenChanged = pyqtSignal(str, int)
+    selectionPenChanged = pyqtSignal(str, int)
 
-    def __init__(self, parent=None):
+    def __init__(self, settings, parent=None):
         super(drawingSettingsWidget, self).__init__(parent)
+
+        self.settings = settings
 
         self.border_pen_color = "255-255-255"
         self.selection_pen_color = "255-255-255"
@@ -186,6 +218,8 @@ class drawingSettingsWidget(QWidget):
         # connections
         self.btn_border_color.clicked.connect(self.chooseBorderColor)
         self.btn_selection_color.clicked.connect(self.chooseSelectionColor)
+        self.spinbox_border_width.valueChanged.connect(self.borderWidthChanged)
+        self.spinbox_selection_width.valueChanged.connect(self.selectionWidthChanged)
 
     @pyqtSlot()
     def chooseBorderColor(self):
@@ -196,8 +230,6 @@ class drawingSettingsWidget(QWidget):
         newcolor = "{:d}-{:d}-{:d}".format(color.red(), color.green(), color.blue())
         self.setBorderColor(newcolor)
 
-        self.drawingSettingsChanged.emit()
-
     @pyqtSlot()
     def chooseSelectionColor(self):
 
@@ -207,7 +239,13 @@ class drawingSettingsWidget(QWidget):
         newcolor = "{:d}-{:d}-{:d}".format(color.red(), color.green(), color.blue())
         self.setSelectionColor(newcolor)
 
-        self.drawingSettingsChanged.emit()
+    @pyqtSlot(int)
+    def borderWidthChanged(self, value):
+        self.setBorderWidth(value)
+
+    @pyqtSlot(int)
+    def selectionWidthChanged(self, value):
+        self.setSelectionWidth(value)
 
     def setBorderColor(self, color):
 
@@ -216,9 +254,14 @@ class drawingSettingsWidget(QWidget):
             r = color_components[0]
             g = color_components[1]
             b = color_components[2]
-            text = "QPushButton:flat {background-color: rgb(" + str(r) + "," + str(g) + "," + str(b) + "); border: none ;}"
+            text = "QPushButton:flat {background-color: rgb(" + r + "," + g + "," + b + "); border: none ;}"
             self.btn_border_color.setStyleSheet(text)
             self.border_pen_color = color
+
+            self.settings.setValue("border-pen-color", self.border_pen_color)
+
+            border_pen_width = self.spinbox_border_width.value()
+            self.borderPenChanged.emit(self.border_pen_color, border_pen_width)
 
     def borderColor(self):
 
@@ -226,7 +269,11 @@ class drawingSettingsWidget(QWidget):
 
     def setBorderWidth(self, width):
 
-        self.spinbox_border_width.setValue(width)
+        if self.spinbox_border_width.minimum() <= width <= self.spinbox_border_width.maximum():
+            self.spinbox_border_width.setValue(width)
+            self.settings.setValue("border-pen-width", width)
+
+            self.borderPenChanged.emit(self.border_pen_color, width)
 
     def borderWidth(self):
 
@@ -239,9 +286,14 @@ class drawingSettingsWidget(QWidget):
             r = color_components[0]
             g = color_components[1]
             b = color_components[2]
-            text = "QPushButton:flat {background-color: rgb(" + str(r) + "," + str(g) + "," + str(b) + "); border: none ;}"
+            text = "QPushButton:flat {background-color: rgb(" + r + "," + g + "," + b + "); border: none ;}"
             self.btn_selection_color.setStyleSheet(text)
             self.selection_pen_color = color
+
+            self.settings.setValue("selection-pen-color", self.selection_pen_color)
+
+            selection_pen_width = self.spinbox_selection_width.value()
+            self.selectionPenChanged.emit(self.selection_pen_color, selection_pen_width)
 
     def selectionColor(self):
 
@@ -249,7 +301,11 @@ class drawingSettingsWidget(QWidget):
 
     def setSelectionWidth(self, width):
 
-        self.spinbox_selection_width.setValue(width)
+        if self.spinbox_selection_width.minimum() <= width <= self.spinbox_selection_width.maximum():
+            self.spinbox_selection_width.setValue(width)
+            self.settings.setValue("selection-pen-width", width)
+
+            self.selectionPenChanged.emit(self.selection_pen_color, width)
 
     def selectionWidth(self):
 
@@ -261,6 +317,8 @@ class QtSettingsWidget(QWidget):
 
     def __init__(self, parent=None):
         super(QtSettingsWidget, self).__init__(parent)
+
+        self.settings = QSettings("VCLAB", "TagLab")
 
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
@@ -275,12 +333,12 @@ class QtSettingsWidget(QWidget):
 
         ###### CENTRAL PART
 
-        self.generalSettings = generalSettingsWidget()
-        self.drawingSettings = drawingSettingsWidget()
+        self.general_settings = generalSettingsWidget(self.settings)
+        self.drawing_settings = drawingSettingsWidget(self.settings)
 
         self.stackedwidget = QStackedWidget()
-        self.stackedwidget.addWidget(self.generalSettings)
-        self.stackedwidget.addWidget(self.drawingSettings)
+        self.stackedwidget.addWidget(self.general_settings)
+        self.stackedwidget.addWidget(self.drawing_settings)
 
         layoutH = QHBoxLayout()
         layoutH.addWidget(self.listwidget)
@@ -329,57 +387,27 @@ class QtSettingsWidget(QWidget):
 
         self.settings_widget = QtSettingsWidget()
 
-        settings = QSettings("VCLAB", "TagLab")
-
         # 0: autosave is disabled , >0: the project is saved every N seconds
-        self.autosave_interval = settings.value("autosave", type=int)
-        self.research_field = settings.value("research-field", type=str)
+        self.autosave_interval = self.settings.value("autosave", type=int)
+        self.research_field = self.settings.value("research-field", type=str)
 
-        self.selection_pen_color = settings.value("selection-pen-color", type=str)
-        self.selection_pen_width = settings.value("selection-pen-width", type=int)
-        self.border_pen_color = settings.value("border-pen-color", type=str)
-        self.border_pen_width = settings.value("border-pen-width", type=int)
+        self.selection_pen_color = self.settings.value("selection-pen-color", type=str)
+        self.selection_pen_width = self.settings.value("selection-pen-width", type=int)
+        self.border_pen_color = self.settings.value("border-pen-color", type=str)
+        self.border_pen_width = self.settings.value("border-pen-width", type=int)
 
-        self.generalSettings.setResearchField(self.research_field)
-        self.generalSettings.setAutosaveInterval(self.autosave_interval)
+        self.general_settings.setResearchField(self.research_field)
+        self.general_settings.setAutosaveInterval(self.autosave_interval)
 
-        self.drawingSettings.setBorderColor(self.border_pen_color)
-        self.drawingSettings.setBorderWidth(self.border_pen_width)
-        self.drawingSettings.setSelectionColor(self.selection_pen_color)
-        self.drawingSettings.setSelectionWidth(self.selection_pen_width)
+        self.drawing_settings.setBorderColor(self.border_pen_color)
+        self.drawing_settings.setBorderWidth(self.border_pen_width)
+        self.drawing_settings.setSelectionColor(self.selection_pen_color)
+        self.drawing_settings.setSelectionWidth(self.selection_pen_width)
 
     @pyqtSlot(int)
     def display(self, i):
         self.stackedwidget.setCurrentIndex(i)
 
-    @pyqtSlot()
-    def apply(self):
 
-        # SAVE SETTINGS
-        settings = QSettings("VCLAB", "TagLab")
-
-        # GENERAL settings
-        self.research_field = self.generalSettings.researchField()
-        self.autosave_interval = self.generalSettings.autosaveInterval()
-        settings.setValue("research_field", self.research_field)
-        settings.setValue("autosave_interval", self.autosave_interval)
-
-        # DRAWING settings
-        self.border_pen_color = self.borderPenColor()
-        self.border_pen_width = self.borderPenWidth()
-        self.selection_pen_color = self.selectionPenColor()
-        self.selection_pen_width = self.selectionPenWidth()
-
-        settings.setValue("border_pen_color", self.border_pen_color)
-
-        if self.border_pen_width > 0:
-            settings.setValue("border_pen_width", self.border_pen_width)
-
-        settings.setValue("selection_pen_color", self.selection_pen_color)
-
-        if self.selection_pen_width > 0:
-            settings.setValue("selection_pen_width", self.selection_pen_width)
-
-        self.close()
 
 

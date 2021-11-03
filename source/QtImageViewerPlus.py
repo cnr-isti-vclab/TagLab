@@ -23,7 +23,7 @@
 
 import os.path
 from PyQt5.QtCore import Qt, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
-from PyQt5.QtGui import QImage, QPixmap, QPainter, QPainterPath, QPen, QImageReader, QFont, QBrush
+from PyQt5.QtGui import QImage, QPixmap, QPainter, QPainterPath, QPen, QColor, QFont, QBrush
 from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QFileDialog, QGraphicsItem, QGraphicsSimpleTextItem, QPlainTextEdit,QSizePolicy
 
 from source.Undo import Undo
@@ -283,7 +283,6 @@ class QtImageViewerPlus(QtImageViewer):
         else:
             self.showGrid()
 
-
     @pyqtSlot(int)
     def toggleFill(self, checked):
 
@@ -294,8 +293,6 @@ class QtImageViewerPlus(QtImageViewer):
             for blob in self.annotations.seg_blobs:
                 brush = self.project.classBrushFromName(blob)
                 blob.qpath_gitem.setBrush(brush)
-
-
 
     @pyqtSlot(int)
     def toggleBorders(self, checked):
@@ -337,9 +334,6 @@ class QtImageViewerPlus(QtImageViewer):
         blob.id_item.setBrush(Qt.white)
         blob.id_item.setOpacity(0.8)
 
-
-
-
     def undrawBlob(self, blob):
         self.scene.removeItem(blob.qpath_gitem)
         self.scene.removeItem(blob.id_item)
@@ -348,14 +342,11 @@ class QtImageViewerPlus(QtImageViewer):
         blob.id_item = None
         self.scene.invalidate()
 
-
     def applyTransparency(self, value):
         self.transparency_value = 1.0 - (value / 100.0)
         # current annotations
         for blob in self.annotations.seg_blobs:
             blob.qpath_gitem.setOpacity(self.transparency_value)
-
-
 
     #used for crossair cursor
     def drawForeground(self, painter, rect):
@@ -647,6 +638,36 @@ class QtImageViewerPlus(QtImageViewer):
                 self.tools.tools["WATERSHED"].setActiveLabel(label_info)
 
         self.active_label = label
+
+    @pyqtSlot(str, int)
+    def setBorderPen(self, color, thickness):
+
+        self.border_pen = QPen(Qt.black, thickness)
+        self.border_pen.setCosmetic(True)
+        color_components = color.split("-")
+        if len(color_components) > 2:
+            r = int(color_components[0])
+            g = int(color_components[1])
+            b = int(color_components[2])
+            self.border_pen.setColor(QColor(r, g, b))
+
+            for blob in self.annotations.seg_blobs:
+                blob.qpath_gitem.setPen(self.border_pen)
+
+    @pyqtSlot(str, int)
+    def setSelectionPen(self, color, thickness):
+
+        self.border_selected_pen = QPen(Qt.white, thickness)
+        self.border_selected_pen.setCosmetic(True)
+        color_components = color.split("-")
+        if len(color_components) > 2:
+            r = int(color_components[0])
+            g = int(color_components[1])
+            b = int(color_components[2])
+            self.border_selected_pen.setColor(QColor(r, g, b))
+
+            for blob in self.selected_blobs:
+                blob.qpath_gitem.setPen(self.border_selected_pen)
 
     def setBlobVisible(self, blob, visibility):
         if blob.qpath_gitem is not None:

@@ -105,9 +105,7 @@ class TagLab(QMainWindow):
         print(self.TAGLAB_VERSION)
 
         # SETTINGS
-
         self.settings_widget = QtSettingsWidget()
-
         self.settings_widget.loadSettings()
 
         # LOAD CONFIGURATION FILE
@@ -558,7 +556,16 @@ class TagLab(QMainWindow):
         self.sliderTransparency.setValue(50)
         self.transparency_value = 0.5
 
-        # EVENTS
+        # EVENTS-CONNECTIONS
+
+        self.settings_widget.general_settings.researchFieldChanged[str].connect(self.researchFieldChanged)
+        self.settings_widget.general_settings.autosaveInfoChanged[int].connect(self.setAutosave)
+
+        self.settings_widget.drawing_settings.borderPenChanged[str, int].connect(self.viewerplus.setBorderPen)
+        self.settings_widget.drawing_settings.selectionPenChanged[str, int].connect(self.viewerplus.setSelectionPen)
+        self.settings_widget.drawing_settings.borderPenChanged[str, int].connect(self.viewerplus2.setBorderPen)
+        self.settings_widget.drawing_settings.selectionPenChanged[str, int].connect(self.viewerplus2.setSelectionPen)
+
         self.labels_widget.activeLabelChanged.connect(self.viewerplus.setActiveLabel)
         self.labels_widget.activeLabelChanged.connect(self.viewerplus2.setActiveLabel)
 
@@ -728,7 +735,7 @@ class TagLab(QMainWindow):
 
     def setAutosave(self, interval):
         """
-        Set autosave interval. Interval is in seconds. If interval is zero or negative the autosave is disabled.
+        Set autosave interval. Interval is in minutes. If interval is zero or negative the autosave is disabled.
         """
 
         if interval > 0:
@@ -740,7 +747,7 @@ class TagLab(QMainWindow):
                 pass
 
             self.timer.timeout.connect(self.autosave)
-            self.timer.start(interval * 1000)   # interval is in seconds
+            self.timer.start(interval * 60 * 1000)   # interval is in seconds
         else:
             self.timer.stop()
 
@@ -1100,10 +1107,6 @@ class TagLab(QMainWindow):
 
     @pyqtSlot(str)
     def researchFieldChanged(self, str):
-
-        self.setResearchField(str)
-
-    def setResearchField(self):
         pass
 
     @pyqtSlot(QAction)
