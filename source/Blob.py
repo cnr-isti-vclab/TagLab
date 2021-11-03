@@ -541,13 +541,14 @@ class Blob(object):
         return d
 
     def toContour(self, p):
-        print(p)
+
         if type(p) is 'str':
             p = map(int, p.split(' '))
         c = np.asarray(p)
-        print(c.shape)
+
         if len(c.shape) == 2:
             return c
+
         c = np.reshape(c, (-1, 2))
         c = np.cumsum(c, axis=0)
         c = c / 10.0
