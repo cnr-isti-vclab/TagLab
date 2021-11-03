@@ -22,7 +22,7 @@ import os
 from PyQt5.QtCore import Qt, QSettings, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import QWidget, QColorDialog, QListWidget, QStackedWidget, QComboBox, QSizePolicy, QLineEdit, \
-    QLabel, QCheckBox, QPushButton, QHBoxLayout, QVBoxLayout
+    QLabel, QSpinBox, QCheckBox, QPushButton, QHBoxLayout, QVBoxLayout
 from source import utils
 from source.Grid import Grid
 
@@ -111,6 +111,8 @@ class generalSettingsWidget(QWidget):
 
 class drawingSettingsWidget(QWidget):
 
+    drawingSettingsChanged = pyqtSignal()
+
     def __init__(self, parent=None):
         super(drawingSettingsWidget, self).__init__(parent)
 
@@ -140,13 +142,15 @@ class drawingSettingsWidget(QWidget):
         self.lblBorderWidth = QLabel("Border width :  ")
         self.lblSelectionWidth = QLabel("Selection Width :  ")
 
-        self.lineedit_border_width = QLineEdit("3")
-        self.lineedit_border_width.setFixedWidth(50)
-        self.lineedit_border_width.setValidator(QIntValidator())
+        self.spinbox_border_width = QSpinBox()
+        self.spinbox_border_width.setFixedWidth(50)
+        self.spinbox_border_width.setRange(2, 6)
+        self.spinbox_border_width.setValue(3)
 
-        self.lineedit_selection_width = QLineEdit("3")
-        self.lineedit_selection_width.setFixedWidth(50)
-        self.lineedit_selection_width.setValidator(QIntValidator())
+        self.spinbox_selection_width = QSpinBox()
+        self.spinbox_selection_width.setFixedWidth(50)
+        self.spinbox_selection_width.setRange(2, 6)
+        self.spinbox_selection_width.setValue(3)
 
         layout_H1 = QHBoxLayout()
         layout_H1.addWidget(self.lbl_border_color)
@@ -158,11 +162,11 @@ class drawingSettingsWidget(QWidget):
 
         layout_H3 = QHBoxLayout()
         layout_H3.addWidget(self.lblBorderWidth)
-        layout_H3.addWidget(self.lineedit_border_width)
+        layout_H3.addWidget(self.spinbox_border_width)
 
         layout_H4 = QHBoxLayout()
         layout_H4.addWidget(self.lblSelectionWidth)
-        layout_H4.addWidget(self.lineedit_selection_width)
+        layout_H4.addWidget(self.spinbox_selection_width)
 
         layout_V1 = QVBoxLayout()
         layout_V1.addLayout(layout_H1)
@@ -192,6 +196,8 @@ class drawingSettingsWidget(QWidget):
         newcolor = "{:d}-{:d}-{:d}".format(color.red(), color.green(), color.blue())
         self.setBorderColor(newcolor)
 
+        self.drawingSettingsChanged.emit()
+
     @pyqtSlot()
     def chooseSelectionColor(self):
 
@@ -200,6 +206,8 @@ class drawingSettingsWidget(QWidget):
         # convert to string RR-GG-BB
         newcolor = "{:d}-{:d}-{:d}".format(color.red(), color.green(), color.blue())
         self.setSelectionColor(newcolor)
+
+        self.drawingSettingsChanged.emit()
 
     def setBorderColor(self, color):
 
@@ -218,14 +226,11 @@ class drawingSettingsWidget(QWidget):
 
     def setBorderWidth(self, width):
 
-        self.lineedit_border_width.setText(str(width))
+        self.spinbox_border_width.setValue(width)
 
     def borderWidth(self):
 
-        if self.lineedit_border_width.hasAcceptableInput() is True:
-            return self.lineedit_border_width.text().toInt()
-        else:
-            return -1  # invalid
+        return self.spinbox_border_width.value()
 
     def setSelectionColor(self, color):
 
@@ -244,14 +249,11 @@ class drawingSettingsWidget(QWidget):
 
     def setSelectionWidth(self, width):
 
-        self.lineedit_selection_width.setText(str(width))
+        self.spinbox_selection_width.setValue(width)
 
     def selectionWidth(self):
 
-        if self.lineedit_selection_width.hasAcceptableInput() is True:
-            return self.lineedit_selection_width.text().toInt()
-        else:
-            return -1  # invalid
+        return self.spinbox_selection_width.value()
 
 class QtSettingsWidget(QWidget):
 

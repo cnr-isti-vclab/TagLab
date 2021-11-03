@@ -107,6 +107,7 @@ class TagLab(QMainWindow):
         # SETTINGS
 
         self.settings_widget = QtSettingsWidget()
+
         self.settings_widget.loadSettings()
 
         # LOAD CONFIGURATION FILE
@@ -905,6 +906,10 @@ class TagLab(QMainWindow):
         trainYourNetworkAct.setStatusTip("Export a new training dataset and, eventually, train your network on it")
         trainYourNetworkAct.triggered.connect(self.trainYourNetwork)
 
+        settingsAct = QAction("Settings..", self)
+        settingsAct.setStatusTip("")
+        settingsAct.triggered.connect(self.settings)
+
         undoAct = QAction("Undo", self)
         undoAct.setShortcut('Ctrl+Z')
         undoAct.setStatusTip("Undo")
@@ -971,6 +976,8 @@ class TagLab(QMainWindow):
         self.submenuExport.addAction(exportTrainingDatasetAct)
         self.filemenu.addSeparator()
         self.filemenu.addAction(trainYourNetworkAct)
+        self.filemenu.addSeparator()
+        self.filemenu.addAction(settingsAct)
 
         ###### DEM MENU
 
@@ -994,7 +1001,6 @@ class TagLab(QMainWindow):
         self.demmenu.addAction(switchAct)
         self.demmenu.addAction(calculateSurfaceAreaAct)
         self.demmenu.addAction(exportClippedRasterAct)
-
 
         self.editmenu = menubar.addMenu("&Edit")
         self.editmenu.setStyleSheet(styleMenu)
@@ -1082,6 +1088,11 @@ class TagLab(QMainWindow):
                 self.submenuEdit.triggered[QAction].connect(self.editMapSettings)
                 self.mapActionList.append(editMap)
 
+    @pyqtSlot()
+    def settings(self):
+
+        self.settings_widget.setWindowModality(Qt.WindowModal)
+        self.settings_widget.show()
 
     @pyqtSlot(str)
     def researchFieldChanged(self, str):
@@ -1090,9 +1101,6 @@ class TagLab(QMainWindow):
 
     def setResearchField(self):
         pass
-
-
-
 
     @pyqtSlot(QAction)
     def editMapSettings(self, openMapAction):
@@ -1383,9 +1391,7 @@ class TagLab(QMainWindow):
             self.deleteSelectedBlobs()
 
         elif event.key() == Qt.Key_X:
-
-            self.settings_widget.setWindowModality(Qt.WindowModal)
-            self.settings_widget.show()
+            pass
 
         elif event.key() == Qt.Key_B:
             self.attachBoundaries()
