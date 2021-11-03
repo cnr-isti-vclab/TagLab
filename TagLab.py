@@ -149,11 +149,15 @@ class TagLab(QMainWindow):
 
         flatbuttonstyle1 = """
         QPushButton:checked { background-color: rgb(100,100,100); }
-        QPushButton:hover   { border: 1px solid darkgray;         }"""
+        QPushButton:hover   { border: 1px solid darkgray;         }
+        QToolTip { background-color: white; color: rgb(100,100,100); }
+        """
 
         flatbuttonstyle2 = """
         QPushButton:checked { background-color: rgb(100,100,100); }
-        QPushButton:hover   { border: 1px solid rgb(255,100,100); }"""
+        QPushButton:hover   { border: 1px solid rgb(255,100,100); }
+        QToolTip { background-color: white; color: rgb(100,100,100); }
+        """
 
 
         self.btnMove               = self.newButton("move.png",     "Move",                   flatbuttonstyle1, self.move)
