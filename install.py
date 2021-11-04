@@ -16,12 +16,14 @@ if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] 
 something_wrong_with_nvcc = False
 flag_install_pythorch_cpu = False
 nvcc_version = ''
-torch_package = 'torch==1.5.1'
-torchvision_package = 'torchvision==0.6.1'
+torch_package = 'torch==1.10.0'
+torchvision_package = 'torchvision==0.11.1'
 
+# if the user wants to install cpu torch
 if len(sys.argv)==2 and sys.argv[1]=='cpu':
     flag_install_pythorch_cpu = True
 
+# get nvcc version
 if flag_install_pythorch_cpu == False and osused != 'Darwin':
     result = subprocess.getstatusoutput('nvcc --version')
     output = result[1]
@@ -36,11 +38,11 @@ if flag_install_pythorch_cpu == False and osused != 'Darwin':
         else:
             raise Exception('Could not read NVCC version.\nInstallation aborted.')
     else:
-        #raise Exception('NVCC not found. Please install NVidia CUDA first.\nInstallation aborted.')
         print('Impossible to run "nvcc --version" command. CUDA seems to be not installed.')
-        something_wrong_with_nvcc = True
+        something_wrong_with_nvcc = True # remember that we had issues on finding nvcc
 
 
+    # get nvcc version
     if '9.2' in nvcc_version:
         nvcc_version = '9.2'
         print('Torch for CUDA 9.2')
@@ -51,12 +53,18 @@ if flag_install_pythorch_cpu == False and osused != 'Darwin':
         torch_package += '+cu101'
         torchvision_package += '+cu101'
     elif nvcc_version == '10.2':
+        # 10.2 is default in torch and torchvision
         print('Torch for CUDA 10.2')
+    elif '11.3' in nvcc_version:
+        print('Torch for CUDA 11.3')
+        torch_package += '+cu113'
+        torchvision_package += '+cu113'
     elif something_wrong_with_nvcc==False:
+        # nvcc is installed, but some version that is not supported by torch
         print('nvcc version installed not supported by pytorch!!')
-        something_wrong_with_nvcc = True
-        #raise Exception('NVCC version not supported by pythorch.\nInstallation aborted.')
+        something_wrong_with_nvcc = True # remember that we had issues on finding nvcc
 
+    # if the user tried to run the installer but there were issues on finding a supported
     if something_wrong_with_nvcc == True and flag_install_pythorch_cpu == False:
         ans = input('Something is wrong with NVCC. Do you want to install the CPU version of pythorch? [Y/n]')
         if ans == "Y":
@@ -68,9 +76,10 @@ elif osused == 'Darwin':
     print('NVCC not supported on MacOS. Installing cpu version automatically...')
 
 
+# somewhere before, this flag has been set to True and the user choose to install the cpu torch version
 if flag_install_pythorch_cpu==True:
     print('Torch will be installed in its CPU version.')
-    if osused != 'Darwin':
+    if osused != 'Darwin': # for macos, the DEFAULT is cpu, therefore we don't need the '+cpu' flag
         torch_package += '+cpu'
         torchvision_package += '+cpu'
 
