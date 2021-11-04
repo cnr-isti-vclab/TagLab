@@ -106,7 +106,6 @@ class TagLab(QMainWindow):
 
         # SETTINGS
         self.settings_widget = QtSettingsWidget()
-        self.settings_widget.loadSettings()
 
         # LOAD CONFIGURATION FILE
 
@@ -580,6 +579,8 @@ class TagLab(QMainWindow):
 
         self.viewerplus.customContextMenuRequested.connect(self.openContextMenu)
         self.viewerplus2.customContextMenuRequested.connect(self.openContextMenu)
+
+        self.settings_widget.loadSettings()
 
         # SWITCH IMAGES
         self.current_image_index = 0
