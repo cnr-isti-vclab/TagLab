@@ -392,14 +392,17 @@ class Ritm(Tool):
 
         blob.setupForDrawing()
 
-        pen = QPen(Qt.lightGray)
+        pen = QPen(Qt.white)
         pen.setWidth(2)
         pen.setCosmetic(True)
 
         if self.blob_to_correct is None:
-            brush = QBrush(Qt.NoBrush)
+            brush = QBrush(Qt.SolidPattern)
+            brush.setColor(Qt.white)
         else:
             brush = self.viewerplus.project.classBrushFromName(self.blob_to_correct)
+
+        brush.setStyle(Qt.Dense4Pattern)
 
         blob.qpath_gitem = scene.addPath(blob.qpath, pen, brush)
         blob.qpath_gitem.setZValue(1)
