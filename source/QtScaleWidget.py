@@ -83,7 +83,7 @@ class QtScaleWidget(QWidget):
         layout_first_row.addLayout(layout_px)
 
 
-        label_current_scale = QLabel("Map current pixel size (mm) is")
+        label_current_scale = QLabel("Current map pixel size (mm): ")
         self.label_current_scale_value = QLabel(" ")
         layout_current_scale = QHBoxLayout()
         layout_current_scale.addWidget(label_current_scale)
