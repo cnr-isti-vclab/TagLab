@@ -284,23 +284,26 @@ class QtImageViewerPlus(QtImageViewer):
 
         if checked == 0:
             for blob in self.annotations.seg_blobs:
-                blob.qpath_gitem.setBrush(QBrush(Qt.NoBrush))
+                if blob.qpath_gitem is not None:
+                    blob.qpath_gitem.setBrush(QBrush(Qt.NoBrush))
         else:
             for blob in self.annotations.seg_blobs:
                 brush = self.project.classBrushFromName(blob)
-                blob.qpath_gitem.setBrush(brush)
+                if blob.qpath_gitem is not None:
+                    blob.qpath_gitem.setBrush(brush)
 
     @pyqtSlot(int)
     def toggleBorders(self, checked):
 
         if checked == 0:
            for blob in self.annotations.seg_blobs:
-                blob.qpath_gitem.setPen(QPen(Qt.NoPen))
-
+                if blob.qpath_gitem is not None:
+                    blob.qpath_gitem.setPen(QPen(Qt.NoPen))
         else:
             for blob in self.annotations.seg_blobs:
                 pen = self.border_selected_pen if blob in self.selected_blobs else self.border_pen
-                blob.qpath_gitem.setPen(pen)
+                if blob.qpath_gitem is not None:
+                    blob.qpath_gitem.setPen(pen)
 
     def drawBlob(self, blob, prev=False):
 
