@@ -1,21 +1,19 @@
 import numpy as np
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QPen, QFont
 from PyQt5.QtWidgets import QGraphicsItem
 from source.tools.Tool import Tool
 
 class Ruler(Tool):
+    measuretaken = pyqtSignal(float)
     def __init__(self, viewerplus, pick_points ):
         super(Ruler, self).__init__(viewerplus)
         self.pick_points = pick_points
-        self.scene = viewerplus.scene
+        self.viewerplus = viewerplus
 
         self.CROSS_LINE_WIDTH = 2
         self.pick_style = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.cyan, 'size': 6}
-        self.px_to_mm_factor = None
 
-    def setPxToMM(self, factor):
-        self.px_to_mm_factor = factor
 
     def leftPressed(self, x, y, mods):
         points = self.pick_points.points
@@ -46,17 +44,19 @@ class Ruler(Tool):
         pen.setCosmetic(True)
         start = self.pick_points.points[0]
         end = self.pick_points.points[1]
-        line = self.scene.addLine(start[0], start[1], end[0], end[1], pen)
+        line = self.viewerplus.scene.addLine(start[0], start[1], end[0], end[1], pen)
         line.setZValue(5)
+
+
         self.pick_points.markers.append(line)
 
         middle_x = (start[0] + end[0]) / 2.0
         middle_y = (start[1] + end[1]) / 2.0
 
-        middle = self.scene.addEllipse(middle_x, middle_y, 0, 0)
+        middle = self.viewerplus.scene.addEllipse(middle_x, middle_y, 0, 0)
         middle.setZValue(5)
 
-        ruler_text = self.scene.addText('%.1f cm' % measure)
+        ruler_text = self.viewerplus.scene.addText('%.1f cm' % measure)
         ruler_text.setFont(QFont("Calibri", 12, QFont.Bold))
         ruler_text.setDefaultTextColor(Qt.white)
         ruler_text.setPos(middle_x, middle_y)
@@ -68,6 +68,7 @@ class Ruler(Tool):
 
 
         self.log.emit("[TOOL][RULER] Measure taken.")
+        self.measuretaken.emit(measure)
 
 
     def computeMeasure(self, annotations):
@@ -98,8 +99,6 @@ class Ruler(Tool):
 
         measurepx = np.sqrt(((x2 - x1) ** 2) + ((y2 - y1) ** 2))
 
-        if self.px_to_mm_factor is None:
-            raise Exception("map_px to mm factor in ruler needs to be explicitly set")
         # conversion to cm
-        measure = measurepx * self.px_to_mm_factor / 10
+        measure = measurepx * self.viewerplus.image.pixelSize() / 10
         return measure

@@ -50,6 +50,7 @@ from source.QtImageViewerPlus import QtImageViewerPlus
 from source.QtMapViewer import QtMapViewer
 from source.QtSettingsWidget import QtSettingsWidget
 from source.QtMapSettingsWidget import QtMapSettingsWidget
+from source.QtScaleWidget import QtScaleWidget
 from source.QtLabelsWidget import QtLabelsWidget
 from source.QtInfoWidget import QtInfoWidget
 from source.QtHelpWidget import QtHelpWidget
@@ -106,6 +107,7 @@ class TagLab(QMainWindow):
 
         # SETTINGS
         self.settings_widget = QtSettingsWidget()
+        self.settings_widget.loadSettings()
 
         # LOAD CONFIGURATION FILE
 
@@ -132,6 +134,7 @@ class TagLab(QMainWindow):
         #####################
 
         self.mapWidget = None
+        self.scale_widget = None
         self.classifierWidget = None
         self.newDatasetWidget = None
         self.editProjectWidget = None
@@ -139,6 +142,7 @@ class TagLab(QMainWindow):
         self.trainResultsWidget = None
         self.progress_bar = None
         self.gridWidget = None
+
 
         ##### TOP LAYOUT
 
@@ -187,7 +191,6 @@ class TagLab(QMainWindow):
         self.btnSplitScreen = self.newButton("split.png", "Split screen", flatbuttonstyle1, self.toggleComparison)
         self.btnAutoMatch = self.newButton("automatch.png", "Compute automatic matches", flatbuttonstyle1, self.autoCorrespondences)
         self.btnMatch = self.newButton("manualmatch.png", "Add manual matches ", flatbuttonstyle1, self.matchTool)
-
 
         # NOTE: Automatic matches button is not checkable
         self.btnAutoMatch.setCheckable(False)
@@ -579,8 +582,6 @@ class TagLab(QMainWindow):
 
         self.viewerplus.customContextMenuRequested.connect(self.openContextMenu)
         self.viewerplus2.customContextMenuRequested.connect(self.openContextMenu)
-
-        self.settings_widget.loadSettings()
 
         # SWITCH IMAGES
         self.current_image_index = 0
@@ -1994,6 +1995,9 @@ class TagLab(QMainWindow):
         self.btnGrid.setChecked(False)
         self.btnMatch.setChecked(False)
         self.btnAutoClassification.setChecked(False)
+        if self.scale_widget is not None:
+            self.scale_widget.close()
+            self.scale_widget = None
 
     def setTool(self, tool):
         tools = {
@@ -2107,6 +2111,21 @@ class TagLab(QMainWindow):
         Activate the "ruler" tool. The tool allows to measure the distance between two points or between two blob centroids.
         """
         self.setTool("RULER")
+        if self.scale_widget is None:
+            self.scale_widget = QtScaleWidget(parent=self)
+            self.scale_widget.setWindowModality(Qt.NonModal)
+            self.scale_widget.setScale(self.activeviewer.image.pixelSize())
+            self.scale_widget.show()
+            self.activeviewer.tools.tools["RULER"].measuretaken[float].connect(self.scale_widget.setMeasure)
+            self.scale_widget.newscale[float].connect(self.updateMapScale)
+            self.scale_widget.btnOk.clicked.connect(self.closeScaleWidget)
+            self.scale_widget.closewidget.connect(self.closeScaleWidget)
+
+    @pyqtSlot()
+    def closeScaleWidget(self):
+        self.scale_widget.close()
+        self.scale_widget = None
+        self.setTool("MOVE")
 
     @pyqtSlot()
     def deepExtreme(self):
@@ -2772,6 +2791,11 @@ class TagLab(QMainWindow):
         self.mapWidget.close()
         self.showImage(image)
 
+    @pyqtSlot(float)
+    def updateMapScale(self, value):
+        # this should only operate on the active image
+        self.activeviewer.image.map_px_to_mm_factor = round(value, 3)
+        self.activeviewer.px_to_mm = round(value, 3)
     @pyqtSlot()
     def updateMapProperties(self):
 

@@ -48,3 +48,4 @@ class QtInfoWidget(QWidget):
         self.lineEdit.setStyleSheet("color: rgb(255,255,255)")
         self.lblMessage.setText("Ready.")
 
+
