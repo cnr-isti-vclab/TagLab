@@ -85,6 +85,19 @@ LOG_FILENAME = "TagLab.log"
 logging.basicConfig(level=logging.DEBUG, filemode='w', filename=LOG_FILENAME, format = '%(asctime)s %(levelname)-8s %(message)s')
 logfile = logging.getLogger("tool-logger")
 
+class MainWindow(QMainWindow):
+    def __init__(self, parent=None):
+        super(MainWindow, self).__init__(parent)
+        pass
+    def closeEvent(self, event):
+        taglab = self.centralWidget()
+        if taglab.project.filename is not None:
+            box = QMessageBox()
+            reply = box.question(self, taglab.TAGLAB_VERSION, "Do you want to save changes to" + taglab.project.filename, QMessageBox.Yes | QMessageBox.No)
+            if reply == QMessageBox.Yes:
+               taglab.saveProject()
+        super(MainWindow, self).closeEvent(event)
+
 class TagLab(QMainWindow):
 
     def __init__(self, parent=None):
@@ -3932,9 +3945,8 @@ if __name__ == '__main__':
 
     # Create the inspection tool
     tool = TagLab()
-
     # create the main window - TagLab widget is the central widget
-    mw = QMainWindow()
+    mw = MainWindow()
     title = tool.TAGLAB_VERSION
     mw.setWindowTitle(title)
     mw.setCentralWidget(tool)
@@ -3943,4 +3955,5 @@ if __name__ == '__main__':
 
     # Show the viewer and run the application.
     mw.show()
+
     sys.exit(app.exec_())
