@@ -542,9 +542,11 @@ class Blob(object):
 
     def toContour(self, p):
 
-        if type(p) is 'str':
+        if type(p) is str:
             p = map(int, p.split(' '))
-        c = np.asarray(p)
+            c = np.fromiter(p, dtype=int)
+        else:
+            c = np.asarray(p)
 
         if len(c.shape) == 2:
             return c
