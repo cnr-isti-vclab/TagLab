@@ -67,6 +67,8 @@ from source.Image import Image
 from source.MapClassifier import MapClassifier
 from source.NewDataset import NewDataset
 from source.QtGridWidget import QtGridWidget
+from source.QtDictionaryWidget import QtDictionaryWidget
+
 
 from source import utils
 
@@ -885,6 +887,9 @@ class TagLab(QMainWindow):
         newMapAct.setStatusTip("Add a new map to the project")
         newMapAct.triggered.connect(self.setMapToLoad)
 
+        createDicAct = QAction("Create/Edit Dictionary", self)
+        createDicAct.triggered.connect(self.createDictionary)
+
         ### IMPORT
 
         appendAct = QAction("Add Another Project", self)
@@ -980,6 +985,7 @@ class TagLab(QMainWindow):
         self.filemenu.addAction(saveAct)
         self.filemenu.addAction(saveAsAct)
         self.filemenu.addSeparator()
+        self.filemenu.addAction(createDicAct)
         self.filemenu.addAction(newMapAct)
         self.submenuEdit = self.filemenu.addMenu("Edit Maps info")
         self.submenuEdit.setEnabled(False)
@@ -1009,7 +1015,6 @@ class TagLab(QMainWindow):
         ###### DEM MENU
 
         calculateSurfaceAreaAct = QAction("Calculate Surface Area", self)
-        #calculateSurfaceAreaAct.setShortcut('Alt+C')
         calculateSurfaceAreaAct.setStatusTip("Estimate surface area using slope derived from the DEM")
         calculateSurfaceAreaAct.triggered.connect(self.calculateAreaUsingSlope)
 
@@ -1045,8 +1050,6 @@ class TagLab(QMainWindow):
         self.editmenu.addAction(self.dilateAction)
         self.editmenu.addAction(self.erodeAction)
         self.editmenu.addAction(self.attachBoundariesAction)
-        #self.editmenu.addAction(self.refineActionDilate)
-        #self.editmenu.addAction(self.refineActionErode)
         self.editmenu.addAction(self.fillAction)
 
         splitScreenAction = QAction("Enable Split Screen", self)
@@ -2766,6 +2769,11 @@ class TagLab(QMainWindow):
             if self.mapWidget.isHidden():
                 self.mapWidget.show()
 
+    @pyqtSlot()
+    def createDictionary(self):
+        self.create_dictionary = QtDictionaryWidget(self.taglab_dir, parent = self)
+        self.create_dictionary.show()
+
 
 #REFACTOR
     @pyqtSlot()
@@ -2952,7 +2960,7 @@ class TagLab(QMainWindow):
     def saveAsProject(self):
 
         filters = "ANNOTATION PROJECT (*.json)"
-        filename, _ = QFileDialog.getSaveFileName(self, "Save the project", self.taglab_dir, filters)
+        filename, _ = QFileDialog.getSaveFileName(self, "Save project", self.taglab_dir, filters)
 
         if filename:
             dir = QDir(self.taglab_dir)
