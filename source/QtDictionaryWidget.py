@@ -40,7 +40,6 @@ class QtDictionaryWidget(QWidget):
         self.taglab_dir = dir
 
         self.labels = []
-
         self.label_color = []
         self.label_name  = []
 
@@ -59,7 +58,6 @@ class QtDictionaryWidget(QWidget):
         lbl_description = QLabel("Description:")
         lbl_description.setFixedWidth(160)
         lbl_description.setAlignment(Qt.AlignTop)
-      #  self.groupbox_labels.setAlignment(Qt.AlignLeft)
 
         self.edit_dname = QLineEdit()
         self.edit_dname.setPlaceholderText("Name of the dictionary")
@@ -75,7 +73,7 @@ class QtDictionaryWidget(QWidget):
         self.edit_load.setPlaceholderText("Path of the dictionary")
         self.edit_load.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_load.setFixedWidth(350)
-
+        self.edit_load.setReadOnly(True)
 
         self.edit_description = QTextEdit()
         self.edit_description.setPlaceholderText("Type a description of your dictionary")
@@ -83,56 +81,35 @@ class QtDictionaryWidget(QWidget):
         self.edit_description.setFixedWidth(350)
         self.edit_description.setMaximumHeight(100)
 
-
-        self.edit_load.setReadOnly(True)
         self.labels_layout = QVBoxLayout()
         self.labels_widget = QWidget()
 
         self.labels_widget.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.labels_widget.setMinimumWidth(400)
-        self.labels_widget.setMinimumHeight(100)
+        self.labels_widget.setMinimumHeight(220)
         self.labels_widget.setLayout(self.labels_layout)
-
 
         self.scroll = QScrollArea()
         self.scroll.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.scroll.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.scroll.setMinimumHeight(200)
+        self.scroll.setMaximumHeight(200)
         self.scroll.setWidget(self.labels_widget)
-
-        groupbox_style = "QGroupBox\
-                  {\
-                      border: 2px solid rgb(40,40,40);\
-                      border-radius: 0px;\
-                      margin-top: 10px;\
-                      margin-left: 0px;\
-                      margin-right: 0px;\
-                      padding-top: 5px;\
-                      padding-left: 0px;\
-                      padding-bottom: 0px;\
-                      padding-right: 0px;\
-                  }\
-                  \
-                  QGroupBox::title\
-                  {\
-                      subcontrol-origin: margin;\
-                      subcontrol-position: top center;\
-                      padding: 0 0px;\
-                  }"
-
 
         self.btnRemove = QPushButton("Remove")
         self.btnAdd = QPushButton("Add")
+        self.btnAdd.setStyleSheet("background-color: rgb(55,55,55);")
+        self.btnEdit = QPushButton("Edit")
         self.btnRemove.clicked.connect(self.removeLabel)
         self.btnAdd.clicked.connect(self.addLabel)
+        self.btnEdit.clicked.connect(self.editLabel)
 
         buttons_layout = QVBoxLayout()
         buttons_layout.setAlignment(Qt.AlignRight)
         # buttons_layout.setAlignment(Qt.AlignTop)
         buttons_layout.addStretch()
-        buttons_layout.addWidget(self.btnAdd)
+        buttons_layout.addWidget(self.btnEdit)
         buttons_layout.addWidget(self.btnRemove)
 
 
@@ -183,6 +160,9 @@ class QtDictionaryWidget(QWidget):
         self.btnSave = QPushButton("Save")
         self.btnSave.clicked.connect(self.saveDictionary)
 
+        self.btnSet = QPushButton("Set")
+        self.btnSet.clicked.connect(self.setDictionary)
+
         layout_firstrow = QHBoxLayout()
         layout_firstrow.setAlignment(Qt.AlignLeft)
         layout_firstrow.addWidget(lbl_dname)
@@ -211,13 +191,14 @@ class QtDictionaryWidget(QWidget):
         layout_setColor.addWidget(self.btn_selection_color)
         layout_setColor.addLayout(self.channels_layout)
         layout_setColor.addWidget(self.editLabel)
+        layout_setColor.addWidget(self.btnAdd)
 
         #6 row
         bottom = QHBoxLayout()
         bottom.setAlignment(Qt.AlignRight)
         bottom.addStretch()
-        #bottom.addWidget(self.btnCancel)
         bottom.addWidget(self.btnSave)
+        bottom.addWidget(self.btnSet)
 
         layout = QVBoxLayout()
         layout.addLayout(layout_firstrow)
@@ -231,6 +212,8 @@ class QtDictionaryWidget(QWidget):
 
         self.setWindowTitle("Create/edit dictionary")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
+
+        self.selection_index = -1
 
 
     def closeEvent(self, event):
@@ -246,52 +229,45 @@ class QtDictionaryWidget(QWidget):
         filters = "DICTIONARY (*.json)"
         fileName, _ = QFileDialog.getOpenFileName(self, "Dictionary", "", filters)
 
-        self.edit_load.setText(fileName)
-        self.labels_layout = QVBoxLayout()
-
-
         if fileName:
-           f = open(fileName, "r")
-           dict = json.load(f)
-           self.edit_dname.setText(dict["Name"])
-           self.edit_description.document().setPlainText(dict["Description"])
-           ALLlabels = dict["Labels"]
-           self.labels = []
-           for label in ALLlabels:
+
+            if self.labels:
+
+                box = QMessageBox()
+                box.setIcon(QMessageBox.Question)
+                box.setWindowTitle('TagLab')
+                box.setText('Do you want to append or replace the current dictionary?')
+                box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+                buttonY = box.button(QMessageBox.Yes)
+                buttonY.setText('Append')
+                buttonN = box.button(QMessageBox.No)
+                buttonN.setText('Replace')
+                box.exec()
+                if box.clickedButton() == buttonN:
+                    self.labels = []
+
+            self.edit_load.setText(fileName)
+
+            f = open(fileName, "r")
+            dict = json.load(f)
+            self.edit_dname.setText(dict["Name"])
+            self.edit_description.document().setPlainText(dict["Description"])
+            ALLlabels = dict["Labels"]
+
+            for label in ALLlabels:
                name= label['name']
                id = label['name']
                fill = label['fill']
                mylabel = Label(id=id, name=name, fill=fill)
                self.labels.append(mylabel)
-               COLOR_SIZE = 20
-               text = "QPushButton:flat {background-color: rgb(" + str(mylabel.fill[0]) + "," + str(mylabel.fill[1]) + "," + str(mylabel.fill[2]) + "); border: none ;}"
-               self.btn_color = QPushButton()
-               self.btn_color.setFlat(True)
-               self.btn_color.setStyleSheet(text)
-               self.btn_color.setAutoFillBackground(True)
-               self.btn_color.setFixedWidth(COLOR_SIZE)
-               self.btn_color.setFixedHeight(COLOR_SIZE)
 
-               self.lbl_name = QLabel(mylabel.name)
-               self.lbl_name.setStyleSheet("border: none; color: lightgray;")
-               self.lbl_name.setFixedHeight(20)
-
-               self.label_layout = QHBoxLayout()
-               self.label_layout.addWidget(self.btn_color)
-               self.label_layout.addWidget(self.lbl_name)
-
-               self.labels_layout.addLayout(self.label_layout)
-
-           tempWidget = QWidget()
-           tempWidget.setLayout(self.labels_widget.layout())
-           self.labels_widget.setLayout(self.labels_layout)
+            self.createAllLabels()
 
 
-    def setDictionary (self):
+    def checkConsistency (self):
         pass
 
-
-    def removeLabel (self):
+    def setDictionary (self):
         pass
 
     @pyqtSlot()
@@ -344,6 +320,13 @@ class QtDictionaryWidget(QWidget):
 
         self.labels_layout.addLayout(self.label_layout)
 
+        tempWidget = QWidget()
+        tempWidget.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+        tempWidget.setMinimumWidth(400)
+        tempWidget.setMinimumHeight(220)
+        tempWidget.setLayout(self.labels_layout)
+        self.scroll.setWidget(tempWidget)
+
         label = Label(id =name , name =name , fill= [r,g,b])
         self.labels.append(label)
 
@@ -373,18 +356,49 @@ class QtDictionaryWidget(QWidget):
         self.editB.blockSignals(False)
 
 
+    def createAllLabels(self):
+
+        self.labels_layout = QVBoxLayout()
+        self.label_color = []
+        self.label_name = []
+        for label in self.labels:
+
+            COLOR_SIZE = 20
+            text = "QPushButton:flat {background-color: rgb(" + str(label.fill[0]) + "," + str(
+                label.fill[1]) + "," + str(label.fill[2]) + "); border: none ;}"
+            btn_color = QPushButton()
+            btn_color.setFlat(True)
+            btn_color.setStyleSheet(text)
+            btn_color.setAutoFillBackground(True)
+            btn_color.setFixedWidth(COLOR_SIZE)
+            btn_color.setFixedHeight(COLOR_SIZE)
+            self.label_color.append(btn_color)
+
+            lbl_name = QLabel(label.name)
+            lbl_name.setStyleSheet("border: none; color: lightgray;")
+            lbl_name.setFixedHeight(20)
+            lbl_name.installEventFilter(self)
+            self.label_name.append(lbl_name)
+
+            self.label_layout = QHBoxLayout()
+            self.label_layout.addWidget(btn_color)
+            self.label_layout.addWidget(lbl_name)
+
+            self.labels_layout.addLayout(self.label_layout)
+
+        # update the scroll area
+        tempWidget = QWidget()
+        tempWidget.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+        tempWidget.setMinimumWidth(400)
+        tempWidget.setMinimumHeight(220)
+        tempWidget.setLayout(self.labels_layout)
+        self.scroll.setWidget(tempWidget)
+
+
     @pyqtSlot()
     def updatelabelColor(self):
 
-        try: r = int(self.editR.text())
-        except:
-            r = -1
-        try : g = int(self.editG.text())
-        except:
-            g = - 1
-        try : b = int(self.editB.text())
-        except:
-            b = - 1
+        r, g, b = self.getRGB()
 
         if 0 <= r <= 255 and 0 <= g <= 255 and 0 <= b <= 255:
             text = "QPushButton:flat {background-color: rgb(" + str(r) + "," + str(g) + "," + str(b) + "); border: none ;}"
@@ -393,10 +407,6 @@ class QtDictionaryWidget(QWidget):
             self.editR.blockSignals(True)
             self.editG.blockSignals(True)
             self.editB.blockSignals(True)
-            self.editLabel.setText('')
-            self.editR.setText('')
-            self.editG.setText('')
-            self.editB.setText('')
             text = "QPushButton:flat {background-color: rgb(255,255,255); border: none;}"
             self.btn_selection_color.setStyleSheet(text)
             box = QMessageBox()
@@ -419,13 +429,43 @@ class QtDictionaryWidget(QWidget):
             text = "QPushButton:flat {background-color: rgb(" + r + "," + g + "," + b + "); border: none ;}"
             self.btn_selection_color.setStyleSheet(text)
 
+    @pyqtSlot()
+    def editLabel(self):
 
+        if self.selection_index > 0:
+            label = self.labels[self.selection_index]
+            label.id = self.editLabel.text()
+            label.name = self.editLabel.text()
+            r, g, b = self.getRGB()
 
-    def addLabel(self):
+            if 0 <= r <= 255 and 0 <= g <= 255 and 0 <= b <= 255:
+                label.fill = [r, g, b]
+                self.createAllLabels()
+                lbl_selected = self.label_name[self.selection_index]
+                lbl_selected.setStyleSheet("border: 1 px; font-weight: bold; color: white;")
+            else:
+                box = QMessageBox()
+                box.setText("Please, set a valid color")
+                box.exec()
 
-        self.editR.blockSignals(True)
-        self.editG.blockSignals(True)
-        self.editB.blockSignals(True)
+        else:
+            box = QMessageBox()
+            box.setText("Please, select a label to modify")
+            box.exec()
+
+    def removeLabel (self):
+
+        if self.selection_index > 0:
+            label = self.labels[self.selection_index]
+            self.labels.remove(label)
+            self.createAllLabels()
+            self.selection_index = -1
+        else:
+            box = QMessageBox()
+            box.setText("Please, select a label to remove")
+            box.exec()
+
+    def getRGB(self):
 
         try:
             red = int(self.editR.text())
@@ -436,9 +476,19 @@ class QtDictionaryWidget(QWidget):
             green = - 1
             blue = - 1
 
+        return red, green, blue
+
+    @pyqtSlot()
+    def addLabel(self):
+
+        self.editR.blockSignals(True)
+        self.editG.blockSignals(True)
+        self.editB.blockSignals(True)
+
+        red, green, blue = self.getRGB()
+
         if 0 <= red <= 255 and 0 <= green <= 255 and 0 <= blue <= 255 and self.editLabel.text() != '':
             self.createLabel(red, green, blue, self.editLabel.text())
-
         else:
             box = QMessageBox()
             box.setText("Please chose a valid color and type a label name")
@@ -451,25 +501,45 @@ class QtDictionaryWidget(QWidget):
 
     def eventFilter(self, object, event):
 
-
-        if type(object) == QLabel and event.type() == QEvent.FocusIn:
+        if type(object) == QLabel and event.type() == QEvent.MouseButtonDblClick:
             self.highlightSelectedLabel(object)
             return False
 
+        return False
 
     def highlightSelectedLabel(self, lbl_clicked):
 
-        # reset the text of all the clickable labels
+        # reset the text of all the labels
         for lbl in self.label_name:
-            lbl.setStyleSheet("QLineEdit { border: none; font-weight: normal; color : lightgray;}")
+            lbl.setStyleSheet("border: none; color: lightgray;")
 
+        # highlight the selected label
         txt = lbl_clicked.text()
-        lbl_clicked.setStyleSheet("QLineEdit { border: 1 px; font-weight: bold; color : white;}")
+        lbl_clicked.setStyleSheet("border: 1 px; font-weight: bold; color: white;")
 
+        # pick corresponding color button
         index = self.label_name.index(lbl_clicked)
-        btn_clicked = self.btn_color[index]
+        btn_clicked = self.label_color[index]
+
+        # update visualization
         self.editLabel.setText(txt)
 
-        textcolor = "QPushButton:flat {background-color: rgb(" + str(self.labels[index].fill[0])+ "," + str(self.labels[index].fill[1]) + "," +    str(self.labels[index].fill[2]) + "); border: none ;}"
+        color = self.labels[index].fill
+        textcolor = "QPushButton:flat {background-color: rgb(" + str(color[0]) + "," + str(color[1]) + "," + \
+                    str(color[2]) + "); border: none ;}"
         self.btn_selection_color.setStyleSheet(textcolor)
+
+        self.editR.blockSignals(True)
+        self.editG.blockSignals(True)
+        self.editB.blockSignals(True)
+        self.editR.setText(str(color[0]))
+        self.editG.setText(str(color[1]))
+        self.editB.setText(str(color[2]))
+        self.editR.blockSignals(False)
+        self.editG.blockSignals(False)
+        self.editB.blockSignals(False)
+
+        self.selection_index = index
+
+
 
