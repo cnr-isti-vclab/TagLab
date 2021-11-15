@@ -231,6 +231,12 @@ class Project(object):
         #except Exception as a:
         #    print(str(a))
 
+    def classColor(self, class_name):
+        if class_name == "Empty":
+            return [128, 128, 128]
+        if not class_name in self.labels:
+            raise ("Missing label for " + class_name)
+        return self.labels[class_name].fill
 
     def classBrushFromName(self, blob):
         brush = QBrush()
@@ -320,8 +326,6 @@ class Project(object):
     def setBlobClass(self, image, blob, class_name):
 
         blob.class_name = class_name
-        # THIS should be removed: the color comes from the labels!
-        blob.class_color = self.labels[blob.class_name].fill
 
     def getImageFromId(self, id):
         for img in self.images:

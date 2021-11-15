@@ -44,7 +44,7 @@ def createPolygon(blob, transform):
 
     return newPolygon
 
-def write_shapefile(blobs, georef_filename, out_shp):
+def write_shapefile(project, blobs, georef_filename, out_shp):
     """
     https://gis.stackexchange.com/a/52708/8104
     """
@@ -64,7 +64,8 @@ def write_shapefile(blobs, georef_filename, out_shp):
             polygon = createPolygon(blob, transform)
             ids.append(blob.id)
             classnames.append(blob.class_name)
-            colors.append('#%02X%02X%02X' % tuple(blob.class_color))
+            class_color  = project.classColor(blob.class_name)
+            colors.append('#%02X%02X%02X' % tuple(class_color))
             polygons.append(polygon)
 
     # Now convert them to a shapefile with OGR

@@ -209,7 +209,6 @@ class Annotation(QObject):
 
             if region.area > area_th:
                 b = Blob(region, box[1], box[0], self.getFreeId())
-                b.class_color = blob.class_color
                 b.class_name = blob.class_name
                 created_blobs.append(b)
 
@@ -252,7 +251,6 @@ class Annotation(QObject):
         for region in measure.regionprops(label_image):
             if region.area > area_th:
                 b = Blob(region, box[1], box[0], self.getFreeId())
-                b.class_color = blob.class_color
                 b.class_name = blob.class_name
                 created_blobs.append(b)
         return created_blobs
@@ -287,7 +285,6 @@ class Annotation(QObject):
         created_blobs = []
         for region in measure.regionprops(labels):
                 b = Blob(region, box[1], box[0], self.getFreeId())
-                b.class_color = blob.class_color
                 b.class_name = blob.class_name
                 created_blobs.append(b)
 
@@ -299,8 +296,6 @@ class Annotation(QObject):
 
         if points is None or len(points) == 0 or all(len(p) == 0 for p in points):
             return
-
-        print(points)
 
         # compute the box for the outer contour
         intersected = False
@@ -438,8 +433,7 @@ class Annotation(QObject):
             if blob.class_name == "Empty":
                 rgb = [255, 255, 255]
             else:
-                class_color = labels_info[blob.class_name]
-                rgb = class_color
+                rgb = labels_info[blob.class_name]
 
             mask = blob.getMask().astype(bool)  #bool is required for bitmask indexing
             box = blob.bbox
@@ -502,7 +496,6 @@ class Annotation(QObject):
                     c = labels_info[label_name]
                     if c[0] == color[0] and c[1] == color[1] and c[2] == color[2]:
                         blob.class_name = label_name
-                        blob.class_color = c
                         break
                 if create_holes or blob.class_name is not 'Empty':
                     created_blobs.append(blob)

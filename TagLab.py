@@ -3172,7 +3172,7 @@ class TagLab(QMainWindow):
         if output_filename:
             blobs = self.activeviewer.annotations.seg_blobs
             gf = self.activeviewer.image.georef_filename
-            rasterops.write_shapefile(blobs, gf, output_filename)
+            rasterops.write_shapefile(self.project, blobs, gf, output_filename)
 
     @pyqtSlot()
     def exportGeoRefLabelMap(self):

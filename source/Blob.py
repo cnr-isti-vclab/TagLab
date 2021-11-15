@@ -109,14 +109,8 @@ class Blob(object):
             yc = self.centroid[1]
             self.blob_name = "c-{:d}-{:.1f}x-{:.1f}y".format(self.id, xc, yc)
 
-        # deep extreme points (for fine-tuning)
-        self.deep_extreme_points = np.zeros((4, 2))
-
         # name of the class
         self.class_name = "Empty"
-
-        # color of the class
-        self.class_color = [128, 128, 128]
 
         self.genet = None
 
@@ -159,7 +153,6 @@ class Blob(object):
         blob.genet = self.genet
         blob.class_name = self.class_name
 
-        blob.deep_extreme_points = self.deep_extreme_points
         blob.note = self.note
 
         self.qimg_mask = None
@@ -428,25 +421,25 @@ class Blob(object):
             path_inner.addPolygon(qpoly_inner)
             self.qpath = self.qpath.subtracted(path_inner)
 
-    def createQPixmapFromMask(self):
+    # def createQPixmapFromMask(self):
 
-        w = self.bbox[2]
-        h = self.bbox[3]
-        self.qimg_mask = QImage(w, h, QImage.Format_ARGB32)
-        self.qimg_mask.fill(qRgba(0, 0, 0, 0))
+    #     w = self.bbox[2]
+    #     h = self.bbox[3]
+    #     self.qimg_mask = QImage(w, h, QImage.Format_ARGB32)
+    #     self.qimg_mask.fill(qRgba(0, 0, 0, 0))
 
-        if self.class_name == "Empty":
-            rgba = qRgba(255, 255, 255, 255)
-        else:
-            rgba = qRgba(self.class_color[0], self.class_color[1], self.class_color[2], 100)
+    #     if self.class_name == "Empty":
+    #         rgba = qRgba(255, 255, 255, 255)
+    #     else:
+    #         rgba = qRgba(self.class_color[0], self.class_color[1], self.class_color[2], 100)
 
-        blob_mask = self.getMask()
-        for x in range(w):
-            for y in range(h):
-                if blob_mask[y, x] == 1:
-                    self.qimg_mask.setPixel(x, y, rgba)
+    #     blob_mask = self.getMask()
+    #     for x in range(w):
+    #         for y in range(h):
+    #             if blob_mask[y, x] == 1:
+    #                 self.qimg_mask.setPixel(x, y, rgba)
 
-        self.pxmap_mask = QPixmap.fromImage(self.qimg_mask)
+    #     self.pxmap_mask = QPixmap.fromImage(self.qimg_mask)
 
     #bbox is used to place the mask!
     def calculateCentroid(self, mask, bbox):
@@ -515,12 +508,11 @@ class Blob(object):
             #self.inner_contours.append(np.asarray(c))
             self.inner_contours.append(self.toContour(c))
 
-        self.deep_extreme_points = np.asarray(dict["deep_extreme_points"])
+
         #for the moment we just update genets on load.
 #        if "genet" in dict:
 #            self.genet = dict["genet"]
         self.class_name = dict["class name"]
-        self.class_color = dict["class color"]
         self.instance_name = dict["instance name"]
         self.blob_name = dict["blob name"]
         self.id = int(dict["id"])
@@ -566,9 +558,9 @@ class Blob(object):
 
         dict["bbox"] = self.bbox.tolist()
 
-        dict["centroid"] = self.centroid.tolist()
+        dict["centroid"] = [math.trunc(10 * v) / 10 for v in self.centroid.tolist()]
         dict["area"] = self.area
-        dict["perimeter"] = self.perimeter
+        dict["perimeter"] = math.trunc(10 *self.perimeter)/10;
 
         #dict["contour"] = self.contour.tolist()
         dict["contour"] = self.toPoints(self.contour)
@@ -578,11 +570,8 @@ class Blob(object):
             #dict["inner contours"].append(c.tolist())
             dict["inner contours"].append(self.toPoints(c))
 
-        dict["deep_extreme_points"] = self.deep_extreme_points.tolist()
-
 #        dict["genet"] = self.genet
         dict["class name"] = self.class_name
-        dict["class color"] = self.class_color
 
         dict["instance name"] = self.instance_name
         dict["blob name"] = self.blob_name
