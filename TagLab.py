@@ -630,6 +630,7 @@ class TagLab(QMainWindow):
         # autosave timer
         self.timer = QTimer(self)
 
+        self.updateToolStatus()
         self.disableSplitScreen()
 
         self.move()
@@ -2730,9 +2731,11 @@ class TagLab(QMainWindow):
 
         self.resetAll()
         self.setTool("MOVE")
+        self.updateToolStatus();
         self.setProjectTitle("NONE")
         self.infoWidget.setInfoMessage("TagLab has been reset. To continue open an existing project or load a map.")
         logfile.info("[PROJECT] A new project has been setup.")
+        
 
     @pyqtSlot()
     def editProject(self):
@@ -2808,10 +2811,22 @@ class TagLab(QMainWindow):
 
         # add an image and its annotation to the project
         self.project.addNewImage(image)
+        self.updateToolStatus()
         self.updateImageSelectionMenu()
         self.updateEditSubMenu()
         self.mapWidget.close()
         self.showImage(image)
+
+    @pyqtSlot()
+    def updateToolStatus(self):
+
+        for button in [self.btnMove, self.btnAssign, self.btnEditBorder, self.btnCut, self.btnFreehand,
+            self.btnCreateCrack, self.btnWatershed, self.btnBricksSegmentation, self.btnRuler, self.btnDeepExtreme,
+            self.btnRitm, self.btnAutoClassification, self.btnCreateGrid, self.btnGrid]:
+            button.setEnabled(len(self.project.images) > 0)
+        
+        for button in [self.btnSplitScreen, self.btnAutoMatch, self.btnMatch]:
+            button.setEnabled(len(self.project.images) > 1)
 
     @pyqtSlot(float)
     def updateMapScale(self, value):
@@ -3567,6 +3582,7 @@ class TagLab(QMainWindow):
 
         message = "[PROJECT] The project " + self.project.filename + " has been loaded."
         logfile.info(message)
+        self.updateToolStatus()
 
 
     def append(self, filename):
