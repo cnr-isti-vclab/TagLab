@@ -16,15 +16,21 @@ class QtImageViewer(QGraphicsView):
         QGraphicsView.__init__(self)
 
         self.setStyleSheet("background-color: rgb(40,40,40)")
+
+        # MAIN SCENE
         self.scene = QGraphicsScene()
         self.setScene(self.scene)
 
-        # Store a local handle to the scene's current image pixmap.
+        # local handle to the scene's current image pixmap.
         self.pixmapitem = QGraphicsPixmapItem()
         self.pixmapitem.setZValue(0)
         self.scene.addItem(self.pixmapitem)
 
+        # OVERLAY
+        self.scene_overlay = QGraphicsScene()
+
         self.img_map = None
+
         # current image size
         self.imgwidth = 0
         self.imgheight = 0
@@ -277,3 +283,14 @@ class QtImageViewer(QGraphicsView):
             self.centerOn(scene_pos - delta)
 
             self.invalidateScene()
+
+    def paintEvent(self, event):
+
+        # render the main scene (self.scene)
+        super(QtImageViewer, self).paintEvent(event)
+
+        # render the overlay
+        p = QPainter(self.viewport())
+        p.setRenderHints(self.renderHints())
+        self.scene_overlay.render(p, QRectF(self.viewport().rect()))
+

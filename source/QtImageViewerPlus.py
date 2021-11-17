@@ -22,7 +22,7 @@
 """
 
 import os.path
-from PyQt5.QtCore import Qt, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
+from PyQt5.QtCore import Qt, QPoint, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
 from PyQt5.QtGui import QImage, QPixmap, QPainter, QPainterPath, QPen, QColor, QFont, QBrush
 from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QFileDialog, QGraphicsItem, QGraphicsSimpleTextItem, QPlainTextEdit,QSizePolicy
 
@@ -162,6 +162,13 @@ class QtImageViewerPlus(QtImageViewer):
         self.refine_original_blob = None
         self.active_label = None
 
+        # scale bar
+        self.scalebar_text = None
+        self.scalebar_line = None
+        self.scalebar_line2 = None
+        self.scalebar_line3 = None
+        self.setupScaleBar()
+
     def setProject(self, project):
 
         self.project = project
@@ -249,6 +256,56 @@ class QtImageViewerPlus(QtImageViewer):
             del blob
 
         self.annotations = Annotation()
+
+    def setupScaleBar(self):
+
+        LENGTH_IN_PIXEL = 100
+        LENGTH_VLINES = 5
+
+        w = self.viewport().width()
+        h = self.viewport().height()
+        posx = w * 0.8
+        posy = h * 0.9
+
+        self.scene_overlay.setSceneRect(0,0,w,h)
+
+        pt1 = QPoint(posx, posy)
+        pt2 = QPoint(posx + 100, posy)
+
+        self.scalebar_text = self.scene_overlay.addText('PROVA!')
+        self.scalebar_text.setDefaultTextColor(QColor(Qt.white))
+        font = self.scalebar_text.font()
+        font.setBold(True)
+        self.scalebar_text.setFont(font)
+        self.scalebar_text.setPos(pt1.x(), pt1.y())
+        self.scalebar_text.setZValue(5)
+        self.scalebar_text.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+
+        pen = QPen(Qt.white)
+        pen.setWidth(3)
+        pen.setCosmetic(True)
+        self.scalebar_line = self.scene_overlay.addLine(pt1.x(), pt1.y(), pt2.x(), pt2.y(), pen)
+        self.scalebar_line.setZValue(5)
+
+        self.scalebar_line2 = self.scene_overlay.addLine(pt1.x(), pt1.y()-LENGTH_VLINES, pt1.x(), pt1.y()+LENGTH_VLINES, pen)
+        self.scalebar_line2.setZValue(5)
+
+        self.scalebar_line3 = self.scene_overlay.addLine(pt2.x(), pt2.y()-LENGTH_VLINES, pt2.x(), pt2.y()+LENGTH_VLINES, pen)
+        self.scalebar_line3.setZValue(5)
+
+        self.hideScalebar()
+
+    def showScalebar(self):
+        self.scalebar_text.show()
+        self.scalebar_line.show()
+        self.scalebar_line2.show()
+        self.scalebar_line3.show()
+
+    def hideScalebar(self):
+        self.scalebar_text.hide()
+        self.scalebar_line.hide()
+        self.scalebar_line2.hide()
+        self.scalebar_line3.hide()
 
     def showGrid(self):
 
@@ -586,11 +643,10 @@ class QtImageViewerPlus(QtImageViewer):
 
             view_pos = event.pos()
             scene_pos = self.mapToScene(view_pos)
-            self.centerOn(scene_pos)
 
             pt = event.angleDelta()
 
-            #uniform zoom.
+            # uniform zoom.
             self.zoom_factor = self.zoom_factor*pow(pow(2, 1/2), pt.y()/100);
             if self.zoom_factor < self.ZOOM_FACTOR_MIN:
                 self.zoom_factor = self.ZOOM_FACTOR_MIN
@@ -603,11 +659,48 @@ class QtImageViewerPlus(QtImageViewer):
             delta = self.mapToScene(view_pos) - self.mapToScene(self.viewport().rect().center())
             self.centerOn(scene_pos - delta)
 
-            self.invalidateScene()
-            #self.updateViewer()
+            self.updateScaleBar(self.zoom_factor)
 
-        # PAY ATTENTION !! THE WHEEL INTERACT ALSO WITH THE SCROLL BAR !!
-        #QGraphicsView.wheelEvent(self, event)
+            self.scene_overlay.invalidate()
+            self.invalidateScene()
+
+    def updateScaleBar(self, zoom_factor):
+
+        LENGTH_IN_PIXEL = 100
+        LENGTH_VLINES = 5
+
+        w = self.viewport().width()
+        h = self.viewport().height()
+
+        posx = w - 120
+        posy = h * 0.95
+
+        self.scene_overlay.setSceneRect(0,0,w,h)
+
+        pt1 = QPoint(posx, posy)
+        pt2 = QPoint(posx + 100, posy)
+
+        length = self.px_to_mm * 100 / zoom_factor
+
+        if length < 100.0:
+            txt = "{:.1f} mm".format(length)
+        if 100.0 <= length <= 10000.0:
+            txt = "{:.1f} cm".format(length / 10.0)
+        if length > 10000.0:
+            txt = "{:.1f} cm".format(length / 1000.0)
+
+        self.scalebar_text.setPlainText(txt)
+        rc = self.scalebar_text.boundingRect()
+
+        px = (pt1.x() + pt2.x() - rc.width()) / 2
+        py = pt1.y() - rc.height()
+
+        self.scalebar_text.setPos(px, py)
+
+        self.scalebar_line.setLine(pt1.x(), pt1.y(), pt2.x(), pt2.y())
+        self.scalebar_line2.setLine(pt1.x(), pt1.y() - LENGTH_VLINES, pt1.x(), pt2.y() + LENGTH_VLINES)
+        self.scalebar_line3.setLine(pt2.x(), pt1.y() - LENGTH_VLINES, pt2.x(), pt2.y() + LENGTH_VLINES)
+
 
 #VISIBILITY AND SELECTION
 
@@ -720,6 +813,16 @@ class QtImageViewerPlus(QtImageViewer):
             print("Exception: e", e)
             pass
         self.selectionChanged.emit()
+
+    def resizeEvent(self, event):
+        """ Maintain current zoom on resize.
+        """
+        if self.imgheight:
+            self.ZOOM_FACTOR_MIN = min(1.0 * self.width() / self.imgwidth, 1.0 * self.height() / self.imgheight)
+        self.updateScaleBar(self.zoom_factor)
+        self.updateViewer()
+
+        event.accept()
 
     def resetSelection(self):
         for blob in self.selected_blobs:
