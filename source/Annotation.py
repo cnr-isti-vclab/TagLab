@@ -441,10 +441,9 @@ class Annotation(QObject):
                 class_color = labels_info[blob.class_name]
                 rgb = class_color
 
-            mask = blob.getMask().astype(bool)  #bool is required for bitmask indexing
-            box = blob.bbox
-            (box[2], box[3]) = (box[3] + box[0], box[2] + box[1])
-            #box is now startx,starty,endx,endy
+            mask = blob.getMask().astype(bool)  # bool is required for bitmask indexing
+            box = blob.bbox.copy()  # blob.bbox is top, left, width, height
+            (box[2], box[3]) = (box[3] + box[0], box[2] + box[1])  # box is now startx, starty, endx, endy
 
             #range is the interection of box and imagebox
             range = [max(box[0], imagebox[0]), max(box[1], imagebox[1]), min(box[2], imagebox[2]), min(box[3], imagebox[3])]
