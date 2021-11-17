@@ -821,7 +821,7 @@ class TagLab(QMainWindow):
 
     def setProjectTitle(self, project_name):
 
-        title = "TagLab - [Project: " + project_name + "]"
+        title = self.TAGLAB_VERSION + " [Project: " + project_name + "]"
         if self.parent() is not None:
             self.parent().setWindowTitle(title)
         else:
@@ -1972,6 +1972,8 @@ class TagLab(QMainWindow):
         self.viewerplus2.resetTools()
         self.resetToolbar()
 
+        self.viewerplus.hideScalebar()
+
         # RE-INITIALIZATION
 
         self.mapWidget = None
@@ -2827,6 +2829,12 @@ class TagLab(QMainWindow):
         
         for button in [self.btnSplitScreen, self.btnAutoMatch, self.btnMatch]:
             button.setEnabled(len(self.project.images) > 1)
+
+        if self.activeviewer is not None:
+            if self.activeviewer.image is not None:
+                self.activeviewer.showScalebar()
+            else:
+                self.activeviewer.hideScalebar()
 
     @pyqtSlot(float)
     def updateMapScale(self, value):
