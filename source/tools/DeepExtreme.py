@@ -152,9 +152,6 @@ class DeepExtreme(Tool):
             #TODO: move this function to blob!!!
             blobs = self.viewerplus.annotations.blobsFromMask(segm_mask, left_map_pos, top_map_pos, area_extreme_points)
 
-            for blob in blobs:
-                blob.deep_extreme_points = extreme_points_to_use
-
             self.viewerplus.resetSelection()
             for blob in blobs:
                 self.viewerplus.addBlob(blob, selected=True)

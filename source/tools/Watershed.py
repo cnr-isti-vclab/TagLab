@@ -134,7 +134,6 @@ class Watershed(Tool):
                     name = t[1]
                     break
 
-            blob.class_color = color
             blob.class_name = name
 
             blobs.append(blob)
