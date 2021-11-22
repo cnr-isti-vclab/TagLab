@@ -8,7 +8,6 @@ class PandasModelShape(QAbstractTableModel):
     def __init__(self, data, parent=None):
         QAbstractTableModel.__init__(self, parent)
         self._data = data
-        print('bu')
 
     def headerData(self, section, orientation, role):
 
@@ -20,7 +19,6 @@ class PandasModelShape(QAbstractTableModel):
             if orientation == Qt.Vertical:
                 return str(self._data.index[section])
 
-
     def rowCount(self, parent=None):
         return len(self._data.values)
 
@@ -28,12 +26,11 @@ class PandasModelShape(QAbstractTableModel):
         return self._data.columns.size
 
     def data(self, index, role=Qt.DisplayRole):
+
         if index.isValid():
             if role == Qt.DisplayRole:
-                element = str(self._data.iloc[index.row(),index.column()])
-                print(element)
+                element = str(self._data.iloc[index.row(), index.column()])
                 return element
-        return ""
 
 class QtAttributeWidget(QWidget):
 
@@ -79,13 +76,9 @@ class QtAttributeWidget(QWidget):
         self.data_table.horizontalHeader().showSection(0)
         self.data_table.update()
 
-        # self.data_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-        self.data_table.update()
-        # self.data_table.resizeColumnsToContents()
-        self.data_table.horizontalHeader().setStretchLastSection(False)
-
         layout.addWidget(self.data_table)
         self.setLayout(layout)
+
         self.setWindowTitle("Shapefile Attribute Editor")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
