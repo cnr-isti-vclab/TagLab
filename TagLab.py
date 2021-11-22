@@ -889,7 +889,7 @@ class TagLab(QMainWindow):
         newMapAct.setStatusTip("Add a new map to the project")
         newMapAct.triggered.connect(self.setMapToLoad)
 
-        createDicAct = QAction("Create/Edit Dictionary", self)
+        createDicAct = QAction("Dictionary Editor", self)
         createDicAct.triggered.connect(self.createDictionary)
 
         ### IMPORT
@@ -2781,7 +2781,8 @@ class TagLab(QMainWindow):
 
     @pyqtSlot()
     def createDictionary(self):
-        self.create_dictionary = QtDictionaryWidget(self.taglab_dir, parent = self)
+
+        self.create_dictionary = QtDictionaryWidget(self.taglab_dir, self.project, parent = self)
         self.create_dictionary.show()
 
 

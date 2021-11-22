@@ -34,10 +34,11 @@ class DictionaryEncoder(json.JSONEncoder):
 class QtDictionaryWidget(QWidget):
 
     closewidget = pyqtSignal()
-    def __init__(self, dir, parent=None):
+    def __init__(self, dir, project, parent=None):
         super(QtDictionaryWidget, self).__init__(parent)
 
         self.taglab_dir = dir
+        self.project = project
 
         self.labels = []
         self.label_color = []
@@ -49,10 +50,24 @@ class QtDictionaryWidget(QWidget):
         self.setMinimumWidth(300)
         self.setMinimumHeight(100)
 
+        self.button_new = QPushButton("New")
+        self.button_new.clicked.connect(self.newDictionary)
+
+        self.button_current = QPushButton("Use current")
+        self.button_current.clicked.connect(self.chooseDictionary)
+
+        self.button_load = QPushButton("Load")
+        self.button_load.clicked.connect(self.chooseDictionary)
+
+        self.btn_save = QPushButton("Save")
+        self.btn_save.clicked.connect(self.saveDictionary)
+
+
+
         lbl_dname = QLabel("Dictionary name:")
         lbl_dname.setFixedWidth(160)
 
-        lbl_load = QLabel("Load dictionary:")
+        lbl_load = QLabel("Dictionary path:")
         lbl_load.setFixedWidth(160)
 
         lbl_description = QLabel("Description:")
@@ -63,11 +78,6 @@ class QtDictionaryWidget(QWidget):
         self.edit_dname.setPlaceholderText("Name of the dictionary")
         self.edit_dname.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_dname.setFixedWidth(350)
-        self.edit_dname.textChanged.connect(self.nameAssigned)
-
-        button_load = QPushButton("...")
-        button_load.setMaximumWidth(20)
-        button_load.clicked.connect(self.chooseDictionary)
 
         self.edit_load = QLineEdit()
         self.edit_load.setPlaceholderText("Path of the dictionary")
@@ -97,19 +107,19 @@ class QtDictionaryWidget(QWidget):
         self.scroll.setMaximumHeight(200)
         self.scroll.setWidget(self.labels_widget)
 
-        self.btnRemove = QPushButton("Remove")
+        self.btnRemove = QPushButton("Delete")
         self.btnAdd = QPushButton("Add")
         self.btnAdd.setStyleSheet("background-color: rgb(55,55,55);")
-        self.btnEdit = QPushButton("Edit")
+        self.btnOk = QPushButton("Update")
         self.btnRemove.clicked.connect(self.removeLabel)
         self.btnAdd.clicked.connect(self.addLabel)
-        self.btnEdit.clicked.connect(self.editLabel)
+        self.btnOk.clicked.connect(self.editLabel)
 
         buttons_layout = QVBoxLayout()
         buttons_layout.setAlignment(Qt.AlignRight)
         # buttons_layout.setAlignment(Qt.AlignTop)
         buttons_layout.addStretch()
-        buttons_layout.addWidget(self.btnEdit)
+        buttons_layout.addWidget(self.btnOk)
         buttons_layout.addWidget(self.btnRemove)
 
 
@@ -154,14 +164,17 @@ class QtDictionaryWidget(QWidget):
         self.editLabel.setPlaceholderText("Label name")
 
 
-        # self.btnCancel = QPushButton("Cancel")
-        # self.btnCancel.clicked.connect(self.closeEvent(event))
+        self.btn_set = QPushButton("Set Dictionary")
+        self.btn_set.setMinimumWidth(360)
+        self.btn_set.setMinimumHeight(40)
+        self.btn_set.setStyleSheet("font-weight: bold;")
+        self.btn_set.clicked.connect(self.setDictionary)
 
-        self.btnSave = QPushButton("Save")
-        self.btnSave.clicked.connect(self.saveDictionary)
-
-        self.btnSet = QPushButton("Set")
-        self.btnSet.clicked.connect(self.setDictionary)
+        layout_zerorow = QHBoxLayout()
+        layout_zerorow.addWidget(self.button_new)
+        layout_zerorow.addWidget(self.button_current)
+        layout_zerorow.addWidget(self.button_load)
+        layout_zerorow.addWidget(self.btn_save)
 
         layout_firstrow = QHBoxLayout()
         layout_firstrow.setAlignment(Qt.AlignLeft)
@@ -173,7 +186,6 @@ class QtDictionaryWidget(QWidget):
         layout_secondrow.setAlignment(Qt.AlignLeft)
         layout_secondrow.addWidget(lbl_load)
         layout_secondrow.addWidget(self.edit_load)
-        layout_secondrow.addWidget(button_load)
 
         layout_thirdrow = QHBoxLayout()
         layout_thirdrow.setAlignment(Qt.AlignLeft)
@@ -195,12 +207,11 @@ class QtDictionaryWidget(QWidget):
 
         #6 row
         bottom = QHBoxLayout()
-        bottom.setAlignment(Qt.AlignRight)
-        bottom.addStretch()
-        bottom.addWidget(self.btnSave)
-        bottom.addWidget(self.btnSet)
+        bottom.setAlignment(Qt.AlignHCenter)
+        bottom.addWidget(self.btn_set)
 
         layout = QVBoxLayout()
+        layout.addLayout(layout_zerorow)
         layout.addLayout(layout_firstrow)
         layout.addLayout(layout_secondrow)
         layout.addLayout(layout_thirdrow)
@@ -210,10 +221,12 @@ class QtDictionaryWidget(QWidget):
 
         self.setLayout(layout)
 
-        self.setWindowTitle("Create/edit dictionary")
+        self.setWindowTitle("Dictionary Editor")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
         self.selection_index = -1
+
+        self.populateLabelsFromProject()
 
 
     def closeEvent(self, event):
@@ -221,9 +234,14 @@ class QtDictionaryWidget(QWidget):
         super(QtDictionaryWidget, self).closeEvent(event)
 
 
-    def nameAssigned(self):
-        pass
 
+    @pyqtSlot()
+    def newDictionary(self):
+
+        self.labels = []
+        self.createAllLabels()
+
+    @pyqtSlot()
     def chooseDictionary(self):
 
         filters = "DICTIONARY (*.json)"
@@ -355,6 +373,14 @@ class QtDictionaryWidget(QWidget):
         self.editG.blockSignals(False)
         self.editB.blockSignals(False)
 
+    def populateLabelsFromProject(self):
+
+        for key in self.project.labels.keys():
+            label = self.project.labels[key]
+            lbl = Label(id=label.id, name=label.name, fill=label.fill)
+            self.labels.append(lbl)
+
+        self.createAllLabels()
 
     def createAllLabels(self):
 
@@ -462,7 +488,7 @@ class QtDictionaryWidget(QWidget):
             self.selection_index = -1
         else:
             box = QMessageBox()
-            box.setText("Please, select a label to remove")
+            box.setText("Please, select a label to delete")
             box.exec()
 
     def getRGB(self):

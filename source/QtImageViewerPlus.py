@@ -470,7 +470,6 @@ class QtImageViewerPlus(QtImageViewer):
         self.scene.invalidate(self.scene.sceneRect())
         self.setDragMode(QGraphicsView.NoDrag)
 
-#TODO not necessarily a slot
     @pyqtSlot(float, float)
     def selectOp(self, x, y):
         """
