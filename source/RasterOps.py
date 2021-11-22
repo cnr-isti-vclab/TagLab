@@ -1,11 +1,16 @@
 
 import numpy as np
+import ast
 from shapely.geometry import Polygon
 from osgeo import gdal, osr
 import osgeo.ogr as ogr
 import rasterio as rio
 from rasterio.plot import reshape_as_raster
 from rasterio.mask import mask
+import pandas as pd
+from source.Blob import Blob
+from source.Mask import subtract
+from numpy.linalg import inv
 
 
 def changeFormat(contour, transform):
@@ -29,6 +34,23 @@ def changeFormat(contour, transform):
         return coords
 
 
+def changeFormatInv(coord, transform):
+    """
+    convert poligon coordinate in pixel coordinates
+    # """
+    # transformr = np.reshape(transform, (3, 3))
+    # transformInv = inv(transformr)
+    pointpixels = []
+    #va controllato se esiste
+    if transform is not None:
+        for points in coord[0]:
+            xref = points[0]
+            yref = points[1]
+            pointpix = ~transform * (xref, yref)
+            pointpixels.append(pointpix)
+        return pointpixels
+
+
 def createPolygon(blob, transform):
 
     # load blob.contour and transform coordinate
@@ -44,7 +66,77 @@ def createPolygon(blob, transform):
 
     return newPolygon
 
-def write_shapefile(project, blobs, georef_filename, out_shp):
+
+
+
+def open_shapefile(filename, georef_filename):
+
+    # #ci andrebbero self.labels_dictionary, self.activeviewer.img_map.width(), self.activeviewer.img_map.height()):
+    img = rio.open(georef_filename)
+    transform = img.transform
+    driver = ogr.GetDriverByName("ESRI Shapefile")
+    dataSource = driver.Open(filename, 0)
+    layer = dataSource.GetLayer(0)
+
+    # layerDefinition = layer.GetLayerDefn()
+    #
+    # GET FIELDS of layer's features
+    # fields = []
+    # for i in range(layerDefinition.GetFieldCount()):
+    #     fieldName = layerDefinition.GetFieldDefn(i).GetName()
+    #     fieldTypeCode = layerDefinition.GetFieldDefn(i).GetType()
+    #     fieldType = layerDefinition.GetFieldDefn(i).GetFieldTypeName(fieldTypeCode)
+    #     fieldWidth = layerDefinition.GetFieldDefn(i).GetWidth()
+    #     fieldPrecision = layerDefinition.GetFieldDefn(i).GetPrecision()
+    #     field = [fieldName, fieldType]
+    #     fields.append(field)
+
+    # #GET FEATURES
+    # num_features = layer.GetFeatureCount()
+    # pt = np.zeros((num_features, ), dtype=object)
+    # values = np.zeros((num_features, len(fields)), dtype=object)
+    # for i in range(0, num_features):
+    #     for j in range(0, len(fields)):
+    #         if fields[j][2] == str:
+    #             value_name = layer[i].GetFieldAsString(fields[j][0])
+    #         else:
+    #             value_name = layer[i].GetField(fields[j][0])
+    #         values[i][j] = value_name
+
+
+    blobList = []
+    Data = pd.DataFrame()
+    for feat in layer:
+        shpdict= ast.literal_eval(feat.ExportToJson())
+        if shpdict['geometry']['type'] == 'Polygon':
+           blob = Blob(None, 0, 0, '0')
+           coord = shpdict['geometry']['coordinates']
+           outercontourn = coord[0]
+           outpointpixels = changeFormatInv([outercontourn], transform)
+           blob.createFromClosedCurve([np.asarray(outpointpixels)])
+           for i in range(1, len(coord)):
+               innercontourn_i = coord[i]
+               innerpointpixels_i = changeFormatInv([innercontourn_i], transform)
+               innerblob = Blob(None, 0, 0, '0')
+               innerblob.createFromClosedCurve([np.asarray(innerpointpixels_i)])
+               (mask, box) = subtract(blob.getMask(), blob.bbox, innerblob.getMask(), innerblob.bbox)
+               if mask.any():
+                   blob.updateUsingMask(box, mask.astype(int))
+           blobList.append(blob)
+           # The attribute field can be empty
+           properties = shpdict['properties']
+           if Data.empty:
+            Data = pd.DataFrame.from_dict([properties])
+           else:
+            data = pd.DataFrame.from_dict([properties])
+            Data = Data.append(data, ignore_index=True)
+
+
+    return blobList, Data
+
+
+
+def write_shapefile(blobs, georef_filename, out_shp):
     """
     https://gis.stackexchange.com/a/52708/8104
     """
@@ -64,8 +156,7 @@ def write_shapefile(project, blobs, georef_filename, out_shp):
             polygon = createPolygon(blob, transform)
             ids.append(blob.id)
             classnames.append(blob.class_name)
-            class_color  = project.classColor(blob.class_name)
-            colors.append('#%02X%02X%02X' % tuple(class_color))
+            colors.append('#%02X%02X%02X' % tuple(blob.class_color))
             polygons.append(polygon)
 
     # Now convert them to a shapefile with OGR

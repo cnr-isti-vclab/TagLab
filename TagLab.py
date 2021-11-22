@@ -68,6 +68,7 @@ from source.MapClassifier import MapClassifier
 from source.NewDataset import NewDataset
 from source.QtGridWidget import QtGridWidget
 from source.QtDictionaryWidget import QtDictionaryWidget
+from source.QtShapefileAttributeWidget import QtAttributeWidget
 
 
 from source import utils
@@ -901,6 +902,9 @@ class TagLab(QMainWindow):
         importAct.setStatusTip("Import a Label Image")
         importAct.triggered.connect(self.importLabelMap)
 
+        importShap = QAction("Import Shapefile", self)
+        importShap.setStatusTip("Import a Georeferenced Shapefile")
+        importShap.triggered.connect(self.importShapefile)
 
         ### EXPORT
 
@@ -999,6 +1003,7 @@ class TagLab(QMainWindow):
 
         self.submenuImport = self.filemenu.addMenu("Import")
         self.submenuImport.addAction(importAct)
+        self.submenuImport.addAction(importShap)
         self.submenuImport.addAction(appendAct)
         self.filemenu.addSeparator()
         self.submenuExport = self.filemenu.addMenu("Export")
@@ -3115,6 +3120,41 @@ class TagLab(QMainWindow):
         self.activeviewer.saveUndo()
 
         QApplication.restoreOverrideCursor()
+
+    @pyqtSlot()
+    def importShapefile(self):
+        """
+        Import a ortho
+        """
+        if self.activeviewer is None:
+            return
+
+        if self.activeviewer.image is not None:
+            if self.activeviewer.image.georef_filename == "":
+                box = QMessageBox()
+                box.setText("Georeference information is not available.")
+                box.exec()
+                return
+
+        filters = "Shapefile (*.shp)"
+        filename, _ = QFileDialog.getOpenFileName(self, "Import Shapefile", "", filters)
+        if not filename:
+            return
+
+        # QApplication.setOverrideCursor(Qt.WaitCursor)
+        gf = self.activeviewer.image.georef_filename
+        blobList, Data = rasterops.open_shapefile(filename, gf)
+
+        for blob in blobList:
+            self.activeviewer.addBlob(blob, selected=False)
+        self.activeviewer.saveUndo()
+
+        self.attribute_widget = QtAttributeWidget(Data)
+        self.attribute_widget.show()
+
+        print('fatto')
+
+        # QApplication.restoreOverrideCursor()
 
     @pyqtSlot()
     def exportAnnAsDataTable(self):
