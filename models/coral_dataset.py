@@ -9,7 +9,7 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 import glob
 from albumentations import (CLAHE, HueSaturationValue, RGBShift, RandomBrightnessContrast, Compose)
-
+from source.Label import Label
 
 
 
@@ -28,7 +28,7 @@ class CoralsDataset(Dataset):
 
     """Corals dataset."""
 
-    def __init__(self, input_images_dir, input_labels_dir, dictionary, target_class):
+    def __init__(self, input_images_dir, input_labels_dir, labels_dictionary, target_class):
         """
         :param input_images_dir: folder containing the images
         :param input_labels_dir: folder containing the labels
@@ -40,12 +40,12 @@ class CoralsDataset(Dataset):
         self.images_dir = input_images_dir
         self.labels_dir = input_labels_dir
         self.images_names = [os.path.basename(x) for x in glob.glob(os.path.join(input_images_dir, '*.png'))]
-        self.dict_colors = dictionary
         self.dict_target = target_class
         self.num_classes = len(target_class)
 
         # if background does not exists it is added
-        self.dict_colors["Background"] = [0, 0, 0]
+        self.labels_dictionary = labels_dictionary.copy()
+        self.labels_dictionary["Background"] = Label(id-"Background", name="Background", fill=[0, 0, 0])
 
         # DATA LOADING SETTINGS
         self.flagDataAugmentation = True
@@ -277,7 +277,7 @@ class CoralsDataset(Dataset):
         class_code = 1
         for color_code in existing_color_codes:
             for key in labels_dictionary.keys():
-                color = labels_dictionary[key]
+                color = labels_dictionary[key].fill
                 code = color[0] + color[1] * 256 + color[2] * 65536
                 if color_code == code:
                     value = dict_classes.get(key)
@@ -380,7 +380,7 @@ class CoralsDataset(Dataset):
         labelsint[:] = self.dict_target['Background']
 
         for key in self.dict_target.keys():
-            colors = self.dict_colors[key]
+            colors = self.labels_dictionary[key].fill
             idx = np.where((data[:, :, 0] == colors[0]) & (data[:, :, 1] == colors[1]) & (data[:, :, 2] == colors[2]))
             labelsint[idx] = self.dict_target[key]
 
@@ -403,7 +403,7 @@ class CoralsDataset(Dataset):
         labelsint[:] = self.dict_target['Background']
 
         for key in self.dict_target.keys():
-            colors = self.dict_colors[key]
+            colors = self.labels_dictionary[key].fill
             idx = np.where((data[:, :, 0] == colors[0]) & (data[:, :, 1] == colors[1]) & (data[:, :, 2] == colors[2]))
             labelsint[idx] = self.dict_target[key]
 
@@ -451,7 +451,7 @@ class CoralsDataset(Dataset):
                 label = pred_indices[i][j]
 
                 color_name = class_names[label]
-                color = self.dict_colors[color_name]
+                color = self.labels_dictionary[color_name].fill
 
                 img[i][j][0] = color[0]
                 img[i][j][1] = color[1]

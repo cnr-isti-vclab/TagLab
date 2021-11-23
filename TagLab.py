@@ -369,7 +369,6 @@ class TagLab(QMainWindow):
         # LABELS PANEL
         self.labels_widget = QtLabelsWidget()
 
-
         self.project.importLabelsFromConfiguration(self.labels_dictionary)
         self.labels_widget.setLabels(self.project)
 
@@ -378,7 +377,6 @@ class TagLab(QMainWindow):
         self.scroll_area_labels_panel.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.scroll_area_labels_panel.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.scroll_area_labels_panel.setMinimumHeight(200)
-        #self.scroll_area_labels_panel.setWidgetResizable(True)
         self.scroll_area_labels_panel.setWidget(self.labels_widget)
 
         groupbox_style = "QGroupBox\
@@ -3114,7 +3112,7 @@ class TagLab(QMainWindow):
         QApplication.setOverrideCursor(Qt.WaitCursor)
 
         # -1, -1 means that the label map imported must not be rescaled
-        created_blobs = self.activeviewer.annotations.import_label_map(filename, self.labels_dictionary, self.activeviewer.img_map.width(),
+        created_blobs = self.activeviewer.annotations.import_label_map(filename, self.project.labels, self.activeviewer.img_map.width(),
                                                                        self.activeviewer.img_map.height())
         for blob in created_blobs:
             self.activeviewer.addBlob(blob, selected=False)
@@ -3211,7 +3209,7 @@ class TagLab(QMainWindow):
                     filename += '.png'
 
                 size = QSize(self.activeviewer.image.width, self.activeviewer.image.height)
-                self.activeviewer.annotations.export_image_data_for_Scripps(size, filename, self.labels_dictionary)
+                self.activeviewer.annotations.export_image_data_for_Scripps(size, filename, self.project.labels)
 
                 msgBox = QMessageBox(self)
                 msgBox.setWindowTitle(self.TAGLAB_VERSION)
@@ -3225,7 +3223,7 @@ class TagLab(QMainWindow):
 
         if self.activeviewer is not None:
 
-            histo_widget = QtHistogramWidget(self.activeviewer.annotations, self.labels_dictionary,
+            histo_widget = QtHistogramWidget(self.activeviewer.annotations, self.project.labels,
                                              self.activeviewer.image.pixelSize(),
                                              self.activeviewer.image.acquisition_date, self)
             histo_widget.setWindowModality(Qt.WindowModal)
@@ -3275,7 +3273,7 @@ class TagLab(QMainWindow):
 
         if output_filename:
             size = QSize(self.activeviewer.image.width, self.activeviewer.image.height)
-            label_map_img = self.activeviewer.annotations.create_label_map(size, self.labels_dictionary)
+            label_map_img = self.activeviewer.annotations.create_label_map(size, self.project.labels)
             label_map_np = utils.qimageToNumpyArray(label_map_img)
             georef_filename = self.activeviewer.image.georef_filename
             outfilename = os.path.splitext(output_filename)[0]
@@ -3368,8 +3366,8 @@ class TagLab(QMainWindow):
             target_classes = training.createTargetClasses(self.activeviewer.annotations)
             target_classes = list(target_classes.keys())
 
-            new_dataset.createLabelImage(self.labels_dictionary)
-            new_dataset.convert_colors_to_labels(target_classes, self.labels_dictionary)
+            new_dataset.createLabelImage(self.project.labels)
+            new_dataset.convert_colors_to_labels(target_classes, self.project.labels)
             new_dataset.computeFrequencies(target_classes)
             target_scale_factor = self.newDatasetWidget.getTargetScale()
             new_dataset.workingAreaCropAndRescale(self.activeviewer.image.pixelSize(), target_scale_factor,self.activeviewer.image.working_area)
@@ -3407,7 +3405,7 @@ class TagLab(QMainWindow):
 
             basename = self.newDatasetWidget.getDatasetFolder()
             tilename = os.path.splitext(self.activeviewer.image.name)[0]
-            new_dataset.export_tiles(basename=basename, tilename=tilename, labels_info=self.labels_dictionary)
+            new_dataset.export_tiles(basename=basename, tilename=tilename, labels_info=self.project.labels)
 
             # save the target scale factor
             target_scale_factor_file = os.path.join(basename, "target-scale-factor.txt")
@@ -3443,7 +3441,7 @@ class TagLab(QMainWindow):
         # CLASSES TO RECOGNIZE (label name - label code)
         labels_folder = os.path.join(dataset_folder, "training")
         labels_folder = os.path.join(labels_folder, "labels")
-        target_classes = CoralsDataset.importClassesFromDataset(labels_folder, self.labels_dictionary)
+        target_classes = CoralsDataset.importClassesFromDataset(labels_folder, self.project.labels)
         num_classes = len(target_classes)
 
         # GO TRAINING GO...
@@ -3467,7 +3465,7 @@ class TagLab(QMainWindow):
 
         dataset_train_info, train_loss_values, val_loss_values = training.trainingNetwork(images_dir_train, labels_dir_train,
                         images_dir_val, labels_dir_val,
-                        self.labels_dictionary, target_classes, num_classes,
+                        self.project.labels, target_classes, num_classes,
                         save_network_as=network_filename, classifier_name=classifier_name,
                         epochs=nepochs, batch_sz=batch_size, batch_mult=4, validation_frequency=2,
                         loss_to_use="FOCAL_TVERSKY", epochs_switch=0, epochs_transition=0,
@@ -3491,7 +3489,7 @@ class TagLab(QMainWindow):
         self.progress_bar.setMessage("Test network..")
         QApplication.processEvents()
 
-        metrics = training.testNetwork(images_dir_test, labels_dir_test, dictionary=self.labels_dictionary,
+        metrics = training.testNetwork(images_dir_test, labels_dir_test, dictionary=self.project.labels,
                                        target_classes=target_classes, dataset_train=dataset_train_info,
                                        network_filename=network_filename, output_folder=output_folder)
 

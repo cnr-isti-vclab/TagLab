@@ -414,7 +414,7 @@ class Annotation(QObject):
     ###########################################################################
     ### IMPORT / EXPORT
 
-    def create_label_map(self, size, labels_info):
+    def create_label_map(self, size, labels_dictionary):
         """
         Create a label map as a QImage and returns it.
         """
@@ -433,7 +433,7 @@ class Annotation(QObject):
             if blob.class_name == "Empty":
                 rgb = [255, 255, 255]
             else:
-                rgb = labels_info[blob.class_name]
+                rgb = labels_dictionary[blob.class_name]
 
             mask = blob.getMask().astype(bool)  # bool is required for bitmask indexing
             box = blob.bbox.copy()  # blob.bbox is top, left, width, height
@@ -457,7 +457,7 @@ class Annotation(QObject):
         labelimg = utils.rgbToQImage(image)
         return labelimg
 
-    def import_label_map(self, filename, labels_info, w_target, h_target, create_holes=False):
+    def import_label_map(self, filename, labels_dictionary, w_target, h_target, create_holes=False):
         """
         It imports a label map and create the corresponding blobs.
         The label map is rescaled such that it coincides with the reference map.
@@ -491,10 +491,10 @@ class Annotation(QObject):
                 col = region.coords[0, 1]
                 color = label_map[row, col]
 
-                for label_name in labels_info.keys():
-                    c = labels_info[label_name]
+                for label in labels_dictionary.keys():
+                    c = label.fill
                     if c[0] == color[0] and c[1] == color[1] and c[2] == color[2]:
-                        blob.class_name = label_name
+                        blob.class_name = label.name
                         break
                 if create_holes or blob.class_name is not 'Empty':
                     created_blobs.append(blob)
@@ -561,6 +561,6 @@ class Annotation(QObject):
         df.to_csv(filename, sep=',', index=False)
 
 
-    def export_image_data_for_Scripps(self, size, filename, labels_info):
-        label_map = self.create_label_map(size, labels_info)
+    def export_image_data_for_Scripps(self, size, filename, labels_dictionary):
+        label_map = self.create_label_map(size, labels_dictionary)
         label_map.save(filename, 'png')

@@ -136,17 +136,16 @@ class QtDictionaryWidget(QWidget):
         self.btn_selection_color.clicked.connect(self.chooseLabelColor)
 
         rgblbl = QLabel("RGB:")
-        rgblbl.setFixedWidth(50)
         self.editR = QLineEdit()
-        self.editR.setFixedWidth(50)
+        self.editR.setFixedWidth(40)
         self.editR.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
 
         self.editG = QLineEdit()
-        self.editG.setFixedWidth(50)
+        self.editG.setFixedWidth(40)
         self.editG.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
 
         self.editB = QLineEdit()
-        self.editB.setFixedWidth(50)
+        self.editB.setFixedWidth(40)
         self.editB.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
 
         self.editR.textChanged.connect(self.updatelabelColor)
@@ -232,8 +231,6 @@ class QtDictionaryWidget(QWidget):
     def closeEvent(self, event):
         self.closewidget.emit()
         super(QtDictionaryWidget, self).closeEvent(event)
-
-
 
     @pyqtSlot()
     def newDictionary(self):

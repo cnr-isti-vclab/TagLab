@@ -34,14 +34,14 @@ import cv2
 
 class QtHistogramWidget(QWidget):
 
-    def __init__(self, annotations, labels_info, scale_factor, year, parent=None):
+    def __init__(self, annotations, labels_dictionary, scale_factor, year, parent=None):
 
         super(QtHistogramWidget, self).__init__(parent)
 
         self.scale_factor = scale_factor
         self.year = year
         self.ann = annotations
-        self.labels_info = labels_info
+        self.labels_dictionary = labels_dictionary
         self.checkBoxes = []  # list of QCheckBox
         self.setStyleSheet("background-color: rgba(40,40,40); color: white")
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
@@ -69,7 +69,7 @@ class QtHistogramWidget(QWidget):
             btnC = QPushButton("")
             btnC.setFlat(True)
 
-            color = self.labels_info[label_name]
+            color = self.labels_dictionary[label_name].fill
             r = color[0]
             g = color[1]
             b = color[2]
@@ -144,7 +144,7 @@ class QtHistogramWidget(QWidget):
         for checkbox in self.checkBoxes:
             if checkbox.isChecked():
                list_selected.append(checkbox.text())
-               list_color.append(self.labels_info[checkbox.text()])
+               list_color.append(self.labels_dictionary[checkbox.text()].fill)
 
         if len(list_selected) > 0:
             self.create_histogram(list_selected,list_color)

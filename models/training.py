@@ -226,7 +226,7 @@ def computeLoss(loss_name, CE, w_for_GDL, tversky_alpha, tversky_beta, focal_tve
 
 
 def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val, labels_folder_val,
-                    dictionary, target_classes, output_classes, save_network_as, classifier_name,
+                    labels_dictionary, target_classes, output_classes, save_network_as, classifier_name,
                     epochs, batch_sz, batch_mult, learning_rate, L2_penalty, validation_frequency, loss_to_use,
                     epochs_switch, epochs_transition, tversky_alpha, tversky_gamma, optimiz,
                     flag_shuffle, flag_training_accuracy, progress):
@@ -234,7 +234,7 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
     ##### DATA #####
 
     # setup the training dataset
-    datasetTrain = CoralsDataset(images_folder_train, labels_folder_train, dictionary, target_classes)
+    datasetTrain = CoralsDataset(images_folder_train, labels_folder_train, labels_dictionary, target_classes)
 
     print("Dataset setup..", end='')
     datasetTrain.computeAverage()
@@ -249,7 +249,7 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
 
     datasetTrain.enableAugumentation()
 
-    datasetVal = CoralsDataset(images_folder_val, labels_folder_val, dictionary, target_classes)
+    datasetVal = CoralsDataset(images_folder_val, labels_folder_val, labels_dictionary, target_classes)
     datasetVal.dataset_average = datasetTrain.dataset_average
     datasetVal.weights = datasetTrain.weights
 
@@ -425,7 +425,7 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
     return datasetTrain, loss_values_train, loss_values_val
 
 
-def testNetwork(images_folder, labels_folder, dictionary, target_classes, dataset_train,
+def testNetwork(images_folder, labels_folder, labels_dictionary, target_classes, dataset_train,
                 network_filename, output_folder):
     """
     Load a network and test it on the test dataset.
@@ -433,7 +433,7 @@ def testNetwork(images_folder, labels_folder, dictionary, target_classes, datase
     """
 
     # TEST DATASET
-    datasetTest = CoralsDataset(images_folder, labels_folder, dictionary, target_classes)
+    datasetTest = CoralsDataset(images_folder, labels_folder, labels_dictionary, target_classes)
     datasetTest.disableAugumentation()
 
     datasetTest.num_classes = dataset_train.num_classes
