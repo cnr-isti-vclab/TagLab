@@ -17,40 +17,6 @@ from source.Genet import Genet
 from source import utils
 from source.Grid import Grid
 
-def checkDictionaryConsisteny(dict_config, dict):
-    """
-    Check the consistency between two labels' dictionaries.
-    """
-
-    messages = ""
-    inconsistencies = 0
-
-    # check for color consistency between labels
-    for key in dict_config.keys():
-        index = dict.get(key)
-        if index is not None:
-            config_color = dict_config[key]
-            project_color = dict[key].fill
-            if config_color != project_color:
-                msg = "\n" + str(inconsistencies) + ") Inconsistent color for label '" + key + "'.\nDictionary color is " + repr(config_color) + ".\nProject color is " + repr(project_color) + " ."
-                messages += msg
-                inconsistencies += 1
-
-    # check for labels present in the project dictionary but not present in config.json
-    for key in dict.keys():
-        index = dict_config.get(key)
-        if index is None and key != 'Empty':
-            msg = "\n" + str(inconsistencies) + ") Label '" + key + "' is missing in the configuration. To correctly handle this class add it manually to 'config.json' ."
-            messages += msg
-            inconsistencies += 1
-
-    if inconsistencies > 0:
-        box = QMessageBox()
-        box.setWindowTitle("WARNING!! Dictionary inconsistencies.")
-        box.setText(messages)
-        box.exec()
-
-
 def loadProject(taglab_working_dir, filename, default_dict):
 
     dir = QDir(taglab_working_dir)
@@ -194,8 +160,6 @@ class Project(object):
         self.image_metadata_template = image_metadata_template          # description of metadata keywords expected in images
                                                                          # name: { type: (integer, date, string), mandatory: (true|false), default: ... }
 
-
-
     def importLabelsFromConfiguration(self, dictionary):
         """
         This function should be removed when the Labels Panel will be finished.
@@ -206,6 +170,45 @@ class Project(object):
         for key in dictionary.keys():
             color = dictionary[key]
             self.labels[key] = Label(id=key, name=key, description=None, fill=color, border=[200, 200, 200], visible=True)
+
+
+    def checkDictionaryConsistency(self, labels):
+        """
+        Check the consistency between a list of labels and the current annotations.
+        """
+
+        return True
+
+        messages = ""
+        inconsistencies = 0
+
+        # check for color consistency between labels
+        for key in dict_config.keys():
+            index = dict.get(key)
+            if index is not None:
+                config_color = dict_config[key]
+                project_color = dict[key].fill
+                if config_color != project_color:
+                    msg = "\n" + str(
+                        inconsistencies) + ") Inconsistent color for label '" + key + "'.\nDictionary color is " + repr(
+                        config_color) + ".\nProject color is " + repr(project_color) + " ."
+                    messages += msg
+                    inconsistencies += 1
+
+        # check for labels present in the project dictionary but not present in config.json
+        for key in dict.keys():
+            index = dict_config.get(key)
+            if index is None and key != 'Empty':
+                msg = "\n" + str(
+                    inconsistencies) + ") Label '" + key + "' is missing in the configuration. To correctly handle this class add it manually to 'config.json' ."
+                messages += msg
+                inconsistencies += 1
+
+        if inconsistencies > 0:
+            box = QMessageBox()
+            box.setWindowTitle("WARNING!! Dictionary inconsistencies.")
+            box.setText(messages)
+            box.exec()
 
 
     def save(self, filename = None):

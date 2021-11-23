@@ -362,7 +362,7 @@ class QtImageViewerPlus(QtImageViewer):
                 if blob.qpath_gitem is not None:
                     blob.qpath_gitem.setPen(pen)
 
-    def drawBlob(self, blob, prev=False):
+    def drawBlob(self, blob):
 
         # if it has just been created remove the current graphics item in order to set it again
         if blob.qpath_gitem is not None:
@@ -403,6 +403,11 @@ class QtImageViewerPlus(QtImageViewer):
         # current annotations
         for blob in self.annotations.seg_blobs:
             blob.qpath_gitem.setOpacity(self.transparency_value)
+
+    def redrawAllBlobs(self):
+
+        for blob in self.annotations.seg_blobs:
+            self.drawBlob(blob)
 
     #used for crossair cursor
     def drawForeground(self, painter, rect):

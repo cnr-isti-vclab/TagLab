@@ -2788,11 +2788,42 @@ class TagLab(QMainWindow):
     @pyqtSlot()
     def setDictionary(self):
 
-        # set the dictionary in the project
-        self.project.setDictionaryFromListOfLabels(self.create_dictionary.labels)
+        # before to set the dictionary some consistency checks are needed
+        #
+        # RULES:
+        #
+        #   - duplicate keys in the list are not allowed
+        #   - missing labels (present in the annotation but not in the dictionary to set) are added to the dictionary
+        #   - same keys may have different colors -> recoloring of the annotations is needed
+        #   - same colors are allowed ??
 
-        # update labels widget
-        self.updateLabelsPanel()
+        labels_list = self.create_dictionary.labels
+
+        if len(set(labels_list)) < len(labels_list):
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("There are duplicated class names !! Please, remove the duplicates.")
+            msgBox.exec()
+            return
+
+        dictionary_ok = self.project.checkDictionaryConsistency(labels_list)
+
+        if dictionary_ok is True:
+
+            # set the dictionary in the project
+            self.project.setDictionaryFromListOfLabels(labels_list)
+
+            # update labels widget
+            self.updateLabelsPanel()
+
+            # redraw all blobs
+            if self.viewerplus is not None:
+                if self.viewerplus.image is not None:
+                    self.viewerplus.redrawAllBlobs()
+
+            if self.viewerplus2 is not None:
+                if self.viewerplus2.image is not None:
+                    self.viewerplus2.redrawAllBlobs()
 
     def updateLabelsPanel(self):
         """
