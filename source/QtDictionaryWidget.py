@@ -34,6 +34,7 @@ class DictionaryEncoder(json.JSONEncoder):
 class QtDictionaryWidget(QWidget):
 
     closewidget = pyqtSignal()
+
     def __init__(self, dir, project, parent=None):
         super(QtDictionaryWidget, self).__init__(parent)
 
@@ -167,7 +168,6 @@ class QtDictionaryWidget(QWidget):
         self.btn_set.setMinimumWidth(360)
         self.btn_set.setMinimumHeight(40)
         self.btn_set.setStyleSheet("font-weight: bold;")
-        self.btn_set.clicked.connect(self.setDictionary)
 
         layout_zerorow = QHBoxLayout()
         layout_zerorow.addWidget(self.button_new)
@@ -280,9 +280,6 @@ class QtDictionaryWidget(QWidget):
 
 
     def checkConsistency (self):
-        pass
-
-    def setDictionary (self):
         pass
 
     @pyqtSlot()

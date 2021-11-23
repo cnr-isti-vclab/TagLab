@@ -51,7 +51,7 @@ def checkDictionaryConsisteny(dict_config, dict):
         box.exec()
 
 
-def loadProject(taglab_working_dir, filename, labels_dict):
+def loadProject(taglab_working_dir, filename, default_dict):
 
     dir = QDir(taglab_working_dir)
     filename = dir.relativeFilePath(filename)
@@ -62,13 +62,10 @@ def loadProject(taglab_working_dir, filename, labels_dict):
         raise Exception(str(e))
 
     if "Map File" in data:
-        project = loadOldProject(taglab_working_dir, data, labels_dict)
+        project = loadOldProject(taglab_working_dir, data)
+        project.loadDictionary(default_dict)
     else:
         project = Project(**data)
-
-        #force config dictionary
-        checkDictionaryConsisteny(labels_dict, project.labels)
-        project.importLabelsFromConfiguration(labels_dict)
 
     f.close()
 
@@ -119,11 +116,10 @@ def loadProject(taglab_working_dir, filename, labels_dict):
 
     return project
 
-# NOTE: old project NEEDS a pre-defined label dictionary
-def loadOldProject(taglab_working_dir, data, labels_dict):
+# WARNING!! The old-style projects do not include a labels dictionary
+def loadOldProject(taglab_working_dir, data):
 
     project = Project()
-    project.importLabelsFromConfiguration(labels_dict)
     map_filename = data["Map File"]
 
     #convert to relative paths in case:
@@ -250,9 +246,18 @@ class Project(object):
             id = label['id']
             name = label['name']
             fill = label['fill']
-            border = dictionary['border']
-            description = dictionary['description']
-            self.labels[key] = Label(id=id, name=name, fill=fill, border=border)
+            border = label['border']
+            description = label['description']
+            self.labels[name] = Label(id=id, name=name, fill=fill, border=border)
+
+    def setDictionaryFromListOfLabels(self, labels):
+        """
+        Convert the list of labels into a labels dictionary.
+        """
+
+        self.labels = {}
+        for label in labels:
+            self.labels[label.name] = label
 
     def classColor(self, class_name):
         if class_name == "Empty":

@@ -129,7 +129,9 @@ class TagLab(QMainWindow):
         f = open("config.json", "r")
         config_dict = json.load(f)
         self.available_classifiers = config_dict["Available Classifiers"]
-        self.labels_dictionary = config_dict["Labels"]
+
+        # filename of the default dictionary
+        self.default_dictionary = "dictionaries/scripps.json"
 
         logfile.info("[INFO] Initizialization begins..")
 
@@ -368,8 +370,7 @@ class TagLab(QMainWindow):
 
         # LABELS PANEL
         self.labels_widget = QtLabelsWidget()
-
-        self.project.importLabelsFromConfiguration(self.labels_dictionary)
+        self.project.loadDictionary(self.default_dictionary)
         self.labels_widget.setLabels(self.project)
 
         self.scroll_area_labels_panel = QScrollArea()
@@ -633,8 +634,6 @@ class TagLab(QMainWindow):
         self.disableSplitScreen()
 
         self.move()
-
-        self.project.loadDictionary("dictionaries/scripps.json")
 
     def checkNewVersion(self):
 
@@ -1990,7 +1989,7 @@ class TagLab(QMainWindow):
         self.classifier_name = None
         self.dataset_train_info = None
         self.project = Project()
-        self.project.importLabelsFromConfiguration(self.labels_dictionary)
+        self.project.loadDictionary(self.default_dictionary)
         self.last_image_loaded = None
         self.activeviewer = None
         self.compare_panel.clear()
@@ -2783,7 +2782,19 @@ class TagLab(QMainWindow):
     def createDictionary(self):
 
         self.create_dictionary = QtDictionaryWidget(self.taglab_dir, self.project, parent = self)
+        self.create_dictionary.btn_set.clicked.connect(self.setDictionary)
         self.create_dictionary.show()
+
+    @pyqtSlot()
+    def setDictionary(self):
+
+        # set the dictionary in the project
+        self.project.setDictionaryFromListOfLabels(self.create_dictionary.labels)
+
+        # update labels widget re-creating it to ensure correct size inside the scroll area
+        self.labels_widget = QtLabelsWidget()
+        self.labels_widget.setLabels(self.project)
+        self.scroll_area_labels_panel.setWidget(self.labels_widget)
 
 
 #REFACTOR
@@ -3531,7 +3542,7 @@ class TagLab(QMainWindow):
         self.available_classifiers.append(new_classifier)
         newconfig = dict()
         newconfig["Available Classifiers"] = self.available_classifiers
-        newconfig["Labels"] = self.labels_dictionary
+        newconfig["Labels"] = self.project.labels
         str = json.dumps(newconfig)
         newconfig_filename = os.path.join(self.taglab_dir, "newconfig.json")
         f = open(newconfig_filename, "w")
@@ -3618,7 +3629,7 @@ class TagLab(QMainWindow):
         QApplication.setOverrideCursor(Qt.WaitCursor)
 
         try:
-            self.project = loadProject(self.taglab_dir, filename, self.labels_dictionary)
+            self.project = loadProject(self.taglab_dir, filename, self.default_dictionary)
         except Exception as e:
             msgBox = QMessageBox()
             msgBox.setText("The json project contains an error:\n {0}\n\nPlease contact us.".format(str(e)))
