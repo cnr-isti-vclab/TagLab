@@ -2791,7 +2791,14 @@ class TagLab(QMainWindow):
         # set the dictionary in the project
         self.project.setDictionaryFromListOfLabels(self.create_dictionary.labels)
 
-        # update labels widget re-creating it to ensure correct size inside the scroll area
+        # update labels widget
+        self.updateLabelsPanel()
+
+    def updateLabelsPanel(self):
+        """
+        Update labels widget re-creating it to ensure correct size inside the scroll area
+        """
+
         self.labels_widget = QtLabelsWidget()
         self.labels_widget.setLabels(self.project)
         self.scroll_area_labels_panel.setWidget(self.labels_widget)
@@ -3644,7 +3651,7 @@ class TagLab(QMainWindow):
         if len(self.project.images) > 0:
             self.showImage(self.project.images[0])
 
-        self.labels_widget.setLabels(self.project)
+        self.updateLabelsPanel()
 
         self.updateImageSelectionMenu()
         self.updateEditSubMenu()
