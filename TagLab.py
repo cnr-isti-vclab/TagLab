@@ -3128,34 +3128,48 @@ class TagLab(QMainWindow):
         Import a ortho
         """
         if self.activeviewer is None:
+            box = QMessageBox()
+            box.setText("Load a georeferenced orthoimage.")
+            box.exec()
             return
 
         if self.activeviewer.image is not None:
             if self.activeviewer.image.georef_filename == "":
                 box = QMessageBox()
-                box.setText("Georeference information is not available.")
+                box.setText("Georeferencing is not available; please load a georeferenced ortho image.")
                 box.exec()
                 return
+        else:
+            box = QMessageBox()
+            box.setText("Load a georeferenced orthoimage.")
+            box.exec()
+            return
 
         filters = "Shapefile (*.shp)"
         filename, _ = QFileDialog.getOpenFileName(self, "Import Shapefile", "", filters)
         if not filename:
             return
 
-        # QApplication.setOverrideCursor(Qt.WaitCursor)
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+
         gf = self.activeviewer.image.georef_filename
-        blobList, Data = rasterops.open_shapefile(filename, gf)
+        blobList, data = rasterops.open_shapefile(filename, gf)
 
         for blob in blobList:
             self.activeviewer.addBlob(blob, selected=False)
         self.activeviewer.saveUndo()
 
-        self.attribute_widget = QtAttributeWidget(Data)
-        self.attribute_widget.show()
+        QApplication.restoreOverrideCursor()
 
-        print('fatto')
+        if  data.empty:
+            msgBox = QMessageBox(self)
+            msgBox.setWindowTitle('TagLab')
+            msgBox.setText("This shapefile has no attributes")
+            msgBox.exec()
+        else:
+            self.attribute_widget = QtAttributeWidget(data)
+            self.attribute_widget.show()
 
-        # QApplication.restoreOverrideCursor()
 
     @pyqtSlot()
     def exportAnnAsDataTable(self):
