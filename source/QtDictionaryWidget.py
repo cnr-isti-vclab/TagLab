@@ -79,6 +79,7 @@ class QtDictionaryWidget(QWidget):
         self.edit_dname.setPlaceholderText("Name of the dictionary")
         self.edit_dname.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_dname.setFixedWidth(350)
+        self.edit_dname.setText(project.dictionary_name)
 
         self.edit_load = QLineEdit()
         self.edit_load.setPlaceholderText("Path of the dictionary")
@@ -91,6 +92,7 @@ class QtDictionaryWidget(QWidget):
         self.edit_description.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_description.setFixedWidth(350)
         self.edit_description.setMaximumHeight(100)
+        self.edit_description.setText(project.dictionary_description)
 
         self.labels_layout = QVBoxLayout()
         self.labels_widget = QWidget()
