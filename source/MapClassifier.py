@@ -49,7 +49,7 @@ class MapClassifier(QObject):
     # custom signal
     updateProgress = pyqtSignal(float)
 
-    def __init__(self, classifier_info, labels_info, parent=None):
+    def __init__(self, classifier_info, labels_dictionary, parent=None):
         super(QObject, self).__init__(parent)
 
         self.label_colors = []
@@ -63,7 +63,7 @@ class MapClassifier(QObject):
             if label_name == "Background":
                 color = [0, 0, 0]
             else:
-                color = labels_info[label_name]
+                color = labels_dictionary[label_name].fill
 
             self.label_colors.append(color)
 

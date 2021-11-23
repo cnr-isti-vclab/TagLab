@@ -172,6 +172,10 @@ class Project(object):
                  spatial_reference_system=None, metadata={}, image_metadata_template={}, genet={}):
 
         self.filename = None                                             #filename with path of the project json
+
+        self.dictionary_name = ""
+        self.dictionary_description = ""
+
         self.labels = { key: Label(**value) for key, value in labels.items() }
         if not 'Empty' in self.labels:
             self.labels['Empty'] = Label(id='Empty', name='Empty', description=None, fill=[127, 127, 127], border=[200, 200, 200], visible=True)
@@ -230,6 +234,25 @@ class Project(object):
         f.close()
         #except Exception as a:
         #    print(str(a))
+
+    def loadDictionary(self, filename):
+
+        f = open(filename)
+        dictionary = json.load(f)
+        f.close()
+
+        self.dictionary_name = dictionary['Name']
+        self.dictionary_description = dictionary['Description']
+        labels = dictionary['Labels']
+
+        self.labels = {}
+        for label in labels:
+            id = label['id']
+            name = label['name']
+            fill = label['fill']
+            border = dictionary['border']
+            description = dictionary['description']
+            self.labels[key] = Label(id=id, name=name, fill=fill, border=border)
 
     def classColor(self, class_name):
         if class_name == "Empty":

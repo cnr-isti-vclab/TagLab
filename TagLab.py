@@ -634,6 +634,8 @@ class TagLab(QMainWindow):
 
         self.move()
 
+        self.project.loadDictionary("dictionaries/scripps.json")
+
     def checkNewVersion(self):
 
         github_repo = 'cnr-isti-vclab/TagLab/'
@@ -3773,7 +3775,7 @@ class TagLab(QMainWindow):
 
             QApplication.processEvents()
 
-            self.classifier = MapClassifier(classifier_selected, self.labels_dictionary)
+            self.classifier = MapClassifier(classifier_selected, self.project.labels)
             self.classifier.updateProgress.connect(self.progress_bar.setProgress)
 
             self.progress_bar.hidePerc()
@@ -3905,7 +3907,7 @@ class TagLab(QMainWindow):
             message = "[AUTOCLASS] Automatic classification STARTS.. (classifier: )" + classifier_selected['Classifier Name']
             logfile.info(message)
 
-            self.classifier = MapClassifier(classifier_selected, self.labels_dictionary)
+            self.classifier = MapClassifier(classifier_selected, self.project.labels)
             self.classifier.updateProgress.connect(self.progress_bar.setProgress)
 
             if self.activeviewer is None:
@@ -3941,7 +3943,7 @@ class TagLab(QMainWindow):
 
                     filename = os.path.join("temp", "labelmap.png")
 
-                    created_blobs = self.activeviewer.annotations.import_label_map(filename, self.labels_dictionary,
+                    created_blobs = self.activeviewer.annotations.import_label_map(filename, self.project.labels,
                                                                                    orthoimage.width(), orthoimage.height())
                     for blob in created_blobs:
                         self.viewerplus.addBlob(blob, selected=False)
