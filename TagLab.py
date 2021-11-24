@@ -68,6 +68,7 @@ from source.MapClassifier import MapClassifier
 from source.NewDataset import NewDataset
 from source.QtGridWidget import QtGridWidget
 from source.QtDictionaryWidget import QtDictionaryWidget
+from source.QtCustomDataWidget import QtCustomDataWidget
 from source.QtShapefileAttributeWidget import QtAttributeWidget
 
 
@@ -888,8 +889,13 @@ class TagLab(QMainWindow):
         newMapAct.setStatusTip("Add a new map to the project")
         newMapAct.triggered.connect(self.setMapToLoad)
 
+        ### Project
         createDicAct = QAction("Dictionary Editor", self)
         createDicAct.triggered.connect(self.createDictionary)
+
+        customDataAct = QAction("Custom data", self)
+        customDataAct.triggered.connect(self.editCustomData)
+
 
         ### IMPORT
 
@@ -989,12 +995,7 @@ class TagLab(QMainWindow):
         self.filemenu.addAction(saveAct)
         self.filemenu.addAction(saveAsAct)
         self.filemenu.addSeparator()
-        self.filemenu.addAction(createDicAct)
-        self.filemenu.addAction(newMapAct)
-        self.submenuEdit = self.filemenu.addMenu("Edit Maps info")
-        self.submenuEdit.setEnabled(False)
-        self.filemenu.addSeparator()
-
+        
         for i in range(self.maxRecentFiles):
             self.filemenu.addAction(self.recentFileActs[i])
         self.separatorRecentFilesAct = self.filemenu.addSeparator()
@@ -1016,6 +1017,17 @@ class TagLab(QMainWindow):
         self.filemenu.addAction(trainYourNetworkAct)
         self.filemenu.addSeparator()
         self.filemenu.addAction(settingsAct)
+
+        #### PROJECT MENU
+
+        self.projectmenu = menubar.addMenu("&Project")
+        self.projectmenu.addAction(createDicAct)
+        self.projectmenu.addAction(customDataAct)
+        self.projectmenu.addAction(newMapAct)
+        self.submenuEdit = self.filemenu.addMenu("Edit Maps info")
+        self.submenuEdit.setEnabled(False)
+        #self.projectmenu.addSeparator()
+
 
         ###### DEM MENU
 
@@ -2784,6 +2796,14 @@ class TagLab(QMainWindow):
         self.create_dictionary = QtDictionaryWidget(self.taglab_dir, self.project, parent = self)
         self.create_dictionary.btn_set.clicked.connect(self.setDictionary)
         self.create_dictionary.show()
+
+    @pyqtSlot()
+    def editCustomData(self):
+
+        self.edit_customData = QtCustomDataWidget(self.taglab_dir, self.project, parent = self)
+        self.edit_customData.show()
+
+
 
     @pyqtSlot()
     def setDictionary(self):

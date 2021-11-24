@@ -49,6 +49,14 @@ class Blob(object):
         self.version = 0
         self.id = int(id)
         self.id_item = None
+        self.instance_name = "noname"
+        self.blob_name = "noname"
+        self.class_name = "Empty"
+
+        self.genet = None
+        # note about the coral, i.e. damage type
+        self.note = ""
+        self.data = {}
 
         self.area = 0.0
         self.surface_area = 0.0
@@ -62,18 +70,14 @@ class Blob(object):
         self.qpath = None
         self.qpath_gitem = None
 
-        self.instance_name = "noname"
-        self.blob_name = "noname"
 
         if region:
 
             # extract properties
 
             self.centroid = np.array(region.centroid)
-            cy = self.centroid[0]
-            cx = self.centroid[1]
-            self.centroid[0] = cx + offset_x
-            self.centroid[1] = cy + offset_y
+            self.centroid[0] += offset_x
+            self.centroid[1] += offset_y
 
             # Bounding box (min_row, min_col, max_row, max_col).
             # Pixels belonging to the bounding box are in the half-open
@@ -89,12 +93,6 @@ class Blob(object):
             self.bbox[2] = width
             self.bbox[3] = height
 
-            # QPainterPath associated with the contours
-            self.qpath = None
-
-            # QGraphicsItem associated with the QPainterPath
-            self.qpath_gitem = None
-
             # to extract the contour we use the mask cropped according to the bbox
             input_mask = region.image.astype(int)
             self.contour = np.zeros((2, 2))
@@ -109,41 +107,10 @@ class Blob(object):
             yc = self.centroid[1]
             self.blob_name = "c-{:d}-{:.1f}x-{:.1f}y".format(self.id, xc, yc)
 
-        # name of the class
-        self.class_name = "Empty"
-
-        self.genet = None
-
-        # note about the coral, i.e. damage type
-        self.note = ""
-
-        # QImage corresponding to the current mask
-        self.qimg_mask = None
-
-        # QPixmap associated with the mask (for pixel-level editing operations)
-        self.pxmap_mask = None
-
-        # QGraphicsItem associated with the pixmap mask
-        self.pxmap_mask_gitem = None
-
-        # membership group (if any)  # NOT USED(!)
-        self.group = None
-
+       
 
     def copy(self):
         blob = Blob(None, 0, 0, 0)
-
-        blob.area = self.area
-        blob.surface_area = self.surface_area
-        blob.perimeter = self.perimeter
-        blob.centroid = self.centroid
-        blob.bbox = self.bbox
-
-        blob.contour = self.contour.copy()
-        for inner in self.inner_contours:
-            blob.inner_contours.append(inner.copy())
-        blob.qpath_gitem = None
-        blob.qpath = None
 
         blob.instance_name = blob.instance_name
         blob.blob_name = self.blob_name
@@ -155,9 +122,19 @@ class Blob(object):
 
         blob.note = self.note
 
-        self.qimg_mask = None
-        self.pxmap_mask = None
-        self.pxmap_mask_gitem = None
+        blob.area = self.area
+        blob.surface_area = self.surface_area
+        blob.perimeter = self.perimeter
+        blob.centroid = self.centroid
+        blob.bbox = self.bbox
+        blob.data = self.data.copy()
+
+        blob.contour = self.contour.copy()
+        for inner in self.inner_contours:
+            blob.inner_contours.append(inner.copy())
+
+        blob.qpath_gitem = None
+        blob.qpath = None
 
         return blob
 
@@ -517,6 +494,7 @@ class Blob(object):
         self.blob_name = dict["blob name"]
         self.id = int(dict["id"])
         self.note = dict["note"]
+        self.data = dict["data"].copy()
 
     def save(self):
         return self.toDict()
@@ -577,6 +555,7 @@ class Blob(object):
         dict["blob name"] = self.blob_name
         dict["id"] = self.id
         dict["note"] = self.note
+        dict["data"] = self.data.copy()
 
         return dict
 
