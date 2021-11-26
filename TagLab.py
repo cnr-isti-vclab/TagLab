@@ -2788,14 +2788,10 @@ class TagLab(QMainWindow):
     @pyqtSlot()
     def setDictionary(self):
 
-        # before to set the dictionary some consistency checks are needed
+        # NOTES:
         #
-        # RULES:
-        #
-        #   - duplicate keys in the list are not allowed
-        #   - missing labels (present in the annotation but not in the dictionary to set) are added to the dictionary
-        #   - same keys may have different colors -> recoloring of the annotations is needed
-        #   - same colors are allowed ??
+        #  - same keys in use may have different colors -> recoloring of the annotations is needed
+        #  - at the moment, two different labels can have the same color
 
         labels_list = self.create_dictionary.labels
 
@@ -2806,24 +2802,20 @@ class TagLab(QMainWindow):
             msgBox.exec()
             return
 
-        dictionary_ok = self.project.checkDictionaryConsistency(labels_list)
+        # set the dictionary in the project
+        self.project.setDictionaryFromListOfLabels(labels_list)
 
-        if dictionary_ok is True:
+        # update labels widget
+        self.updateLabelsPanel()
 
-            # set the dictionary in the project
-            self.project.setDictionaryFromListOfLabels(labels_list)
+        # redraw all blobs
+        if self.viewerplus is not None:
+            if self.viewerplus.image is not None:
+                self.viewerplus.redrawAllBlobs()
 
-            # update labels widget
-            self.updateLabelsPanel()
-
-            # redraw all blobs
-            if self.viewerplus is not None:
-                if self.viewerplus.image is not None:
-                    self.viewerplus.redrawAllBlobs()
-
-            if self.viewerplus2 is not None:
-                if self.viewerplus2.image is not None:
-                    self.viewerplus2.redrawAllBlobs()
+        if self.viewerplus2 is not None:
+            if self.viewerplus2.image is not None:
+                self.viewerplus2.redrawAllBlobs()
 
     def updateLabelsPanel(self):
         """

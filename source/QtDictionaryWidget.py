@@ -38,6 +38,12 @@ class QtDictionaryWidget(QWidget):
     def __init__(self, dir, project, parent=None):
         super(QtDictionaryWidget, self).__init__(parent)
 
+        # DICTIONRY RULES:
+        #
+        #   - duplicate label names (key) are not allowed
+        #   - labels in use cannot be removed
+        #   - same colors are allowed
+
         self.taglab_dir = dir
         self.project = project
 
@@ -512,22 +518,32 @@ class QtDictionaryWidget(QWidget):
     @pyqtSlot()
     def addLabel(self):
 
-        self.editR.blockSignals(True)
-        self.editG.blockSignals(True)
-        self.editB.blockSignals(True)
-
         red, green, blue = self.getRGB()
 
         if 0 <= red <= 255 and 0 <= green <= 255 and 0 <= blue <= 255 and self.editLabel.text() != '':
+
+            label_name = self.editLabel.text()
+            for label in self.labels:
+                if label.name == label_name:
+                    box = QMessageBox()
+                    box.setText("A label with the same name just exists (!) Please, change it!")
+                    box.exec()
+                    return
+
+            self.editR.blockSignals(True)
+            self.editG.blockSignals(True)
+            self.editB.blockSignals(True)
+
             self.createLabel(red, green, blue, self.editLabel.text())
+
+            self.editR.blockSignals(False)
+            self.editG.blockSignals(False)
+            self.editB.blockSignals(False)
+
         else:
             box = QMessageBox()
             box.setText("Please chose a valid color and type a label name")
             box.exec()
-
-        self.editR.blockSignals(False)
-        self.editG.blockSignals(False)
-        self.editB.blockSignals(False)
 
 
     def eventFilter(self, object, event):
