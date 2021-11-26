@@ -229,6 +229,9 @@ class QtDictionaryWidget(QWidget):
 
         self.populateLabelsFromProject()
 
+        # it returns the list of the labels currently used by the annotations
+        self.labels_in_use = self.project.labelsInUse()
+
 
     def closeEvent(self, event):
         self.closewidget.emit()
@@ -475,13 +478,19 @@ class QtDictionaryWidget(QWidget):
             box.setText("Please, select a label to modify")
             box.exec()
 
-    def removeLabel (self):
+    def removeLabel(self):
 
         if self.selection_index > 0:
             label = self.labels[self.selection_index]
-            self.labels.remove(label)
-            self.createAllLabels()
-            self.selection_index = -1
+
+            if label.name in self.labels_in_use:
+                box = QMessageBox()
+                box.setText("This label is currently in use and cannot be removed (!)")
+                box.exec()
+            else:
+                self.labels.remove(label)
+                self.createAllLabels()
+                self.selection_index = -1
         else:
             box = QMessageBox()
             box.setText("Please, select a label to delete")
