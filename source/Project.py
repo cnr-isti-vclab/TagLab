@@ -131,12 +131,13 @@ class ProjectEncoder(json.JSONEncoder):
 class Project(object):
 
     def __init__(self, filename=None, labels={}, images=[], correspondences=None,
-                 spatial_reference_system=None, metadata={}, image_metadata_template={}, genet={}):
+                 spatial_reference_system=None, metadata={}, image_metadata_template={}, genet={},
+                 dictionary_name="", dictionary_description=""):
 
         self.filename = None                                             #filename with path of the project json
 
-        self.dictionary_name = ""
-        self.dictionary_description = ""
+        self.dictionary_name = dictionary_name
+        self.dictionary_description = dictionary_description
 
         self.labels = { key: Label(**value) for key, value in labels.items() }
         if not 'Empty' in self.labels:
@@ -177,38 +178,43 @@ class Project(object):
         Check the consistency between a list of labels and the current annotations.
         """
 
-        return True
-
         messages = ""
         inconsistencies = 0
 
-        # check for color consistency between labels
-        for key in dict_config.keys():
-            index = dict.get(key)
-            if index is not None:
-                config_color = dict_config[key]
-                project_color = dict[key].fill
-                if config_color != project_color:
-                    msg = "\n" + str(
-                        inconsistencies) + ") Inconsistent color for label '" + key + "'.\nDictionary color is " + repr(
-                        config_color) + ".\nProject color is " + repr(project_color) + " ."
-                    messages += msg
-                    inconsistencies += 1
+        # check for existing labels present in the annotations but not present in list of labels
 
-        # check for labels present in the project dictionary but not present in config.json
-        for key in dict.keys():
-            index = dict_config.get(key)
-            if index is None and key != 'Empty':
-                msg = "\n" + str(
-                    inconsistencies) + ") Label '" + key + "' is missing in the configuration. To correctly handle this class add it manually to 'config.json' ."
+        for class_name in class_names:
+            if not class_name in labels:
+                msg = "\n" + str(inconsistencies) + ") Label '" + key + "' is missing. We automatically add it."
                 messages += msg
                 inconsistencies += 1
 
+                label = self.labels[class_name]
+                labels.append(label.copy())
+
         if inconsistencies > 0:
             box = QMessageBox()
-            box.setWindowTitle("WARNING!! Dictionary inconsistencies.")
+            box.setWindowTitle("There are dictionary inconsistencies. See below:\n")
             box.setText(messages)
             box.exec()
+
+        return True
+
+
+    def labelsInUse(self):
+        """
+        It returns the labels currently assigned to the annotations.
+        """
+
+        class_names = set()  # class names effectively used
+        for image in self.images:
+            for blob in image.annotations.seg_blobs:
+                class_names.add(blob.class_name)
+
+        if len(class_names) == 0:
+            return []
+        else:
+            return list(class_names)
 
 
     def save(self, filename = None):
