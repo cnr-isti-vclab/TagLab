@@ -265,6 +265,16 @@ class Project(object):
         """
 
         self.labels = {}
+
+        label_names = []
+        for label in labels:
+            label_names.append(label.name)
+
+        # 'Empty' key must be be always present
+        if not 'Empty' in label_names:
+            self.labels['Empty'] = Label(id='Empty', name='Empty', description=None, fill=[127, 127, 127],
+                                         border=[200, 200, 200], visible=True)
+
         for label in labels:
             self.labels[label.name] = label
 
