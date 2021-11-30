@@ -67,7 +67,7 @@ class QtCustomDataWidget(QWidget):
         self.edit_dname.setPlaceholderText("Name of the custom data")
         self.edit_dname.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_dname.setFixedWidth(350)
-        self.edit_dname.setText(project.custom_data.name)
+        #self.edit_dname.setText(project.custom_data.name)
 
         self.edit_load = QLineEdit()
         self.edit_load.setPlaceholderText("Path of the custom data")
@@ -80,7 +80,7 @@ class QtCustomDataWidget(QWidget):
         self.edit_description.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_description.setFixedWidth(350)
         self.edit_description.setMaximumHeight(100)
-        self.edit_description.setText(project.custom_data.description)
+        #self.edit_description.setText(project.custom_data.description)
 
         self.fields_layout = QVBoxLayout()
         self.fields_widget = QWidget()
@@ -327,18 +327,6 @@ class QtCustomDataWidget(QWidget):
         self.btn_selection_color.setStyleSheet(text)
 
 
-    @pyqtSlot()
-    def chooseLabelColor(self):
-        self.editR.blockSignals(True)
-        self.editG.blockSignals(True)
-        self.editB.blockSignals(True)
-        color = QColorDialog.getColor()
-        # convert to string RR-GG-BB
-        newcolor = "{:d}-{:d}-{:d}".format(color.red(), color.green(), color.blue())
-        newcolortext= self.setlabelColor(newcolor)
-        self.editR.blockSignals(False)
-        self.editG.blockSignals(False)
-        self.editB.blockSignals(False)
 
     def populateLabelsFromProject(self):
 
@@ -389,40 +377,6 @@ class QtCustomDataWidget(QWidget):
 
 
     @pyqtSlot()
-    def updatelabelColor(self):
-
-        r, g, b = self.getRGB()
-
-        if 0 <= r <= 255 and 0 <= g <= 255 and 0 <= b <= 255:
-            text = "QPushButton:flat {background-color: rgb(" + str(r) + "," + str(g) + "," + str(b) + "); border: none ;}"
-            self.btn_selection_color.setStyleSheet(text)
-        else:
-            self.editR.blockSignals(True)
-            self.editG.blockSignals(True)
-            self.editB.blockSignals(True)
-            text = "QPushButton:flat {background-color: rgb(255,255,255); border: none;}"
-            self.btn_selection_color.setStyleSheet(text)
-            box = QMessageBox()
-            box.setText("Please enter a number between 0 and 255")
-            box.exec()
-            self.editR.blockSignals(False)
-            self.editG.blockSignals(False)
-            self.editB.blockSignals(False)
-
-    @pyqtSlot()
-    def setlabelColor(self, color):
-        color_components = color.split("-")
-        if len(color_components) > 2:
-            r = color_components[0]
-            g = color_components[1]
-            b = color_components[2]
-            self.editR.setText(r)
-            self.editG.setText(g)
-            self.editB.setText(b)
-            text = "QPushButton:flat {background-color: rgb(" + r + "," + g + "," + b + "); border: none ;}"
-            self.btn_selection_color.setStyleSheet(text)
-
-    @pyqtSlot()
     def editFieldName(self):
 
         if self.selection_index > 0:
@@ -446,7 +400,8 @@ class QtCustomDataWidget(QWidget):
             box.setText("Please, select a label to modify")
             box.exec()
 
-    def removeLabel (self):
+    @pyqtSlot()
+    def removeField (self):
 
         if self.selection_index > 0:
             label = self.labels[self.selection_index]
@@ -458,25 +413,8 @@ class QtCustomDataWidget(QWidget):
             box.setText("Please, select a label to delete")
             box.exec()
 
-    def getRGB(self):
-
-        try:
-            red = int(self.editR.text())
-            green = int(self.editG.text())
-            blue = int(self.editB.text())
-        except:
-            red = -1
-            green = - 1
-            blue = - 1
-
-        return red, green, blue
-
     @pyqtSlot()
-    def addLabel(self):
-
-        self.editR.blockSignals(True)
-        self.editG.blockSignals(True)
-        self.editB.blockSignals(True)
+    def addField(self):
 
         red, green, blue = self.getRGB()
 
@@ -487,9 +425,6 @@ class QtCustomDataWidget(QWidget):
             box.setText("Please chose a valid color and type a label name")
             box.exec()
 
-        self.editR.blockSignals(False)
-        self.editG.blockSignals(False)
-        self.editB.blockSignals(False)
 
 
     def eventFilter(self, object, event):
@@ -517,20 +452,6 @@ class QtCustomDataWidget(QWidget):
         # update visualization
         self.editFieldName.setText(txt)
 
-        color = self.labels[index].fill
-        textcolor = "QPushButton:flat {background-color: rgb(" + str(color[0]) + "," + str(color[1]) + "," + \
-                    str(color[2]) + "); border: none ;}"
-        self.btn_selection_color.setStyleSheet(textcolor)
-
-        self.editR.blockSignals(True)
-        self.editG.blockSignals(True)
-        self.editB.blockSignals(True)
-        self.editR.setText(str(color[0]))
-        self.editG.setText(str(color[1]))
-        self.editB.setText(str(color[2]))
-        self.editR.blockSignals(False)
-        self.editG.blockSignals(False)
-        self.editB.blockSignals(False)
 
         self.selection_index = index
 
