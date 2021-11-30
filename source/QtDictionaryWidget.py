@@ -61,7 +61,7 @@ class QtDictionaryWidget(QWidget):
         self.button_new.clicked.connect(self.newDictionary)
 
         self.button_current = QPushButton("Use current")
-        self.button_current.clicked.connect(self.chooseDictionary)
+        self.button_current.clicked.connect(self.currentDictionary)
 
         self.button_load = QPushButton("Load")
         self.button_load.clicked.connect(self.chooseDictionary)
@@ -233,7 +233,7 @@ class QtDictionaryWidget(QWidget):
 
         self.selection_index = -1
 
-        self.populateLabelsFromProject()
+        self.populateLabelsFromProjectDictionary()
 
         # it returns the list of the labels currently used by the annotations
         self.labels_in_use = self.project.labelsInUse()
@@ -247,7 +247,17 @@ class QtDictionaryWidget(QWidget):
     def newDictionary(self):
 
         self.labels = []
+
+        labels_currently_in_use = self.project.labelsInUse()
+        for label_name in labels_currently_in_use:
+            self.labels.append(self.project.labels[label_name])
+
         self.createAllLabels()
+
+    @pyqtSlot()
+    def currentDictionary(self):
+
+        self.populateLabelsFromProjectDictionary()
 
     @pyqtSlot()
     def chooseDictionary(self):
@@ -289,9 +299,6 @@ class QtDictionaryWidget(QWidget):
 
             self.createAllLabels()
 
-
-    def checkConsistency (self):
-        pass
 
     @pyqtSlot()
     def saveDictionary(self):
@@ -378,7 +385,7 @@ class QtDictionaryWidget(QWidget):
         self.editG.blockSignals(False)
         self.editB.blockSignals(False)
 
-    def populateLabelsFromProject(self):
+    def populateLabelsFromProjectDictionary(self):
 
         for key in self.project.labels.keys():
             label = self.project.labels[key]
