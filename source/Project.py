@@ -16,6 +16,7 @@ from source.Correspondences import Correspondences
 from source.Genet import Genet
 from source import utils
 from source.Grid import Grid
+from source.CustomData import CustomData
 
 def loadProject(taglab_working_dir, filename, default_dict):
 
@@ -126,13 +127,15 @@ class ProjectEncoder(json.JSONEncoder):
             return obj.save()
         elif isinstance(obj, Genet):
             return {}
+        elif isinstance(obj, CustomData):
+            return obj.save()
         return json.JSONEncoder.default(self, obj)
 
 class Project(object):
 
     def __init__(self, filename=None, labels={}, images=[], correspondences=None,
                  spatial_reference_system=None, metadata={}, image_metadata_template={}, genet={},
-                 dictionary_name="", dictionary_description=""):
+                 dictionary_name="", dictionary_description="", custom_data={}):
 
         self.filename = None                                             #filename with path of the project json
 
@@ -155,6 +158,7 @@ class Project(object):
                 self.correspondences[key].fillTable(correspondences[key]['correspondences'])
 
         self.genet = Genet(self)
+        self.custom_data = CustomData(**custom_data)
 
         self.spatial_reference_system = spatial_reference_system        #if None we assume coordinates in pixels (but Y is up or down?!)
         self.metadata = metadata                                        # project metadata => keyword -> value

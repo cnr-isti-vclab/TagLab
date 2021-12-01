@@ -19,10 +19,12 @@
 
 
 from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal, QEvent
-from PyQt5.QtWidgets import QWidget, QScrollArea,QGroupBox, QColorDialog, QMessageBox, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, \
-    QHBoxLayout, QVBoxLayout, QTextEdit
+from PyQt5.QtWidgets import QGridLayout, QWidget, QScrollArea,QGroupBox, QColorDialog, QMessageBox, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, \
+    QHBoxLayout, QVBoxLayout, QTextEdit, QTableWidget, QTableWidgetItem, QFrame
 import json
 import os
+from source.CustomData import CustomData
+from copy import deepcopy
 
 class QtCustomDataWidget(QWidget):
 
@@ -34,163 +36,159 @@ class QtCustomDataWidget(QWidget):
         self.taglab_dir = dir
         self.project = project
 
-        self.fields = []
+        self.custom_data = deepcopy(project.custom_data)
 
-        self.setStyleSheet("background-color: rgb(40,40,40); color: white")
+#        self.setStyleSheet("background-color: rgb(40,40,40); color: white")
 
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        self.setMinimumWidth(300)
-        self.setMinimumHeight(100)
+        self.setMinimumWidth(600)
 
-        self.button_new = QPushButton("New")
-        self.button_new.clicked.connect(self.newCustomData)
+        layout = QVBoxLayout()
 
-        self.button_load = QPushButton("Load")
-        self.button_load.clicked.connect(self.loadCustomData)
+        #top toolbar
+        toolbar_layout = QHBoxLayout()
 
-        self.btn_save = QPushButton("Save")
-        self.btn_save.clicked.connect(self.saveCustomData)
+        button_new = QPushButton("New")
+        button_new.clicked.connect(self.newCustomData)
+        toolbar_layout.addWidget(button_new)
 
+        button_load = QPushButton("Load")
+        button_load.clicked.connect(self.loadCustomData)
+        toolbar_layout.addWidget(button_load)
 
+        btn_save = QPushButton("Save")
+        btn_save.clicked.connect(self.saveCustomData)
+        toolbar_layout.addWidget(btn_save)
 
-        lbl_dname = QLabel("Custom data name:")
-        lbl_dname.setFixedWidth(160)
-
-        lbl_load = QLabel("Custom data path:")
-        lbl_load.setFixedWidth(160)
-
-        lbl_description = QLabel("Description:")
-        lbl_description.setFixedWidth(160)
-        lbl_description.setAlignment(Qt.AlignTop)
-
-        self.edit_dname = QLineEdit()
-        self.edit_dname.setPlaceholderText("Name of the custom data")
-        self.edit_dname.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        self.edit_dname.setFixedWidth(350)
-        #self.edit_dname.setText(project.custom_data.name)
-
-        self.edit_load = QLineEdit()
-        self.edit_load.setPlaceholderText("Path of the custom data")
-        self.edit_load.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        self.edit_load.setFixedWidth(350)
-        self.edit_load.setReadOnly(True)
-
-        self.edit_description = QTextEdit()
-        self.edit_description.setPlaceholderText("Type a description of your custom data")
-        self.edit_description.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        self.edit_description.setFixedWidth(350)
-        self.edit_description.setMaximumHeight(100)
-        #self.edit_description.setText(project.custom_data.description)
-
-        self.fields_layout = QVBoxLayout()
-        self.fields_widget = QWidget()
-
-        self.fields_widget.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        self.fields_widget.setMinimumWidth(400)
-        self.fields_widget.setMinimumHeight(220)
-        self.fields_widget.setLayout(self.fields_layout)
-
-        self.scroll = QScrollArea()
-        self.scroll.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        self.scroll.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.scroll.setMaximumHeight(200)
-        self.scroll.setWidget(self.fields_widget)
-
-        self.btnRemove = QPushButton("Delete")
-        self.btnAdd = QPushButton("Add")
-        self.btnAdd.setStyleSheet("background-color: rgb(55,55,55);")
-        self.btnOk = QPushButton("Update")
-        self.btnRemove.clicked.connect(self.removeField)
-        self.btnAdd.clicked.connect(self.addField)
-        self.btnOk.clicked.connect(self.editField)
-
-        buttons_layout = QVBoxLayout()
-        buttons_layout.setAlignment(Qt.AlignRight)
-        # buttons_layout.setAlignment(Qt.AlignTop)
-        buttons_layout.addStretch()
-        buttons_layout.addWidget(self.btnOk)
-        buttons_layout.addWidget(self.btnRemove)
+        layout.addLayout(toolbar_layout)
 
 
-        COLOR_SIZE = 20
+        #name & description
 
-        text = "QPushButton:flat {background-color: rgb(255,255,255); border: 1px ;}"
+        name_layout = QGridLayout()
+        name_layout.addWidget(QLabel("Custom data name:"), 0, 0)
 
-        
+        edit_name = QLineEdit()
+        edit_name.setPlaceholderText("Name of the custom data")
+        edit_name.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        edit_name.setFixedWidth(350)
+        edit_name.setText(self.custom_data.name)
+        name_layout.addWidget(edit_name, 0, 1, 2, 1)
+
+
+        name_layout.addWidget(QLabel("Description:"), 1, 0)
+
+        edit_description = QTextEdit()
+        edit_description.setPlaceholderText("Type a description of your custom data")
+        edit_description.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        edit_description.setFixedWidth(350)
+        edit_description.setMaximumHeight(100)
+        edit_description.setText(self.custom_data.description)
+
+        name_layout.addWidget(edit_description, 1, 1, 2, 1)
+
+        layout.addLayout(name_layout)
+
+
+        left_layout = QVBoxLayout()
+
+        self.table = QTableWidget()
+        self.table.setColumnCount(5)
+        self.table.setHorizontalHeaderLabels(["Name", "Type", "Min", "Max", "Values"])
+        left_layout.addWidget(self.table)
+
+
+        #edit fields
+        edit_layout = QHBoxLayout()
 
         self.editName = QLineEdit()
         self.editName.setPlaceholderText("Name")
-#        self.editName.setFixedWidth(40)
-        self.eeditNameditR.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        self.editName.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        edit_layout.addWidget(self.editName)
+
 
         self.editType = QComboBox()
-        #self.editType.setFixedWidth(40)
-        self.editType.addItems('string', 'boolean', 'number', 'enum');
-        self.editG.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        self.editType.addItems(['string', 'boolean', 'number', 'keyword']);
+        self.editType.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        self.editType.activated[str].connect(self.updateFieldType)
+        edit_layout.addWidget(self.editType)
+
+
+        self.editMin = QLineEdit()
+        self.editMin.setPlaceholderText("Min")
+
+        #self.editB.setFixedWidth(40)
+        self.editMin.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        edit_layout.addWidget(self.editMin)
+
+
+        self.editMax = QLineEdit()
+        self.editMax.setPlaceholderText("Max")
+
+        #self.editB.setFixedWidth(40)
+        self.editMax.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        edit_layout.addWidget(self.editMax)
 
         self.editValues = QLineEdit()
-        #self.editB.setFixedWidth(40)
+        self.editMax.setPlaceholderText("List of keywords")
         self.editValues.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-
-        self.editType.activated[str].connect(self.updateFieldType)
-
+        edit_layout.addWidget(self.editValues, 1)
 
 
 
-        self.btn_set = QPushButton("Close")
-#        self.btn_set.setMinimumWidth(360)
-#        self.btn_set.setMinimumHeight(40)
-#        self.btn_set.setStyleSheet("font-weight: bold;")
 
-        layout_zerorow = QHBoxLayout()
-        layout_zerorow.addWidget(self.button_new)
-        layout_zerorow.addWidget(self.button_load)
-        layout_zerorow.addWidget(self.btn_save)
+        edit_layout.addWidget(self.editName)
 
-        layout_firstrow = QHBoxLayout()
-        layout_firstrow.setAlignment(Qt.AlignLeft)
-        layout_firstrow.addWidget(lbl_dname)
-        layout_firstrow.addWidget(self.edit_dname)
-        layout_firstrow.addStretch()
+        left_layout.addLayout(edit_layout)
 
-        layout_secondrow = QHBoxLayout()
-        layout_secondrow.setAlignment(Qt.AlignLeft)
-        layout_secondrow.addWidget(lbl_load)
-        layout_secondrow.addWidget(self.edit_load)
 
-        layout_thirdrow = QHBoxLayout()
-        layout_thirdrow.setAlignment(Qt.AlignLeft)
-        layout_thirdrow.addWidget(lbl_description)
-        layout_thirdrow.addWidget(self.edit_description)
+        right_layout = QVBoxLayout()
+        right_layout.setAlignment(Qt.AlignBottom)
 
-        #4 row
-        layout_addremove = QHBoxLayout()
-        layout_addremove.addWidget(self.scroll)
-        layout_addremove.addStretch()
-        layout_addremove.addLayout(buttons_layout)
 
-        #5 row
-        layout_setField = QHBoxLayout()
-        
-        layout_setField.addWidget(self.editName)
-        layout_setField.addWidget(self.btnAdd)
+        btnRemove = QPushButton("Delete")
+        btnRemove.clicked.connect(self.removeField)
+        right_layout.addWidget(btnRemove)
 
-        #6 row
-        bottom = QHBoxLayout()
-        bottom.setAlignment(Qt.AlignHCenter)
-        bottom.addWidget(self.btn_set)
+        btnAdd = QPushButton("Add")
+        btnAdd.setStyleSheet("background-color: rgb(55,55,55);")
+        btnAdd.clicked.connect(self.addField)
+        right_layout.addWidget(btnAdd)
 
-        layout = QVBoxLayout()
-        layout.addLayout(layout_zerorow)
-        layout.addLayout(layout_firstrow)
-        layout.addLayout(layout_secondrow)
-        layout.addLayout(layout_thirdrow)
-        layout.addLayout(layout_addremove)
-        layout.addLayout(layout_setField)
-        layout.addLayout(bottom)
 
+        btnOk = QPushButton("Update")
+        btnOk.clicked.connect(self.editField)
+        right_layout.addWidget(btnOk)
+
+
+        bottom_layout = QHBoxLayout()
+        bottom_layout.addLayout(left_layout);
+        bottom_layout.addLayout(right_layout);
+
+        layout.addLayout(bottom_layout)
+
+
+        line = QFrame()
+
+        line.setFrameShape(QFrame.HLine)
+        line.setFrameShadow(QFrame.Sunken);
+        line.setLineWidth(1)
+        layout.addWidget(line)
+
+
+        buttons_layout = QHBoxLayout()
+        buttons_layout.addStretch(1)
+        btn_apply = QPushButton("Apply")
+        btn_apply.clicked.connect(self.apply)
+        buttons_layout.addWidget(btn_apply)
+
+        btn_cancel = QPushButton("Cancel")
+        btn_cancel.clicked.connect(self.apply)
+        buttons_layout.addWidget(btn_cancel)
+
+        layout.addLayout(buttons_layout)
+
+#
         self.setLayout(layout)
 
         self.setWindowTitle("Edit Custom Data")
@@ -198,242 +196,143 @@ class QtCustomDataWidget(QWidget):
 
         self.selection_index = -1
 
-        self.populateFieldsFromProject()
+        self.createFields()
 
+    @pyqtSlot()
+    def apply(self):
+        self.project.custom_data = deepcopy(self.custom_data)
+        self.close()
 
-    def closeEvent(self, event):
-        self.closewidget.emit()
-        super(QtCustomDataWidget, self).closeEvent(event)
+    def cancel(self):
+        self.close()
+
+    #def closeEvent(self, event):
+    #    self.closewidget.emit()
+    #    super(QtCustomDataWidget, self).closeEvent(event)
+
 
     @pyqtSlot()
     def newCustomData(self):
-
-        self.labels = []
-        self.createAllLabels()
+        self.labels = CustomData()
 
     @pyqtSlot()
     def loadCustomData(self):
 
         filters = "Custom Data (*.json)"
-        fileName, _ = QFileDialog.getOpenFileName(self, "Custom data", "", filters)
+        filename, _ = QFileDialog.getOpenFileName(self, "Custom data", "", filters)
+        if filename is None:
+            return
 
-        if fileName:
+        self.edit_load.setText(filename)
 
-            if self.labels:
+        data = CustomData()
+        data.loadFromFile(filename)
 
-                box = QMessageBox()
-                box.setIcon(QMessageBox.Question)
-                box.setWindowTitle('TagLab')
-                box.setText('Do you want to append or replace the current custom data?')
-                box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-                buttonY = box.button(QMessageBox.Yes)
-                buttonY.setText('Append')
-                buttonN = box.button(QMessageBox.No)
-                buttonN.setText('Replace')
-                box.exec()
-                if box.clickedButton() == buttonN:
-                    self.labels = []
+        self.edit_dname.setText(data["name"])
+        self.edit_description.document().setPlainText(data["description"])
 
-            self.edit_load.setText(fileName)
+        self.custom_data = data
+        self.createFields()
 
-            f = open(fileName, "r")
-            dict = json.load(f)
-            self.edit_dname.setText(dict["name"])
-            self.edit_description.document().setPlainText(dict["description"])
-            fields = dict["fields"]
+#            for field in fields:
+#               name= field['name']
+#               type = field['type']
+#               values = field['value']
+#               mylabel = Label(id=id, name=name, fill=fill)
+#               self.labels.append(mylabel)
 
-            for field in fields:
-               name= field['name']
-               type = field['type']
-               values = field['value']
-               mylabel = Label(id=id, name=name, fill=fill)
-               self.labels.append(mylabel)
-
-            self.createFields()
-
-
-    def checkConsistency (self):
-        pass
 
     @pyqtSlot()
     def saveCustomData(self):
 
-        name = self.edit_dname.text()
-        description = self.edit_description.document().toPlainText()
-        if name!= '':
-            dir = os.path.join(self.taglab_dir, name + '.json')
-            filters = "Custom Data (*.json)"
-            filename, _ = QFileDialog.getSaveFileName(self, "Save Custom Data", dir, filters)
-            dict={'Name': name, 'Description': description, 'Fields': self.fields}
-            text = json.dumps(dict, indent = 2)
-            f = open(filename, "w")
-            f.write(text)
-            f.close()
-        else:
+        #name = self.edit_dname.text()
+        #description = self.edit_description.document().toPlainText()
+        if self.custom_data.name == '':
             box = QMessageBox()
             box.setWindowTitle('TagLab')
             box.setText("Please enter a custom data name")
             box.exec()
-            pass
+            return
 
-        msgBox = QMessageBox(self)
-        msgBox.setWindowTitle('TagLab')
-        msgBox.setText("Custom data successfully exported!")
-        msgBox.exec()
+        dir = os.path.join(self.taglab_dir, self.custom_data.name + '.json')
+        filters = "Custom Data (*.json)"
+        filename, _ = QFileDialog.getSaveFileName(self, "Save Custom Data", dir, filters)
+        if filename is null:
+            return
 
-
-    @pyqtSlot(int,int,int,str)
-    def createField(self, r, g, b, name):
-
-        COLOR_SIZE= 20
-        text = "QPushButton:flat {background-color: rgb(" + str(r) + "," + str(g) + "," + str(b) + "); border: none ;}"
-        btn_color = QPushButton()
-        btn_color.setFlat(True)
-        btn_color.setStyleSheet(text)
-        btn_color.setAutoFillBackground(True)
-        btn_color.setFixedWidth(COLOR_SIZE)
-        btn_color.setFixedHeight(COLOR_SIZE)
-
-        lbl_name = QLabel(name)
-        lbl_name.setStyleSheet("border: none; color: lightgray;")
-        lbl_name.setFixedHeight(20)
-        lbl_name.installEventFilter(self)
-
-        self.label_layout = QHBoxLayout()
-        self.label_layout.addWidget(btn_color)
-        self.label_layout.addWidget(lbl_name)
-
-        self.fields_layout.addLayout(self.label_layout)
-
-        tempWidget = QWidget()
-        tempWidget.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        tempWidget.setMinimumWidth(400)
-        tempWidget.setMinimumHeight(220)
-        tempWidget.setLayout(self.fields_layout)
-        self.scroll.setWidget(tempWidget)
-
-        label = Label(id =name , name =name , fill= [r,g,b])
-        self.labels.append(label)
-
-        self.label_color.append(btn_color)
-        self.label_name.append(lbl_name)
-
-        self.editFieldName.setText('')
-        self.editR.setText('')
-        self.editG.setText('')
-        self.editB.setText('')
-
-        text = "QPushButton:flat {background-color: rgb(255,255,255); border: none;}"
-        self.btn_selection_color.setStyleSheet(text)
+        self.custom_data.saveToFile(filename)
 
 
 
-    def populateLabelsFromProject(self):
-
-        for key in self.project.data.keys():
-            label = self.project.labels[key]
-            lbl = Label(id=label.id, name=label.name, fill=label.fill)
-            self.labels.append(lbl)
-
-        self.createFields()
 
     def createFields(self):
-
-        self.fields_layout = QVBoxLayout()
-        self.label_color = []
-        self.label_name = []
-        for label in self.labels:
-
-            COLOR_SIZE = 20
-            text = "QPushButton:flat {background-color: rgb(" + str(label.fill[0]) + "," + str(
-                label.fill[1]) + "," + str(label.fill[2]) + "); border: none ;}"
-            btn_color = QPushButton()
-            btn_color.setFlat(True)
-            btn_color.setStyleSheet(text)
-            btn_color.setAutoFillBackground(True)
-            btn_color.setFixedWidth(COLOR_SIZE)
-            btn_color.setFixedHeight(COLOR_SIZE)
-            self.label_color.append(btn_color)
-
-            lbl_name = QLabel(label.name)
-            lbl_name.setStyleSheet("border: none; color: lightgray;")
-            lbl_name.setFixedHeight(20)
-            lbl_name.installEventFilter(self)
-            self.label_name.append(lbl_name)
-
-            self.label_layout = QHBoxLayout()
-            self.label_layout.addWidget(btn_color)
-            self.label_layout.addWidget(lbl_name)
-
-            self.fields_layout.addLayout(self.label_layout)
-
-        # update the scroll area
-        tempWidget = QWidget()
-        tempWidget.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        tempWidget.setMinimumWidth(400)
-        tempWidget.setMinimumHeight(220)
-        tempWidget.setLayout(self.fields_layout)
-        self.scroll.setWidget(tempWidget)
+        self.table.clearContents()
+        self.table.setRowCount(len(self.custom_data.data))
+        row = 0
+        for field in self.custom_data.data:
+            self.table.setItem(row, 0, QTableWidgetItem(field.name))
 
 
-    @pyqtSlot()
-    def editFieldName(self):
-
-        if self.selection_index > 0:
-            label = self.labels[self.selection_index]
-            label.id = self.editFieldName.text()
-            label.name = self.editFieldName.text()
-            r, g, b = self.getRGB()
-
-            if 0 <= r <= 255 and 0 <= g <= 255 and 0 <= b <= 255:
-                label.fill = [r, g, b]
-                self.createAllLabels()
-                lbl_selected = self.label_name[self.selection_index]
-                lbl_selected.setStyleSheet("border: 1 px; font-weight: bold; color: white;")
-            else:
-                box = QMessageBox()
-                box.setText("Please, set a valid color")
-                box.exec()
-
-        else:
-            box = QMessageBox()
-            box.setText("Please, select a label to modify")
-            box.exec()
-
-    @pyqtSlot()
-    def removeField (self):
-
-        if self.selection_index > 0:
-            label = self.labels[self.selection_index]
-            self.labels.remove(label)
-            self.createAllLabels()
-            self.selection_index = -1
-        else:
-            box = QMessageBox()
-            box.setText("Please, select a label to delete")
-            box.exec()
 
     @pyqtSlot()
     def addField(self):
+        #validate text
+        name = self.editFieldName.text()
+        if name == '':
+            return self.message("Please choose a field name")
+        if self.custom_data.has(name):
+            return self.message("Duplicated field name...")
 
-        red, green, blue = self.getRGB()
+        type = self.edit
 
-        if 0 <= red <= 255 and 0 <= green <= 255 and 0 <= blue <= 255 and self.editFieldName.text() != '':
-            self.createLabel(red, green, blue, self.editFieldName.text())
-        else:
-            box = QMessageBox()
-            box.setText("Please chose a valid color and type a label name")
-            box.exec()
+    @pyqtSlot()
+    def editField(self):
+        row = self.selectedRow()
+
+        if row < 0:
+            return self.message("Please, select a label to modify")
+
+#        field = self.
+#            label = self.labels[self.selection_index]
+#            label.name = self.editFieldName.text()
+
+
+    @pyqtSlot()
+    def removeField (self):
+        row = self.selectedRow()
+
+        if row < 0:
+            return self.message("Please, select a label to delete")
+
+
+        label = self.labels[self.selection_index]
+        self.labels.remove(label)
+        self.createAllLabels()
+        self.selection_index = -1
 
 
 
-    def eventFilter(self, object, event):
+    @pyqtSlot()
+    def updateFieldType(self):
+        type = self.editType.currentText()
 
-        if type(object) == QLabel and event.type() == QEvent.MouseButtonDblClick:
-            self.highlightSelectedLabel(object)
-            return False
+        self.editMin.clear()
+        self.editMax.clear()
+        self.editValues.clear()
 
-        return False
+        self.editMin.setEnabled(type == "float")
+        self.editMax.setEnabled(type == "float")
+        
+        self.editValues.setEnabled(type == "keywod")
+
+
+#    def eventFilter(self, object, event):
+
+#        if type(object) == QLabel and event.type() == QEvent.MouseButtonDblClick:
+#            self.highlightSelectedLabel(object)
+#            return False
+
+#        return False
 
     def highlightSelectedLabel(self, lbl_clicked):
 
@@ -457,3 +356,31 @@ class QtCustomDataWidget(QWidget):
 
 
 
+#    @pyqtSlot(int,int,int,str)
+#    def createField(self, entry):
+
+        # lbl_name = QLabel(entry.name)
+        # lbl_name.setStyleSheet("border: none; color: lightgray;")
+        # lbl_name.setFixedHeight(20)
+        # #lbl_name.installEventFilter(self)
+
+        # self.label_layout = QHBoxLayout()
+        # self.label_layout.addWidget(lbl_name)
+
+        # self.fields_layout.addLayout(self.label_layout)
+
+        # self.editFieldName.setText('')
+
+        # text = "QPushButton:flat {background-color: rgb(255,255,255); border: none;}"
+        # self.btn_selection_color.setStyleSheet(text)
+
+    def selectedRow(self):
+        selected = self.table.selectedRanges()
+        if len(selected) == 0:
+            return -1
+        return selected[0].topRow()
+
+    def message(self, text):
+        box = QMessageBox()
+        box.setText(text)
+        box.exec()
