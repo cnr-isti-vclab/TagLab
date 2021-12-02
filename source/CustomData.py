@@ -27,7 +27,10 @@ class CustomData:
 		except:
 			raise Exception("The custo data file header has not the correct format")
 
-	def has(fieldName):
-		return len( filter(lambda field: field.name == fieldName, self.data)) > 0
+	def has(self, fieldName):
+		for field in self.data:
+			if field['name'] == fieldName:
+				return True
+		return False
 
 

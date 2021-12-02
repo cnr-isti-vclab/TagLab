@@ -21,8 +21,7 @@
 from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal, QEvent
 from PyQt5.QtWidgets import QGridLayout, QWidget, QScrollArea,QGroupBox, QColorDialog, QMessageBox, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, \
     QHBoxLayout, QVBoxLayout, QTextEdit, QTableWidget, QTableWidgetItem, QFrame
-import json
-import os
+import os, json, re
 from source.CustomData import CustomData
 from copy import deepcopy
 
@@ -68,24 +67,24 @@ class QtCustomDataWidget(QWidget):
         name_layout = QGridLayout()
         name_layout.addWidget(QLabel("Custom data name:"), 0, 0)
 
-        edit_name = QLineEdit()
-        edit_name.setPlaceholderText("Name of the custom data")
-        edit_name.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        edit_name.setFixedWidth(350)
-        edit_name.setText(self.custom_data.name)
-        name_layout.addWidget(edit_name, 0, 1, 2, 1)
+        self.edit_name = QLineEdit()
+        self.edit_name.setPlaceholderText("Name of the custom data")
+        self.edit_name.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        self.edit_name.setFixedWidth(350)
+        self.edit_name.setText(self.custom_data.name)
+        name_layout.addWidget(self.edit_name, 0, 1, 1, 2)
 
 
         name_layout.addWidget(QLabel("Description:"), 1, 0)
 
-        edit_description = QTextEdit()
-        edit_description.setPlaceholderText("Type a description of your custom data")
-        edit_description.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        edit_description.setFixedWidth(350)
-        edit_description.setMaximumHeight(100)
-        edit_description.setText(self.custom_data.description)
+        self.edit_description = QTextEdit()
+        self.edit_description.setPlaceholderText("Type a description of your custom data")
+        self.edit_description.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        self.edit_description.setFixedWidth(350)
+        self.edit_description.setMaximumHeight(100)
+        self.edit_description.setText(self.custom_data.description)
 
-        name_layout.addWidget(edit_description, 1, 1, 2, 1)
+        name_layout.addWidget(edit_description, 1, 1, 1, 2) 
 
         layout.addLayout(name_layout)
 
@@ -94,7 +93,11 @@ class QtCustomDataWidget(QWidget):
 
         self.table = QTableWidget()
         self.table.setColumnCount(5)
-        self.table.setHorizontalHeaderLabels(["Name", "Type", "Min", "Max", "Values"])
+        self.table.setHorizontalHeaderLabels(["Name", "Type", "Min", "Max", "Keywords"])
+        self.table.cellActivated.connect(self.selectRow)
+        self.table.cellClicked.connect(self.selectRow)
+        self.table.currentCellChanged.connect(self.selectRow)
+
         left_layout.addWidget(self.table)
 
 
@@ -116,28 +119,21 @@ class QtCustomDataWidget(QWidget):
 
         self.editMin = QLineEdit()
         self.editMin.setPlaceholderText("Min")
-
-        #self.editB.setFixedWidth(40)
+        self.editMin.setFixedWidth(80)
         self.editMin.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         edit_layout.addWidget(self.editMin)
 
 
         self.editMax = QLineEdit()
         self.editMax.setPlaceholderText("Max")
-
-        #self.editB.setFixedWidth(40)
+        self.editMax.setFixedWidth(80)
         self.editMax.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         edit_layout.addWidget(self.editMax)
 
         self.editValues = QLineEdit()
-        self.editMax.setPlaceholderText("List of keywords")
+        self.editValues.setPlaceholderText("List of keywords")
         self.editValues.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         edit_layout.addWidget(self.editValues, 1)
-
-
-
-
-        edit_layout.addWidget(self.editName)
 
         left_layout.addLayout(edit_layout)
 
@@ -151,14 +147,12 @@ class QtCustomDataWidget(QWidget):
         right_layout.addWidget(btnRemove)
 
         btnAdd = QPushButton("Add")
-        btnAdd.setStyleSheet("background-color: rgb(55,55,55);")
         btnAdd.clicked.connect(self.addField)
         right_layout.addWidget(btnAdd)
 
-
-        btnOk = QPushButton("Update")
-        btnOk.clicked.connect(self.editField)
-        right_layout.addWidget(btnOk)
+        btnUpdate = QPushButton("Update")
+        btnUpdate.clicked.connect(self.updateField)
+        right_layout.addWidget(btnUpdate)
 
 
         bottom_layout = QHBoxLayout()
@@ -200,6 +194,9 @@ class QtCustomDataWidget(QWidget):
 
     @pyqtSlot()
     def apply(self):
+        self.custom_data.name = self.edit_name.text()
+        self.custom_data.description = self.edit_description.document().toPlainText()
+
         self.project.custom_data = deepcopy(self.custom_data)
         self.close()
 
@@ -223,7 +220,7 @@ class QtCustomDataWidget(QWidget):
         if filename is None:
             return
 
-        self.edit_load.setText(filename)
+        #self.edit_load.setText(filename)
 
         data = CustomData()
         data.loadFromFile(filename)
@@ -234,19 +231,11 @@ class QtCustomDataWidget(QWidget):
         self.custom_data = data
         self.createFields()
 
-#            for field in fields:
-#               name= field['name']
-#               type = field['type']
-#               values = field['value']
-#               mylabel = Label(id=id, name=name, fill=fill)
-#               self.labels.append(mylabel)
-
-
     @pyqtSlot()
     def saveCustomData(self):
 
-        #name = self.edit_dname.text()
-        #description = self.edit_description.document().toPlainText()
+        self.custom_data.name = self.edit_name.text()
+        self.custom_data.description = self.edit_description.document().toPlainText()
         if self.custom_data.name == '':
             box = QMessageBox()
             box.setWindowTitle('TagLab')
@@ -267,35 +256,91 @@ class QtCustomDataWidget(QWidget):
 
     def createFields(self):
         self.table.clearContents()
-        self.table.setRowCount(len(self.custom_data.data))
-        row = 0
         for field in self.custom_data.data:
-            self.table.setItem(row, 0, QTableWidgetItem(field.name))
+            self.appendField(field)
 
+    def appendField(self, field):
+        rowcount = self.table.rowCount()
+        self.table.setRowCount(rowcount+1)
+        self.setField(rowcount, field)
 
+    def setField(self, row, field):
+        self.table.setItem(row, 0, QTableWidgetItem(field['name']))
+        self.table.setItem(row, 1, QTableWidgetItem(field['type']))
+        self.table.setItem(row, 2, QTableWidgetItem(field['min']))
+        self.table.setItem(row, 3, QTableWidgetItem(field['max']))
+        self.table.setItem(row, 4, QTableWidgetItem(', '.join(field['keywords'])))
+
+    @pyqtSlot(int, int)
+    def selectRow(self, row, column):
+        if row < 0:
+            self.clearField()
+            return
+
+        self.table.selectRow(row)
+        field = self.custom_data.data[row]
+        self.editName.setText(field['name'])
+        self.editType.setCurrentText(field['type'])
+        self.editMin.setText(field['min'])
+        self.editMax.setText(field['max'])
+        self.editValues.setText(' '.join(field['keywords']))
+        self.updateFieldType()
+
+    def clearField(self):
+        self.editName.setText("")
+        self.editType.setCurrentText("string")
+        self.editMin.setText("")
+        self.editMax.setText("")
+        self.editValues.setText("")
+        self.updateFieldType()
+
+    def validateField(self):
+        name = self.editName.text()
+        if name == '':
+            self.message("Please choose a field name")
+            return False
+
+        field = {}
+        field['name'] = name
+        field['type'] = self.editType.currentText()
+        field['min'] = self.editMin.text()
+        field['max'] = self.editMax.text()
+        field['keywords'] = re.split(' ,|:;\t', self.editValues.text())
+
+        if field['type'] == 'keywords' and len(field['keywords'] < 2):
+            self.message("Insert at least two keywords separated by commas or spaces.")
+            return False
+        return field
 
     @pyqtSlot()
     def addField(self):
         #validate text
-        name = self.editFieldName.text()
-        if name == '':
-            return self.message("Please choose a field name")
-        if self.custom_data.has(name):
-            return self.message("Duplicated field name...")
+        field = self.validateField()
+        if field == False:
+            return
 
-        type = self.edit
+        if self.custom_data.has(field['name']):
+            self.message("Duplicated field name...")
+            return
+
+
+        self.custom_data.data.append(field)
+        self.appendField(field)
 
     @pyqtSlot()
-    def editField(self):
+    def updateField(self):
         row = self.selectedRow()
 
         if row < 0:
             return self.message("Please, select a label to modify")
 
-#        field = self.
-#            label = self.labels[self.selection_index]
-#            label.name = self.editFieldName.text()
+        field = self.validateField()
+        if field == False:
+            return
 
+        self.custom_data.data[row] = field
+        self.setField(row, field)
+        self.selectRow(row, 0)
 
     @pyqtSlot()
     def removeField (self):
@@ -304,13 +349,9 @@ class QtCustomDataWidget(QWidget):
         if row < 0:
             return self.message("Please, select a label to delete")
 
-
-        label = self.labels[self.selection_index]
-        self.labels.remove(label)
-        self.createAllLabels()
-        self.selection_index = -1
-
-
+        self.clearField()
+        del self.custom_data.data[row]
+        self.table.removeRow(row)
 
     @pyqtSlot()
     def updateFieldType(self):
@@ -320,10 +361,10 @@ class QtCustomDataWidget(QWidget):
         self.editMax.clear()
         self.editValues.clear()
 
-        self.editMin.setEnabled(type == "float")
-        self.editMax.setEnabled(type == "float")
         
-        self.editValues.setEnabled(type == "keywod")
+        self.editMin.setEnabled(type == "number")
+        self.editMax.setEnabled(type == "number")        
+        self.editValues.setEnabled(type == "keyword")
 
 
 #    def eventFilter(self, object, event):
@@ -334,25 +375,6 @@ class QtCustomDataWidget(QWidget):
 
 #        return False
 
-    def highlightSelectedLabel(self, lbl_clicked):
-
-        # reset the text of all the labels
-        for lbl in self.label_name:
-            lbl.setStyleSheet("border: none; color: lightgray;")
-
-        # highlight the selected label
-        txt = lbl_clicked.text()
-        lbl_clicked.setStyleSheet("border: 1 px; font-weight: bold; color: white;")
-
-        # pick corresponding color button
-        index = self.label_name.index(lbl_clicked)
-        btn_clicked = self.label_color[index]
-
-        # update visualization
-        self.editFieldName.setText(txt)
-
-
-        self.selection_index = index
 
 
 
