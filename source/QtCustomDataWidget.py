@@ -27,7 +27,7 @@ from copy import deepcopy
 
 class QtCustomDataWidget(QWidget):
 
-    closewidget = pyqtSignal()
+    dataChanged = pyqtSignal()
 
     def __init__(self, dir, project, parent=None):
         super(QtCustomDataWidget, self).__init__(parent)
@@ -84,7 +84,7 @@ class QtCustomDataWidget(QWidget):
         self.edit_description.setMaximumHeight(100)
         self.edit_description.setText(self.custom_data.description)
 
-        name_layout.addWidget(edit_description, 1, 1, 1, 2) 
+        name_layout.addWidget(self.edit_description, 1, 1, 1, 2) 
 
         layout.addLayout(name_layout)
 
@@ -216,8 +216,9 @@ class QtCustomDataWidget(QWidget):
     def loadCustomData(self):
 
         filters = "Custom Data (*.json)"
-        filename, _ = QFileDialog.getOpenFileName(self, "Custom data", "", filters)
-        if filename is None:
+        filename, filter = QFileDialog.getOpenFileName(self, "Custom data", "", filters)
+        print(filename)
+        if filename == '':
             return
 
         #self.edit_load.setText(filename)
@@ -225,8 +226,8 @@ class QtCustomDataWidget(QWidget):
         data = CustomData()
         data.loadFromFile(filename)
 
-        self.edit_dname.setText(data["name"])
-        self.edit_description.document().setPlainText(data["description"])
+        self.edit_name.setText(data.name)
+        self.edit_description.document().setPlainText(data.description)
 
         self.custom_data = data
         self.createFields()
@@ -246,9 +247,8 @@ class QtCustomDataWidget(QWidget):
         dir = os.path.join(self.taglab_dir, self.custom_data.name + '.json')
         filters = "Custom Data (*.json)"
         filename, _ = QFileDialog.getSaveFileName(self, "Save Custom Data", dir, filters)
-        if filename is null:
+        if filename == '':
             return
-
         self.custom_data.saveToFile(filename)
 
 
@@ -305,7 +305,10 @@ class QtCustomDataWidget(QWidget):
         field['type'] = self.editType.currentText()
         field['min'] = self.editMin.text()
         field['max'] = self.editMax.text()
-        field['keywords'] = re.split(' ,|:;\t', self.editValues.text())
+        field['keywords'] = []
+        keywords =  self.editValues.text();
+        if keywords != '':
+            field['keywords'] = re.split(' ,|:;\t', keywords)
 
         if field['type'] == 'keywords' and len(field['keywords'] < 2):
             self.message("Insert at least two keywords separated by commas or spaces.")

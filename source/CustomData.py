@@ -12,8 +12,11 @@ class CustomData:
 	def saveToFile(self, filename):
 		data = self.__dict__
 		str = json.dumps(data, indent=1)
+		file = open(filename, "w")
+		file.write(str)
+		file.close()
 
-	def loadFromFile(filename):
+	def loadFromFile(self, filename):
 		file = open(filename, "r")
 		try:
 			data = json.load(file)
@@ -21,9 +24,9 @@ class CustomData:
 			raise Exception(str(e))
 		
 		try:
-			self.name = data.name
-			self.description = data.description
-			self.data = data.data
+			self.name = data['name']
+			self.description = data['description']
+			self.data = data['data']
 		except:
 			raise Exception("The custo data file header has not the correct format")
 
