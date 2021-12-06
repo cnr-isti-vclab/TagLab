@@ -17,7 +17,6 @@ class Image(object):
         #in range np format: (top, left, bottom, right)
         #in GIS standard (bottom, left, top, right)
 
-
         self.rect = rect                                         #coordinates of the image. (in the spatial reference system)
         self.map_px_to_mm_factor = map_px_to_mm_factor           #if we have a references system we should be able to recover this numner
                                                                 # otherwise we need to specify it.

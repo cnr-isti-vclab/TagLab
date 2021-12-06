@@ -494,7 +494,10 @@ class Blob(object):
         self.blob_name = dict["blob name"]
         self.id = int(dict["id"])
         self.note = dict["note"]
-        self.data = dict["data"].copy()
+        if 'data' in dict:
+            self.data = dict["data"].copy()
+        else:
+            self.data = []
 
     def save(self):
         return self.toDict()

@@ -455,11 +455,11 @@ class TagLab(QMainWindow):
         self.groupbox_comparison.setStyleSheet("padding: 0px")
 
 
-        self.blobdock = QDockWidget("Region info", self)
-        self.blobdock.setWidget(self.groupbox_blobpanel)
+        self.blobdock = QDockWidget("Region Info", self)
+        self.blobdock.setWidget(QWidget())
+        self.blobdock.setTitleBarWidget(self.groupbox_blobpanel)
         self.blobdock.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Minimum)
         self.groupbox_blobpanel.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Minimum)
-        self.groupbox_blobpanel.setStyleSheet("padding: 0px")
 
 
         self.mapdock = QDockWidget("Map", self)
@@ -3558,13 +3558,13 @@ class TagLab(QMainWindow):
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
 
-        try:
-            self.project = loadProject(self.taglab_dir, filename, self.default_dictionary)
-        except Exception as e:
-            msgBox = QMessageBox()
-            msgBox.setText("The json project contains an error:\n {0}\n\nPlease contact us.".format(str(e)))
-            msgBox.exec()
-            return
+#        try:
+        self.project = loadProject(self.taglab_dir, filename, self.default_dictionary)
+#        except Exception as e:
+#            msgBox = QMessageBox()
+#            msgBox.setText("The json project contains an error:\n {0}\n\nPlease contact us.".format(str(e)))
+#            msgBox.exec()
+#            return
 
         QApplication.restoreOverrideCursor()
 

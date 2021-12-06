@@ -28,6 +28,7 @@ def loadProject(taglab_working_dir, filename, default_dict):
     except json.JSONDecodeError as e:
         raise Exception(str(e))
 
+
     if "Map File" in data:
         project = loadOldProject(taglab_working_dir, data)
         project.loadDictionary(default_dict)
@@ -149,6 +150,7 @@ class Project(object):
         self.images = list(map(lambda img: Image(**img), images))       #list of annotated images
 
                                                                          # dict of tables (DataFrame) of correspondences betweeen a source and a target image
+
         self.correspondences = {}
         if correspondences is not None:
             for key in correspondences.keys():
@@ -158,7 +160,7 @@ class Project(object):
                 self.correspondences[key].fillTable(correspondences[key]['correspondences'])
 
         self.genet = Genet(self)
-        self.custom_data = CustomData(**custom_data)
+        self.custom_data = CustomData() #CustomData(**custom_data)
 
         self.spatial_reference_system = spatial_reference_system        #if None we assume coordinates in pixels (but Y is up or down?!)
         self.metadata = metadata                                        # project metadata => keyword -> value
