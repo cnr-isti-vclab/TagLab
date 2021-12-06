@@ -22,20 +22,20 @@ from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal, QEvent
 from PyQt5.QtWidgets import QGridLayout, QWidget, QScrollArea,QGroupBox, QColorDialog, QMessageBox, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, \
     QHBoxLayout, QVBoxLayout, QTextEdit, QTableWidget, QTableWidgetItem, QFrame
 import os, json, re
-from source.CustomData import CustomData
+from source.RegionAttributes import RegionAttributes
 from copy import deepcopy
 
-class QtCustomDataWidget(QWidget):
+class QtRegionAttributesWidget(QWidget):
 
     dataChanged = pyqtSignal()
 
     def __init__(self, dir, project, parent=None):
-        super(QtCustomDataWidget, self).__init__(parent)
+        super(QtRegionAttributesWidget, self).__init__(parent)
 
         self.taglab_dir = dir
         self.project = project
 
-        self.custom_data = deepcopy(project.custom_data)
+        self.region_attributes = deepcopy(project.region_attributes)
 
 #        self.setStyleSheet("background-color: rgb(40,40,40); color: white")
 
@@ -48,15 +48,15 @@ class QtCustomDataWidget(QWidget):
         toolbar_layout = QHBoxLayout()
 
         button_new = QPushButton("New")
-        button_new.clicked.connect(self.newCustomData)
+        button_new.clicked.connect(self.newRegionAttributes)
         toolbar_layout.addWidget(button_new)
 
         button_load = QPushButton("Load")
-        button_load.clicked.connect(self.loadCustomData)
+        button_load.clicked.connect(self.loadRegionAttributes)
         toolbar_layout.addWidget(button_load)
 
         btn_save = QPushButton("Save")
-        btn_save.clicked.connect(self.saveCustomData)
+        btn_save.clicked.connect(self.saveRegionAttributes)
         toolbar_layout.addWidget(btn_save)
 
         layout.addLayout(toolbar_layout)
@@ -65,24 +65,24 @@ class QtCustomDataWidget(QWidget):
         #name & description
 
         name_layout = QGridLayout()
-        name_layout.addWidget(QLabel("Custom data name:"), 0, 0)
+        name_layout.addWidget(QLabel("Attribute name:"), 0, 0)
 
         self.edit_name = QLineEdit()
-        self.edit_name.setPlaceholderText("Name of the custom data")
+        self.edit_name.setPlaceholderText("Name of the attribute set")
         self.edit_name.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_name.setFixedWidth(350)
-        self.edit_name.setText(self.custom_data.name)
+        self.edit_name.setText(self.region_attributes.name)
         name_layout.addWidget(self.edit_name, 0, 1, 1, 2)
 
 
         name_layout.addWidget(QLabel("Description:"), 1, 0)
 
         self.edit_description = QTextEdit()
-        self.edit_description.setPlaceholderText("Type a description of your custom data")
+        self.edit_description.setPlaceholderText("Type a description of your attributes")
         self.edit_description.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_description.setFixedWidth(350)
         self.edit_description.setMaximumHeight(100)
-        self.edit_description.setText(self.custom_data.description)
+        self.edit_description.setText(self.region_attributes.description)
 
         name_layout.addWidget(self.edit_description, 1, 1, 1, 2) 
 
@@ -194,10 +194,10 @@ class QtCustomDataWidget(QWidget):
 
     @pyqtSlot()
     def apply(self):
-        self.custom_data.name = self.edit_name.text()
-        self.custom_data.description = self.edit_description.document().toPlainText()
+        self.region_attributes.name = self.edit_name.text()
+        self.region_attributes.description = self.edit_description.document().toPlainText()
 
-        self.project.custom_data = deepcopy(self.custom_data)
+        self.project.region_attributes = deepcopy(self.region_attributes)
         self.close()
 
     def cancel(self):
@@ -205,58 +205,58 @@ class QtCustomDataWidget(QWidget):
 
     #def closeEvent(self, event):
     #    self.closewidget.emit()
-    #    super(QtCustomDataWidget, self).closeEvent(event)
+    #    super(QtRegionAttributesWidget, self).closeEvent(event)
 
 
     @pyqtSlot()
-    def newCustomData(self):
-        self.labels = CustomData()
+    def newRegionAttributes(self):
+        self.labels = RegionAttributes()
 
     @pyqtSlot()
-    def loadCustomData(self):
+    def loadRegionAttributes(self):
 
-        filters = "Custom Data (*.json)"
-        filename, filter = QFileDialog.getOpenFileName(self, "Custom data", "", filters)
+        filters = "Region attributes (*.json)"
+        filename, filter = QFileDialog.getOpenFileName(self, "Region attributes", "", filters)
         print(filename)
         if filename == '':
             return
 
         #self.edit_load.setText(filename)
 
-        data = CustomData()
+        data = RegionAttributes()
         data.loadFromFile(filename)
 
         self.edit_name.setText(data.name)
         self.edit_description.document().setPlainText(data.description)
 
-        self.custom_data = data
+        self.region_attributes = data
         self.createFields()
 
     @pyqtSlot()
-    def saveCustomData(self):
+    def saveRegionAttributes(self):
 
-        self.custom_data.name = self.edit_name.text()
-        self.custom_data.description = self.edit_description.document().toPlainText()
-        if self.custom_data.name == '':
+        self.region_attributes.name = self.edit_name.text()
+        self.region_attributes.description = self.edit_description.document().toPlainText()
+        if self.region_attributes.name == '':
             box = QMessageBox()
             box.setWindowTitle('TagLab')
-            box.setText("Please enter a custom data name")
+            box.setText("Please enter a name for this region attributes set")
             box.exec()
             return
 
-        dir = os.path.join(self.taglab_dir, self.custom_data.name + '.json')
-        filters = "Custom Data (*.json)"
-        filename, _ = QFileDialog.getSaveFileName(self, "Save Custom Data", dir, filters)
+        dir = os.path.join(self.taglab_dir, self.region_attributes.name + '.json')
+        filters = "Region attributes (*.json)"
+        filename, _ = QFileDialog.getSaveFileName(self, "Save region attributes", dir, filters)
         if filename == '':
             return
-        self.custom_data.saveToFile(filename)
+        self.region_attributes.saveToFile(filename)
 
 
 
 
     def createFields(self):
         self.table.clearContents()
-        for field in self.custom_data.data:
+        for field in self.region_attributes.data:
             self.appendField(field)
 
     def appendField(self, field):
@@ -278,7 +278,7 @@ class QtCustomDataWidget(QWidget):
             return
 
         self.table.selectRow(row)
-        field = self.custom_data.data[row]
+        field = self.region_attributes.data[row]
         self.editName.setText(field['name'])
         self.editType.setCurrentText(field['type'])
         self.editMin.setText(field['min'])
@@ -322,12 +322,12 @@ class QtCustomDataWidget(QWidget):
         if field == False:
             return
 
-        if self.custom_data.has(field['name']):
+        if self.region_attributes.has(field['name']):
             self.message("Duplicated field name...")
             return
 
 
-        self.custom_data.data.append(field)
+        self.region_attributes.data.append(field)
         self.appendField(field)
 
     @pyqtSlot()
@@ -341,7 +341,7 @@ class QtCustomDataWidget(QWidget):
         if field == False:
             return
 
-        self.custom_data.data[row] = field
+        self.region_attributes.data[row] = field
         self.setField(row, field)
         self.selectRow(row, 0)
 
@@ -353,7 +353,7 @@ class QtCustomDataWidget(QWidget):
             return self.message("Please, select a label to delete")
 
         self.clearField()
-        del self.custom_data.data[row]
+        del self.region_attributes.data[row]
         self.table.removeRow(row)
 
     @pyqtSlot()

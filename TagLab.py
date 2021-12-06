@@ -69,7 +69,7 @@ from source.MapClassifier import MapClassifier
 from source.NewDataset import NewDataset
 from source.QtGridWidget import QtGridWidget
 from source.QtDictionaryWidget import QtDictionaryWidget
-from source.QtCustomDataWidget import QtCustomDataWidget
+from source.QtRegionAttributesWidget import QtRegionAttributesWidget
 from source.QtShapefileAttributeWidget import QtAttributeWidget
 from source.QtPanelInfo import QtPanelInfo
 
@@ -425,7 +425,7 @@ class TagLab(QMainWindow):
         self.groupbox_comparison.setLayout(layout_groupbox2)
 
         # BLOB INFO
-        self.groupbox_blobpanel = QtPanelInfo(self.project.custom_data)
+        self.groupbox_blobpanel = QtPanelInfo(self.project.region_attributes)
 
 
         # INFO WIDGET
@@ -837,8 +837,8 @@ class TagLab(QMainWindow):
         createDicAct = QAction("Dictionary Editor", self)
         createDicAct.triggered.connect(self.createDictionary)
 
-        customDataAct = QAction("Custom data", self)
-        customDataAct.triggered.connect(self.editCustomData)
+        regionAttributesAct = QAction("Region attributes...", self)
+        regionAttributesAct.triggered.connect(self.editRegionAttributes)
 
 
         ### IMPORT
@@ -966,7 +966,7 @@ class TagLab(QMainWindow):
 
         self.projectmenu = menubar.addMenu("&Project")
         self.projectmenu.addAction(createDicAct)
-        self.projectmenu.addAction(customDataAct)
+        self.projectmenu.addAction(regionAttributesAct)
         self.projectmenu.addAction(newMapAct)
         self.submenuEdit = self.filemenu.addMenu("Edit Maps info")
         self.submenuEdit.setEnabled(False)
@@ -2631,7 +2631,7 @@ class TagLab(QMainWindow):
         self.setProjectTitle("NONE")
         self.infoWidget.setInfoMessage("TagLab has been reset. To continue open an existing project or load a map.")
         logfile.info("[PROJECT] A new project has been setup.")
-        self.groupbox_blobpanel.custom_data = self.project.custom_data
+        self.groupbox_blobpanel.region_attributes = self.project.region_attributes
 
         
 
@@ -2678,10 +2678,10 @@ class TagLab(QMainWindow):
         self.create_dictionary.show()
 
     @pyqtSlot()
-    def editCustomData(self):
+    def editRegionAttributes(self):
 
-        self.edit_customData = QtCustomDataWidget(self.taglab_dir, self.project, parent = self)
-        self.edit_customData.show()
+        self.regionAttributes_dialog = QtRegionAttributesWidget(self.taglab_dir, self.project, parent = self)
+        self.regionAttributes_dialog.show()
 
 
 
@@ -3574,8 +3574,7 @@ class TagLab(QMainWindow):
         if len(self.project.images) > 0:
             self.showImage(self.project.images[0])
 
-        self.groupbox_blobpanel.custom_data = self.project.custom_data
-        self.groupbox_blobpanel.clear()
+        self.groupbox_blobpanel.updateRegionAttributes(self.project.region_attributes)
         self.updateLabelsPanel()
 
         self.updateImageSelectionMenu()

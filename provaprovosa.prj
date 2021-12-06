@@ -1,1 +1,0 @@
-PROJCS["unnamed",GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.25722356049]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Orthographic"],PARAMETER["False_Easting",0.0],PARAMETER["False_Northing",0.0],PARAMETER["Longitude_Of_Center",0.0],PARAMETER["Latitude_Of_Center",0.0],UNIT["Meter",1.0]]

@@ -16,7 +16,9 @@ from source.Correspondences import Correspondences
 from source.Genet import Genet
 from source import utils
 from source.Grid import Grid
-from source.CustomData import CustomData
+from source.RegionAttributes import RegionAttributes
+
+import pprint
 
 def loadProject(taglab_working_dir, filename, default_dict):
 
@@ -32,6 +34,7 @@ def loadProject(taglab_working_dir, filename, default_dict):
     if "Map File" in data:
         project = loadOldProject(taglab_working_dir, data)
         project.loadDictionary(default_dict)
+        project.region_attributes = RegionAttributes()
     else:
         project = Project(**data)
 
@@ -128,7 +131,7 @@ class ProjectEncoder(json.JSONEncoder):
             return obj.save()
         elif isinstance(obj, Genet):
             return {}
-        elif isinstance(obj, CustomData):
+        elif isinstance(obj, RegionAttributes):
             return obj.save()
         return json.JSONEncoder.default(self, obj)
 
@@ -136,7 +139,7 @@ class Project(object):
 
     def __init__(self, filename=None, labels={}, images=[], correspondences=None,
                  spatial_reference_system=None, metadata={}, image_metadata_template={}, genet={},
-                 dictionary_name="", dictionary_description="", custom_data={}):
+                 dictionary_name="", dictionary_description="", region_attributes={}):
 
         self.filename = None                                             #filename with path of the project json
 
@@ -160,8 +163,8 @@ class Project(object):
                 self.correspondences[key].fillTable(correspondences[key]['correspondences'])
 
         self.genet = Genet(self)
-        self.custom_data = CustomData() #CustomData(**custom_data)
-
+        self.region_attributes = RegionAttributes(**region_attributes)
+        
         self.spatial_reference_system = spatial_reference_system        #if None we assume coordinates in pixels (but Y is up or down?!)
         self.metadata = metadata                                        # project metadata => keyword -> value
         self.image_metadata_template = image_metadata_template          # description of metadata keywords expected in images
