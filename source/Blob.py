@@ -497,7 +497,7 @@ class Blob(object):
         if 'data' in dict:
             self.data = dict["data"].copy()
         else:
-            self.data = []
+            self.data = {}
 
     def save(self):
         return self.toDict()

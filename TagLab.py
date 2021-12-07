@@ -834,7 +834,7 @@ class TagLab(QMainWindow):
         newMapAct.triggered.connect(self.setMapToLoad)
 
         ### Project
-        createDicAct = QAction("Dictionary Editor", self)
+        createDicAct = QAction("Dictionary Editor...", self)
         createDicAct.triggered.connect(self.createDictionary)
 
         regionAttributesAct = QAction("Region attributes...", self)

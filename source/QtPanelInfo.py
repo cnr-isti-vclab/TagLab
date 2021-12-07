@@ -7,11 +7,13 @@ class QtPanelInfo(QTabWidget):
         super(QtPanelInfo, self).__init__(parent)
 
         self.region_attributes = region_attributes
+        self.fields = {}
+        self.attributes = []
         #self.setMaximumHeight(200)
 
-        self.addTab(self.regionInfo(), "Region Info")
+        self.addTab(self.regionInfo(), "Properties")
         self.addTab(self.customInfo(), "Attributes")
-        self.fields = []
+
         
     def updateRegionAttributes(self, region_attributes):
         self.clear()
@@ -49,8 +51,10 @@ class QtPanelInfo(QTabWidget):
         return widget
 
     def customInfo(self):
-        self.fields = []
+        self.attributes = []
         layout = QGridLayout()
+        layout.setColumnStretch(0, 1);
+        layout.setColumnStretch(1, 1);
         widget = QWidget()
         widget.setLayout(layout)
 
@@ -59,27 +63,40 @@ class QtPanelInfo(QTabWidget):
             return widget
 
         row = 0
-        for field in self.region_attributes.data:
-            layout.addWidget(QLabel(field['name']), row, 0)
-            if field['type'] == 'string':
-                input = QLineEdit()
-            elif field['type'] == 'number':
-                input = QSpinBox()
-                input.setMaximum(field['max'])
-                input.setMinimum(field['min'])
-            elif field['type'] == 'boolean':
-                input = QCheckBox()
-            elif field['type'] == 'keyword':
-                input = QComboBox()
-                input.addItems(field['keywords'])
+        for attribute in self.region_attributes.data:
+            name = attribute['name']
+            layout.addWidget(QLabel(name), row, 0)
+            
 
-            layout.addWidget(input)
-            self.fields.append(input)
+            if attribute['type'] == 'string':
+                input = QLineEdit()
+                input.textChanged.connect(lambda text, name = name: self.assign(text, name))
+            elif attribute['type'] == 'number':
+                input = QSpinBox()
+                input.setMaximum(attribute['max'])
+                input.setMinimum(attribute['min'])
+                input.valueChanged.connect(lambda value, name = name: self.assign(value, name))
+
+            elif attribute['type'] == 'boolean':
+                input = QCheckBox()
+                input.toggled.connect(lambda checked, name = name: self.assign(checked, name))
+
+            elif attribute['type'] == 'keyword':
+                input = QComboBox()
+                input.addItem('')
+                input.addItems(attribute['keywords'])
+                input.currentTextChanged(lambda text, name = name: self.assign(text, name))
+
+            layout.addWidget(input, row, 1)
+            self.attributes.append(input)
 
         return widget
         
 
-
+    def assign(self, text, name):
+        if self.blob == None:
+            return
+        self.blob.data[name] = text
 
     def updateNotes(self):
         if self.blob is None:
@@ -91,8 +108,18 @@ class QtPanelInfo(QTabWidget):
         self.blob = None
         for field in self.fields:
             self.fields[field].setText("")
+        for input, attribute in zip(self.attributes, self.region_attributes.data):
+            if attribute['type'] == 'string':
+                input.setText('')
+            elif attribute['type'] == 'number':
+                input.setValue(0)
+            elif attribute['type'] == 'boolean':
+                input.setChecked(False)
+            elif attribute['type'] == 'keyword':
+                input.setCurrentText('')
 
     def update(self, blob):
+        self.clear()
         self.blob = blob
 
         for field in self.fields:
@@ -103,4 +130,19 @@ class QtPanelInfo(QTabWidget):
                 value = str(value)
             
             self.fields[field].setText(value)
+
+        for input, attribute in zip(self.attributes, self.region_attributes.data):
+            key = attribute['name']
+            if not key in blob.data:
+                continue
+            value = blob.data[key]
+            if attribute['type'] == 'string':
+                input.setText(value)
+            elif attribute['type'] == 'number':
+                input.setValue(value)
+            elif attribute['type'] == 'boolean':
+                input.setChecked(value)
+            elif attribute['type'] == 'keyword':
+                input.setCurrentText(value)
+
         

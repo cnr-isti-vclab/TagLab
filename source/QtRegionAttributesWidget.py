@@ -267,8 +267,15 @@ class QtRegionAttributesWidget(QWidget):
     def setField(self, row, field):
         self.table.setItem(row, 0, QTableWidgetItem(field['name']))
         self.table.setItem(row, 1, QTableWidgetItem(field['type']))
-        self.table.setItem(row, 2, QTableWidgetItem(field['min']))
-        self.table.setItem(row, 3, QTableWidgetItem(field['max']))
+        min = ''
+        if field['min'] != None:
+            min = str(field['min'])
+        self.table.setItem(row, 2, QTableWidgetItem(min))
+        max = ''
+        if field['max'] != None:
+            max = str(field['max'])
+        self.table.setItem(row, 3, QTableWidgetItem(max))
+
         self.table.setItem(row, 4, QTableWidgetItem(', '.join(field['keywords'])))
 
     @pyqtSlot(int, int)
@@ -281,8 +288,14 @@ class QtRegionAttributesWidget(QWidget):
         field = self.region_attributes.data[row]
         self.editName.setText(field['name'])
         self.editType.setCurrentText(field['type'])
-        self.editMin.setText(field['min'])
-        self.editMax.setText(field['max'])
+        min = ''
+        if field['min'] != None:
+            min = str(field['min'])
+        self.editMin.setText(min)
+        max = ''
+        if field['max'] != None:
+            max = str(field['max'])
+        self.editMax.setText(max)
         self.editValues.setText(' '.join(field['keywords']))
         self.updateFieldType()
 
@@ -303,14 +316,30 @@ class QtRegionAttributesWidget(QWidget):
         field = {}
         field['name'] = name
         field['type'] = self.editType.currentText()
-        field['min'] = self.editMin.text()
-        field['max'] = self.editMax.text()
+        min = None
+        if self.editMin.text() != '':
+            try:
+                min = float(self.editMin.text())
+            except ValueError:
+                self.message("Min value is not a number")
+                return False
+        field['min'] = min
+
+        max = None
+        if self.editMax.text() != '':
+            try:
+                max = int(self.editMax.text())
+            except ValueError:
+                self.message("Max value is not a number")
+                return False
+        field['max'] = max
+
         field['keywords'] = []
         keywords =  self.editValues.text();
         if keywords != '':
             field['keywords'] = re.split(' ,|:;\t', keywords)
 
-        if field['type'] == 'keywords' and len(field['keywords'] < 2):
+        if field['type'] == 'keyword' and len(field['keywords'] < 2):
             self.message("Insert at least two keywords separated by commas or spaces.")
             return False
         return field
