@@ -18,8 +18,6 @@ from source import utils
 from source.Grid import Grid
 from source.RegionAttributes import RegionAttributes
 
-import pprint
-
 def loadProject(taglab_working_dir, filename, default_dict):
 
     dir = QDir(taglab_working_dir)

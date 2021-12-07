@@ -27,7 +27,7 @@ from copy import deepcopy
 
 class QtRegionAttributesWidget(QWidget):
 
-    dataChanged = pyqtSignal()
+    closed = pyqtSignal()
 
     def __init__(self, dir, project, parent=None):
         super(QtRegionAttributesWidget, self).__init__(parent)
@@ -203,9 +203,9 @@ class QtRegionAttributesWidget(QWidget):
     def cancel(self):
         self.close()
 
-    #def closeEvent(self, event):
-    #    self.closewidget.emit()
-    #    super(QtRegionAttributesWidget, self).closeEvent(event)
+    def closeEvent(self, event):
+        self.closed.emit()
+        super(QtRegionAttributesWidget, self).closeEvent(event)
 
 
     @pyqtSlot()
@@ -217,7 +217,6 @@ class QtRegionAttributesWidget(QWidget):
 
         filters = "Region attributes (*.json)"
         filename, filter = QFileDialog.getOpenFileName(self, "Region attributes", "", filters)
-        print(filename)
         if filename == '':
             return
 
@@ -341,7 +340,6 @@ class QtRegionAttributesWidget(QWidget):
         else:
             keywords = []
 
-        print(keywords)
         if field['type'] == 'keyword' and len(keywords) < 2:
             self.message("Insert at least two keywords separated by commas or spaces.")
             return False
@@ -377,7 +375,8 @@ class QtRegionAttributesWidget(QWidget):
 
         self.region_attributes.data[row] = field
         self.setField(row, field)
-        self.selectRow(row, 0)
+        if len(self.region_attributes.data) > 0:
+            self.selectRow(row, 0)
 
     @pyqtSlot()
     def removeField (self):

@@ -99,7 +99,7 @@ class MainWindow(QMainWindow):
         taglab = self.centralWidget()
         if taglab.project.filename is not None:
             box = QMessageBox()
-            reply = box.question(self, taglab.TAGLAB_VERSION, "Do you want to save changes to" + taglab.project.filename, QMessageBox.Yes | QMessageBox.No)
+            reply = box.question(self, taglab.TAGLAB_VERSION, "Do you want to save changes to " + taglab.project.filename, QMessageBox.Yes | QMessageBox.No)
             if reply == QMessageBox.Yes:
                taglab.saveProject()
         super(MainWindow, self).closeEvent(event)
@@ -839,6 +839,8 @@ class TagLab(QMainWindow):
 
         regionAttributesAct = QAction("Region attributes...", self)
         regionAttributesAct.triggered.connect(self.editRegionAttributes)
+
+        
 
 
         ### IMPORT
@@ -2682,7 +2684,11 @@ class TagLab(QMainWindow):
 
         self.regionAttributes_dialog = QtRegionAttributesWidget(self.taglab_dir, self.project, parent = self)
         self.regionAttributes_dialog.show()
+        self.regionAttributes_dialog.closed.connect(self.updateRegionAttributes)
 
+    @pyqtSlot()
+    def updateRegionAttributes(self):
+        self.groupbox_blobpanel.updateRegionAttributes(self.project.region_attributes)
 
 
     @pyqtSlot()

@@ -41,11 +41,6 @@ class QtPanelInfo(QTabWidget):
             if col == 4:
                 row += 1
                 col = 0
-        layout.addWidget(QLabel("Notes:"), row, 0)
-        note = self.fields['note'] = QTextEdit()
-        note.setMaximumHeight(100)
-        note.textChanged.connect(self.updateNotes)
-        layout.addWidget(note, row+1, 0, 1, 4)
 
         widget = QWidget()
         widget.setLayout(layout)
@@ -58,10 +53,6 @@ class QtPanelInfo(QTabWidget):
         layout.setColumnStretch(1, 1);
         widget = QWidget()
         widget.setLayout(layout)
-
-        if len(self.region_attributes.data) == 0:
-            layout.addWidget(QLabel("See project -> Region attributes... to configure additional attributes"))
-            return widget
 
         row = 0
         for attribute in self.region_attributes.data:
@@ -98,6 +89,11 @@ class QtPanelInfo(QTabWidget):
             row += 1
             self.attributes.append(input)
 
+        layout.addWidget(QLabel("Notes:"), row, 0)
+        note = self.fields['note'] = QTextEdit()
+        note.setMaximumHeight(100)
+        note.textChanged.connect(self.updateNotes)
+        layout.addWidget(note, row+1, 0, 1, 2)
         return widget
         
 
