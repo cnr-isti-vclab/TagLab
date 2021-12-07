@@ -1,5 +1,6 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QGridLayout, QWidget, QTabWidget, QSpinBox, QLineEdit, QCheckBox, QComboBox, QTableWidget, QTableWidgetItem, QGroupBox, QLabel, QHBoxLayout, QVBoxLayout, QTextEdit
+from PyQt5.QtWidgets import QGridLayout, QWidget, QTabWidget, QSpinBox, QLineEdit, QDoubleSpinBox, \
+    QCheckBox, QComboBox, QTableWidget, QTableWidgetItem, QGroupBox, QLabel, QHBoxLayout, QVBoxLayout, QTextEdit
 
 class QtPanelInfo(QTabWidget):
 
@@ -72,8 +73,14 @@ class QtPanelInfo(QTabWidget):
                 input = QLineEdit()
                 input.textChanged.connect(lambda text, name = name: self.assign(text, name))
             elif attribute['type'] == 'number':
-                input = QSpinBox()
-                input.setMaximum(attribute['max'])
+                input = QDoubleSpinBox()
+                max = attribute['max']
+                if max is None:
+                     max = 1e20
+                input.setMaximum(max)
+                min = attribute['max']
+                if min is None:
+                     min = -1e20
                 input.setMinimum(attribute['min'])
                 input.valueChanged.connect(lambda value, name = name: self.assign(value, name))
 
@@ -85,9 +92,10 @@ class QtPanelInfo(QTabWidget):
                 input = QComboBox()
                 input.addItem('')
                 input.addItems(attribute['keywords'])
-                input.currentTextChanged(lambda text, name = name: self.assign(text, name))
+                input.currentTextChanged.connect(lambda text, name = name: self.assign(text, name))
 
             layout.addWidget(input, row, 1)
+            row += 1
             self.attributes.append(input)
 
         return widget
@@ -112,7 +120,7 @@ class QtPanelInfo(QTabWidget):
             if attribute['type'] == 'string':
                 input.setText('')
             elif attribute['type'] == 'number':
-                input.setValue(0)
+                input.clear()
             elif attribute['type'] == 'boolean':
                 input.setChecked(False)
             elif attribute['type'] == 'keyword':
@@ -136,6 +144,8 @@ class QtPanelInfo(QTabWidget):
             if not key in blob.data:
                 continue
             value = blob.data[key]
+            if value is None:
+                continue;
             if attribute['type'] == 'string':
                 input.setText(value)
             elif attribute['type'] == 'number':

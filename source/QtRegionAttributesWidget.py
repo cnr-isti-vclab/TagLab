@@ -334,14 +334,19 @@ class QtRegionAttributesWidget(QWidget):
                 return False
         field['max'] = max
 
-        field['keywords'] = []
+        
         keywords =  self.editValues.text();
         if keywords != '':
-            field['keywords'] = re.split(' ,|:;\t', keywords)
+            keywords = re.split(' |,|:|;|\t', keywords)
+        else:
+            keywords = []
 
-        if field['type'] == 'keyword' and len(field['keywords'] < 2):
+        print(keywords)
+        if field['type'] == 'keyword' and len(keywords) < 2:
             self.message("Insert at least two keywords separated by commas or spaces.")
             return False
+
+        field['keywords'] = keywords
         return field
 
     @pyqtSlot()
