@@ -840,9 +840,6 @@ class TagLab(QMainWindow):
         regionAttributesAct = QAction("Region attributes...", self)
         regionAttributesAct.triggered.connect(self.editRegionAttributes)
 
-        
-
-
         ### IMPORT
 
         appendAct = QAction("Add Another Project", self)
