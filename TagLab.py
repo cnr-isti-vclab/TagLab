@@ -20,6 +20,7 @@
 
 import sys
 import os
+import json
 import time
 import datetime
 import shutil
@@ -35,6 +36,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QFileDialog, QCo
     QLabel, QToolButton, QPushButton, QSlider, QCheckBox, \
     QMessageBox, QGroupBox, QLayout, QHBoxLayout, QVBoxLayout, QFrame, QDockWidget, QTextEdit, QAction
 
+import pprint
 # PYTORCH
 try:
     import torch
@@ -3110,12 +3112,27 @@ class TagLab(QMainWindow):
 
 
     @pyqtSlot(str,list)
-    def readShapes(self, shapetype, shapelist):
+    def readShapes(self, shapetype, attributelist):
+
+        for attribute in attributelist:
+            if self.project.region_attributes.has(attribute['name']):
+                continue
+            self.project.region_attributes.data.append(attribute)
 
         gf = self.activeviewer.image.georef_filename
         if shapetype == 'Label':
             blobList = rasterops.read_geometry(self.shapefile_filename, gf, shapetype)
+            data = rasterops.read_attributes(self.shapefile_filename)
+            
+            count = 0
             for blob in blobList:
+                row = data.iloc[count]
+                count += 1
+                for field in data.columns:
+                    if self.project.region_attributes.has(field):
+                        blob.data[field] = row[field]
+#                pp = pprint.PrettyPrinter(indent=4)
+#                pp.pprint(blob.contour)
                 self.activeviewer.addBlob(blob, selected=False)
             self.activeviewer.saveUndo()
 
@@ -3124,7 +3141,8 @@ class TagLab(QMainWindow):
 
         else:
             pass
-
+        
+        self.groupbox_blobpanel.updateRegionAttributes(self.project.region_attributes)
         self.shapefile_filename = ""
 
 

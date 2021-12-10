@@ -109,8 +109,10 @@ class QtAttributeWidget(QWidget):
 
         for i in range(0, len(self.data.columns)):
             field = self.data.columns[i]
+            type = self.data.dtypes[i]
             chkBox = QCheckBox(field)
-            chkBox.setChecked(True)
+            chkBox.setChecked(False)
+            chkBox.setProperty('type', 'string' if type == 'object' else 'number')
 
             if i % FIELDS_FOR_ROW == 0:
                 if self.fields is not None:
@@ -191,8 +193,9 @@ class QtAttributeWidget(QWidget):
         self.fieldlist =[]
         for checkbox in self.checkBoxes:
             if checkbox.isChecked():
-                self.fieldlist.append(checkbox.text())
+                self.fieldlist.append({ 'name': checkbox.text(), 'type': checkbox.property('type')})
                 # self.fieldslist.append(self.data[str(checkbox.text())])
                 # self.data[str(checkbox.text())][i] returns i element
                 # print(self.fieldslist)
         self.shapefilechoices.emit(self.shape, self.fieldlist)
+        self.close()

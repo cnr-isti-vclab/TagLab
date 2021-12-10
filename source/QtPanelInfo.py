@@ -2,6 +2,8 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QGridLayout, QWidget, QTabWidget, QSpinBox, QLineEdit, QDoubleSpinBox, \
     QCheckBox, QComboBox, QTableWidget, QTableWidgetItem, QGroupBox, QLabel, QHBoxLayout, QVBoxLayout, QTextEdit
 
+import numpy as np
+
 class QtPanelInfo(QTabWidget):
 
     def __init__(self, region_attributes, parent=None):
@@ -128,7 +130,7 @@ class QtPanelInfo(QTabWidget):
 
         for field in self.fields:
             value = getattr(blob, field)
-            if type(value) == float:
+            if type(value) == float or type(value) == np.float64:
                 value = "{:6.1f}".format(value)
             if type(value) == int:
                 value = str(value)
