@@ -36,7 +36,7 @@ def changeFormat(contour, transform):
 
 def changeFormatInv(coord, transform):
     """
-    convert poligon coordinate in pixel coordinates
+    convert polygon coordinate in pixel coordinates
     # """
     # transformr = np.reshape(transform, (3, 3))
     # transformInv = inv(transformr)
@@ -49,6 +49,16 @@ def changeFormatInv(coord, transform):
             pointpix = ~transform * (xref, yref)
             pointpixels.append(pointpix)
         return pointpixels
+
+def changeFormatInvPoint(coord, transform):
+    """
+    convert poligon coordinate in pixel coordinates
+    # """
+    if transform is not None:
+        xref = coord[0]
+        yref = coord[1]
+        pointpix = ~transform * (xref, yref)
+        return pointpix
 
 
 def createPolygon(blob, transform):
@@ -67,16 +77,81 @@ def createPolygon(blob, transform):
     return newPolygon
 
 
-
-
-def open_shapefile(filename, georef_filename):
-
-    # #ci andrebbero self.labels_dictionary, self.activeviewer.img_map.width(), self.activeviewer.img_map.height()):
-    img = rio.open(georef_filename)
-    transform = img.transform
+def read_attributes(filename):
     driver = ogr.GetDriverByName("ESRI Shapefile")
     dataSource = driver.Open(filename, 0)
     layer = dataSource.GetLayer(0)
+    Data = pd.DataFrame()
+    for feat in layer:
+        shpdict =json.loads(feat.ExportToJson())
+        properties = shpdict['properties']
+        if Data.empty:
+            Data = pd.DataFrame.from_dict([properties])
+        else:
+            data = pd.DataFrame.from_dict([properties])
+            Data = Data.append(data, ignore_index=True)
+    return Data
+
+def read_geometry(filename, georef_filename, shapetype):
+
+    img = rio.open(georef_filename)
+    transform = img.transform
+
+    driver = ogr.GetDriverByName("ESRI Shapefile")
+    dataSource = driver.Open(filename, 0)
+    layer = dataSource.GetLayer(0)
+
+    if shapetype == 'Label':
+        blobList = []
+        for feat in layer:
+            shpdict =json.loads(feat.ExportToJson())
+            if shpdict['geometry']['type'] == 'Polygon':
+               blob = Blob(None, 0, 0, '0')
+               coord = shpdict['geometry']['coordinates']
+               outercontourn = coord[0]
+               outpointpixels = changeFormatInv([outercontourn], transform)
+               blob.createFromClosedCurve([np.asarray(outpointpixels)])
+               for i in range(1, len(coord)):
+                   innercontourn_i = coord[i]
+                   innerpointpixels_i = changeFormatInv([innercontourn_i], transform)
+                   innerblob = Blob(None, 0, 0, '0')
+                   innerblob.createFromClosedCurve([np.asarray(innerpointpixels_i)])
+                   (mask, box) = subtract(blob.getMask(), blob.bbox, innerblob.getMask(), innerblob.bbox)
+                   if mask.any():
+                       blob.updateUsingMask(box, mask.astype(int))
+               blobList.append(blob)
+
+    if shapetype == 'Sampling':
+
+        # sampling puo'avere cerchi bucati? Contorni interni? che forme ammettiamo?
+        centers =[]
+        rays = []
+        for feat in layer:
+            shpdict = json.loads(feat.ExportToJson())
+            if shpdict['geometry']['type'] == 'Polygon':
+                blob = Blob(None, 0, 0, '0')
+                coord = shpdict['geometry']['coordinates']
+                outercontourn = coord[0]
+                outpointpixels = changeFormatInv([outercontourn], transform)
+                blob.createFromClosedCurve([np.asarray(outpointpixels)])
+                c = round((4*np.pi*blob.area)/ np.square(blob.perimeter), 2)
+
+                center = blob.centroid
+                r = (blob.perimeter)/(2*np.pi)
+
+
+                print(c)
+
+
+
+
+
+
+    return blobList
+
+
+
+
 
     # layerDefinition = layer.GetLayerDefn()
     #
@@ -104,35 +179,51 @@ def open_shapefile(filename, georef_filename):
     #         values[i][j] = value_name
 
 
-    blobList = []
-    Data = pd.DataFrame()
-    for feat in layer:
-        shpdict= ast.literal_eval(feat.ExportToJson())
-        if shpdict['geometry']['type'] == 'Polygon':
-           blob = Blob(None, 0, 0, '0')
-           coord = shpdict['geometry']['coordinates']
-           outercontourn = coord[0]
-           outpointpixels = changeFormatInv([outercontourn], transform)
-           blob.createFromClosedCurve([np.asarray(outpointpixels)])
-           for i in range(1, len(coord)):
-               innercontourn_i = coord[i]
-               innerpointpixels_i = changeFormatInv([innercontourn_i], transform)
-               innerblob = Blob(None, 0, 0, '0')
-               innerblob.createFromClosedCurve([np.asarray(innerpointpixels_i)])
-               (mask, box) = subtract(blob.getMask(), blob.bbox, innerblob.getMask(), innerblob.bbox)
-               if mask.any():
-                   blob.updateUsingMask(box, mask.astype(int))
-           blobList.append(blob)
-           # The attribute field can be empty
-           properties = shpdict['properties']
-           if Data.empty:
-            Data = pd.DataFrame.from_dict([properties])
-           else:
-            data = pd.DataFrame.from_dict([properties])
-            Data = Data.append(data, ignore_index=True)
+    # blobList = []
+    # Data = pd.DataFrame()
+    #
+    #
+    # for feat in layer:
+    #     # shpdict= ast.literal_eval(feat.ExportToJson())
+    #     shpdict =json.loads(feat.ExportToJson())
+    #     if shpdict['geometry']['type'] == 'Polygon':
+    #        blob = Blob(None, 0, 0, '0')
+    #        coord = shpdict['geometry']['coordinates']
+    #        outercontourn = coord[0]
+    #        outpointpixels = changeFormatInv([outercontourn], transform)
+    #        blob.createFromClosedCurve([np.asarray(outpointpixels)])
+    #        for i in range(1, len(coord)):
+    #            innercontourn_i = coord[i]
+    #            innerpointpixels_i = changeFormatInv([innercontourn_i], transform)
+    #            innerblob = Blob(None, 0, 0, '0')
+    #            innerblob.createFromClosedCurve([np.asarray(innerpointpixels_i)])
+    #            (mask, box) = subtract(blob.getMask(), blob.bbox, innerblob.getMask(), innerblob.bbox)
+    #            if mask.any():
+    #                blob.updateUsingMask(box, mask.astype(int))
+    #        blobList.append(blob)
 
-
-    return blobList, Data
+    #        # The attribute field can be empty
+    #        properties = shpdict['properties']
+    #        if Data.empty:
+    #         Data = pd.DataFrame.from_dict([properties])
+    #        else:
+    #         data = pd.DataFrame.from_dict([properties])
+    #         Data = Data.append(data, ignore_index=True)
+    #
+    #     elif shpdict['geometry']['type'] == 'Point':
+    #          coord = shpdict['geometry']['coordinates']
+    #          #not integers
+    #          coord_= changeFormatInvPoint(coord, transform)
+    #
+    #          properties = shpdict['properties']
+    #          if Data.empty:
+    #              Data = pd.DataFrame.from_dict([properties])
+    #          else:
+    #              data = pd.DataFrame.from_dict([properties])
+    #              Data = Data.append(data, ignore_index=True)
+    #
+    #
+    # return blobList, Data
 
 
 
