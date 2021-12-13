@@ -186,7 +186,7 @@ if osused != 'Windows':
 install_requires = [
     'wheel',
     'pyqt5',
-    'scikit-image',
+    'scikit-image==0.18',
     'scikit-learn',
     'pandas',
     'opencv-python',
