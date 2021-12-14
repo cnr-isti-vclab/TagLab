@@ -44,6 +44,7 @@ class QtPanelInfo(QTabWidget):
                 row += 1
                 col = 0
 
+        layout.setRowStretch(layout.rowCount(), 1)
         widget = QWidget()
         widget.setLayout(layout)
         return widget
@@ -93,7 +94,7 @@ class QtPanelInfo(QTabWidget):
 
         layout.addWidget(QLabel("Notes:"), row, 0)
         note = self.fields['note'] = QTextEdit()
-        note.setMaximumHeight(100)
+        note.setMaximumHeight(50)
         note.textChanged.connect(self.updateNotes)
         layout.addWidget(note, row+1, 0, 1, 2)
         return widget

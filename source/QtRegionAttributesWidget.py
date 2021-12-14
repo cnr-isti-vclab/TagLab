@@ -361,6 +361,8 @@ class QtRegionAttributesWidget(QWidget):
 
         self.region_attributes.data.append(field)
         self.appendField(field)
+        self.clearField()
+
 
     @pyqtSlot()
     def updateField(self):
