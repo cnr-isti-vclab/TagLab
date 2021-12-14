@@ -491,10 +491,10 @@ class Annotation(QObject):
                 col = region.coords[0, 1]
                 color = label_map[row, col]
 
-                for label in labels_dictionary.keys():
-                    c = label.fill
+                for key in labels_dictionary.keys():
+                    c = labels_dictionary[key].fill
                     if c[0] == color[0] and c[1] == color[1] and c[2] == color[2]:
-                        blob.class_name = label.name
+                        blob.class_name = labels_dictionary[key].name
                         break
                 if create_holes or blob.class_name is not 'Empty':
                     created_blobs.append(blob)
