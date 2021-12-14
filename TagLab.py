@@ -3743,6 +3743,7 @@ class TagLab(QMainWindow):
 
         if self.prev_area is not None:
             classifier_selected = self.classifierWidget.selected()
+            checkColor = self.classifierWidget.chkAutolevel.isChecked()
             target_scale_factor = classifier_selected['Scale']
 
             # free GPU memory
@@ -3765,7 +3766,7 @@ class TagLab(QMainWindow):
             self.progress_bar.setProgress(0.0)
             QApplication.processEvents()
 
-            self.classifier.run(1026, 513, 256, save_scores=True)
+            self.classifier.run(1026, 513, 256, save_scores=True, autolevel = checkColor)
             self.classifier.loadScores()
             self.showScores()
 
@@ -3861,6 +3862,7 @@ class TagLab(QMainWindow):
         if self.classifierWidget:
 
             classifier_selected = self.classifierWidget.selected()
+            checkcolor = self.classifierWidget.chkAutolevel.isChecked()
 
             # free GPU memory
             self.resetNetworks()
@@ -3908,7 +3910,7 @@ class TagLab(QMainWindow):
                 # runs the classifier
                 self.infoWidget.setInfoMessage("Automatic classification is running..")
 
-                self.classifier.run(1026, 513, 256)
+                self.classifier.run(1026, 513, 256, save_scores=False, autolevel=checkcolor)
 
                 if self.classifier.flagStopProcessing is False:
 

@@ -254,3 +254,38 @@ def qimageToNumpyArray(qimg):
     arr[:, :, 2] = arrtemp[:, :, 0]
 
     return arr
+
+def autolevel(img, percent):
+
+    '''
+       Determine the histogram for each RGB channel and find the quantiles that correspond to our desired saturation level
+       Cut off the outlying values by saturating a certain percentage of the pixels to black and white
+       Scale the saturated histogram to span the full 0-255 range
+    '''
+
+    out_channels = []
+    # mask background (it can be black or white)
+    maskblack = ~ (np.any(img == [0, 0, 0], axis=-1))
+    maskwhite = ~ (np.any(img == [255, 255, 255], axis=-1))
+    mask = ((maskblack & maskwhite)).astype(np.uint8) * 255
+    numpx= cv2.countNonZero(mask)
+    cumstops = (
+       numpx * percent / 200.0,
+       numpx * (1 - percent / 200.0)
+    )
+
+    for channel in cv2.split(img):
+        cumhist = np.cumsum(cv2.calcHist([channel], [0], mask, [256], (0, 256)))
+        # find indices about where insert cumstops in cumhist mantaining the order
+        low_cut, high_cut = np.searchsorted(cumhist, cumstops)
+        high_cut = min(high_cut,255)
+        # saturate below the low percentile and above the high percentile, lut apply a color mapping to the image
+        lut = np.concatenate((
+            np.zeros(low_cut),
+            np.around(np.linspace(0, 255, high_cut - low_cut + 1)),
+            255 * np.ones(255 - high_cut)
+        ))
+        #apply the colormap for each channel
+        out_channels.append(cv2.LUT(channel, lut.astype('uint8')))
+
+    return cv2.merge(out_channels)

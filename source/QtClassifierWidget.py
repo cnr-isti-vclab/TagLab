@@ -21,7 +21,7 @@ import os
 
 from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QPainter, QImage, QPixmap, QIcon, qRgb, qRed, qGreen, qBlue
-from PyQt5.QtWidgets import QSlider,QGroupBox, QWidget, QDialog, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
+from PyQt5.QtWidgets import QSlider,QGroupBox, QCheckBox,  QWidget, QDialog, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
 from source.Annotation import Annotation
 
 from source import utils
@@ -112,11 +112,15 @@ class QtClassifierWidget(QWidget):
         self.btnChooseArea = QPushButton()
         ChooseAreaIcon = QIcon("icons\\select_area.png")
         self.btnChooseArea.setIcon(ChooseAreaIcon)
+        self.chkAutolevel = QCheckBox("Autocolor")
         self.btnPrev = QPushButton("Preview")
+
 
         layoutButtons = QHBoxLayout()
         layoutButtons.setAlignment(Qt.AlignLeft)
         layoutButtons.addWidget(self.btnChooseArea)
+        layoutButtons.addWidget(self.chkAutolevel)
+        self.chkAutolevel.stateChanged.connect(self.useAutoLevel)
         layoutButtons.addWidget(self.btnPrev)
 
         self.LABEL_SIZE = 600
@@ -191,7 +195,7 @@ class QtClassifierWidget(QWidget):
 
         self.groupPrew = QGroupBox("Check Classifier Prediction")
         self.groupPrew.setLayout(layoutPreview)
-        #self.groupPrew.hide()
+        # self.groupPrew.hide()
 
         self.btnCancel = QPushButton("Cancel")
         self.btnCancel.clicked.connect(self.close)
@@ -220,6 +224,21 @@ class QtClassifierWidget(QWidget):
 
         self.rgb_image = None
         self.labelimage = None
+
+    @pyqtSlot(int)
+    def useAutoLevel(self, state):
+
+        if state == 0:
+            self.setRGBPreview(self.rgb_image)
+        else:
+            color_rgb = self.rgb_image.convertToFormat(QImage.Format_RGB32)
+            color_rgb = utils.qimageToNumpyArray(color_rgb)
+            color_rgb = utils.autolevel(color_rgb, 1.0)
+            color_rgb_qimage = utils.rgbToQImage(color_rgb)
+            self.QPixmapRGB = QPixmap.fromImage(color_rgb_qimage)
+            size = self.LABEL_SIZE
+            self.QlabelRGB.setPixmap(self.QPixmapRGB.scaled(QSize(size, size), Qt.KeepAspectRatio))
+
 
     def setRGBPreview(self, image):
 
