@@ -87,7 +87,7 @@ class QtPanelInfo(QTabWidget):
                 min = attribute['max']
                 if min is None:
                      min = -1e20
-                input.setMinimum(attribute['min'])
+                input.setMinimum(min)
                 input.valueChanged.connect(lambda value, name = name: self.assign(value, name))
 
             elif attribute['type'] == 'boolean':

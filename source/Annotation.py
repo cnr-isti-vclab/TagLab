@@ -496,68 +496,73 @@ class Annotation(QObject):
                     if c[0] == color[0] and c[1] == color[1] and c[2] == color[2]:
                         blob.class_name = labels_dictionary[key].name
                         break
-                if create_holes or blob.class_name is not 'Empty':
+                if create_holes or blob.class_name != 'Empty':
                     created_blobs.append(blob)
 
         return created_blobs
 
 
-    def export_data_table_for_Scripps(self, scale_factor, filename):
+    def export_data_table_for_Scripps(self, project, image,  filename):
 
-        # create a list of properties
-        properties = ['Blob id','Class name', 'Centroid x', 'Centroid y', 'Coral area', 'Coral surf area', 'Genet id', 'Coral perimeter', 'Coral note']
-
+        scale_factor = image.pixelSize()
+        
         # create a list of instances
         name_list = []
         visible_blobs = []
         for blob in self.seg_blobs:
-
             if blob.qpath_gitem.isVisible():
                 index = blob.blob_name
                 name_list.append(index)
                 visible_blobs.append(blob)
 
         number_of_seg = len(name_list)
-        class_name = []
-        blob_id = np.zeros(number_of_seg, int)
-        genet_id = np.zeros(number_of_seg, int)
-        centroid_x = np.zeros(number_of_seg)
-        centroid_y = np.zeros(number_of_seg)
-        coral_area = np.zeros(number_of_seg)
-        coral_surf_area = np.zeros(number_of_seg)
-        coral_perimeter = np.zeros(number_of_seg)
-        coral_note = []
 
+
+        dict = {
+            'Blob id' : np.zeros(number_of_seg, int),
+            'Class name': [],
+            'Genet id': np.zeros(number_of_seg, int),
+            'Centroid x': np.zeros(number_of_seg),
+            'Centroid y': np.zeros(number_of_seg),
+            'Coral area': np.zeros(number_of_seg),
+            'Coral surf area': np.zeros(number_of_seg),
+            'Coral perimeter': np.zeros(number_of_seg),
+            'Coral note': [] }
+
+        for attribute in project.region_attributes.data:
+            if attribute['type'] in ['string', 'boolean', 'keyword']:
+                dict[attribute['name']] = []
+            elif attribute['type'] == 'number':
+                dict[attribute['name']] = np.zeros(0),
+            
+
+        
         for i, blob in enumerate(visible_blobs):
-
-            blob_id[i] = blob.id
-            class_name.append(blob.class_name)
-            centroid_x[i] = round(blob.centroid[0], 1)
-            centroid_y[i] = round(blob.centroid[1], 1)
-            coral_area[i] = round(blob.area * (scale_factor) * (scale_factor)/ 100,2)
-            coral_perimeter[i] = round(blob.perimeter*scale_factor / 10,1)
-            coral_note.append(blob.note)
-
+            dict['Blob id'][i] = blob.id
+            dict['Class name'].append(blob.class_name)
+            dict['Centroid x'][i] = round(blob.centroid[0], 1)
+            dict['Centroid y'][i] = round(blob.centroid[1], 1)
+            dict['Coral area'][i] = round(blob.area * (scale_factor) * (scale_factor)/ 100,2)
             if blob.surface_area > 0.0:
-               coral_surf_area[i] = round(blob.surface_area * (scale_factor) * (scale_factor) / 100, 2)
+               dict['Coral surf area'][i] = round(blob.surface_area * (scale_factor) * (scale_factor) / 100, 2)
+            dict['Coral perimeter'][i] =  round(blob.perimeter*scale_factor / 10,1)
 
             if blob.genet is not None:
-               genet_id[i] = blob.genet
+               dict['Genet id'][i] = blob.genet
+            dict['Coral note'].append(blob.note)
 
-        # create a dictionary
-        dic = {
-            'Blob id' : blob_id,
-            'Class name': class_name,
-            'Genet id': genet_id,
-            'Centroid x': centroid_x,
-            'Centroid y': centroid_y,
-            'Coral area': coral_area,
-            'Coral surf area': coral_surf_area,
-            'Coral perimeter': coral_perimeter,
-            'Coral note': coral_note}
+
+
+            for attribute in project.region_attributes.data:
+                try:                
+                    value = blob.data[attribute['name']]
+                except:
+                    value = None
+
+                dict[attribute['name']].append(value)
 
         # create dataframe
-        df = pd.DataFrame(dic, columns=properties)
+        df = pd.DataFrame(dict, columns=list(dict.keys()))
         df.to_csv(filename, sep=',', index=False)
 
 

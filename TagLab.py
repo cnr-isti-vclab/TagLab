@@ -3160,7 +3160,9 @@ class TagLab(QMainWindow):
 
         if filename:
 
-            self.activeviewer.annotations.export_data_table_for_Scripps(self.activeviewer.image.pixelSize(), filename)
+            #self.activeviewer.annotations.export_data_table_for_Scripps(self.activeviewer.image.pixelSize(), filename)
+            self.activeviewer.annotations.export_data_table_for_Scripps(self.project, self.activeviewer.image, filename)
+
 
             msgBox = QMessageBox(self)
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
