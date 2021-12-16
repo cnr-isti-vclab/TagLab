@@ -133,7 +133,7 @@ class MapClassifier(QObject):
         self.wa_height = round(h_target - 2*self.padding)
 
 
-    def run(self, TILE_SIZE, AGGREGATION_WINDOW_SIZE, AGGREGATION_STEP, save_scores = False, autolevel = False):
+    def run(self, TILE_SIZE, AGGREGATION_WINDOW_SIZE, AGGREGATION_STEP, save_scores = False, autocolor = False,  autolevel = False):
         """
         :param TILE_SIZE: Base tile. This corresponds to the INPUT SIZE of the network.
         :param AGGREGATION_WINDOW_SIZE: Size of the center window considered for the aggregation.
@@ -184,6 +184,9 @@ class MapClassifier(QObject):
 
 
                         img_np = utils.cropImage(self.input_image, [top, left, TILE_SIZE, TILE_SIZE])
+
+                        if autocolor is True:
+                            img_np = utils.whiteblance(img_np)
 
                         if autolevel is True:
                             img_np = utils.autolevel(img_np, 1.0)

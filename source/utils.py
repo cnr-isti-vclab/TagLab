@@ -289,3 +289,56 @@ def autolevel(img, percent):
         out_channels.append(cv2.LUT(channel, lut.astype('uint8')))
 
     return cv2.merge(out_channels)
+
+
+def whiteblance(img):
+    """  Dynamic threshold algorithm ---- white point detection and white point adjustment
+         Only white point detection is not the same as white point as the perfect reflection algorithm, but is determined by another rule."""
+    #  Read image
+    b, g, r = cv2.split(img)
+    #  Mean is three-channel
+    h, w, c = img.shape
+
+    def con_num(x):
+        if x > 0:
+            return 1
+        if x < 0:
+            return -1
+        if x == 0:
+            return 0
+
+    yuv_img = cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb)
+    #  YUV space
+    (y, u, v) = cv2.split(yuv_img)
+    max_y = np.max(y.flatten())
+    sum_u, sum_v = np.sum(u), np.sum(v)
+    avl_u, avl_v = sum_u / (h * w), sum_v / (h * w)
+    du, dv = np.sum(np.abs(u - avl_u)), np.sum(np.abs(v - avl_v))
+    avl_du, avl_dv = du / (h * w), dv / (h * w)
+    radio = 0.5  #  If the value is too small, the color temperature develops to the pole
+
+    valuekey = np.where((np.abs(u - (avl_u + avl_du * con_num(avl_u))) < radio * avl_du)
+                         | (np.abs(v - (avl_v + avl_dv * con_num(avl_v))) < radio * avl_dv))
+    num_y, yhistogram = np.zeros((h, w)), np.zeros(256)
+    num_y[valuekey] = np.uint8(y[valuekey])
+    yhistogram = np.bincount(np.uint8(num_y[valuekey].flatten()), minlength=256)
+    ysum = len(valuekey[0])
+    Y = 255
+    num, key = 0, 0
+    while Y >= 0:
+        num += yhistogram[Y]
+        if num > 0.001 * ysum:  #  Take the first 0.1% highlights as the calculated value,
+            key = Y
+            break
+        Y = Y - 1
+    sumkey = np.where(num_y > key)
+    sum_b, sum_g, sum_r = np.sum(b[sumkey]), np.sum(g[sumkey]), np.sum(r[sumkey])
+    num_rgb = len(sumkey[0])
+
+    b0 = np.double(b) * int(max_y) / (sum_b / num_rgb)
+    g0 = np.double(g) * int(max_y) / (sum_g / num_rgb)
+    r0 = np.double(r) * int(max_y) / (sum_r / num_rgb)
+
+    output_img = cv2.merge([b0, g0, r0])
+    return output_img
+

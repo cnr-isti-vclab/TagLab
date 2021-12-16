@@ -112,13 +112,16 @@ class QtClassifierWidget(QWidget):
         self.btnChooseArea = QPushButton()
         ChooseAreaIcon = QIcon("icons\\select_area.png")
         self.btnChooseArea.setIcon(ChooseAreaIcon)
-        self.chkAutolevel = QCheckBox("Autocolor")
+        self.chkAutocolor = QCheckBox("Auto color")
+        self.chkAutolevel = QCheckBox("Auto contrast")
         self.btnPrev = QPushButton("Preview")
 
 
         layoutButtons = QHBoxLayout()
         layoutButtons.setAlignment(Qt.AlignLeft)
         layoutButtons.addWidget(self.btnChooseArea)
+        layoutButtons.addWidget(self.chkAutocolor)
+        self.chkAutocolor.stateChanged.connect(self.useAutocolor)
         layoutButtons.addWidget(self.chkAutolevel)
         self.chkAutolevel.stateChanged.connect(self.useAutoLevel)
         layoutButtons.addWidget(self.btnPrev)
@@ -224,6 +227,22 @@ class QtClassifierWidget(QWidget):
 
         self.rgb_image = None
         self.labelimage = None
+
+    # devoseparare state autocolor e state autocontrast
+
+    @pyqtSlot(int)
+    def useAutocolor(self, state):
+
+        if state == 0:
+            self.setRGBPreview(self.rgb_image)
+        else:
+            color_rgb = self.rgb_image.convertToFormat(QImage.Format_RGB32)
+            color_rgb = utils.qimageToNumpyArray(color_rgb)
+            color_rgb = utils.whiteblance(color_rgb)
+            color_rgb_qimage = utils.rgbToQImage(color_rgb)
+            self.QPixmapRGB = QPixmap.fromImage(color_rgb_qimage)
+            size = self.LABEL_SIZE
+            self.QlabelRGB.setPixmap(self.QPixmapRGB.scaled(QSize(size, size), Qt.KeepAspectRatio))
 
     @pyqtSlot(int)
     def useAutoLevel(self, state):
