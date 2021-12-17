@@ -886,7 +886,7 @@ class QtImageViewerPlus(QtImageViewer):
             self.removeBlob(blob)
         self.saveUndo()
 
-    pyqtSlot(str)
+    @pyqtSlot(str)
     def assignClass(self, class_name):
         """
         Assign the given class to the selected blobs.
