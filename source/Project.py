@@ -137,9 +137,14 @@ class Project(object):
 
     def __init__(self, filename=None, labels={}, images=[], correspondences=None,
                  spatial_reference_system=None, metadata={}, image_metadata_template={}, genet={},
-                 dictionary_name="", dictionary_description="", region_attributes={}):
+                 dictionary_name="", dictionary_description="", working_area=None, region_attributes={}):
 
         self.filename = None                                             #filename with path of the project json
+
+        # area of the images where the user annotate the data
+        # NOTE 1: since the images are co-registered the working area is the same for all the images
+        # NOTE 2: the working area is a RECTANGULAR region stored as [top, left, width, height]
+        self.working_area = working_area
 
         self.dictionary_name = dictionary_name
         self.dictionary_description = dictionary_description
@@ -147,6 +152,11 @@ class Project(object):
         self.labels = { key: Label(**value) for key, value in labels.items() }
         if not 'Empty' in self.labels:
             self.labels['Empty'] = Label(id='Empty', name='Empty', description=None, fill=[127, 127, 127], border=[200, 200, 200], visible=True)
+
+        # compatibility with previous TagLab versions (working_area does not exist anymore)
+        for img in images:
+            if img.get("working_area") is not None:
+                img.__delitem__("working_area")
 
         self.images = list(map(lambda img: Image(**img), images))       #list of annotated images
 

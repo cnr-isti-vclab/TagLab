@@ -9,7 +9,7 @@ class Image(object):
     def __init__(self, rect = [0.0, 0.0, 0.0, 0.0],
         map_px_to_mm_factor = 1.0, width = None, height = None, channels = [], id = None, name = None,
         acquisition_date = "",
-        georef_filename = "", workspace = [], metadata = {}, annotations = {}, grid = {}, working_area = []):
+        georef_filename = "", workspace = [], metadata = {}, annotations = {}, grid = {}, export_dataset_area = []):
 
         #we have to select a standanrd enforced!
         #in image standard (x, y, width height)
@@ -31,13 +31,13 @@ class Image(object):
 
         self.channels = list(map(lambda c: Channel(**c), channels))
 
-        self.id = id                              # internal id used in correspondences it will never changes
-        self.name = name                          # a label for an annotated image
-        self.workspace = workspace                # a polygon in spatial reference system
-        self.working_area = working_area          # this is the working area of data exports for training
-        self.acquisition_date = acquisition_date  # acquisition date is mandatory (format YYYY-MM-DD)
-        self.georef_filename = georef_filename    # image file (GeoTiff) contained the georeferencing information
-        self.metadata = metadata                  # this follows image_metadata_template, do we want to allow freedom to add custome values?
+        self.id = id                                    # internal id used in correspondences it will never changes
+        self.name = name                                # a label for an annotated image
+        self.workspace = workspace                      # a polygon in spatial reference system (reserved for future uses)
+        self.export_dataset_area = export_dataset_area  # this is the region exported for training
+        self.acquisition_date = acquisition_date        # acquisition date is mandatory (format YYYY-MM-DD)
+        self.georef_filename = georef_filename          # image file (GeoTiff) contained the georeferencing information
+        self.metadata = metadata                        # this follows image_metadata_template, do we want to allow freedom to add custome values?
 
         if grid:
             self.grid = Grid()

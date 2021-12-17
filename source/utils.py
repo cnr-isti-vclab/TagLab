@@ -317,8 +317,10 @@ def whiteblance(img):
     avl_du, avl_dv = du / (h * w), dv / (h * w)
     radio = 0.5  #  If the value is too small, the color temperature develops to the pole
 
-    valuekey = np.where((np.abs(u - (avl_u + avl_du * con_num(avl_u))) < radio * avl_du)
-                         | (np.abs(v - (avl_v + avl_dv * con_num(avl_v))) < radio * avl_dv))
+    whitemask = (y == 255) & (u == 128) & (v == 128)
+    valuekey = np.where( (np.abs(u - (avl_u + avl_du * con_num(avl_u))) < radio * avl_du)
+                         | (np.abs(v - (avl_v + avl_dv * con_num(avl_v))) < radio * avl_dv)
+                         & ~whitemask)
     num_y, yhistogram = np.zeros((h, w)), np.zeros(256)
     num_y[valuekey] = np.uint8(y[valuekey])
     yhistogram = np.bincount(np.uint8(num_y[valuekey].flatten()), minlength=256)

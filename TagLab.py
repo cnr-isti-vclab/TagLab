@@ -54,6 +54,7 @@ from source.QtMapViewer import QtMapViewer
 from source.QtSettingsWidget import QtSettingsWidget
 from source.QtMapSettingsWidget import QtMapSettingsWidget
 from source.QtScaleWidget import QtScaleWidget
+from source.QtWorkingAreaWidget import QtWorkingAreaWidget
 from source.QtLabelsWidget import QtLabelsWidget
 from source.QtInfoWidget import QtInfoWidget
 from source.QtHelpWidget import QtHelpWidget
@@ -157,6 +158,7 @@ class TagLab(QMainWindow):
 
         self.mapWidget = None
         self.scale_widget = None
+        self.working_area_widget = None
         self.classifierWidget = None
         self.newDatasetWidget = None
         self.editProjectWidget = None
@@ -492,6 +494,7 @@ class TagLab(QMainWindow):
 
         self.filemenu = None
         self.submenuEdit = None
+        self.submenuWorkingArea = None
         self.submenuExport = None
         self.submenuImport = None
         self.editmenu = None
@@ -501,7 +504,7 @@ class TagLab(QMainWindow):
 
         self.setMenuBar(self.createMenuBar())
 
-        viewMenu = self.menuBar().addMenu("&View");
+        viewMenu = self.menuBar().addMenu("&View")
         
         viewMenu.addAction(self.labelsdock.toggleViewAction())
         #viewMenu.addAction(self.infodock.toggleViewAction())
@@ -543,7 +546,7 @@ class TagLab(QMainWindow):
         self.current_image_index = 0
 
         # Graphics Item of the working area
-        self.working_area_rect = None
+        self.export_dataset_rect = None
 
         # Graphis Item of the prev area
         self.prev_area_rect = None
@@ -815,7 +818,7 @@ class TagLab(QMainWindow):
         saveAct.setStatusTip("Save current project")
         saveAct.triggered.connect(self.saveProject)
 
-        saveAsAct = QAction("Save As..", self)
+        saveAsAct = QAction("Save As", self)
         saveAsAct.setShortcut('Ctrl+Alt+S')
         saveAsAct.setStatusTip("Save current project")
         saveAsAct.triggered.connect(self.saveAsProject)
@@ -828,12 +831,19 @@ class TagLab(QMainWindow):
         newMapAct.setStatusTip("Add a new map to the project")
         newMapAct.triggered.connect(self.setMapToLoad)
 
-        ### Project
+        ### PROJECT
+
         createDicAct = QAction("Dictionary Editor...", self)
         createDicAct.triggered.connect(self.createDictionary)
 
         regionAttributesAct = QAction("Region attributes...", self)
         regionAttributesAct.triggered.connect(self.editRegionAttributes)
+
+        setWorkingAreaAct = QAction("Set working area", self)
+        setWorkingAreaAct.triggered.connect(self.setWorkingArea)
+
+        deleteWorkingAreaAct = QAction("Delete working area", self)
+        deleteWorkingAreaAct.triggered.connect(self.deleteWorkingArea)
 
         ### IMPORT
 
@@ -959,12 +969,18 @@ class TagLab(QMainWindow):
         #### PROJECT MENU
 
         self.projectmenu = menubar.addMenu("&Project")
-        self.projectmenu.addAction(createDicAct)
-        self.projectmenu.addAction(regionAttributesAct)
+        self.projectmenu.setStyleSheet(styleMenu)
         self.projectmenu.addAction(newMapAct)
-        self.submenuEdit = self.filemenu.addMenu("Edit Maps info")
+        self.submenuEdit = self.projectmenu.addMenu("Edit Maps info")
         self.submenuEdit.setEnabled(False)
-        #self.projectmenu.addSeparator()
+        self.projectmenu.addSeparator()
+        self.submenuWorkingArea = self.projectmenu.addMenu("Working area")
+        self.submenuWorkingArea.addAction(setWorkingAreaAct)
+        self.submenuWorkingArea.addAction(deleteWorkingAreaAct)
+        self.projectmenu.addSeparator()
+        self.projectmenu.addAction(createDicAct)
+        self.projectmenu.addSeparator()
+        self.projectmenu.addAction(regionAttributesAct)
 
 
         ###### DEM MENU
@@ -974,12 +990,10 @@ class TagLab(QMainWindow):
         calculateSurfaceAreaAct.triggered.connect(self.calculateAreaUsingSlope)
 
         exportClippedRasterAct = QAction("Export Clipped Raster", self)
-        # exportShapefilesAct.setShortcut('Ctrl+??')
         exportClippedRasterAct.setStatusTip("Export a raster clipped using visible annotations")
         exportClippedRasterAct.triggered.connect(self.exportClippedRaster)
 
         switchAct = QAction("Switch RGB/DEM", self)
-        # exportShapefilesAct.setShortcut('Ctrl+??')
         switchAct.setStatusTip("Switch between the image and the DEM")
         switchAct.triggered.connect(self.switch)
 
@@ -1942,6 +1956,7 @@ class TagLab(QMainWindow):
         # RE-INITIALIZATION
 
         self.mapWidget = None
+        self.working_area_widget = None
         self.classifierWidget = None
         self.newDatasetWidget = None
         self.trainYourNetworkWidget = None
@@ -2951,7 +2966,6 @@ class TagLab(QMainWindow):
             self.setProjectTitle(self.project.filename)
             self.save()
 
-
     @pyqtSlot()
     def importAnnotations(self):
         """
@@ -2973,9 +2987,26 @@ class TagLab(QMainWindow):
     def help(self):
 
         help_widget = QtHelpWidget(self)
-        help_widget.setWindowOpacity(0.9)
+        help_widget.setWindowOpacity(0.8)
         help_widget.setWindowModality(Qt.WindowModal)
         help_widget.show()
+
+    @pyqtSlot()
+    def setWorkingArea(self):
+
+        if self.activeviewer is not None:
+            if self.activeviewer.image is not None:
+                self.working_area_widget = QtWorkingAreaWidget(self)
+                self.working_area_widget.show()
+                self.working_area_widget.workingAreaChanged[int, int, int, int].connect(self.updateWorkingArea)
+
+    @pyqtSlot(int,int,int,int)
+    def updateWorkingArea(self, top, left, width, height):
+        pass
+
+    @pyqtSlot()
+    def deleteWorkingArea(self):
+        pass
 
     def setupProgressBar(self):
 
@@ -3279,59 +3310,59 @@ class TagLab(QMainWindow):
         if self.activeviewer is not None:
             if self.newDatasetWidget is None:
 
-                if not self.activeviewer.image.working_area :
-                    self.activeviewer.image.working_area = [0, 0 , self.activeviewer.img_map.width(), self.activeviewer.img_map.height()]
+                if not self.activeviewer.image.export_dataset_area:
+                    self.activeviewer.image.export_dataset_area = [0, 0 , self.activeviewer.img_map.width(), self.activeviewer.img_map.height()]
 
                 annotations = self.activeviewer.annotations
-                self.newDatasetWidget = QtNewDatasetWidget(self.activeviewer.image.working_area, parent=self)
+                self.newDatasetWidget = QtNewDatasetWidget(self.activeviewer.image.export_dataset_area, parent=self)
                 self.newDatasetWidget.setWindowModality(Qt.NonModal)
-                self.newDatasetWidget.btnChooseWorkingArea.clicked.connect(self.enableWorkingArea)
+                self.newDatasetWidget.btnChooseWorkingArea.clicked.connect(self.enableExportDatasetArea)
                 self.newDatasetWidget.btnExport.clicked.connect(self.exportNewDataset)
-                self.newDatasetWidget.btnCancel.clicked.connect(self.disableWorkingArea)
-                self.newDatasetWidget.closed.connect(self.disableWorkingArea)
-                self.activeviewer.tools.tools["WORKINGAREA"].rectChanged.connect(self.updateWorkingArea)
+                self.newDatasetWidget.btnCancel.clicked.connect(self.disableExportDatasetArea)
+                self.newDatasetWidget.closed.connect(self.disableExportDatasetArea)
+                self.activeviewer.tools.tools["WORKINGAREA"].rectChanged.connect(self.updateExportDatasetArea)
 
-            self.showWorkingArea()
+            self.showExportDatasetArea()
             self.newDatasetWidget.show()
 
-    def showWorkingArea(self):
+    def showExportDatasetArea(self):
         """
         Show the working area of the current image.
         """
-        working_area = self.activeviewer.image.working_area
+        export_dataset_area = self.activeviewer.image.export_dataset_area
 
-        if working_area is not None:
+        if export_dataset_area is not None:
             workingAreaStyle = QPen(Qt.magenta, 5, Qt.DashLine)
             workingAreaStyle.setCosmetic(True)
 
-            x = working_area[1]
-            y = working_area[0]
-            w = working_area[2]
-            h = working_area[3]
+            x = export_dataset_area[1]
+            y = export_dataset_area[0]
+            w = export_dataset_area[2]
+            h = export_dataset_area[3]
 
-            if self.working_area_rect is None:
-                self.working_area_rect = self.activeviewer.scene.addRect(x, y, w, h, workingAreaStyle)
-                self.working_area_rect.setZValue(5)
+            if self.export_dataset_rect is None:
+                self.export_dataset_rect = self.activeviewer.scene.addRect(x, y, w, h, workingAreaStyle)
+                self.export_dataset_rect.setZValue(5)
             else:
-                self.working_area_rect.setVisible(True)
-                self.working_area_rect.setRect(x, y, w, h)
+                self.export_dataset_rect.setVisible(True)
+                self.export_dataset_rect.setRect(x, y, w, h)
 
-    def hideWorkingArea(self):
-        self.working_area_rect.setVisible(False)
+    def hideExportDatasetArea(self):
+        self.export_dataset_rect.setVisible(False)
 
     @pyqtSlot(int, int, int, int)
-    def updateWorkingArea(self, x, y, width, height):
+    def updateExportDatasetArea(self, x, y, width, height):
         txt = self.newDatasetWidget.formatWorkingArea(y, x, width, height)
         self.newDatasetWidget.editWorkingArea.setText(txt)
-        self.activeviewer.image.working_area = [y, x, width, height]
+        self.activeviewer.image.export_dataset_area = [y, x, width, height]
         self.showWorkingArea()
 
     @pyqtSlot()
-    def enableWorkingArea(self):
+    def enableExportDatasetArea(self):
         self.activeviewer.setTool("WORKINGAREA")
 
     @pyqtSlot()
-    def disableWorkingArea(self):
+    def disableExportDatasetArea(self):
         self.activeviewer.setTool("MOVE")
         self.hideWorkingArea()
 
@@ -3357,7 +3388,7 @@ class TagLab(QMainWindow):
             new_dataset.convert_colors_to_labels(target_classes, self.project.labels)
             new_dataset.computeFrequencies(target_classes)
             target_scale_factor = self.newDatasetWidget.getTargetScale()
-            new_dataset.workingAreaCropAndRescale(self.activeviewer.image.pixelSize(), target_scale_factor,self.activeviewer.image.working_area)
+            new_dataset.workingAreaCropAndRescale(self.activeviewer.image.pixelSize(), target_scale_factor,self.activeviewer.image.export_dataset_area)
 
             # create training, validation and test areas
 
