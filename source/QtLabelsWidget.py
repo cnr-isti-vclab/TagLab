@@ -102,7 +102,6 @@ class QtLabelsWidget(QWidget):
         self.btnClass.append(btnC)
         self.lineeditClass.append(lbl)
 
-        # btnC.clicked.connect(self.editColor)
         btnV.clicked.connect(self.toggleVisibility)
         lbl.editingFinished.connect(self.editingFinished)
 
@@ -186,34 +185,6 @@ class QtLabelsWidget(QWidget):
 
         lineedit = self.sender()
         lineedit.setReadOnly(True)
-
-    @pyqtSlot()
-    def editColor(self):
-
-        button_clicked = self.sender()
-        key = self.sender().getProperty('key')
-
-        index = self.btnClass.index(button_clicked)
-        label_name = self.lineeditClass[index].text()
-
-        color_dlg = QColorDialog(self)
-
-        color = self.labels[label_name].fill
-        r = color[0]
-        g = color[1]
-        b = color[2]
-        current_color = QColor(r, g, b, 255)
-        color_dlg.setCustomColor(0, current_color)
-
-        selected_color = color_dlg.getColor()
-        r = selected_color.red()
-        g = selected_color.green()
-        b = selected_color.blue()
-
-        self.labels[label_name].fill = [r, g, b]
-
-        style_text = "QPushButton:flat {background-color: rgb(" + str(r) + "," + str(g) + "," + str(b) + "); border: none ;}"
-        button_clicked.setStyleSheet(style_text)
 
     @pyqtSlot()
     def toggleVisibility(self):
