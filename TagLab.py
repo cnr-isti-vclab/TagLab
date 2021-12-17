@@ -582,14 +582,7 @@ class TagLab(QMainWindow):
         self.settings_widget.drawing_settings.borderPenChanged[str, int].connect(self.viewerplus2.setBorderPen)
         self.settings_widget.drawing_settings.selectionPenChanged[str, int].connect(self.viewerplus2.setSelectionPen)
 
-        self.labels_widget.activeLabelChanged.connect(self.viewerplus.setActiveLabel)
-        self.labels_widget.activeLabelChanged.connect(self.viewerplus2.setActiveLabel)
-
-        self.labels_widget.visibilityChanged.connect(self.viewerplus.updateVisibility)
-        self.labels_widget.visibilityChanged.connect(self.viewerplus2.updateVisibility)
-
-        self.labels_widget.doubleClickLabel[str].connect(self.viewerplus.assignClass)
-        self.labels_widget.doubleClickLabel[str].connect(self.viewerplus2.assignClass)
+        self.connectLabelsPanelWithViewers()
 
         self.viewerplus.viewHasChanged[float, float, float].connect(self.viewerplus2.setViewParameters)
         self.viewerplus2.viewHasChanged[float, float, float].connect(self.viewerplus.setViewParameters)
@@ -1122,6 +1115,17 @@ class TagLab(QMainWindow):
                 self.submenuEdit.addAction(editMap)
                 self.submenuEdit.triggered[QAction].connect(self.editMapSettings)
                 self.mapActionList.append(editMap)
+
+    def connectLabelsPanelWithViewers(self):
+
+        self.labels_widget.activeLabelChanged[str].connect(self.viewerplus.setActiveLabel)
+        self.labels_widget.activeLabelChanged[str].connect(self.viewerplus2.setActiveLabel)
+
+        self.labels_widget.visibilityChanged.connect(self.viewerplus.updateVisibility)
+        self.labels_widget.visibilityChanged.connect(self.viewerplus2.updateVisibility)
+
+        self.labels_widget.doubleClickLabel[str].connect(self.viewerplus.assignClass)
+        self.labels_widget.doubleClickLabel[str].connect(self.viewerplus2.assignClass)
 
     @pyqtSlot()
     def settings(self):
@@ -2823,6 +2827,10 @@ class TagLab(QMainWindow):
         """
 
         self.labels_widget = QtLabelsWidget()
+
+        # re-connection
+        self.connectLabelsPanelWithViewers()
+
         self.labels_widget.setLabels(self.project)
         self.scroll_area_labels_panel.setWidget(self.labels_widget)
 

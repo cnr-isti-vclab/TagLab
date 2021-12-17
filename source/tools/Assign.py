@@ -24,7 +24,8 @@ class Assign(Tool):
 
         genets = set()
         for blob in self.viewerplus.selected_blobs:
-            if blob.genet is not None and blob.genet >= 0:
+            if blob.genet is not None \
+                    and blob.genet >= 0:
                 genets.add(blob.genet)
             else:
                 self.viewerplus.setBlobClass(blob, self.active_label)

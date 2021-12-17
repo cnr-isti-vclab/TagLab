@@ -843,7 +843,6 @@ class QtImageViewerPlus(QtImageViewer):
         self.selectionReset.emit()
 
 
-
 #CREATION and DESTRUCTION of BLOBS
     def addBlob(self, blob, selected = False):
         """
@@ -886,10 +885,12 @@ class QtImageViewerPlus(QtImageViewer):
             self.removeBlob(blob)
         self.saveUndo()
 
+    @pyqtSlot(str)
     def assignClass(self, class_name):
         """
         Assign the given class to the selected blobs.
         """
+
         for blob in self.selected_blobs:
             self.project.setBlobClass(self.image, blob, class_name)
             self.undo_data.setBlobClass(blob, class_name)
@@ -903,6 +904,7 @@ class QtImageViewerPlus(QtImageViewer):
 
         if blob.class_name == class_name:
             return
+
         self.undo_data.setBlobClass(blob, class_name)
         self.project.setBlobClass(self.image, blob, class_name)
 
