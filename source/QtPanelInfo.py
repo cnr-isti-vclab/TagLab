@@ -143,7 +143,7 @@ class QtPanelInfo(QTabWidget):
 
         for field in self.fields:
             value = getattr(blob, field)
-            if type(value) == float or type(value) == np.float64:
+            if type(value) == float or type(value) == np.float64 or type(value) == np.float32:
                 value = "{:6.1f}".format(value)
             if type(value) == int:
                 value = str(value)

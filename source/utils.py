@@ -333,7 +333,7 @@ def whiteblance(img):
             key = Y
             break
         Y = Y - 1
-    sumkey = np.where(num_y > key)
+    sumkey = np.where(num_y >= key)
     sum_b, sum_g, sum_r = np.sum(b[sumkey]), np.sum(g[sumkey]), np.sum(r[sumkey])
     num_rgb = len(sumkey[0])
 
