@@ -2202,7 +2202,9 @@ class TagLab(QMainWindow):
     @pyqtSlot()
     def noteChanged(self):
 
-        if len(self.activeviewer.selected_blobs) > 0:
+        if (self.activeviewer is None):
+            return
+        elif len(self.activeviewer.selected_blobs) > 0:
             for blob in self.activeviewer.selected_blobs:
                 blob.note = self.editNote.toPlainText()
 
