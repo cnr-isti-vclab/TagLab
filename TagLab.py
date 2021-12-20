@@ -3324,6 +3324,8 @@ class TagLab(QMainWindow):
 
     @pyqtSlot(int, int, int, int)
     def updateExportDatasetArea(self, x, y, width, height):
+
+        # NOTE: area is in the form of [top, left, width, height]
         self.newDatasetWidget.setAreaToExport(y, x, width, height)
 
     @pyqtSlot()

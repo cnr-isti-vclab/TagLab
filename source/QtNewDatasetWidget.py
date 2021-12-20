@@ -155,6 +155,7 @@ class QtNewDatasetWidget(QWidget):
         self.closed.emit()
 
     def setAreaToExport(self, top, left, width, height):
+
         txt = str(int(left)) + ',' + str(int(top)) + ',' + str(int(width)) + ',' + str(int(height))
         self.area_to_export = [top, left, width, height]
         self.editExportArea.setText(txt)

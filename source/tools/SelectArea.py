@@ -23,12 +23,12 @@ class SelectArea(Tool):
         points = self.pick_points.points
 
         # first point
-        if len(points) == 0:
-            self.pick_points.points.append(np.array([x, y]))
-            self.pick_points.points.append(np.array([x, y]))
-        else:
+        if len(points) != 0:
             self.pick_points.reset()
             self.selected_area_rect = None
+
+        self.pick_points.points.append(np.array([x, y]))
+        self.pick_points.points.append(np.array([x, y]))
 
     def leftReleased(self, x, y):
 
@@ -40,14 +40,27 @@ class SelectArea(Tool):
             self.pick_points.points[1][0] = x
             self.pick_points.points[1][1] = y
 
-            start = self.pick_points.points[0]
-            end = self.pick_points.points[1]
-
             # draw the selected area
             self.drawArea()
 
             # notify that the selected area is changed
-            self.rectChanged.emit(start[0], start[1], end[0] - start[0], end[1] - start[1])
+            x, y, w, h = self.fromPointsToArea()
+            self.rectChanged.emit(x, y, w, h)
+
+    def fromPointsToArea(self):
+        """
+        It transforms the picked points into the selected area.
+        """
+
+        p1 = self.pick_points.points[0]
+        p2 = self.pick_points.points[1]
+
+        x = min(p1[0], p2[0])
+        y = min(p1[1], p2[1])
+        w = abs(p2[0] - p1[0])
+        h = abs(p2[1] - p1[1])
+
+        return x, y, w, h
 
     def setAreaStyle(self, style_name):
 
@@ -64,10 +77,7 @@ class SelectArea(Tool):
 
     def drawArea(self):
 
-        x = self.pick_points.points[0][0]
-        y = self.pick_points.points[0][1]
-        w = self.pick_points.points[1][0] - self.pick_points.points[0][0]
-        h = self.pick_points.points[1][1] - self.pick_points.points[0][1]
+        x, y, w, h = self.fromPointsToArea()
 
         if self.selected_area_rect is None:
             self.selected_area_rect = self.scene.addRect(x, y, w, h, self.area_style)
