@@ -74,6 +74,7 @@ class Tools(object):
 
         self.tools["DEEPEXTREME"].reset()
         self.tools["RITM"].reset()
+        self.tools["SELECTAREA"].reset()
 
         if self.tool == "AUTOCLASS":
             self.corals_classifier.stopProcessing()

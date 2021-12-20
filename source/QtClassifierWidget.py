@@ -28,7 +28,6 @@ from source import utils
 
 class QtClassifierWidget(QWidget):
 
-
     closed = pyqtSignal()
 
     def __init__(self, classifiers, parent=None):
@@ -228,7 +227,23 @@ class QtClassifierWidget(QWidget):
         self.rgb_image = None
         self.labelimage = None
 
-    # devoseparare state autocolor e state autocontrast
+        self.preview_area = [0, 0, 0, 0]
+
+    @pyqtSlot(int, int, int, int)
+    def updatePreviewArea(self, x, y, width, height):
+
+        width = min(2048, width)
+        height = min(2048, height)
+        self.preview_area = [x, y, width, height]
+
+    def getPreviewArea(self):
+
+        x = self.preview_area[0]
+        y = self.preview_area[1]
+        w = self.preview_area[2]
+        h = self.preview_area[3]
+
+        return x, y, w, h
 
     @pyqtSlot(int)
     def useAutocolor(self, state):

@@ -18,6 +18,11 @@ class SelectArea(Tool):
         self.scene = viewerplus.scene
         self.selected_area_rect = None
 
+    def reset(self):
+
+        self.pick_points.reset()
+        self.selected_area_rect = None
+
     def leftPressed(self, x, y, mods):
 
         points = self.pick_points.points

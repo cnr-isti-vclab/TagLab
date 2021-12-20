@@ -545,10 +545,6 @@ class TagLab(QMainWindow):
         # SWITCH IMAGES
         self.current_image_index = 0
 
-        # Working area / export area / preview area ..
-        self.prev_area = None
-        self.prev_area_rect = None
-
         # menu options
         self.mapActionList = []
         self.image2update = None
@@ -3731,46 +3727,42 @@ class TagLab(QMainWindow):
                 self.classifierWidget.btnApply.clicked.connect(self.applyClassifier)
                 self.classifierWidget.setWindowModality(Qt.NonModal)
                 self.classifierWidget.show()
-                self.classifierWidget.btnChooseArea.clicked.connect(self.enablePrevArea)
-                self.classifierWidget.btnCancel.clicked.connect(self.disablePrevArea)
-                self.classifierWidget.closed.connect(self.disablePrevArea)
-                self.classifierWidget.btnPrev.clicked.connect(self.applyPrev)
+                self.classifierWidget.btnChooseArea.clicked.connect(self.enableAreaSelection)
+                self.classifierWidget.btnCancel.clicked.connect(self.disableAreaSelection)
+                self.classifierWidget.closed.connect(self.disableAreaSelection)
+                self.classifierWidget.btnPrev.clicked.connect(self.applyPreview)
                 self.classifierWidget.sliderScores.valueChanged.connect(self.showScores)
-                self.prev_area = None
+                self.activeviewer.tools.tools["SELECTAREA"].setAreaStyle("PREVIEW")
+                self.activeviewer.tools.tools["SELECTAREA"].released.connect(self.cropPreview)
+                self.activeviewer.tools.tools["SELECTAREA"].rectChanged[int, int, int, int].connect(self.classifierWidget.updatePreviewArea)
 
-
-        self.showPrevArea()
         self.classifierWidget.show()
         self.classifierWidget.disableSliders()
 
     @pyqtSlot()
-    def cropPrev(self):
+    def cropPreview(self):
 
         classifier_selected = self.classifierWidget.selected()
         target_scale_factor = classifier_selected['Scale']
         scale_factor = target_scale_factor / self.activeviewer.image.pixelSize()
 
-        prev_area = self.prev_area
-        width = max(513 * scale_factor, prev_area[2])
-        height = max(513 * scale_factor, prev_area[3])
-        crop_image = self.activeviewer.img_map.copy(prev_area[1], prev_area[0], width, height)
+        x, y, w, h = self.classifierWidget.getPreviewArea()
+        width = max(513 * scale_factor, w)
+        height = max(513 * scale_factor, h)
+        crop_image = self.activeviewer.img_map.copy(x, y, width, height)
 
         self.classifierWidget.setRGBPreview(crop_image)
 
-        WA_tool = self.activeviewer.tools.tools["SELECTAREA"]
-        if WA_tool.receivers(WA_tool.released) > 0:
-            WA_tool.released.disconnect()
-        if WA_tool.receivers(WA_tool.rectChanged) > 0:
-            WA_tool.rectChanged.disconnect()
+        self.disableAreaSelection()
 
-        QApplication.setOverrideCursor(Qt.ArrowCursor)
-
-    def applyPrev(self):
+    def applyPreview(self):
         """
         crop selected area and apply preview.
         """
 
-        if self.prev_area is not None:
+        x, y, w, h = self.classifierWidget.getPreviewArea()
+
+        if w > 0 and h > 0:
             classifier_selected = self.classifierWidget.selected()
             checkColor = self.classifierWidget.chkAutocolor.isChecked()
             checkLevel = self.classifierWidget.chkAutolevel.isChecked()
@@ -3789,7 +3781,7 @@ class TagLab(QMainWindow):
             self.progress_bar.setMessage("Initialization..")
 
             self.classifier.setup(self.activeviewer.img_map, self.activeviewer.image.pixelSize(), target_scale_factor,
-                                  working_area=self.prev_area, padding=256)
+                                  working_area=[y, x, w, h], padding=256)
 
             self.progress_bar.showPerc()
             self.progress_bar.setMessage("Classification: ")
@@ -3809,62 +3801,6 @@ class TagLab(QMainWindow):
         tresh = self.classifierWidget.sliderScores.value()/100.0
         outimg = self.classifier.classify(tresh)
         self.classifierWidget.setLabelPreview(outimg)
-
-
-    def showPrevArea(self):
-        """
-       Show the working area of the current image.
-        """
-
-        prev_area = self.prev_area
-
-        if prev_area is not None:
-            workingAreaStyle = QPen(Qt.white, 2, Qt.DashLine)
-            workingAreaStyle.setCosmetic(True)
-
-            x = prev_area[1]
-            y = prev_area[0]
-            w = prev_area[2]
-            h = prev_area[3]
-
-            if self.prev_area_rect is None:
-                self.prev_area_rect = self.activeviewer.scene.addRect(x, y, w, h, workingAreaStyle)
-                self.prev_area_rect.setZValue(5)
-            else:
-                self.prev_area_rect.setRect(x, y, w, h)
-
-
-    @pyqtSlot(int, int, int, int)
-    def updatePrevArea(self, x, y, width, height):
-
-        width = min(2048, width)
-        height = min(2048, height)
-        self.prev_area = [y, x, width, height]
-        self.showPrevArea()
-
-    @pyqtSlot()
-    def enablePrevArea(self):
-        self.activeviewer.setTool("SELECTAREA")
-        self.activeviewer.tools.tools["SELECTAREA"].released.connect(self.cropPrev)
-        self.activeviewer.tools.tools["SELECTAREA"].rectChanged.connect(self.updatePrevArea)
-
-    @pyqtSlot()
-    def disablePrevArea(self):
-        self.prev_area = None
-
-        WA_tool = self.activeviewer.tools.tools["SELECTAREA"]
-        if WA_tool.receivers(WA_tool.released) > 0:
-            WA_tool.released.disconnect()
-        if WA_tool.receivers(WA_tool.rectChanged) > 0:
-            WA_tool.rectChanged.disconnect()
-
-        if self.prev_area_rect is not None:
-            self.activeviewer.scene.removeItem(self.prev_area_rect)
-            self.prev_area_rect = None
-
-        self.setTool("MOVE")
-        self.classifierWidget = None
-
 
     def resetAutomaticClassification(self):
         """
