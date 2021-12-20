@@ -3007,7 +3007,7 @@ class TagLab(QMainWindow):
     def setWorkingArea(self):
 
         # assign the working area to the project
-        x, y, width, heigth = self.working_area_widget.getWorkingArea()
+        x, y, width, height = self.working_area_widget.getWorkingArea()
 
         # NOTE: working area format in Project is [top, left, width, height]
         self.project.working_area = [y, x, width, height]
