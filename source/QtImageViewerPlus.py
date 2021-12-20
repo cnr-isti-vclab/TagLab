@@ -439,7 +439,7 @@ class QtImageViewerPlus(QtImageViewer):
         else:
             self.setContextMenuPolicy(Qt.CustomContextMenu)
 
-        if tool == "WORKINGAREA":
+        if tool == "SELECTAREA":
             QApplication.setOverrideCursor(Qt.CrossCursor)
 
         if tool == "WATERSHED":

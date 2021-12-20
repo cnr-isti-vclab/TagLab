@@ -421,7 +421,7 @@ class TagLab(QMainWindow):
         self.compare_panel.data_table.clicked.connect(self.showConnectionCluster)
 
         self.groupbox_comparison = QGroupBox()
-       # self.groupbox_comparison.setStyleSheet(groupbox_style)
+        # self.groupbox_comparison.setStyleSheet(groupbox_style)
 
         layout_groupbox2 = QVBoxLayout()
         layout_groupbox2.addWidget(self.compare_panel)
@@ -505,7 +505,7 @@ class TagLab(QMainWindow):
         self.setMenuBar(self.createMenuBar())
 
         viewMenu = self.menuBar().addMenu("&View")
-        
+
         viewMenu.addAction(self.labelsdock.toggleViewAction())
         #viewMenu.addAction(self.infodock.toggleViewAction())
         viewMenu.addAction(self.blobdock.toggleViewAction())
@@ -545,12 +545,9 @@ class TagLab(QMainWindow):
         # SWITCH IMAGES
         self.current_image_index = 0
 
-        # Graphics Item of the working area
-        self.export_dataset_rect = None
-
-        # Graphis Item of the prev area
-        self.prev_area_rect = None
+        # Working area / export area / preview area ..
         self.prev_area = None
+        self.prev_area_rect = None
 
         # menu options
         self.mapActionList = []
@@ -593,7 +590,7 @@ class TagLab(QMainWindow):
             f_online_version = urllib.request.urlopen(raw_link)
         except:
             return taglab_offline_version, False
-            
+
         taglab_online_version = f_online_version.read().decode('utf-8')
 
         offline_spl_version = taglab_offline_version.split('.')
@@ -943,7 +940,7 @@ class TagLab(QMainWindow):
         self.filemenu.addAction(saveAct)
         self.filemenu.addAction(saveAsAct)
         self.filemenu.addSeparator()
-        
+
         for i in range(self.maxRecentFiles):
             self.filemenu.addAction(self.recentFileActs[i])
         self.separatorRecentFilesAct = self.filemenu.addSeparator()
@@ -1146,10 +1143,10 @@ class TagLab(QMainWindow):
             if viewer.channel.type != "DEM":
                 channel = viewer.image.getDEMChannel()
                 if channel is None:
-                   box = QMessageBox()
-                   box.setText("DEM not found!")
-                   box.exec()
-                   return
+                    box = QMessageBox()
+                    box.setText("DEM not found!")
+                    box.exec()
+                    return
 
                 viewer.setChannel(channel, switch=True)
             else:
@@ -1277,8 +1274,8 @@ class TagLab(QMainWindow):
         if self.activeviewer.image.grid is not None:
 
             reply = QMessageBox.question(self, self.TAGLAB_VERSION,
-                                     "Would you like to remove the existing <em>grid</em> and create a new one?",
-                                     QMessageBox.Yes | QMessageBox.No)
+                                         "Would you like to remove the existing <em>grid</em> and create a new one?",
+                                         QMessageBox.Yes | QMessageBox.No)
             if reply == QMessageBox.No:
                 self.btnCreateGrid.setChecked(False)
                 return
@@ -1372,8 +1369,8 @@ class TagLab(QMainWindow):
 
         if event.key() == Qt.Key_Escape:
             for viewer in (self.viewerplus, self.viewerplus2):
-            #if self.activeviewer is not None:
-            # RESET CURRENT OPERATION
+                #if self.activeviewer is not None:
+                # RESET CURRENT OPERATION
                 viewer.resetSelection()
                 viewer.resetTools()
 
@@ -2191,12 +2188,12 @@ class TagLab(QMainWindow):
             self.deleteMatch()
         #disable delete blobs while creating new ones
         elif self.viewerplus.tools.tool == 'RITM' and self.viewerplus.tools.tools['RITM'].work_area_bbox[2] > 0:
-             return False
+            return False
         else:
             self.activeviewer.deleteSelectedBlobs()
             logfile.info("[OP-DELETE] Selected blobs has been DELETED")
 
-#OPERATIONS
+    #OPERATIONS
 
     def assignOperation(self):
         view = self.activeviewer
@@ -2640,7 +2637,7 @@ class TagLab(QMainWindow):
 
 
 
-#REFACTOR call create a new project and treplace the old one.
+    #REFACTOR call create a new project and treplace the old one.
 
     @pyqtSlot()
     def newProject(self):
@@ -2653,7 +2650,7 @@ class TagLab(QMainWindow):
         logfile.info("[PROJECT] A new project has been setup.")
         self.groupbox_blobpanel.region_attributes = self.project.region_attributes
 
-        
+
 
     @pyqtSlot()
     def editProject(self):
@@ -2670,7 +2667,7 @@ class TagLab(QMainWindow):
             if self.editProjectWidget.isHidden():
                 self.editProjectWidget.show()
 
- # REFACTOR load project properties
+    # REFACTOR load project properties
     @pyqtSlot()
     def setMapToLoad(self):
 
@@ -2755,7 +2752,7 @@ class TagLab(QMainWindow):
         self.scroll_area_labels_panel.setWidget(self.labels_widget)
 
 
-#REFACTOR
+    #REFACTOR
     @pyqtSlot()
     def setMapProperties(self):
 
@@ -2764,11 +2761,11 @@ class TagLab(QMainWindow):
         try:
 
             image = Image(
-                            map_px_to_mm_factor = self.mapWidget.data["px_to_mm"],
-                            id = self.mapWidget.data['name'],
-                            name = self.mapWidget.data['name'],
-                            acquisition_date=self.mapWidget.data['acquisition_date']
-                          )
+                map_px_to_mm_factor = self.mapWidget.data["px_to_mm"],
+                id = self.mapWidget.data['name'],
+                name = self.mapWidget.data['name'],
+                acquisition_date=self.mapWidget.data['acquisition_date']
+            )
 
             # set RGB map
             rgb_filename = dir.relativeFilePath(self.mapWidget.data['rgb_filename'])
@@ -2798,10 +2795,10 @@ class TagLab(QMainWindow):
     def updateToolStatus(self):
 
         for button in [self.btnMove, self.btnAssign, self.btnEditBorder, self.btnCut, self.btnFreehand,
-            self.btnCreateCrack, self.btnWatershed, self.btnBricksSegmentation, self.btnRuler, self.btnDeepExtreme,
-            self.btnRitm, self.btnAutoClassification, self.btnCreateGrid, self.btnGrid]:
+                       self.btnCreateCrack, self.btnWatershed, self.btnBricksSegmentation, self.btnRuler, self.btnDeepExtreme,
+                       self.btnRitm, self.btnAutoClassification, self.btnCreateGrid, self.btnGrid]:
             button.setEnabled(len(self.project.images) > 0)
-        
+
         for button in [self.btnSplitScreen, self.btnAutoMatch, self.btnMatch]:
             button.setEnabled(len(self.project.images) > 1)
 
@@ -2889,10 +2886,10 @@ class TagLab(QMainWindow):
 
         self.mapWidget.close()
 
-#    def resizeEvent(self, event):
-#        pass
-        #w = self.groupbox_labels.width()
-        #self.mapviewer.setNewWidth(w)
+    #    def resizeEvent(self, event):
+    #        pass
+    #w = self.groupbox_labels.width()
+    #self.mapviewer.setNewWidth(w)
 
     def showImage(self, image):
 
@@ -3055,7 +3052,7 @@ class TagLab(QMainWindow):
         content.setTextFormat(Qt.RichText)
 
         txt = "<b>{:s}</b> <p><a href='http://taglab.isti.cnr.it' style='color: white; font-weight: bold; text-decoration: none'>" \
-              "TagLab</a> was created to support the activity of annotation and extraction of statistical data "\
+              "TagLab</a> was created to support the activity of annotation and extraction of statistical data " \
               "from ortho-images of benthic communities. TagLab is an ongoing project of the " \
               "<a href='http://vcg.isti.cnr.it' style='color: white; font-weight: bold; text-decoration: none'>" \
               "Visual Computing Lab</a>.</p>".format(self.TAGLAB_VERSION)
@@ -3162,7 +3159,7 @@ class TagLab(QMainWindow):
         if shapetype == 'Label':
             blobList = rasterops.read_geometry(self.shapefile_filename, gf, shapetype)
             data = rasterops.read_attributes(self.shapefile_filename)
-            
+
             count = 0
             for blob in blobList:
                 row = data.iloc[count]
@@ -3170,17 +3167,17 @@ class TagLab(QMainWindow):
                 for field in data.columns:
                     if self.project.region_attributes.has(field):
                         blob.data[field] = row[field]
-#                pp = pprint.PrettyPrinter(indent=4)
-#                pp.pprint(blob.contour)
+                #                pp = pprint.PrettyPrinter(indent=4)
+                #                pp.pprint(blob.contour)
                 self.activeviewer.addBlob(blob, selected=False)
             self.activeviewer.saveUndo()
 
         elif shapetype == 'Sampling':
-             blobList = rasterops.read_geometry(self.shapefile_filename, gf, shapetype)
+            blobList = rasterops.read_geometry(self.shapefile_filename, gf, shapetype)
 
         else:
             pass
-        
+
         self.groupbox_blobpanel.updateRegionAttributes(self.project.region_attributes)
         self.shapefile_filename = ""
 
@@ -3316,55 +3313,26 @@ class TagLab(QMainWindow):
                 annotations = self.activeviewer.annotations
                 self.newDatasetWidget = QtNewDatasetWidget(self.activeviewer.image.export_dataset_area, parent=self)
                 self.newDatasetWidget.setWindowModality(Qt.NonModal)
-                self.newDatasetWidget.btnChooseWorkingArea.clicked.connect(self.enableExportDatasetArea)
+                self.newDatasetWidget.btnChooseExportArea.clicked.connect(self.enableExportDatasetArea)
                 self.newDatasetWidget.btnExport.clicked.connect(self.exportNewDataset)
                 self.newDatasetWidget.btnCancel.clicked.connect(self.disableExportDatasetArea)
                 self.newDatasetWidget.closed.connect(self.disableExportDatasetArea)
-                self.activeviewer.tools.tools["WORKINGAREA"].rectChanged.connect(self.updateExportDatasetArea)
+                self.activeviewer.tools.tools["SELECTAREA"].setAreaStyle("EXPORT_DATASET")
+                self.activeviewer.tools.tools["SELECTAREA"].rectChanged.connect(self.updateExportDatasetArea)
 
-            self.showExportDatasetArea()
             self.newDatasetWidget.show()
-
-    def showExportDatasetArea(self):
-        """
-        Show the working area of the current image.
-        """
-        export_dataset_area = self.activeviewer.image.export_dataset_area
-
-        if export_dataset_area is not None:
-            workingAreaStyle = QPen(Qt.magenta, 5, Qt.DashLine)
-            workingAreaStyle.setCosmetic(True)
-
-            x = export_dataset_area[1]
-            y = export_dataset_area[0]
-            w = export_dataset_area[2]
-            h = export_dataset_area[3]
-
-            if self.export_dataset_rect is None:
-                self.export_dataset_rect = self.activeviewer.scene.addRect(x, y, w, h, workingAreaStyle)
-                self.export_dataset_rect.setZValue(5)
-            else:
-                self.export_dataset_rect.setVisible(True)
-                self.export_dataset_rect.setRect(x, y, w, h)
-
-    def hideExportDatasetArea(self):
-        self.export_dataset_rect.setVisible(False)
 
     @pyqtSlot(int, int, int, int)
     def updateExportDatasetArea(self, x, y, width, height):
-        txt = self.newDatasetWidget.formatWorkingArea(y, x, width, height)
-        self.newDatasetWidget.editWorkingArea.setText(txt)
-        self.activeviewer.image.export_dataset_area = [y, x, width, height]
-        self.showWorkingArea()
+        self.newDatasetWidget.setAreaToExport(y, x, width, height)
 
     @pyqtSlot()
     def enableExportDatasetArea(self):
-        self.activeviewer.setTool("WORKINGAREA")
+        self.activeviewer.setTool("SELECTAREA")
 
     @pyqtSlot()
     def disableExportDatasetArea(self):
         self.activeviewer.setTool("MOVE")
-        self.hideWorkingArea()
 
     @pyqtSlot()
     def exportNewDataset(self):
@@ -3372,12 +3340,13 @@ class TagLab(QMainWindow):
         if self.activeviewer is not None and self.newDatasetWidget is not None:
 
             QApplication.setOverrideCursor(Qt.WaitCursor)
-
             self.setupProgressBar()
 
             self.progress_bar.hidePerc()
             self.progress_bar.setMessage("Export new dataset (setup)..")
             QApplication.processEvents()
+
+            self.activeviewer.image.export_dataset_area = self.newDatasetWidget.getAreaToExport()
 
             new_dataset = NewDataset(self.activeviewer.img_map, self.activeviewer.annotations.seg_blobs, tile_size=1026, step=513)
 
@@ -3388,7 +3357,8 @@ class TagLab(QMainWindow):
             new_dataset.convert_colors_to_labels(target_classes, self.project.labels)
             new_dataset.computeFrequencies(target_classes)
             target_scale_factor = self.newDatasetWidget.getTargetScale()
-            new_dataset.workingAreaCropAndRescale(self.activeviewer.image.pixelSize(), target_scale_factor,self.activeviewer.image.export_dataset_area)
+            new_dataset.workingAreaCropAndRescale(self.activeviewer.image.pixelSize(), target_scale_factor,
+                                                  self.activeviewer.image.export_dataset_area)
 
             # create training, validation and test areas
 
@@ -3482,14 +3452,14 @@ class TagLab(QMainWindow):
         labels_dir_val = os.path.join(val_folder, "labels")
 
         dataset_train_info, train_loss_values, val_loss_values = training.trainingNetwork(images_dir_train, labels_dir_train,
-                        images_dir_val, labels_dir_val,
-                        self.project.labels, target_classes, num_classes,
-                        save_network_as=network_filename, classifier_name=classifier_name,
-                        epochs=nepochs, batch_sz=batch_size, batch_mult=4, validation_frequency=2,
-                        loss_to_use="FOCAL_TVERSKY", epochs_switch=0, epochs_transition=0,
-                        learning_rate=lr, L2_penalty=L2, tversky_alpha=0.6, tversky_gamma=0.75,
-                        optimiz="ADAM", flag_shuffle=True, flag_training_accuracy=False,
-                        progress=self.progress_bar)
+                                                                                          images_dir_val, labels_dir_val,
+                                                                                          self.project.labels, target_classes, num_classes,
+                                                                                          save_network_as=network_filename, classifier_name=classifier_name,
+                                                                                          epochs=nepochs, batch_sz=batch_size, batch_mult=4, validation_frequency=2,
+                                                                                          loss_to_use="FOCAL_TVERSKY", epochs_switch=0, epochs_transition=0,
+                                                                                          learning_rate=lr, L2_penalty=L2, tversky_alpha=0.6, tversky_gamma=0.75,
+                                                                                          optimiz="ADAM", flag_shuffle=True, flag_training_accuracy=False,
+                                                                                          progress=self.progress_bar)
 
         ##### TEST
 
@@ -3633,13 +3603,13 @@ class TagLab(QMainWindow):
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
 
-#        try:
+        #        try:
         self.project = loadProject(self.taglab_dir, filename, self.default_dictionary)
-#        except Exception as e:
-#            msgBox = QMessageBox()
-#            msgBox.setText("The json project contains an error:\n {0}\n\nPlease contact us.".format(str(e)))
-#            msgBox.exec()
-#            return
+        #        except Exception as e:
+        #            msgBox = QMessageBox()
+        #            msgBox.setText("The json project contains an error:\n {0}\n\nPlease contact us.".format(str(e)))
+        #            msgBox.exec()
+        #            return
 
         QApplication.restoreOverrideCursor()
 
@@ -3769,7 +3739,7 @@ class TagLab(QMainWindow):
 
         self.classifierWidget.setRGBPreview(crop_image)
 
-        WA_tool = self.activeviewer.tools.tools["WORKINGAREA"]
+        WA_tool = self.activeviewer.tools.tools["SELECTAREA"]
         if WA_tool.receivers(WA_tool.released) > 0:
             WA_tool.released.disconnect()
         if WA_tool.receivers(WA_tool.rectChanged) > 0:
@@ -3856,15 +3826,15 @@ class TagLab(QMainWindow):
 
     @pyqtSlot()
     def enablePrevArea(self):
-        self.activeviewer.setTool("WORKINGAREA")
-        self.activeviewer.tools.tools["WORKINGAREA"].released.connect(self.cropPrev)
-        self.activeviewer.tools.tools["WORKINGAREA"].rectChanged.connect(self.updatePrevArea)
+        self.activeviewer.setTool("SELECTAREA")
+        self.activeviewer.tools.tools["SELECTAREA"].released.connect(self.cropPrev)
+        self.activeviewer.tools.tools["SELECTAREA"].rectChanged.connect(self.updatePrevArea)
 
     @pyqtSlot()
     def disablePrevArea(self):
         self.prev_area = None
 
-        WA_tool = self.activeviewer.tools.tools["WORKINGAREA"]
+        WA_tool = self.activeviewer.tools.tools["SELECTAREA"]
         if WA_tool.receivers(WA_tool.released) > 0:
             WA_tool.released.disconnect()
         if WA_tool.receivers(WA_tool.rectChanged) > 0:
@@ -3976,7 +3946,7 @@ class TagLab(QMainWindow):
                     msgBox = QMessageBox()
                     msgBox.setWindowTitle(self.TAGLAB_VERSION)
                     msgBox.setText(
-                    "Automatic classification is finished. TagLab will be close. Please, click ok and save the project.")
+                        "Automatic classification is finished. TagLab will be close. Please, click ok and save the project.")
                     msgBox.exec()
 
                     self.saveAsProject()

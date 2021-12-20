@@ -28,7 +28,7 @@ class QtNewDatasetWidget(QWidget):
 
     closed = pyqtSignal()
 
-    def __init__(self, working_area, parent=None):
+    def __init__(self, export_area, parent=None):
         super(QtNewDatasetWidget, self).__init__(parent)
 
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
@@ -40,9 +40,9 @@ class QtNewDatasetWidget(QWidget):
         self.lblDatasetFolder = QLabel("Dataset folder: ")
         self.lblDatasetFolder.setFixedWidth(TEXT_SPACE)
         self.lblDatasetFolder.setAlignment(Qt.AlignRight)
-        self.lblWorkingArea = QLabel("Working area: ")
-        self.lblWorkingArea.setFixedWidth(TEXT_SPACE)
-        self.lblWorkingArea.setAlignment(Qt.AlignRight)
+        self.lblExportArea = QLabel("Area to export: ")
+        self.lblExportArea.setFixedWidth(TEXT_SPACE)
+        self.lblExportArea.setAlignment(Qt.AlignRight)
 
         self.lblSplitMode = QLabel("Dataset split:")
         self.lblSplitMode.setFixedWidth(TEXT_SPACE)
@@ -55,7 +55,7 @@ class QtNewDatasetWidget(QWidget):
         layoutH0a = QVBoxLayout()
         layoutH0a.setAlignment(Qt.AlignRight)
         layoutH0a.addWidget(self.lblDatasetFolder)
-        layoutH0a.addWidget(self.lblWorkingArea)
+        layoutH0a.addWidget(self.lblExportArea)
         layoutH0a.addWidget(self.lblSplitMode)
         layoutH0a.addWidget(self.lblTargetScale)
 
@@ -64,10 +64,9 @@ class QtNewDatasetWidget(QWidget):
         self.editDatasetFolder = QLineEdit("temp")
         self.editDatasetFolder.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editDatasetFolder.setMinimumWidth(LINEWIDTH)
-        txt = self.formatWorkingArea(working_area[0],working_area[1],working_area[2],working_area[3])
-        self.editWorkingArea = QLineEdit(txt)
-        self.editWorkingArea.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        self.editWorkingArea.setMinimumWidth(LINEWIDTH)
+        self.editExportArea = QLineEdit("")
+        self.editExportArea.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        self.editExportArea.setMinimumWidth(LINEWIDTH)
         self.comboSplitMode = QComboBox()
         self.comboSplitMode.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.comboSplitMode.setFixedWidth(LINEWIDTH)
@@ -79,10 +78,13 @@ class QtNewDatasetWidget(QWidget):
         self.editTargetScale .setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editTargetScale .setMinimumWidth(LINEWIDTH)
 
+        self.area_to_export = [0, 0, 0, 0]
+        self.setAreaToExport(export_area[0], export_area[1], export_area[2], export_area[3])
+
         layoutH0b = QVBoxLayout()
         layoutH0b.setAlignment(Qt.AlignLeft)
         layoutH0b.addWidget(self.editDatasetFolder)
-        layoutH0b.addWidget(self.editWorkingArea)
+        layoutH0b.addWidget(self.editExportArea)
         layoutH0b.addWidget(self.comboSplitMode)
         layoutH0b.addWidget(self.editTargetScale)
 
@@ -92,15 +94,13 @@ class QtNewDatasetWidget(QWidget):
        # self.btnChooseDatasetFolder.setMaximumWidth(20)
         self.btnChooseDatasetFolder.clicked.connect(self.chooseDatasetFolder)
 
-        self.btnChooseWorkingArea = QPushButton()
-        WorkingAreaIcon = QIcon("icons\\select_area.png")
-        self.btnChooseWorkingArea.setIcon(WorkingAreaIcon)
-        # self.btnChooseWorkingArea.setMaximumWidth(20)
-        #self.btnChooseWorkingArea.clicked.connect(self.dragWorkingArea)
+        self.btnChooseExportArea = QPushButton()
+        exportAreaIcon = QIcon("icons\\select_area.png")
+        self.btnChooseExportArea.setIcon(exportAreaIcon)
 
         layoutH0c = QVBoxLayout()
         layoutH0c.addWidget(self.btnChooseDatasetFolder)
-        layoutH0c.addWidget(self.btnChooseWorkingArea)
+        layoutH0c.addWidget(self.btnChooseExportArea)
         layoutH0c.addStretch()
 
         layoutH1 = QHBoxLayout()
@@ -154,9 +154,14 @@ class QtNewDatasetWidget(QWidget):
     def closeEvent(self, event):
         self.closed.emit()
 
-    def formatWorkingArea(self, top, left, width, height):
-        txt = str(int(top)) + ',' + str(int(left)) + ',' + str(int(width)) + ',' + str(int(height))
-        return txt
+    def setAreaToExport(self, top, left, width, height):
+        txt = str(int(left)) + ',' + str(int(top)) + ',' + str(int(width)) + ',' + str(int(height))
+        self.area_to_export = [top, left, width, height]
+        self.editExportArea.setText(txt)
+
+    def getAreaToExport(self):
+
+        return self.area_to_export
 
     def getDatasetFolder(self):
 
