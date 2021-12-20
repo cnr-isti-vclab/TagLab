@@ -53,22 +53,22 @@ class QtWorkingAreaWidget(QWidget):
         self.edit_X = QLineEdit()
         self.edit_X.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_X.setFixedWidth(100)
-        self.edit_X.textChanged.connect(self.notifyAreaChanged)
+        self.edit_X.textChanged[str].connect(self.notifyAreaChanged)
 
         self.edit_Y = QLineEdit()
         self.edit_Y.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_Y.setFixedWidth(100)
-        self.edit_Y.textChanged.connect(self.notifyAreaChanged)
+        self.edit_Y.textChanged[str].connect(self.notifyAreaChanged)
 
         self.edit_W = QLineEdit()
         self.edit_W.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_W.setFixedWidth(100)
-        self.edit_W.textChanged.connect(self.notifyAreaChanged)
+        self.edit_W.textChanged[str].connect(self.notifyAreaChanged)
 
         self.edit_H = QLineEdit()
         self.edit_H.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_H.setFixedWidth(100)
-        self.edit_H.textChanged.connect(self.notifyAreaChanged)
+        self.edit_H.textChanged[str].connect(self.notifyAreaChanged)
 
         layout_h1 = QHBoxLayout()
         layout_h1.addWidget(label_X)
@@ -112,7 +112,7 @@ class QtWorkingAreaWidget(QWidget):
         self.closed.emit()
         super(QtWorkingAreaWidget, self).closeEvent(event)
 
-    @pyqtSlot()
+    @pyqtSlot(str)
     def notifyAreaChanged(self, txt):
 
         try:
