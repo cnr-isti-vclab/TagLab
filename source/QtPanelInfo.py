@@ -78,13 +78,13 @@ class QtPanelInfo(QTabWidget):
             if attribute['type'] == 'string':
                 input = QLineEdit()
                 input.textChanged.connect(lambda text, name = name: self.assign(text, name))
-            elif attribute['type'] == 'number':ReadFromStream
+            elif attribute['type'] == 'number':
                 input = QDoubleSpinBox()
-                max = attribute['max'] if 'max' in attributes.keys() else 1e20
+                max = attribute['max'] if 'max' in attribute.keys() else 1e20
                 if max is None:
                      max = 1e20
                 input.setMaximum(max)
-                min = attribute['min'] if 'max' in attributes.keys() else -1e20 
+                min = attribute['min'] if 'min' in attribute.keys() else -1e20 
                 if min is None:
                      min = -1e20
                 input.setMinimum(min)
