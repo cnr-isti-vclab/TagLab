@@ -72,9 +72,10 @@ class SelectArea(Tool):
         if self.selected_area_rect is None:
             self.selected_area_rect = self.scene.addRect(x, y, w, h, self.area_style)
             self.selected_area_rect.setZValue(6)
+            self.selected_area_rect.setVisible(True)
+
             self.pick_points.markers.append(self.selected_area_rect)
         else:
-            self.selected_area_rect.setVisible(True)
             self.selected_area_rect.setRect(x, y, w, h)
 
 
