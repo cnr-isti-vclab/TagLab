@@ -147,6 +147,8 @@ class QtImageViewerPlus(QtImageViewer):
         self.border_selected_pen = QPen(Qt.white, 3)
         self.border_selected_pen.setCosmetic(True)
 
+        self.working_area_pen = QPen(Qt.white, 3, Qt.DashLine)
+        self.working_area_pen.setCosmetic(True)
 
         self.showCrossair = False
         self.mouseCoords = QPointF(0, 0)
@@ -169,6 +171,9 @@ class QtImageViewerPlus(QtImageViewer):
         self.scalebar_line3 = None
         self.setupScaleBar()
 
+        # working area
+        self.working_area_rect = None
+
     def setProject(self, project):
 
         self.project = project
@@ -183,8 +188,12 @@ class QtImageViewerPlus(QtImageViewer):
         self.selected_blobs = []
         self.selectionChanged.emit()
 
+        # draw all the annotations
         for blob in self.annotations.seg_blobs:
             self.drawBlob(blob)
+
+        # draw the working area (if defined)
+        self.drawWorkingArea()
 
         self.scene.invalidate()
         self.px_to_mm = image.pixelSize()
@@ -306,6 +315,18 @@ class QtImageViewerPlus(QtImageViewer):
         self.scalebar_line.hide()
         self.scalebar_line2.hide()
         self.scalebar_line3.hide()
+
+    def drawWorkingArea(self):
+
+        wa = self.project.working_area  # top, left, width, height
+
+        if wa is not None:
+          if len(wa) == 4 and wa[2] > 0 and wa[3] > 0:
+                if self.working_area_rect is None:
+                    self.working_area_rect = self.scene.addRect(wa[1], wa[0], wa[2], wa[3], self.working_area_pen)
+                    self.working_area_rect.setZValue(6)
+                else:
+                    self.working_area_rect.setRect(wa[1], wa[0], wa[2], wa[3])
 
     def showGrid(self):
 
@@ -764,6 +785,23 @@ class QtImageViewerPlus(QtImageViewer):
 
             for blob in self.selected_blobs:
                 blob.qpath_gitem.setPen(self.border_selected_pen)
+
+    @pyqtSlot(str, int)
+    def setWorkingAreaPen(self, color, thickness):
+
+        self.working_area_pen = QPen(Qt.white, thickness, Qt.DashLine)
+        self.working_area_pen.setCosmetic(True)
+        color_components = color.split("-")
+        if len(color_components) > 2:
+            r = int(color_components[0])
+            g = int(color_components[1])
+            b = int(color_components[2])
+            self.working_area_pen.setColor(QColor(r, g, b))
+
+            self.tools.tools["SELECTAREA"].setWorkingAreaStyle(self.working_area_pen)
+
+            if self.working_area_rect is not None:
+                self.working_area_rect.setPen(self.working_area_pen)
 
     def setBlobVisible(self, blob, visibility):
         if blob.qpath_gitem is not None:

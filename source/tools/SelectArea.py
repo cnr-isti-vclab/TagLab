@@ -67,12 +67,16 @@ class SelectArea(Tool):
 
         return x, y, w, h
 
+    def setWorkingAreaStyle(self, pen):
+
+        self.working_area_style = pen
+
     def setAreaStyle(self, style_name):
 
         if style_name == "WORKING":
-            self.area_style = QPen(Qt.white, 5, Qt.DashLine)
+            self.area_style = self.working_area_style
         elif style_name == "EXPORT_DATASET":
-            self.area_style = QPen(Qt.magenta, 5, Qt.DashLine)
+            self.area_style = QPen(Qt.magenta, 3, Qt.DashLine)
         elif style_name == "PREVIEW":
             self.area_style = QPen(Qt.white, 3, Qt.DotLine)
         else:
