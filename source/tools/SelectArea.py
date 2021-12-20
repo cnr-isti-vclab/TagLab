@@ -75,6 +75,15 @@ class SelectArea(Tool):
 
         self.area_style.setCosmetic(True)
 
+    @pyqtSlot(int, int, int, int)
+    def setSelectionRectangle(self, x, y, w, h):
+
+        self.pick_points.reset()
+        self.pick_points.points.append(np.array([x, y]))
+        self.pick_points.points.append(np.array([x + w, y + h]))
+        self.selected_area_rect = None
+        self.drawArea()
+
     def drawArea(self):
 
         x, y, w, h = self.fromPointsToArea()

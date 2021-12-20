@@ -837,7 +837,7 @@ class TagLab(QMainWindow):
         regionAttributesAct.triggered.connect(self.editRegionAttributes)
 
         setWorkingAreaAct = QAction("Set working area", self)
-        setWorkingAreaAct.triggered.connect(self.setWorkingArea)
+        setWorkingAreaAct.triggered.connect(self.selectWorkingArea)
 
         deleteWorkingAreaAct = QAction("Delete working area", self)
         deleteWorkingAreaAct.triggered.connect(self.deleteWorkingArea)
@@ -2989,21 +2989,44 @@ class TagLab(QMainWindow):
         help_widget.show()
 
     @pyqtSlot()
-    def setWorkingArea(self):
+    def selectWorkingArea(self):
 
         if self.activeviewer is not None:
             if self.activeviewer.image is not None:
                 self.working_area_widget = QtWorkingAreaWidget(self)
                 self.working_area_widget.show()
-                self.working_area_widget.workingAreaChanged[int, int, int, int].connect(self.updateWorkingArea)
+                self.working_area_widget.closed.connect(self.disableAreaSelection)
+                self.working_area_widget.btnApply.clicked.connect(self.setWorkingArea)
+                selection_tool = self.activeviewer.tools.tools["SELECTAREA"]
+                selection_tool.setAreaStyle("WORKING")
+                selection_tool.rectChanged[int, int, int, int].connect(self.working_area_widget.updateArea)
+                self.working_area_widget.areaChanged[int, int, int, int].connect(selection_tool.setSelectionRectangle)
+                self.enableAreaSelection()
 
-    @pyqtSlot(int,int,int,int)
-    def updateWorkingArea(self, top, left, width, height):
-        pass
+    @pyqtSlot()
+    def setWorkingArea(self):
+
+        # assign the working area to the project
+        x, y, width, heigth = self.working_area_widget.getWorkingArea()
+
+        # NOTE: working area format in Project is [top, left, width, height]
+        self.project.working_area = [y, x, width, height]
+
+        # reset all
+        self.working_area_widget.close()
+        self.working_area_widget = None
 
     @pyqtSlot()
     def deleteWorkingArea(self):
         pass
+
+    @pyqtSlot()
+    def enableAreaSelection(self):
+        self.activeviewer.setTool("SELECTAREA")
+
+    @pyqtSlot()
+    def disableAreaSelection(self):
+        self.activeviewer.setTool("MOVE")
 
     def setupProgressBar(self):
 
@@ -3313,12 +3336,12 @@ class TagLab(QMainWindow):
                 annotations = self.activeviewer.annotations
                 self.newDatasetWidget = QtNewDatasetWidget(self.activeviewer.image.export_dataset_area, parent=self)
                 self.newDatasetWidget.setWindowModality(Qt.NonModal)
-                self.newDatasetWidget.btnChooseExportArea.clicked.connect(self.enableExportDatasetArea)
+                self.newDatasetWidget.btnChooseExportArea.clicked.connect(self.enableAreaSelection)
                 self.newDatasetWidget.btnExport.clicked.connect(self.exportNewDataset)
-                self.newDatasetWidget.btnCancel.clicked.connect(self.disableExportDatasetArea)
-                self.newDatasetWidget.closed.connect(self.disableExportDatasetArea)
+                self.newDatasetWidget.btnCancel.clicked.connect(self.disableAreaSelection)
+                self.newDatasetWidget.closed.connect(self.disableAreaSelection)
                 self.activeviewer.tools.tools["SELECTAREA"].setAreaStyle("EXPORT_DATASET")
-                self.activeviewer.tools.tools["SELECTAREA"].rectChanged.connect(self.updateExportDatasetArea)
+                self.activeviewer.tools.tools["SELECTAREA"].rectChanged[int, int, int, int].connect(self.updateExportDatasetArea)
 
             self.newDatasetWidget.show()
 
@@ -3328,13 +3351,6 @@ class TagLab(QMainWindow):
         # NOTE: area is in the form of [top, left, width, height]
         self.newDatasetWidget.setAreaToExport(y, x, width, height)
 
-    @pyqtSlot()
-    def enableExportDatasetArea(self):
-        self.activeviewer.setTool("SELECTAREA")
-
-    @pyqtSlot()
-    def disableExportDatasetArea(self):
-        self.activeviewer.setTool("MOVE")
 
     @pyqtSlot()
     def exportNewDataset(self):

@@ -18,12 +18,16 @@
 # for more details.
 
 
-from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal
-from PyQt5.QtWidgets import QWidget, QMessageBox, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, \
+from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QWidget, QMessageBox, QSizePolicy, QLineEdit, QLabel, QPushButton, \
     QHBoxLayout, QVBoxLayout
 
 
 class QtWorkingAreaWidget(QWidget):
+
+    areaChanged = pyqtSignal(int, int, int, int)
+    closed = pyqtSignal()
 
     def __init__(self, parent=None):
         super(QtWorkingAreaWidget, self).__init__(parent)
@@ -49,48 +53,44 @@ class QtWorkingAreaWidget(QWidget):
         self.edit_X = QLineEdit()
         self.edit_X.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_X.setFixedWidth(100)
-        self.edit_X.textChanged.connect(self.updateArea)
+        self.edit_X.textChanged.connect(self.notifyAreaChanged)
 
         self.edit_Y = QLineEdit()
         self.edit_Y.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_Y.setFixedWidth(100)
-        self.edit_Y.textChanged.connect(self.updateArea)
+        self.edit_Y.textChanged.connect(self.notifyAreaChanged)
 
         self.edit_W = QLineEdit()
         self.edit_W.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_W.setFixedWidth(100)
-        self.edit_W.textChanged.connect(self.updateArea)
+        self.edit_W.textChanged.connect(self.notifyAreaChanged)
 
         self.edit_H = QLineEdit()
         self.edit_H.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_H.setFixedWidth(100)
-        self.edit_H.textChanged.connect(self.updateArea)
+        self.edit_H.textChanged.connect(self.notifyAreaChanged)
 
         layout_h1 = QHBoxLayout()
-        layout_h1.addWidget(self.label_X)
+        layout_h1.addWidget(label_X)
         layout_h1.addWidget(self.edit_X)
-        layout_h1.addWidget(self.label_Y)
+        layout_h1.addWidget(label_Y)
         layout_h1.addWidget(self.edit_Y)
 
         layout_h2 = QHBoxLayout()
-        layout_h2.addWidget(self.label_X)
-        layout_h2.addWidget(self.edit_X)
-        layout_h2.addWidget(self.label_Y)
-        layout_h2.addWidget(self.edit_Y)
+        layout_h2.addWidget(label_W)
+        layout_h2.addWidget(self.edit_W)
+        layout_h2.addWidget(label_H)
+        layout_h2.addWidget(self.edit_H)
 
         layout_v = QVBoxLayout()
         layout_v.addLayout(layout_h1)
         layout_v.addLayout(layout_h2)
-
-        self.btnSetArea = QPushButton()
-        self.btnSetArea.setIcon(QIcon("icons\\select_area.png"))
 
 
         # Cancel / Apply buttons
         buttons_layout = QHBoxLayout()
         self.btnCancel = QPushButton("Cancel")
         self.btnApply = QPushButton("Apply")
-        self.btnApply.clicked.connect(self.setWorkingArea)
         buttons_layout.setAlignment(Qt.AlignRight)
         buttons_layout.addStretch()
         buttons_layout.addWidget(self.btnCancel)
@@ -100,7 +100,7 @@ class QtWorkingAreaWidget(QWidget):
 
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignLeft)
-        layout.addLayout(area_layout)
+        layout.addLayout(layout_v)
         layout.addLayout(buttons_layout)
         self.setLayout(layout)
 
@@ -108,11 +108,42 @@ class QtWorkingAreaWidget(QWidget):
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint | Qt.WindowStaysOnTopHint)
 
     def closeEvent(self, event):
-        self.closewidget.emit()
-        super(QtScaleWidget, self).closeEvent(event)
+
+        self.closed.emit()
+        super(QtWorkingAreaWidget, self).closeEvent(event)
 
     @pyqtSlot()
-    def updateArea(self):
-        pass
+    def notifyAreaChanged(self, txt):
+
+        try:
+            x = int(self.edit_X.text())
+            y = int(self.edit_Y.text())
+            w = int(self.edit_W.text())
+            h = int(self.edit_H.text())
+
+            self.areaChanged.emit(x, y, w, h)
+        except:
+            pass
+
+
+    @pyqtSlot(int, int, int, int)
+    def updateArea(self, x, y, w, h):
+
+        self.edit_X.setText(str(x))
+        self.edit_Y.setText(str(y))
+        self.edit_W.setText(str(w))
+        self.edit_H.setText(str(h))
+
+    def getWorkingArea(self):
+
+        try:
+            x = int(self.edit_X.text())
+            y = int(self.edit_Y.text())
+            w = int(self.edit_W.text())
+            h = int(self.edit_H.text())
+        except:
+            print("CONVERSION ERROR")
+
+        return x, y, w, h
 
 

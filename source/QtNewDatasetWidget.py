@@ -153,6 +153,7 @@ class QtNewDatasetWidget(QWidget):
 
     def closeEvent(self, event):
         self.closed.emit()
+        super(QtNewDatasetWidget, self).closeEvent(event)
 
     def setAreaToExport(self, top, left, width, height):
 
