@@ -26,15 +26,6 @@
     "Classes": ["Porite","Montipora","Pocillopora","Background"],
 	"Scale": 1.1111,
     "Average Norm.": [0.4433,0.4499,0.4408]
-  },
-  
-      {
-    "Classifier Name": "Pocillopora_Porite_Montipora3",
-    "Weights": "Pocillopora_Porite_Montipora3.net",
-    "Num. Classes": 6,
-    "Classes": ["Porite","Montipora_plate/flabellata","Montipora_crust/patula","Montipora_capitata","Pocillopora","Background"],
-	"Scale": 1.1111,
-    "Average Norm.": [0.4433,0.4499,0.4408]
   }
 ]
 

@@ -88,7 +88,6 @@ class QtClassifierWidget(QWidget):
         self.editScale.setReadOnly(True)
         self.editAvgColor = QLineEdit(self.avgcolor2str(classifiers[0]["Average Norm."]))
         self.editAvgColor.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
-
         self.editAvgColor.setReadOnly(True)
 
         layoutH1b = QVBoxLayout()
