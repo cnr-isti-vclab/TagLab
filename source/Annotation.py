@@ -534,7 +534,7 @@ class Annotation(QObject):
             if attribute['type'] in ['string', 'boolean', 'keyword']:
                 dict[attribute['name']] = []
             elif attribute['type'] == 'number':
-                dict[attribute['name']] = np.zeros(number_of_seg),
+                dict[attribute['name']] = np.zeros(number_of_seg)
             
 
         

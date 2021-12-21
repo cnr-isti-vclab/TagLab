@@ -267,11 +267,11 @@ class QtRegionAttributesWidget(QWidget):
         self.table.setItem(row, 0, QTableWidgetItem(field['name']))
         self.table.setItem(row, 1, QTableWidgetItem(field['type']))
         min = ''
-        if field['min'] != None:
+        if 'min' in field.keys() and field['min'] != None:
             min = str(field['min'])
         self.table.setItem(row, 2, QTableWidgetItem(min))
         max = ''
-        if field['max'] != None:
+        if 'max' in field.keys() and field['max'] != None:
             max = str(field['max'])
         self.table.setItem(row, 3, QTableWidgetItem(max))
 
@@ -279,14 +279,18 @@ class QtRegionAttributesWidget(QWidget):
 
     @pyqtSlot(int, int)
     def selectRow(self, row, column):
+        self.clearField()
+
         if row < 0:
-            self.clearField()
             return
 
         self.table.selectRow(row)
         field = self.region_attributes.data[row]
+
         self.editName.setText(field['name'])
         self.editType.setCurrentText(field['type'])
+        self.updateFieldType()
+
         min = ''
         if field['min'] != None:
             min = str(field['min'])
@@ -296,7 +300,6 @@ class QtRegionAttributesWidget(QWidget):
             max = str(field['max'])
         self.editMax.setText(max)
         self.editValues.setText(' '.join(field['keywords']))
-        self.updateFieldType()
 
     def clearField(self):
         self.editName.setText("")
