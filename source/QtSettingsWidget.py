@@ -149,7 +149,7 @@ class drawingSettingsWidget(QWidget):
 
         self.settings = settings
 
-        self.border_pen_color = "255-255-255"
+        self.border_pen_color = "0-0-0"
         self.selection_pen_color = "255-255-255"
         self.workingarea_pen_color = "255-255-255"
 
@@ -463,15 +463,15 @@ class QtSettingsWidget(QWidget):
         self.settings_widget = QtSettingsWidget()
 
         # 0: autosave is disabled , >0: the project is saved every N seconds
-        self.autosave_interval = self.settings.value("autosave", type=int)
-        self.research_field = self.settings.value("research-field", type=str)
+        self.autosave_interval = self.settings.value("autosave", defaultValue=0, type=int)
+        self.research_field = self.settings.value("research-field", defaultValue="Marine Ecology/Biology", type=str)
 
-        self.selection_pen_color = self.settings.value("selection-pen-color", type=str)
-        self.selection_pen_width = self.settings.value("selection-pen-width", type=int)
-        self.border_pen_color = self.settings.value("border-pen-color", type=str)
-        self.border_pen_width = self.settings.value("border-pen-width", type=int)
-        self.workingarea_pen_color = self.settings.value("workingarea-pen-color", type=str)
-        self.workingarea_pen_width = self.settings.value("workingarea-pen-width", type=int)
+        self.selection_pen_color = self.settings.value("selection-pen-color", defaultValue="255-255-255", type=str)
+        self.selection_pen_width = self.settings.value("selection-pen-width", defaultValue=2, type=int)
+        self.border_pen_color = self.settings.value("border-pen-color", defaultValue="0-0-0", type=str)
+        self.border_pen_width = self.settings.value("border-pen-width", defaultValue=2, type=int)
+        self.workingarea_pen_color = self.settings.value("workingarea-pen-color", defaultValue="0-255-0", type=str)
+        self.workingarea_pen_width = self.settings.value("workingarea-pen-width", defaultValue=3, type=int)
 
         self.general_settings.setResearchField(self.research_field)
         self.general_settings.setAutosaveInterval(self.autosave_interval)
