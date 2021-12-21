@@ -529,11 +529,12 @@ class Annotation(QObject):
             'Coral perimeter': np.zeros(number_of_seg),
             'Coral note': [] }
 
+        #TODO check if attribute name is already in dict.
         for attribute in project.region_attributes.data:
             if attribute['type'] in ['string', 'boolean', 'keyword']:
                 dict[attribute['name']] = []
             elif attribute['type'] == 'number':
-                dict[attribute['name']] = np.zeros(0),
+                dict[attribute['name']] = np.zeros(number_of_seg),
             
 
         
@@ -559,7 +560,11 @@ class Annotation(QObject):
                 except:
                     value = None
 
-                dict[attribute['name']].append(value)
+                if attribute['type'] == 'number':
+                    if value != None:
+                        dict[attribute['name']][i] = value
+                else:
+                    dict[attribute['name']].append(value)
 
         # create dataframe
         df = pd.DataFrame(dict, columns=list(dict.keys()))
