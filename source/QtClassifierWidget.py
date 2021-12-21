@@ -70,26 +70,25 @@ class QtClassifierWidget(QWidget):
         layoutH1a.addWidget(self.lblAvgColor)
         self.lblAvgColor.hide()
 
-        LINEWIDTH = 300
         self.editFilename = QLineEdit(classifiers[0]["Weights"])
         self.editFilename.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
         self.editFilename.setReadOnly(True)
-        self.editFilename.setFixedWidth(LINEWIDTH)
+
         self.editNClasses = QLineEdit(str(classifiers[0]["Num. Classes"]))
         self.editNClasses.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
         self.editNClasses.setReadOnly(True)
-        self.editNClasses.setFixedWidth(LINEWIDTH)
+
         self.editClasses = QLineEdit(self.classes2str(classifiers[0]["Classes"]))
         self.editClasses.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
-        self.editClasses.setFixedWidth(LINEWIDTH)
+
         self.editClasses.setReadOnly(True)
         self.editScale = QLineEdit(str(classifiers[0]["Scale"]))
         self.editScale.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
-        self.editScale.setFixedWidth(LINEWIDTH)
+
         self.editScale.setReadOnly(True)
         self.editAvgColor = QLineEdit(self.avgcolor2str(classifiers[0]["Average Norm."]))
         self.editAvgColor.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
-        self.editAvgColor.setFixedWidth(LINEWIDTH)
+
         self.editAvgColor.setReadOnly(True)
 
         layoutH1b = QVBoxLayout()
@@ -116,6 +115,29 @@ class QtClassifierWidget(QWidget):
         self.btnPrev = QPushButton("Preview")
 
 
+        SLIDER_WIDTH = 200
+
+        self.QlabelThresh = QLabel("Uncertainty Threshold:")
+        self.QlabelThreshValue = QLabel("0.0")
+
+        self.QlabelTransparency = QLabel("Transparency:")
+        self.QlabelTransparencyValue = QLabel("50.0")
+
+        self.sliderTransparency = QSlider(Qt.Horizontal)
+        self.sliderTransparency.setFocusPolicy(Qt.StrongFocus)
+        self.sliderTransparency.setMinimumWidth(SLIDER_WIDTH)
+        self.sliderTransparency.setMinimum(0)
+        self.sliderTransparency.setMaximum(100)
+        self.sliderTransparency.setValue(50)
+        self.sliderTransparency.setTickInterval(20)
+        self.sliderTransparency.setAutoFillBackground(True)
+        self.sliderTransparency.valueChanged.connect(self.sliderTransparencyChanged)
+
+        layoutSliderTransparency = QHBoxLayout()
+        layoutSliderTransparency.addWidget(self.QlabelTransparency)
+        layoutSliderTransparency.addWidget(self.QlabelTransparencyValue)
+        layoutSliderTransparency.addWidget(self.sliderTransparency)
+
         layoutButtons = QHBoxLayout()
         layoutButtons.setAlignment(Qt.AlignLeft)
         layoutButtons.addWidget(self.btnChooseArea)
@@ -124,6 +146,8 @@ class QtClassifierWidget(QWidget):
         layoutButtons.addWidget(self.chkAutolevel)
         self.chkAutolevel.stateChanged.connect(self.useAutoLevel)
         layoutButtons.addWidget(self.btnPrev)
+        layoutButtons.addStretch()
+        layoutButtons.addLayout(layoutSliderTransparency)
 
         self.LABEL_SIZE = 600
 
@@ -142,14 +166,6 @@ class QtClassifierWidget(QWidget):
         layoutTiles.addWidget(self.QlabelRGB)
         layoutTiles.addWidget(self.QlabelPred)
 
-        self.QlabelThresh = QLabel("Uncertainty Threshold:")
-        self.QlabelThreshValue = QLabel("0.0")
-
-        self.QlabelTransparency = QLabel("Transparency:")
-        self.QlabelTransparencyValue = QLabel("50.0")
-
-
-        SLIDER_WIDTH = 200
 
         self.sliderScores = QSlider(Qt.Horizontal)
         self.sliderScores.setFocusPolicy(Qt.StrongFocus)
@@ -165,31 +181,10 @@ class QtClassifierWidget(QWidget):
         layoutSliderScores.addWidget(self.QlabelThreshValue)
         layoutSliderScores.addWidget(self.sliderScores)
 
-        self.sliderTransparency = QSlider(Qt.Horizontal)
-        self.sliderTransparency.setFocusPolicy(Qt.StrongFocus)
-        self.sliderTransparency.setMinimumWidth(SLIDER_WIDTH)
-        self.sliderTransparency.setMinimum(0)
-        self.sliderTransparency.setMaximum(100)
-        self.sliderTransparency.setValue(50)
-        self.sliderTransparency.setTickInterval(20)
-        self.sliderTransparency.setAutoFillBackground(True)
-        self.sliderTransparency.valueChanged.connect(self.sliderTransparencyChanged)
-
-        layoutSliderTransparency = QHBoxLayout()
-        layoutSliderTransparency.addWidget(self.QlabelTransparencyValue)
-        layoutSliderTransparency.addWidget(self.sliderTransparency)
-
-        layoutThreshold = QVBoxLayout()
-        layoutThreshold.setAlignment(Qt.AlignTop)
-        layoutThreshold.addWidget(self.QlabelThresh)
-        layoutThreshold.addLayout(layoutSliderScores)
-        layoutThreshold.setSpacing(20)
-        layoutThreshold.addWidget(self.QlabelTransparency)
-        layoutThreshold.addLayout(layoutSliderTransparency)
 
         layoutPred= QHBoxLayout()
         layoutPred.addLayout(layoutTiles)
-        layoutPred.addLayout(layoutThreshold)
+        # layoutPred.addLayout(layoutThreshold)
 
         layoutPreview = QVBoxLayout()
         layoutPreview.addLayout(layoutButtons)
