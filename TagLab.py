@@ -3416,7 +3416,7 @@ class TagLab(QMainWindow):
 
             basename = self.newDatasetWidget.getDatasetFolder()
             tilename = os.path.splitext(self.activeviewer.image.name)[0]
-            new_dataset.export_tiles(basename=basename, tilename=tilename, labels_info=self.project.labels)
+            new_dataset.export_tiles(basename=basename, tilename=tilename)
 
             # save the target scale factor
             target_scale_factor_file = os.path.join(basename, "target-scale-factor.txt")
@@ -3427,7 +3427,8 @@ class TagLab(QMainWindow):
             self.deleteProgressBar()
             self.deleteNewDatasetWidget()
 
-            self.disableWorkingArea()
+            self.disableAreaSelection()
+
             QApplication.restoreOverrideCursor()
 
     @pyqtSlot()
