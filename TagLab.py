@@ -2897,8 +2897,8 @@ class TagLab(QMainWindow):
             QApplication.setOverrideCursor(Qt.WaitCursor)
 
             self.infoWidget.setInfoMessage("Map is loading..")
-            self.viewerplus.setProject(self.project)
             self.viewerplus.clear()
+            self.viewerplus.setProject(self.project)
             self.viewerplus.setImage(image)
             self.last_image_loaded = image
 

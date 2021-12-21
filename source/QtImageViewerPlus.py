@@ -270,7 +270,7 @@ class QtImageViewerPlus(QtImageViewer):
             self.working_area_rect = None
 
         # undraw and clear current image and channel
-        QtImageViewer.clear()
+        QtImageViewer.clear(self)
         self.image = None
         self.channel = None
 
