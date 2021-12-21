@@ -254,24 +254,34 @@ class QtImageViewerPlus(QtImageViewer):
 
     def clear(self):
 
-        QtImageViewer.clear(self)
+        # clear selection and undo
         self.selected_blobs = []
         self.selectionChanged.emit()
         self.undo_data = Undo()
-        self.hideGrid()
 
+        # undraw all blobs
         for blob in self.annotations.seg_blobs:
             self.undrawBlob(blob)
             del blob
 
+        # clear working area
         if self.working_area_rect is not None:
             self.scene.removeItem(self.working_area_rect)
             self.working_area_rect = None
 
+        # undraw and clear current image and channel
+        QtImageViewer.clear()
         self.image = None
         self.channel = None
 
+        # clear annotation data
         self.annotations = Annotation()
+
+        # TO FIX
+        self.hideGrid()
+
+        # no project is set
+        self.project = None
 
     def setupScaleBar(self):
 
