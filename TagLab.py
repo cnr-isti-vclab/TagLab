@@ -529,8 +529,10 @@ class TagLab(QMainWindow):
 
         self.settings_widget.drawing_settings.borderPenChanged[str, int].connect(self.viewerplus.setBorderPen)
         self.settings_widget.drawing_settings.selectionPenChanged[str, int].connect(self.viewerplus.setSelectionPen)
+        self.settings_widget.drawing_settings.workingAreaPenChanged[str, int].connect(self.viewerplus.setWorkingAreaPen)
         self.settings_widget.drawing_settings.borderPenChanged[str, int].connect(self.viewerplus2.setBorderPen)
         self.settings_widget.drawing_settings.selectionPenChanged[str, int].connect(self.viewerplus2.setSelectionPen)
+        self.settings_widget.drawing_settings.workingAreaPenChanged[str, int].connect(self.viewerplus2.setWorkingAreaPen)
 
         self.connectLabelsPanelWithViewers()
 
@@ -1958,8 +1960,6 @@ class TagLab(QMainWindow):
         self.classifier_name = None
         self.dataset_train_info = None
         self.project = Project()
-        self.viewerplus.setProject(self.project)
-        self.viewerplus2.setProject(self.project)
         self.project.loadDictionary(self.default_dictionary)
         self.last_image_loaded = None
         self.activeviewer = None
@@ -2649,6 +2649,7 @@ class TagLab(QMainWindow):
         self.groupbox_blobpanel.region_attributes = self.project.region_attributes
 
 
+
     @pyqtSlot()
     def editProject(self):
         if self.editProjectWidget is None:
@@ -2897,8 +2898,8 @@ class TagLab(QMainWindow):
             QApplication.setOverrideCursor(Qt.WaitCursor)
 
             self.infoWidget.setInfoMessage("Map is loading..")
-            self.viewerplus.clear()
             self.viewerplus.setProject(self.project)
+            self.viewerplus.clear()
             self.viewerplus.setImage(image)
             self.last_image_loaded = image
 
@@ -3008,6 +3009,11 @@ class TagLab(QMainWindow):
 
         # NOTE: working area format in Project is [top, left, width, height]
         self.project.working_area = [y, x, width, height]
+        self.viewerplus.setProject(self.project)
+        self.viewerplus2.setProject(self.project)
+
+        self.viewerplus.drawWorkingArea()
+        self.viewerplus2.drawWorkingArea()
 
         # reset all
         self.working_area_widget.close()
@@ -3019,11 +3025,13 @@ class TagLab(QMainWindow):
 
     @pyqtSlot()
     def enableAreaSelection(self):
-        self.activeviewer.setTool("SELECTAREA")
+        if self.activeviewer is not None:
+            self.activeviewer.setTool("SELECTAREA")
 
     @pyqtSlot()
     def disableAreaSelection(self):
-        self.activeviewer.setTool("MOVE")
+        if self.activeviewer is not None:
+            self.activeviewer.setTool("MOVE")
 
     def setupProgressBar(self):
 
