@@ -1958,6 +1958,8 @@ class TagLab(QMainWindow):
         self.classifier_name = None
         self.dataset_train_info = None
         self.project = Project()
+        self.viewerplus.setProject(self.project)
+        self.viewerplus2.setProject(self.project)
         self.project.loadDictionary(self.default_dictionary)
         self.last_image_loaded = None
         self.activeviewer = None
@@ -2645,7 +2647,6 @@ class TagLab(QMainWindow):
         self.infoWidget.setInfoMessage("TagLab has been reset. To continue open an existing project or load a map.")
         logfile.info("[PROJECT] A new project has been setup.")
         self.groupbox_blobpanel.region_attributes = self.project.region_attributes
-
 
 
     @pyqtSlot()

@@ -264,6 +264,13 @@ class QtImageViewerPlus(QtImageViewer):
             self.undrawBlob(blob)
             del blob
 
+        if self.working_area_rect is not None:
+            self.scene.removeItem(self.working_area_rect)
+            self.working_area_rect = None
+
+        self.image = None
+        self.channel = None
+
         self.annotations = Annotation()
 
     def setupScaleBar(self):
