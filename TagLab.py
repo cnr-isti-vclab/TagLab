@@ -3212,7 +3212,10 @@ class TagLab(QMainWindow):
                 count += 1
                 for field in data.columns:
                     if self.project.region_attributes.has(field):
-                        blob.data[field] = row[field]
+                        if data.dtypes['Id'] == 'int64':
+                            blob.data[field] = int(row[field])
+                        else:
+                            blob.data[field] = row[field]
                 #                pp = pprint.PrettyPrinter(indent=4)
                 #                pp.pprint(blob.contour)
                 self.activeviewer.addBlob(blob, selected=False)
