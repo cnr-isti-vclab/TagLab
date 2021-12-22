@@ -2993,6 +2993,7 @@ class TagLab(QMainWindow):
             if self.activeviewer.image is not None:
                 if self.working_area_widget is None:
                     self.working_area_widget = QtWorkingAreaWidget(self)
+                    self.working_area_widget.btnChooseArea.clicked.connect(self.enableAreaSelection)
                     self.working_area_widget.closed.connect(self.disableAreaSelection)
                     self.working_area_widget.closed.connect(self.deleteWorkingAreaWidget)
                     self.working_area_widget.btnApply.clicked.connect(self.setWorkingArea)
@@ -3000,9 +3001,12 @@ class TagLab(QMainWindow):
                     selection_tool.setAreaStyle("WORKING")
                     selection_tool.rectChanged[int, int, int, int].connect(self.working_area_widget.updateArea)
                     self.working_area_widget.areaChanged[int, int, int, int].connect(selection_tool.setSelectionRectangle)
+                    if self.project.working_area is not None:
+                        if len(self.project.working_area) == 4:
+                            wa = self.project.working_area
+                            self.working_area_widget.updateArea(wa[1], wa[0], wa[2], wa[3])
 
                 self.working_area_widget.show()
-                self.enableAreaSelection()
 
     @pyqtSlot()
     def deleteWorkingAreaWidget(self):
@@ -3034,7 +3038,10 @@ class TagLab(QMainWindow):
     @pyqtSlot()
     def enableAreaSelection(self):
         if self.activeviewer is not None:
-            self.activeviewer.setTool("SELECTAREA")
+            if self.activeviewer.image is not None:
+                self.activeviewer.setTool("SELECTAREA")
+                image = self.activeviewer.image
+                self.activeviewer.tools.tools["SELECTAREA"].setImageSize(image.width, image.height)
 
     @pyqtSlot()
     def disableAreaSelection(self):

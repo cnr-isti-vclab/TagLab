@@ -82,10 +82,19 @@ class QtWorkingAreaWidget(QWidget):
         layout_h2.addWidget(label_H)
         layout_h2.addWidget(self.edit_H)
 
-        layout_v = QVBoxLayout()
-        layout_v.addLayout(layout_h1)
-        layout_v.addLayout(layout_h2)
+        layout_edits = QVBoxLayout()
+        layout_edits.addLayout(layout_h1)
+        layout_edits.addLayout(layout_h2)
 
+        self.btnChooseArea = QPushButton()
+        self.btnChooseArea.setFixedWidth(40)
+        self.btnChooseArea.setFixedHeight(40)
+        ChooseAreaIcon = QIcon("icons\\select_area.png")
+        self.btnChooseArea.setIcon(ChooseAreaIcon)
+
+        layout_main_horiz = QHBoxLayout()
+        layout_main_horiz.addWidget(self.btnChooseArea)
+        layout_main_horiz.addLayout(layout_edits)
 
         # Cancel / Apply buttons
         buttons_layout = QHBoxLayout()
@@ -100,7 +109,7 @@ class QtWorkingAreaWidget(QWidget):
 
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignLeft)
-        layout.addLayout(layout_v)
+        layout.addLayout(layout_main_horiz)
         layout.addLayout(buttons_layout)
         self.setLayout(layout)
 

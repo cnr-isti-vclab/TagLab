@@ -18,6 +18,9 @@ class SelectArea(Tool):
         self.scene = viewerplus.scene
         self.selected_area_rect = None
 
+        self.image_width = 0
+        self.image_height = 0
+
     def reset(self):
 
         self.pick_points.reset()
@@ -52,6 +55,14 @@ class SelectArea(Tool):
             x, y, w, h = self.fromPointsToArea()
             self.rectChanged.emit(x, y, w, h)
 
+    def setImageSize(self, w, h):
+        """
+        Set the image size to calculate the maximum admissible area of the selection.
+        """
+
+        self.image_width = w
+        self.image_height = h
+
     def fromPointsToArea(self):
         """
         It transforms the picked points into the selected area.
@@ -64,6 +75,15 @@ class SelectArea(Tool):
         y = min(p1[1], p2[1])
         w = abs(p2[0] - p1[0])
         h = abs(p2[1] - p1[1])
+
+        if x < 0:
+            x = 0
+        if y < 0:
+            y = 0
+        if x + w > self.image_width:
+            w = self.image_width - x
+        if y + h > self.image_height:
+            h = self.image_height - y
 
         return x, y, w, h
 
