@@ -345,6 +345,12 @@ class QtImageViewerPlus(QtImageViewer):
                 else:
                     self.working_area_rect.setRect(wa[1], wa[0], wa[2], wa[3])
 
+    def undrawWorkingArea(self):
+
+        if self.working_area_rect is not None:
+            self.scene.removeItem(self.working_area_rect)
+            self.working_area_rect = None
+
     def showGrid(self):
 
         if self.image is not None:

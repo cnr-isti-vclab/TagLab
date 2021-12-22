@@ -3033,7 +3033,10 @@ class TagLab(QMainWindow):
 
     @pyqtSlot()
     def deleteWorkingArea(self):
-        pass
+
+        self.activeviewer.undrawWorkingArea()
+        self.project.working_area = None
+        self.activeviewer.setTool("MOVE")
 
     @pyqtSlot()
     def enableAreaSelection(self):
