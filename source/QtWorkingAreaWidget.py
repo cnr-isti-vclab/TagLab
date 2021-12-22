@@ -47,7 +47,7 @@ class QtWorkingAreaWidget(QWidget):
         label_W = QLabel("Width:")
         label_W.setAlignment(Qt.AlignLeft)
 
-        label_H = QLabel("Width:")
+        label_H = QLabel("Height:")
         label_H.setAlignment(Qt.AlignLeft)
 
         self.edit_X = QLineEdit()
