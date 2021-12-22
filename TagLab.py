@@ -3270,7 +3270,7 @@ class TagLab(QMainWindow):
                     filename += '.png'
 
                 size = QSize(self.activeviewer.image.width, self.activeviewer.image.height)
-                self.activeviewer.annotations.export_image_data_for_Scripps(size, filename, self.project.labels)
+                self.activeviewer.annotations.export_image_data_for_Scripps(size, filename, self.project)
 
                 msgBox = QMessageBox(self)
                 msgBox.setWindowTitle(self.TAGLAB_VERSION)

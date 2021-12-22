@@ -414,7 +414,7 @@ class Annotation(QObject):
     ###########################################################################
     ### IMPORT / EXPORT
 
-    def create_label_map(self, size, labels_dictionary):
+    def create_label_map(self, size, labels_dictionary, working_area):
         """
         Create a label map as a QImage and returns it.
         """
@@ -433,7 +433,7 @@ class Annotation(QObject):
             if blob.class_name == "Empty":
                 rgb = [255, 255, 255]
             else:
-                rgb = labels_dictionary[blob.class_name]
+                rgb = labels_dictionary[blob.class_name].fill
 
             mask = blob.getMask().astype(bool)  # bool is required for bitmask indexing
             box = blob.bbox.copy()  # blob.bbox is top, left, width, height
@@ -455,7 +455,11 @@ class Annotation(QObject):
             subimage[border & samecolor] = [0, 0, 0]
 
         labelimg = utils.rgbToQImage(image)
-        return labelimg
+
+        # FIXME: this is inefficient! The working_area should be used during the drawing.
+        labelimg_cropped = utils.cropQImage(labelimg, working_area)
+
+        return labelimg_cropped
 
     def import_label_map(self, filename, labels_dictionary, w_target, h_target, create_holes=False):
         """
@@ -502,7 +506,7 @@ class Annotation(QObject):
         return created_blobs
 
 
-    def export_data_table_for_Scripps(self, project, image,  filename):
+    def export_data_table_for_Scripps(self, project, image, filename):
 
         scale_factor = image.pixelSize()
         
@@ -571,6 +575,6 @@ class Annotation(QObject):
         df.to_csv(filename, sep=',', index=False)
 
 
-    def export_image_data_for_Scripps(self, size, filename, labels_dictionary):
-        label_map = self.create_label_map(size, labels_dictionary)
+    def export_image_data_for_Scripps(self, size, filename, project):
+        label_map = self.create_label_map(size, labels_dictionary=project.labels, working_area=project.working_area)
         label_map.save(filename, 'png')
