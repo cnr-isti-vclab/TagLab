@@ -3212,7 +3212,9 @@ class TagLab(QMainWindow):
                 count += 1
                 for field in data.columns:
                     if self.project.region_attributes.has(field):
-                        if data.dtypes['Id'] == 'int64':
+                        if row[field] is None:
+                            continue
+                        if data.dtypes[field] == 'int64':
                             blob.data[field] = int(row[field])
                         else:
                             blob.data[field] = row[field]
