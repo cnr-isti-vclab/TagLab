@@ -3739,15 +3739,22 @@ class TagLab(QMainWindow):
                 self.classifierWidget.show()
                 self.classifierWidget.btnChooseArea.clicked.connect(self.enableAreaSelection)
                 self.classifierWidget.btnCancel.clicked.connect(self.disableAreaSelection)
+                self.classifierWidget.btnCancel.clicked.connect(self.deleteClassifierWidget)
                 self.classifierWidget.closed.connect(self.disableAreaSelection)
+                self.classifierWidget.closed.connect(self.deleteClassifierWidget)
                 self.classifierWidget.btnPrev.clicked.connect(self.applyPreview)
                 self.classifierWidget.sliderScores.valueChanged.connect(self.showScores)
                 self.activeviewer.tools.tools["SELECTAREA"].setAreaStyle("PREVIEW")
                 self.activeviewer.tools.tools["SELECTAREA"].released.connect(self.cropPreview)
                 self.activeviewer.tools.tools["SELECTAREA"].rectChanged[int, int, int, int].connect(self.classifierWidget.updatePreviewArea)
 
-        self.classifierWidget.show()
-        self.classifierWidget.disableSliders()
+            self.classifierWidget.show()
+            self.classifierWidget.disableSliders()
+
+    @pyqtSlot()
+    def deleteClassifierWidget(self):
+        del self.classifierWidget
+        self.classifierWidget = None
 
     @pyqtSlot()
     def cropPreview(self):
@@ -3840,12 +3847,12 @@ class TagLab(QMainWindow):
             classifier_selected = self.classifierWidget.selected()
             checkcolor = self.classifierWidget.chkAutocolor.isChecked()
             checklevel = self.classifierWidget.chkAutolevel.isChecked()
+
             # free GPU memory
             self.resetNetworks()
 
             self.classifierWidget.close()
-            del self.classifierWidget
-            self.classifierWidget = None
+            self.deleteClassifierWidget()
 
             self.setupProgressBar()
 
