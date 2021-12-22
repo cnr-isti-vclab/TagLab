@@ -2991,15 +2991,24 @@ class TagLab(QMainWindow):
 
         if self.activeviewer is not None:
             if self.activeviewer.image is not None:
-                self.working_area_widget = QtWorkingAreaWidget(self)
+                if self.working_area_widget is None:
+                    self.working_area_widget = QtWorkingAreaWidget(self)
+                    self.working_area_widget.closed.connect(self.disableAreaSelection)
+                    self.working_area_widget.closed.connect(self.deleteWorkingAreaWidget)
+                    self.working_area_widget.btnApply.clicked.connect(self.setWorkingArea)
+                    selection_tool = self.activeviewer.tools.tools["SELECTAREA"]
+                    selection_tool.setAreaStyle("WORKING")
+                    selection_tool.rectChanged[int, int, int, int].connect(self.working_area_widget.updateArea)
+                    self.working_area_widget.areaChanged[int, int, int, int].connect(selection_tool.setSelectionRectangle)
+
                 self.working_area_widget.show()
-                self.working_area_widget.closed.connect(self.disableAreaSelection)
-                self.working_area_widget.btnApply.clicked.connect(self.setWorkingArea)
-                selection_tool = self.activeviewer.tools.tools["SELECTAREA"]
-                selection_tool.setAreaStyle("WORKING")
-                selection_tool.rectChanged[int, int, int, int].connect(self.working_area_widget.updateArea)
-                self.working_area_widget.areaChanged[int, int, int, int].connect(selection_tool.setSelectionRectangle)
                 self.enableAreaSelection()
+
+    @pyqtSlot()
+    def deleteWorkingAreaWidget(self):
+
+        del self.working_area_widget
+        self.working_area_widget = None
 
     @pyqtSlot()
     def setWorkingArea(self):
@@ -3015,9 +3024,8 @@ class TagLab(QMainWindow):
         self.viewerplus.drawWorkingArea()
         self.viewerplus2.drawWorkingArea()
 
-        # reset all
         self.working_area_widget.close()
-        self.working_area_widget = None
+        self.deleteWorkingAreaWidget()
 
     @pyqtSlot()
     def deleteWorkingArea(self):
