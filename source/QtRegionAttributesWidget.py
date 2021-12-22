@@ -274,7 +274,8 @@ class QtRegionAttributesWidget(QWidget):
         if 'max' in field.keys() and field['max'] != None:
             max = str(field['max'])
         self.table.setItem(row, 3, QTableWidgetItem(max))
-
+        if not 'keywords' in field or field['keywords'] == None:
+            field['keywords'] = []
         self.table.setItem(row, 4, QTableWidgetItem(', '.join(field['keywords'])))
 
     @pyqtSlot(int, int)
