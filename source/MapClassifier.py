@@ -181,15 +181,18 @@ class MapClassifier(QObject):
 
                         top = self.wa_top - DELTA_CROP + row * AGGREGATION_WINDOW_SIZE + i * AGGREGATION_STEP
                         left = self.wa_left - DELTA_CROP + col * AGGREGATION_WINDOW_SIZE + j * AGGREGATION_STEP
-
-
                         img_np = utils.cropImage(self.input_image, [top, left, TILE_SIZE, TILE_SIZE])
 
-                        if autocolor is True:
+                        if autocolor is True and autolevel is False:
                             img_np = utils.whiteblance(img_np)
 
-                        if autolevel is True:
+                        if autolevel is True and autocolor is False:
                             img_np = utils.autolevel(img_np, 1.0)
+
+                        if autolevel is True and autocolor is True:
+                            white = utils.whiteblance(img_np)
+                            white = white.astype(np.uint8)
+                            img_np = utils.autolevel(white, 1.0)
 
                         # if i == 0 and j == 0:
                         #     tilename = "RGB_" + str(row) + "_" + str(col) + ".png"

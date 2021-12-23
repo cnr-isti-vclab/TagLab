@@ -3036,7 +3036,7 @@ class TagLab(QMainWindow):
 
         self.activeviewer.undrawWorkingArea()
         self.project.working_area = None
-        self.activeviewer.setTool("MOVE")
+        self.setTool("MOVE")
 
     @pyqtSlot()
     def enableAreaSelection(self):
@@ -3048,8 +3048,7 @@ class TagLab(QMainWindow):
 
     @pyqtSlot()
     def disableAreaSelection(self):
-        if self.activeviewer is not None:
-            self.activeviewer.setTool("MOVE")
+        self.setTool("MOVE")
 
     def setupProgressBar(self):
 
@@ -3749,6 +3748,8 @@ class TagLab(QMainWindow):
         if self.available_classifiers == "None":
             self.btnAutoClassification.setChecked(False)
         else:
+            self.resetToolbar()
+            self.btnAutoClassification.setChecked(True)
 
             if self.classifierWidget is None:
                 self.classifierWidget = QtClassifierWidget(self.available_classifiers, parent=self)
@@ -3778,6 +3779,7 @@ class TagLab(QMainWindow):
     @pyqtSlot()
     def cropPreview(self):
 
+
         classifier_selected = self.classifierWidget.selected()
         target_scale_factor = classifier_selected['Scale']
         scale_factor = target_scale_factor / self.activeviewer.image.pixelSize()
@@ -3788,7 +3790,8 @@ class TagLab(QMainWindow):
         crop_image = self.activeviewer.img_map.copy(x, y, width, height)
 
         self.classifierWidget.setRGBPreview(crop_image)
-
+        self.classifierWidget.chkAutocolor.setChecked(False)
+        self.classifierWidget.chkAutolevel.setChecked(False)
         self.disableAreaSelection()
 
     def applyPreview(self):
