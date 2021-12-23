@@ -22,7 +22,6 @@ import copy
 import numpy as np
 
 from skimage import measure
-from skimage.util import pad
 from scipy import ndimage as ndi
 from PyQt5.QtGui import QPainterPath, QPolygonF, QImage, QPixmap, qRgba
 from PyQt5.QtCore import QPointF
@@ -232,7 +231,8 @@ class Blob(object):
 
         # we need to pad the mask to avoid to break the contour that touches the borders
         PADDED_SIZE = 4
-        img_padded = pad(mask, (PADDED_SIZE, PADDED_SIZE), mode="constant", constant_values=(0, 0))
+
+        img_padded = np.pad(mask, (PADDED_SIZE, PADDED_SIZE), mode="constant", constant_values=(0, 0))
 
         contours = measure.find_contours(img_padded, 0.6)
         inner_contours = measure.find_contours(img_padded, 0.4)
