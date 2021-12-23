@@ -293,9 +293,14 @@ def autolevel(img, percent):
 
 def whiteblance(img):
     """  Dynamic threshold algorithm ---- white point detection and white point adjustment
-         Only white point detection is not the same as white point as the perfect reflection algorithm, but is determined by another rule."""
+         Note, this algoritm only handles white backgrounds png images.  If you have a white background in a jpg image the algorithm might fail to estimate
+         valid correction values"""
     #  Read image
     b, g, r = cv2.split(img)
+
+    # mask white pixels
+    whitemask = (b > 254) & (g > 254) & (r > 254)
+
     #  Mean is three-channel
     h, w, c = img.shape
 
@@ -310,15 +315,17 @@ def whiteblance(img):
     yuv_img = cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb)
     #  YUV space
     (y, u, v) = cv2.split(yuv_img)
-    max_y = np.max(y.flatten())
+
+    y_masked = y.copy()
+    y_masked[whitemask] = 0
+    max_y = np.max(y_masked.flatten())
+
     sum_u, sum_v = np.sum(u), np.sum(v)
     avl_u, avl_v = sum_u / (h * w), sum_v / (h * w)
     du, dv = np.sum(np.abs(u - avl_u)), np.sum(np.abs(v - avl_v))
     avl_du, avl_dv = du / (h * w), dv / (h * w)
     radio = 0.5  #  If the value is too small, the color temperature develops to the pole
-
-    whitemask = (y == 255) & (u == 128) & (v == 128)
-    valuekey = np.where( (np.abs(u - (avl_u + avl_du * con_num(avl_u))) < radio * avl_du)
+    valuekey = np.where((np.abs(u - (avl_u + avl_du * con_num(avl_u))) < radio * avl_du)
                          | (np.abs(v - (avl_v + avl_dv * con_num(avl_v))) < radio * avl_dv)
                          & ~whitemask)
     num_y, yhistogram = np.zeros((h, w)), np.zeros(256)
@@ -333,6 +340,7 @@ def whiteblance(img):
             key = Y
             break
         Y = Y - 1
+
     sumkey = np.where(num_y >= key)
     sum_b, sum_g, sum_r = np.sum(b[sumkey]), np.sum(g[sumkey]), np.sum(r[sumkey])
     num_rgb = len(sumkey[0])
@@ -342,5 +350,7 @@ def whiteblance(img):
     r0 = np.double(r) * int(max_y) / (sum_r / num_rgb)
 
     output_img = cv2.merge([b0, g0, r0])
+    output_img[whitemask] = [255, 255, 255]
+
     return output_img
 
