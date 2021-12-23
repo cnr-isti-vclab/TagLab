@@ -461,17 +461,19 @@ class Annotation(QObject):
 
         return labelimg_cropped
 
-    def import_label_map(self, filename, labels_dictionary, w_target, h_target, create_holes=False):
+    def import_label_map(self, filename, labels_dictionary, offset, scale, create_holes=False):
         """
         It imports a label map and create the corresponding blobs.
-        The label map is rescaled such that it coincides with the reference map.
+        The offset is stored as a [top, left] coordinates and scale are the scale factors of X and Y axis respectively.
         """
 
         qimg_label_map = QImage(filename)
         qimg_label_map = qimg_label_map.convertToFormat(QImage.Format_RGB32)
 
-        if w_target > 0 and h_target > 0:
-            qimg_label_map = qimg_label_map.scaled(w_target, h_target, Qt.IgnoreAspectRatio, Qt.FastTransformation)
+        # label map rescaling (if necessary)
+        w_target = round(qimg_label_map.width() * scale[0])
+        h_target = round(qimg_label_map.height() * scale[1])
+        qimg_label_map = qimg_label_map.scaled(w_target, h_target, Qt.IgnoreAspectRatio, Qt.FastTransformation)
 
         label_map = utils.qimageToNumpyArray(qimg_label_map)
         label_map = label_map.astype(np.int32)
@@ -484,11 +486,14 @@ class Annotation(QObject):
         too_much_small_area = 50
         region_big = None
 
+        offset_x = offset[1]
+        offset_y = offset[0]
         created_blobs = []
         for region in measure.regionprops(labels):
             if region.area > too_much_small_area:
                 id = len(self.seg_blobs)
-                blob = Blob(region, 0, 0, self.getFreeId())
+
+                blob = Blob(region, offset_x, offset_y, self.getFreeId())
 
                 # assign class
                 row = region.coords[0, 0]
