@@ -3176,17 +3176,13 @@ class TagLab(QMainWindow):
         filters = "Shapefile (*.shp)"
         self.shapefile_filename, _ = QFileDialog.getOpenFileName(self, "Import Shapefile", "", filters)
         QApplication.setOverrideCursor(Qt.WaitCursor)
+
+        if not self.shapefile_filename:
+            QApplication.restoreOverrideCursor()
+            return
         #read only attributes
         data = rasterops.read_attributes(self.shapefile_filename)
         QApplication.restoreOverrideCursor()
-
-        # # errore dovrebbe farti vedere tabella vuota ma lo stesso vedere la shape
-        # if  data.empty:
-        #     msgBox = QMessageBox(self)
-        #     msgBox.setWindowTitle('TagLab')
-        #     msgBox.setText("This shapefile has no attributes")
-        #     msgBox.exec()
-        # else:
 
         self.attribute_widget = QtAttributeWidget(data)
         self.attribute_widget.show()

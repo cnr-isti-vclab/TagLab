@@ -23,6 +23,7 @@ from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QPainter, QImage, QPixmap, QIcon, qRgb, qRed, qGreen, qBlue
 from PyQt5.QtWidgets import QSlider,QGroupBox, QCheckBox,  QWidget, QDialog, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
 from source.Annotation import Annotation
+import numpy as np
 
 from source import utils
 
@@ -223,6 +224,44 @@ class QtClassifierWidget(QWidget):
 
         self.preview_area = [0, 0, 0, 0]
 
+    def colorPreview(self):
+
+        if  not self.chkAutocolor.isChecked() and not self.chkAutolevel.isChecked():
+            self.setRGBPreview(self.rgb_image)
+
+        elif self.chkAutocolor.isChecked() and not self.chkAutolevel.isChecked():
+            color_rgb = self.rgb_image.convertToFormat(QImage.Format_RGB32)
+            color_rgb = utils.qimageToNumpyArray(color_rgb)
+            color_rgb = utils.whiteblance(color_rgb)
+            color_rgb_qimage = utils.rgbToQImage(color_rgb)
+            self.QPixmapRGB = QPixmap.fromImage(color_rgb_qimage)
+            size = self.LABEL_SIZE
+            self.QlabelRGB.setPixmap(self.QPixmapRGB.scaled(QSize(size, size), Qt.KeepAspectRatio))
+
+        elif not self.chkAutocolor.isChecked() and self.chkAutolevel.isChecked():
+            color_rgb = self.rgb_image.convertToFormat(QImage.Format_RGB32)
+            color_rgb = utils.qimageToNumpyArray(color_rgb)
+            color_rgb = utils.autolevel(color_rgb, 1.0)
+            color_rgb_qimage = utils.rgbToQImage(color_rgb)
+            self.QPixmapRGB = QPixmap.fromImage(color_rgb_qimage)
+            size = self.LABEL_SIZE
+            self.QlabelRGB.setPixmap(self.QPixmapRGB.scaled(QSize(size, size), Qt.KeepAspectRatio))
+
+        elif self.chkAutocolor.isChecked() and self.chkAutolevel.isChecked():
+
+            #always apply first auto color then autolevel
+            color_rgb = self.rgb_image.convertToFormat(QImage.Format_RGB32)
+            color_rgb = utils.qimageToNumpyArray(color_rgb)
+            #this returns a float64
+            color_rgb = utils.whiteblance(color_rgb)
+            color_rgb = color_rgb.astype(np.uint8)
+            level_rgb = utils.autolevel(color_rgb, 1.0)
+            color_rgb_qimage = utils.rgbToQImage(level_rgb)
+            self.QPixmapRGB = QPixmap.fromImage(color_rgb_qimage)
+            size = self.LABEL_SIZE
+            self.QlabelRGB.setPixmap(self.QPixmapRGB.scaled(QSize(size, size), Qt.KeepAspectRatio))
+
+
     @pyqtSlot(int, int, int, int)
     def updatePreviewArea(self, x, y, width, height):
 
@@ -240,32 +279,13 @@ class QtClassifierWidget(QWidget):
         return x, y, w, h
 
     @pyqtSlot(int)
-    def useAutocolor(self, state):
+    def useAutocolor(self):
+        self.colorPreview()
 
-        if state == 0:
-            self.setRGBPreview(self.rgb_image)
-        else:
-            color_rgb = self.rgb_image.convertToFormat(QImage.Format_RGB32)
-            color_rgb = utils.qimageToNumpyArray(color_rgb)
-            color_rgb = utils.whiteblance(color_rgb)
-            color_rgb_qimage = utils.rgbToQImage(color_rgb)
-            self.QPixmapRGB = QPixmap.fromImage(color_rgb_qimage)
-            size = self.LABEL_SIZE
-            self.QlabelRGB.setPixmap(self.QPixmapRGB.scaled(QSize(size, size), Qt.KeepAspectRatio))
 
     @pyqtSlot(int)
-    def useAutoLevel(self, state):
-
-        if state == 0:
-            self.setRGBPreview(self.rgb_image)
-        else:
-            color_rgb = self.rgb_image.convertToFormat(QImage.Format_RGB32)
-            color_rgb = utils.qimageToNumpyArray(color_rgb)
-            color_rgb = utils.autolevel(color_rgb, 1.0)
-            color_rgb_qimage = utils.rgbToQImage(color_rgb)
-            self.QPixmapRGB = QPixmap.fromImage(color_rgb_qimage)
-            size = self.LABEL_SIZE
-            self.QlabelRGB.setPixmap(self.QPixmapRGB.scaled(QSize(size, size), Qt.KeepAspectRatio))
+    def useAutoLevel(self):
+        self.colorPreview()
 
 
     def setRGBPreview(self, image):

@@ -38,16 +38,20 @@ class QtWorkingAreaWidget(QWidget):
         self.setMinimumWidth(300)
         self.setMinimumHeight(100)
 
-        label_X = QLabel("X:")
-        label_X.setAlignment(Qt.AlignLeft)
+        label_Top = QLabel("Top:")
+        label_Top.setFixedWidth(70)
+        label_Top.setAlignment(Qt.AlignLeft)
 
-        label_Y = QLabel("Y:")
-        label_Y.setAlignment(Qt.AlignLeft)
+        label_Left = QLabel("Left:")
+        label_Left.setFixedWidth(70)
+        label_Left.setAlignment(Qt.AlignLeft)
 
         label_W = QLabel("Width:")
+        label_W.setFixedWidth(70)
         label_W.setAlignment(Qt.AlignLeft)
 
         label_H = QLabel("Height:")
+        label_H.setFixedWidth(70)
         label_H.setAlignment(Qt.AlignLeft)
 
         self.edit_X = QLineEdit()
@@ -71,10 +75,10 @@ class QtWorkingAreaWidget(QWidget):
         self.edit_H.textChanged[str].connect(self.notifyAreaChanged)
 
         layout_h1 = QHBoxLayout()
-        layout_h1.addWidget(label_X)
-        layout_h1.addWidget(self.edit_X)
-        layout_h1.addWidget(label_Y)
+        layout_h1.addWidget(label_Top)
         layout_h1.addWidget(self.edit_Y)
+        layout_h1.addWidget(label_Left)
+        layout_h1.addWidget(self.edit_X)
 
         layout_h2 = QHBoxLayout()
         layout_h2.addWidget(label_W)
@@ -93,6 +97,7 @@ class QtWorkingAreaWidget(QWidget):
         self.btnChooseArea.setIcon(ChooseAreaIcon)
 
         layout_main_horiz = QHBoxLayout()
+        layout_main_horiz.setAlignment(Qt.AlignTop)
         layout_main_horiz.addWidget(self.btnChooseArea)
         layout_main_horiz.addLayout(layout_edits)
 
