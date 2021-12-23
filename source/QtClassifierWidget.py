@@ -226,40 +226,42 @@ class QtClassifierWidget(QWidget):
 
     def colorPreview(self):
 
-        if  not self.chkAutocolor.isChecked() and not self.chkAutolevel.isChecked():
-            self.setRGBPreview(self.rgb_image)
+        if self.rgb_image is not None:
 
-        elif self.chkAutocolor.isChecked() and not self.chkAutolevel.isChecked():
-            color_rgb = self.rgb_image.convertToFormat(QImage.Format_RGB32)
-            color_rgb = utils.qimageToNumpyArray(color_rgb)
-            color_rgb = utils.whiteblance(color_rgb)
-            color_rgb_qimage = utils.rgbToQImage(color_rgb)
-            self.QPixmapRGB = QPixmap.fromImage(color_rgb_qimage)
-            size = self.LABEL_SIZE
-            self.QlabelRGB.setPixmap(self.QPixmapRGB.scaled(QSize(size, size), Qt.KeepAspectRatio))
+            if not self.chkAutocolor.isChecked() and not self.chkAutolevel.isChecked():
+                self.setRGBPreview(self.rgb_image)
 
-        elif not self.chkAutocolor.isChecked() and self.chkAutolevel.isChecked():
-            color_rgb = self.rgb_image.convertToFormat(QImage.Format_RGB32)
-            color_rgb = utils.qimageToNumpyArray(color_rgb)
-            color_rgb = utils.autolevel(color_rgb, 1.0)
-            color_rgb_qimage = utils.rgbToQImage(color_rgb)
-            self.QPixmapRGB = QPixmap.fromImage(color_rgb_qimage)
-            size = self.LABEL_SIZE
-            self.QlabelRGB.setPixmap(self.QPixmapRGB.scaled(QSize(size, size), Qt.KeepAspectRatio))
+            elif self.chkAutocolor.isChecked() and not self.chkAutolevel.isChecked():
+                color_rgb = self.rgb_image.convertToFormat(QImage.Format_RGB32)
+                color_rgb = utils.qimageToNumpyArray(color_rgb)
+                color_rgb = utils.whiteblance(color_rgb)
+                color_rgb_qimage = utils.rgbToQImage(color_rgb)
+                self.QPixmapRGB = QPixmap.fromImage(color_rgb_qimage)
+                size = self.LABEL_SIZE
+                self.QlabelRGB.setPixmap(self.QPixmapRGB.scaled(QSize(size, size), Qt.KeepAspectRatio))
 
-        elif self.chkAutocolor.isChecked() and self.chkAutolevel.isChecked():
+            elif not self.chkAutocolor.isChecked() and self.chkAutolevel.isChecked():
+                color_rgb = self.rgb_image.convertToFormat(QImage.Format_RGB32)
+                color_rgb = utils.qimageToNumpyArray(color_rgb)
+                color_rgb = utils.autolevel(color_rgb, 1.0)
+                color_rgb_qimage = utils.rgbToQImage(color_rgb)
+                self.QPixmapRGB = QPixmap.fromImage(color_rgb_qimage)
+                size = self.LABEL_SIZE
+                self.QlabelRGB.setPixmap(self.QPixmapRGB.scaled(QSize(size, size), Qt.KeepAspectRatio))
 
-            #always apply first auto color then autolevel
-            color_rgb = self.rgb_image.convertToFormat(QImage.Format_RGB32)
-            color_rgb = utils.qimageToNumpyArray(color_rgb)
-            #this returns a float64
-            color_rgb = utils.whiteblance(color_rgb)
-            color_rgb = color_rgb.astype(np.uint8)
-            level_rgb = utils.autolevel(color_rgb, 1.0)
-            color_rgb_qimage = utils.rgbToQImage(level_rgb)
-            self.QPixmapRGB = QPixmap.fromImage(color_rgb_qimage)
-            size = self.LABEL_SIZE
-            self.QlabelRGB.setPixmap(self.QPixmapRGB.scaled(QSize(size, size), Qt.KeepAspectRatio))
+            elif self.chkAutocolor.isChecked() and self.chkAutolevel.isChecked():
+
+                #always apply first auto color then autolevel
+                color_rgb = self.rgb_image.convertToFormat(QImage.Format_RGB32)
+                color_rgb = utils.qimageToNumpyArray(color_rgb)
+                #this returns a float64
+                color_rgb = utils.whiteblance(color_rgb)
+                color_rgb = color_rgb.astype(np.uint8)
+                level_rgb = utils.autolevel(color_rgb, 1.0)
+                color_rgb_qimage = utils.rgbToQImage(level_rgb)
+                self.QPixmapRGB = QPixmap.fromImage(color_rgb_qimage)
+                size = self.LABEL_SIZE
+                self.QlabelRGB.setPixmap(self.QPixmapRGB.scaled(QSize(size, size), Qt.KeepAspectRatio))
 
 
     @pyqtSlot(int, int, int, int)

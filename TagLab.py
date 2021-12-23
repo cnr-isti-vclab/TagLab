@@ -3139,10 +3139,8 @@ class TagLab(QMainWindow):
             return
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
-
-        # -1, -1 means that the label map imported must not be rescaled
-        created_blobs = self.activeviewer.annotations.import_label_map(filename, self.project.labels, self.activeviewer.img_map.width(),
-                                                                       self.activeviewer.img_map.height())
+        created_blobs = self.activeviewer.annotations.import_label_map(filename, self.project.labels, offset=[0,0],
+                                                                       scale_factor=[1.0, 1.0])
         for blob in created_blobs:
             self.activeviewer.addBlob(blob, selected=False)
         self.activeviewer.saveUndo()
@@ -3779,20 +3777,21 @@ class TagLab(QMainWindow):
     @pyqtSlot()
     def cropPreview(self):
 
+        if self.classifierWidget is not None:
 
-        classifier_selected = self.classifierWidget.selected()
-        target_scale_factor = classifier_selected['Scale']
-        scale_factor = target_scale_factor / self.activeviewer.image.pixelSize()
+            classifier_selected = self.classifierWidget.selected()
+            target_scale_factor = classifier_selected['Scale']
+            scale_factor = target_scale_factor / self.activeviewer.image.pixelSize()
 
-        x, y, w, h = self.classifierWidget.getPreviewArea()
-        width = max(513 * scale_factor, w)
-        height = max(513 * scale_factor, h)
-        crop_image = self.activeviewer.img_map.copy(x, y, width, height)
+            x, y, w, h = self.classifierWidget.getPreviewArea()
+            width = max(513 * scale_factor, w)
+            height = max(513 * scale_factor, h)
+            crop_image = self.activeviewer.img_map.copy(x, y, width, height)
 
-        self.classifierWidget.setRGBPreview(crop_image)
-        self.classifierWidget.chkAutocolor.setChecked(False)
-        self.classifierWidget.chkAutolevel.setChecked(False)
-        self.disableAreaSelection()
+            self.classifierWidget.setRGBPreview(crop_image)
+            self.classifierWidget.chkAutocolor.setChecked(False)
+            self.classifierWidget.chkAutolevel.setChecked(False)
+            self.disableAreaSelection()
 
     def applyPreview(self):
         """
@@ -3905,7 +3904,7 @@ class TagLab(QMainWindow):
                 target_scale_factor = classifier_selected['Scale']
                 self.classifier.setup(orthoimage, self.activeviewer.image.pixelSize(),
                                       target_scale_factor,
-                                      working_area=[], padding=256)
+                                      working_area=self.project.working_area, padding=256)
 
                 self.progress_bar.showPerc()
                 self.progress_bar.setMessage("Classification: ")
@@ -3926,8 +3925,10 @@ class TagLab(QMainWindow):
 
                     filename = os.path.join("temp", "labelmap.png")
 
+                    offset = self.classifier.offset
+                    scale = [self.classifier.scale_factor, self.classifier.scale_factor]
                     created_blobs = self.activeviewer.annotations.import_label_map(filename, self.project.labels,
-                                                                                   orthoimage.width(), orthoimage.height())
+                                                                                   offset, scale)
                     for blob in created_blobs:
                         self.viewerplus.addBlob(blob, selected=False)
 

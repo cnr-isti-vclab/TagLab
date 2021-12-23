@@ -120,12 +120,19 @@ class MapClassifier(QObject):
         crop_image = img_map.copy(left, top, width, height)
         self.input_image = utils.qimageToNumpyArray(crop_image)
 
+        # IMPORTNAT NOTE 1:
+        # The following information, together with the scale_factor, are used to put the results on the orthoimage
+        self.offset = [working_area[0], working_area[1]]
+
         # scale the input image
         w_target = round(crop_image.width() / self.scale_factor)
         h_target = round(crop_image.height() / self.scale_factor)
 
         self.input_image = cv2.resize(self.input_image, dsize=(w_target, h_target), interpolation=cv2.INTER_CUBIC)
 
+        # IMPORTANT NOTE 2:
+        # since the input image is cropped and resized the working area used for the tiles is
+        # always the same, i.e. [padding, padding, w_target -  2 padding , h_target - 2 padding]
         self.padding = round(self.padding / self.scale_factor)
         self.wa_top = self.padding
         self.wa_left = self.padding
