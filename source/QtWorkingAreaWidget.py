@@ -91,25 +91,26 @@ class QtWorkingAreaWidget(QWidget):
         layout_edits.addLayout(layout_h2)
 
         self.btnChooseArea = QPushButton()
-        self.btnChooseArea.setFixedWidth(40)
-        self.btnChooseArea.setFixedHeight(40)
+        self.btnChooseArea.setFixedWidth(32)
+        self.btnChooseArea.setFixedHeight(32)
         ChooseAreaIcon = QIcon("icons\\select_area.png")
         self.btnChooseArea.setIcon(ChooseAreaIcon)
 
         layout_main_horiz = QHBoxLayout()
         layout_main_horiz.setAlignment(Qt.AlignTop)
-        layout_main_horiz.addWidget(self.btnChooseArea)
         layout_main_horiz.addLayout(layout_edits)
 
         # Cancel / Apply buttons
         buttons_layout = QHBoxLayout()
+        self.btnDelete = QPushButton("Delete")
         self.btnCancel = QPushButton("Cancel")
-        self.btnApply = QPushButton("Apply")
+        self.btnApply = QPushButton("Set")
         buttons_layout.setAlignment(Qt.AlignRight)
         buttons_layout.addStretch()
-        buttons_layout.addWidget(self.btnCancel)
+        buttons_layout.addWidget(self.btnChooseArea)
         buttons_layout.addWidget(self.btnApply)
-
+        buttons_layout.addWidget(self.btnDelete)
+        buttons_layout.addWidget(self.btnCancel)
         self.btnCancel.clicked.connect(self.close)
 
         layout = QVBoxLayout()
@@ -148,7 +149,21 @@ class QtWorkingAreaWidget(QWidget):
         self.edit_W.setText(str(w))
         self.edit_H.setText(str(h))
 
+
+    def deleteWorkingAreaValues(self):
+
+        self.edit_X.setText("")
+        self.edit_Y.setText("")
+        self.edit_W.setText("")
+        self.edit_H.setText("")
+
+
     def getWorkingArea(self):
+
+        x = 0
+        y = 0
+        w = 0
+        h = 0
 
         try:
             x = int(self.edit_X.text())

@@ -837,9 +837,6 @@ class TagLab(QMainWindow):
         setWorkingAreaAct = QAction("Set working area", self)
         setWorkingAreaAct.triggered.connect(self.selectWorkingArea)
 
-        deleteWorkingAreaAct = QAction("Delete working area", self)
-        deleteWorkingAreaAct.triggered.connect(self.deleteWorkingArea)
-
         ### IMPORT
 
         appendAct = QAction("Add Another Project", self)
@@ -969,9 +966,7 @@ class TagLab(QMainWindow):
         self.submenuEdit = self.projectmenu.addMenu("Edit Maps info")
         self.submenuEdit.setEnabled(False)
         self.projectmenu.addSeparator()
-        self.submenuWorkingArea = self.projectmenu.addMenu("Working area")
-        self.submenuWorkingArea.addAction(setWorkingAreaAct)
-        self.submenuWorkingArea.addAction(deleteWorkingAreaAct)
+        self.projectmenu.addAction(setWorkingAreaAct)
         self.projectmenu.addSeparator()
         self.projectmenu.addAction(createDicAct)
         self.projectmenu.addSeparator()
@@ -2996,6 +2991,7 @@ class TagLab(QMainWindow):
                     self.working_area_widget.btnChooseArea.clicked.connect(self.enableAreaSelection)
                     self.working_area_widget.closed.connect(self.disableAreaSelection)
                     self.working_area_widget.closed.connect(self.deleteWorkingAreaWidget)
+                    self.working_area_widget.btnDelete.clicked.connect(self.deleteWorkingArea)
                     self.working_area_widget.btnApply.clicked.connect(self.setWorkingArea)
                     selection_tool = self.activeviewer.tools.tools["SELECTAREA"]
                     selection_tool.setAreaStyle("WORKING")
@@ -3016,27 +3012,36 @@ class TagLab(QMainWindow):
 
     @pyqtSlot()
     def setWorkingArea(self):
-
         # assign the working area to the project
         x, y, width, height = self.working_area_widget.getWorkingArea()
+        if width != 0 and height != 0:
+            # NOTE: working area format in Project is [top, left, width, height]
+            self.project.working_area = [y, x, width, height]
+            self.viewerplus.setProject(self.project)
+            self.viewerplus2.setProject(self.project)
 
-        # NOTE: working area format in Project is [top, left, width, height]
-        self.project.working_area = [y, x, width, height]
-        self.viewerplus.setProject(self.project)
-        self.viewerplus2.setProject(self.project)
+            self.viewerplus.drawWorkingArea()
+            self.viewerplus2.drawWorkingArea()
 
-        self.viewerplus.drawWorkingArea()
-        self.viewerplus2.drawWorkingArea()
+            self.working_area_widget.close()
+            self.deleteWorkingAreaWidget()
+        else:
+            box = QMessageBox(self.working_area_widget)
+            box.setText("Please, select a valid working area")
+            box.exec()
+            return
 
-        self.working_area_widget.close()
-        self.deleteWorkingAreaWidget()
 
     @pyqtSlot()
     def deleteWorkingArea(self):
-
-        self.activeviewer.undrawWorkingArea()
-        self.project.working_area = None
-        self.setTool("MOVE")
+        box = QMessageBox()
+        reply = box.question(self.working_area_widget, self.TAGLAB_VERSION, "Are you sure to delete the Working Area?",
+                             QMessageBox.Yes | QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            self.activeviewer.undrawWorkingArea()
+            self.project.working_area = None
+            self.working_area_widget.deleteWorkingAreaValues()
+            self.setTool("MOVE")
 
     @pyqtSlot()
     def enableAreaSelection(self):
