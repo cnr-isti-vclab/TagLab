@@ -3823,7 +3823,9 @@ class TagLab(QMainWindow):
             self.progress_bar.hidePerc()
             self.progress_bar.setMessage("Initialization..")
 
-            self.classifier.setup(self.activeviewer.img_map, self.activeviewer.image.pixelSize(), target_scale_factor,
+            orthoimage = self.activeviewer.img_map
+            target_scale_factor = classifier_selected['Scale']
+            self.classifier.setup(orthoimage, self.activeviewer.image.pixelSize(), target_scale_factor,
                                   working_area=[y, x, w, h], padding=256)
 
             self.progress_bar.showPerc()
@@ -3907,8 +3909,7 @@ class TagLab(QMainWindow):
 
                 orthoimage = self.activeviewer.img_map
                 target_scale_factor = classifier_selected['Scale']
-                self.classifier.setup(orthoimage, self.activeviewer.image.pixelSize(),
-                                      target_scale_factor,
+                self.classifier.setup(orthoimage, self.activeviewer.image.pixelSize(), target_scale_factor,
                                       working_area=self.project.working_area, padding=256)
 
                 self.progress_bar.showPerc()
