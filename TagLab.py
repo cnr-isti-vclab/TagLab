@@ -323,18 +323,21 @@ class TagLab(QMainWindow):
 
         self.checkBoxFill = QCheckBox("Fill")
         self.checkBoxFill.setChecked(True)
+        self.checkBoxFill.setFocusPolicy(Qt.NoFocus)
         self.checkBoxFill.setMinimumWidth(20)
         self.checkBoxFill.stateChanged[int].connect(self.viewerplus.toggleFill)
         self.checkBoxFill.stateChanged[int].connect(self.viewerplus2.toggleFill)
 
         self.checkBoxBorders = QCheckBox("Borders")
         self.checkBoxBorders.setChecked(True)
+        self.checkBoxBorders.setFocusPolicy(Qt.NoFocus)
         self.checkBoxBorders.setMinimumWidth(20)
         self.checkBoxBorders.stateChanged[int].connect(self.viewerplus.toggleBorders)
         self.checkBoxBorders.stateChanged[int].connect(self.viewerplus2.toggleBorders)
 
         self.checkBoxGrid = QCheckBox("Grid")
         self.checkBoxGrid.setMinimumWidth(20)
+        self.checkBoxGrid.setFocusPolicy(Qt.NoFocus)
         self.checkBoxGrid.stateChanged[int].connect(self.viewerplus.toggleGrid)
         self.checkBoxGrid.stateChanged[int].connect(self.viewerplus2.toggleGrid)
 

@@ -128,8 +128,6 @@ class QtImageViewerPlus(QtImageViewer):
         self.tools = Tools(self)
         self.tools.createTools()
 
-        self.show_grid = False
-
         self.undo_data = Undo()
 
         self.dragSelectionStart = None
@@ -142,6 +140,11 @@ class QtImageViewerPlus(QtImageViewer):
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
         # DRAWING SETTINGS
+        self.fill_enabled = True
+        self.border_enabled = True
+
+        self.show_grid = False
+
         self.border_pen = QPen(Qt.black, 3)
         self.border_pen.setCosmetic(True)
         self.border_selected_pen = QPen(Qt.white, 3)
@@ -380,31 +383,55 @@ class QtImageViewerPlus(QtImageViewer):
         else:
             self.showGrid()
 
+    def enableFill(self):
+
+        for blob in self.annotations.seg_blobs:
+            brush = self.project.classBrushFromName(blob)
+            if blob.qpath_gitem is not None:
+                blob.qpath_gitem.setBrush(brush)
+
+        self.fill_enabled = True
+
+    def disableFill(self):
+
+        for blob in self.annotations.seg_blobs:
+            if blob.qpath_gitem is not None:
+                blob.qpath_gitem.setBrush(QBrush(Qt.NoBrush))
+
+        self.fill_enabled = False
+
     @pyqtSlot(int)
     def toggleFill(self, checked):
 
         if checked == 0:
-            for blob in self.annotations.seg_blobs:
-                if blob.qpath_gitem is not None:
-                    blob.qpath_gitem.setBrush(QBrush(Qt.NoBrush))
+            self.disableFill()
         else:
-            for blob in self.annotations.seg_blobs:
-                brush = self.project.classBrushFromName(blob)
-                if blob.qpath_gitem is not None:
-                    blob.qpath_gitem.setBrush(brush)
+            self.enableFill()
+
+    def enableBorders(self):
+
+        for blob in self.annotations.seg_blobs:
+            pen = self.border_selected_pen if blob in self.selected_blobs else self.border_pen
+            if blob.qpath_gitem is not None:
+                blob.qpath_gitem.setPen(pen)
+
+        self.border_enabled = True
+
+    def disableBorders(self):
+
+        for blob in self.annotations.seg_blobs:
+            if blob.qpath_gitem is not None:
+                blob.qpath_gitem.setPen(QPen(Qt.NoPen))
+
+        self.border_enabled = False
 
     @pyqtSlot(int)
     def toggleBorders(self, checked):
 
         if checked == 0:
-           for blob in self.annotations.seg_blobs:
-                if blob.qpath_gitem is not None:
-                    blob.qpath_gitem.setPen(QPen(Qt.NoPen))
+            self.disableBorders()
         else:
-            for blob in self.annotations.seg_blobs:
-                pen = self.border_selected_pen if blob in self.selected_blobs else self.border_pen
-                if blob.qpath_gitem is not None:
-                    blob.qpath_gitem.setPen(pen)
+            self.enableBorders()
 
     def drawBlob(self, blob):
 
@@ -894,7 +921,9 @@ class QtImageViewerPlus(QtImageViewer):
             if blob.qpath_gitem is None:
                 print("Selected item with no path!")
             else:
-                blob.qpath_gitem.setPen(self.border_pen)
+                if self.border_enabled is True:
+                    blob.qpath_gitem.setPen(self.border_pen)
+
                 blob.qpath_gitem.setZValue(1)
                 blob.id_item.setZValue(2)
 
@@ -915,6 +944,12 @@ class QtImageViewerPlus(QtImageViewer):
         self.drawBlob(blob)
         if selected:
             self.addToSelectedList(blob)
+
+        if self.fill_enabled is False:
+            blob.qpath_gitem.setBrush(QBrush(Qt.NoBrush))
+
+        if self.border_enabled is False:
+            blob.qpath_gitem.setPen(QPen(Qt.NoPen))
 
     def removeBlob(self, blob):
         """
@@ -940,6 +975,11 @@ class QtImageViewerPlus(QtImageViewer):
         if selected:
             self.addToSelectedList(new_blob)
 
+        if self.fill_enabled is False:
+            new_blob.qpath_gitem.setBrush(QBrush(Qt.NoBrush))
+
+        if self.border_enabled is False:
+            new_blob.qpath_gitem.setPen(QPen(Qt.NoPen))
 
     def deleteSelectedBlobs(self):
 
