@@ -115,10 +115,10 @@ class QtClassifierWidget(QWidget):
         self.btnPrev = QPushButton("Preview")
 
 
-        SLIDER_WIDTH = 200
+        SLIDER_WIDTH = 160
 
-        self.QlabelThresh = QLabel("Uncertainty Threshold:")
-        self.QlabelThreshValue = QLabel("0.0")
+        self.QlabelThresh = QLabel("Prediction threshold:")
+        self.QlabelThreshValue = QLabel("0.5")
 
         self.QlabelTransparency = QLabel("Transparency:")
         self.QlabelTransparencyValue = QLabel("50.0")
@@ -138,6 +138,21 @@ class QtClassifierWidget(QWidget):
         layoutSliderTransparency.addWidget(self.QlabelTransparencyValue)
         layoutSliderTransparency.addWidget(self.sliderTransparency)
 
+        self.sliderScores = QSlider(Qt.Horizontal)
+        self.sliderScores.setFocusPolicy(Qt.StrongFocus)
+        self.sliderScores.setMinimumWidth(SLIDER_WIDTH)
+        self.sliderScores.setMinimum(0)
+        self.sliderScores.setMaximum(100)
+        self.sliderScores.setValue(50)
+        self.sliderScores.setTickInterval(20)
+        self.sliderScores.setAutoFillBackground(True)
+        self.sliderScores.valueChanged.connect(self.sliderScoresChanged)
+
+        layoutSliderScores = QHBoxLayout()
+        layoutSliderScores.addWidget(self.QlabelThresh)
+        layoutSliderScores.addWidget(self.QlabelThreshValue)
+        layoutSliderScores.addWidget(self.sliderScores)
+
         layoutButtons = QHBoxLayout()
         layoutButtons.setAlignment(Qt.AlignLeft)
         layoutButtons.addWidget(self.btnChooseArea)
@@ -148,6 +163,8 @@ class QtClassifierWidget(QWidget):
         layoutButtons.addWidget(self.btnPrev)
         layoutButtons.addStretch()
         layoutButtons.addLayout(layoutSliderTransparency)
+        layoutButtons.addSpacing(20)
+        layoutButtons.addLayout(layoutSliderScores)
 
         self.LABEL_SIZE = 600
 
@@ -166,33 +183,12 @@ class QtClassifierWidget(QWidget):
         layoutTiles.addWidget(self.QlabelRGB)
         layoutTiles.addWidget(self.QlabelPred)
 
-
-        self.sliderScores = QSlider(Qt.Horizontal)
-        self.sliderScores.setFocusPolicy(Qt.StrongFocus)
-        self.sliderScores.setMinimumWidth(SLIDER_WIDTH)
-        self.sliderScores.setMinimum(0)
-        self.sliderScores.setMaximum(50)
-        self.sliderScores.setValue(0)
-        self.sliderScores.setTickInterval(20)
-        self.sliderScores.setAutoFillBackground(True)
-        self.sliderScores.valueChanged.connect(self.sliderScoresChanged)
-
-        layoutSliderScores = QHBoxLayout()
-        layoutSliderScores.addWidget(self.QlabelThreshValue)
-        layoutSliderScores.addWidget(self.sliderScores)
-
-
-        layoutPred= QHBoxLayout()
-        layoutPred.addLayout(layoutTiles)
-        # layoutPred.addLayout(layoutThreshold)
-
         layoutPreview = QVBoxLayout()
         layoutPreview.addLayout(layoutButtons)
-        layoutPreview.addLayout(layoutPred)
+        layoutPreview.addLayout(layoutTiles)
 
         self.groupPrew = QGroupBox("Check Classifier Prediction")
         self.groupPrew.setLayout(layoutPreview)
-        # self.groupPrew.hide()
 
         self.btnCancel = QPushButton("Cancel")
         self.btnCancel.clicked.connect(self.close)
@@ -212,9 +208,6 @@ class QtClassifierWidget(QWidget):
         layoutV.addLayout(layoutH2)
         layoutV.setSpacing(3)
         self.setLayout(layoutV)
-
-        self.QlabelThresh.hide()
-        self.QlabelThreshValue.hide()
 
         self.setWindowTitle("Select Classifier")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
@@ -365,13 +358,11 @@ class QtClassifierWidget(QWidget):
 
         self.sliderScores.setEnabled(True)
         self.sliderTransparency.setEnabled(True)
-        self.sliderScores.hide()
 
     def disableSliders(self):
 
         self.sliderScores.setEnabled(False)
         self.sliderTransparency.setEnabled(False)
-        self.sliderScores.hide()
 
     def closeEvent(self, event):
         self.closed.emit()

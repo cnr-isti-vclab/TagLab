@@ -58,10 +58,13 @@ class MapClassifier(QObject):
         self.nclasses = classifier_info['Num. Classes']
         self.label_names = classifier_info['Classes']
 
-        for label_name in self.label_names:
+        self.background_index = -1
+
+        for index, label_name in enumerate(self.label_names):
 
             if label_name == "Background":
                 color = [0, 0, 0]
+                self.background_index = index
             else:
                 color = labels_dictionary[label_name].fill
 
@@ -202,10 +205,10 @@ class MapClassifier(QObject):
                             img_np = utils.autolevel(white, 1.0)
 
                         # if i == 0 and j == 0:
-                        #     tilename = "RGB_" + str(row) + "_" + str(col) + ".png"
-                        #     filename = os.path.join(self.temp_dir, tilename)
-                        #     tile =utils.rgbToQImage(img_np)
-                        #     tile.save(filename)
+                        # tilename = "RGB_r=" + str(row) + "_c=" + str(col) + "_i=" + str(i) + "_j=" + str(j) + ".png"
+                        # filename = os.path.join(self.temp_dir, tilename)
+                        # tile =utils.rgbToQImage(img_np)
+                        # tile.save(filename)
 
                         img_np = img_np.astype(np.float32)
                         img_np = img_np / 255.0
@@ -237,6 +240,29 @@ class MapClassifier(QObject):
 
                 if self.flagStopProcessing is True:
                     break
+
+                # import matplotlib.pyplot as plt
+                # for k in range(9):
+                #     plt.imshow(scores[k,0,513-256:513+256, 513-256:513+256])
+                #     filename = "C:\\temp\\predPorite_r=" + str(row) + "_c=" + str(col) + "-" + str(k) + ".png"
+                #     plt.savefig(filename)
+                #     plt.close('all')
+                #     plt.imshow(scores[k,1,513-256:513+256, 513-256:513+256])
+                #     filename = "C:\\temp\\predBack_r=" + str(row) + "_c=" + str(col) + "-" + str(k) + ".png"
+                #     plt.savefig(filename)
+                #     plt.close('all')
+                #
+                # por = scores[:,0,513-256:513+256, 513-256:513+256]
+                # por = np.average(por, axis=0)
+                # plt.imshow(por)
+                # filename = "C:\\temp\\por_r=" + str(row) + "_c=" + str(col) + ".png"
+                # plt.savefig(filename)
+                #
+                # back = scores[:,1,513-256:513+256, 513-256:513+256]
+                # back = np.average(back, axis=0)
+                # plt.imshow(back)
+                # filename = "C:\\temp\\backg_r=" + str(row) + "_c=" + str(col) + ".png"
+                # plt.savefig(filename)
 
                 preds_avg = self.aggregateScores(scores, tile_sz=TILE_SIZE,
                                                      center_window_size=AGGREGATION_WINDOW_SIZE, step=AGGREGATION_STEP)
@@ -335,21 +361,16 @@ class MapClassifier(QObject):
         Given the output scores (C x H x W) it returns the label map.
         """
 
-        scoresCopy= self.scores.copy()
+        scores_copy= self.scores.copy()
         predictions = np.argmax(self.scores, 0)
-        mymax= np.max(self.scores,0)
+        max_scores = np.max(self.scores, 0)
 
-        for i in range(self.nclasses):
-            scoresCopy[i, predictions == i] = 0.0
+        uncMatrix = tresh > max_scores
 
-        delta = mymax - np.max(scoresCopy, 0)
-        uncMatrix = delta < tresh
-
-        predictions[uncMatrix] = self.nclasses
-        self.label_colors.append([255, 255, 255])
+        predictions[uncMatrix] = self.background_index  # assign background
 
         resimg = np.zeros((predictions.shape[0], predictions.shape[1], 3), dtype='uint8')
-        for label_index in range(self.nclasses + 1):
+        for label_index in range(self.nclasses):
             resimg[predictions == label_index, :] = self.label_colors[label_index]
 
         qimg = utils.rgbToQImage(resimg)
@@ -428,6 +449,10 @@ class MapClassifier(QObject):
             classification_scores_avg = classification_scores_avg + prob.numpy()
 
         classification_scores_avg = classification_scores_avg / nscores
+
+        #classification_scores = np.average(classification_scores, axis=0)
+        #classification_scores_avg = softmax(torch.from_numpy(classification_scores)).cpu().numpy()
+
 
         #####   AGGREGATE SCORES USING BAYESIAN FUSION   #############################################
 
