@@ -41,7 +41,7 @@ class QtPanelInfo(QTabWidget):
         layout = QGridLayout()
 
         fields = { 'id': 'Id:', 'class_name': 'Class:', 'genet': 'Genet:', 
-            'perimeter': 'Perimenter:', 'area': 'Area:', 'surface_area': 'Surf. area:' }
+            'perimeter': 'Perimeter:', 'area': 'Area:', 'surface_area': 'Surf. area:' }
 
         self.fields = {}
         row = 0
@@ -137,12 +137,18 @@ class QtPanelInfo(QTabWidget):
             elif attribute['type'] == 'keyword':
                 input.setCurrentText('')
 
-    def update(self, blob):
+    def update(self, blob, scale_factor):
         self.clear()
         self.blob = blob
 
         for field in self.fields:
             value = getattr(blob, field)
+            if field == 'area':
+                value = round(value * (scale_factor) * (scale_factor) / 100, 2)
+            if field ==  'surface_area':
+                value = round(value * (scale_factor) * (scale_factor) / 100, 2)
+            if field ==  'perimeter':
+                value = round(value * scale_factor / 10, 1)
             if type(value) == float or type(value) == np.float64 or type(value) == np.float32:
                 value = "{:6.1f}".format(value)
             if type(value) == int:

@@ -110,7 +110,7 @@ class QtImageViewerPlus(QtImageViewer):
     externalAnnotationsChanged = pyqtSignal()
 
     # custom signal
-    updateInfoPanel = pyqtSignal(Blob)
+    updateInfoPanel = pyqtSignal(Blob,float)
 
     activated = pyqtSignal()
     newSelection = pyqtSignal()
@@ -567,7 +567,7 @@ class QtImageViewerPlus(QtImageViewer):
                 self.removeFromSelectedList(selected_blob)
             else:
                 self.addToSelectedList(selected_blob)
-                self.updateInfoPanel.emit(selected_blob)
+                self.updateInfoPanel.emit(selected_blob,self.px_to_mm)
 
         if len(self.selected_blobs) == 1:
             self.newSelection.emit()

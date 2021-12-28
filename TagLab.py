@@ -78,6 +78,7 @@ from source.QtPanelInfo import QtPanelInfo
 
 
 from source import utils
+from source.Blob import Blob
 
 # training modules
 from models.coral_dataset import CoralsDataset
@@ -274,7 +275,7 @@ class TagLab(QMainWindow):
         self.viewerplus.logfile = logfile
         self.viewerplus.viewUpdated.connect(self.updateViewInfo)
         self.viewerplus.activated.connect(self.setActiveViewer)
-        self.viewerplus.updateInfoPanel.connect(self.updatePanelInfo)
+        self.viewerplus.updateInfoPanel[Blob,float].connect(self.updatePanelInfo)
         self.viewerplus.mouseMoved[float, float].connect(self.updateMousePos)
         self.viewerplus.selectionChanged.connect(self.updateEditActions)
         self.viewerplus.selectionReset.connect(self.resetPanelInfo)
@@ -284,7 +285,7 @@ class TagLab(QMainWindow):
         self.viewerplus2.logfile = logfile
         self.viewerplus2.viewUpdated.connect(self.updateViewInfo)
         self.viewerplus2.activated.connect(self.setActiveViewer)
-        self.viewerplus2.updateInfoPanel.connect(self.updatePanelInfo)
+        self.viewerplus2.updateInfoPanel[Blob,float].connect(self.updatePanelInfo)
         self.viewerplus2.mouseMoved[float, float].connect(self.updateMousePos)
         self.viewerplus2.selectionChanged.connect(self.updateEditActions)
         self.viewerplus2.selectionReset.connect(self.resetPanelInfo)
@@ -2171,8 +2172,9 @@ class TagLab(QMainWindow):
             for blob in self.activeviewer.selected_blobs:
                 blob.note = self.editNote.toPlainText()
 
-    def updatePanelInfo(self, blob):
-        self.groupbox_blobpanel.update(blob)
+    @pyqtSlot(Blob, float)
+    def updatePanelInfo(self, blob, scale_factor):
+        self.groupbox_blobpanel.update(blob, scale_factor)
 
     @pyqtSlot()
     def resetPanelInfo(self):
