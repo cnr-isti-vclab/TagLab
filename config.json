@@ -4,7 +4,7 @@
 [
   {
     "Classifier Name": "Porite",
-    "Weights": "Porites.net",
+    "Weights": "porites.net",
     "Num. Classes": 2,
     "Classes": ["Porite", "Background"],
 	"Scale": 1.1111,
@@ -13,7 +13,7 @@
   
     {
     "Classifier Name": "Pocillopora",
-    "Weights": "Pocillopora.net",
+    "Weights": "pocillopora.net",
     "Num. Classes": 2,
     "Classes": ["Pocillopora", "Background"],
 	"Scale": 1.1111,
@@ -21,7 +21,7 @@
   },
     {
     "Classifier Name": "Pocillopora_Porite_Montipora",
-    "Weights": "Pocillopora_Porite_Montipora.net",
+    "Weights": "pocillopora_porite_montipora.net",
     "Num. Classes": 4,
     "Classes": ["Porite","Montipora","Pocillopora","Background"],
 	"Scale": 1.1111,

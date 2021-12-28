@@ -122,7 +122,8 @@ base_url = 'http://taglab.isti.cnr.it/models/'
 from os import path
 import urllib.request
 this_directory = path.abspath(path.dirname(__file__))
-net_file_names = ['dextr_corals.pth', 'deeplab-resnet.pth.tar', 'ritm_corals.pth']
+net_file_names = ['dextr_corals.pth', 'deeplab-resnet.pth.tar', 'ritm_corals.pth',
+                  'pocillopora.net', 'porites.net', 'pocillopora_porite_montipora.net']
 
 for net_name in net_file_names:
     filename_dextr_corals = 'dextr_corals.pth'
