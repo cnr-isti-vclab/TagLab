@@ -525,18 +525,16 @@ class Annotation(QObject):
                 visible_blobs.append(blob)
 
         number_of_seg = len(name_list)
-
-
         dict = {
-            'Blob id' : np.zeros(number_of_seg, int),
+            'Object id': np.zeros(number_of_seg, int),
             'Class name': [],
             'Genet id': np.zeros(number_of_seg, int),
             'Centroid x': np.zeros(number_of_seg),
             'Centroid y': np.zeros(number_of_seg),
-            'Coral area': np.zeros(number_of_seg),
-            'Coral surf area': np.zeros(number_of_seg),
-            'Coral perimeter': np.zeros(number_of_seg),
-            'Coral note': [] }
+            'Area': np.zeros(number_of_seg),
+            'Surf area': np.zeros(number_of_seg),
+            'Perimeter': np.zeros(number_of_seg),
+            'Note': [] }
 
         #TODO check if attribute name is already in dict.
         for attribute in project.region_attributes.data:
@@ -544,24 +542,21 @@ class Annotation(QObject):
                 dict[attribute['name']] = []
             elif attribute['type'] == 'number':
                 dict[attribute['name']] = np.zeros(number_of_seg)
-            
 
         
         for i, blob in enumerate(visible_blobs):
-            dict['Blob id'][i] = blob.id
+            dict['Object id'][i] = blob.id
             dict['Class name'].append(blob.class_name)
             dict['Centroid x'][i] = round(blob.centroid[0], 1)
             dict['Centroid y'][i] = round(blob.centroid[1], 1)
-            dict['Coral area'][i] = round(blob.area * (scale_factor) * (scale_factor)/ 100,2)
+            dict['Area'][i] = round(blob.area * (scale_factor) * (scale_factor)/ 100,2)
             if blob.surface_area > 0.0:
-               dict['Coral surf area'][i] = round(blob.surface_area * (scale_factor) * (scale_factor) / 100, 2)
-            dict['Coral perimeter'][i] =  round(blob.perimeter*scale_factor / 10,1)
+               dict['Surf area'][i] = round(blob.surface_area * (scale_factor) * (scale_factor) / 100, 2)
+            dict['Perimeter'][i] = round(blob.perimeter*scale_factor / 10,1)
 
             if blob.genet is not None:
                dict['Genet id'][i] = blob.genet
-            dict['Coral note'].append(blob.note)
-
-
+            dict['Note'].append(blob.note)
 
             for attribute in project.region_attributes.data:
                 try:                

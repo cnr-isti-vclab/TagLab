@@ -123,7 +123,6 @@ def read_geometry(filename, georef_filename, shapetype):
                blobList.append(blob)
 
     if shapetype == 'Sampling':
-
         # sampling puo'avere cerchi bucati? Contorni interni? che forme ammettiamo?
         centers =[]
         rays = []
@@ -136,20 +135,14 @@ def read_geometry(filename, georef_filename, shapetype):
                 outpointpixels = changeFormatInv([outercontourn], transform)
                 blob.createFromClosedCurve([np.asarray(outpointpixels)])
                 c = round((4*np.pi*blob.area)/ np.square(blob.perimeter), 2)
-
                 center = blob.centroid
                 r = (blob.perimeter)/(2*np.pi)
 
-
-                print(c)
-
-
-
-
-
+            if shpdict['geometry']['type'] == 'Point':
+                coord = shpdict['geometry']['coordinates']
+                coord_map = changeFormatInv(coord, transform)
 
     return blobList
-
 
 
 
@@ -228,28 +221,75 @@ def read_geometry(filename, georef_filename, shapetype):
 
 
 
-def write_shapefile(project, blobs, georef_filename, out_shp):
+def write_shapefile(project, image, blobs, georef_filename, out_shp):
     """
     https://gis.stackexchange.com/a/52708/8104
     """
+    scale_factor = image.pixelSize()
     # load georeference information to use
     img = rio.open(georef_filename)
     geoinfo = img.crs
     transform = img.transform
 
-    # convert blobs in polygons
-    polygons = []
-    ids = []
-    classnames = []
-    colors = []
-
+    # create the list of visible instances
+    name_list = []
+    visible_blobs = []
     for blob in blobs:
         if blob.qpath_gitem.isVisible():
+            index = blob.blob_name
+            name_list.append(index)
+            visible_blobs.append(blob)
+
+    number_of_seg = len(name_list)
+    dict = {
+        'Object id': np.zeros(number_of_seg, int),
+        'Class name': [],
+        'Genet id': np.zeros(number_of_seg, int),
+        'Centroid x': np.zeros(number_of_seg),
+        'Centroid y': np.zeros(number_of_seg),
+        'Area': np.zeros(number_of_seg),
+        'Surf Area': np.zeros(number_of_seg),
+        'Perimeter': np.zeros(number_of_seg),
+        'Note': []}
+
+    # TODO check if attribute name is already in dict.
+    for attribute in project.region_attributes.data:
+        if attribute['type'] in ['string', 'boolean', 'keyword']:
+            dict[attribute['name']] = []
+        elif attribute['type'] == 'number':
+            dict[attribute['name']] = np.zeros(number_of_seg)
+
+    for i, blob in enumerate(visible_blobs):
+        dict['Object id'][i] = blob.id
+        dict['Class name'].append(blob.class_name)
+        dict['Centroid x'][i] = round(blob.centroid[0], 1)
+        dict['Centroid y'][i] = round(blob.centroid[1], 1)
+        dict['Area'][i] = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
+        if blob.surface_area > 0.0:
+            dict['Surf area'][i] = round(blob.surface_area * (scale_factor) * (scale_factor) / 100, 2)
+        dict['Perimeter'][i] = round(blob.perimeter * scale_factor / 10, 1)
+
+        if blob.genet is not None:
+            dict['Genet id'][i] = blob.genet
+        dict['Note'].append(blob.note)
+
+        for attribute in project.region_attributes.data:
+            try:
+                value = blob.data[attribute['name']]
+            except:
+                value = None
+
+            if attribute['type'] == 'number':
+                if value != None:
+                    dict[attribute['name']][i] = value
+            else:
+                dict[attribute['name']].append(value)
+
+    # # convert blobs in polygons
+    polygons = []
+    for blob in visible_blobs:
+        if blob.qpath_gitem.isVisible():
             polygon = createPolygon(blob, transform)
-            ids.append(blob.id)
-            classnames.append(blob.class_name)
-            class_color = project.classColor(blob.class_name)
-            colors.append('#%02X%02X%02X' % tuple(class_color))
             polygons.append(polygon)
 
     # Now convert them to a shapefile with OGR
@@ -260,22 +300,24 @@ def write_shapefile(project, blobs, georef_filename, out_shp):
         srs.ImportFromWkt(geoinfo.wkt)
     outLayer = outDataSource.CreateLayer("polygon", srs, geom_type=ogr.wkbPolygon)
 
-    # Add id to polygon
-    outLayer.CreateField(ogr.FieldDefn('id', ogr.OFTInteger))
-    outLayer.CreateField(ogr.FieldDefn('class', ogr.OFTString))
+    # Add attributes
+    for key in list(dict.keys()):
+        outLayer.CreateField(ogr.FieldDefn(key))
     defn = outLayer.GetLayerDefn()
 
-    ## If there are multiple geometries, put the "for" loop here
-    for i in range(len(ids)):
-        # Create a new feature (attribute and geometry)
+    ## For each objects and for each key, set attributes
+
+    for i in range(len(polygons)):
         feat = ogr.Feature(defn)
-        feat.SetField('id', ids[i])
-        feat.SetField('class', classnames[i])
+        for key in list(dict.keys()):
+            try:
+                feat.SetField(key, dict[key][i])
+            except:
+                feat.SetField(key, float(dict[key][i]))
 
         # Make a geometry, from Shapely object
         geom = ogr.CreateGeometryFromWkb(polygons[i].wkb)
         feat.SetGeometry(geom)
-        feat.SetStyleString('BRUSH(fc:' + colors[i] + ')')
         outLayer.CreateFeature(feat)
         feat = geom = None  # destroy these
 
