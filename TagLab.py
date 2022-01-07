@@ -3249,11 +3249,7 @@ class TagLab(QMainWindow):
         filename, _ = QFileDialog.getSaveFileName(self, "Output file", self.activeviewer.image.name + ".csv", filters)
 
         if filename:
-
-            #self.activeviewer.annotations.export_data_table_for_Scripps(self.activeviewer.image.pixelSize(), filename)
             self.activeviewer.annotations.export_data_table_for_Scripps(self.project, self.activeviewer.image, filename)
-
-
             msgBox = QMessageBox(self)
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
             msgBox.setText("Data table exported successfully!")
@@ -3318,6 +3314,11 @@ class TagLab(QMainWindow):
             blobs = self.activeviewer.annotations.seg_blobs
             gf = self.activeviewer.image.georef_filename
             rasterops.write_shapefile(self.project,self.activeviewer.image, blobs, gf, output_filename)
+            msgBox = QMessageBox(self)
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("Shapefile exported successfully!")
+            msgBox.exec()
+            return
 
 
     @pyqtSlot()

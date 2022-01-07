@@ -226,6 +226,7 @@ def write_shapefile(project, image, blobs, georef_filename, out_shp):
     https://gis.stackexchange.com/a/52708/8104
     """
     scale_factor = image.pixelSize()
+    date = image.acquisition_date
     # load georeference information to use
     img = rio.open(georef_filename)
     geoinfo = img.crs
@@ -243,6 +244,7 @@ def write_shapefile(project, image, blobs, georef_filename, out_shp):
     number_of_seg = len(name_list)
     dict = {
         'Object id': np.zeros(number_of_seg, int),
+        'Date': [],
         'Class name': [],
         'Genet id': np.zeros(number_of_seg, int),
         'Centroid x': np.zeros(number_of_seg),
@@ -261,6 +263,7 @@ def write_shapefile(project, image, blobs, georef_filename, out_shp):
 
     for i, blob in enumerate(visible_blobs):
         dict['Object id'][i] = blob.id
+        dict['Date'].append(date)
         dict['Class name'].append(blob.class_name)
         dict['Centroid x'][i] = round(blob.centroid[0], 1)
         dict['Centroid y'][i] = round(blob.centroid[1], 1)

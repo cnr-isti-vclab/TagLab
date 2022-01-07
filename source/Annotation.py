@@ -514,6 +514,7 @@ class Annotation(QObject):
     def export_data_table_for_Scripps(self, project, image, filename):
 
         scale_factor = image.pixelSize()
+        date = image.acquisition_date
         
         # create a list of instances
         name_list = []
@@ -527,6 +528,7 @@ class Annotation(QObject):
         number_of_seg = len(name_list)
         dict = {
             'Object id': np.zeros(number_of_seg, int),
+            'Date': [],
             'Class name': [],
             'Genet id': np.zeros(number_of_seg, int),
             'Centroid x': np.zeros(number_of_seg),
@@ -546,6 +548,7 @@ class Annotation(QObject):
         
         for i, blob in enumerate(visible_blobs):
             dict['Object id'][i] = blob.id
+            dict['Date'].append(date)
             dict['Class name'].append(blob.class_name)
             dict['Centroid x'][i] = round(blob.centroid[0], 1)
             dict['Centroid y'][i] = round(blob.centroid[1], 1)
