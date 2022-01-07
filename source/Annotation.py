@@ -318,7 +318,8 @@ class Annotation(QObject):
             origin = np.array([points_box[1], points_box[0]])
             Mask.paintPoints(points_mask, points_box, allpoints - origin, 1)
             points_mask = ndi.binary_fill_holes(points_mask)
-            points_mask = binary_erosion(points_mask)
+            selem = np.array([[0, 0, 0], [0, 0, 1], [0, 1, 0]])
+            points_mask = binary_erosion(points_mask, selem)
             Mask.paintMask(mask, box, points_mask, points_box, 0)
 
 
