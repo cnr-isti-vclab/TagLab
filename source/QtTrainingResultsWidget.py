@@ -11,9 +11,10 @@ from source import utils
 
 class QtTrainingResultsWidget(QWidget):
 
-    def __init__(self, metrics, train_loss_data, val_loss_data, image_folder, label_folder, prediction_folder, parent=None):
+    def __init__(self, dict_target, metrics, train_loss_data, val_loss_data, image_folder, label_folder, prediction_folder, parent=None):
         super(QtTrainingResultsWidget, self).__init__(parent)
 
+        self.dict_target_classes = dict_target
         self.dataset_folder = os.path.dirname(prediction_folder)
         self.image_folder = image_folder
         self.label_folder=label_folder
@@ -159,12 +160,24 @@ class QtTrainingResultsWidget(QWidget):
         self.QPixmapPred.fill(Qt.black)
         self.QlabelPred.setPixmap(self.QPixmapPred)
 
+        layoutTileInput = QVBoxLayout()
+        layoutTileInput.addWidget(self.QlabelRGB, alignment=Qt.AlignCenter)
+        layoutTileInput.addWidget(QLabel("Input"), alignment=Qt.AlignCenter)
+
+        layoutTileGT = QVBoxLayout()
+        layoutTileGT.addWidget(self.QlabelLB, alignment=Qt.AlignCenter)
+        layoutTileGT.addWidget(QLabel("Ground Truth"), alignment=Qt.AlignCenter)
+
+        layoutTilePred = QVBoxLayout()
+        layoutTilePred.addWidget(self.QlabelPred, alignment=Qt.AlignCenter)
+        layoutTilePred.addWidget(QLabel("Prediction"), alignment=Qt.AlignCenter)
+
         layoutTiles = QHBoxLayout()
         layoutTiles.setAlignment(Qt.AlignTop)
         layoutTiles.addStretch()
-        layoutTiles.addWidget(self.QlabelRGB)
-        layoutTiles.addWidget(self.QlabelLB)
-        layoutTiles.addWidget(self.QlabelPred)
+        layoutTiles.addLayout(layoutTileInput)
+        layoutTiles.addLayout(layoutTileGT)
+        layoutTiles.addLayout(layoutTilePred)
         layoutTiles.addStretch()
 
         layoutSelect = QHBoxLayout()
@@ -211,18 +224,26 @@ class QtTrainingResultsWidget(QWidget):
 
         self.figureCM = None
         self.pxmapCM = None
-        self.last_file = None
+        self.last_tile_selected = None
 
     @pyqtSlot()
     def displayCM(self):
 
         np.set_printoptions(precision=2)
 
-        #display_labels = class_names
-        disp = ConfusionMatrixDisplay(confusion_matrix=self.metrics["NormConfMatrix"], display_labels=None)
+        dict_ordered_by_value = {k: v for k, v in sorted(self.dict_target_classes.items(), key=lambda item: item[1])}
+
+        class_names = []
+        max_characters = 12
+        for item in dict_ordered_by_value.items():
+            name = item[0]
+            if len(name) > max_characters:
+                name = name[:max_characters-2] + ".."
+            class_names.append(name)
+        disp = ConfusionMatrixDisplay(confusion_matrix=self.metrics["NormConfMatrix"], display_labels=class_names)
 
         disp.plot(include_values=True,
-                  cmap=plt.cm.Blues, xticks_rotation='horizontal',
+                  cmap=plt.cm.Blues, xticks_rotation=45,
                   values_format='.3g')
 
         disp.ax_.set_title("Normalized Confusion Matrix")
@@ -230,12 +251,14 @@ class QtTrainingResultsWidget(QWidget):
         fig = disp.figure_
         fig.set_size_inches(6.0, 6.0)
 
+        plt.tight_layout()
+
         self.figureCM = fig
         self.pxmapCM = utils.figureToQPixmap(fig, dpi=300, width=800, height=800)
 
         widget = QWidget(parent=self)
-        widget.setFixedWidth(800)
-        widget.setFixedHeight(800)
+        widget.setFixedWidth(840)
+        widget.setFixedHeight(840)
         lblCentral = QLabel("")
         lblCentral.setPixmap(self.pxmapCM)
         layout = QHBoxLayout()
@@ -275,28 +298,32 @@ class QtTrainingResultsWidget(QWidget):
         filters = "PNG (*.png)"
         filename, _ = QFileDialog.getOpenFileName(self, "Select tile", self.image_folder, filters)
 
-        self.last_folder = os.path.dirname(filename)
-        self.last_file = os.path.basename(filename)
+        self.last_tile_selected = filename
         self.updateTiles(filename)
 
     def keyPressEvent(self, event):
 
-        if self.last_file is not None and self.last_folder is not None:
+        if self.last_tile_selected is not None:
 
-            if event.key() == Qt.Key_Left:
-                filelist = os.listdir(self.last_folder)
-                index = filelist.index(self.last_file)
+            folder = os.path.dirname(self.last_tile_selected)
+            filename = os.path.basename(self.last_tile_selected)
+
+            if event.key() == Qt.Key_X:
+                filelist = os.listdir(folder)
+                index = filelist.index(filename)
                 if index < len(filelist) - 1:
                     index = index + 1
-                filename = filelist[index]
-                self.updateTiles(filename)
-            elif event.key() == Qt.Key_Right:
-                filelist = os.listdir(self.last_folder)
-                index = filelist.index(self.last_file)
+                    nextfile = filelist[index]
+                    self.updateTiles(os.path.join(folder, nextfile))
+                    self.last_tile_selected = os.path.join(folder, nextfile)
+            elif event.key() == Qt.Key_Z:
+                filelist = os.listdir(folder)
+                index = filelist.index(filename)
                 if index > 0:
                     index = index - 1
-                filename = filelist[index]
-                self.updateTiles(filename)
+                    prevfile = filelist[index]
+                    self.updateTiles(os.path.join(folder, prevfile))
+                    self.last_tile_selected = os.path.join(folder, prevfile)
 
     def updateTiles(self, filename):
 
@@ -310,7 +337,7 @@ class QtTrainingResultsWidget(QWidget):
             pxmap = QPixmap.fromImage(img)
             self.QlabelRGB.setPixmap(pxmap.scaled(QSize(size, size)))
 
-            # GT tile
+            # GT label
             filename = filename.replace('images', 'labels')
             img2 = QImage(filename)
             img2 = img2.copy(256, 256, 513, 513)
@@ -321,6 +348,7 @@ class QtTrainingResultsWidget(QWidget):
             base_name = os.path.basename(filename)
             newfilename = os.path.join(self.prediction_folder, base_name)
             img3 = QImage(newfilename)
+            img3 = img3.copy(256, 256, 513, 513)
             pxmapPred = QPixmap.fromImage(img3)
             self.QlabelPred.setPixmap(pxmapPred.scaled(QSize(size, size)))
 

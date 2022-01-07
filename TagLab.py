@@ -1391,12 +1391,15 @@ class TagLab(QMainWindow):
             self.deleteSelectedBlobs()
 
         elif event.key() == Qt.Key_X:
+
             pass
 
             # CM = np.zeros((5, 5), dtype=int)
             # CMnorm = np.zeros((5, 5), dtype=np.float32)
             # accuracy = 0.8
             # jaccard_s = 0.7
+            #
+            # dict_target = { "Pocilloporonagrande": 3, "Background": 0, "Pinuccio": 2, "Montipora": 4, "Porite": 1}
             #
             # metrics = {'ConfMatrix': CM, 'NormConfMatrix': CMnorm, 'Accuracy': accuracy, 'JaccardScore': jaccard_s}
             #
@@ -1408,10 +1411,11 @@ class TagLab(QMainWindow):
             #     if i % 2 == 0:
             #         val_loss_values.append(random())
             #
-            # self.trainResultsWidget = QtTrainingResultsWidget(metrics, train_loss_values, val_loss_values,
+            # self.trainResultsWidget = QtTrainingResultsWidget(dict_target, metrics, train_loss_values, val_loss_values,
             #                                                   "C:\\trainingtest2\\test\\images",
             #                                                   "C:\\trainingtest2\\test\\labels",
-            #                                                   "C:\\trainingtest2\\predictions")
+            #                                                   "C:\\trainingtest2\\predictions",
+            #                                                   parent=self)
             # self.trainResultsWidget.setAttribute(Qt.WA_DeleteOnClose)
             # self.trainResultsWidget.setWindowModality(Qt.WindowModal)
             # self.trainResultsWidget.show()
@@ -3562,8 +3566,10 @@ class TagLab(QMainWindow):
         self.deleteProgressBar()
         self.deleteTrainYourNetworkWidget()
 
-        self.trainResultsWidget = QtTrainingResultsWidget(metrics, train_loss_values, val_loss_values,
-                                                          images_dir_test, labels_dir_test, output_folder)
+        self.trainResultsWidget = QtTrainingResultsWidget(dataset_train_info.dict_target,
+                                                          metrics, train_loss_values, val_loss_values,
+                                                          images_dir_test, labels_dir_test, output_folder,
+                                                          parent=self)
         self.trainResultsWidget.btnConfirm.clicked.connect(self.confirmTraining)
         self.trainResultsWidget.setAttribute(Qt.WA_DeleteOnClose)
         self.trainResultsWidget.setWindowModality(Qt.WindowModal)
