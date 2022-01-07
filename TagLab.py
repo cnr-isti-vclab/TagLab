@@ -124,12 +124,14 @@ class TagLab(QMainWindow):
 
         ##### DATA INITIALIZATION AND SETUP #####
 
+        self.taglab_dir = os.getcwd()
+
         self.TAGLAB_VERSION = "TagLab " + current_version
 
         print(self.TAGLAB_VERSION)
 
         # SETTINGS
-        self.settings_widget = QtSettingsWidget()
+        self.settings_widget = QtSettingsWidget(self.taglab_dir)
 
         # LOAD CONFIGURATION FILE
 
@@ -137,12 +139,8 @@ class TagLab(QMainWindow):
         config_dict = json.load(f)
         self.available_classifiers = config_dict["Available Classifiers"]
 
-        # filename of the default dictionary
-        self.default_dictionary = "dictionaries/scripps.json"
-
         logfile.info("[INFO] Initizialization begins..")
 
-        self.taglab_dir = os.getcwd()
         self.project = Project()         # current project
         self.last_image_loaded = None
 
@@ -381,6 +379,8 @@ class TagLab(QMainWindow):
 
         # LABELS PANEL
         self.labels_widget = QtLabelsWidget()
+        self.default_dictionary = self.settings_widget.settings.value("default-dictionary",
+                                                defaultValue="dictionaries/scripps.json", type=str)
         self.project.loadDictionary(self.default_dictionary)
         self.labels_widget.setLabels(self.project)
 
@@ -1392,6 +1392,30 @@ class TagLab(QMainWindow):
 
         elif event.key() == Qt.Key_X:
             pass
+
+            # CM = np.zeros((5, 5), dtype=int)
+            # CMnorm = np.zeros((5, 5), dtype=np.float32)
+            # accuracy = 0.8
+            # jaccard_s = 0.7
+            #
+            # metrics = {'ConfMatrix': CM, 'NormConfMatrix': CMnorm, 'Accuracy': accuracy, 'JaccardScore': jaccard_s}
+            #
+            # train_loss_values = []
+            # val_loss_values = []
+            # from random import random
+            # for i in range(10):
+            #     train_loss_values.append(random())
+            #     if i % 2 == 0:
+            #         val_loss_values.append(random())
+            #
+            # self.trainResultsWidget = QtTrainingResultsWidget(metrics, train_loss_values, val_loss_values,
+            #                                                   "C:\\trainingtest2\\test\\images",
+            #                                                   "C:\\trainingtest2\\test\\labels",
+            #                                                   "C:\\trainingtest2\\predictions")
+            # self.trainResultsWidget.setAttribute(Qt.WA_DeleteOnClose)
+            # self.trainResultsWidget.setWindowModality(Qt.WindowModal)
+            # self.trainResultsWidget.show()
+
 
         elif event.key() == Qt.Key_B:
             self.attachBoundaries()
@@ -3150,7 +3174,7 @@ class TagLab(QMainWindow):
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
         created_blobs = self.activeviewer.annotations.import_label_map(filename, self.project.labels, offset=[0,0],
-                                                                       scale_factor=[1.0, 1.0])
+                                                                       scale=[1.0, 1.0])
         for blob in created_blobs:
             self.activeviewer.addBlob(blob, selected=False)
         self.activeviewer.saveUndo()
@@ -3249,7 +3273,11 @@ class TagLab(QMainWindow):
         filename, _ = QFileDialog.getSaveFileName(self, "Output file", self.activeviewer.image.name + ".csv", filters)
 
         if filename:
+
+            #self.activeviewer.annotations.export_data_table_for_Scripps(self.activeviewer.image.pixelSize(), filename)
             self.activeviewer.annotations.export_data_table_for_Scripps(self.project, self.activeviewer.image, filename)
+
+
             msgBox = QMessageBox(self)
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
             msgBox.setText("Data table exported successfully!")
@@ -3313,13 +3341,7 @@ class TagLab(QMainWindow):
         if output_filename:
             blobs = self.activeviewer.annotations.seg_blobs
             gf = self.activeviewer.image.georef_filename
-            rasterops.write_shapefile(self.project,self.activeviewer.image, blobs, gf, output_filename)
-            msgBox = QMessageBox(self)
-            msgBox.setWindowTitle(self.TAGLAB_VERSION)
-            msgBox.setText("Shapefile exported successfully!")
-            msgBox.exec()
-            return
-
+            rasterops.write_shapefile(self.project, blobs, gf, output_filename)
 
     @pyqtSlot()
     def exportGeoRefLabelMap(self):
@@ -3413,7 +3435,7 @@ class TagLab(QMainWindow):
 
             # create training, validation and test areas
 
-            self.progress_bar.setMessage("Export new dataset (create train/val/test areas)..")
+            self.progress_bar.setMessage("Select area and cut tiles (it could take long)..")
             self.progress_bar.setProgress(25.0)
             QApplication.processEvents()
 
@@ -3423,7 +3445,6 @@ class TagLab(QMainWindow):
             # cut the tiles
             flag_oversampling = self.newDatasetWidget.checkOversampling.isChecked()
 
-            self.progress_bar.setMessage("Export new dataset (cut tiles)..")
             self.progress_bar.setProgress(50.0)
             QApplication.processEvents()
 
@@ -3438,7 +3459,7 @@ class TagLab(QMainWindow):
                 new_dataset.save_samples("tiles_cutted.png", show_tiles=True, show_areas=True, radii=None)
 
             # export the tiles
-            self.progress_bar.setMessage("Export new dataset (export tiles)..")
+            self.progress_bar.setMessage("Export tiles (it could take long)..")
             self.progress_bar.setProgress(75.0)
             QApplication.processEvents()
 
@@ -3529,18 +3550,20 @@ class TagLab(QMainWindow):
         self.progress_bar.setMessage("Test network..")
         QApplication.processEvents()
 
-        metrics = training.testNetwork(images_dir_test, labels_dir_test, dictionary=self.project.labels,
+        metrics = training.testNetwork(images_dir_test, labels_dir_test, labels_dictionary=self.project.labels,
                                        target_classes=target_classes, dataset_train=dataset_train_info,
-                                       network_filename=network_filename, output_folder=output_folder)
+                                       network_filename=network_filename, output_folder=output_folder,
+                                       progress=self.progress_bar)
 
-        #info about the classifier created
+        # info about the classifier created
         self.classifier_name = classifier_name
         self.dataset_train_info = dataset_train_info
 
         self.deleteProgressBar()
         self.deleteTrainYourNetworkWidget()
 
-        self.trainResultsWidget = QtTrainingResultsWidget(metrics, train_loss_values, val_loss_values, images_dir_test, labels_dir_test, output_folder)
+        self.trainResultsWidget = QtTrainingResultsWidget(metrics, train_loss_values, val_loss_values,
+                                                          images_dir_test, labels_dir_test, output_folder)
         self.trainResultsWidget.btnConfirm.clicked.connect(self.confirmTraining)
         self.trainResultsWidget.setAttribute(Qt.WA_DeleteOnClose)
         self.trainResultsWidget.setWindowModality(Qt.WindowModal)
@@ -3569,9 +3592,8 @@ class TagLab(QMainWindow):
         self.available_classifiers.append(new_classifier)
         newconfig = dict()
         newconfig["Available Classifiers"] = self.available_classifiers
-        newconfig["Labels"] = self.project.labels
         str = json.dumps(newconfig)
-        newconfig_filename = os.path.join(self.taglab_dir, "newconfig.json")
+        newconfig_filename = os.path.join(self.taglab_dir, "config.json")
         f = open(newconfig_filename, "w")
         f.write(str)
         f.close()

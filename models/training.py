@@ -81,7 +81,7 @@ def saveMetrics(metrics, filename):
 # VALIDATION
 def evaluateNetwork(dataset, dataloader, loss_to_use, CEloss, w_for_GDL, tversky_loss_alpha, tversky_loss_beta,
                     focal_tversky_gamma, epoch, epochs_switch, epochs_transition, nclasses, net,
-                    flag_compute_mIoU=False, savefolder=""):
+                    progress, flag_compute_mIoU=False, flag_test=False, savefolder=""):
     """
     It evaluates the network on the validation set.  
     :param dataloader: Pytorch DataLoader to load the dataset for the evaluation.
@@ -107,6 +107,9 @@ def evaluateNetwork(dataset, dataloader, loss_to_use, CEloss, w_for_GDL, tversky
 
     CM = np.zeros((nclasses, nclasses), dtype=int)
     class_indices = list(range(nclasses))
+
+    num_iter = 0
+    total_iter = int(len(dataset) / dataloader.batch_size)
 
     ypred_list = []
     ytrue_list = []
@@ -144,11 +147,17 @@ def evaluateNetwork(dataset, dataloader, loss_to_use, CEloss, w_for_GDL, tversky
 
             # CONFUSION MATRIX, PREDICTIONS ARE PER-COLUMN, GROUND TRUTH CLASSES ARE PER-ROW
             for i in range(batch_size):
-                print(i)
                 pred_index = pred_cpu[i].numpy().ravel()
                 true_index = labels_cpu[i].numpy().ravel()
                 confmat = confusion_matrix(true_index, pred_index, class_indices)
                 CM += confmat
+
+            if flag_test is True:
+                updateProgressBar(progress, "Test - Iteration ", num_iter, total_iter)
+            else:
+                updateProgressBar(progress, "Validation - Iteration ", num_iter, total_iter)
+
+            num_iter = num_iter + 1
 
             # SAVE THE OUTPUT OF THE NETWORK
             for i in range(batch_size):
@@ -223,6 +232,18 @@ def computeLoss(loss_name, CE, w_for_GDL, tversky_alpha, tversky_beta, focal_tve
             loss = losses.focal_tversky(predictions, labels, tversky_alpha, tversky_beta, focal_tversky_gamma)
 
     return loss
+
+
+def updateProgressBar(progress_bar, prefix_message, num_iter, total_iter):
+    """
+    Update progress bar according to the number of iterations done.
+    """
+
+    txt = prefix_message + str(num_iter + 1) + "/" + str(total_iter)
+    progress_bar.setMessage(txt)
+    perc_training = round((100.0 * num_iter) / total_iter)
+    progress_bar.setProgress(perc_training)
+    QApplication.processEvents()
 
 
 def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val, labels_folder_val,
@@ -341,10 +362,7 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
         loss_values_per_iter = []
         for i, minibatch in enumerate(dataloaderTrain):
 
-            txt = "Training - Iterations " + str(num_iter + 1) + "/" + str(total_iter)
-            progress.setMessage(txt)
-            progress.setProgress((100.0 * num_iter) / total_iter)
-            QApplication.processEvents()
+            updateProgressBar(progress, "Training - Iteration ", num_iter, total_iter)
             num_iter += 1
 
             # get the inputs
@@ -384,7 +402,8 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
             metrics_val, mean_loss_val = evaluateNetwork(datasetVal, dataloaderVal, loss_to_use, CEloss, w_for_GDL,
                                                          tversky_loss_alpha, tversky_loss_beta, focal_tversky_gamma,
                                                          epoch, epochs_switch, epochs_transition,
-                                                         output_classes, net, flag_compute_mIoU=False)
+                                                         output_classes, net, progress, flag_compute_mIoU=False,
+                                                         flag_test=False)
             accuracy = metrics_val['Accuracy']
             jaccard_score = metrics_val['JaccardScore']
             scheduler.step(mean_loss_val)
@@ -397,7 +416,8 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
                 metrics_train, mean_loss_train = evaluateNetwork(datasetTrain, dataloaderTrain, loss_to_use, CEloss, w_for_GDL,
                                                                  tversky_loss_alpha, tversky_loss_beta, focal_tversky_gamma,
                                                                  epoch, epochs_switch, epochs_transition,
-                                                                 output_classes, net, flag_compute_mIoU=False)
+                                                                 output_classes, net, progress,
+                                                                 flag_compute_mIoU=False, flag_test=False)
                 accuracy_training = metrics_train['Accuracy']
                 jaccard_training = metrics_train['JaccardScore']
 
@@ -413,6 +433,8 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
 
             print("-> CURRENT BEST ACCURACY ", best_accuracy)
 
+            # restore training messages
+            updateProgressBar(progress, "Training - Iteration ", num_iter, total_iter)
 
     # main loop ended
     torch.cuda.empty_cache()
@@ -426,7 +448,7 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
 
 
 def testNetwork(images_folder, labels_folder, labels_dictionary, target_classes, dataset_train,
-                network_filename, output_folder):
+                network_filename, output_folder, progress):
     """
     Load a network and test it on the test dataset.
     :param network_filename: Full name of the network to load (PATH+name)
@@ -453,7 +475,7 @@ def testNetwork(images_folder, labels_folder, labels_dictionary, target_classes,
     print("Weights loaded.")
 
     metrics_test, loss = evaluateNetwork(datasetTest, dataloaderTest, "NONE", None, [0.0], 0.0, 0.0, 0.0, 0, 0, 0,
-                                         output_classes, net, True, output_folder)
+                                         output_classes, net, progress, True, True, output_folder)
     metrics_filename = network_filename[:len(network_filename) - 4] + "-test-metrics.txt"
     saveMetrics(metrics_test, metrics_filename)
     print("***** TEST FINISHED *****")

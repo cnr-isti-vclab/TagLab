@@ -27,8 +27,8 @@ class QtTrainingResultsWidget(QWidget):
 
         self.LINEWIDTH = 100
 
-        self.TG_WIDTH = 520
-        self.TG_HEIGHT = 360
+        self.TG_WIDTH = 640
+        self.TG_HEIGHT = 640 / 1.77777777
 
         self.LABEL_SIZE = 256
 
@@ -118,6 +118,7 @@ class QtTrainingResultsWidget(QWidget):
         self.QlabelTG = QLabel()
         self.QlabelTG.setMinimumWidth(self.TG_WIDTH)
         self.QlabelTG.setMinimumHeight(self.TG_HEIGHT)
+        self.figureTG = None
         self.pxmapTG = None
         self.setTrainingGraphs()
         self.QlabelTG.setPixmap(self.pxmapTG)
@@ -208,6 +209,7 @@ class QtTrainingResultsWidget(QWidget):
 
         self.adjustSize()
 
+        self.figureCM = None
         self.pxmapCM = None
         self.last_file = None
 
@@ -226,9 +228,10 @@ class QtTrainingResultsWidget(QWidget):
         disp.ax_.set_title("Normalized Confusion Matrix")
 
         fig = disp.figure_
-        fig.set_size_inches(8.0, 8.0)
+        fig.set_size_inches(6.0, 6.0)
 
-        self.pxmapCM = utils.figureToQPixmap(fig, dpi=180, width=800, height=800)
+        self.figureCM = fig
+        self.pxmapCM = utils.figureToQPixmap(fig, dpi=300, width=800, height=800)
 
         widget = QWidget(parent=self)
         widget.setFixedWidth(800)
@@ -253,7 +256,7 @@ class QtTrainingResultsWidget(QWidget):
         if filename:
             file = QFile(filename)
             file.open(QIODevice.WriteOnly)
-            self.pxmapCM.save(file, "PNG")
+            plt.savefig(file, format="png", dpi=300)
 
     @pyqtSlot()
     def SaveTG(self):
@@ -264,7 +267,7 @@ class QtTrainingResultsWidget(QWidget):
         if filename:
             file = QFile(filename)
             file.open(QIODevice.WriteOnly)
-            self.pxmapCM.save(file, "PNG")
+            plt.savefig(file, format="png", dpi=300)
 
     @pyqtSlot()
     def SelectTile(self):
@@ -280,16 +283,14 @@ class QtTrainingResultsWidget(QWidget):
 
         if self.last_file is not None and self.last_folder is not None:
 
-            print(event.key())
-
-            if event.key() == Qt.Key_Z:
+            if event.key() == Qt.Key_Left:
                 filelist = os.listdir(self.last_folder)
                 index = filelist.index(self.last_file)
                 if index < len(filelist) - 1:
                     index = index + 1
                 filename = filelist[index]
                 self.updateTiles(filename)
-            elif event.key() == Qt.Key_X:
+            elif event.key() == Qt.Key_Right:
                 filelist = os.listdir(self.last_folder)
                 index = filelist.index(self.last_file)
                 if index > 0:
@@ -311,7 +312,6 @@ class QtTrainingResultsWidget(QWidget):
 
             # GT tile
             filename = filename.replace('images', 'labels')
-            print(filename)
             img2 = QImage(filename)
             img2 = img2.copy(256, 256, 513, 513)
             pxmapGT = QPixmap.fromImage(img2)
@@ -330,7 +330,7 @@ class QtTrainingResultsWidget(QWidget):
         n_epochs = len(self.train_loss_data)
 
         fig = plt.figure()
-        fig.set_size_inches(10, 6.0)
+        fig.set_size_inches(6.3, 6.3 / 1.7777)
         plt.grid(axis="x")
         plt.xticks(np.arange(0, n_epochs, 5))
 
@@ -344,4 +344,5 @@ class QtTrainingResultsWidget(QWidget):
         plt.ylabel('Loss')
         plt.legend()
 
-        self.pxmapTG = utils.figureToQPixmap(fig, dpi=180, width=self.TG_WIDTH, height=self.TG_HEIGHT)
+        self.figureTG = fig
+        self.pxmapTG = utils.figureToQPixmap(fig, dpi=300, width=self.TG_WIDTH, height=self.TG_HEIGHT)

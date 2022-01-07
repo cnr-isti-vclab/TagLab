@@ -22,17 +22,17 @@ import os
 from PyQt5.QtCore import Qt, QSettings, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import QWidget, QColorDialog, QListWidget, QStackedWidget, QComboBox, QSizePolicy, QLineEdit, \
-    QLabel, QSpinBox, QCheckBox, QPushButton, QHBoxLayout, QVBoxLayout
-from source import utils
-from source.Grid import Grid
+    QLabel, QSpinBox, QCheckBox, QPushButton, QHBoxLayout, QVBoxLayout, QFileDialog
 
 class generalSettingsWidget(QWidget):
 
     researchFieldChanged = pyqtSignal(str)
     autosaveInfoChanged = pyqtSignal(int)
 
-    def __init__(self, settings, parent=None):
+    def __init__(self, settings, taglab_dir, parent=None):
         super(generalSettingsWidget, self).__init__(parent)
+
+        self.taglab_dir = taglab_dir
 
         self.settings = settings
 
@@ -44,12 +44,18 @@ class generalSettingsWidget(QWidget):
         self.lbl_autosave_1 = QLabel("Every ")
         self.lbl_autosave_2 = QLabel(" minutes.")
 
-        self.lbl_research_field = QLabel("Research field :  ")
+        self.lbl_research_field = QLabel("Research field: ")
         self.combo_research_field = QComboBox()
-        self.combo_research_field.setFixedWidth(200)
+        self.combo_research_field.setFixedWidth(240)
         self.combo_research_field.addItem("Marine Ecology/Biology")
         self.combo_research_field.addItem("Architectural Heritage")
         self.combo_research_field.setCurrentIndex(0)
+
+        self.lbl_default_dict = QLabel("Default dictionary: ")
+        self.edit_default_dict = QLineEdit("dictionaries/scripps.json")
+        self.btn_default_dict = QPushButton("...")
+        self.btn_default_dict.setFixedWidth(20)
+        self.btn_default_dict.clicked.connect(self.chooseDict)
 
         layout_H1 = QHBoxLayout()
         layout_H1.addWidget(self.lbl_research_field)
@@ -63,15 +69,32 @@ class generalSettingsWidget(QWidget):
         layout_H2.addWidget(self.lbl_autosave_2)
         layout_H2.addStretch()
 
+        layout_H3 = QHBoxLayout()
+        layout_H3.addWidget(self.lbl_default_dict)
+        layout_H3.addWidget(self.edit_default_dict)
+        layout_H3.addWidget(self.btn_default_dict)
+
         layout = QVBoxLayout()
         layout.addLayout(layout_H1)
         layout.addLayout(layout_H2)
+        layout.addLayout(layout_H3)
 
         self.setLayout(layout)
 
         self.combo_research_field.currentTextChanged.connect(self.setResearchField)
         self.checkbox_autosave.stateChanged.connect(self.autosaveChanged)
         self.spinbox_autosave_interval.valueChanged.connect(self.autosaveIntervalChanged)
+
+    @pyqtSlot()
+    def chooseDict(self):
+
+        filters = "JSON (*.json)"
+        file_name, _ = QFileDialog.getOpenFileName(self, "Default Dictionary File", "", filters)
+        if file_name:
+            default_dict = os.path.relpath(file_name, start=self.taglab_dir)
+            self.edit_default_dict.setText(default_dict)
+            self.settings.setValue("default-dictionary", default_dict)
+
 
     @pyqtSlot(int)
     def autosaveChanged(self, status):
@@ -389,7 +412,7 @@ class QtSettingsWidget(QWidget):
 
     accepted = pyqtSignal()
 
-    def __init__(self, parent=None):
+    def __init__(self, taglab_dir, parent=None):
         super(QtSettingsWidget, self).__init__(parent)
 
         self.settings = QSettings("VCLAB", "TagLab")
@@ -402,12 +425,13 @@ class QtSettingsWidget(QWidget):
         ###### LEFT PART
 
         self.listwidget = QListWidget()
+        self.listwidget.setMaximumWidth(100)
         self.listwidget.addItem("General")
         self.listwidget.addItem("Drawing")
 
         ###### CENTRAL PART
 
-        self.general_settings = generalSettingsWidget(self.settings)
+        self.general_settings = generalSettingsWidget(self.settings, taglab_dir)
         self.drawing_settings = drawingSettingsWidget(self.settings)
 
         self.stackedwidget = QStackedWidget()
@@ -417,20 +441,6 @@ class QtSettingsWidget(QWidget):
         layoutH = QHBoxLayout()
         layoutH.addWidget(self.listwidget)
         layoutH.addWidget(self.stackedwidget)
-
-        ###### CANCEL/APPLY
-
-        #self.btnCancel = QPushButton("Cancel")
-        #self.btnApply = QPushButton("Apply")
-
-        #layout_buttons = QHBoxLayout()
-        #layout_buttons.setAlignment(Qt.AlignRight)
-        #layout_buttons.addStretch()
-        #layout_buttons.addWidget(self.btnCancel)
-        #layout_buttons.addWidget(self.btnApply)
-
-        #self.btnCancel.clicked.connect(self.close)
-        #self.btnApply.clicked.connect(self.apply)
 
         ###########################################################
 
@@ -460,11 +470,10 @@ class QtSettingsWidget(QWidget):
 
     def loadSettings(self):
 
-        self.settings_widget = QtSettingsWidget()
-
         # 0: autosave is disabled , >0: the project is saved every N seconds
         self.autosave_interval = self.settings.value("autosave", defaultValue=0, type=int)
         self.research_field = self.settings.value("research-field", defaultValue="Marine Ecology/Biology", type=str)
+        self.default_dictionary = self.settings.value("default-dictionary", defaultValue="dictionaries/scripps.json", type=str)
 
         self.selection_pen_color = self.settings.value("selection-pen-color", defaultValue="255-255-255", type=str)
         self.selection_pen_width = self.settings.value("selection-pen-width", defaultValue=2, type=int)
