@@ -66,6 +66,7 @@ from source.QtTrainingResultsWidget import QtTrainingResultsWidget
 from source.QtTYNWidget import QtTYNWidget
 from source.QtComparePanel import QtComparePanel
 from source.QtProjectWidget import QtProjectWidget
+from source.QtProjectEditor import QtProjectEditor
 from source.Project import Project, loadProject
 from source.Image import Image
 from source.MapClassifier import MapClassifier
@@ -156,11 +157,13 @@ class TagLab(QMainWindow):
         #####################
 
         self.mapWidget = None
+        self.projectEditor = None
+        self.editProjectWidget = None
         self.scale_widget = None
         self.working_area_widget = None
         self.classifierWidget = None
         self.newDatasetWidget = None
-        self.editProjectWidget = None
+
         self.trainYourNetworkWidget = None
         self.trainResultsWidget = None
         self.progress_bar = None
@@ -825,10 +828,15 @@ class TagLab(QMainWindow):
         for i in range(self.maxRecentFiles):
             self.recentFileActs.append(QAction(self, visible=False, triggered=self.openRecentProject))
 
-        newMapAct = QAction("Add New Map..", self)
+        newMapAct = QAction("Add New Map...", self)
         newMapAct.setShortcut('Ctrl+L')
         newMapAct.setStatusTip("Add a new map to the project")
         newMapAct.triggered.connect(self.setMapToLoad)
+
+        projectEditorAct = QAction("Project editor...", self)
+        projectEditorAct.setShortcut('Ctrl+L')
+        projectEditorAct.setStatusTip("Open project editor dialog")
+        projectEditorAct.triggered.connect(self.openProjectEditor)
 
         ### PROJECT
 
@@ -967,6 +975,7 @@ class TagLab(QMainWindow):
         self.projectmenu = menubar.addMenu("&Project")
         self.projectmenu.setStyleSheet(styleMenu)
         self.projectmenu.addAction(newMapAct)
+        self.projectmenu.addAction(projectEditorAct)
         self.submenuEdit = self.projectmenu.addMenu("Edit Maps info")
         self.submenuEdit.setEnabled(False)
         self.projectmenu.addSeparator()
@@ -1107,6 +1116,9 @@ class TagLab(QMainWindow):
 
         index = self.mapActionList.index(openMapAction)
         image = self.project.images[index]
+        self.editMapSettingsImage(image)
+
+    def editMapSettingsImage(self, image):
 
         if self.mapWidget is None:
             self.mapWidget = QtMapSettingsWidget(parent=self)
@@ -1131,6 +1143,16 @@ class TagLab(QMainWindow):
         self.mapWidget.accepted.disconnect()
         self.mapWidget.accepted.connect(self.updateMapProperties)
         self.mapWidget.show()
+
+    def deleteImage(self, img):
+        self.project.deleteImage(img)
+        self.updateImageSelectionMenu()
+        if len(self.project.images) == 0:
+            self.resetAll()
+            return
+        
+        if self.viewerplus.image == img:
+            self.showImage(self.project.images[0])
 
     def toggleRGBDEM(self, viewer):
         """
@@ -2714,6 +2736,15 @@ class TagLab(QMainWindow):
                 self.mapWidget.show()
 
     @pyqtSlot()
+    def openProjectEditor(self):
+        if self.projectEditor is None:
+            self.projectEditor = QtProjectEditor(self.project, parent=self)
+            self.projectEditor.setWindowModality(Qt.WindowModal)
+
+        self.projectEditor.fillMaps()
+        self.projectEditor.show()
+
+    @pyqtSlot()
     def createDictionary(self):
 
         self.create_dictionary = QtDictionaryWidget(self.taglab_dir, self.project, parent = self)
@@ -2839,6 +2870,7 @@ class TagLab(QMainWindow):
         # this should only operate on the active image
         self.activeviewer.image.map_px_to_mm_factor = round(value, 3)
         self.activeviewer.px_to_mm = round(value, 3)
+
     @pyqtSlot()
     def updateMapProperties(self):
 
