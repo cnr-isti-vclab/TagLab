@@ -577,6 +577,8 @@ class TagLab(QMainWindow):
         self.timer = QTimer(self)
 
         self.updateToolStatus()
+
+        self.split_screen_flag = False
         self.disableSplitScreen()
 
         self.move()
@@ -1576,23 +1578,28 @@ class TagLab(QMainWindow):
             if splitScreenAction is not None:
                 splitScreenAction.setText("Enable Split Screen")
 
-        # just inb case..
+        # just in case..
         self.viewerplus2.viewUpdated[QRectF].connect(self.mapviewer.drawOverlayImage)
 
-        # disconnect all slots
+        # disconnect viewer 2 slots
         self.viewerplus2.viewUpdated[QRectF].disconnect()
 
         self.btnSplitScreen.setChecked(False)
         self.split_screen_flag = False
 
+        self.activeviewer = self.viewerplus
 
     def enableSplitScreen(self):
 
-        self.viewerplus.viewChanged()
+        if self.working_area_widget is not None:
+            self.btnSplitScreen.setChecked(False)
+            return
 
         if len(self.project.images) > 1:
 
             QApplication.setOverrideCursor(Qt.WaitCursor)
+
+            self.viewerplus.viewChanged()
 
             index = self.comboboxSourceImage.currentIndex()
             if index < 0:
@@ -1621,21 +1628,23 @@ class TagLab(QMainWindow):
 
             QApplication.restoreOverrideCursor()
 
-        self.viewerplus2.show()
-        self.comboboxTargetImage.show()
-        self.viewerplus.viewChanged()
+            self.viewerplus2.show()
+            self.comboboxTargetImage.show()
+            self.viewerplus.viewChanged()
 
-        self.viewerplus2.viewUpdated[QRectF].connect(self.mapviewer.drawOverlayImage)
+            self.viewerplus2.viewUpdated[QRectF].connect(self.mapviewer.drawOverlayImage)
 
-        if self.comparemenu is not None:
-            splitScreenAction = self.comparemenu.actions()[0]
-            if splitScreenAction is not None:
-                splitScreenAction.setText("Disable Split Screen")
+            if self.comparemenu is not None:
+                splitScreenAction = self.comparemenu.actions()[0]
+                if splitScreenAction is not None:
+                    splitScreenAction.setText("Disable Split Screen")
 
-        self.blobdock.hide()
+            self.blobdock.hide()
 
-        self.btnSplitScreen.setChecked(True)
-        self.split_screen_flag = True
+            self.btnSplitScreen.setChecked(True)
+            self.split_screen_flag = True
+
+            self.activeviewer = self.viewerplus
 
     def createMatch(self):
         """
@@ -3057,6 +3066,9 @@ class TagLab(QMainWindow):
         if self.activeviewer is not None:
             if self.activeviewer.image is not None:
                 if self.working_area_widget is None:
+
+                    self.disableSplitScreen()
+
                     self.working_area_widget = QtWorkingAreaWidget(self)
                     self.working_area_widget.btnChooseArea.clicked.connect(self.enableAreaSelection)
                     self.working_area_widget.closed.connect(self.disableAreaSelection)
@@ -3067,6 +3079,8 @@ class TagLab(QMainWindow):
                     selection_tool.setAreaStyle("WORKING")
                     selection_tool.rectChanged[int, int, int, int].connect(self.working_area_widget.updateArea)
                     self.working_area_widget.areaChanged[int, int, int, int].connect(selection_tool.setSelectionRectangle)
+                    self.working_area_widget.areaChanged[int, int, int, int].connect(selection_tool.setSelectionRectangle)
+
                     if self.project.working_area is not None:
                         if len(self.project.working_area) == 4:
                             wa = self.project.working_area
