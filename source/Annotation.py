@@ -457,10 +457,12 @@ class Annotation(QObject):
 
         labelimg = utils.rgbToQImage(image)
 
-        # FIXME: this is inefficient! The working_area should be used during the drawing.
-        labelimg_cropped = utils.cropQImage(labelimg, working_area)
-
-        return labelimg_cropped
+        if working_area is not None:
+            # FIXME: this is inefficient! The working_area should be used during the drawing.
+            labelimg_cropped = utils.cropQImage(labelimg, working_area)
+            return labelimg_cropped
+        else:
+            return labelimg
 
     def import_label_map(self, filename, labels_dictionary, offset, scale, create_holes=False):
         """
