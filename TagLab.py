@@ -168,6 +168,7 @@ class TagLab(QMainWindow):
         self.trainResultsWidget = None
         self.progress_bar = None
         self.gridWidget = None
+        self.contextMenuPosition = None
 
 
         ##### TOP LAYOUT
@@ -680,22 +681,25 @@ class TagLab(QMainWindow):
 
     @pyqtSlot()
     def markEmptyOperation(self):
-        self.activeviewer.updateCellState(0)
+        if self.contextMenuPosition is not None:
+            self.activeviewer.updateCellState(self.contextMenuPosition.x(),self.contextMenuPosition.y(), 0)
 
     @pyqtSlot()
     def markIncompleteOperation(self):
-        self.activeviewer.updateCellState(1)
+        if self.contextMenuPosition is not None:
+            self.activeviewer.updateCellState(self.contextMenuPosition.x(),self.contextMenuPosition.y(), 1)
 
     @pyqtSlot()
     def markCompleteOperation(self):
-        self.activeviewer.updateCellState(2)
+        if self.contextMenuPosition is not None:
+            self.activeviewer.updateCellState(self.contextMenuPosition.x(), self.contextMenuPosition.y(), 2)
 
 
     @pyqtSlot()
     def addNoteOperation(self):
 
-        if self.btnGrid.isChecked():
-            self.activeviewer.addNote()
+        if self.contextMenuPosition is not None and self.btnGrid.isChecked():
+            self.activeviewer.addNote(self.contextMenuPosition.x(), self.contextMenuPosition.y())
 
     def setAutosave(self, interval):
         """
@@ -757,12 +761,11 @@ class TagLab(QMainWindow):
         menu.addAction(self.dilateAction)
         menu.addAction(self.erodeAction)
         menu.addAction(self.attachBoundariesAction)
-        #menu.addAction(self.refineActionDilate)
-        #menu.addAction(self.refineActionErode)
         menu.addAction(self.fillAction)
 
         viewer = self.sender()
-        action = menu.exec_(viewer.mapToGlobal(position))
+        self.contextMenuPosition = viewer.mapToGlobal(position)
+        action = menu.exec_(self.contextMenuPosition)
 
     def setProjectTitle(self, project_name):
 
@@ -1479,7 +1482,8 @@ class TagLab(QMainWindow):
         elif event.key() == Qt.Key_G:
 
             if self.btnGrid.isChecked():
-                self.activeviewer.updateCellState(None)
+                pos = self.cursor().pos()
+                self.activeviewer.updateCellState(pos.x(), pos.y(), None)
 
         elif event.key() == Qt.Key_1:
             # ACTIVATE "MOVE" TOOL
@@ -2012,6 +2016,7 @@ class TagLab(QMainWindow):
         self.project.loadDictionary(self.default_dictionary)
         self.last_image_loaded = None
         self.activeviewer = None
+        self.contextMenuPosition = None
         self.compare_panel.clear()
         self.comboboxSourceImage.clear()
         self.comboboxTargetImage.clear()

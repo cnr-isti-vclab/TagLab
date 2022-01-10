@@ -573,19 +573,19 @@ class QtImageViewerPlus(QtImageViewer):
             self.newSelection.emit()
         self.logfile.info("[SELECTION][DOUBLE-CLICK] Selection ends.")
 
-    def updateCellState(self, state):
+    def updateCellState(self, x, y, state):
 
         if self.image.grid is not None and self.show_grid is True:
-            pos = self.mapFromGlobal(self.cursor().pos())
+            pos = self.mapFromGlobal(QPoint(x, y))
             scenePos = self.mapToScene(pos)
             self.image.grid.changeCellState(scenePos.x(), scenePos.y(), state)
 
-    def addNote(self):
+    def addNote(self, x, y):
         """
         Insert the node to add.
         """
         if self.image.grid is not None and self.show_grid is True:
-            pos = self.mapFromGlobal(self.cursor().pos())
+            pos = self.mapFromGlobal(QPoint(x, y))
             scenePos = self.mapToScene(pos)
             self.image.grid.addNote(scenePos.x(), scenePos.y(), "Enter note..")
 
