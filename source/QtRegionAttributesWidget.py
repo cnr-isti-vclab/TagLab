@@ -1,7 +1,7 @@
 # TagLab
 # A semi-automatic segmentation tool
 #
-# Copyright(C) 2019
+# Copyright(C) 2021
 # Visual Computing Lab
 # ISTI - Italian National Research Council
 # All rights reserved.
@@ -37,7 +37,7 @@ class QtRegionAttributesWidget(QWidget):
 
         self.region_attributes = deepcopy(project.region_attributes)
 
-#        self.setStyleSheet("background-color: rgb(40,40,40); color: white")
+        self.setStyleSheet("background-color: rgb(40,40,40); color: white")
 
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.setMinimumWidth(600)
@@ -97,6 +97,7 @@ class QtRegionAttributesWidget(QWidget):
         self.table.cellActivated.connect(self.selectRow)
         self.table.cellClicked.connect(self.selectRow)
         self.table.currentCellChanged.connect(self.selectRow)
+        self.table.setStyleSheet("QHeaderView::section { background-color: rgb(40,40,40); }")
 
         left_layout.addWidget(self.table)
 
