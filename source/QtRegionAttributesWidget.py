@@ -294,11 +294,11 @@ class QtRegionAttributesWidget(QWidget):
         self.updateFieldType()
 
         min = ''
-        if field['min'] != None:
+        if 'min' in field.keys() and field['min'] != None:
             min = str(field['min'])
         self.editMin.setText(min)
         max = ''
-        if field['max'] != None:
+        if 'max' in field.keys() and field['max'] != None:
             max = str(field['max'])
         self.editMax.setText(max)
         self.editValues.setText(' '.join(field['keywords']))
