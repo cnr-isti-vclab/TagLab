@@ -143,7 +143,8 @@ class MapClassifier(QObject):
         self.wa_height = round(h_target - 2*self.padding)
 
 
-    def run(self, TILE_SIZE, AGGREGATION_WINDOW_SIZE, AGGREGATION_STEP, save_scores = False, autocolor = False,  autolevel = False):
+    def run(self, TILE_SIZE, AGGREGATION_WINDOW_SIZE, AGGREGATION_STEP, prediction_threshold=0.5,
+            save_scores = False, autocolor = False,  autolevel = False):
         """
         :param TILE_SIZE: Base tile. This corresponds to the INPUT SIZE of the network.
         :param AGGREGATION_WINDOW_SIZE: Size of the center window considered for the aggregation.
@@ -269,6 +270,9 @@ class MapClassifier(QObject):
 
                 values_t, predictions_t = torch.max(torch.from_numpy(preds_avg), 0)
                 preds = predictions_t.cpu().numpy()
+                values_t = values_t.cpu().numpy()
+                unc_matrix = values_t < prediction_threshold
+                preds[unc_matrix] = self.background_index  # assign background
 
                 resimg = np.zeros((preds.shape[0], preds.shape[1], 3), dtype='uint8')
                 for label_index in range(self.nclasses):
@@ -365,9 +369,8 @@ class MapClassifier(QObject):
         predictions = np.argmax(self.scores, 0)
         max_scores = np.max(self.scores, 0)
 
-        uncMatrix = tresh > max_scores
-
-        predictions[uncMatrix] = self.background_index  # assign background
+        unc_matrix = max_scores < tresh
+        predictions[unc_matrix] = self.background_index  # assign background
 
         resimg = np.zeros((predictions.shape[0], predictions.shape[1], 3), dtype='uint8')
         for label_index in range(self.nclasses):

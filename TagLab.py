@@ -3895,6 +3895,7 @@ class TagLab(QMainWindow):
             classifier_selected = self.classifierWidget.selected()
             checkColor = self.classifierWidget.chkAutocolor.isChecked()
             checkLevel = self.classifierWidget.chkAutolevel.isChecked()
+            pred_thresh = self.classifierWidget.sliderScores.value() / 100.0
             target_scale_factor = classifier_selected['Scale']
 
             # free GPU memory
@@ -3919,7 +3920,8 @@ class TagLab(QMainWindow):
             self.progress_bar.setProgress(0.0)
             QApplication.processEvents()
 
-            self.classifier.run(1026, 513, 256, save_scores=True,autocolor = checkColor, autolevel = checkLevel)
+            self.classifier.run(1026, 513, 256, prediction_threshold=pred_thresh,
+                                save_scores=True,autocolor = checkColor, autolevel = checkLevel)
             self.classifier.loadScores()
             self.showScores()
 
@@ -3929,8 +3931,8 @@ class TagLab(QMainWindow):
 
         self.classifierWidget.enableSliders()
 
-        tresh = self.classifierWidget.sliderScores.value()/100.0
-        outimg = self.classifier.classify(tresh)
+        pred_thresh = self.classifierWidget.sliderScores.value() / 100.0
+        outimg = self.classifier.classify(pred_thresh)
         self.classifierWidget.setLabelPreview(outimg)
 
     def resetAutomaticClassification(self):
@@ -3961,6 +3963,7 @@ class TagLab(QMainWindow):
             classifier_selected = self.classifierWidget.selected()
             checkcolor = self.classifierWidget.chkAutocolor.isChecked()
             checklevel = self.classifierWidget.chkAutolevel.isChecked()
+            pred_thresh = self.classifierWidget.sliderScores.value() / 100.0
 
             # free GPU memory
             self.resetNetworks()
@@ -4006,7 +4009,8 @@ class TagLab(QMainWindow):
                 # runs the classifier
                 self.infoWidget.setInfoMessage("Automatic classification is running..")
 
-                self.classifier.run(1026, 513, 256, save_scores=False, autocolor=checkcolor,  autolevel=checklevel)
+                self.classifier.run(1026, 513, 256, prediction_threshold=pred_thresh,
+                    save_scores=False, autocolor=checkcolor,  autolevel=checklevel)
 
                 if self.classifier.flagStopProcessing is False:
 
