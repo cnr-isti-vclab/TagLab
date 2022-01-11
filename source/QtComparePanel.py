@@ -390,7 +390,7 @@ class QtComparePanel(QWidget):
 
     def updateTable(self, corr):
 
-        if corr is None or if model is None:
+        if corr is None or model is None:
             return
 
         self.correspondences = corr
