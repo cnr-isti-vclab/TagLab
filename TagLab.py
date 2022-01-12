@@ -104,9 +104,16 @@ class MainWindow(QMainWindow):
         taglab = self.centralWidget()
         if taglab.project.filename is not None:
             box = QMessageBox()
-            reply = box.question(self, taglab.TAGLAB_VERSION, "Do you want to save changes to " + taglab.project.filename, QMessageBox.Yes | QMessageBox.No)
+            reply = box.question(self, taglab.TAGLAB_VERSION, "Do you want to save changes to " + taglab.project.filename,
+                                 QMessageBox.Cancel | QMessageBox.Yes | QMessageBox.No)
+
             if reply == QMessageBox.Yes:
-               taglab.saveProject()
+                taglab.saveProject()
+
+            if reply == QMessageBox.Cancel:
+                event.ignore()
+                return
+
         super(MainWindow, self).closeEvent(event)
 
 class TagLab(QMainWindow):
