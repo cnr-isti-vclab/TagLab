@@ -37,7 +37,6 @@ class QtProjectEditor(QWidget):
         self.setMinimumWidth(600)
 
         layout = QVBoxLayout()
-        layout.addWidget(QLabel("Maps:"))
 
         self.area = QScrollArea()
         v = QVBoxLayout()
@@ -53,7 +52,7 @@ class QtProjectEditor(QWidget):
 #
         self.setLayout(layout)
 
-        self.setWindowTitle("Project editor")
+        self.setWindowTitle("Maps editor")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
         self.fillMaps()
