@@ -305,27 +305,26 @@ class QtDictionaryWidget(QWidget):
 
         name = self.edit_dname.text()
         description = self.edit_description.document().toPlainText()
-        if name!= '':
-            dir = os.path.join(self.taglab_dir, name + '.json')
-            filters = "DICTIONARY (*.json)"
-            filename, _ = QFileDialog.getSaveFileName(self, "Save dictionary", dir, filters)
+        dir = os.path.join(self.taglab_dir, name + '.json')
+        filters = "DICTIONARY (*.json)"
+        filename, _ = QFileDialog.getSaveFileName(self, "Save dictionary", dir, filters)
+
+        if filename:
             dict={'Name': name, 'Description': description, 'Labels': self.labels}
             text = json.dumps(dict, cls = DictionaryEncoder, indent = 2)
             f = open(filename, "w")
             f.write(text)
             f.close()
+            msgBox = QMessageBox(self)
+            msgBox.setWindowTitle('TagLab')
+            msgBox.setText("Dictionary successfully exported!")
+            msgBox.exec()
         else:
             box = QMessageBox()
             box.setWindowTitle('TagLab')
             box.setText("Please enter a dictionary name")
             box.exec()
             pass
-
-        msgBox = QMessageBox(self)
-        msgBox.setWindowTitle('TagLab')
-        msgBox.setText("Dictionary successfully exported!")
-        msgBox.exec()
-
 
     @pyqtSlot(int,int,int,str)
     def createLabel(self, r, g, b, name):
