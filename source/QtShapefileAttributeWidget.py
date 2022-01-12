@@ -85,7 +85,7 @@ class QtAttributeWidget(QWidget):
         lbltype = QLabel("Shapefile type:")
 
         self.types_layout = QHBoxLayout()
-        self.chkBoxlabel = QRadioButton("Labels")
+        self.chkBoxlabel = QRadioButton("Labeled regions")
         self.chkBoxlabel.setChecked(True)
         # self.chkBoxlabel.toggled.connect(lambda: self.btnstate(self.chkBoxlabel))
         self.chkBoxsampling = QRadioButton("Sampling")
@@ -95,8 +95,8 @@ class QtAttributeWidget(QWidget):
         # self.chkBoxlabel.toggled.connect(lambda: self.btnstate(self.chkBoxother))
         # self.chkBoxother.setChecked(False)
         self.types_layout.addWidget(self.chkBoxlabel)
-        self.types_layout.addWidget(self.chkBoxother)
         self.types_layout.addWidget(self.chkBoxsampling)
+        self.types_layout.addWidget(self.chkBoxother)
 
         self.choice_layout = QVBoxLayout()
         self.choice_layout.addWidget(lbltype)
@@ -182,11 +182,9 @@ class QtAttributeWidget(QWidget):
     def accept(self):
 
         if self.chkBoxlabel.isChecked():
-           self.shape = 'Label'
-
+           self.shape = 'Labeled regions'
         elif self.chkBoxsampling.isChecked():
              self.shape = 'Sampling'
-
         else:
            self.shape = 'Other'
 

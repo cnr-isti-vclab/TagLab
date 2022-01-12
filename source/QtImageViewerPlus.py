@@ -150,6 +150,16 @@ class QtImageViewerPlus(QtImageViewer):
         self.border_selected_pen = QPen(Qt.white, 3)
         self.border_selected_pen.setCosmetic(True)
 
+        self.sampling_pen = QPen(Qt.yellow, 3)
+        self.sampling_pen.setCosmetic(True)
+        self.sampling_brush = QBrush(Qt.yellow)
+        self.sampling_brush.setStyle(Qt.CrossPattern)
+
+        self.markers_pen = QPen(Qt.cyan, 3)
+        self.markers_pen.setCosmetic(True)
+        self.markers_brush = QBrush(Qt.cyan)
+        self.markers_brush.setStyle(Qt.SolidPattern)
+
         self.working_area_pen = QPen(Qt.white, 3, Qt.DashLine)
         self.working_area_pen.setCosmetic(True)
 
@@ -194,6 +204,9 @@ class QtImageViewerPlus(QtImageViewer):
         # draw all the annotations
         for blob in self.annotations.seg_blobs:
             self.drawBlob(blob)
+
+        # draw the layers
+        self.drawAllLayers()
 
         # draw the working area (if defined)
         self.drawWorkingArea()
@@ -433,6 +446,77 @@ class QtImageViewerPlus(QtImageViewer):
         else:
             self.enableBorders()
 
+    def drawAllLayers(self):
+        for layer in self.image.layers:
+            if layer.isEnabled():
+                self.drawLayer(layer)
+            else:
+                self.undrawLayer(layer)
+
+    def drawLayer(self, layer):
+        for shape in layer.shapes:
+            self.drawShape(shape, layer.type)
+
+    def undrawLayer(self, layer):
+        for shape in layer.shapes:
+            self.undrawShape(shape)
+
+    def drawShape(self, shape, layer_type):
+
+        if shape.type == "point":
+
+            # if the graphics item has just been create we remove it to set it again
+            if shape.qpath_gitem is not None:
+                self.scene.removeItem(shape.point_gitem)
+                del shape.point_gitem
+                shape.point_gitem = None
+
+            pen = QPen(Qt.white, 3)
+            pen.setCosmetic(True)
+            brush = QBrush(Qt.red)
+            brush.setStyle(Qt.SolidPattern)
+
+            x = shape.outer_contour[0][0]
+            y = shape.outer_contour[0][1]
+            shape.point_gitem = self.scene.addEllipse(x - 5, y - 5, 10, 10, pen, brush)
+
+        elif shape.type == "polygon":
+
+            # if the graphics item has just been create we remove it to set it again
+            if shape.qpath_gitem is not None:
+                self.scene.removeItem(shape.qpath_gitem)
+                self.scene.removeItem(shape.id_item)
+                del shape.qpath_gitem
+                del shape.id_item
+                shape.qpath_gitem = None
+                shape.id_item = None
+
+            shape.setupForDrawing()
+
+            if layer_type == "Sampling":
+                pen = self.sampling_pen
+                brush = self.sampling_brush
+            else:
+                pen = self.markers_pen
+                brush = self.markers_brush
+
+            shape.qpath_gitem = self.scene.addPath(shape.qpath, pen, brush)
+            shape.qpath_gitem.setZValue(1)
+            shape.qpath_gitem.setOpacity(self.transparency_value)
+
+    def undrawShape(self, shape):
+
+        if shape.type == "point":
+            if shape.point_gitem is not None:
+                self.scene.removeItem(shape.point_gitem)
+        elif shape.type == "polygon":
+            if shape.qpath_gitem is not None:
+                self.scene.removeItem(shape.qpath_gitem)
+                shape.qpath = None
+                shape.qpath_gitem = None
+
+        self.scene.invalidate()
+
     def drawBlob(self, blob):
 
         # if it has just been created remove the current graphics item in order to set it again
@@ -462,6 +546,7 @@ class QtImageViewerPlus(QtImageViewer):
         blob.id_item.setOpacity(0.8)
 
     def undrawBlob(self, blob):
+
         self.scene.removeItem(blob.qpath_gitem)
         self.scene.removeItem(blob.id_item)
         blob.qpath = None
@@ -942,6 +1027,7 @@ class QtImageViewerPlus(QtImageViewer):
         self.undo_data.addBlob(blob)
         self.project.addBlob(self.image, blob)
         self.drawBlob(blob)
+
         if selected:
             self.addToSelectedList(blob)
 

@@ -10,6 +10,7 @@ from rasterio.plot import reshape_as_raster
 from rasterio.mask import mask
 import pandas as pd
 from source.Blob import Blob
+from source.Shape import Shape
 from source.Mask import subtract
 from numpy.linalg import inv
 
@@ -93,7 +94,8 @@ def read_attributes(filename):
             Data = Data.append(data, ignore_index=True)
     return Data
 
-def read_geometry(filename, georef_filename, shapetype):
+
+def read_regions_geometry(filename, georef_filename):
 
     img = rio.open(georef_filename)
     transform = img.transform
@@ -102,47 +104,63 @@ def read_geometry(filename, georef_filename, shapetype):
     dataSource = driver.Open(filename, 0)
     layer = dataSource.GetLayer(0)
 
-    if shapetype == 'Label':
-        blobList = []
-        for feat in layer:
-            shpdict =json.loads(feat.ExportToJson())
-            if shpdict['geometry']['type'] == 'Polygon':
-               blob = Blob(None, 0, 0, '0')
-               coord = shpdict['geometry']['coordinates']
-               outercontourn = coord[0]
-               outpointpixels = changeFormatInv([outercontourn], transform)
-               blob.createFromClosedCurve([np.asarray(outpointpixels)])
-               for i in range(1, len(coord)):
-                   innercontourn_i = coord[i]
-                   innerpointpixels_i = changeFormatInv([innercontourn_i], transform)
-                   innerblob = Blob(None, 0, 0, '0')
-                   innerblob.createFromClosedCurve([np.asarray(innerpointpixels_i)])
-                   (mask, box) = subtract(blob.getMask(), blob.bbox, innerblob.getMask(), innerblob.bbox)
-                   if mask.any():
-                       blob.updateUsingMask(box, mask.astype(int))
-               blobList.append(blob)
-
-    if shapetype == 'Sampling':
-        # sampling puo'avere cerchi bucati? Contorni interni? che forme ammettiamo?
-        centers =[]
-        rays = []
-        for feat in layer:
-            shpdict = json.loads(feat.ExportToJson())
-            if shpdict['geometry']['type'] == 'Polygon':
-                blob = Blob(None, 0, 0, '0')
-                coord = shpdict['geometry']['coordinates']
-                outercontourn = coord[0]
-                outpointpixels = changeFormatInv([outercontourn], transform)
-                blob.createFromClosedCurve([np.asarray(outpointpixels)])
-                c = round((4*np.pi*blob.area)/ np.square(blob.perimeter), 2)
-                center = blob.centroid
-                r = (blob.perimeter)/(2*np.pi)
-
-            if shpdict['geometry']['type'] == 'Point':
-                coord = shpdict['geometry']['coordinates']
-                coord_map = changeFormatInv(coord, transform)
+    blobList = []
+    for feat in layer:
+        shpdict = json.loads(feat.ExportToJson())
+        if shpdict['geometry']['type'] == 'Polygon':
+            blob = Blob(None, 0, 0, 0)
+            coord = shpdict['geometry']['coordinates']
+            outercontour = coord[0]
+            outpointpixels = changeFormatInv([outercontour], transform)
+            blob.createFromClosedCurve([np.asarray(outpointpixels)])
+            for i in range(1, len(coord)):
+                innercontourn_i = coord[i]
+                innerpointpixels_i = changeFormatInv([innercontourn_i], transform)
+                innerblob = Blob(None, 0, 0, 0)
+                innerblob.createFromClosedCurve([np.asarray(innerpointpixels_i)])
+                (mask, box) = subtract(blob.getMask(), blob.bbox, innerblob.getMask(), innerblob.bbox)
+                if mask.any():
+                    blob.updateUsingMask(box, mask.astype(int))
+            blobList.append(blob)
 
     return blobList
+
+
+def read_geometry(filename, georef_filename):
+
+    img = rio.open(georef_filename)
+    transform = img.transform
+
+    driver = ogr.GetDriverByName("ESRI Shapefile")
+    dataSource = driver.Open(filename, 0)
+    layer = dataSource.GetLayer(0)
+
+    shape_list = []
+    for feat in layer:
+        shpdict = json.loads(feat.ExportToJson())
+
+        if shpdict['geometry']['type'] == 'Polygon':
+            coord = shpdict['geometry']['coordinates']
+            outercontour = coord[0]
+            outpointpixels = changeFormatInv([outercontour], transform)
+
+            inner_contours = []
+            for i in range(1, len(coord)):
+                innercontourn_i = coord[i]
+                innerpointpixels_i = changeFormatInv([innercontourn_i], transform)
+                inner_contours.append(np.asarray(innerpointpixels_i))
+
+            shape = Shape(np.asarray(outpointpixels), inner_contours)
+            shape_list.append(shape)
+
+        if shpdict['geometry']['type'] == 'Point':
+            coord = shpdict['geometry']['coordinates']
+            coord_map = changeFormatInv([[coord]], transform)
+
+            sh = Shape(np.asarray(coord_map), None)
+            shape_list.append(sh)
+
+    return shape_list
 
 
 

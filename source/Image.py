@@ -1,5 +1,6 @@
 from source.Channel import Channel
 from source.Blob import Blob
+from source.Shape import Layer, Shape
 from source.Annotation import Annotation
 from source.Grid import Grid
 import rasterio as rio
@@ -9,7 +10,8 @@ class Image(object):
     def __init__(self, rect = [0.0, 0.0, 0.0, 0.0],
         map_px_to_mm_factor = 1.0, width = None, height = None, channels = [], id = None, name = None,
         acquisition_date = "",
-        georef_filename = "", workspace = [], metadata = {}, annotations = {}, grid = {}, export_dataset_area = []):
+        georef_filename = "", workspace = [], metadata = {}, annotations = {}, layers = [],
+                 grid = {}, export_dataset_area = []):
 
         #we have to select a standanrd enforced!
         #in image standard (x, y, width height)
@@ -28,6 +30,15 @@ class Image(object):
             blob = Blob(None, 0, 0, 0)
             blob.fromDict(data)
             self.annotations.addBlob(blob)
+
+        self.layers = []
+        for layer_data in layers:
+            layer = Layer(layer_data["type"])
+            for data in layer_data["shapes"]:
+                shape = Shape(None, None)
+                shape.fromDict(data)
+                layer.shapes.append(shape)
+            self.layers.append(layer)
 
         self.channels = list(map(lambda c: Channel(**c), channels))
 
@@ -112,9 +123,6 @@ class Image(object):
         for index,channel in enumerate(self.channels):
             if channel.type == type:
                self.channels[index] = Channel(filename, type)
-
-
-
 
     def hasDEM(self):
         """

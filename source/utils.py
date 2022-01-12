@@ -354,3 +354,18 @@ def whiteblance(img):
 
     return output_img
 
+def setAttributes(project, data, object_list):
+
+    count = 0
+    for obj in object_list:
+        row = data.iloc[count]
+        count += 1
+        for field in data.columns:
+            if project.region_attributes.has(field):
+                if row[field] is None:
+                    continue
+                if data.dtypes[field] == 'int64':
+                    obj.data[field] = int(row[field])
+                else:
+                    obj.data[field] = row[field]
+

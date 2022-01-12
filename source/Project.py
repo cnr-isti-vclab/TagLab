@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import QFileDialog, QMessageBox
 from source.Image import Image
 from source.Channel import Channel
 from source.Annotation import Annotation
+from source.Shape import Layer, Shape
 from source.Blob import Blob
 from source.Label import Label
 from source.Correspondences import Correspondences
@@ -122,6 +123,10 @@ class ProjectEncoder(json.JSONEncoder):
         elif isinstance(obj, Annotation):
             return obj.save()
         elif isinstance(obj, Blob):
+            return obj.save()
+        elif isinstance(obj, Layer):
+            return obj.save()
+        elif isinstance(obj, Shape):
             return obj.save()
         elif isinstance(obj, Correspondences):
             return obj.save()

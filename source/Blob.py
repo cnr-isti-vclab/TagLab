@@ -23,13 +23,12 @@ import numpy as np
 
 from skimage import measure
 from scipy import ndimage as ndi
-from PyQt5.QtGui import QPainterPath, QPolygonF, QImage, QPixmap, qRgba
+from PyQt5.QtGui import QPainterPath, QPolygonF
 from PyQt5.QtCore import QPointF
 
 from skimage.morphology import square, binary_dilation, binary_erosion
 from skimage.measure import points_in_poly
-from skimage.draw import polygon_perimeter, polygon
-import cv2
+
 from cv2 import fillPoly
 
 import source.Mask as Mask
@@ -397,26 +396,6 @@ class Blob(object):
             path_inner = QPainterPath()
             path_inner.addPolygon(qpoly_inner)
             self.qpath = self.qpath.subtracted(path_inner)
-
-    # def createQPixmapFromMask(self):
-
-    #     w = self.bbox[2]
-    #     h = self.bbox[3]
-    #     self.qimg_mask = QImage(w, h, QImage.Format_ARGB32)
-    #     self.qimg_mask.fill(qRgba(0, 0, 0, 0))
-
-    #     if self.class_name == "Empty":
-    #         rgba = qRgba(255, 255, 255, 255)
-    #     else:
-    #         rgba = qRgba(self.class_color[0], self.class_color[1], self.class_color[2], 100)
-
-    #     blob_mask = self.getMask()
-    #     for x in range(w):
-    #         for y in range(h):
-    #             if blob_mask[y, x] == 1:
-    #                 self.qimg_mask.setPixel(x, y, rgba)
-
-    #     self.pxmap_mask = QPixmap.fromImage(self.qimg_mask)
 
     #bbox is used to place the mask!
     def calculateCentroid(self, mask, bbox):

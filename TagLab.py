@@ -80,6 +80,7 @@ from source.QtPanelInfo import QtPanelInfo
 
 from source import utils
 from source.Blob import Blob
+from source.Shape import Layer, Shape
 
 # training modules
 from models.coral_dataset import CoralsDataset
@@ -845,7 +846,7 @@ class TagLab(QMainWindow):
         newMapAct.setStatusTip("Add a new map to the project")
         newMapAct.triggered.connect(self.setMapToLoad)
 
-        projectEditorAct = QAction("Project editor...", self)
+        projectEditorAct = QAction("Maps Editor...", self)
         projectEditorAct.setShortcut('Ctrl+L')
         projectEditorAct.setStatusTip("Open project editor dialog")
         projectEditorAct.triggered.connect(self.openProjectEditor)
@@ -3280,32 +3281,39 @@ class TagLab(QMainWindow):
             self.project.region_attributes.data.append(attribute)
 
         gf = self.activeviewer.image.georef_filename
-        if shapetype == 'Label':
-            blobList = rasterops.read_geometry(self.shapefile_filename, gf, shapetype)
+        if shapetype == 'Labeled regions':
+            blob_list = rasterops.read_regions_geometry(self.shapefile_filename, gf)
             data = rasterops.read_attributes(self.shapefile_filename)
+            utils.setAttributes(self.project, data, blob_list)
 
-            count = 0
-            for blob in blobList:
-                row = data.iloc[count]
-                count += 1
-                for field in data.columns:
-                    if self.project.region_attributes.has(field):
-                        if row[field] is None:
-                            continue
-                        if data.dtypes[field] == 'int64':
-                            blob.data[field] = int(row[field])
-                        else:
-                            blob.data[field] = row[field]
-                #                pp = pprint.PrettyPrinter(indent=4)
-                #                pp.pprint(blob.contour)
+            for blob in blob_list:
                 self.activeviewer.addBlob(blob, selected=False)
+
             self.activeviewer.saveUndo()
 
         elif shapetype == 'Sampling':
-            blobList = rasterops.read_geometry(self.shapefile_filename, gf, shapetype)
+            shape_list = rasterops.read_geometry(self.shapefile_filename, gf)
+            data = rasterops.read_attributes(self.shapefile_filename)
 
-        else:
-            pass
+            layer = Layer("Sampling")
+            layer.shapes = shape_list
+            self.activeviewer.image.layers.append(layer)
+
+            utils.setAttributes(self.project, data, layer.shapes)
+
+            self.activeviewer.drawLayers()
+
+        elif shapetype == 'Other':
+            shape_list = rasterops.read_geometry(self.shapefile_filename, gf)
+            data = rasterops.read_attributes(self.shapefile_filename)
+
+            layer = Layer("Other")
+            layer.shapes = shape_list
+            self.activeviewer.image.layers.append(layer)
+
+            utils.setAttributes(self.project, data, layer.shapes)
+
+            self.activeviewer.drawLayers()
 
         self.groupbox_blobpanel.updateRegionAttributes(self.project.region_attributes)
         self.shapefile_filename = ""
