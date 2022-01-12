@@ -109,12 +109,17 @@ class QtHelpWidget(QWidget):
         self.gridlayout4.addWidget(QLabel("Reset Operation"), 3, 0)
         self.gridlayout4.addWidget(QLabel("Undo Operation"), 4, 0)
         self.gridlayout4.addWidget(QLabel("Redo Operation"), 5, 0)
+        self.gridlayout4.addWidget(QLabel("Toggle Fill"), 6, 0)
+        self.gridlayout4.addWidget(QLabel("Toggle Boundaries"), 7, 0)
         self.gridlayout4.addWidget(QLabel("<b>Click</b>"), 0, 1)
         self.gridlayout4.addWidget(QLabel("<b>Click + Shift</b>"), 1, 1)
         self.gridlayout4.addWidget(QLabel("<b>SPACE</b>"), 2, 1)
         self.gridlayout4.addWidget(QLabel("<b>ESC</b>"), 3, 1)
         self.gridlayout4.addWidget(QLabel("<b>Ctrl+Z</b>"), 4, 1)
         self.gridlayout4.addWidget(QLabel("<b>Ctrl+Shift+Z</b>"), 5, 1)
+        self.gridlayout4.addWidget(QLabel("<b>Q</b>"), 6, 1)
+        self.gridlayout4.addWidget(QLabel("<b>W</b>"), 7, 1)
+
 
         self.groupbox_commands.setLayout(self.gridlayout4)
 

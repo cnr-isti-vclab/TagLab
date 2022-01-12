@@ -331,7 +331,7 @@ class TagLab(QMainWindow):
         self.checkBoxFill.stateChanged[int].connect(self.viewerplus.toggleFill)
         self.checkBoxFill.stateChanged[int].connect(self.viewerplus2.toggleFill)
 
-        self.checkBoxBorders = QCheckBox("Borders")
+        self.checkBoxBorders = QCheckBox("Boundaries")
         self.checkBoxBorders.setChecked(True)
         self.checkBoxBorders.setFocusPolicy(Qt.NoFocus)
         self.checkBoxBorders.setMinimumWidth(20)
@@ -1421,33 +1421,6 @@ class TagLab(QMainWindow):
 
             pass
 
-            # CM = np.zeros((5, 5), dtype=int)
-            # CMnorm = np.zeros((5, 5), dtype=np.float32)
-            # accuracy = 0.8
-            # jaccard_s = 0.7
-            #
-            # dict_target = { "Pocilloporonagrande": 3, "Background": 0, "Pinuccio": 2, "Montipora": 4, "Porite": 1}
-            #
-            # metrics = {'ConfMatrix': CM, 'NormConfMatrix': CMnorm, 'Accuracy': accuracy, 'JaccardScore': jaccard_s}
-            #
-            # train_loss_values = []
-            # val_loss_values = []
-            # from random import random
-            # for i in range(10):
-            #     train_loss_values.append(random())
-            #     if i % 2 == 0:
-            #         val_loss_values.append(random())
-            #
-            # self.trainResultsWidget = QtTrainingResultsWidget(dict_target, metrics, train_loss_values, val_loss_values,
-            #                                                   "C:\\trainingtest2\\test\\images",
-            #                                                   "C:\\trainingtest2\\test\\labels",
-            #                                                   "C:\\trainingtest2\\predictions",
-            #                                                   parent=self)
-            # self.trainResultsWidget.setAttribute(Qt.WA_DeleteOnClose)
-            # self.trainResultsWidget.setWindowModality(Qt.WindowModal)
-            # self.trainResultsWidget.show()
-
-
         elif event.key() == Qt.Key_B:
             self.attachBoundaries()
 
@@ -1527,11 +1500,27 @@ class TagLab(QMainWindow):
             # FULLY AUTOMATIC SEGMENTATION
             self.selectClassifier()
 
-        #elif event.key() == Qt.Key_P:
-        #    self.drawDeepExtremePoints()
-        #
-        # elif event.key() == Qt.Key_Y:
-        #     self.refineAllBorders()
+        elif event.key() == Qt.Key_Q:
+            # toggle fill
+            if self.checkBoxFill.isChecked():
+               self.viewerplus.toggleFill(1)
+               self.viewerplus2.toggleFill(1)
+               self.checkBoxFill.setChecked(False)
+            else:
+                self.viewerplus.toggleFill(0)
+                self.viewerplus2.toggleFill(0)
+                self.checkBoxFill.setChecked(True)
+
+        elif event.key() == Qt.Key_W:
+            # toggle boundaries
+            if self.checkBoxBorders.isChecked():
+               self.viewerplus.toggleBorders(1)
+               self.viewerplus2.toggleBorders(1)
+               self.checkBoxBorders.setChecked(False)
+            else:
+                self.viewerplus.toggleBorders(0)
+                self.viewerplus2.toggleBorders(0)
+                self.checkBoxBorders.setChecked(True)
 
         elif event.key() == Qt.Key_Home:
             # ASSIGN LABEL
