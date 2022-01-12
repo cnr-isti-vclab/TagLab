@@ -509,7 +509,6 @@ class TagLab(QMainWindow):
         self.setCentralWidget(central_widget)
 
         self.filemenu = None
-        self.submenuEdit = None
         self.submenuWorkingArea = None
         self.submenuExport = None
         self.submenuImport = None
@@ -989,8 +988,6 @@ class TagLab(QMainWindow):
         self.projectmenu.setStyleSheet(styleMenu)
         self.projectmenu.addAction(newMapAct)
         self.projectmenu.addAction(projectEditorAct)
-        self.submenuEdit = self.projectmenu.addMenu("Edit Maps info")
-        self.submenuEdit.setEnabled(False)
         self.projectmenu.addSeparator()
         self.projectmenu.addAction(setWorkingAreaAct)
         self.projectmenu.addSeparator()
@@ -1085,23 +1082,6 @@ class TagLab(QMainWindow):
         self.helpmenu.addAction(aboutAct)
 
         return menubar
-
-    def updateEditSubMenu(self):
-
-        for action in self.mapActionList:
-            self.submenuEdit.removeAction(action)
-
-        self.mapActionList = []
-
-        if not self.project.images:
-            self.submenuEdit.setEnabled(False)
-        else:
-            self.submenuEdit.setEnabled(True)
-            for image in self.project.images:
-                editMap = QAction(image.name)
-                self.submenuEdit.addAction(editMap)
-                self.submenuEdit.triggered[QAction].connect(self.editMapSettings)
-                self.mapActionList.append(editMap)
 
     def connectLabelsPanelWithViewers(self):
 
@@ -2028,7 +2008,6 @@ class TagLab(QMainWindow):
         self.comboboxTargetImage.clear()
         self.resetPanelInfo()
         self.disableSplitScreen()
-        self.updateEditSubMenu()
 
     def resetToolbar(self):
 
@@ -2855,7 +2834,6 @@ class TagLab(QMainWindow):
         self.project.addNewImage(image)
         self.updateToolStatus()
         self.updateImageSelectionMenu()
-        self.updateEditSubMenu()
         self.mapWidget.close()
         self.showImage(image)
 
@@ -2950,9 +2928,6 @@ class TagLab(QMainWindow):
         # update the comboboxes to select the images
         self.updateImageSelectionMenu()
 
-        # update the edit map info submenu
-        self.updateEditSubMenu()
-
         self.mapWidget.close()
 
     #    def resizeEvent(self, event):
@@ -3045,7 +3020,6 @@ class TagLab(QMainWindow):
             self.append(filename)
 
         self.updateImageSelectionMenu()
-        self.updateEditSubMenu()
         self.showImage(self.project.images[-1])
 
 
@@ -3758,7 +3732,6 @@ class TagLab(QMainWindow):
         self.updateLabelsPanel()
 
         self.updateImageSelectionMenu()
-        self.updateEditSubMenu()
 
         if self.timer is None:
             self.activateAutosave()
