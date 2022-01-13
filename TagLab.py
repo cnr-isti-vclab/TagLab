@@ -2726,10 +2726,15 @@ class TagLab(QMainWindow):
                 self.mapWidget.show()
 
     @pyqtSlot()
+    def closeProjectEditor(self):
+        self.projectEditor = None
+
+    @pyqtSlot()
     def openProjectEditor(self):
         if self.projectEditor is None:
             self.projectEditor = QtProjectEditor(self.project, parent=self)
             self.projectEditor.setWindowModality(Qt.WindowModal)
+            self.projectEditor.closed.connect(self.closeProjectEditor)
 
         self.projectEditor.fillMaps()
         self.projectEditor.show()

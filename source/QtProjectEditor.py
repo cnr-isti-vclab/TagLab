@@ -26,7 +26,7 @@ from source.RegionAttributes import RegionAttributes
 from copy import deepcopy
 
 class QtProjectEditor(QWidget):
-
+    closed = pyqtSignal()
     def __init__(self, project, parent=None):
         super(QtProjectEditor, self).__init__(parent)
         self.project = project
@@ -108,3 +108,6 @@ class QtProjectEditor(QWidget):
 
         self.parent().deleteImage(img)
         self.fillMaps()
+
+    def closeEvent(self, event):
+        self.closed.emit()
