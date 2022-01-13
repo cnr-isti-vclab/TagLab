@@ -3275,7 +3275,7 @@ class TagLab(QMainWindow):
 
             utils.setAttributes(self.project, data, layer.shapes)
 
-            self.activeviewer.drawLayers()
+            self.activeviewer.drawAllLayers()
 
         elif shapetype == 'Other':
             shape_list = rasterops.read_geometry(self.shapefile_filename, gf)
@@ -3287,7 +3287,7 @@ class TagLab(QMainWindow):
 
             utils.setAttributes(self.project, data, layer.shapes)
 
-            self.activeviewer.drawLayers()
+            self.activeviewer.drawAllLayers()
 
         self.groupbox_blobpanel.updateRegionAttributes(self.project.region_attributes)
         self.shapefile_filename = ""

@@ -107,8 +107,8 @@ class MapClassifier(QObject):
         Initialize the image to classify.
         """
 
-        self.scale_factor = target_scale / pixel_size
-
+        # self.scale_factor = target_scale / pixel_size
+        self.scale_factor = pixel_size / target_scale
         if not working_area:
             working_area = [0, 0, img_map.width(), img_map.height()]
 

@@ -485,11 +485,9 @@ class QtImageViewerPlus(QtImageViewer):
             # if the graphics item has just been create we remove it to set it again
             if shape.qpath_gitem is not None:
                 self.scene.removeItem(shape.qpath_gitem)
-                self.scene.removeItem(shape.id_item)
                 del shape.qpath_gitem
-                del shape.id_item
                 shape.qpath_gitem = None
-                shape.id_item = None
+
 
             shape.setupForDrawing()
 
