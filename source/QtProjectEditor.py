@@ -35,21 +35,26 @@ class QtProjectEditor(QWidget):
         self.setStyleSheet('.map-item { border: 1px solid grey } ')
 
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        self.setMinimumWidth(1000)
+        self.setMinimumWidth(800)
         self.setMinimumHeight(300)
 
-        layout = QVBoxLayout()
-
         self.area = QScrollArea()
-        v = QVBoxLayout()
-        self.area.setLayout(v)
-        layout.addWidget(self.area)
+        self.area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.area.setMaximumHeight(500)
+        widget = QWidget()
+        widget.setLayout(QVBoxLayout())
+        widget.setMinimumHeight(150)
+        self.area.setWidget(widget)
+
+        btn_close = QPushButton("Close")
+        btn_close.clicked.connect(self.close)
 
         buttons_layout = QHBoxLayout()
-        buttons_layout.addStretch(1)
-        btn_apply = QPushButton("Close")
-        btn_apply.clicked.connect(self.close)
+        buttons_layout.addStretch()
+        buttons_layout.addWidget(btn_close)
 
+        layout = QVBoxLayout()
+        layout.addWidget(self.area)
         layout.addLayout(buttons_layout)
 #
         self.setLayout(layout)
@@ -61,24 +66,15 @@ class QtProjectEditor(QWidget):
 
     @pyqtSlot()
     def fillMaps(self):
-        layout = self.area.layout()
 
-
-        for i in reversed(range(layout.count())): 
-            child = layout.itemAt(i)
-            widget = child.widget()
-            layout.removeItem(child)
-            if widget:
-                widget.setParent(None)
+        layout = QVBoxLayout()
 
         for img in self.project.images:
             map_widget = QWidget()
 
             self.text = QTextEdit()
-            # self.text.setMinimumHeight(150)
-            map_widget.setProperty("class", "map-item");
-
-
+            map_widget.setProperty("class", "map-item")
+            self.text.setMinimumWidth(800)
 
             date = self.convertDate(img.acquisition_date)
             day = date.day()
@@ -89,9 +85,11 @@ class QtProjectEditor(QWidget):
             self.text.append("<b>Map acquisition date</b>" + " : " + str(day) + " " + date.longMonthName(date.month()) + " " +  str(year))
             self.text.append("<b>Map georeference information</b>" + " : " + str(self.georefAvailable(img.georef_filename)))
             self.text.append("<b>DEM availability</b>" + " : " + str(self.boolToWord(len(img.channels)>1)))
+            self.text.document().adjustSize()  # calculate size
+            self.text.setMaximumHeight(self.text.document().size().height() + 20)
 
             map_layout = QHBoxLayout()
-            map_layout.addWidget(QLabel("Map name" + " : " + img.name))
+            map_layout.addWidget(QLabel("<b>Map name</b>" + " : " + img.name))
 
             edit = QPushButton("edit")
             edit.setMaximumWidth(80)
@@ -110,7 +108,11 @@ class QtProjectEditor(QWidget):
             map_widget.setLayout(info_layout)
             layout.addWidget(map_widget)
 
-        layout.addStretch()
+        # update the scroll area
+        widget_to_scroll = QWidget()
+        widget_to_scroll.setLayout(layout)
+        self.area.setWidget(widget_to_scroll)
+
 
     def editMap(self, img):
         self.parent().editMapSettingsImage(img)
