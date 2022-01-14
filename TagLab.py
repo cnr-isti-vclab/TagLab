@@ -56,6 +56,7 @@ from source.QtMapSettingsWidget import QtMapSettingsWidget
 from source.QtScaleWidget import QtScaleWidget
 from source.QtWorkingAreaWidget import QtWorkingAreaWidget
 from source.QtLabelsWidget import QtLabelsWidget
+from source.QtLayersWidget import QtLayersWidget
 from source.QtInfoWidget import QtInfoWidget
 from source.QtHelpWidget import QtHelpWidget
 from source.QtProgressBarCustom import QtProgressBarCustom
@@ -389,6 +390,15 @@ class TagLab(QMainWindow):
 
         ##### LAYOUT - labels + blob info + navigation map
 
+        # LAYERS PANEL
+
+        self.layers_widget = QtLayersWidget()
+        self.layers_widget.setProject(self.project)
+        self.layers_widget.showImage.connect(self.showImage)
+        self.layers_widget.showLayer.connect(self.showLayer)
+        self.layers_widget.hideLayer.connect(self.hideLayer)
+
+
         # LABELS PANEL
         self.labels_widget = QtLabelsWidget()
         self.default_dictionary = self.settings_widget.settings.value("default-dictionary",
@@ -466,6 +476,10 @@ class TagLab(QMainWindow):
         self.infodock.setWidget(self.infoWidget)
         self.infoWidget.setStyleSheet("padding: 0px")
 
+        self.layersdock = QDockWidget("Layers", self)
+        self.layersdock.setWidget(self.layers_widget)
+        self.layers_widget.setStyleSheet("padding: 0px")
+
         self.labelsdock = QDockWidget("Labels", self)
         self.labelsdock.setWidget(self.groupbox_labels)
         self.groupbox_labels.setStyleSheet("padding: 0px")
@@ -485,7 +499,7 @@ class TagLab(QMainWindow):
         self.mapdock = QDockWidget("Map", self)
         self.mapdock.setWidget(self.mapviewer)
 
-        for dock in (self.infodock, self.labelsdock, self.comparisondock, self.blobdock, self.mapdock):
+        for dock in (self.infodock, self.layersdock, self.labelsdock, self.comparisondock, self.blobdock, self.mapdock):
             dock.setAllowedAreas(Qt.RightDockWidgetArea)
             self.addDockWidget(Qt.RightDockWidgetArea, dock)
 
@@ -521,6 +535,7 @@ class TagLab(QMainWindow):
 
         viewMenu = self.menuBar().addMenu("&View")
 
+        viewMenu.addAction(self.layersdock.toggleViewAction())
         viewMenu.addAction(self.labelsdock.toggleViewAction())
         #viewMenu.addAction(self.infodock.toggleViewAction())
         viewMenu.addAction(self.blobdock.toggleViewAction())
@@ -1881,6 +1896,7 @@ class TagLab(QMainWindow):
         if index1 == -1 or index1 >= N:
             return
 
+        image = self.project.images[index1]
         self.viewerplus.clear()
         self.btnGrid.setChecked(False)
 
@@ -1894,10 +1910,12 @@ class TagLab(QMainWindow):
             self.updateComboboxTargetImage(index2)
 
         self.viewerplus.setProject(self.project)
-        self.viewerplus.setImage(self.project.images[index1])
+        self.viewerplus.setImage(image)
 
         if self.compare_panel.isVisible():
             self.compare_panel.setTable(self.project, index1, index2)
+
+        self.layers_widget.setImage(image)
 
     @pyqtSlot(int)
     def targetImageChanged(self, index2):
@@ -2008,6 +2026,7 @@ class TagLab(QMainWindow):
         self.comboboxTargetImage.clear()
         self.resetPanelInfo()
         self.disableSplitScreen()
+        self.layers_widget.setProject(self.project)
 
     def resetToolbar(self):
 
@@ -2800,7 +2819,8 @@ class TagLab(QMainWindow):
         # re-connect
         self.connectLabelsPanelWithViewers()
 
-        self.labels_widget.setLabels(self.project)
+        self.layers_widget.setProject(self.project)
+        self.labels_widget.setLabels(self.project)       
         self.scroll_area_labels_panel.setWidget(self.labels_widget)
 
 
@@ -2839,6 +2859,7 @@ class TagLab(QMainWindow):
         self.project.addNewImage(image)
         self.updateToolStatus()
         self.updateImageSelectionMenu()
+        self.layers_widget.setProject(self.project)
         self.mapWidget.close()
         self.showImage(image)
 
@@ -2939,7 +2960,7 @@ class TagLab(QMainWindow):
     #        pass
     #w = self.groupbox_labels.width()
     #self.mapviewer.setNewWidth(w)
-
+    @pyqtSlot(Image)
     def showImage(self, image):
 
         """
@@ -2956,6 +2977,7 @@ class TagLab(QMainWindow):
 
             index = self.project.images.index(image)
             self.updateComboboxSourceImage(index)
+            self.layers_widget.setImage(image);
 
             w = self.mapviewer.width()
             thumb = self.viewerplus.pixmap.scaled(w, w, Qt.KeepAspectRatio, Qt.SmoothTransformation)
@@ -2973,6 +2995,16 @@ class TagLab(QMainWindow):
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
             msgBox.setText("Error loading map:" + str(e))
             msgBox.exec()
+
+    @pyqtSlot(Layer)
+    def showLayer(self, layer):
+        layer.enable()
+        self.viewerplus.drawLayer(layer)
+
+    @pyqtSlot(Layer)
+    def hideLayer(self, layer):
+        layer.disable()
+        self.viewerplus.undrawLayer(layer)
 
 
     @pyqtSlot()
@@ -3295,6 +3327,8 @@ class TagLab(QMainWindow):
             self.activeviewer.drawAllLayers()
 
         self.groupbox_blobpanel.updateRegionAttributes(self.project.region_attributes)
+        self.layers_widget.setProject(self.project)
+        self.layers_widget.setImage(self.activeviewer.image)
         self.shapefile_filename = ""
 
 
@@ -3729,12 +3763,16 @@ class TagLab(QMainWindow):
 
         self.setProjectTitle(self.project.filename)
 
-        # show the first map present in project
-        if len(self.project.images) > 0:
-            self.showImage(self.project.images[0])
-
+        
+        self.layers_widget.setProject(self.project)
         self.groupbox_blobpanel.updateRegionAttributes(self.project.region_attributes)
         self.updateLabelsPanel()
+
+        # show the first map present in project
+        if len(self.project.images) > 0:
+            image = self.project.images[0]
+            self.showImage(image)
+            self.layers_widget.setImage(image)
 
         self.updateImageSelectionMenu()
 
