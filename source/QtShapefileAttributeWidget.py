@@ -99,7 +99,8 @@ class QtAttributeWidget(QWidget):
 
         lbl = QLabel("Fields to import:")
 
-        self.fields_layout = QVBoxLayout()
+        self.fields_layout = QGridLayout()
+        self.fields_layout.setSpacing(8)
         self.fields = None
 
         for i in range(0, len(self.data.columns)):
@@ -109,20 +110,10 @@ class QtAttributeWidget(QWidget):
             chkBox.setChecked(False)
             chkBox.setProperty('type', 'string' if type == 'object' else 'number')
 
-            if i % FIELDS_FOR_ROW == 0:
-                if self.fields is not None:
-                    self.fields.addStretch()
-                self.fields = QHBoxLayout()
-                self.fields.setAlignment(Qt.AlignLeft)
-                self.fields_layout.addLayout(self.fields)
+            self.fields_layout.addWidget(chkBox, i / FIELDS_FOR_ROW, i % FIELDS_FOR_ROW)
 
             self.checkBoxes.append(chkBox)
-            self.fields.addWidget(chkBox)
-            self.fields.addStretch()
-
-            #need of vertical space?
-            if i % FIELDS_FOR_ROW  < FIELDS_FOR_ROW - 1 and i < len(self.data.columns) - 1:
-                self.fields_layout.addSpacing(5)
+            self.fields_layout.addWidget(chkBox)
 
 
         label_layout = QHBoxLayout()
@@ -148,9 +139,9 @@ class QtAttributeWidget(QWidget):
 
 
         layout.addLayout(self.choice_layout)
-        layout.addSpacing(30)
+        layout.addSpacing(20)
         layout.addWidget(self.data_table)
-        layout.addSpacing(30)
+        layout.addSpacing(20)
         layout.addWidget(lbl)
         layout.addLayout(self.fields_layout)
         layout.addLayout(label_layout)
