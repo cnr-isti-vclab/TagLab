@@ -3278,11 +3278,11 @@ class TagLab(QMainWindow):
 
         self.attribute_widget = QtAttributeWidget(data)
         self.attribute_widget.show()
-        self.attribute_widget.shapefilechoices[str, list].connect(self.readShapes)
+        self.attribute_widget.shapefilechoices[str, list, str].connect(self.readShapes)
 
 
-    @pyqtSlot(str,list)
-    def readShapes(self, shapetype, attributelist):
+    @pyqtSlot(str,list,str)
+    def readShapes(self, shapetype, attributelist, label_field):
 
         for attribute in attributelist:
             if self.project.region_attributes.has(attribute['name']):

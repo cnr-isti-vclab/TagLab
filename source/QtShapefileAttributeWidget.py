@@ -38,7 +38,7 @@ class QtAttributeWidget(QWidget):
     # Data.columns - returns fields names
     # Data.pop('class') - returns column 'class'
 
-    shapefilechoices = pyqtSignal(str, list)
+    shapefilechoices = pyqtSignal(str, list, str)
 
     def __init__(self, data, parent=None):
         super(QtAttributeWidget, self).__init__(parent)
@@ -87,13 +87,8 @@ class QtAttributeWidget(QWidget):
         self.types_layout = QHBoxLayout()
         self.chkBoxlabel = QRadioButton("Labeled regions")
         self.chkBoxlabel.setChecked(True)
-        # self.chkBoxlabel.toggled.connect(lambda: self.btnstate(self.chkBoxlabel))
         self.chkBoxsampling = QRadioButton("Sampling")
-        # self.chkBoxlabel.toggled.connect(lambda: self.btnstate(self.chkBoxsampling))
-        # chkBoxsampling.QRadioButton(False)
         self.chkBoxother = QRadioButton("Other")
-        # self.chkBoxlabel.toggled.connect(lambda: self.btnstate(self.chkBoxother))
-        # self.chkBoxother.setChecked(False)
         self.types_layout.addWidget(self.chkBoxlabel)
         self.types_layout.addWidget(self.chkBoxsampling)
         self.types_layout.addWidget(self.chkBoxother)
@@ -129,6 +124,16 @@ class QtAttributeWidget(QWidget):
             if i % FIELDS_FOR_ROW  < FIELDS_FOR_ROW - 1 and i < len(self.data.columns) - 1:
                 self.fields_layout.addSpacing(5)
 
+
+        label_layout = QHBoxLayout()
+        my_lbl = QLabel("Label field:")
+        my_class = QLineEdit("")
+        my_class.setPlaceholderText("Field to import as label (optional)")
+        label_layout.addWidget(my_lbl)
+        label_layout.addWidget(my_class)
+        label_layout.addStretch()
+
+
         self.btnCancel = QPushButton("Cancel")
         self.btnCancel.clicked.connect(self.cancel)
 
@@ -148,6 +153,7 @@ class QtAttributeWidget(QWidget):
         layout.addSpacing(30)
         layout.addWidget(lbl)
         layout.addLayout(self.fields_layout)
+        layout.addLayout(label_layout)
         layout.addLayout(buttons_layout)
 
         self.setLayout(layout)
@@ -165,35 +171,40 @@ class QtAttributeWidget(QWidget):
         self.close()
 
     # questo mi deve tornare la lista di fields selezionati
-
-    @pyqtSlot()
-    def addfields(self):
-
-        for checkbox in self.checkBoxes:
-            if checkbox.isChecked():
-                # print(checkbox.text())
-                self.fieldslist.append(self.data[str(checkbox.text())])
-                # self.data[str(checkbox.text())][i] returns i element
-                print(self.fieldslist)
-
-    # questo mi deve tornare il tipo di shape
-
+    #
+    # @pyqtSlot()
+    # def addfields(self):
+    #
+    #     print('bu')
+    #
+    #     for checkbox in self.checkBoxes:
+    #             self.fieldslist.append(self.data[str(checkbox.text())])
 
     def accept(self):
 
-        if self.chkBoxlabel.isChecked():
-           self.shape = 'Labeled regions'
-        elif self.chkBoxsampling.isChecked():
-             self.shape = 'Sampling'
-        else:
-           self.shape = 'Other'
+        # if self.chkBoxlabel.isChecked():
+        #    self.shape = 'Labeled regions'
+        # elif self.chkBoxsampling.isChecked():
+        #      self.shape = 'Sampling'
+        # else:
+        #    self.shape = 'Other'
 
         self.fieldlist =[]
+        flagExist = False
+
         for checkbox in self.checkBoxes:
+
+            if self.my_class.text() == checkbox.text():
+                flagExist = True
+
             if checkbox.isChecked():
-                self.fieldlist.append({ 'name': checkbox.text(), 'type': checkbox.property('type')})
-                # self.fieldslist.append(self.data[str(checkbox.text())])
-                # self.data[str(checkbox.text())][i] returns i element
-                # print(self.fieldslist)
-        self.shapefilechoices.emit(self.shape, self.fieldlist)
-        self.close()
+                self.fieldlist.append({'name': checkbox.text(), 'type': checkbox.property('type')})
+
+        if flagExist is False and self.my_class.text() != "":
+            msgBox = QMessageBox(self)
+            msgBox.setText("Wrong label field! Type an existing one.")
+            msgBox.exec()
+            return
+        else:
+            self.shapefilechoices.emit(self.shape, self.fieldlist, self.my_class.text)
+            self.close()
