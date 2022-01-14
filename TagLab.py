@@ -458,9 +458,6 @@ class TagLab(QMainWindow):
         self.groupbox_blobpanel = QtPanelInfo(self.project.region_attributes)
 
 
-        # INFO WIDGET
-        self.infoWidget = QtInfoWidget(self)
-
         # MAP VIEWER
         self.mapviewer = QtMapViewer(350)
 
@@ -472,10 +469,6 @@ class TagLab(QMainWindow):
 
 
         #DOCK
-        self.infodock = QDockWidget("Info", self)
-        self.infodock.setWidget(self.infoWidget)
-        self.infoWidget.setStyleSheet("padding: 0px")
-
         self.layersdock = QDockWidget("Layers", self)
         self.layersdock.setWidget(self.layers_widget)
         self.layers_widget.setStyleSheet("padding: 0px")
@@ -499,7 +492,7 @@ class TagLab(QMainWindow):
         self.mapdock = QDockWidget("Map", self)
         self.mapdock.setWidget(self.mapviewer)
 
-        for dock in (self.infodock, self.layersdock, self.labelsdock, self.comparisondock, self.blobdock, self.mapdock):
+        for dock in (self.layersdock, self.labelsdock, self.comparisondock, self.blobdock, self.mapdock):
             dock.setAllowedAreas(Qt.RightDockWidgetArea)
             self.addDockWidget(Qt.RightDockWidgetArea, dock)
 
@@ -508,7 +501,6 @@ class TagLab(QMainWindow):
 
         self.comparisondock.hide()
 
-        self.infodock.hide()
         self.compare_panel.setMinimumHeight(600)
 
         ##### MAIN LAYOUT
@@ -2074,7 +2066,6 @@ class TagLab(QMainWindow):
         self.viewerplus2.setTool(tool)
         newtool[1].setChecked(True)
         logfile.info("[TOOL][" + tool + "] Tool activated")
-        self.infoWidget.setInfoMessage(newtool[0] + " Tool is active")
         self.comboboxSourceImage.setEnabled(True)
         self.comboboxTargetImage.setEnabled(True)
 
@@ -2293,7 +2284,10 @@ class TagLab(QMainWindow):
             logfile.info("[OP-MERGE] MERGE OVERLAPPED LABELS operation ends.")
 
         else:
-            self.infoWidget.setWarningMessage("You need to select at least <em>two</em> blobs for MERGE OVERLAPPED LABELS operation.")
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("You need to select at least <em>two</em> blobs for MERGE OVERLAPPED LABELS operation.")
+            msgBox.exec()
 
 
     def subtract(self):
@@ -2332,8 +2326,10 @@ class TagLab(QMainWindow):
             logfile.info("[OP-SUBTRACT] SUBTRACT LABELS operation ends.")
 
         else:
-
-            self.infoWidget.setInfoMessage("You need to select <em>two</em> blobs for SUBTRACT operation.")
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("You need to select <em>two</em> blobs for SUBTRACT operation.")
+            msgBox.exec()
 
     def divide(self):
         """
@@ -2373,8 +2369,11 @@ class TagLab(QMainWindow):
             logfile.info("[OP-DIVIDE] DIVIDE LABELS operation ends.")
 
         else:
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("You need to select <em>two</em> regions for DIVIDE operation.")
+            msgBox.exec()
 
-            self.infoWidget.setInfoMessage("You need to select <em>two</em> blobs for DIVIDE operation.")
 
     def dilate(self):
         """
@@ -2444,8 +2443,11 @@ class TagLab(QMainWindow):
             view.saveUndo()
 
         else:
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("You need to select <em>two</em> regions for this operation.")
+            msgBox.exec()
 
-            self.infoWidget.setInfoMessage("You need to select <em>two</em> blobs for this operation.")
 
     def attachBoundaries2(self):
         """
@@ -2491,8 +2493,11 @@ class TagLab(QMainWindow):
             view.saveUndo()
 
         else:
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("You need to select <em>two</em> regions for this operation.")
+            msgBox.exec()
 
-            self.infoWidget.setInfoMessage("You need to select <em>two</em> blobs for this operation.")
 
     def refineBorderDilate(self):
 
@@ -2643,7 +2648,10 @@ class TagLab(QMainWindow):
                 pass
 
         else:
-            self.infoWidget.setInfoMessage("You need to select <em>one</em> blob for REFINE operation.")
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("You need to select <em>one</em> region for REFINE operation.")
+            msgBox.exec()
 
 
     def fillLabel(self):
@@ -2676,9 +2684,6 @@ class TagLab(QMainWindow):
 
         logfile.info("[OP-FILL] FILL operation ends.")
 
-
-
-
     def logBlobInfo(self, blob, tag):
 
         message1 = tag + " BLOBID=" + str(blob.id) + " VERSION=" + str(blob.version) + " CLASS=" + blob.class_name
@@ -2691,9 +2696,6 @@ class TagLab(QMainWindow):
         logfile.info(message3)
         logfile.info(message4)
 
-
-
-
     #REFACTOR call create a new project and treplace the old one.
 
     @pyqtSlot()
@@ -2703,7 +2705,6 @@ class TagLab(QMainWindow):
         self.setTool("MOVE")
         self.updateToolStatus();
         self.setProjectTitle("NONE")
-        self.infoWidget.setInfoMessage("TagLab has been reset. To continue open an existing project or load a map.")
         logfile.info("[PROJECT] A new project has been setup.")
         self.groupbox_blobpanel.region_attributes = self.project.region_attributes
 
@@ -2969,7 +2970,6 @@ class TagLab(QMainWindow):
         try:
             QApplication.setOverrideCursor(Qt.WaitCursor)
 
-            self.infoWidget.setInfoMessage("Map is loading..")
             self.viewerplus.clear()
             self.viewerplus.setProject(self.project)
             self.viewerplus.setImage(image)
@@ -2985,8 +2985,6 @@ class TagLab(QMainWindow):
             self.mapviewer.setOpacity(0.5)
 
             self.disableSplitScreen()
-
-            self.infoWidget.setInfoMessage("The map has been successfully loading.")
 
             QApplication.restoreOverrideCursor()
 
@@ -3779,8 +3777,6 @@ class TagLab(QMainWindow):
         if self.timer is None:
             self.activateAutosave()
 
-        self.infoWidget.setInfoMessage("The project: " + self.project.filename + " has been successfully open.")
-
         message = "[PROJECT] The project " + self.project.filename + " has been loaded."
         logfile.info(message)
         self.updateToolStatus()
@@ -3807,9 +3803,12 @@ class TagLab(QMainWindow):
 
         QApplication.restoreOverrideCursor()
 
-        self.infoWidget.setInfoMessage("The annotations of the given project has been successfully loaded.")
+        msgBox = QMessageBox()
+        msgBox.setWindowTitle(self.TAGLAB_VERSION)
+        msgBox.setText("The annotations of the given project has been successfully loaded.")
+        msgBox.exec()
 
-    # REFACTOR move to a project method
+# REFACTOR move to a project method
     def save(self):
         """
         Save the current project.
@@ -3821,7 +3820,10 @@ class TagLab(QMainWindow):
         if self.timer is None:
             self.activateAutosave()
 
-        self.infoWidget.setInfoMessage("Current project has been successfully saved.")
+        msgBox = QMessageBox()
+        msgBox.setWindowTitle(self.TAGLAB_VERSION)
+        msgBox.setText("Current project has been successfully saved.")
+        msgBox.exec()
 
         message = "[PROJECT] The project " + self.project.filename + " has been saved."
         logfile.info(message)
@@ -3995,8 +3997,6 @@ class TagLab(QMainWindow):
 
             # setup the desired classifier
 
-            self.infoWidget.setInfoMessage("Setup automatic classification..")
-
             self.progress_bar.hidePerc()
             self.progress_bar.setMessage("Setup automatic classification..")
 
@@ -4027,8 +4027,6 @@ class TagLab(QMainWindow):
                 QApplication.processEvents()
 
                 # runs the classifier
-                self.infoWidget.setInfoMessage("Automatic classification is running..")
-
                 self.classifier.run(1026, 513, 256, prediction_threshold=pred_thresh,
                     save_scores=False, autocolor=checkcolor,  autolevel=checklevel)
 
@@ -4055,8 +4053,8 @@ class TagLab(QMainWindow):
                     # save and close
                     msgBox = QMessageBox()
                     msgBox.setWindowTitle(self.TAGLAB_VERSION)
-                    msgBox.setText(
-                        "Automatic classification is finished. TagLab will be close. Please, click ok and save the project.")
+                    msgBox.setText("Automatic classification is finished. TagLab will be close. "
+                                   "Please, click ok and save the project.")
                     msgBox.exec()
 
                     self.saveAsProject()
