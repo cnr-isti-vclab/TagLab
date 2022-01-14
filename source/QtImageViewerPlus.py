@@ -245,7 +245,7 @@ class QtImageViewerPlus(QtImageViewer):
         if img.isNull():
             (filename, filter) = QFileDialog.getOpenFileName(self, "Couldn't find the map, please select it:",
                                                                        QFileInfo(channel.filename).dir().path(),
-                                                                       "Image Files (*.png *.jpg)")
+                                                                       "Image Files (*.png *.jpg *.jpeg)")
             dir = QDir(self.taglab_dir)
             channel.filename = dir.relativeFilePath(filename)
 

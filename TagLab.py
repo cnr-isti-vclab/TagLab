@@ -3433,7 +3433,7 @@ class TagLab(QMainWindow):
             box.exec()
             return
 
-        filters = "Tiff (*.tif) ;; All Files (*)"
+        filters = "Tiff (*.tif *.tiff) ;; All Files (*)"
         output_filename, _ = QFileDialog.getSaveFileName(self, "Output GeoTiff", "", filters)
 
         if output_filename:
