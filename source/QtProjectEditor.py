@@ -18,9 +18,10 @@
 # for more details.
 
 
-from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal, QEvent
+from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal, QEvent, QDate
 from PyQt5.QtWidgets import QGridLayout, QWidget, QScrollArea,QGroupBox, QColorDialog, QMessageBox, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, \
     QHBoxLayout, QVBoxLayout, QTextEdit, QTableWidget, QTableWidgetItem, QFrame
+import rasterio as rio
 import os, json, re
 from source.RegionAttributes import RegionAttributes
 from copy import deepcopy
@@ -34,7 +35,8 @@ class QtProjectEditor(QWidget):
         self.setStyleSheet('.map-item { border: 1px solid grey } ')
 
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        self.setMinimumWidth(600)
+        self.setMinimumWidth(1000)
+        self.setMinimumHeight(300)
 
         layout = QVBoxLayout()
 
@@ -60,6 +62,8 @@ class QtProjectEditor(QWidget):
     @pyqtSlot()
     def fillMaps(self):
         layout = self.area.layout()
+
+
         for i in reversed(range(layout.count())): 
             child = layout.itemAt(i)
             widget = child.widget()
@@ -67,17 +71,27 @@ class QtProjectEditor(QWidget):
             if widget:
                 widget.setParent(None)
 
-#            child.setParent(None)
-
         for img in self.project.images:
             map_widget = QWidget()
+
+            self.text = QTextEdit()
+            # self.text.setMinimumHeight(150)
             map_widget.setProperty("class", "map-item");
-            map_widget.setMaximumHeight(100)
-            layout.addWidget(map_widget)
-            
+
+
+
+            date = self.convertDate(img.acquisition_date)
+            day = date.day()
+            year = date.year()
+            self.text.setHtml(
+            "<b>Map size in pixels</b>" + " : " + "(" + str(img.width) + "," + str(img.height) + ")")
+            self.text.append("<b>Map pixel size in mm</b>" + " : " + img.map_px_to_mm_factor)
+            self.text.append("<b>Map acquisition date</b>" + " : " + str(day) + " " + date.longMonthName(date.month()) + " " +  str(year))
+            self.text.append("<b>Map georeference information</b>" + " : " + str(self.georefAvailable(img.georef_filename)))
+            self.text.append("<b>DEM availability</b>" + " : " + str(self.boolToWord(len(img.channels)>1)))
+
             map_layout = QHBoxLayout()
-            map_layout.addWidget(QLabel(img.acquisition_date + ": " + img.name))
-            map_widget.setLayout(map_layout)
+            map_layout.addWidget(QLabel("Map name" + " : " + img.name))
 
             edit = QPushButton("edit")
             edit.setMaximumWidth(80)
@@ -89,8 +103,14 @@ class QtProjectEditor(QWidget):
             delete.clicked.connect(lambda x, img=img: self.deleteMap(img))
             map_layout.addWidget(delete)
 
+            info_layout = QVBoxLayout()
+            info_layout.addLayout(map_layout)
+            info_layout.addWidget(self.text)
+
+            map_widget.setLayout(info_layout)
+            layout.addWidget(map_widget)
+
         layout.addStretch()
-            #self.mapList.addItem()
 
     def editMap(self, img):
         self.parent().editMapSettingsImage(img)
@@ -111,3 +131,26 @@ class QtProjectEditor(QWidget):
 
     def closeEvent(self, event):
         self.closed.emit()
+
+
+    def georefAvailable(self,str):
+
+        if str == '':
+            return "None"
+        else:
+            img = rio.open(str)
+            geoinfo = img.crs
+            return geoinfo
+
+    def boolToWord(self, bool):
+
+        if bool == True:
+            return "Yes"
+        else:
+            return "No"
+
+    def convertDate(self, str):
+        myDate = QDate.fromString(str, 'yyyy-MM-dd')
+        return myDate
+
+
