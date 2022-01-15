@@ -47,7 +47,7 @@ def loadProject(taglab_working_dir, filename, default_dict):
         for channel in image.channels:
             if not os.path.exists(channel.filename):
                 (filename, filter) = QFileDialog.getOpenFileName(None, "Couldn't find "+ channel.filename + " please select it:", taglab_working_dir,
-                                                                 "Image Files (*.png *.jpg *.tif)")
+                                                                 "Image Files (*.png *.jpg *.jpeg *.tif *.tiff)")
                 dir = QDir(taglab_working_dir)
                 if image.georef_filename == channel.filename:
                    image.georef_filename = dir.relativeFilePath(filename)

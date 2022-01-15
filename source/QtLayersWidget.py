@@ -21,9 +21,9 @@ class QtLayersWidget(QTreeWidget):
         super(QtLayersWidget, self).__init__(parent)
 
         self.setHeaderHidden(True)
-        self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+        self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
 
-        self.setMinimumWidth(400)
+        self.setMinimumWidth(300)
         self.setMinimumHeight(100)
 
         self.icon_eyeopen = QIcon(imdir+os.path.join("icons", "eye.png"))
@@ -50,7 +50,7 @@ class QtLayersWidget(QTreeWidget):
 
             for layer in image.layers:
                 child = QTreeWidgetItem()
-                child.setText(0, "Layer")
+                child.setText(0, layer.name)
                 if layer.isEnabled():
                     child.setCheckState(0, Qt.Checked)
                 else:
@@ -65,20 +65,26 @@ class QtLayersWidget(QTreeWidget):
         self.insertTopLevelItems(0, items);
         self.blockSignals(False)
 
-    def setImage(self, image):
+    def setImage(self, image1, image2 = None):
         self.blockSignals(True)
         it = QTreeWidgetItemIterator(self)
         while it.value():
             item = it.value()
             if item.type == 'image':
-                if item.target == image:
+                if item.target == image1 or item.target == image2:
                     item.setIcon(0, self.icon_eyeopen)
                     item.setCheckState(0, Qt.Checked)
-                    item.setExpanded(True)
+                    if len(item.target.layers):
+                        item.setExpanded(True)
                 else:
                     item.setIcon(0, self.icon_eyeclosed)
                     item.setCheckState(0, Qt.Unchecked)
                     item.setExpanded(False)
+
+                if image2 == None:
+                    item.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
+                else:
+                    item.setFlags(Qt.NoItemFlags)
 
                 for i in range(item.childCount()):
                         child = item.child(i)

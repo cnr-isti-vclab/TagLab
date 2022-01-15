@@ -18,6 +18,7 @@
 # for more details.
 
 from PyQt5.QtGui import QImage
+from PyQt5.QtGui import QImageReader
 import rasterio as rio
 from source import utils
 import numpy as np
@@ -37,7 +38,11 @@ class Channel(object):
         """
 
         if self.type == "RGB":
-            self.qimage = QImage(self.filename)
+            reader = QImageReader(self.filename)
+            self.qimage = reader.read()
+            if self.qimage.isNull():
+                print(reader.errorString())
+
             self.qimage = self.qimage.convertToFormat(QImage.Format_RGB32)
 
         # typically the depth map is stored in a 32-bit Tiff

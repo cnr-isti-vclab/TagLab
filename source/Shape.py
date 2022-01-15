@@ -35,6 +35,7 @@ class Layer(object):
         self.shapes = []
         self.enabled = True
         self.type = type
+        self.name = ""
 
     def add(self, shape):
         """
