@@ -395,8 +395,8 @@ class TagLab(QMainWindow):
         self.layers_widget = QtLayersWidget()
         self.layers_widget.setProject(self.project)
         self.layers_widget.showImage.connect(self.showImage)
-        self.layers_widget.showLayer.connect(self.showLayer)
-        self.layers_widget.hideLayer.connect(self.hideLayer)
+        self.layers_widget.toggleLayer.connect(self.toggleLayer)
+        self.layers_widget.toggleAnnotations.connect(self.toggleAnnotations)
 
 
         # LABELS PANEL
@@ -3003,15 +3003,23 @@ class TagLab(QMainWindow):
             msgBox.setText("Error loading map:" + str(e))
             msgBox.exec()
 
-    @pyqtSlot(Layer)
-    def showLayer(self, layer):
-        layer.enable()
-        self.viewerplus.drawLayer(layer)
+    
+    @pyqtSlot(Layer, bool)
+    def toggleLayer(self, layer, enable):
+        if enable:
+            layer.enable()
+            self.viewerplus.drawLayer(layer)
+        else:
+            layer.disable()
+            self.viewerplus.undrawLayer(layer)
 
-    @pyqtSlot(Layer)
-    def hideLayer(self, layer):
-        layer.disable()
-        self.viewerplus.undrawLayer(layer)
+    @pyqtSlot(Image, bool)
+    def toggleAnnotations(self, image, enable):
+        if self.viewerplus.image == image:
+            self.viewerplus.toggleAnnotations(enable)
+
+        if self.viewerplus2.image == image:
+            self.viewerplus2.toggleAnnotations(enable)
 
 
     @pyqtSlot()

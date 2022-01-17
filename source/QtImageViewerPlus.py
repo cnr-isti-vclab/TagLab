@@ -217,6 +217,14 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.activated.emit()
 
+    def toggleAnnotations(self, enable):
+        for blob in self.annotations.seg_blobs:
+            if enable:
+                self.drawBlob(blob)
+            else:
+                self.undrawBlob(blob)
+
+
     def updateImageProperties(self):
         """
         The properties of the image have been changed. This function updates the viewer accordingly.
