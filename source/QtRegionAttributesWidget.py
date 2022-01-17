@@ -107,8 +107,10 @@ class QtRegionAttributesWidget(QWidget):
 
         self.editName = QLineEdit()
         self.editName.setPlaceholderText("Name")
+        self.editName.setMaxLength(10)
         self.editName.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         edit_layout.addWidget(self.editName)
+        
 
 
         self.editType = QComboBox()
