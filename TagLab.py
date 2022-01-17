@@ -3278,11 +3278,11 @@ class TagLab(QMainWindow):
 
         self.attribute_widget = QtAttributeWidget(data)
         self.attribute_widget.show()
-        self.attribute_widget.shapefilechoices[str, list, str].connect(self.readShapes)
+        self.attribute_widget.shapefilechoices[str, list, list].connect(self.readShapes)
 
 
-    @pyqtSlot(str,list,str)
-    def readShapes(self, shapetype, attributelist, label_field):
+    @pyqtSlot(str,list,list)
+    def readShapes(self, shapetype, attributelist, classes_list):
 
         for attribute in attributelist:
             if self.project.region_attributes.has(attribute['name']):
@@ -3295,9 +3295,10 @@ class TagLab(QMainWindow):
             data = rasterops.read_attributes(self.shapefile_filename)
             utils.setAttributes(self.project, data, blob_list)
 
-            for blob in blob_list:
+            for i in range(0,len(blob_list)):
+                blob = blob_list[i]
+                blob.class_name = classes_list[i]
                 self.activeviewer.addBlob(blob, selected=False)
-
             self.activeviewer.saveUndo()
 
         elif shapetype == 'Sampling':
@@ -3411,7 +3412,9 @@ class TagLab(QMainWindow):
         if output_filename:
             blobs = self.activeviewer.annotations.seg_blobs
             gf = self.activeviewer.image.georef_filename
-            rasterops.write_shapefile(self.project, blobs, gf, output_filename)
+            rasterops.write_shapefile(self.project, self.activeviewer.image, blobs, gf, output_filename)
+
+
 
     @pyqtSlot()
     def exportGeoRefLabelMap(self):

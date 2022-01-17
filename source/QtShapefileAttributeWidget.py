@@ -38,7 +38,7 @@ class QtAttributeWidget(QWidget):
     # Data.columns - returns fields names
     # Data.pop('class') - returns column 'class'
 
-    shapefilechoices = pyqtSignal(str, list, str)
+    shapefilechoices = pyqtSignal(str, list, list)
 
     def __init__(self, data, parent=None):
         super(QtAttributeWidget, self).__init__(parent)
@@ -118,10 +118,10 @@ class QtAttributeWidget(QWidget):
 
         label_layout = QHBoxLayout()
         my_lbl = QLabel("Label field:")
-        my_class = QLineEdit("")
-        my_class.setPlaceholderText("Field to import as label (optional)")
+        self.my_class = QLineEdit("")
+        self.my_class.setPlaceholderText("Field to import as label (optional)")
         label_layout.addWidget(my_lbl)
-        label_layout.addWidget(my_class)
+        label_layout.addWidget(self.my_class)
         label_layout.addStretch()
 
 
@@ -173,12 +173,12 @@ class QtAttributeWidget(QWidget):
 
     def accept(self):
 
-        # if self.chkBoxlabel.isChecked():
-        #    self.shape = 'Labeled regions'
-        # elif self.chkBoxsampling.isChecked():
-        #      self.shape = 'Sampling'
-        # else:
-        #    self.shape = 'Other'
+        if self.chkBoxlabel.isChecked():
+           self.shape = 'Labeled regions'
+        elif self.chkBoxsampling.isChecked():
+             self.shape = 'Sampling'
+        else:
+           self.shape = 'Other'
 
         self.fieldlist =[]
         flagExist = False
@@ -197,5 +197,6 @@ class QtAttributeWidget(QWidget):
             msgBox.exec()
             return
         else:
-            self.shapefilechoices.emit(self.shape, self.fieldlist, self.my_class.text)
+            classes_list = self.data.pop(self.my_class.text())
+            self.shapefilechoices.emit(self.shape, self.fieldlist, list(classes_list.values))
             self.close()

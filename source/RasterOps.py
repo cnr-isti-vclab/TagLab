@@ -274,9 +274,9 @@ def write_shapefile(project, image, blobs, georef_filename, out_shp):
 
     # TODO check if attribute name is already in dict.
     for attribute in project.region_attributes.data:
-        if attribute['type'] in ['string', 'boolean', 'keyword']:
+        if attribute['type'] in ['string', 'keyword']:
             dict[attribute['name']] = []
-        elif attribute['type'] == 'number':
+        elif attribute['type'] in ['number', 'boolean']:
             dict[attribute['name']] = np.zeros(number_of_seg)
 
     for i, blob in enumerate(visible_blobs):
@@ -300,7 +300,7 @@ def write_shapefile(project, image, blobs, georef_filename, out_shp):
             except:
                 value = None
 
-            if attribute['type'] == 'number':
+            if attribute['type'] == 'number' or attribute['type'] == 'boolean':
                 if value != None:
                     dict[attribute['name']][i] = value
             else:
