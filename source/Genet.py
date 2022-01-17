@@ -96,12 +96,13 @@ class Genet:
 
     def exportCSV(self, filename):
         fields = ['genet']
+
         for img in self.project.images:
-            fields.append(img.name + " blobs")
-            fields.append(img.name + " area")
-
+            # writing both classes seems redundant in matching, but it's not for born and dead
+            fields.append(img.name + "Class name")
+            fields.append(img.name + " Object id")
+            fields.append(img.name + " Area")
         lines = {}
-
         for img in self.project.images:
             for blob in img.annotations.seg_blobs:
                 if not blob.genet in lines:
@@ -119,12 +120,15 @@ class Genet:
 
         count = 1
         for img in self.project.images:
+            scale_factor = img.pixelSize()
             for blob in img.annotations.seg_blobs:
                 line = lines[blob.genet]
                 row = line['row']
-                data[row][count] += str(blob.id) + " "
-                data[row][count+1] += str(blob.area) + " "
-            count += 2
+                area = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
+                data[row][count] += blob.class_name + " "
+                data[row][count+1] += str(blob.id) + " "
+                data[row][count+2] += str(area) + " "
+            count += 3
 
         import csv
 
