@@ -191,12 +191,16 @@ class QtAttributeWidget(QWidget):
             if checkbox.isChecked():
                 self.fieldlist.append({'name': checkbox.text(), 'type': checkbox.property('type')})
 
-        if flagExist is False and self.my_class.text() != "":
-            msgBox = QMessageBox(self)
-            msgBox.setText("Wrong label field! Type an existing one.")
-            msgBox.exec()
-            return
-        else:
-            classes_list = self.data.pop(self.my_class.text())
-            self.shapefilechoices.emit(self.shape, self.fieldlist, list(classes_list.values))
-            self.close()
+        classes_list = []
+        if self.shape == "Labeled regions":
+            if self.my_class.text() != "":
+                if flagExist is False:
+                    msgBox = QMessageBox(self)
+                    msgBox.setText("Wrong label field! Type an existing one.")
+                    msgBox.exec()
+                    return
+
+                classes_list = list(self.data.pop(self.my_class.text()).values)
+
+        self.shapefilechoices.emit(self.shape, self.fieldlist, classes_list)
+        self.close()
