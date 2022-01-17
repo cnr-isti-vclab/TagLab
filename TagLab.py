@@ -397,6 +397,7 @@ class TagLab(QMainWindow):
         self.layers_widget.showImage.connect(self.showImage)
         self.layers_widget.toggleLayer.connect(self.toggleLayer)
         self.layers_widget.toggleAnnotations.connect(self.toggleAnnotations)
+        self.layers_widget.deleteLayer.connect(self.deleteLayer)
 
 
         # LABELS PANEL
@@ -1159,6 +1160,22 @@ class TagLab(QMainWindow):
         
         if self.viewerplus.image == img:
             self.showImage(self.project.images[0])
+
+    def deleteLayer(self, img, layer):
+        box = QMessageBox()
+        reply = box.question(self.working_area_widget, self.TAGLAB_VERSION, "Are you sure to delete layer: " + layer.name + " ?",
+                             QMessageBox.Yes | QMessageBox.No)
+        if reply != QMessageBox.Yes:
+            return
+            
+        if self.viewerplus.image == img:
+            self.viewerplus.undrawLayer(layer)
+
+        if self.viewerplus2.image == img:
+            self.viewerplus2.undrawLayer(layer)
+
+        img.deleteLayer(layer)
+        self.layers_widget.setProject(self.project)
 
     def toggleRGBDEM(self, viewer):
         """

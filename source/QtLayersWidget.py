@@ -1,6 +1,6 @@
 from PyQt5.QtCore import Qt,QSize, QEvent, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QIcon, QColor
-from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem, QTreeWidgetItemIterator, QWidget, QSizePolicy
+from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem, QTreeWidgetItemIterator, QWidget, QSizePolicy, QPushButton, QHeaderView
 from pathlib import Path
 import os
 from source.Project import Project
@@ -16,6 +16,7 @@ class QtLayersWidget(QTreeWidget):
     showImage = pyqtSignal(Image)
     toggleLayer = pyqtSignal(Layer, bool)
     toggleAnnotations = pyqtSignal(Image, bool)
+    deleteLayer = pyqtSignal(Image, Layer)
 
     def __init__(self, parent=None):
         super(QtLayersWidget, self).__init__(parent)
@@ -26,27 +27,31 @@ class QtLayersWidget(QTreeWidget):
         self.setMinimumWidth(300)
         self.setMinimumHeight(100)
 
+        self.trash = QIcon(imdir+os.path.join("icons", "trash.png"))
         self.icon_eyeopen = QIcon(imdir+os.path.join("icons", "eye.png"))
         self.icon_eyeclosed = QIcon(imdir+os.path.join("icons", "cross.png"))
         self.itemChanged.connect(self.itemChecked)
 
-
-    def itemChecked(self, item):
-        print(item)
+        self.setColumnCount(2)
+        self.header().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.header().setSectionResizeMode(1, QHeaderView.Fixed)
+        self.header().setStretchLastSection(False)
+        self.setColumnWidth(1, 24)
 
     def setProject(self, project):
         self.blockSignals(True)
         self.clear()
-        self.setColumnCount(1);
 
-        items = []
+        #items = []
         for image in project.images:
             item = QTreeWidgetItem()
             item.setText(0, image.name)
             item.setIcon(0, self.icon_eyeclosed)
             item.setCheckState(0, Qt.Unchecked)
+            item.setExpanded(True)
+
             item.type = 'image'
-            item.target = image
+            item.image = image
 
 
             child = QTreeWidgetItem()
@@ -54,7 +59,7 @@ class QtLayersWidget(QTreeWidget):
             child.setCheckState(0, Qt.Checked)
             child.setFlags(Qt.NoItemFlags)
             child.type = 'annotations'
-            child.target = image
+            child.image = image
             item.addChild(child)
 
 
@@ -67,25 +72,43 @@ class QtLayersWidget(QTreeWidget):
                     child.setCheckState(0, Qt.Unhecked)
                 child.setFlags(Qt.NoItemFlags)
                 child.type = 'layer'
-                child.target = layer
-                item.addChild(child)
+                child.layer = layer
+                child.image = image
+                
 
-            items.append(item)
-            
-            
-        self.insertTopLevelItems(0, items);
+                item.addChild(child)
+                # ui->treeWidget->setItemWidget(items.value(1),0,new QPushButton("Click Me")); // Solution for your problem 
+
+            #items.append(item)
+            self.addTopLevelItem(item);
+
+        it = QTreeWidgetItemIterator(self)
+        while it.value():
+            item = it.value()
+            if item.type == 'layer':
+                image = item.image
+                layer = item.layer
+                type = item.type
+                button = QPushButton()
+                button.setIcon(self.trash)
+                #button.setFixedWidth(100)
+                button.clicked.connect(lambda x: self.deleteLayer.emit(image, layer))
+                self.setItemWidget(item, 1, button)
+            it += 1
+
         self.blockSignals(False)
 
     def setImage(self, image1, image2 = None):
+
         self.blockSignals(True)
         it = QTreeWidgetItemIterator(self)
         while it.value():
             item = it.value()
             if item.type == 'image':
-                if item.target == image1 or item.target == image2:
+                if item.image == image1 or item.image == image2:
                     item.setIcon(0, self.icon_eyeopen)
                     item.setCheckState(0, Qt.Checked)
-                    if len(item.target.layers):
+                    if len(item.image.layers):
                         item.setExpanded(True)
                 else:
                     item.setIcon(0, self.icon_eyeclosed)
@@ -99,7 +122,7 @@ class QtLayersWidget(QTreeWidget):
 
                 for i in range(item.childCount()):
                     child = item.child(i)
-                    if item.target == image1 or item.target == image2:
+                    if item.image == image1 or item.image == image2:
                         child.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
                     else:
                         child.setFlags(Qt.NoItemFlags) #Qt.ItemIsEnabled)
@@ -112,11 +135,11 @@ class QtLayersWidget(QTreeWidget):
     def itemChecked(self, item):
         checked = item.checkState(0) == Qt.Checked
         if item.type == 'image':
-            self.setImage(item.target)
-            self.showImage.emit(item.target)
+            self.setImage(item.image)
+            self.showImage.emit(item.image)
 
         elif item.type == 'layer':
-            self.toggleLayer.emit(item.target, checked)
+            self.toggleLayer.emit(item.layer, checked)
 
         elif item.type == 'annotations':
-            self.toggleAnnotations.emit(item.target, checked)
+            self.toggleAnnotations.emit(item.image, checked)

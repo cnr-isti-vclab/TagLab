@@ -56,6 +56,8 @@ class Image(object):
         else:
             self.grid = None
 
+    def deleteLayer(self, layer):
+        self.layers.remove(layer)
 
     def pixelSize(self):
 

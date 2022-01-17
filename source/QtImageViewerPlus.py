@@ -123,6 +123,7 @@ class QtImageViewerPlus(QtImageViewer):
         self.image = None
         self.channel = None
         self.annotations = Annotation()
+        self.layers = []
         self.selected_blobs = []
         self.taglab_dir = taglab_dir
         self.tools = Tools(self)
@@ -196,10 +197,13 @@ class QtImageViewerPlus(QtImageViewer):
         Set the image to visualize. The first channel is visualized unless otherwise specified.
         """
 
+        self.undrawAllLayers()
         self.image = image
         self.annotations = image.annotations
         self.selected_blobs = []
         self.selectionChanged.emit()
+        #clear existing layers
+
 
         # draw all the annotations
         for blob in self.annotations.seg_blobs:
@@ -460,6 +464,12 @@ class QtImageViewerPlus(QtImageViewer):
                 self.drawLayer(layer)
             else:
                 self.undrawLayer(layer)
+
+    def undrawAllLayers(self):
+        if self.image != None:
+            for layer in self.image.layers:
+                self.undrawLayer(layer)
+
 
     def drawLayer(self, layer):
         for shape in layer.shapes:
