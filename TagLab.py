@@ -460,6 +460,8 @@ class TagLab(QMainWindow):
 
         # MAP VIEWER
         self.mapviewer = QtMapViewer(350)
+        self.mapviewer.setMinimumHeight(200)
+        self.mapviewer.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.MinimumExpanding)
 
         self.viewerplus.viewUpdated[QRectF].connect(self.mapviewer.drawOverlayImage)
         self.mapviewer.leftMouseButtonPressed[float, float].connect(self.viewerplus.center)
@@ -472,6 +474,8 @@ class TagLab(QMainWindow):
         self.layersdock = QDockWidget("Layers", self)
         self.layersdock.setWidget(self.layers_widget)
         self.layers_widget.setStyleSheet("padding: 0px")
+        self.layersdock.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
+
 
         self.labelsdock = QDockWidget("Labels", self)
         self.labelsdock.setWidget(self.groupbox_labels)
@@ -491,6 +495,8 @@ class TagLab(QMainWindow):
 
         self.mapdock = QDockWidget("Map", self)
         self.mapdock.setWidget(self.mapviewer)
+        self.mapdock.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.MinimumExpanding)
+
 
         for dock in (self.layersdock, self.labelsdock, self.comparisondock, self.blobdock, self.mapdock):
             dock.setAllowedAreas(Qt.RightDockWidgetArea)
@@ -527,8 +533,8 @@ class TagLab(QMainWindow):
 
         viewMenu = self.menuBar().addMenu("&View")
 
-        viewMenu.addAction(self.layersdock.toggleViewAction())
         viewMenu.addAction(self.labelsdock.toggleViewAction())
+        viewMenu.addAction(self.layersdock.toggleViewAction())
         #viewMenu.addAction(self.infodock.toggleViewAction())
         viewMenu.addAction(self.blobdock.toggleViewAction())
         viewMenu.addAction(self.mapdock.toggleViewAction())
@@ -1572,6 +1578,7 @@ class TagLab(QMainWindow):
         self.split_screen_flag = False
 
         self.activeviewer = self.viewerplus
+        self.layers_widget.setImage(self.viewerplus.image)
 
     def enableSplitScreen(self):
 
@@ -1629,6 +1636,8 @@ class TagLab(QMainWindow):
             self.split_screen_flag = True
 
             self.activeviewer = self.viewerplus
+            self.layers_widget.setImage(self.viewerplus.image, self.viewerplus2.image)
+
 
     def createMatch(self):
         """
@@ -3228,7 +3237,7 @@ class TagLab(QMainWindow):
             box.exec()
             return
 
-        filters = "Image (*.png *.jpg)"
+        filters = "Image (*.png *.jpg *.jpeg)"
         filename, _ = QFileDialog.getOpenFileName(self, "Input Label Map File", "", filters)
         if not filename:
             return
@@ -3284,16 +3293,20 @@ class TagLab(QMainWindow):
     @pyqtSlot(str,list,list)
     def readShapes(self, shapetype, attributelist, classes_list):
 
-        for attribute in attributelist:
-            if self.project.region_attributes.has(attribute['name']):
-                continue
-            self.project.region_attributes.data.append(attribute)
 
         gf = self.activeviewer.image.georef_filename
         if shapetype == 'Labeled regions':
+
+            for attribute in attributelist:
+                if self.project.region_attributes.has(attribute['name']):
+                    continue
+                self.project.region_attributes.data.append(attribute)
+
             blob_list = rasterops.read_regions_geometry(self.shapefile_filename, gf)
             data = rasterops.read_attributes(self.shapefile_filename)
             utils.setAttributes(self.project, data, blob_list)
+
+            self.groupbox_blobpanel.updateRegionAttributes(self.project.region_attributes)
 
             for i in range(0,len(blob_list)):
                 blob = blob_list[i]
@@ -3306,10 +3319,11 @@ class TagLab(QMainWindow):
             data = rasterops.read_attributes(self.shapefile_filename)
 
             layer = Layer("Sampling")
+            layer.name = os.path.basename(self.shapefile_filename)
             layer.shapes = shape_list
             self.activeviewer.image.layers.append(layer)
 
-            utils.setAttributes(self.project, data, layer.shapes)
+            #utils.setAttributes(self.project, data, layer.shapes)
 
             self.activeviewer.drawAllLayers()
 
@@ -3318,14 +3332,14 @@ class TagLab(QMainWindow):
             data = rasterops.read_attributes(self.shapefile_filename)
 
             layer = Layer("Other")
+            layer.name = os.path.basename(self.shapefile_filename)
             layer.shapes = shape_list
             self.activeviewer.image.layers.append(layer)
 
-            utils.setAttributes(self.project, data, layer.shapes)
+            #utils.setAttributes(self.project, data, layer.shapes)
 
             self.activeviewer.drawAllLayers()
 
-        self.groupbox_blobpanel.updateRegionAttributes(self.project.region_attributes)
         self.layers_widget.setProject(self.project)
         self.layers_widget.setImage(self.activeviewer.image)
         self.shapefile_filename = ""
@@ -3705,7 +3719,7 @@ class TagLab(QMainWindow):
             box.exec()
             return
 
-        filters = " TIFF (*.tif)"
+        filters = " TIFF (*.tif *.tiff)"
         output_filename, _ = QFileDialog.getSaveFileName(self, "Save raster as", self.taglab_dir, filters)
 
         if output_filename:

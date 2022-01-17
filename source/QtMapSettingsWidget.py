@@ -110,7 +110,7 @@ class QtMapSettingsWidget(QWidget):
     @pyqtSlot()
     def chooseMapFile(self):
 
-        filters = "Image (*.png *.jpg *.tif *.tiff)"
+        filters = "Image (*.png *.jpg *.jpeg *.tif *.tiff)"
         fileName, _ = QFileDialog.getOpenFileName(self, "Input Map File", "", filters)
         if fileName:
             self.fields["rgb_filename"]["edit"].setText(fileName)
