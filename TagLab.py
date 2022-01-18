@@ -304,6 +304,11 @@ class TagLab(QMainWindow):
 
         self.viewerplus.newSelection.connect(self.showMatch)
         self.viewerplus2.newSelection.connect(self.showMatch)
+
+        self.viewerplus.newSelection.connect(self.showBlobOnTable)
+
+
+
         #when updating classes
         self.viewerplus.externalAnnotationsChanged.connect(self.viewerplus2.scene.invalidate)
         self.viewerplus2.externalAnnotationsChanged.connect(self.viewerplus.scene.invalidate)
@@ -449,7 +454,7 @@ class TagLab(QMainWindow):
         self.compare_panel.data_table.clicked.connect(self.showConnectionCluster)
 
         self.table_panel = QtTablePanel()
-        self.table_panel.data_table.clicked.connect(self.showBlob)
+        self.table_panel.data_table.clicked.connect(self.showBlobOnViewer)
 
 
         self.groupbox_comparison = QGroupBox()
@@ -1704,16 +1709,39 @@ class TagLab(QMainWindow):
 
 
     @pyqtSlot()
-    def showBlob(self):
+    def showBlobOnViewer(self):
 
         index = self.table_panel.data_table.selectionModel().selectedRows()
         if len(index) == 0:
             return
         row = self.table_panel.data.iloc[index[0].row()]
-        blob_id = row['Id']
-        if blob_id>= 0:
-            self.showCluster(blob_id, is_source=True, center=True)
 
+        blob_id = row['Id']
+        if blob_id >= 0:
+
+            self.viewerplus.resetSelection()
+
+            blob = self.viewerplus.annotations.blobById(blob_id)
+            self.viewerplus.addToSelectedList(blob)
+
+            scale = self.viewerplus.px_to_mm
+            box = blob.bbox
+            x = box[1] + box[2] / 2
+            y = box[0] + box[3] / 2
+            self.viewerplus.centerOn(x, y)
+
+    @pyqtSlot()
+    def showBlobOnTable(self):
+
+        if self.activeviewer is not None:
+            selected = self.activeviewer.selected_blobs
+
+            rows = []
+            for blob in selected:
+                row = self.table_panel.data.index[self.table_panel.data["Id"] == blob.id].to_list()[0]
+                rows.append(row)
+
+            self.table_panel.selectRows(rows)
 
     @pyqtSlot()
     def showConnectionCluster(self):
