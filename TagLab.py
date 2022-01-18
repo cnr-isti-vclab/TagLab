@@ -66,6 +66,7 @@ from source.QtNewDatasetWidget import QtNewDatasetWidget
 from source.QtTrainingResultsWidget import QtTrainingResultsWidget
 from source.QtTYNWidget import QtTYNWidget
 from source.QtComparePanel import QtComparePanel
+from source.QtTablePanel import QtTablePanel
 from source.QtProjectWidget import QtProjectWidget
 from source.QtProjectEditor import QtProjectEditor
 from source.Project import Project, loadProject
@@ -447,11 +448,16 @@ class TagLab(QMainWindow):
         self.compare_panel.areaModeChanged[str].connect(self.updateAreaMode)
         self.compare_panel.data_table.clicked.connect(self.showConnectionCluster)
 
+        self.table_panel = QtTablePanel()
+        self.table_panel.data_table.clicked.connect(self.showBlob)
+
+
         self.groupbox_comparison = QGroupBox()
-        # self.groupbox_comparison.setStyleSheet(groupbox_style)
 
         layout_groupbox2 = QVBoxLayout()
-        layout_groupbox2.addWidget(self.compare_panel)
+        # in single view only show the table panel
+        layout_groupbox2.addWidget(self.table_panel)
+
         layout_groupbox2.setContentsMargins(QMargins(0, 0, 0, 0))
         self.groupbox_comparison.setLayout(layout_groupbox2)
 
@@ -482,9 +488,13 @@ class TagLab(QMainWindow):
         self.labelsdock.setWidget(self.groupbox_labels)
         self.groupbox_labels.setStyleSheet("padding: 0px")
 
-        self.comparisondock = QDockWidget("Comparison", self)
-        self.comparisondock.setWidget(self.groupbox_comparison)
+        self.datadock = QDockWidget("Data Table", self)
+        self.datadock.setWidget(self.groupbox_comparison)
         self.groupbox_comparison.setStyleSheet("padding: 0px")
+
+        # self.comparisondock = QDockWidget("Comparison Table", self)
+        # self.comparisondock.setWidget(self.groupbox_comparison)
+        # self.groupbox_comparison.setStyleSheet("padding: 0px")
 
 
         self.blobdock = QDockWidget("Region Info", self)
@@ -494,19 +504,19 @@ class TagLab(QMainWindow):
         self.groupbox_blobpanel.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Minimum)
 
 
-        self.mapdock = QDockWidget("Map", self)
+        self.mapdock = QDockWidget("Map Preview", self)
         self.mapdock.setWidget(self.mapviewer)
         self.mapdock.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.MinimumExpanding)
 
 
-        for dock in (self.layersdock, self.labelsdock, self.comparisondock, self.blobdock, self.mapdock):
+        for dock in (self.labelsdock, self.layersdock, self.datadock, self.blobdock, self.mapdock):
             dock.setAllowedAreas(Qt.RightDockWidgetArea)
             self.addDockWidget(Qt.RightDockWidgetArea, dock)
 
         self.setDockOptions(self.AnimatedDocks)
         #layout_labels.setAlignment(self.mapviewer, Qt.AlignHCenter)
 
-        self.comparisondock.hide()
+        # self.datadock.hide()
 
         self.compare_panel.setMinimumHeight(600)
 
@@ -539,7 +549,7 @@ class TagLab(QMainWindow):
         #viewMenu.addAction(self.infodock.toggleViewAction())
         viewMenu.addAction(self.blobdock.toggleViewAction())
         viewMenu.addAction(self.mapdock.toggleViewAction())
-        viewMenu.addAction(self.comparisondock.toggleViewAction())
+        viewMenu.addAction(self.datadock.toggleViewAction())
 
 
         self.setProjectTitle("NONE")
@@ -1577,6 +1587,8 @@ class TagLab(QMainWindow):
                 self.setTool("MOVE")
 
         self.viewerplus2.hide()
+        self.groupbox_comparison.layout().removeWidget(self.compare_panel)
+        self.groupbox_comparison.layout().addWidget(self.table_panel)
         self.comboboxTargetImage.hide()
         self.blobdock.show()
 
@@ -1608,6 +1620,8 @@ class TagLab(QMainWindow):
             QApplication.setOverrideCursor(Qt.WaitCursor)
 
             self.viewerplus.viewChanged()
+            self.groupbox_comparison.layout().removeWidget(self.table_panel)
+            self.groupbox_comparison.layout().addWidget(self.compare_panel)
 
             index = self.comboboxSourceImage.currentIndex()
             if index < 0:
@@ -1677,7 +1691,7 @@ class TagLab(QMainWindow):
             self.project.addCorrespondence(img_source_index, img_target_index, sel1, sel2)
 
             if self.compare_panel.correspondences is None:
-                self.setTable(self.project, img_source_index, img_target_index)
+                self.compare_panel.setTable(self.project, img_source_index, img_target_index)
             else:
                 corr = self.project.getImagePairCorrespondences(img_source_index, img_target_index)
                 self.compare_panel.updateTable(corr)
@@ -1687,6 +1701,18 @@ class TagLab(QMainWindow):
                 self.showCluster(sel1[0].id, is_source=True, center=False)
             elif len(sel2) > 0:
                 self.showCluster(sel2[0].id, is_source=False, center=False)
+
+
+    @pyqtSlot()
+    def showBlob(self):
+
+        index = self.table_panel.data_table.selectionModel().selectedRows()
+        if len(index) == 0:
+            return
+        row = self.table_panel.data.iloc[index[0].row()]
+        blob_id = row['Id']
+        if blob_id>= 0:
+            self.showCluster(blob_id, is_source=True, center=True)
 
 
     @pyqtSlot()
@@ -2101,11 +2127,11 @@ class TagLab(QMainWindow):
                 self.enableSplitScreen()
 
             self.labelsdock.hide()
-            self.comparisondock.show()
+            self.datadock.show()
         else:
             # settings when MATCH tool is disactive
 
-            self.comparisondock.hide()
+            # self.datadock.hide()
             self.labelsdock.show()
 
 
@@ -3011,6 +3037,7 @@ class TagLab(QMainWindow):
             self.mapviewer.setOpacity(0.5)
 
             self.disableSplitScreen()
+            self.setDataTable()
 
             QApplication.restoreOverrideCursor()
 
@@ -3019,6 +3046,12 @@ class TagLab(QMainWindow):
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
             msgBox.setText("Error loading map:" + str(e))
             msgBox.exec()
+
+    def setDataTable(self):
+
+        if self.activeviewer is not None:
+            if self.activeviewer.image is not None:
+                self.table_panel.setTable(self.project, self.activeviewer.image)
 
     
     @pyqtSlot(Layer, bool)

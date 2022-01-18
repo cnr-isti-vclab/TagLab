@@ -4,7 +4,8 @@ from source.Shape import Layer, Shape
 from source.Annotation import Annotation
 from source.Grid import Grid
 import rasterio as rio
-
+import pandas as pd
+import numpy as np
 
 class Image(object):
     def __init__(self, rect = [0.0, 0.0, 0.0, 0.0],
@@ -106,6 +107,37 @@ class Image(object):
 
         self.channels.append(Channel(filename, type))
 
+    def create_data_table(self):
+
+        ''''This create a data table only for the data panel view'''
+        scale_factor = self.pixelSize()
+
+        # create a list of instances
+        name_list = []
+        visible_blobs = []
+        for blob in self.annotations.seg_blobs:
+            if blob.qpath_gitem.isVisible():
+                index = blob.blob_name
+                name_list.append(index)
+                visible_blobs.append(blob)
+
+        number_of_seg = len(name_list)
+        dict = {
+            'Id': np.zeros(number_of_seg, dtype=np.int),
+            'Class': [],
+            'Area': np.zeros(number_of_seg),
+            'Surf. area': np.zeros(number_of_seg)}
+
+        for i, blob in enumerate(visible_blobs):
+            dict['Id'][i] = blob.id
+            dict['Class'].append(blob.class_name)
+            dict['Area'][i] = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
+            if blob.surface_area > 0.0:
+                dict['Surf. area'][i] = round(blob.surface_area * (scale_factor) * (scale_factor) / 100, 2)
+
+        # create dataframe
+        df = pd.DataFrame(dict, columns=['Id', 'Class', 'Area', 'Surf. area'])
+        return df
 
     def updateChannel(self, filename, type):
 
