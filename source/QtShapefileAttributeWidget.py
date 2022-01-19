@@ -78,7 +78,7 @@ class QtAttributeWidget(QWidget):
         # user variables
         self.shape = None
         self.fieldslist = []
-
+        self.my_class = None
 
         FIELDS_FOR_ROW = 6
 
@@ -117,11 +117,19 @@ class QtAttributeWidget(QWidget):
 
 
         label_layout = QHBoxLayout()
-        my_lbl = QLabel("Label field:")
-        self.my_class = QLineEdit("")
-        self.my_class.setPlaceholderText("Field to import as label (optional)")
+        my_lbl = QLabel("Select label field:")
+
+        combo = QComboBox()
+        combo.addItem("None")
+        for field in list(self.data.columns):
+            combo.addItem(field)
+            # self.my_class.activated.connect(self.classSelected)
+            combo.activated[str].connect(self.classSelected)
+            # combo.currentTextChanged.connect(self.classSelected)
+
+
         label_layout.addWidget(my_lbl)
-        label_layout.addWidget(self.my_class)
+        label_layout.addWidget(combo)
         label_layout.addStretch()
 
 
@@ -137,7 +145,6 @@ class QtAttributeWidget(QWidget):
         buttons_layout.addWidget(self.btnCancel)
         buttons_layout.addWidget(self.btnOk)
 
-
         layout.addLayout(self.choice_layout)
         layout.addSpacing(20)
         layout.addWidget(self.data_table)
@@ -151,6 +158,10 @@ class QtAttributeWidget(QWidget):
         self.setWindowTitle("Shapefile Attribute Editor")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
+    @pyqtSlot(str)
+    def classSelected(self, text):
+        self.my_class = text
+
 
     @pyqtSlot()
     def cancel(self):
@@ -161,15 +172,6 @@ class QtAttributeWidget(QWidget):
         self.data_table.update()
         self.close()
 
-    # questo mi deve tornare la lista di fields selezionati
-    #
-    # @pyqtSlot()
-    # def addfields(self):
-    #
-    #     print('bu')
-    #
-    #     for checkbox in self.checkBoxes:
-    #             self.fieldslist.append(self.data[str(checkbox.text())])
 
     def accept(self):
 
@@ -184,8 +186,7 @@ class QtAttributeWidget(QWidget):
         flagExist = False
 
         for checkbox in self.checkBoxes:
-
-            if self.my_class.text() == checkbox.text():
+            if self.my_class == checkbox.text():
                 flagExist = True
 
             if checkbox.isChecked():
@@ -193,14 +194,10 @@ class QtAttributeWidget(QWidget):
 
         classes_list = []
         if self.shape == "Labeled regions":
-            if self.my_class.text() != "":
-                if flagExist is False:
-                    msgBox = QMessageBox(self)
-                    msgBox.setText("Wrong label field! Type an existing one.")
-                    msgBox.exec()
-                    return
-
-                classes_list = list(self.data.pop(self.my_class.text()).values)
+            if self.my_class != None:
+                classes_list = list(self.data.pop(self.my_class).values)
+            else:
+                classes_list = ['Empty'] * self.data.shape[0]
 
         self.shapefilechoices.emit(self.shape, self.fieldlist, classes_list)
         self.close()
