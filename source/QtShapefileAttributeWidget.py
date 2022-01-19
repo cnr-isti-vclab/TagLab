@@ -191,7 +191,7 @@ class QtAttributeWidget(QWidget):
 
         classes_list = []
         if self.shape == "Labeled regions":
-            if self.my_class != "":
+            if self.my_class != None:
                 classes_list = list(self.data.pop(self.my_class).values)
             else:
                 classes_list = ['Empty'] * self.data.shape[0]

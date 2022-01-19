@@ -196,7 +196,7 @@ class Blob(object):
         self.calculateArea(mask)
         self.bbox = Mask.pointsBox(self.contour,4)
 
-    def createFromClosedCurve(self, lines):
+    def createFromClosedCurve(self, lines, erode = True):
         """
         It creates a blob starting from a closed curve. If the curve is not closed False is returned.
         If the curve intersect itself many times the first segmented region is created.
@@ -214,7 +214,8 @@ class Blob(object):
             return False
 
         selem = np.array([[0, 0, 0], [0, 0, 1], [0, 1, 0]])
-        mask = binary_erosion(mask, selem)
+        if erode:
+            mask = binary_erosion(mask, selem)
         self.updateUsingMask(box, mask)
         return True
 

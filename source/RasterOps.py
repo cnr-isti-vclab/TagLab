@@ -112,12 +112,12 @@ def read_regions_geometry(filename, georef_filename):
             coord = shpdict['geometry']['coordinates']
             outercontour = coord[0]
             outpointpixels = changeFormatInv([outercontour], transform)
-            blob.createFromClosedCurve([np.asarray(outpointpixels)])
+            blob.createFromClosedCurve([np.asarray(outpointpixels)], False)
             for i in range(1, len(coord)):
                 innercontourn_i = coord[i]
                 innerpointpixels_i = changeFormatInv([innercontourn_i], transform)
                 innerblob = Blob(None, 0, 0, 0)
-                innerblob.createFromClosedCurve([np.asarray(innerpointpixels_i)])
+                innerblob.createFromClosedCurve([np.asarray(innerpointpixels_i)], False)
                 (mask, box) = subtract(blob.getMask(), blob.bbox, innerblob.getMask(), innerblob.bbox)
                 if mask.any():
                     blob.updateUsingMask(box, mask.astype(int))
