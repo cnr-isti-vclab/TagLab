@@ -339,6 +339,7 @@ class TagLab(QMainWindow):
         self.checkBoxFill.setMinimumWidth(20)
         self.checkBoxFill.stateChanged[int].connect(self.viewerplus.toggleFill)
         self.checkBoxFill.stateChanged[int].connect(self.viewerplus2.toggleFill)
+        self.checkBoxFill.stateChanged[int].connect(self.saveGuiPreferences)
 
         self.checkBoxBorders = QCheckBox("Boundaries")
         self.checkBoxBorders.setChecked(True)
@@ -346,12 +347,14 @@ class TagLab(QMainWindow):
         self.checkBoxBorders.setMinimumWidth(20)
         self.checkBoxBorders.stateChanged[int].connect(self.viewerplus.toggleBorders)
         self.checkBoxBorders.stateChanged[int].connect(self.viewerplus2.toggleBorders)
+        self.checkBoxBorders.stateChanged[int].connect(self.saveGuiPreferences)
 
         self.checkBoxGrid = QCheckBox("Grid")
         self.checkBoxGrid.setMinimumWidth(20)
         self.checkBoxGrid.setFocusPolicy(Qt.NoFocus)
         self.checkBoxGrid.stateChanged[int].connect(self.viewerplus.toggleGrid)
         self.checkBoxGrid.stateChanged[int].connect(self.viewerplus2.toggleGrid)
+        self.checkBoxGrid.stateChanged[int].connect(self.saveGuiPreferences)
 
         self.labelZoomInfo = QLabel("100%")
         self.labelMouseLeftInfo = QLabel("0")
@@ -603,7 +606,27 @@ class TagLab(QMainWindow):
         self.split_screen_flag = False
         self.disableSplitScreen()
 
+        self.setGuiPreferences()
+
         self.move()
+
+    def setGuiPreferences(self):
+
+        settings = QSettings("VCLAB", "TagLab")
+        value = settings.value("gui-checkbox-fill", type=bool, defaultValue=True)
+        self.checkBoxFill.setChecked(value)
+        value = settings.value("gui-checkbox-borders", type=bool, defaultValue=True)
+        self.checkBoxBorders.setChecked(value)
+        value = settings.value("gui-checkbox-grid", type=bool, defaultValue=False)
+        self.checkBoxGrid.setChecked(value)
+
+    @pyqtSlot()
+    def saveGuiPreferences(self):
+
+        settings = QSettings("VCLAB", "TagLab")
+        settings.setValue("gui-checkbox-fill", self.checkBoxFill.isChecked())
+        settings.setValue("gui-checkbox-borders", self.checkBoxBorders.isChecked())
+        settings.setValue("gui-checkbox-grid", self.checkBoxFill.isChecked())
 
     def checkNewVersion(self):
 
@@ -3058,6 +3081,25 @@ class TagLab(QMainWindow):
             index = self.project.images.index(image)
             self.updateComboboxSourceImage(index)
             self.layers_widget.setImage(image);
+
+            if self.checkBoxFill.isChecked():
+                self.viewerplus.enableFill()
+                self.viewerplus2.enableFill()
+            else:
+                self.viewerplus.disableFill()
+                self.viewerplus2.disableFill()
+
+            if self.checkBoxBorders.isChecked():
+                self.viewerplus.enableBorders()
+                self.viewerplus2.enableBorders()
+            else:
+                self.viewerplus.disableBorders()
+                self.viewerplus2.disableBorders()
+
+            if self.checkBoxGrid.isChecked():
+                self.viewerplus.showGrid()
+            else:
+                self.viewerplus.hideGrid()
 
             w = self.mapviewer.width()
             thumb = self.viewerplus.pixmap.scaled(w, w, Qt.KeepAspectRatio, Qt.SmoothTransformation)

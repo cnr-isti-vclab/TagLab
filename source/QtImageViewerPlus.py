@@ -214,6 +214,9 @@ class QtImageViewerPlus(QtImageViewer):
         # draw the working area (if defined)
         self.drawWorkingArea()
 
+        # draw the grid (if defined)
+        self.showGrid()
+
         self.scene.invalidate()
         self.px_to_mm = image.pixelSize()
         self.setChannel(image.channels[channel_idx])
