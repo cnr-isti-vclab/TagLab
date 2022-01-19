@@ -89,10 +89,10 @@ class QtPanelInfo(QTabWidget):
                      min = -1e20
                 input.setMinimum(min)
                 input.valueChanged.connect(lambda value, name = name: self.assign(value, name))
-
-            elif attribute['type'] == 'boolean':
-                input = QCheckBox()
-                input.toggled.connect(lambda checked, name = name: self.assign(checked, name))
+            #
+            # elif attribute['type'] == 'boolean':
+            #     input = QCheckBox()
+            #     input.toggled.connect(lambda checked, name = name: self.assign(checked, name))
 
             elif attribute['type'] == 'keyword':
                 input = QComboBox()
@@ -132,8 +132,8 @@ class QtPanelInfo(QTabWidget):
                 input.setText('')
             elif attribute['type'] == 'number':
                 input.clear()
-            elif attribute['type'] == 'boolean':
-                input.setChecked(False)
+            # elif attribute['type'] == 'boolean':
+            #     input.setChecked(False)
             elif attribute['type'] == 'keyword':
                 input.setCurrentText('')
 
@@ -167,8 +167,8 @@ class QtPanelInfo(QTabWidget):
                 input.setText(value)
             elif attribute['type'] == 'number':
                 input.setValue(value)
-            elif attribute['type'] == 'boolean':
-                input.setChecked(value)
+            # elif attribute['type'] == 'boolean':
+            #      input.setChecked(value)
             elif attribute['type'] == 'keyword':
                 input.setCurrentText(value)
 
