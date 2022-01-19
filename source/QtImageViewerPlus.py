@@ -107,7 +107,6 @@ class QtImageViewerPlus(QtImageViewer):
     mouseMoved = pyqtSignal(float, float)
     selectionChanged = pyqtSignal()
     selectionReset = pyqtSignal()
-    externalAnnotationsChanged = pyqtSignal()
 
     # custom signal
     updateInfoPanel = pyqtSignal(Blob,float)
@@ -1100,8 +1099,10 @@ class QtImageViewerPlus(QtImageViewer):
             brush = self.project.classBrushFromName(blob)
             blob.qpath_gitem.setBrush(brush)
 
+            # notify the update of the class
+            self.annotations.blobUpdated.emit(blob)
+
         self.scene.invalidate()
-        self.externalAnnotationsChanged.emit()
 
     def setBlobClass(self, blob, class_name):
 
@@ -1115,7 +1116,9 @@ class QtImageViewerPlus(QtImageViewer):
             blob.qpath_gitem.setBrush(brush)
 
             self.scene.invalidate()
-            self.externalAnnotationsChanged.emit()
+
+        # notify the update of the class
+        self.annotations.blobUpdated.emit(blob)
 
 #UNDO STUFF
 #UNDO STUFF

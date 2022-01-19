@@ -17,14 +17,11 @@
 # GNU General Public License (http://www.gnu.org/licenses/gpl.txt)
 # for more details.                                               
 from PyQt5.QtCore import Qt, QAbstractTableModel, QItemSelectionModel, QSortFilterProxyModel, QRegExp, QModelIndex, pyqtSlot, pyqtSignal
-from PyQt5.QtWidgets import QWidget, QSizePolicy, QComboBox, QLabel, QTableView, \
+from PyQt5.QtWidgets import QWidget, QSizePolicy, QComboBox, QLabel, QTableView, QHeaderView, \
     QHBoxLayout, QVBoxLayout, QAbstractItemView, QStyledItemDelegate, QAction, QMenu, QToolButton, QGridLayout, QLineEdit
 from PyQt5.QtGui import QColor
-from pathlib import Path
-
-path = Path(__file__).parent.absolute()
-imdir = str(path)
-imdir =imdir.replace('source', '')
+import pandas as pd
+from source.Blob import Blob
 
 class TableModel(QAbstractTableModel):
 
@@ -247,25 +244,18 @@ class QtTablePanel(QWidget):
         self.data = None
         self.setContextMenuPolicy(Qt.CustomContextMenu)
 
-        self.genetAction = QAction("Genet", self)
-        self.genetAction.setCheckable(True)
-        self.genetAction.setChecked(True)
-        self.genetAction.triggered.connect(
-            lambda checked: self.data_table.horizontalHeader().setSectionHidden(0, not checked))
-
         self.areasAction = QAction("Area", self)
         self.areasAction.setCheckable(True)
         self.areasAction.setChecked(True)
         self.areasAction.triggered.connect(
             lambda checked:
-                (self.data_table.horizontalHeader().setSectionHidden(3, not checked),
-                self.data_table.horizontalHeader().setSectionHidden(4, not checked)))
+                self.data_table.horizontalHeader().setSectionHidden(2, not checked))
 
         self.classAction = QAction("Class", self)
         self.classAction.setCheckable(True)
         self.classAction.setChecked(True)
         self.classAction.triggered.connect(
-            lambda checked: self.data_table.horizontalHeader().setSectionHidden(5, not checked))
+            lambda checked: self.data_table.horizontalHeader().setSectionHidden(1, not checked))
 
         self.sourceImg = None
         self.targetImg = None
@@ -282,7 +272,6 @@ class QtTablePanel(QWidget):
             } QMenu::item:disabled { color:rgb(150, 150, 150); }"
 
         menu.setStyleSheet(str)
-        menu.addAction(self.genetAction)
         menu.addAction(self.areasAction)
         menu.addAction(self.classAction)
 
@@ -298,7 +287,9 @@ class QtTablePanel(QWidget):
         if n_receivers > 1:
             self.activeImg.annotations.blobUpdated.disconnect()
 
-        self.activeImg.annotations.blobUpdated.connect(self.sourceBlobUpdated)
+        self.activeImg.annotations.blobUpdated.connect(self.updateBlob)
+        self.activeImg.annotations.blobAdded.connect(self.addBlob)
+        self.activeImg.annotations.blobRemoved.connect(self.removeBlob)
 
         self.data = self.activeImg.create_data_table()
 
@@ -310,20 +301,49 @@ class QtTablePanel(QWidget):
 
         self.data_table.setVisible(False)
         self.data_table.verticalHeader().hide()
-        self.data_table.resizeColumnsToContents()
         self.data_table.setVisible(True)
         self.data_table.setEditTriggers(QAbstractItemView.DoubleClicked)
 
+        self.data_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        self.data_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
         self.data_table.horizontalHeader().showSection(0)
         self.data_table.update()
 
         self.data_table.setStyleSheet("QHeaderView::section { background-color: rgb(40,40,40) }")
 
-    def sourceBlobUpdated(self, blob):
+    @pyqtSlot(Blob)
+    def addBlob(self, blob):
+
+        scale_factor = self.activeImg.pixelSize()
+        area = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
+        new_row = {'Id': blob.id, 'Class': blob.class_name, 'Area':  area }
+        self.data = self.data.append(new_row, ignore_index=True)
+        self.data.sort_values(by='Id', inplace=True)
+        self.data.reset_index(drop=True, inplace=True)
+        self.updateTable(self.data)
+
+    @pyqtSlot(Blob)
+    def removeBlob(self, blob):
+
+        index = self.data.index[self.data["Id"] == blob.id]
+        self.data = self.data.drop(index=index)
+
+        self.data.sort_values(by='Id', inplace=True)
+        self.data.reset_index(drop=True, inplace=True)
+        self.updateTable(self.data)
+
+    @pyqtSlot(Blob)
+    def updateBlob(self, blob):
+
         for i, row in self.data.iterrows():
             if row[0] == blob.id:
-               scale_factor = self.activeImg.pixelSize()
-               self.data.loc[i, 'Area'] = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
+                scale_factor = self.activeImg.pixelSize()
+                self.data.loc[i, 'Area'] = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
+                #self.data.loc[i, 'Surf. Area'] = round(blob.surface_area * (scale_factor) * (scale_factor) / 100, 2)
+                self.data.loc[i, 'Class'] = blob.class_name
+
+        self.data_table.update()
 
     def clear(self):
 
@@ -354,15 +374,15 @@ class QtTablePanel(QWidget):
         self.data_table.horizontalHeader().showSection(0)
         self.data_table.update()
 
-    # def selectById(self, text, isSource):
-    #     try:
-    #         blobid = int(text)
-    #     except:
-    #         return
-    #     #
-    #     # corr = self.project.getImagePairCorrespondences(self.img1idx, self.img2idx)
-    #     # sourcecluster, targetcluster, rows = corr.findCluster(blobid, isSource)
-    #     self.selectRows(rows)
+    def selectById(self, text):
+        try:
+            blobid = int(text)
+        except:
+            return
+        #
+        # corr = self.project.getImagePairCorrespondences(self.img1idx, self.img2idx)
+        # sourcecluster, targetcluster, rows = corr.findCluster(blobid, isSource)
+        self.selectRows(rows)
 
 
     def selectById(self, text):

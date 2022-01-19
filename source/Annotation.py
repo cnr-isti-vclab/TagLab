@@ -43,6 +43,8 @@ class Annotation(QObject):
     """
         Annotation object contains all the annotations as a list of blobs.
     """
+    blobAdded = pyqtSignal(Blob)
+    blobRemoved = pyqtSignal(Blob)
     blobUpdated = pyqtSignal(Blob)
 
     def __init__(self):
@@ -57,23 +59,30 @@ class Annotation(QObject):
         self.refine_depth_weight = 0.0
         self.refine_conservative = 0.1
 
-#        self.undo = Undo()                       #not saved
-
-    def addBlob(self, blob):
+    def addBlob(self, blob, notify=True):
         used = [blob.id for blob in self.seg_blobs]
         if blob.id in used:
             blob.id = self.getFreeId()
         self.seg_blobs.append(blob)
 
-    def removeBlob(self, blob):
+        # notification that a blob has been added
+        if notify:
+            self.blobAdded.emit(blob)
+
+    def removeBlob(self, blob, notify=True):
+
+        # notification that a blob is going to be removed
+        if notify:
+            self.blobRemoved.emit(blob)
+
         index = self.seg_blobs.index(blob)
         del self.seg_blobs[index]
 
-    #just
     def updateBlob(self, old_blob, new_blob):
+
         new_blob.id = old_blob.id;
-        self.removeBlob(old_blob)
-        self.addBlob(new_blob)
+        self.removeBlob(old_blob, notify=False)
+        self.addBlob(new_blob, notify=False)
         self.blobUpdated.emit(new_blob)
 
 

@@ -308,12 +308,6 @@ class TagLab(QMainWindow):
         self.viewerplus.newSelection.connect(self.showBlobOnTable)
 
 
-
-        #when updating classes
-        self.viewerplus.externalAnnotationsChanged.connect(self.viewerplus2.scene.invalidate)
-        self.viewerplus2.externalAnnotationsChanged.connect(self.viewerplus.scene.invalidate)
-
-
         #last activated viewerplus: redirect here context menu commands and keyboard commands
         self.activeviewer = None
         self.inactiveviewer = None
@@ -1738,8 +1732,9 @@ class TagLab(QMainWindow):
 
             rows = []
             for blob in selected:
-                row = self.table_panel.data.index[self.table_panel.data["Id"] == blob.id].to_list()[0]
-                rows.append(row)
+                row = self.table_panel.data.index[self.table_panel.data["Id"] == blob.id].to_list()
+                if row is not None:
+                    rows += row
 
             self.table_panel.selectRows(rows)
 
