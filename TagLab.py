@@ -2088,6 +2088,7 @@ class TagLab(QMainWindow):
         self.last_image_loaded = None
         self.activeviewer = None
         self.contextMenuPosition = None
+        self.table_panel.clear()
         self.compare_panel.clear()
         self.comboboxSourceImage.clear()
         self.comboboxTargetImage.clear()
@@ -3400,7 +3401,9 @@ class TagLab(QMainWindow):
             data = rasterops.read_attributes(self.shapefile_filename)
 
             layer = Layer("Sampling")
-            layer.name = os.path.basename(self.shapefile_filename)
+            basename = os.path.basename(self.shapefile_filename)
+            layer.name = os.path.splitext(basename)[0]
+
             layer.shapes = shape_list
             self.activeviewer.image.layers.append(layer)
 
@@ -3413,7 +3416,9 @@ class TagLab(QMainWindow):
             data = rasterops.read_attributes(self.shapefile_filename)
 
             layer = Layer("Other")
-            layer.name = os.path.basename(self.shapefile_filename)
+            basename = os.path.basename(self.shapefile_filename)
+            layer.name = os.path.splitext(basename)[0]
+
             layer.shapes = shape_list
             self.activeviewer.image.layers.append(layer)
 

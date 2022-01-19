@@ -35,11 +35,13 @@ class Image(object):
         self.layers = []
         for layer_data in layers:
             layer = Layer(layer_data["type"])
+            layer.name = layer_data["name"]
             for data in layer_data["shapes"]:
                 shape = Shape(None, None)
                 shape.fromDict(data)
                 layer.shapes.append(shape)
             self.layers.append(layer)
+
 
         self.channels = list(map(lambda c: Channel(**c), channels))
 

@@ -183,100 +183,19 @@ class QtTablePanel(QWidget):
         self.model = None
         self.data = None
 
-        # self.combodelegate1 = ComboBoxItemDelegate(self.data_table)
-        # self.combodelegate2 = ComboBoxItemDelegate(self.data_table)
-        # #
-
-        # DON'T NEED FILTER HERE - ONLY ONE SEARCH
-
-
-        # self.comboboxFilter = QComboBox()
-        # self.comboboxFilter.setMinimumWidth(80)
-        # self.comboboxFilter.addItem("All")
-        # self.comboboxFilter.addItem("Same")
-        # self.comboboxFilter.addItem("Born")
-        # self.comboboxFilter.addItem("Dead")
-        # self.comboboxFilter.addItem("Grow")
-        # self.comboboxFilter.addItem("Shrink")
-
-        # self.comboboxAreaMode = QComboBox()
-        # self.comboboxAreaMode.setMinimumWidth(80)
-        # self.comboboxAreaMode.addItem("Area")
-        # self.comboboxAreaMode.addItem("Surface Area")
-
-        self.searchId = QLineEdit()
-        self.searchId.textChanged.connect(lambda text: self.selectById(text, True))
-
-        # self.searchId2 = QLineEdit()
-        # self.searchId2.textChanged.connect(lambda text: self.selectById(text, False))
-
-#https://stackoverflow.com/questions/32476006/how-to-make-an-expandable-collapsable-section-widget-in-qt
+        self.searchId = QLineEdit("")
+        self.searchId.textChanged[str].connect(self.selectById)
         
-        filter_layout = QGridLayout()
-        filter_layout.addWidget(QLabel("Search Id: "), 0, 0)
-        filter_layout.addWidget(self.searchId, 0, 1)
+        filter_layout = QHBoxLayout()
+        filter_layout.addWidget(QLabel("Search Id: "))
+        filter_layout.addWidget(self.searchId)
 
-        self.searchWidget =QWidget()
-        self.searchWidget.hide()
-        self.searchWidget.setLayout(filter_layout)
-
-        searchButton = QToolButton(self)
-        searchButton.setStyleSheet("QToolButton { border: none; }")
-        searchButton.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        searchButton.setArrowType(Qt.ArrowType.RightArrow)
-        searchButton.setText("Search")
-        searchButton.setCheckable(True)
-        searchButton.setChecked(False)
-
-        def animate(checked):
-            arrow_type = Qt.DownArrow if checked else Qt.RightArrow
-            searchButton.setArrowType(arrow_type)
-            self.searchWidget.setVisible(checked)
-
-        searchButton.clicked.connect(animate)
-        
         layout = QVBoxLayout()
-        layout.addWidget(searchButton)
-        layout.addWidget(self.searchWidget)
+        layout.addLayout(filter_layout)
         layout.addWidget(self.data_table)
+
         self.setLayout(layout)
 
-        self.data = None
-        self.setContextMenuPolicy(Qt.CustomContextMenu)
-
-        self.areasAction = QAction("Area", self)
-        self.areasAction.setCheckable(True)
-        self.areasAction.setChecked(True)
-        self.areasAction.triggered.connect(
-            lambda checked:
-                self.data_table.horizontalHeader().setSectionHidden(2, not checked))
-
-        self.classAction = QAction("Class", self)
-        self.classAction.setCheckable(True)
-        self.classAction.setChecked(True)
-        self.classAction.triggered.connect(
-            lambda checked: self.data_table.horizontalHeader().setSectionHidden(1, not checked))
-
-        self.sourceImg = None
-        self.targetImg = None
-        self.sortfilter = None
-
-    def openContextMenu(self, position):
-
-        menu = QMenu(self)
-        menu.setAutoFillBackground(True)
-
-        str = "QMenu::item:selected{\
-            background-color: rgb(110, 110, 120);\
-            color: rgb(255, 255, 255);\
-            } QMenu::item:disabled { color:rgb(150, 150, 150); }"
-
-        menu.setStyleSheet(str)
-        menu.addAction(self.areasAction)
-        menu.addAction(self.classAction)
-
-        viewer = self.sender()
-        action = menu.exec_(viewer.mapToGlobal(position))
 
     def setTable(self, project, img):
 
@@ -340,7 +259,6 @@ class QtTablePanel(QWidget):
             if row[0] == blob.id:
                 scale_factor = self.activeImg.pixelSize()
                 self.data.loc[i, 'Area'] = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
-                #self.data.loc[i, 'Surf. Area'] = round(blob.surface_area * (scale_factor) * (scale_factor) / 100, 2)
                 self.data.loc[i, 'Class'] = blob.class_name
 
         self.data_table.update()
@@ -359,42 +277,29 @@ class QtTablePanel(QWidget):
 
     def updateTable(self, data_table):
 
-        # if corr is None or self.model is None:
-        #     return
+        if self.model is None:
+            return
 
-        # self.correspondences = corr
         self.sortfilter.beginResetModel()
         self.model.beginResetModel()
 
         self.model._data = data_table
-        #
-        # self.sortfilter.endResetModel()
+        self.sortfilter.endResetModel()
         self.model.endResetModel()
 
         self.data_table.horizontalHeader().showSection(0)
         self.data_table.update()
 
-    def selectById(self, text):
-        try:
-            blobid = int(text)
-        except:
-            return
-        #
-        # corr = self.project.getImagePairCorrespondences(self.img1idx, self.img2idx)
-        # sourcecluster, targetcluster, rows = corr.findCluster(blobid, isSource)
-        self.selectRows(rows)
-
-
+    @pyqtSlot(str)
     def selectById(self, text):
 
         try:
             blobid = int(text)
         except:
             return
-
-        # FARE UN FOR SU TABELLA
-        #  self.data_table.loc[i, 'Area']
-        # self.selectRows(row)
+        if blobid > 0:
+            row = self.data.index[self.data["Id"] == blobid].to_list()
+            self.selectRows(row)
 
     def selectRows(self, rows):
         self.data_table.clearSelection()
@@ -409,13 +314,13 @@ class QtTablePanel(QWidget):
             column = self.data_table.columnAt(value)
             self.data_table.scrollTo(self.data_table.model().index(indexes[0].row(), column))
 
-    @pyqtSlot(QModelIndex)
-    def getData(self, index):
-
-        pass
-        #column = index.column()
-        #row = index.row()
-        #self.data_table.model().index(row, column).data()
+    # @pyqtSlot(QModelIndex)
+    # def getData(self, index):
+    #
+    #     pass
+    #     #column = index.column()
+    #     #row = index.row()
+    #     #self.data_table.model().index(row, column).data()
 
 
 

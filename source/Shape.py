@@ -64,6 +64,7 @@ class Layer(object):
 
     def save(self):
         dict = {}
+        dict["name"] = self.name
         dict["type"] = self.type
         dict["shapes"] = self.shapes
         return dict

@@ -285,6 +285,7 @@ class QtImageViewerPlus(QtImageViewer):
         self.selected_blobs = []
         self.selectionChanged.emit()
         self.undo_data = Undo()
+        self.undrawAllLayers()
 
         # undraw all blobs
         for blob in self.annotations.seg_blobs:
