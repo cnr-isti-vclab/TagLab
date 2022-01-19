@@ -497,25 +497,18 @@ class TagLab(QMainWindow):
 
 
         self.blobdock = QDockWidget("Region Info", self)
-        self.blobdock.setWidget(QWidget())
-        self.blobdock.setTitleBarWidget(self.groupbox_blobpanel)
-        self.blobdock.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Minimum)
-        self.groupbox_blobpanel.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Minimum)
+        self.blobdock.setWidget(self.groupbox_blobpanel)
 
 
         self.mapdock = QDockWidget("Map Preview", self)
         self.mapdock.setWidget(self.mapviewer)
         self.mapdock.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.MinimumExpanding)
 
-
         for dock in (self.labelsdock, self.layersdock, self.datadock, self.blobdock, self.mapdock):
             dock.setAllowedAreas(Qt.RightDockWidgetArea)
             self.addDockWidget(Qt.RightDockWidgetArea, dock)
 
-        self.setDockOptions(self.AnimatedDocks)
-        #layout_labels.setAlignment(self.mapviewer, Qt.AlignHCenter)
-
-        # self.datadock.hide()
+        #self.setDockOptions(self.AnimatedDocks)
 
         self.compare_panel.setMinimumHeight(600)
 
@@ -545,7 +538,6 @@ class TagLab(QMainWindow):
 
         viewMenu.addAction(self.labelsdock.toggleViewAction())
         viewMenu.addAction(self.layersdock.toggleViewAction())
-        #viewMenu.addAction(self.infodock.toggleViewAction())
         viewMenu.addAction(self.blobdock.toggleViewAction())
         viewMenu.addAction(self.mapdock.toggleViewAction())
         viewMenu.addAction(self.datadock.toggleViewAction())
@@ -2791,7 +2783,7 @@ class TagLab(QMainWindow):
 
         self.resetAll()
         self.setTool("MOVE")
-        self.updateToolStatus();
+        self.updateToolStatus()
         self.setProjectTitle("NONE")
         logfile.info("[PROJECT] A new project has been setup.")
         self.groupbox_blobpanel.region_attributes = self.project.region_attributes

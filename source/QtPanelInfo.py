@@ -19,12 +19,12 @@ class QtPanelInfo(QTabWidget):
 
         self.setAutoFillBackground(True)
 
-        self.setStyleSheet("QTabWidget::pane {border: 1px solid white;}"
-                           "QTabBar::tab:!selected {background: rgb(49,51,53); border: 1px solid #AAAAAA; "
+        self.setStyleSheet("QTabWidget::pane {border: 1px solid white; padding: 4px}"
+                           "QTabBar::tab:!selected {background: rgb(49,51,53); border: 0px solid #AAAAAA; "
                            "border-bottom-color: #C2C7CB; border-top-left-radius: 4px; "
                            "border-top-right-radius: 4px;"
                            "min-width: 8ex; padding: 2px;}"
-                           "QTabBar::tab:selected {background: rgb(90,90,90); border: 1px solid #AAAAAA; "
+                           "QTabBar::tab:selected {background: rgb(90,90,90); border: 0px solid #AAAAAA; "
                            "border-bottom-color: #C2C7CB; border-top-left-radius: 4px; "
                            "border-top-right-radius: 4px;"
                            "min-width: 8ex; padding: 2px;}")
