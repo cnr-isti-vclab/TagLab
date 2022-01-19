@@ -297,6 +297,7 @@ class QtImageViewerPlus(QtImageViewer):
             self.scene.removeItem(self.working_area_rect)
             self.working_area_rect = None
 
+        self.hideGrid()
         # undraw and clear current image and channel
         QtImageViewer.clear(self)
         self.image = None
@@ -304,10 +305,7 @@ class QtImageViewerPlus(QtImageViewer):
 
         # clear annotation data
         self.annotations = Annotation()
-
-        # TO FIX
-        self.hideGrid()
-
+        
         # no project is set
         self.project = None
 
