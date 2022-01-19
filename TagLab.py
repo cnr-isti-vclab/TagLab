@@ -1586,8 +1586,15 @@ class TagLab(QMainWindow):
                 self.setTool("MOVE")
 
         self.viewerplus2.hide()
-        self.groupbox_comparison.layout().removeWidget(self.compare_panel)
-        self.groupbox_comparison.layout().addWidget(self.table_panel)
+
+        self.groupbox_comparison = QGroupBox()
+        layout = QVBoxLayout()
+        layout.addWidget(self.table_panel)
+        layout.setContentsMargins(QMargins(0, 0, 0, 0))
+        self.groupbox_comparison.setLayout(layout)
+
+        self.datadock.setWidget(self.groupbox_comparison)
+
         self.comboboxTargetImage.hide()
         self.blobdock.show()
 
@@ -1619,8 +1626,13 @@ class TagLab(QMainWindow):
             QApplication.setOverrideCursor(Qt.WaitCursor)
 
             self.viewerplus.viewChanged()
-            self.groupbox_comparison.layout().removeWidget(self.table_panel)
-            self.groupbox_comparison.layout().addWidget(self.compare_panel)
+
+            self.groupbox_comparison = QGroupBox()
+            layout = QVBoxLayout()
+            layout.addWidget(self.compare_panel)
+            layout.setContentsMargins(QMargins(0, 0, 0, 0))
+            self.groupbox_comparison.setLayout(layout)
+            self.datadock.setWidget(self.groupbox_comparison)
 
             index = self.comboboxSourceImage.currentIndex()
             if index < 0:

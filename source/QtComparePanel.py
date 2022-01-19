@@ -17,7 +17,7 @@
 # GNU General Public License (http://www.gnu.org/licenses/gpl.txt)
 # for more details.                                               
 from PyQt5.QtCore import Qt, QAbstractTableModel, QItemSelectionModel, QSortFilterProxyModel, QRegExp, QModelIndex, pyqtSlot, pyqtSignal
-from PyQt5.QtWidgets import QWidget, QSizePolicy, QComboBox, QLabel, QTableView, \
+from PyQt5.QtWidgets import QWidget, QSizePolicy, QComboBox, QLabel, QTableView, QHeaderView, \
     QHBoxLayout, QVBoxLayout, QAbstractItemView, QStyledItemDelegate, QAction, QMenu, QToolButton, QGridLayout, QLineEdit
 from PyQt5.QtGui import QColor
 from pathlib import Path
@@ -360,6 +360,15 @@ class QtComparePanel(QWidget):
         self.data_table.setItemDelegateForColumn(5, self.combodelegate1)
         self.data_table.setItemDelegateForColumn(6, self.combodelegate2)
         self.data_table.setEditTriggers(QAbstractItemView.DoubleClicked)
+
+        self.data_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.data_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        self.data_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.Stretch)
+        self.data_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
+        self.data_table.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeToContents)
+        self.data_table.horizontalHeader().setSectionResizeMode(6, QHeaderView.Stretch)
+        self.data_table.horizontalHeader().setSectionResizeMode(7, QHeaderView.Stretch)
 
         self.data_table.horizontalHeader().showSection(0)
         self.data_table.update()
