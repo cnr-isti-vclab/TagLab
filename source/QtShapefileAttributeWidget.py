@@ -123,10 +123,7 @@ class QtAttributeWidget(QWidget):
         combo.addItem("None")
         for field in list(self.data.columns):
             combo.addItem(field)
-            # self.my_class.activated.connect(self.classSelected)
             combo.activated[str].connect(self.classSelected)
-            # combo.currentTextChanged.connect(self.classSelected)
-
 
         label_layout.addWidget(my_lbl)
         label_layout.addWidget(combo)
@@ -194,7 +191,7 @@ class QtAttributeWidget(QWidget):
 
         classes_list = []
         if self.shape == "Labeled regions":
-            if self.my_class != None:
+            if self.my_class != "":
                 classes_list = list(self.data.pop(self.my_class).values)
             else:
                 classes_list = ['Empty'] * self.data.shape[0]
