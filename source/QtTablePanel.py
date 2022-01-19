@@ -1,7 +1,7 @@
 # TagLab                                               
 # A semi-automatic segmentation tool                                    
 #
-# Copyright(C) 2019                                         
+# Copyright(C) 2021
 # Visual Computing Lab                                           
 # ISTI - Italian National Research Council                              
 # All rights reserved.                                                      
@@ -30,14 +30,6 @@ class TableModel(QAbstractTableModel):
         self._data = data
         self.surface_area_mode_enabled = False
 
-    # def enableSurfaceAreaMode(self):
-    #
-    #     self.surface_area_mode_enabled = True
-    #
-    # def disableSurfaceAreaMode(self):
-    #
-    #     self.surface_area_mode_enabled = False
-
     def data(self, index, role):
         if role == Qt.TextAlignmentRole:
             if index.column() < 5:
@@ -62,12 +54,11 @@ class TableModel(QAbstractTableModel):
 
             return txt
         
-        # if role == Qt.UserRole:
-        #     if index.column() < 5:
-        #         return float(value)
-        #     return str(value)
+        if role == Qt.UserRole:
+            if index.column() == 1:
+                return str(value)
 
-
+            return float(value)
 
     def setData(self, index, value, role):
 
@@ -112,51 +103,6 @@ class TableModel(QAbstractTableModel):
     #         return QAbstractTableModel.flags(self, index)
 
 
-# class ComboBoxItemDelegate(QStyledItemDelegate):
-#
-#     def __init__(self, parent = None):
-#         super(ComboBoxItemDelegate, self).__init__(parent)
-#
-#         pass
-#
-#     # def createEditor(self, parent, option, index):
-#     #
-#     #     cb = QComboBox(parent)
-#     #     column = index.column()
-#     #
-#     #     if column == 6:
-#     #         cb.addItem("born")
-#     #         cb.addItem("gone")
-#     #         cb.addItem("grow")
-#     #         cb.addItem("same")
-#     #         cb.addItem("shrink")
-#     #         cb.addItem("n/s")
-#     #     elif column == 7:
-#     #         cb.addItem("none")
-#     #         cb.addItem("fuse")
-#     #         cb.addItem("split")
-#     #         cb.addItem("n/s")
-#     #
-#     #     return cb
-#
-#     def setEditorData(self, editor, index):
-#
-#         cb = editor
-#
-#         # get the index of the text in the combobox that matches the current
-#         # value of the item const
-#         currentText = index.data()
-#         cbIndex = cb.findText(currentText)
-#         # if it is valid, adjust the combobox
-#         if cbIndex >= 0:
-#             cb.setCurrentIndex(cbIndex)
-#
-#     def setModelData(self, editor, model, index):
-#
-#         cb = editor
-#         model.setData(index, cb.currentText(), Qt.EditRole)
-
-
 class QtTablePanel(QWidget):
 
     filterChanged = pyqtSignal(str)
@@ -195,7 +141,6 @@ class QtTablePanel(QWidget):
         layout.addWidget(self.data_table)
 
         self.setLayout(layout)
-
 
     def setTable(self, project, img):
 
@@ -238,8 +183,10 @@ class QtTablePanel(QWidget):
         area = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
         new_row = {'Id': blob.id, 'Class': blob.class_name, 'Area':  area }
         self.data = self.data.append(new_row, ignore_index=True)
-        self.data.sort_values(by='Id', inplace=True)
+
+        # index is recalculated so that index i corresponds to row i
         self.data.reset_index(drop=True, inplace=True)
+
         self.updateTable(self.data)
 
     @pyqtSlot(Blob)
@@ -248,8 +195,9 @@ class QtTablePanel(QWidget):
         index = self.data.index[self.data["Id"] == blob.id]
         self.data = self.data.drop(index=index)
 
-        self.data.sort_values(by='Id', inplace=True)
+        # index is recalculated so that index i corresponds to row i
         self.data.reset_index(drop=True, inplace=True)
+
         self.updateTable(self.data)
 
     @pyqtSlot(Blob)
@@ -284,6 +232,7 @@ class QtTablePanel(QWidget):
         self.model.beginResetModel()
 
         self.model._data = data_table
+
         self.sortfilter.endResetModel()
         self.model.endResetModel()
 
@@ -313,15 +262,6 @@ class QtTablePanel(QWidget):
             value = self.data_table.horizontalScrollBar().value()
             column = self.data_table.columnAt(value)
             self.data_table.scrollTo(self.data_table.model().index(indexes[0].row(), column))
-
-    # @pyqtSlot(QModelIndex)
-    # def getData(self, index):
-    #
-    #     pass
-    #     #column = index.column()
-    #     #row = index.row()
-    #     #self.data_table.model().index(row, column).data()
-
 
 
 
