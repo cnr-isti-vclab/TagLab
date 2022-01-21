@@ -87,6 +87,8 @@ class QtWorkingAreaWidget(QWidget):
         layout_h2.addWidget(self.edit_H)
 
         layout_edits = QVBoxLayout()
+        layout_edits.addWidget(QLabel("Coordinates (in pixel):"))
+        layout_edits.addSpacing(10)
         layout_edits.addLayout(layout_h1)
         layout_edits.addLayout(layout_h2)
 

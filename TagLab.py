@@ -1352,7 +1352,7 @@ class TagLab(QMainWindow):
 
         if self.gridWidget is None:
             self.gridWidget = QtGridWidget(self.activeviewer, self)
-            self.gridWidget.setWindowModality(Qt.NonModal)
+            self.gridWidget.setWindowModality(Qt.WindowModal)
             self.gridWidget.show()
             self.gridWidget.accepted.connect(self.assignGrid)
             self.gridWidget.btnCancel.clicked.connect(self.cancelGrid)
@@ -2087,7 +2087,7 @@ class TagLab(QMainWindow):
     def resetAll(self):
 
         if self.gridWidget is not None:
-            self.gridWidget.beforeClose()
+            self.gridWidget.close()
             self.gridWidget = None
 
         self.viewerplus.clear()
@@ -3920,6 +3920,7 @@ class TagLab(QMainWindow):
             image = self.project.images[0]
             self.showImage(image)
             self.layers_widget.setImage(image)
+            self.move()
 
         self.updateImageSelectionMenu()
 
