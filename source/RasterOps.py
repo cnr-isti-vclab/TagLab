@@ -164,81 +164,6 @@ def read_geometry(filename, georef_filename):
 
 
 
-
-    # layerDefinition = layer.GetLayerDefn()
-    #
-    # GET FIELDS of layer's features
-    # fields = []
-    # for i in range(layerDefinition.GetFieldCount()):
-    #     fieldName = layerDefinition.GetFieldDefn(i).GetName()
-    #     fieldTypeCode = layerDefinition.GetFieldDefn(i).GetType()
-    #     fieldType = layerDefinition.GetFieldDefn(i).GetFieldTypeName(fieldTypeCode)
-    #     fieldWidth = layerDefinition.GetFieldDefn(i).GetWidth()
-    #     fieldPrecision = layerDefinition.GetFieldDefn(i).GetPrecision()
-    #     field = [fieldName, fieldType]
-    #     fields.append(field)
-
-    # #GET FEATURES
-    # num_features = layer.GetFeatureCount()
-    # pt = np.zeros((num_features, ), dtype=object)
-    # values = np.zeros((num_features, len(fields)), dtype=object)
-    # for i in range(0, num_features):
-    #     for j in range(0, len(fields)):
-    #         if fields[j][2] == str:
-    #             value_name = layer[i].GetFieldAsString(fields[j][0])
-    #         else:
-    #             value_name = layer[i].GetField(fields[j][0])
-    #         values[i][j] = value_name
-
-
-    # blobList = []
-    # Data = pd.DataFrame()
-    #
-    #
-    # for feat in layer:
-    #     # shpdict= ast.literal_eval(feat.ExportToJson())
-    #     shpdict =json.loads(feat.ExportToJson())
-    #     if shpdict['geometry']['type'] == 'Polygon':
-    #        blob = Blob(None, 0, 0, '0')
-    #        coord = shpdict['geometry']['coordinates']
-    #        outercontourn = coord[0]
-    #        outpointpixels = changeFormatInv([outercontourn], transform)
-    #        blob.createFromClosedCurve([np.asarray(outpointpixels)])
-    #        for i in range(1, len(coord)):
-    #            innercontourn_i = coord[i]
-    #            innerpointpixels_i = changeFormatInv([innercontourn_i], transform)
-    #            innerblob = Blob(None, 0, 0, '0')
-    #            innerblob.createFromClosedCurve([np.asarray(innerpointpixels_i)])
-    #            (mask, box) = subtract(blob.getMask(), blob.bbox, innerblob.getMask(), innerblob.bbox)
-    #            if mask.any():
-    #                blob.updateUsingMask(box, mask.astype(int))
-    #        blobList.append(blob)
-
-    #        # The attribute field can be empty
-    #        properties = shpdict['properties']
-    #        if Data.empty:
-    #         Data = pd.DataFrame.from_dict([properties])
-    #        else:
-    #         data = pd.DataFrame.from_dict([properties])
-    #         Data = Data.append(data, ignore_index=True)
-    #
-    #     elif shpdict['geometry']['type'] == 'Point':
-    #          coord = shpdict['geometry']['coordinates']
-    #          #not integers
-    #          coord_= changeFormatInvPoint(coord, transform)
-    #
-    #          properties = shpdict['properties']
-    #          if Data.empty:
-    #              Data = pd.DataFrame.from_dict([properties])
-    #          else:
-    #              data = pd.DataFrame.from_dict([properties])
-    #              Data = Data.append(data, ignore_index=True)
-    #
-    #
-    # return blobList, Data
-
-
-
 def write_shapefile(project, image, blobs, georef_filename, out_shp):
     """
     https://gis.stackexchange.com/a/52708/8104
@@ -276,7 +201,8 @@ def write_shapefile(project, image, blobs, georef_filename, out_shp):
     for attribute in project.region_attributes.data:
         if attribute['type'] in ['string', 'keyword']:
             dict[attribute['name']] = []
-        elif attribute['type'] in ['number', 'boolean']:
+        # elif attribute['type'] in ['number', 'boolean']:
+        elif attribute['type'] in ['number']:
             dict[attribute['name']] = np.zeros(number_of_seg)
 
     for i, blob in enumerate(visible_blobs):
@@ -319,26 +245,38 @@ def write_shapefile(project, image, blobs, georef_filename, out_shp):
     srs = osr.SpatialReference()
     if geoinfo is not None:
         srs.ImportFromWkt(geoinfo.wkt)
+
+    # create a layer
     outLayer = outDataSource.CreateLayer("polygon", srs, geom_type=ogr.wkbPolygon)
-
-    # Add attributes
-    for key in list(dict.keys()):
-        outLayer.CreateField(ogr.FieldDefn(key))
+    OGRTypes = {int: ogr.OFTInteger, str: ogr.OFTString, float: ogr.OFTReal}
     defn = outLayer.GetLayerDefn()
+    # Create attribute fields according to the data types
+    for key in list(dict.keys()):
 
-    ## For each objects and for each key, set attributes
+            if isinstance(dict[key][0], str):
+                outLayer.CreateField(ogr.FieldDefn(key, OGRTypes[str]))
+
+            elif dict[key].dtype == (np.int64() or np.int32()):
+                outLayer.CreateField(ogr.FieldDefn(key, OGRTypes[int]))
+
+            else:
+                outLayer.CreateField(ogr.FieldDefn(key, OGRTypes[float]))
 
     for i in range(len(polygons)):
         feat = ogr.Feature(defn)
+        geom = ogr.CreateGeometryFromWkb(polygons[i].wkb)
+        feat.SetGeometry(geom)
         for key in list(dict.keys()):
-            try:
-                feat.SetField(key, dict[key][i])
-            except:
+            if isinstance(dict[key][0], str):
+                feat.SetField(key,  dict[key][i])
+
+            elif dict[key].dtype == (np.int64() or np.int32()):
+                feat.SetField(key, int(dict[key][i]))
+
+            else:
                 feat.SetField(key, float(dict[key][i]))
 
         # Make a geometry, from Shapely object
-        geom = ogr.CreateGeometryFromWkb(polygons[i].wkb)
-        feat.SetGeometry(geom)
         outLayer.CreateFeature(feat)
         feat = geom = None  # destroy these
 
