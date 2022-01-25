@@ -620,7 +620,7 @@ class TagLab(QMainWindow):
         settings = QSettings("VCLAB", "TagLab")
         settings.setValue("gui-checkbox-fill", self.checkBoxFill.isChecked())
         settings.setValue("gui-checkbox-borders", self.checkBoxBorders.isChecked())
-        settings.setValue("gui-checkbox-grid", self.checkBoxFill.isChecked())
+        settings.setValue("gui-checkbox-grid", self.checkBoxGrid.isChecked())
 
     def checkNewVersion(self):
 

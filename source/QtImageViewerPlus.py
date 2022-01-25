@@ -554,13 +554,20 @@ class QtImageViewerPlus(QtImageViewer):
         blob.qpath_gitem.setOpacity(self.transparency_value)
 
         font_size = 12
-        blob.id_item = TextItem(str(blob.id),  QFont("Calibri", font_size, QFont.Bold))
+        blob.id_item = TextItem(str(blob.id),  QFont("Roboto", font_size, QFont.Bold))
         blob.id_item.setPos(blob.centroid[0], blob.centroid[1])
         blob.id_item.setTransformOriginPoint(QPointF(blob.centroid[0] + 14.0, blob.centroid[1] + 14.0))
         blob.id_item.setZValue(2)
         blob.id_item.setBrush(Qt.white)
-        blob.id_item.setOpacity(0.8)
+
+        if blob in self.selected_blobs:
+            blob.id_item.setOpacity(1.0)
+        else:
+            blob.id_item.setOpacity(0.7)
         self.scene.addItem(blob.id_item)
+
+
+
 
     def undrawBlob(self, blob):
 
@@ -983,12 +990,14 @@ class QtImageViewerPlus(QtImageViewer):
             str = "[SELECTION] A new blob (" + blob.blob_name + ";" + blob.class_name + ") has been selected."
             self.logfile.info(str)
 
-        if not blob.qpath_gitem is None:
+        if blob.qpath_gitem is not None:
             blob.qpath_gitem.setPen(self.border_selected_pen)
             blob.qpath_gitem.setZValue(3)
             blob.id_item.setZValue(4)
+            blob.id_item.setOpacity(1.0)
         else:
             print("blob qpath_qitem is None!")
+
         self.scene.invalidate()
         self.selectionChanged.emit()
 
@@ -997,12 +1006,17 @@ class QtImageViewerPlus(QtImageViewer):
         try:
             # safer if iterating over selected_blobs and calling this function.
             self.selected_blobs = [x for x in self.selected_blobs if not x == blob]
-            if not blob.qpath_gitem is None:
+
+            if blob.qpath_gitem is not None:
                 blob.qpath_gitem.setPen(self.border_pen)
                 blob.qpath_gitem.setZValue(1)
                 blob.id_item.setZValue(2)
+                blob.id_item.setOpacity(0.7)
+                print("opacita'bassa")
 
             self.scene.invalidate()
+
+
         except Exception as e:
             print("Exception: e", e)
             pass
@@ -1028,6 +1042,7 @@ class QtImageViewerPlus(QtImageViewer):
 
                 blob.qpath_gitem.setZValue(1)
                 blob.id_item.setZValue(2)
+                blob.id_item.setOpacity(0.7)
 
         self.selected_blobs.clear()
         self.scene.invalidate(self.scene.sceneRect())
