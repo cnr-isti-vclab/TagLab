@@ -57,7 +57,6 @@ from source.QtScaleWidget import QtScaleWidget
 from source.QtWorkingAreaWidget import QtWorkingAreaWidget
 from source.QtLabelsWidget import QtLabelsWidget
 from source.QtLayersWidget import QtLayersWidget
-from source.QtInfoWidget import QtInfoWidget
 from source.QtHelpWidget import QtHelpWidget
 from source.QtProgressBarCustom import QtProgressBarCustom
 from source.QtHistogramWidget import QtHistogramWidget
