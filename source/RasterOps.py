@@ -226,11 +226,17 @@ def write_shapefile(project, image, blobs, georef_filename, out_shp):
             except:
                 value = None
 
-            if attribute['type'] == 'number' or attribute['type'] == 'boolean':
+            if attribute['type'] == 'number':
+
                 if value != None:
                     dict[attribute['name']][i] = value
+                else:
+                    dict[attribute['name']][i] = np.NAN
             else:
-                dict[attribute['name']].append(value)
+                if value != None:
+                    dict[attribute['name']][i] = value
+                else:
+                    dict[attribute['name']].append('')
 
     # # convert blobs in polygons
     polygons = []
@@ -251,6 +257,7 @@ def write_shapefile(project, image, blobs, georef_filename, out_shp):
     OGRTypes = {int: ogr.OFTInteger, str: ogr.OFTString, float: ogr.OFTReal}
     defn = outLayer.GetLayerDefn()
     # Create attribute fields according to the data types
+
     for key in list(dict.keys()):
 
             if isinstance(dict[key][0], str):
@@ -266,6 +273,7 @@ def write_shapefile(project, image, blobs, georef_filename, out_shp):
         feat = ogr.Feature(defn)
         geom = ogr.CreateGeometryFromWkb(polygons[i].wkb)
         feat.SetGeometry(geom)
+
         for key in list(dict.keys()):
             if isinstance(dict[key][0], str):
                 feat.SetField(key,  dict[key][i])
