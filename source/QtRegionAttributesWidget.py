@@ -283,6 +283,10 @@ class QtRegionAttributesWidget(QWidget):
 
     @pyqtSlot(int, int)
     def selectRow(self, row, column):
+
+        if row >= len(self.region_attributes.data):
+            return
+
         self.clearField()
 
         if row < 0:
