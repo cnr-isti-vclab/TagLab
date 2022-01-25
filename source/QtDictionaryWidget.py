@@ -228,7 +228,7 @@ class QtDictionaryWidget(QWidget):
 
         self.setLayout(layout)
 
-        self.setWindowTitle("Dictionary Editor")
+        self.setWindowTitle("Labels Dictionary Editor")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
         self.selection_index = -1
@@ -245,6 +245,9 @@ class QtDictionaryWidget(QWidget):
 
     @pyqtSlot()
     def newDictionary(self):
+
+        self.edit_description.setText("")
+        self.edit_dname.setText("")
 
         self.labels = []
 

@@ -846,27 +846,27 @@ class TagLab(QMainWindow):
 
         newAct = QAction("New Project", self)
         newAct.setShortcut('Ctrl+N')
-        newAct.setStatusTip("Create a new project")
+        newAct.setStatusTip("Create A New Project")
         newAct.triggered.connect(self.newProject)
 
         openAct = QAction("Open Project", self)
         openAct.setShortcut('Ctrl+O')
-        openAct.setStatusTip("Open an existing project")
+        openAct.setStatusTip("Open An Existing Project")
         openAct.triggered.connect(self.openProject)
 
         editAct = QAction("Edit Project...", self)
         editAct.setShortcut('Ctrl+E')
-        editAct.setStatusTip("Edit current project")
+        editAct.setStatusTip("Edit Current Project")
         editAct.triggered.connect(self.editProject)
 
         saveAct = QAction("Save Project", self)
         saveAct.setShortcut('Ctrl+S')
-        saveAct.setStatusTip("Save current project")
+        saveAct.setStatusTip("Save Current Project")
         saveAct.triggered.connect(self.saveProject)
 
         saveAsAct = QAction("Save As", self)
         saveAsAct.setShortcut('Ctrl+Alt+S')
-        saveAsAct.setStatusTip("Save current project")
+        saveAsAct.setStatusTip("Save Current Project")
         saveAsAct.triggered.connect(self.saveAsProject)
 
         for i in range(self.maxRecentFiles):
@@ -884,13 +884,13 @@ class TagLab(QMainWindow):
 
         ### PROJECT
 
-        createDicAct = QAction("Dictionary Editor...", self)
+        createDicAct = QAction("Labels Dictionary Editor...", self)
         createDicAct.triggered.connect(self.createDictionary)
 
-        regionAttributesAct = QAction("Region attributes...", self)
+        regionAttributesAct = QAction("Region Attributes...", self)
         regionAttributesAct.triggered.connect(self.editRegionAttributes)
 
-        setWorkingAreaAct = QAction("Set working area", self)
+        setWorkingAreaAct = QAction("Set Working Area", self)
         setWorkingAreaAct.triggered.connect(self.selectWorkingArea)
 
         ### IMPORT
@@ -909,14 +909,14 @@ class TagLab(QMainWindow):
 
         ### EXPORT
 
-        exportDataTableAct = QAction("Export Annotations as Data Table", self)
+        exportDataTableAct = QAction("Export Annotations As Data Table", self)
         #exportDataTableAct.setShortcut('Ctrl+??')
         exportDataTableAct.setStatusTip("Export current annotations as CSV table")
         exportDataTableAct.triggered.connect(self.exportAnnAsDataTable)
 
-        exportMapAct = QAction("Export Annotations as a Label Image", self)
+        exportMapAct = QAction("Export Annotations As a Labeled Image", self)
         #exportMapAct.setShortcut('Ctrl+??')
-        exportMapAct.setStatusTip("Export current annotations as a Label Image")
+        exportMapAct.setStatusTip("Export Current Annotations As A Label Image")
         exportMapAct.triggered.connect(self.exportAnnAsMap)
 
         exportHistogramAct = QAction("Export Histogram", self)
@@ -924,24 +924,24 @@ class TagLab(QMainWindow):
         exportHistogramAct.setStatusTip("Export Histogram")
         exportHistogramAct.triggered.connect(self.exportHistogramFromAnn)
 
-        exportShapefilesAct = QAction("Export as Shapefile", self)
+        exportShapefilesAct = QAction("Export As Shapefile", self)
         # exportShapefilesAct.setShortcut('Ctrl+??')
-        exportShapefilesAct.setStatusTip("Export current annotations as shapefile")
+        exportShapefilesAct.setStatusTip("Export Current Annotations As Shapefile")
         exportShapefilesAct.triggered.connect(self.exportAnnAsShapefiles)
 
-        exportGeoRefLabelMapAct = QAction("Export Annotations as a GeoTiff", self)
+        exportGeoRefLabelMapAct = QAction("Export Annotations As A GeoTiff", self)
         # exportShapefilesAct.setShortcut('Ctrl+??')
-        exportGeoRefLabelMapAct.setStatusTip("Create a label image and export it as a GeoTiff")
+        exportGeoRefLabelMapAct.setStatusTip("Create A Label Image And Export It As A GeoTiff")
         exportGeoRefLabelMapAct.triggered.connect(self.exportGeoRefLabelMap)
 
         exportTrainingDatasetAct = QAction("Export New Training Dataset", self)
         #exportTrainingDatasetAct.setShortcut('Ctrl+??')
-        exportTrainingDatasetAct.setStatusTip("Export a new training dataset based on the current annotations")
+        exportTrainingDatasetAct.setStatusTip("Export A New Training Dataset Based On The Current Annotations")
         exportTrainingDatasetAct.triggered.connect(self.exportAnnAsTrainingDataset)
 
         trainYourNetworkAct = QAction("Train Your Network", self)
         #exportTrainingDatasetAct.setShortcut('Ctrl+??')
-        trainYourNetworkAct.setStatusTip("Export a new training dataset and, eventually, train your network on it")
+        trainYourNetworkAct.setStatusTip("Export A new training dataset and, eventually, train your network on it")
         trainYourNetworkAct.triggered.connect(self.trainYourNetwork)
 
         settingsAct = QAction("Settings..", self)
@@ -1071,27 +1071,27 @@ class TagLab(QMainWindow):
         splitScreenAction.setStatusTip("Split screen")
         splitScreenAction.triggered.connect(self.toggleComparison)
 
-        autoMatchLabels = QAction("Compute automatic matches", self)
+        autoMatchLabels = QAction("Compute Automatic Matches", self)
         autoMatchLabels.setStatusTip("Match labels between two maps automatically")
         autoMatchLabels.triggered.connect(self.autoCorrespondences)
 
-        manualMatchLabels = QAction("Add manual matches", self)
+        manualMatchLabels = QAction("Add Manual Matches", self)
         manualMatchLabels.setStatusTip("Add manual matches")
         manualMatchLabels.triggered.connect(self.matchTool)
 
-        exportMatchLabels = QAction("Export matches", self)
+        exportMatchLabels = QAction("Export Matches", self)
         exportMatchLabels.setStatusTip("Export the current matches")
         exportMatchLabels.triggered.connect(self.exportMatches)
 
-        computeGenets = QAction("Compute genets", self)
+        computeGenets = QAction("Compute Genets", self)
         computeGenets.setStatusTip("Compute genet information.")
         computeGenets.triggered.connect(self.computeGenets)
 
-        exportGenetSVG = QAction("Export genet shapes", self)
+        exportGenetSVG = QAction("Export Genet Shapes", self)
         exportGenetSVG.setStatusTip("Export genets history of corals in SVG.")
         exportGenetSVG.triggered.connect(self.exportGenetSVG)
 
-        exportGenetCSV = QAction("Export genet data", self)
+        exportGenetCSV = QAction("Export Genet Data", self)
         exportGenetCSV.setStatusTip("Export genets history of corals in CSV")
         exportGenetCSV.triggered.connect(self.exportGenetCSV)
 

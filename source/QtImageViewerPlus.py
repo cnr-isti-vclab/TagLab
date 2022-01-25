@@ -1008,11 +1008,16 @@ class QtImageViewerPlus(QtImageViewer):
             self.selected_blobs = [x for x in self.selected_blobs if not x == blob]
 
             if blob.qpath_gitem is not None:
-                blob.qpath_gitem.setPen(self.border_pen)
+                if self.border_enabled is True:
+                    blob.qpath_gitem.setPen(self.border_pen)
+                else:
+                    blob.qpath_gitem.setPen(QPen(Qt.NoPen))
+
                 blob.qpath_gitem.setZValue(1)
                 blob.id_item.setZValue(2)
                 blob.id_item.setOpacity(0.7)
-                print("opacita'bassa")
+
+
 
             self.scene.invalidate()
 
@@ -1039,6 +1044,8 @@ class QtImageViewerPlus(QtImageViewer):
             else:
                 if self.border_enabled is True:
                     blob.qpath_gitem.setPen(self.border_pen)
+                else:
+                    blob.qpath_gitem.setPen(QPen(Qt.NoPen))
 
                 blob.qpath_gitem.setZValue(1)
                 blob.id_item.setZValue(2)
