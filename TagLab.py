@@ -336,7 +336,7 @@ class TagLab(QMainWindow):
         self.checkBoxFill = QCheckBox("Fill")
         self.checkBoxFill.setChecked(True)
         self.checkBoxFill.setFocusPolicy(Qt.NoFocus)
-        self.checkBoxFill.setMinimumWidth(20)
+        self.checkBoxFill.setMinimumWidth(40)
         self.checkBoxFill.stateChanged[int].connect(self.viewerplus.toggleFill)
         self.checkBoxFill.stateChanged[int].connect(self.viewerplus2.toggleFill)
         self.checkBoxFill.stateChanged[int].connect(self.saveGuiPreferences)
@@ -344,17 +344,21 @@ class TagLab(QMainWindow):
         self.checkBoxBorders = QCheckBox("Boundaries")
         self.checkBoxBorders.setChecked(True)
         self.checkBoxBorders.setFocusPolicy(Qt.NoFocus)
-        self.checkBoxBorders.setMinimumWidth(20)
+        self.checkBoxBorders.setMinimumWidth(40)
         self.checkBoxBorders.stateChanged[int].connect(self.viewerplus.toggleBorders)
         self.checkBoxBorders.stateChanged[int].connect(self.viewerplus2.toggleBorders)
         self.checkBoxBorders.stateChanged[int].connect(self.saveGuiPreferences)
 
         self.checkBoxGrid = QCheckBox("Grid")
-        self.checkBoxGrid.setMinimumWidth(20)
+        self.checkBoxGrid.setMinimumWidth(40)
         self.checkBoxGrid.setFocusPolicy(Qt.NoFocus)
         self.checkBoxGrid.stateChanged[int].connect(self.viewerplus.toggleGrid)
         self.checkBoxGrid.stateChanged[int].connect(self.viewerplus2.toggleGrid)
         self.checkBoxGrid.stateChanged[int].connect(self.saveGuiPreferences)
+
+        self.labelZoom = QLabel("Zoom:")
+        self.labelMouseLeft = QLabel("x:")
+        self.labelMouseTop = QLabel("y:")
 
         self.labelZoomInfo = QLabel("100%")
         self.labelMouseLeftInfo = QLabel("0")
@@ -362,6 +366,7 @@ class TagLab(QMainWindow):
         self.labelZoomInfo.setMinimumWidth(70)
         self.labelMouseLeftInfo.setMinimumWidth(70)
         self.labelMouseTopInfo.setMinimumWidth(70)
+
 
         layout_header = QHBoxLayout()
         layout_header.addWidget(QLabel("Map:  "))
@@ -375,8 +380,11 @@ class TagLab(QMainWindow):
         layout_header.addWidget(self.checkBoxBorders)
         layout_header.addWidget(self.checkBoxGrid)
         layout_header.addStretch()
+        layout_header.addWidget(self.labelZoom)
         layout_header.addWidget(self.labelZoomInfo)
+        layout_header.addWidget(self.labelMouseLeft)
         layout_header.addWidget(self.labelMouseLeftInfo)
+        layout_header.addWidget(self.labelMouseTop)
         layout_header.addWidget(self.labelMouseTopInfo)
 
 
@@ -494,11 +502,6 @@ class TagLab(QMainWindow):
         self.datadock.setWidget(self.groupbox_comparison)
         self.groupbox_comparison.setStyleSheet("padding: 0px")
 
-        # self.comparisondock = QDockWidget("Comparison Table", self)
-        # self.comparisondock.setWidget(self.groupbox_comparison)
-        # self.groupbox_comparison.setStyleSheet("padding: 0px")
-
-
         self.blobdock = QDockWidget("Region Info", self)
         self.blobdock.setWidget(self.groupbox_blobpanel)
 
@@ -536,15 +539,6 @@ class TagLab(QMainWindow):
         self.helpmenu = None
 
         self.setMenuBar(self.createMenuBar())
-
-        viewMenu = self.menuBar().addMenu("&View")
-
-        viewMenu.addAction(self.labelsdock.toggleViewAction())
-        viewMenu.addAction(self.layersdock.toggleViewAction())
-        viewMenu.addAction(self.blobdock.toggleViewAction())
-        viewMenu.addAction(self.mapdock.toggleViewAction())
-        viewMenu.addAction(self.datadock.toggleViewAction())
-
 
         self.setProjectTitle("NONE")
 
@@ -1113,6 +1107,14 @@ class TagLab(QMainWindow):
         self.comparemenu.addAction(computeGenets);
         self.comparemenu.addAction(exportGenetSVG)
         self.comparemenu.addAction(exportGenetCSV)
+
+
+        self.viewmenu = menubar.addMenu("&View")
+        self.viewmenu.addAction(self.labelsdock.toggleViewAction())
+        self.viewmenu.addAction(self.layersdock.toggleViewAction())
+        self.viewmenu.addAction(self.blobdock.toggleViewAction())
+        self.viewmenu.addAction(self.mapdock.toggleViewAction())
+        self.viewmenu.addAction(self.datadock.toggleViewAction())
 
         self.helpmenu = menubar.addMenu("&Help")
         self.helpmenu.setStyleSheet(styleMenu)
@@ -2056,10 +2058,8 @@ class TagLab(QMainWindow):
 
         topleft = self.viewerplus.mapToScene(QPoint(0, 0))
         bottomright = self.viewerplus.mapToScene(self.viewerplus.viewport().rect().bottomRight())
-
         (left, top) = self.viewerplus.clampCoords(topleft.x(), topleft.y())
         (right, bottom) = self.viewerplus.clampCoords(bottomright.x(), bottomright.y())
-        self.updateMousePos(0, 0) #todo we should separate zoom from coords
         zf = self.viewerplus.zoom_factor * 100.0
         zoom = "{:6.0f}%".format(zf)
         self.labelZoomInfo.setText(zoom)
@@ -2074,14 +2074,12 @@ class TagLab(QMainWindow):
     def updateMousePos(self, x, y):
         zf = self.viewerplus.zoom_factor * 100.0
         zoom = "{:6.0f}%".format(zf)
-        left = "x: {:5d}".format(int(round(x)))
-        top = "y: {:5d}".format(int(round(y)))
+        left = "{:5d}".format(int(round(x)))
+        top = "{:5d}".format(int(round(y)))
 
         self.labelZoomInfo.setText(zoom)
         self.labelMouseLeftInfo.setText(left)
         self.labelMouseTopInfo.setText(top)
-        #text = "| " + zoom.ljust(8) + " | " + left.ljust(5, '&nbsp;') + ", " + right.ljust(5)
-        #self.labelViewInfo.setText(text)
 
 
     def resetAll(self):
@@ -2134,12 +2132,9 @@ class TagLab(QMainWindow):
         self.btnBricksSegmentation.setChecked(False)
         self.btnRuler.setChecked(False)
         self.btnCreateCrack.setChecked(False)
-        #self.btnSplitBlob.setChecked(False)
         self.btnDeepExtreme.setChecked(False)
         self.btnRitm.setChecked(False)
         self.btnCreateGrid.setChecked(False)
-        #self.viewerplus.hideGrid()
-        #self.viewerplus2.hideGrid()
         self.btnGrid.setChecked(False)
         self.btnMatch.setChecked(False)
         self.btnAutoClassification.setChecked(False)
@@ -2151,7 +2146,6 @@ class TagLab(QMainWindow):
         tools = {
             "MOVE"         : ["Pan"          , self.btnMove],
             "CREATECRACK"  : ["Crack"        , self.btnCreateCrack],
-            #"SPLITBLOB"   : ["Split Blob"   , self.btnSplitBlob],
             "ASSIGN"       : ["Assign"       , self.btnAssign],
             "EDITBORDER"   : ["Edit Border"  , self.btnEditBorder],
             "CUT"          : ["Cut"          , self.btnCut],
@@ -2180,9 +2174,6 @@ class TagLab(QMainWindow):
             self.labelsdock.hide()
             self.datadock.show()
         else:
-            # settings when MATCH tool is disactive
-
-            # self.datadock.hide()
             self.labelsdock.show()
 
 
