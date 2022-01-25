@@ -93,20 +93,9 @@ class TableModel(QAbstractTableModel):
             if orientation == Qt.Vertical:
                 return str(self._data.index[section])
 
-    # def flags(self, index):
-    #
-    #     value = self._data.iloc[index.row(), index.column()]
-    #
-    #     if index.column() == 6 or index.column() == 7:
-    #         return QAbstractTableModel.flags(self, index) | Qt.ItemIsEditable
-    #     else:
-    #         return QAbstractTableModel.flags(self, index)
-
-
 class QtTablePanel(QWidget):
 
     filterChanged = pyqtSignal(str)
-    # areaModeChanged = pyqtSignal(str)
 
     def __init__(self, parent=None):
         super(QtTablePanel, self).__init__(parent)

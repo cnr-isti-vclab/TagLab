@@ -287,7 +287,7 @@ class TagLab(QMainWindow):
         self.viewerplus.logfile = logfile
         self.viewerplus.viewUpdated.connect(self.updateViewInfo)
         self.viewerplus.activated.connect(self.setActiveViewer)
-        self.viewerplus.updateInfoPanel[Blob,float].connect(self.updatePanelInfo)
+        self.viewerplus.updateInfoPanel[Blob].connect(self.updatePanelInfo)
         self.viewerplus.mouseMoved[float, float].connect(self.updateMousePos)
         self.viewerplus.selectionChanged.connect(self.updateEditActions)
         self.viewerplus.selectionReset.connect(self.resetPanelInfo)
@@ -297,7 +297,7 @@ class TagLab(QMainWindow):
         self.viewerplus2.logfile = logfile
         self.viewerplus2.viewUpdated.connect(self.updateViewInfo)
         self.viewerplus2.activated.connect(self.setActiveViewer)
-        self.viewerplus2.updateInfoPanel[Blob,float].connect(self.updatePanelInfo)
+        self.viewerplus2.updateInfoPanel[Blob].connect(self.updatePanelInfo)
         self.viewerplus2.mouseMoved[float, float].connect(self.updateMousePos)
         self.viewerplus2.selectionChanged.connect(self.updateEditActions)
         self.viewerplus2.selectionReset.connect(self.resetPanelInfo)
@@ -2315,9 +2315,14 @@ class TagLab(QMainWindow):
         if len(self.activeviewer.selected_blobs) > 0:
             for blob in self.activeviewer.selected_blobs:
                 blob.note = self.editNote.toPlainText()
+    #
+    # @pyqtSlot(Blob, float)
+    # def updatePanelInfo(self, blob, scale_factor):
+    #     self.groupbox_blobpanel.update(blob, scale_factor)
 
-    @pyqtSlot(Blob, float)
-    def updatePanelInfo(self, blob, scale_factor):
+    @pyqtSlot(Blob)
+    def updatePanelInfo(self, blob):
+        scale_factor = self.activeviewer.image.pixelSize()
         self.groupbox_blobpanel.update(blob, scale_factor)
 
     @pyqtSlot()
@@ -3051,10 +3056,7 @@ class TagLab(QMainWindow):
 
         self.mapWidget.close()
 
-    #    def resizeEvent(self, event):
-    #        pass
-    #w = self.groupbox_labels.width()
-    #self.mapviewer.setNewWidth(w)
+
     @pyqtSlot(Image)
     def showImage(self, image):
 
@@ -3099,6 +3101,13 @@ class TagLab(QMainWindow):
 
             self.disableSplitScreen()
             self.setDataTable()
+
+            # molto sporco per collegare panel info, dovrebbe andare in Panel Info
+
+            if image is not None:
+                 image.annotations.blobUpdated.connect(self.updatePanelInfo)
+                 image.annotations.blobAdded.connect(self.updatePanelInfo)
+                 image.annotations.blobRemoved.connect(self.resetPanelInfo)
 
             QApplication.restoreOverrideCursor()
 
