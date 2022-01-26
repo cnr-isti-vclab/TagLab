@@ -4062,12 +4062,20 @@ class TagLab(QMainWindow):
             checkColor = self.classifierWidget.chkAutocolor.isChecked()
             checkLevel = self.classifierWidget.chkAutolevel.isChecked()
             pred_thresh = self.classifierWidget.sliderScores.value() / 100.0
-            target_scale_factor = classifier_selected['Scale']
+
+            for class_name in classifier_selected['Classes']:
+                mylabel = self.project.labels.get(class_name)
+                if class_name != 'Background' and mylabel is None:
+                    msgBox = QMessageBox()
+                    msgBox.setWindowTitle(self.TAGLAB_VERSION)
+                    txt = 'The label ' + class_name + ' is missing. Please check your dictionary and try again.'
+                    msgBox.setText(txt)
+                    msgBox.exec()
+                    return
 
             # free GPU memory
             self.resetNetworks()
             self.setupProgressBar()
-
             QApplication.processEvents()
 
             self.classifier = MapClassifier(classifier_selected, self.project.labels)
@@ -4130,6 +4138,16 @@ class TagLab(QMainWindow):
             checkcolor = self.classifierWidget.chkAutocolor.isChecked()
             checklevel = self.classifierWidget.chkAutolevel.isChecked()
             pred_thresh = self.classifierWidget.sliderScores.value() / 100.0
+
+            for class_name in classifier_selected['Classes']:
+                mylabel = self.project.labels.get(class_name)
+                if class_name != 'Background' and mylabel is None:
+                    msgBox = QMessageBox()
+                    msgBox.setWindowTitle(self.TAGLAB_VERSION)
+                    txt = 'The label ' + class_name + ' is missing. Please check your dictionary and try again.'
+                    msgBox.setText(txt)
+                    msgBox.exec()
+                    return
 
             # free GPU memory
             self.resetNetworks()

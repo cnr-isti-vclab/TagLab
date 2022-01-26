@@ -337,7 +337,7 @@ class QtRegionAttributesWidget(QWidget):
         max = None
         if self.editMax.text() != '':
             try:
-                max = int(self.editMax.text())
+                max = float(self.editMax.text())
             except ValueError:
                 self.message("Max value is not a number")
                 return False
