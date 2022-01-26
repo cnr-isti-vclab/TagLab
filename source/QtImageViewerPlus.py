@@ -36,7 +36,7 @@ from source.Label import Label
 
 from source.QtImageViewer import QtImageViewer
 
-import random as rnd
+import math
 
 #note on ZValue:
 # 0: image
@@ -850,28 +850,35 @@ class QtImageViewerPlus(QtImageViewer):
 
     def updateScaleBar(self, zoom_factor):
 
-        LENGTH_IN_PIXEL = 100
+        REFERENCE_LENGTH_IN_PIXEL = 100
         LENGTH_VLINES = 5
 
         w = self.viewport().width()
         h = self.viewport().height()
 
-        posx = w - 120
+        length = self.px_to_mm * REFERENCE_LENGTH_IN_PIXEL / zoom_factor
+
+        # make length cute
+        n = int(math.log10(length))
+        cute_length = round(length / math.pow(10,n)) * math.pow(10,n)
+
+        length_in_pixel = (cute_length * zoom_factor) / self.px_to_mm
+
+        if cute_length < 100.0:
+            txt = "{:.1f} mm".format(cute_length)
+        if 100.0 <= cute_length < 1000.0:
+            txt = "{:.1f} cm".format(cute_length / 10.0)
+        if cute_length >= 1000.0:
+            txt = "{:.1f} m".format(cute_length / 1000.0)
+
+
+        posx = w - length_in_pixel - 20
         posy = h * 0.95
 
         self.scene_overlay.setSceneRect(0,0,w,h)
 
         pt1 = QPoint(posx, posy)
-        pt2 = QPoint(posx + 100, posy)
-
-        length = self.px_to_mm * 100 / zoom_factor
-
-        if length < 100.0:
-            txt = "{:.1f} mm".format(length)
-        if 100.0 <= length <= 10000.0:
-            txt = "{:.1f} cm".format(length / 10.0)
-        if length > 10000.0:
-            txt = "{:.1f} cm".format(length / 1000.0)
+        pt2 = QPoint(posx + length_in_pixel, posy)
 
         self.scalebar_text.setPlainText(txt)
         rc = self.scalebar_text.boundingRect()
