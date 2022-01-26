@@ -113,8 +113,7 @@ class QtRegionAttributesWidget(QWidget):
 
 
         self.editType = QComboBox()
-        # self.editType.addItems(['string', 'boolean', 'number', 'keyword']);
-        self.editType.addItems(['string', 'number', 'keyword']);
+        self.editType.addItems(['string', 'integer number', 'real number', 'keyword']);
         self.editType.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editType.activated[str].connect(self.updateFieldType)
         edit_layout.addWidget(self.editType)
@@ -404,15 +403,15 @@ class QtRegionAttributesWidget(QWidget):
 
     @pyqtSlot()
     def updateFieldType(self):
-        type = self.editType.currentText()
 
         self.editMin.clear()
         self.editMax.clear()
         self.editValues.clear()
 
-        
-        self.editMin.setEnabled(type == "number")
-        self.editMax.setEnabled(type == "number")        
+        type = self.editType.currentText()
+        enable_min_max = (type == "integer number" or type == "real number")
+        self.editMin.setEnabled(enable_min_max)
+        self.editMax.setEnabled(enable_min_max)
         self.editValues.setEnabled(type == "keyword")
 
 
