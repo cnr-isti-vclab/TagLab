@@ -3188,7 +3188,7 @@ class TagLab(QMainWindow):
         filename, _ = QFileDialog.getOpenFileName(self, "Open a project", self.taglab_dir, filters)
         if filename:
             self.disableSplitScreen()
-            self.append(filename)
+            self.appendProject(filename)
 
         self.updateImageSelectionMenu()
         self.showImage(self.project.images[-1])
@@ -3897,13 +3897,7 @@ class TagLab(QMainWindow):
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
 
-        #        try:
         self.project = loadProject(self.taglab_dir, filename, self.default_dictionary)
-        #        except Exception as e:
-        #            msgBox = QMessageBox()
-        #            msgBox.setText("The json project contains an error:\n {0}\n\nPlease contact us.".format(str(e)))
-        #            msgBox.exec()
-        #            return
 
         QApplication.restoreOverrideCursor()
 
@@ -3931,7 +3925,7 @@ class TagLab(QMainWindow):
         self.updateToolStatus()
 
 
-    def append(self, filename):
+    def appendProject(self, filename):
         """
         Append the annotated images of a previously saved project to the current one.
         """
@@ -3939,7 +3933,8 @@ class TagLab(QMainWindow):
         QApplication.setOverrideCursor(Qt.WaitCursor)
 
         try:
-            project_to_append = loadProject(self.taglab_dir, filename, self.labels_dictionary)
+            project_to_append = loadProject(self.taglab_dir, filename, self.project.labels)
+
         except Exception as e:
             msgBox = QMessageBox()
             msgBox.setText("The json project contains an error:\n {0}\n\nPlease contact us.".format(str(e)))
