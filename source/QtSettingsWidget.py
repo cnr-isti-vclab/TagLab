@@ -48,7 +48,7 @@ class generalSettingsWidget(QWidget):
         self.combo_research_field = QComboBox()
         self.combo_research_field.setFixedWidth(240)
         self.combo_research_field.addItem("Marine Ecology/Biology")
-        self.combo_research_field.addItem("Architectural Heritage")
+        # self.combo_research_field.addItem("Architectural Heritage")
         self.combo_research_field.setCurrentIndex(0)
 
         self.lbl_default_dict = QLabel("Default dictionary: ")
