@@ -3201,6 +3201,7 @@ class TagLab(QMainWindow):
             self.appendProject(filename)
 
         self.updateImageSelectionMenu()
+        self.layers_widget.setProject(self.project)
         self.showImage(self.project.images[-1])
 
 
