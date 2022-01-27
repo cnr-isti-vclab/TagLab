@@ -22,6 +22,9 @@ def pointsBox(points, pad = 0):
     return np.array(box).astype(int)
 
 def jointBox(boxes):
+    """
+    It returns the joint bounding box given a list of bounding box.
+    """
     box = boxes[0]
     for b in boxes:
         box = np.array([
@@ -34,10 +37,26 @@ def jointBox(boxes):
         box[3] -= box[0]
     return box.astype(int)
 
-"""
-returns (mask, bbox) where bbox is the union and mask is set to 0
-"""
+def insideBox(bbox1, bbox2):
+    """
+    Check if bbox2 is inside the bbox1.
+    """
+
+    right1 = bbox1[1] + bbox1[2]
+    right2 = bbox2[1] + bbox2[2]
+    bottom1 = bbox1[0] + bbox1[3]
+    bottom2 = bbox2[0] + bbox2[3]
+
+    if bbox2[0] >= bbox1[0] and bbox2[1] >= bbox1[1] and right2 <= right1 and bottom2 <= bottom1:
+        return True
+    else:
+        return False
+
+
 def jointMask(box0, box1):
+    """
+    returns (mask, bbox) where bbox is the union and mask is set to 0
+    """
     box = jointBox([box0, box1])
     mask = np.zeros((box[3], box[2])).astype(np.uint8)
     return (mask, box)

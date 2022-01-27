@@ -471,17 +471,15 @@ class Annotation(QObject):
 
 
     def calculate_inner_blobs(self, working_area):
-
-        "This consider only blobs falling ENTIRELY in the working area"
+        """
+        This consider only blobs falling ENTIRELY in the working area"
+        """
 
         selected_blobs = self.seg_blobs
         inner_blobs = []
-        #turn working area in a list (to use jointbox)
-
         for blob in selected_blobs:
-            newbbox = Mask.jointBox([blob.bbox, working_area])
-            if list(newbbox) == working_area:
-              inner_blobs.append(blob)
+            if Mask.insideBox(working_area, blob.bbox):
+                inner_blobs.append(blob)
 
         return inner_blobs
 
