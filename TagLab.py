@@ -3339,7 +3339,7 @@ class TagLab(QMainWindow):
         content.setTextFormat(Qt.RichText)
 
         txt = "<b>{:s}</b> <p><a href='http://taglab.isti.cnr.it' style='color: white; font-weight: bold; text-decoration: none'>" \
-              "TagLab</a> is an AI-supported interactive tool for rapidly labeling and analyzing time-series sets of orthoimages. " \
+              "TagLab</a> is an AI-empowered interactive annotation tool for rapidly labeling and analyzing time-series sets of orthoimages." \
               "TagLab is an ongoing project of " \
               "<a href='http://vcg.isti.cnr.it' style='color: white; font-weight: bold; text-decoration: none'>" \
               "Visual Computing Lab</a>.</p>".format(self.TAGLAB_VERSION)

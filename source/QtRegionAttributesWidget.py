@@ -113,7 +113,7 @@ class QtRegionAttributesWidget(QWidget):
 
 
         self.editType = QComboBox()
-        self.editType.addItems(['string', 'integer number', 'real number', 'keyword']);
+        self.editType.addItems(['string', 'integer number', 'decimal number', 'keyword']);
         self.editType.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editType.activated[str].connect(self.updateFieldType)
         edit_layout.addWidget(self.editType)
@@ -187,7 +187,7 @@ class QtRegionAttributesWidget(QWidget):
 #
         self.setLayout(layout)
 
-        self.setWindowTitle("Edit Custom Data")
+        self.setWindowTitle("Edit Attribute Field")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
         self.selection_index = -1
@@ -252,9 +252,6 @@ class QtRegionAttributesWidget(QWidget):
             return
         self.region_attributes.saveToFile(filename)
 
-
-
-
     def createFields(self):
         self.table.clearContents()
         for field in self.region_attributes.data:
@@ -270,12 +267,19 @@ class QtRegionAttributesWidget(QWidget):
         self.table.setItem(row, 1, QTableWidgetItem(field['type']))
         min = ''
         if 'min' in field.keys() and field['min'] != None:
-            min = str(field['min'])
+            value = field['min']
+            if field['type'] == 'integer number':
+                value = int(value)
+            min = str(value)
         self.table.setItem(row, 2, QTableWidgetItem(min))
         max = ''
         if 'max' in field.keys() and field['max'] != None:
-            max = str(field['max'])
+            value = field['max']
+            if field['type'] == 'integer number':
+                value = int(value)
+            max = str(value)
         self.table.setItem(row, 3, QTableWidgetItem(max))
+
         if not 'keywords' in field or field['keywords'] == None:
             field['keywords'] = []
         self.table.setItem(row, 4, QTableWidgetItem(', '.join(field['keywords'])))
@@ -343,7 +347,10 @@ class QtRegionAttributesWidget(QWidget):
                 return False
         field['max'] = max
 
-        
+        if field['max'] <= field['min']:
+            self.message("Max value must be greater than Min value.")
+            return False
+
         keywords =  self.editValues.text();
         if keywords != '':
             keywords = re.split(' |,|:|;|\t', keywords)
@@ -367,7 +374,6 @@ class QtRegionAttributesWidget(QWidget):
         if self.region_attributes.has(field['name']):
             self.message("Duplicated field name...")
             return
-
 
         self.region_attributes.data.append(field)
         self.appendField(field)
@@ -409,40 +415,11 @@ class QtRegionAttributesWidget(QWidget):
         self.editValues.clear()
 
         type = self.editType.currentText()
-        enable_min_max = (type == "integer number" or type == "real number")
+        enable_min_max = (type == "integer number" or type == "decimal number")
         self.editMin.setEnabled(enable_min_max)
         self.editMax.setEnabled(enable_min_max)
         self.editValues.setEnabled(type == "keyword")
 
-
-#    def eventFilter(self, object, event):
-
-#        if type(object) == QLabel and event.type() == QEvent.MouseButtonDblClick:
-#            self.highlightSelectedLabel(object)
-#            return False
-
-#        return False
-
-
-
-
-#    @pyqtSlot(int,int,int,str)
-#    def createField(self, entry):
-
-        # lbl_name = QLabel(entry.name)
-        # lbl_name.setStyleSheet("border: none; color: lightgray;")
-        # lbl_name.setFixedHeight(20)
-        # #lbl_name.installEventFilter(self)
-
-        # self.label_layout = QHBoxLayout()
-        # self.label_layout.addWidget(lbl_name)
-
-        # self.fields_layout.addLayout(self.label_layout)
-
-        # self.editFieldName.setText('')
-
-        # text = "QPushButton:flat {background-color: rgb(255,255,255); border: none;}"
-        # self.btn_selection_color.setStyleSheet(text)
 
     def selectedRow(self):
         selected = self.table.selectedRanges()

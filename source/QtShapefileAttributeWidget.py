@@ -108,7 +108,12 @@ class QtAttributeWidget(QWidget):
             type = self.data.dtypes[i]
             chkBox = QCheckBox(field)
             chkBox.setChecked(False)
-            chkBox.setProperty('type', 'string' if type == 'object' else 'number')
+            if type == 'int64':
+                chkBox.setProperty('type', 'integer number')
+            elif type == 'float64':
+                chkBox.setProperty('type', 'decimal number')
+            else:
+                 chkBox.setProperty('type', 'string')
 
             self.fields_layout.addWidget(chkBox, i / FIELDS_FOR_ROW, i % FIELDS_FOR_ROW)
 

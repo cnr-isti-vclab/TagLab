@@ -550,10 +550,10 @@ class Annotation(QObject):
 
         number_of_seg = len(name_list)
         dict = {
-            'Object id': np.zeros(number_of_seg, int),
+            'Object id': np.zeros(number_of_seg, dtype = np.int64),
             'Date': [],
             'Class name': [],
-            'Genet id': np.zeros(number_of_seg, int),
+            'Genet id': np.zeros(number_of_seg, dtype = np.int64),
             'Centroid x': np.zeros(number_of_seg),
             'Centroid y': np.zeros(number_of_seg),
             'Area': np.zeros(number_of_seg),
@@ -563,11 +563,12 @@ class Annotation(QObject):
 
         #TODO check if attribute name is already in dict.
         for attribute in project.region_attributes.data:
-            if attribute['type'] in ['string', 'boolean', 'keyword']:
+            if attribute['type'] in ['string', 'keyword']:
                 dict[attribute['name']] = []
-            elif attribute['type'] == 'number':
-                dict[attribute['name']] = np.zeros(number_of_seg)
-
+            elif attribute['type'] == 'integer number':
+                dict[attribute['name']] = np.zeros(number_of_seg, dtype=np.int64)
+            elif attribute['type'] == 'decimal number':
+                dict[attribute['name']] = np.zeros(number_of_seg, dtype=np.float64)
         
         for i, blob in enumerate(visible_blobs):
             dict['Object id'][i] = blob.id
@@ -590,11 +591,24 @@ class Annotation(QObject):
                 except:
                     value = None
 
-                if attribute['type'] == 'number':
+                if attribute['type'] == 'integer number':
+
                     if value != None:
                         dict[attribute['name']][i] = value
+                    else:
+                        dict[attribute['name']][i] = 0
+
+                elif attribute['type'] == 'decimal number':
+
+                    if value != None:
+                        dict[attribute['name']][i] = value
+                    else:
+                        dict[attribute['name']][i] = np.NaN
                 else:
-                    dict[attribute['name']].append(value)
+                    if value is None:
+                        dict[attribute['name']].append('')
+                    else:
+                        dict[attribute['name']].append(value)
 
         # create dataframe
         df = pd.DataFrame(dict, columns=list(dict.keys()))

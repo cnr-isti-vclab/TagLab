@@ -78,18 +78,31 @@ class QtPanelInfo(QTabWidget):
             if attribute['type'] == 'string':
                 input = QLineEdit()
                 input.textChanged.connect(lambda text, name = name: self.assign(text, name))
-            elif attribute['type'] == 'number':
+            elif attribute['type'] == 'integer number':
+                input = QSpinBox()
+                max = attribute['max'] if 'max' in attribute.keys() else 2147483647
+                if max is None:
+                     max = 2147483647
+                input.setMaximum(int(max))
+                min = attribute['min'] if 'min' in attribute.keys() else -2147483647
+                if min is None:
+                     min = -2147483647
+                input.setMinimum(int(min))
+                input.valueChanged.connect(lambda value, name = name: self.assign(value, name))
+
+            elif attribute['type'] == 'decimal number':
                 input = QDoubleSpinBox()
                 max = attribute['max'] if 'max' in attribute.keys() else 1e20
                 if max is None:
-                     max = 1e20
+                    max = 1e20
                 input.setMaximum(max)
-                min = attribute['min'] if 'min' in attribute.keys() else -1e20 
+                min = attribute['min'] if 'min' in attribute.keys() else -1e20
                 if min is None:
-                     min = -1e20
+                    min = -1e20
                 input.setMinimum(min)
-                input.valueChanged.connect(lambda value, name = name: self.assign(value, name))
-            #
+                input.valueChanged.connect(lambda value, name=name: self.assign(value, name))
+
+
             # elif attribute['type'] == 'boolean':
             #     input = QCheckBox()
             #     input.toggled.connect(lambda checked, name = name: self.assign(checked, name))
@@ -130,7 +143,9 @@ class QtPanelInfo(QTabWidget):
         for input, attribute in zip(self.attributes, self.region_attributes.data):
             if attribute['type'] == 'string':
                 input.setText('')
-            elif attribute['type'] == 'number':
+            elif attribute['type'] == 'integer number':
+                input.clear()
+            elif attribute['type'] == 'decimal number':
                 input.clear()
             # elif attribute['type'] == 'boolean':
             #     input.setChecked(False)
@@ -165,7 +180,9 @@ class QtPanelInfo(QTabWidget):
                 continue;
             if attribute['type'] == 'string':
                 input.setText(value)
-            elif attribute['type'] == 'number':
+            elif attribute['type'] == 'integer number':
+                 input.setValue(value)
+            elif attribute['type'] == 'decimal number':
                 input.setValue(value)
             # elif attribute['type'] == 'boolean':
             #      input.setChecked(value)

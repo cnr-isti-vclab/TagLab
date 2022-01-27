@@ -186,10 +186,10 @@ def write_shapefile(project, image, blobs, georef_filename, out_shp):
 
     number_of_seg = len(name_list)
     dict = {
-        'Object id': np.zeros(number_of_seg, int),
+        'Object id': np.zeros(number_of_seg, dtype = np.int64),
         'Date': [],
         'Class name': [],
-        'Genet id': np.zeros(number_of_seg, int),
+        'Genet id': np.zeros(number_of_seg, dtype = np.int64),
         'Centroid x': np.zeros(number_of_seg),
         'Centroid y': np.zeros(number_of_seg),
         'Area': np.zeros(number_of_seg),
@@ -202,8 +202,10 @@ def write_shapefile(project, image, blobs, georef_filename, out_shp):
         if attribute['type'] in ['string', 'keyword']:
             dict[attribute['name']] = []
         # elif attribute['type'] in ['number', 'boolean']:
-        elif attribute['type'] in ['number']:
-            dict[attribute['name']] = np.zeros(number_of_seg)
+        elif attribute['type'] in ['integer number']:
+            dict[attribute['name']] = np.zeros(number_of_seg, dtype = np.int64)
+        elif attribute['type'] in ['decimal number']:
+            dict[attribute['name']] = np.zeros(number_of_seg, dtype = np.float64)
 
     for i, blob in enumerate(visible_blobs):
         dict['Object id'][i] = blob.id
@@ -226,12 +228,20 @@ def write_shapefile(project, image, blobs, georef_filename, out_shp):
             except:
                 value = None
 
-            if attribute['type'] == 'number':
+            if attribute['type'] == 'integer number':
 
                 if value != None:
                     dict[attribute['name']][i] = value
                 else:
-                    dict[attribute['name']][i] = np.NAN
+                    dict[attribute['name']][i] = 0
+
+            elif attribute['type'] == 'decimal number':
+
+                if value != None:
+                    dict[attribute['name']][i] = value
+                else:
+                    dict[attribute['name']][i] = np.NaN
+
             else:
                 if value != None:
                     dict[attribute['name']][i] = value
