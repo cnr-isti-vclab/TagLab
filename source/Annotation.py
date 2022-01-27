@@ -534,7 +534,7 @@ class Annotation(QObject):
         return created_blobs
 
 
-    def export_data_table_for_Scripps(self, project, image, filename):
+    def export_data_table(self, project, image, filename):
 
         scale_factor = image.pixelSize()
         date = image.acquisition_date
@@ -550,24 +550,20 @@ class Annotation(QObject):
 
         number_of_seg = len(name_list)
         dict = {
-            'Object id': np.zeros(number_of_seg, dtype = np.int64),
-            'Date': [],
-            'Class name': [],
-            'Genet id': np.zeros(number_of_seg, dtype = np.int64),
-            'Centroid x': np.zeros(number_of_seg),
-            'Centroid y': np.zeros(number_of_seg),
-            'Area': np.zeros(number_of_seg),
-            'Surf area': np.zeros(number_of_seg),
-            'Perimeter': np.zeros(number_of_seg),
-            'Note': [] }
+            'TagLab Region id': np.zeros(number_of_seg, dtype = np.int64),
+            'TagLab Date': [],
+            'TagLab Class name': [],
+            'TabLab Genet id': np.zeros(number_of_seg, dtype = np.int64),
+            'TagLab Centroid x': np.zeros(number_of_seg),
+            'TagLab Centroid y': np.zeros(number_of_seg),
+            'TagLab Area': np.zeros(number_of_seg),
+            'TagLab Surf. area': np.zeros(number_of_seg),
+            'TagLab Perimeter': np.zeros(number_of_seg),
+            'TagLab Note': [] }
+
 
         for attribute in project.region_attributes.data:
-
             key = attribute["name"]
-            if key in dict:
-                # the name of the attribute is the same of the name of a property, we add "attribute" to disambiguate
-                key = key + " attribute"
-
             if attribute['type'] in ['string', 'keyword']:
                 dict[key] = []
             # elif attribute['type'] in ['number', 'boolean']:
@@ -578,28 +574,26 @@ class Annotation(QObject):
             else:
                 # unknown attribute type, not saved
                 pass
-        
+
         for i, blob in enumerate(visible_blobs):
-            dict['Object id'][i] = blob.id
-            dict['Date'].append(date)
-            dict['Class name'].append(blob.class_name)
-            dict['Centroid x'][i] = round(blob.centroid[0], 1)
-            dict['Centroid y'][i] = round(blob.centroid[1], 1)
-            dict['Area'][i] = round(blob.area * (scale_factor) * (scale_factor)/ 100,2)
+            dict['TagLab Region id'][i] = blob.id
+            dict['TagLab Date'].append(date)
+            dict['TagLab Class name'].append(blob.class_name)
+            dict['TagLab Centroid x'][i] = round(blob.centroid[0], 1)
+            dict['TagLab Centroid y'][i] = round(blob.centroid[1], 1)
+            dict['TagLab Area'][i] = round(blob.area * (scale_factor) * (scale_factor)/ 100,2)
             if blob.surface_area > 0.0:
-               dict['Surf area'][i] = round(blob.surface_area * (scale_factor) * (scale_factor) / 100, 2)
-            dict['Perimeter'][i] = round(blob.perimeter*scale_factor / 10,1)
+               dict['TagLab Surf. area'][i] = round(blob.surface_area * (scale_factor) * (scale_factor) / 100, 2)
+            dict['TagLab Perimeter'][i] = round(blob.perimeter*scale_factor / 10,1)
 
             if blob.genet is not None:
-               dict['Genet id'][i] = blob.genet
-            dict['Note'].append(blob.note)
+               dict['TagLab Genet id'][i] = blob.genet
+
+            dict['TagLab Note'].append(blob.note)
 
             for attribute in project.region_attributes.data:
 
                 key = attribute["name"]
-                if key in dict:
-                    # the name of the attribute is the same of the name of a property, we add "attribute" to disambiguate
-                    key = key + " attribute"
 
                 try:
                     value = blob.data[key]
@@ -610,7 +604,7 @@ class Annotation(QObject):
 
                     if value != None:
                         dict[key][i] = value
-                        else:
+                    else:
                         dict[key][i] = 0
 
                 elif attribute['type'] == 'decimal number':

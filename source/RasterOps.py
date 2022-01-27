@@ -184,26 +184,23 @@ def write_shapefile(project, image, blobs, georef_filename, out_shp):
             name_list.append(index)
             visible_blobs.append(blob)
 
+    # SHAPEFILE NAMES CANNOT BE LONGER THAN 10 characters
+
     number_of_seg = len(name_list)
     dict = {
-        'Object id': np.zeros(number_of_seg, dtype = np.int64),
-        'Date': [],
-        'Class name': [],
-        'Genet id': np.zeros(number_of_seg, dtype = np.int64),
-        'Centroid x': np.zeros(number_of_seg),
-        'Centroid y': np.zeros(number_of_seg),
-        'Area': np.zeros(number_of_seg),
-        'Surf Area': np.zeros(number_of_seg),
-        'Perimeter': np.zeros(number_of_seg),
-        'Note': []}
+        'TL_id': np.zeros(number_of_seg, dtype = np.int64),
+        'TL_Date': [],
+        'TL_Class': [],
+        'TL_Genet': np.zeros(number_of_seg, dtype = np.int64),
+        'TL_Cx': np.zeros(number_of_seg),
+        'TL_Cy': np.zeros(number_of_seg),
+        'TL_Area': np.zeros(number_of_seg),
+        'TL_SurfA': np.zeros(number_of_seg),
+        'TL_Perim': np.zeros(number_of_seg),
+        'TL_Note': []}
 
     for attribute in project.region_attributes.data:
-
         key = attribute["name"]
-        if key in dict:
-            # the name of the attribute is the same of the name of a property, we add "attribute" to disambiguate
-            key = key + " attribute"
-
         if attribute['type'] in ['string', 'keyword']:
             dict[key] = []
         # elif attribute['type'] in ['number', 'boolean']:
@@ -216,26 +213,24 @@ def write_shapefile(project, image, blobs, georef_filename, out_shp):
             pass
 
     for i, blob in enumerate(visible_blobs):
-        dict['Object id'][i] = blob.id
-        dict['Date'].append(date)
-        dict['Class name'].append(blob.class_name)
-        dict['Centroid x'][i] = round(blob.centroid[0], 1)
-        dict['Centroid y'][i] = round(blob.centroid[1], 1)
-        dict['Area'][i] = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
+        dict['TL_id'][i] = blob.id
+        dict['TL_Date'].append(date)
+        dict['TL_Class'].append(blob.class_name)
+        dict['TL_Cx'][i] = round(blob.centroid[0], 1)
+        dict['TL_Cy'][i] = round(blob.centroid[1], 1)
+        dict['TL_Area'][i] = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
         if blob.surface_area > 0.0:
-            dict['Surf area'][i] = round(blob.surface_area * (scale_factor) * (scale_factor) / 100, 2)
-        dict['Perimeter'][i] = round(blob.perimeter * scale_factor / 10, 1)
+            dict['TL_SurfA'][i] = round(blob.surface_area * (scale_factor) * (scale_factor) / 100, 2)
+        dict['TL_Perim'][i] = round(blob.perimeter * scale_factor / 10, 1)
 
         if blob.genet is not None:
-            dict['Genet id'][i] = blob.genet
-        dict['Note'].append(blob.note)
+            dict['TL_Genet'][i] = blob.genet
+
+        dict['TL_Note'].append(blob.note)
 
         for attribute in project.region_attributes.data:
 
             key = attribute["name"]
-            if key in dict:
-                # the name of the attribute is the same of the name of a property, we add "attribute" to disambiguate
-                key = key + " attribute"
 
             try:
                 value = blob.data[key]
