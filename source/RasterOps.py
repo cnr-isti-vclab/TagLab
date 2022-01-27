@@ -277,11 +277,12 @@ def write_shapefile(project, image, blobs, georef_filename, out_shp):
     defn = outLayer.GetLayerDefn()
     # Create attribute fields according to the data types
 
+
     for key in list(dict.keys()):
 
             if type(dict[key]) == list:
                 outLayer.CreateField(ogr.FieldDefn(key, OGRTypes[str]))
-            elif dict[key].dtype == (np.int64() or np.int32()):
+            elif dict[key].dtype == np.int64 or dict[key].dtype == np.int32:
                 outLayer.CreateField(ogr.FieldDefn(key, OGRTypes[int]))
             else:
                 outLayer.CreateField(ogr.FieldDefn(key, OGRTypes[float]))
@@ -295,7 +296,7 @@ def write_shapefile(project, image, blobs, georef_filename, out_shp):
             if type(dict[key]) == list:
                 feat.SetField(key, dict[key][i])
 
-            elif dict[key].dtype == (np.int64() or np.int32()):
+            elif dict[key].dtype == np.int64 or dict[key].dtype == np.int32:
                 feat.SetField(key, int(dict[key][i]))
 
             else:
