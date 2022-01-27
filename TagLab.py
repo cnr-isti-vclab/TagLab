@@ -3865,7 +3865,11 @@ class TagLab(QMainWindow):
         output_filename, _ = QFileDialog.getSaveFileName(self, "Save raster as", self.taglab_dir, filters)
 
         if output_filename:
-            blobs = self.activeviewer.annotations.seg_blobs
+            if self.project.working_area is None:
+                blobs = self.activeviewer.annotations.seg_blobs
+            else:
+                blobs = self.activeviewer.annotations.calculate_inner_blobs(self.project.working_area)
+
             gf = self.activeviewer.image.georef_filename
             rasterops.saveClippedTiff(input_tiff, blobs, gf, output_filename)
 
