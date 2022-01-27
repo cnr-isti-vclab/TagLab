@@ -3431,8 +3431,8 @@ class TagLab(QMainWindow):
     @pyqtSlot(str,list,list)
     def readShapes(self, shapetype, attributelist, classes_list):
 
-
         gf = self.activeviewer.image.georef_filename
+
         if shapetype == 'Labeled regions':
 
             for attribute in attributelist:
@@ -3501,9 +3501,7 @@ class TagLab(QMainWindow):
 
         if filename:
 
-            #self.activeviewer.annotations.export_data_table_for_Scripps(self.activeviewer.image.pixelSize(), filename)
-            self.activeviewer.annotations.export_data_table_for_Scripps(self.project, self.activeviewer.image, filename)
-
+            self.activeviewer.annotations.export_data_table(self.project, self.activeviewer.image, filename)
 
             msgBox = QMessageBox(self)
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
