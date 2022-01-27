@@ -595,29 +595,36 @@ class Annotation(QObject):
             dict['Note'].append(blob.note)
 
             for attribute in project.region_attributes.data:
-                try:                
-                    value = blob.data[attribute['name']]
+
+                key = attribute["name"]
+                if key in dict:
+                    # the name of the attribute is the same of the name of a property, we add "attribute" to disambiguate
+                    key = key + " attribute"
+
+                try:
+                    value = blob.data[key]
                 except:
                     value = None
 
                 if attribute['type'] == 'integer number':
 
                     if value != None:
-                        dict[attribute['name']][i] = value
-                    else:
-                        dict[attribute['name']][i] = 0
+                        dict[key][i] = value
+                        else:
+                        dict[key][i] = 0
 
                 elif attribute['type'] == 'decimal number':
 
                     if value != None:
-                        dict[attribute['name']][i] = value
+                        dict[key][i] = value
                     else:
-                        dict[attribute['name']][i] = np.NaN
+                        dict[key][i] = np.NaN
+
                 else:
-                    if value is None:
-                        dict[attribute['name']].append('')
+                    if value != None:
+                        dict[key][i] = value
                     else:
-                        dict[attribute['name']].append(value)
+                        dict[key].append('')
 
         # create dataframe
         df = pd.DataFrame(dict, columns=list(dict.keys()))

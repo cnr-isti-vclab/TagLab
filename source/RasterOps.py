@@ -231,30 +231,36 @@ def write_shapefile(project, image, blobs, georef_filename, out_shp):
         dict['Note'].append(blob.note)
 
         for attribute in project.region_attributes.data:
+
+            key = attribute["name"]
+            if key in dict:
+                # the name of the attribute is the same of the name of a property, we add "attribute" to disambiguate
+                key = key + " attribute"
+
             try:
-                value = blob.data[attribute['name']]
+                value = blob.data[key]
             except:
                 value = None
 
             if attribute['type'] == 'integer number':
 
                 if value != None:
-                    dict[attribute['name']][i] = value
+                    dict[key][i] = value
                 else:
-                    dict[attribute['name']][i] = 0
+                    dict[key][i] = 0
 
             elif attribute['type'] == 'decimal number':
 
                 if value != None:
-                    dict[attribute['name']][i] = value
+                    dict[key][i] = value
                 else:
-                    dict[attribute['name']][i] = np.NaN
+                    dict[key][i] = np.NaN
 
             else:
                 if value != None:
-                    dict[attribute['name']][i] = value
+                    dict[key][i] = value
                 else:
-                    dict[attribute['name']].append('')
+                    dict[key].append('')
 
     # # convert blobs in polygons
     polygons = []
