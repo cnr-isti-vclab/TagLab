@@ -197,15 +197,23 @@ def write_shapefile(project, image, blobs, georef_filename, out_shp):
         'Perimeter': np.zeros(number_of_seg),
         'Note': []}
 
-    # TODO check if attribute name is already in dict.
     for attribute in project.region_attributes.data:
+
+        key = attribute["name"]
+        if key in dict:
+            # the name of the attribute is the same of the name of a property, we add "attribute" to disambiguate
+            key = key + " attribute"
+
         if attribute['type'] in ['string', 'keyword']:
-            dict[attribute['name']] = []
+            dict[key] = []
         # elif attribute['type'] in ['number', 'boolean']:
         elif attribute['type'] in ['integer number']:
-            dict[attribute['name']] = np.zeros(number_of_seg, dtype = np.int64)
+            dict[key] = np.zeros(number_of_seg, dtype = np.int64)
         elif attribute['type'] in ['decimal number']:
-            dict[attribute['name']] = np.zeros(number_of_seg, dtype = np.float64)
+            dict[key] = np.zeros(number_of_seg, dtype = np.float64)
+        else:
+            # unknown attribute type, not saved
+            pass
 
     for i, blob in enumerate(visible_blobs):
         dict['Object id'][i] = blob.id
@@ -270,12 +278,10 @@ def write_shapefile(project, image, blobs, georef_filename, out_shp):
 
     for key in list(dict.keys()):
 
-            if isinstance(dict[key][0], str):
+            if type(dict[key]) == list:
                 outLayer.CreateField(ogr.FieldDefn(key, OGRTypes[str]))
-
             elif dict[key].dtype == (np.int64() or np.int32()):
                 outLayer.CreateField(ogr.FieldDefn(key, OGRTypes[int]))
-
             else:
                 outLayer.CreateField(ogr.FieldDefn(key, OGRTypes[float]))
 
@@ -285,8 +291,8 @@ def write_shapefile(project, image, blobs, georef_filename, out_shp):
         feat.SetGeometry(geom)
 
         for key in list(dict.keys()):
-            if isinstance(dict[key][0], str):
-                feat.SetField(key,  dict[key][i])
+            if type(dict[key]) == list:
+                feat.SetField(key, dict[key][i])
 
             elif dict[key].dtype == (np.int64() or np.int32()):
                 feat.SetField(key, int(dict[key][i]))

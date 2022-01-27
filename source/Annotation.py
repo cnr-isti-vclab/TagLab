@@ -561,14 +561,23 @@ class Annotation(QObject):
             'Perimeter': np.zeros(number_of_seg),
             'Note': [] }
 
-        #TODO check if attribute name is already in dict.
         for attribute in project.region_attributes.data:
+
+            key = attribute["name"]
+            if key in dict:
+                # the name of the attribute is the same of the name of a property, we add "attribute" to disambiguate
+                key = key + " attribute"
+
             if attribute['type'] in ['string', 'keyword']:
-                dict[attribute['name']] = []
-            elif attribute['type'] == 'integer number':
-                dict[attribute['name']] = np.zeros(number_of_seg, dtype=np.int64)
-            elif attribute['type'] == 'decimal number':
-                dict[attribute['name']] = np.zeros(number_of_seg, dtype=np.float64)
+                dict[key] = []
+            # elif attribute['type'] in ['number', 'boolean']:
+            elif attribute['type'] in ['integer number']:
+                dict[key] = np.zeros(number_of_seg, dtype=np.int64)
+            elif attribute['type'] in ['decimal number']:
+                dict[key] = np.zeros(number_of_seg, dtype=np.float64)
+            else:
+                # unknown attribute type, not saved
+                pass
         
         for i, blob in enumerate(visible_blobs):
             dict['Object id'][i] = blob.id
