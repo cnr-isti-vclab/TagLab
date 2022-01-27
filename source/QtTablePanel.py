@@ -109,6 +109,8 @@ class QtTablePanel(QWidget):
         self.setMinimumHeight(100)
 
         self.data_table = QTableView()
+        self.data_table.setMinimumWidth(400)
+        self.data_table.setMinimumHeight(100)
         self.data_table.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.data_table.setSelectionMode(QAbstractItemView.MultiSelection)
         self.data_table.setSelectionMode(QAbstractItemView.ExtendedSelection)

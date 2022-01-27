@@ -466,6 +466,8 @@ class TagLab(QMainWindow):
         layout_groupbox2 = QVBoxLayout()
         # in single view only show the table panel
         layout_groupbox2.addWidget(self.table_panel)
+        self.compare_panel.hide()
+        layout_groupbox2.addWidget(self.compare_panel)
 
         layout_groupbox2.setContentsMargins(QMargins(0, 0, 0, 0))
         self.groupbox_comparison.setLayout(layout_groupbox2)
@@ -513,7 +515,7 @@ class TagLab(QMainWindow):
             dock.setAllowedAreas(Qt.RightDockWidgetArea)
             self.addDockWidget(Qt.RightDockWidgetArea, dock)
 
-        #self.setDockOptions(self.AnimatedDocks)
+        self.setDockOptions(self.AnimatedDocks)
 
         self.compare_panel.setMinimumHeight(600)
 
@@ -1603,13 +1605,8 @@ class TagLab(QMainWindow):
 
         self.viewerplus2.hide()
 
-        self.groupbox_comparison = QGroupBox()
-        layout = QVBoxLayout()
-        layout.addWidget(self.table_panel)
-        layout.setContentsMargins(QMargins(0, 0, 0, 0))
-        self.groupbox_comparison.setLayout(layout)
-
-        self.datadock.setWidget(self.groupbox_comparison)
+        self.compare_panel.hide();
+        self.table_panel.show()
 
         self.comboboxTargetImage.hide()
         self.blobdock.show()
@@ -1643,12 +1640,8 @@ class TagLab(QMainWindow):
 
             self.viewerplus.viewChanged()
 
-            self.groupbox_comparison = QGroupBox()
-            layout = QVBoxLayout()
-            layout.addWidget(self.compare_panel)
-            layout.setContentsMargins(QMargins(0, 0, 0, 0))
-            self.groupbox_comparison.setLayout(layout)
-            self.datadock.setWidget(self.groupbox_comparison)
+            self.compare_panel.hide();
+            self.table_panel.show()
 
             index = self.comboboxSourceImage.currentIndex()
             if index < 0:
@@ -3183,6 +3176,8 @@ class TagLab(QMainWindow):
         filename, _ = QFileDialog.getSaveFileName(self, "Save project", self.taglab_dir, filters)
 
         if filename:
+            if not filename.endswith('.json'):
+                filename += '.json'
             dir = QDir(self.taglab_dir)
             self.project.filename = dir.relativeFilePath(filename)
             self.setProjectTitle(self.project.filename)
