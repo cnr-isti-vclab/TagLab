@@ -469,6 +469,23 @@ class Annotation(QObject):
         else:
             return labelimg
 
+
+    def calculate_inner_blobs(self, working_area):
+
+        "This consider only blobs falling ENTIRELY in the working area"
+
+        selected_blobs = self.seg_blobs
+        inner_blobs = []
+        #turn working area in a list (to use jointbox)
+
+        for blob in selected_blobs:
+            newbbox = Mask.jointBox([blob.bbox, working_area])
+            if list(newbbox) == working_area:
+              inner_blobs.append(blob)
+
+        return inner_blobs
+
+
     def import_label_map(self, filename, labels_dictionary, offset, scale, create_holes=False):
         """
         It imports a label map and create the corresponding blobs.
