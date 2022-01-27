@@ -99,7 +99,7 @@ class Genet:
 
         for img in self.project.images:
             # writing both classes seems redundant in matching, but it's not for born and dead
-            fields.append(img.name + "Class name")
+            fields.append(img.name + " Class name")
             fields.append(img.name + " Object id")
             fields.append(img.name + " Area")
         lines = {}

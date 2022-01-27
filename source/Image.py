@@ -143,8 +143,8 @@ class Image(object):
         df = pd.DataFrame(dict, columns=['Id', 'Class', 'Area'])
         return df
 
-    def updateChannel(self, filename, type):
 
+    def updateChannel(self, filename, type):
         img = rio.open(filename)
 
         # check image size consistency (all the channels must have the same size)

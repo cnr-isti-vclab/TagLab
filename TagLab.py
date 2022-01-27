@@ -2992,6 +2992,8 @@ class TagLab(QMainWindow):
 
         flag_pixel_size_changed = False
 
+        
+
         try:
             image = self.image2update
 
@@ -3004,16 +3006,21 @@ class TagLab(QMainWindow):
             image.id = self.mapWidget.data['name']
             image.acquisition_date = self.mapWidget.data['acquisition_date']
             rgb_filename = dir.relativeFilePath(self.mapWidget.data['rgb_filename'])
-            depth_filename = dir.relativeFilePath(self.mapWidget.data['depth_filename'])
+            dem_filename = dir.relativeFilePath(self.mapWidget.data['depth_filename'])
 
+
+            rgb_channel = image.getChannel("RGB")
+            dem_channel = image.getChannel("DEM")
+            rgb_changed = rgb_channel == None or rgb_channel.filename != rgb_filename
+            dem_changed = dem_channel == None or dem_channel.filename != dem_filename
 
             if len(rgb_filename) <= 3:
                 raise ValueError("You need to specify an RGB map")
-            else:
+            elif rgb_changed:
                 image.updateChannel(rgb_filename, "RGB")
 
-            if len(depth_filename) > 3:
-                image.updateChannel(depth_filename, "DEM")
+            if len(dem_filename) > 3 and dem_changed:
+                image.updateChannel(dem_filename, "DEM")
 
         except Exception as e:
             msgBox = QMessageBox()
@@ -3028,16 +3035,18 @@ class TagLab(QMainWindow):
         # check if the updated image is shown in the left viewer
         if self.viewerplus.image == image:
             type = self.viewerplus.channel.type
-            channel = image.getChannel(type) or image.getChannel("RGB")
-            self.viewerplus.setChannel(channel)
+            if rgb_changed:
+                channel = image.getChannel(type) or image.getChannel("RGB")
+                self.viewerplus.setChannel(channel)
             self.viewerplus.updateImageProperties()
             self.viewerplus.viewChanged()
 
         # check if the updated image is shown in the right viewer
         if self.viewerplus2.image == image:
             type = self.viewerplus2.channel.type
-            channel = image.getChannel(type) or image.getChannel("RGB")
-            self.viewerplus2.setChannel(channel)
+            if rgb_changed:
+                channel = image.getChannel(type) or image.getChannel("RGB")
+                self.viewerplus2.setChannel(channel)
             self.viewerplus2.updateImageProperties()
             self.viewerplus2.viewChanged()
 
@@ -3052,6 +3061,7 @@ class TagLab(QMainWindow):
 
         # update the comboboxes to select the images
         self.updateImageSelectionMenu()
+        self.layers_widget.setProject(self.project);
 
         self.mapWidget.close()
 
