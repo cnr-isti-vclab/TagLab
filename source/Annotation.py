@@ -602,21 +602,21 @@ class Annotation(QObject):
 
                 if attribute['type'] == 'integer number':
 
-                    if value != None:
+                    if value is not None:
                         dict[key][i] = value
                     else:
                         dict[key][i] = 0
 
                 elif attribute['type'] == 'decimal number':
 
-                    if value != None:
+                    if value is not None:
                         dict[key][i] = value
                     else:
                         dict[key][i] = np.NaN
 
                 else:
-                    if value != None:
-                        dict[key][i] = value
+                    if value is not None:
+                        dict[key].append(value)
                     else:
                         dict[key].append('')
 
