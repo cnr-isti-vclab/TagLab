@@ -3441,7 +3441,7 @@ class TagLab(QMainWindow):
 
             self.groupbox_blobpanel.updateRegionAttributes(self.project.region_attributes)
 
-            for i in range(0,len(blob_list)):
+            for i in range(0, len(blob_list)):
                 blob = blob_list[i]
                 blob.class_name = classes_list[i]
                 self.activeviewer.addBlob(blob, selected=False)

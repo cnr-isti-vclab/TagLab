@@ -192,7 +192,11 @@ class QtAttributeWidget(QWidget):
                 flagExist = True
 
             if checkbox.isChecked():
-                self.fieldlist.append({'name': checkbox.text(), 'type': checkbox.property('type')})
+                fieldname = checkbox.text()
+
+                # TagLab properties ARE NOT IMPORTED TO AVOID POTENTIAL CONFLICTS (!)
+                if fieldname[0:3] != "TL_":
+                    self.fieldlist.append({'name': checkbox.text(), 'type': checkbox.property('type')})
 
         classes_list = []
         if self.shape == "Labeled regions":

@@ -1,5 +1,6 @@
 {
  "filename": "sampleProjects/small_annotated_area_project.json",
+ "working_area": null,
  "dictionary_name": "",
  "dictionary_description": "",
  "labels": {
@@ -1175,7 +1176,8 @@
      "instance name": "coral0",
      "blob name": "c-0-82.1x-52.1y",
      "id": 0,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1196,7 +1198,8 @@
      "instance name": "coral0",
      "blob name": "c-0-302.1x-85.6y",
      "id": 1,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1217,7 +1220,8 @@
      "instance name": "coral0",
      "blob name": "c-0-488.6x-50.9y",
      "id": 2,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1238,7 +1242,8 @@
      "instance name": "coral0",
      "blob name": "c-0-610.4x-20.5y",
      "id": 3,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1259,7 +1264,8 @@
      "instance name": "coral0",
      "blob name": "c-0-743.8x-5.9y",
      "id": 4,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1280,7 +1286,8 @@
      "instance name": "coral0",
      "blob name": "c-0-841.8x-65.7y",
      "id": 5,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1304,7 +1311,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1091.6x-28.3y",
      "id": 6,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1325,7 +1333,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1212.3x-6.2y",
      "id": 7,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1346,7 +1355,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1478.9x-20.4y",
      "id": 8,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1372,7 +1382,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2027.5x-102.4y",
      "id": 9,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1400,7 +1411,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2607.8x-112.2y",
      "id": 10,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1421,7 +1433,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1250.0x-25.3y",
      "id": 11,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1442,7 +1455,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1474.3x-57.8y",
      "id": 12,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1463,7 +1477,8 @@
      "instance name": "coral0",
      "blob name": "c-0-342.5x-31.9y",
      "id": 13,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1484,7 +1499,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1397.2x-62.0y",
      "id": 14,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1505,7 +1521,8 @@
      "instance name": "coral0",
      "blob name": "c-0-653.3x-42.0y",
      "id": 15,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1526,7 +1543,8 @@
      "instance name": "coral0",
      "blob name": "c-0-413.5x-59.0y",
      "id": 16,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1553,7 +1571,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1713.7x-206.8y",
      "id": 17,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1574,7 +1593,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2279.5x-89.0y",
      "id": 18,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1597,7 +1617,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1173.8x-197.5y",
      "id": 19,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1618,7 +1639,8 @@
      "instance name": "coral0",
      "blob name": "c-0-617.5x-78.5y",
      "id": 20,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1639,7 +1661,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1451.6x-86.0y",
      "id": 21,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1662,7 +1685,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1459.6x-220.1y",
      "id": 22,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1683,7 +1707,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1630.7x-109.3y",
      "id": 23,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1704,7 +1729,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1580.9x-152.1y",
      "id": 24,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1725,7 +1751,8 @@
      "instance name": "coral0",
      "blob name": "c-0-478.1x-148.4y",
      "id": 25,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1746,7 +1773,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2265.2x-158.8y",
      "id": 26,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1769,7 +1797,8 @@
      "instance name": "coral0",
      "blob name": "c-0-830.6x-180.2y",
      "id": 27,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1790,7 +1819,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1056.6x-175.8y",
      "id": 28,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1813,7 +1843,8 @@
      "instance name": "coral0",
      "blob name": "c-0-302.8x-222.8y",
      "id": 29,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1834,7 +1865,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2173.2x-176.7y",
      "id": 30,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1855,7 +1887,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1822.6x-196.6y",
      "id": 31,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1880,7 +1913,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1995.7x-364.6y",
      "id": 32,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1904,7 +1938,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2711.9x-382.1y",
      "id": 33,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1925,7 +1960,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1512.1x-225.2y",
      "id": 34,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1946,7 +1982,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2202.1x-229.2y",
      "id": 35,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1970,7 +2007,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1894.3x-293.8y",
      "id": 36,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -1996,7 +2034,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1010.4x-385.4y",
      "id": 37,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2017,7 +2056,8 @@
      "instance name": "coral0",
      "blob name": "c-0-917.0x-222.1y",
      "id": 38,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2038,7 +2078,8 @@
      "instance name": "coral0",
      "blob name": "c-0-895.0x-275.1y",
      "id": 39,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2059,7 +2100,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2435.7x-269.3y",
      "id": 40,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2080,7 +2122,8 @@
      "instance name": "coral0",
      "blob name": "c-0-27.2x-305.2y",
      "id": 41,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2101,7 +2144,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3043.2x-274.3y",
      "id": 42,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2122,7 +2166,8 @@
      "instance name": "coral0",
      "blob name": "c-0-326.0x-296.4y",
      "id": 43,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2147,7 +2192,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2504.2x-565.6y",
      "id": 44,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2168,7 +2214,8 @@
      "instance name": "coral0",
      "blob name": "c-0-261.2x-329.6y",
      "id": 45,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2189,7 +2236,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1150.0x-306.3y",
      "id": 46,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2210,7 +2258,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1701.2x-380.0y",
      "id": 47,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2231,7 +2280,8 @@
      "instance name": "coral0",
      "blob name": "c-0-116.4x-321.1y",
      "id": 48,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2252,7 +2302,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2881.7x-375.7y",
      "id": 49,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2273,7 +2324,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2228.8x-359.0y",
      "id": 50,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2294,7 +2346,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1127.2x-341.6y",
      "id": 51,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2315,7 +2368,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1215.3x-339.7y",
      "id": 52,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2336,7 +2390,8 @@
      "instance name": "coral0",
      "blob name": "c-0-290.1x-551.9y",
      "id": 53,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2357,7 +2412,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2988.2x-381.0y",
      "id": 54,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2382,7 +2438,8 @@
      "instance name": "coral0",
      "blob name": "c-0-491.2x-477.6y",
      "id": 55,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2403,7 +2460,8 @@
      "instance name": "coral0",
      "blob name": "c-0-82.6x-390.2y",
      "id": 56,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2426,7 +2484,8 @@
      "instance name": "coral0",
      "blob name": "c-0-614.5x-591.8y",
      "id": 57,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2447,7 +2506,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1154.2x-405.1y",
      "id": 58,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2468,7 +2528,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1390.8x-408.6y",
      "id": 59,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2489,7 +2550,8 @@
      "instance name": "coral0",
      "blob name": "c-0-893.7x-471.1y",
      "id": 60,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2510,7 +2572,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3128.3x-412.5y",
      "id": 61,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2531,7 +2594,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2149.8x-435.1y",
      "id": 62,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2552,7 +2616,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2325.6x-416.6y",
      "id": 63,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2573,7 +2638,8 @@
      "instance name": "coral0",
      "blob name": "c-0-253.6x-420.3y",
      "id": 64,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2594,7 +2660,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2377.0x-432.7y",
      "id": 65,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2619,7 +2686,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2895.8x-737.4y",
      "id": 66,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2640,7 +2708,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1180.0x-447.7y",
      "id": 67,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2661,7 +2730,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2051.5x-473.5y",
      "id": 68,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2682,7 +2752,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1343.9x-475.2y",
      "id": 69,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2703,7 +2774,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1650.9x-460.7y",
      "id": 70,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2724,7 +2796,8 @@
      "instance name": "coral0",
      "blob name": "c-0-94.4x-469.5y",
      "id": 71,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2749,7 +2822,8 @@
      "instance name": "coral0",
      "blob name": "c-0-91.4x-632.5y",
      "id": 72,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2770,7 +2844,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2024.7x-466.4y",
      "id": 73,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2791,7 +2866,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2967.8x-472.8y",
      "id": 74,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2818,7 +2894,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1814.1x-705.6y",
      "id": 75,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2841,7 +2918,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3089.9x-546.2y",
      "id": 76,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2862,7 +2940,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1251.0x-540.9y",
      "id": 77,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2883,7 +2962,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1890.0x-533.0y",
      "id": 78,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2904,7 +2984,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3171.2x-521.8y",
      "id": 79,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2925,7 +3006,8 @@
      "instance name": "coral0",
      "blob name": "c-0-877.1x-597.3y",
      "id": 80,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2946,7 +3028,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1001.3x-561.4y",
      "id": 81,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2967,7 +3050,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3154.0x-572.4y",
      "id": 82,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -2988,7 +3072,8 @@
      "instance name": "coral0",
      "blob name": "c-0-786.8x-576.3y",
      "id": 83,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3009,7 +3094,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1395.6x-649.7y",
      "id": 84,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3030,7 +3116,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2994.7x-594.8y",
      "id": 85,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3051,7 +3138,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1270.2x-601.8y",
      "id": 86,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3072,7 +3160,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2340.5x-686.4y",
      "id": 87,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3093,7 +3182,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2960.1x-606.0y",
      "id": 88,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3114,7 +3204,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1164.6x-619.7y",
      "id": 89,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3135,7 +3226,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1232.2x-631.2y",
      "id": 90,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3156,7 +3248,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2956.1x-632.9y",
      "id": 91,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3180,7 +3273,8 @@
      "instance name": "coral0",
      "blob name": "c-0-476.2x-766.0y",
      "id": 92,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3201,7 +3295,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3142.5x-642.7y",
      "id": 93,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3222,7 +3317,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1199.7x-771.7y",
      "id": 94,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3243,7 +3339,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2704.0x-663.1y",
      "id": 95,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3264,7 +3361,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3171.6x-667.4y",
      "id": 96,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3285,7 +3383,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3060.0x-707.8y",
      "id": 97,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3306,7 +3405,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3104.4x-704.7y",
      "id": 98,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3331,7 +3431,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2730.3x-778.8y",
      "id": 99,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3352,7 +3453,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3000.7x-714.6y",
      "id": 100,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3373,7 +3475,8 @@
      "instance name": "coral0",
      "blob name": "c-0-233.1x-754.1y",
      "id": 101,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3394,7 +3497,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2957.4x-722.5y",
      "id": 102,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3415,7 +3519,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2930.5x-722.9y",
      "id": 103,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3436,7 +3541,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3086.5x-729.6y",
      "id": 104,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3457,7 +3563,8 @@
      "instance name": "coral0",
      "blob name": "c-0-263.7x-814.9y",
      "id": 105,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3478,7 +3585,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3166.1x-755.4y",
      "id": 106,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3499,7 +3607,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3112.4x-758.6y",
      "id": 107,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3520,7 +3629,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2214.5x-827.7y",
      "id": 108,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3541,7 +3651,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2606.6x-796.5y",
      "id": 109,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3562,7 +3673,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2414.7x-802.5y",
      "id": 110,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3586,7 +3698,8 @@
      "instance name": "coral0",
      "blob name": "c-0-147.6x-969.6y",
      "id": 111,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3607,7 +3720,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3169.2x-790.7y",
      "id": 112,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3628,7 +3742,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1711.0x-868.8y",
      "id": 113,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3649,7 +3764,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3060.4x-796.0y",
      "id": 114,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3670,7 +3786,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1476.5x-866.8y",
      "id": 115,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3695,7 +3812,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2410.9x-904.7y",
      "id": 116,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3716,7 +3834,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2675.5x-841.7y",
      "id": 117,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3737,7 +3856,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2795.9x-922.7y",
      "id": 118,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3758,7 +3878,8 @@
      "instance name": "coral0",
      "blob name": "c-0-415.0x-936.9y",
      "id": 119,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3779,7 +3900,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1297.7x-937.7y",
      "id": 120,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3800,7 +3922,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2543.2x-1057.9y",
      "id": 121,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3821,7 +3944,8 @@
      "instance name": "coral0",
      "blob name": "c-0-725.3x-1028.6y",
      "id": 122,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3842,7 +3966,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1157.9x-991.0y",
      "id": 123,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3865,7 +3990,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1784.4x-1038.4y",
      "id": 124,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3886,7 +4012,8 @@
      "instance name": "coral0",
      "blob name": "c-0-524.7x-1118.5y",
      "id": 125,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3907,7 +4034,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3169.7x-922.1y",
      "id": 126,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3928,7 +4056,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3135.0x-948.9y",
      "id": 127,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3949,7 +4078,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1525.2x-987.6y",
      "id": 128,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3970,7 +4100,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1806.0x-952.2y",
      "id": 129,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -3991,7 +4122,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2068.6x-1039.5y",
      "id": 130,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4016,7 +4148,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1379.5x-1033.0y",
      "id": 131,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4037,7 +4170,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3031.6x-1015.9y",
      "id": 132,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4058,7 +4192,8 @@
      "instance name": "coral0",
      "blob name": "c-0-284.1x-1043.9y",
      "id": 133,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4079,7 +4214,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3157.2x-995.6y",
      "id": 134,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4100,7 +4236,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2128.8x-1000.7y",
      "id": 135,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4121,7 +4258,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1225.0x-1067.6y",
      "id": 136,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4142,7 +4280,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1631.9x-1093.6y",
      "id": 137,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4168,7 +4307,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1956.1x-1192.6y",
      "id": 138,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4189,7 +4329,8 @@
      "instance name": "coral0",
      "blob name": "c-0-298.7x-1107.7y",
      "id": 139,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4225,7 +4366,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2816.9x-1738.6y",
      "id": 140,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4246,7 +4388,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1825.3x-1151.0y",
      "id": 141,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4267,7 +4410,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2807.5x-1144.6y",
      "id": 142,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4294,7 +4438,8 @@
      "instance name": "coral0",
      "blob name": "c-0-223.9x-1312.6y",
      "id": 143,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4315,7 +4460,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1114.4x-1141.6y",
      "id": 144,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4336,7 +4482,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1648.1x-1153.3y",
      "id": 145,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4357,7 +4504,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1663.2x-1222.6y",
      "id": 146,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4378,7 +4526,8 @@
      "instance name": "coral0",
      "blob name": "c-0-995.4x-1211.3y",
      "id": 147,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4399,7 +4548,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2286.1x-1215.2y",
      "id": 148,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4420,7 +4570,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1288.4x-1280.0y",
      "id": 149,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4441,7 +4592,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2299.9x-1268.5y",
      "id": 150,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4462,7 +4614,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2236.1x-1238.1y",
      "id": 151,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4483,7 +4636,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1462.8x-1271.7y",
      "id": 152,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4504,7 +4658,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1732.3x-1297.8y",
      "id": 153,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4525,7 +4680,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1623.1x-1327.3y",
      "id": 154,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4546,7 +4702,8 @@
      "instance name": "coral0",
      "blob name": "c-0-539.5x-1421.4y",
      "id": 155,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4567,7 +4724,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1127.1x-1319.2y",
      "id": 156,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4588,7 +4746,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1949.2x-1336.5y",
      "id": 157,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4613,7 +4772,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1670.4x-1450.8y",
      "id": 158,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4634,7 +4794,8 @@
      "instance name": "coral0",
      "blob name": "c-0-514.5x-1371.1y",
      "id": 159,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4655,7 +4816,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1641.1x-1368.9y",
      "id": 160,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4676,7 +4838,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1687.9x-1381.7y",
      "id": 161,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4700,7 +4863,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1999.3x-1469.2y",
      "id": 162,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4721,7 +4885,8 @@
      "instance name": "coral0",
      "blob name": "c-0-695.8x-1423.7y",
      "id": 163,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4742,7 +4907,8 @@
      "instance name": "coral0",
      "blob name": "c-0-26.4x-1405.4y",
      "id": 164,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4763,7 +4929,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1659.5x-1443.7y",
      "id": 165,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4784,7 +4951,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2442.7x-1477.8y",
      "id": 166,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4805,7 +4973,8 @@
      "instance name": "coral0",
      "blob name": "c-0-30.2x-1459.8y",
      "id": 167,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4826,7 +4995,8 @@
      "instance name": "coral0",
      "blob name": "c-0-654.7x-1467.2y",
      "id": 168,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4847,7 +5017,8 @@
      "instance name": "coral0",
      "blob name": "c-0-326.0x-1495.5y",
      "id": 169,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4868,7 +5039,8 @@
      "instance name": "coral0",
      "blob name": "c-0-78.7x-1475.7y",
      "id": 170,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4897,7 +5069,8 @@
      "instance name": "coral0",
      "blob name": "c-0-134.6x-1836.7y",
      "id": 171,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4918,7 +5091,8 @@
      "instance name": "coral0",
      "blob name": "c-0-589.7x-1494.5y",
      "id": 172,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4939,7 +5113,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2220.1x-1509.5y",
      "id": 173,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4960,7 +5135,8 @@
      "instance name": "coral0",
      "blob name": "c-0-415.0x-1524.9y",
      "id": 174,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -4983,7 +5159,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1504.6x-1716.1y",
      "id": 175,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5004,7 +5181,8 @@
      "instance name": "coral0",
      "blob name": "c-0-211.9x-1510.0y",
      "id": 176,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5025,7 +5203,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1270.1x-1501.2y",
      "id": 177,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5046,7 +5225,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1493.5x-1576.2y",
      "id": 178,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5067,7 +5247,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1195.1x-1523.2y",
      "id": 179,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5088,7 +5269,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3160.6x-1654.9y",
      "id": 180,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5109,7 +5291,8 @@
      "instance name": "coral0",
      "blob name": "c-0-293.5x-1570.2y",
      "id": 181,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5130,7 +5313,8 @@
      "instance name": "coral0",
      "blob name": "c-0-523.1x-1573.0y",
      "id": 182,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5151,7 +5335,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1794.6x-1653.8y",
      "id": 183,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5172,7 +5357,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1651.6x-1614.0y",
      "id": 184,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5193,7 +5379,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1227.9x-1568.9y",
      "id": 185,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5216,7 +5403,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2384.7x-1677.5y",
      "id": 186,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5242,7 +5430,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2192.3x-1702.8y",
      "id": 187,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5263,7 +5452,8 @@
      "instance name": "coral0",
      "blob name": "c-0-212.4x-1610.5y",
      "id": 188,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5284,7 +5474,8 @@
      "instance name": "coral0",
      "blob name": "c-0-695.7x-1608.5y",
      "id": 189,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5305,7 +5496,8 @@
      "instance name": "coral0",
      "blob name": "c-0-425.4x-1615.0y",
      "id": 190,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5326,7 +5518,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1670.0x-1639.5y",
      "id": 191,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5347,7 +5540,8 @@
      "instance name": "coral0",
      "blob name": "c-0-614.7x-1641.5y",
      "id": 192,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5368,7 +5562,8 @@
      "instance name": "coral0",
      "blob name": "c-0-225.4x-1656.6y",
      "id": 193,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5389,7 +5584,8 @@
      "instance name": "coral0",
      "blob name": "c-0-473.3x-1621.1y",
      "id": 194,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5410,7 +5606,8 @@
      "instance name": "coral0",
      "blob name": "c-0-875.9x-1645.7y",
      "id": 195,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5431,7 +5628,8 @@
      "instance name": "coral0",
      "blob name": "c-0-811.1x-1670.8y",
      "id": 196,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5452,7 +5650,8 @@
      "instance name": "coral0",
      "blob name": "c-0-456.7x-1677.9y",
      "id": 197,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5473,7 +5672,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1484.1x-1703.2y",
      "id": 198,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5494,7 +5694,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1343.5x-1703.5y",
      "id": 199,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5515,7 +5716,8 @@
      "instance name": "coral0",
      "blob name": "c-0-737.7x-1820.4y",
      "id": 200,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5536,7 +5738,8 @@
      "instance name": "coral0",
      "blob name": "c-0-916.0x-1679.0y",
      "id": 201,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5557,7 +5760,8 @@
      "instance name": "coral0",
      "blob name": "c-0-496.7x-1702.2y",
      "id": 202,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5578,7 +5782,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1698.8x-1751.9y",
      "id": 203,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5599,7 +5804,8 @@
      "instance name": "coral0",
      "blob name": "c-0-302.3x-1710.4y",
      "id": 204,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5620,7 +5826,8 @@
      "instance name": "coral0",
      "blob name": "c-0-416.8x-1820.7y",
      "id": 205,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5641,7 +5848,8 @@
      "instance name": "coral0",
      "blob name": "c-0-358.9x-1715.7y",
      "id": 206,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5662,7 +5870,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2.0x-1706.4y",
      "id": 207,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5683,7 +5892,8 @@
      "instance name": "coral0",
      "blob name": "c-0-8.6x-1746.5y",
      "id": 208,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5704,7 +5914,8 @@
      "instance name": "coral0",
      "blob name": "c-0-434.8x-1760.4y",
      "id": 209,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5725,7 +5936,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1435.2x-1796.3y",
      "id": 210,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5746,7 +5958,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1309.2x-1820.1y",
      "id": 211,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5767,7 +5980,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1700.4x-1873.8y",
      "id": 212,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5791,7 +6005,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1973.0x-1959.7y",
      "id": 213,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5812,7 +6027,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1561.8x-1906.6y",
      "id": 214,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5833,7 +6049,8 @@
      "instance name": "coral0",
      "blob name": "c-0-508.8x-1913.0y",
      "id": 215,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5854,7 +6071,8 @@
      "instance name": "coral0",
      "blob name": "c-0-29.5x-1928.6y",
      "id": 216,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5894,7 +6112,8 @@
      "instance name": "coral0",
      "blob name": "c-0-448.8x-2244.4y",
      "id": 217,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5915,7 +6134,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1382.4x-1988.0y",
      "id": 218,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5938,7 +6158,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1457.0x-1954.8y",
      "id": 219,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5959,7 +6180,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1634.1x-1963.4y",
      "id": 220,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -5980,7 +6202,8 @@
      "instance name": "coral0",
      "blob name": "c-0-842.4x-1958.9y",
      "id": 221,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6001,7 +6224,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1136.8x-1971.0y",
      "id": 222,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6026,7 +6250,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1272.7x-2142.2y",
      "id": 223,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6047,7 +6272,8 @@
      "instance name": "coral0",
      "blob name": "c-0-851.1x-2099.1y",
      "id": 224,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6068,7 +6294,8 @@
      "instance name": "coral0",
      "blob name": "c-0-952.8x-2104.1y",
      "id": 225,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6089,7 +6316,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2310.1x-2140.7y",
      "id": 226,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6110,7 +6338,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1930.2x-2126.5y",
      "id": 227,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6131,7 +6360,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1629.3x-2122.5y",
      "id": 228,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6152,7 +6382,8 @@
      "instance name": "coral0",
      "blob name": "c-0-923.6x-2167.3y",
      "id": 229,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6173,7 +6404,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1521.1x-2219.0y",
      "id": 230,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6194,7 +6426,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1868.7x-2181.8y",
      "id": 231,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6215,7 +6448,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3166.4x-2193.3y",
      "id": 232,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6236,7 +6470,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2991.6x-2200.7y",
      "id": 233,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6257,7 +6492,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1056.3x-2218.0y",
      "id": 234,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6278,7 +6514,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1364.7x-2305.3y",
      "id": 235,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6299,7 +6536,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1973.6x-2242.1y",
      "id": 236,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6320,7 +6558,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1879.4x-2250.8y",
      "id": 237,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6341,7 +6580,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1644.1x-2268.5y",
      "id": 238,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6362,7 +6602,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2884.5x-2286.8y",
      "id": 239,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6383,7 +6624,8 @@
      "instance name": "coral0",
      "blob name": "c-0-780.5x-2275.8y",
      "id": 240,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6404,7 +6646,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2468.3x-2321.8y",
      "id": 241,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6425,7 +6668,8 @@
      "instance name": "coral0",
      "blob name": "c-0-41.4x-2304.7y",
      "id": 242,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6446,7 +6690,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1978.9x-2303.4y",
      "id": 243,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6467,7 +6712,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2981.1x-2334.8y",
      "id": 244,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6488,7 +6734,8 @@
      "instance name": "coral0",
      "blob name": "c-0-988.3x-2324.1y",
      "id": 245,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6509,7 +6756,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3027.2x-2328.6y",
      "id": 246,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6547,7 +6795,8 @@
      "instance name": "coral0",
      "blob name": "c-0-860.2x-2768.3y",
      "id": 247,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6571,7 +6820,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1557.4x-2384.1y",
      "id": 248,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6594,7 +6844,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1107.7x-2450.0y",
      "id": 249,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6615,7 +6866,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2925.6x-2372.6y",
      "id": 250,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6636,7 +6888,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2054.5x-2497.2y",
      "id": 251,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6657,7 +6910,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1723.5x-2437.8y",
      "id": 252,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6678,7 +6932,8 @@
      "instance name": "coral0",
      "blob name": "c-0-67.9x-2405.8y",
      "id": 253,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6699,7 +6954,8 @@
      "instance name": "coral0",
      "blob name": "c-0-708.9x-2429.9y",
      "id": 254,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6720,7 +6976,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3008.8x-2398.8y",
      "id": 255,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6741,7 +6998,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2556.6x-2421.2y",
      "id": 256,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6764,7 +7022,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1458.4x-2444.7y",
      "id": 257,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6785,7 +7044,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3093.6x-2438.9y",
      "id": 258,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6810,7 +7070,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1428.9x-2534.9y",
      "id": 259,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6831,7 +7092,8 @@
      "instance name": "coral0",
      "blob name": "c-0-4.3x-2455.3y",
      "id": 260,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6852,7 +7114,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3147.8x-2504.2y",
      "id": 261,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6873,7 +7136,8 @@
      "instance name": "coral0",
      "blob name": "c-0-25.0x-2499.4y",
      "id": 262,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6894,7 +7158,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2515.2x-2527.5y",
      "id": 263,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6917,7 +7182,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1616.5x-2554.6y",
      "id": 264,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6938,7 +7204,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2694.9x-2557.8y",
      "id": 265,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6959,7 +7226,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2149.7x-2692.5y",
      "id": 266,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -6980,7 +7248,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1861.3x-2606.6y",
      "id": 267,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7001,7 +7270,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1597.2x-2629.9y",
      "id": 268,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7024,7 +7294,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3061.5x-2754.1y",
      "id": 269,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7045,7 +7316,8 @@
      "instance name": "coral0",
      "blob name": "c-0-9.5x-2635.3y",
      "id": 270,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7066,7 +7338,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2404.0x-2658.2y",
      "id": 271,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7089,7 +7362,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1483.8x-2760.7y",
      "id": 272,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7110,7 +7384,8 @@
      "instance name": "coral0",
      "blob name": "c-0-34.9x-2767.5y",
      "id": 273,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7131,7 +7406,8 @@
      "instance name": "coral0",
      "blob name": "c-0-145.8x-2698.5y",
      "id": 274,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7152,7 +7428,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2907.9x-2687.5y",
      "id": 275,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7173,7 +7450,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1660.4x-2678.5y",
      "id": 276,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7204,7 +7482,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1796.1x-2941.9y",
      "id": 277,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7225,7 +7504,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2461.8x-2718.9y",
      "id": 278,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7248,7 +7528,8 @@
      "instance name": "coral0",
      "blob name": "c-0-168.1x-2838.9y",
      "id": 279,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7269,7 +7550,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3148.8x-2813.1y",
      "id": 280,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7290,7 +7572,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2195.2x-2866.1y",
      "id": 281,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7311,7 +7594,8 @@
      "instance name": "coral0",
      "blob name": "c-0-819.6x-2914.5y",
      "id": 282,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7332,7 +7616,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2141.6x-2915.7y",
      "id": 283,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7353,7 +7638,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2945.2x-2931.1y",
      "id": 284,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7374,7 +7660,8 @@
      "instance name": "coral0",
      "blob name": "c-0-165.4x-3071.4y",
      "id": 285,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7397,7 +7684,8 @@
      "instance name": "coral0",
      "blob name": "c-0-768.3x-2947.5y",
      "id": 286,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7418,7 +7706,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3042.0x-2942.8y",
      "id": 287,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7439,7 +7728,8 @@
      "instance name": "coral0",
      "blob name": "c-0-277.5x-2992.8y",
      "id": 288,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7460,7 +7750,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3091.8x-2951.8y",
      "id": 289,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7481,7 +7772,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3032.4x-3019.5y",
      "id": 290,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7502,7 +7794,8 @@
      "instance name": "coral0",
      "blob name": "c-0-688.4x-3076.9y",
      "id": 291,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7523,7 +7816,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2640.6x-3006.4y",
      "id": 292,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7544,7 +7838,8 @@
      "instance name": "coral0",
      "blob name": "c-0-522.7x-3099.5y",
      "id": 293,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7568,7 +7863,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1088.6x-3110.4y",
      "id": 294,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7589,7 +7885,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3135.1x-3004.0y",
      "id": 295,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7612,7 +7909,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2168.4x-3103.8y",
      "id": 296,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7633,7 +7931,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2009.3x-3016.6y",
      "id": 297,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7654,7 +7953,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1451.6x-3076.6y",
      "id": 298,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7675,7 +7975,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2726.6x-3107.5y",
      "id": 299,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7696,7 +7997,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2570.9x-3107.4y",
      "id": 300,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7717,7 +8019,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2328.9x-3119.1y",
      "id": 301,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7738,7 +8041,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1641.8x-3150.2y",
      "id": 302,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7759,7 +8063,8 @@
      "instance name": "coral0",
      "blob name": "c-0-3077.2x-3142.2y",
      "id": 303,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7780,7 +8085,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2302.3x-3162.3y",
      "id": 304,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7801,7 +8107,8 @@
      "instance name": "coral0",
      "blob name": "c-0-2357.7x-3167.0y",
      "id": 305,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7822,7 +8129,8 @@
      "instance name": "coral0",
      "blob name": "c-0-1801.9x-3166.0y",
      "id": 306,
-     "note": ""
+     "note": "",
+     "data": {}
     },
     {
      "bbox": [
@@ -7843,9 +8151,11 @@
      "instance name": "coral0",
      "blob name": "c-0-2503.5x-3169.4y",
      "id": 307,
-     "note": ""
+     "note": "",
+     "data": {}
     }
    ],
+   "layers": [],
    "channels": [
     {
      "filename": "sampleProjects/data/VOS_RGB.png",
@@ -7855,15 +8165,110 @@
    "id": "VOS",
    "name": "VOS",
    "workspace": [],
-   "working_area": [],
+   "export_dataset_area": [],
    "acquisition_date": "2013-01-01",
    "georef_filename": "",
    "metadata": {},
-   "grid": null
+   "grid": {
+    "width": 3174,
+    "height": 3176,
+    "nrow": 8,
+    "ncol": 8,
+    "offx": 0,
+    "offy": 0,
+    "cell_values": [
+     [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      2.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      0.0,
+      2.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      2.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ]
+    ],
+    "notes": []
+   }
   }
  ],
  "correspondences": {},
  "genet": {},
+ "region_attributes": {
+  "name": "",
+  "description": "",
+  "data": []
+ },
  "spatial_reference_system": null,
  "metadata": {},
  "image_metadata_template": {}
