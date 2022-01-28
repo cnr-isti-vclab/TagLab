@@ -10,6 +10,7 @@ from rasterio.plot import reshape_as_raster
 from rasterio.mask import mask
 import pandas as pd
 from source.Blob import Blob
+
 from source.Shape import Shape
 from source.Mask import subtract
 from numpy.linalg import inv
@@ -164,7 +165,7 @@ def read_geometry(filename, georef_filename):
 
 
 
-def write_shapefile(project, image, blobs, georef_filename, out_shp):
+def write_shapefile( project, image, blobs, georef_filename, out_shp):
     """
     https://gis.stackexchange.com/a/52708/8104
     """
@@ -174,6 +175,14 @@ def write_shapefile(project, image, blobs, georef_filename, out_shp):
     img = rio.open(georef_filename)
     geoinfo = img.crs
     transform = img.transform
+    annotations = image.annotations
+
+    working_area = project.working_area
+
+    if working_area is not None:
+        # only the blobs inside the working area are considered
+        blobs = annotations.calculate_inner_blobs(working_area)
+
 
     # create the list of visible instances
     name_list = []

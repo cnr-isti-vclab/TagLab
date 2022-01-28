@@ -1092,7 +1092,7 @@ class TagLab(QMainWindow):
         exportGenetSVG.setStatusTip("Export genets history of corals in SVG.")
         exportGenetSVG.triggered.connect(self.exportGenetSVG)
 
-        exportGenetCSV = QAction("Export Genet Data", self)
+        exportGenetCSV = QAction("Export Genet as CSV", self)
         exportGenetCSV.setStatusTip("Export genets history of corals in CSV")
         exportGenetCSV.triggered.connect(self.exportGenetCSV)
 
