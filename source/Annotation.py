@@ -536,24 +536,34 @@ class Annotation(QObject):
 
     def export_data_table(self, project, image, filename):
 
+        working_area = project.working_area
         scale_factor = image.pixelSize()
         date = image.acquisition_date
         
         # create a list of instances
         name_list = []
+
+        if working_area is None:
+            # all the blobs are considered
+            self.blobs = self.seg_blobs
+        else:
+            # only the blobs inside the working area are considered
+            self.blobs = self.calculate_inner_blobs(working_area)
+
         visible_blobs = []
-        for blob in self.seg_blobs:
+        for blob in self.blobs:
             if blob.qpath_gitem.isVisible():
                 index = blob.blob_name
                 name_list.append(index)
                 visible_blobs.append(blob)
+
 
         number_of_seg = len(name_list)
         dict = {
             'TagLab Region id': np.zeros(number_of_seg, dtype = np.int64),
             'TagLab Date': [],
             'TagLab Class name': [],
-            'TabLab Genet id': np.zeros(number_of_seg, dtype = np.int64),
+            'TagLab Genet id': np.zeros(number_of_seg, dtype = np.int64),
             'TagLab Centroid x': np.zeros(number_of_seg),
             'TagLab Centroid y': np.zeros(number_of_seg),
             'TagLab Area': np.zeros(number_of_seg),
