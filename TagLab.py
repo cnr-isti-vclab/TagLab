@@ -915,9 +915,9 @@ class TagLab(QMainWindow):
         exportDataTableAct.setStatusTip("Export current annotations as CSV table")
         exportDataTableAct.triggered.connect(self.exportAnnAsDataTable)
 
-        exportMapAct = QAction("Export Annotations As a Labeled Image", self)
+        exportMapAct = QAction("Export Annotations As Labeled Image", self)
         #exportMapAct.setShortcut('Ctrl+??')
-        exportMapAct.setStatusTip("Export Current Annotations As A Label Image")
+        exportMapAct.setStatusTip("Export Current Annotations As Labeled Image")
         exportMapAct.triggered.connect(self.exportAnnAsMap)
 
         exportHistogramAct = QAction("Export Histogram", self)
@@ -3563,6 +3563,12 @@ class TagLab(QMainWindow):
             gf = self.activeviewer.image.georef_filename
             rasterops.write_shapefile(self.project, self.activeviewer.image, blobs, gf, output_filename)
 
+            msgBox = QMessageBox(self)
+           # msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("Shapefile exported successfully!")
+            msgBox.exec()
+            return
+
 
 
     @pyqtSlot()
@@ -3588,11 +3594,11 @@ class TagLab(QMainWindow):
 
         if output_filename:
             size = QSize(self.activeviewer.image.width, self.activeviewer.image.height)
-            label_map_img = self.activeviewer.annotations.create_label_map(size, self.project.labels)
+            label_map_img = self.activeviewer.annotations.create_label_map(size, self.project.labels, None)
             label_map_np = utils.qimageToNumpyArray(label_map_img)
             georef_filename = self.activeviewer.image.georef_filename
             outfilename = os.path.splitext(output_filename)[0]
-            rasterops.saveGeorefLabelMap(label_map_np, georef_filename, outfilename)
+            rasterops.saveGeorefLabelMap(label_map_np, georef_filename, self.project.working_area, outfilename)
 
             msgBox = QMessageBox(self)
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
