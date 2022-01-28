@@ -3538,7 +3538,7 @@ class TagLab(QMainWindow):
 
             histo_widget = QtHistogramWidget(self.activeviewer.annotations, self.project.labels,
                                              self.activeviewer.image.pixelSize(),
-                                             self.activeviewer.image.acquisition_date, self.project.working_area)
+                                             self.activeviewer.image.acquisition_date, self.project.working_area, self)
             histo_widget.setWindowModality(Qt.WindowModal)
             histo_widget.show()
 

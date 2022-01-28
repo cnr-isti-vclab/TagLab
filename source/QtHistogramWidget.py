@@ -43,7 +43,7 @@ class QtHistogramWidget(QWidget):
         self.year = year
         self.labels_dictionary = labels_dictionary
         self.checkBoxes = []  # list of QCheckBox
-        self.setStyleSheet("background-color: rgba(40,40,40); color: white")
+        self.setStyleSheet("background-color: rgb(40,40,40); color: white")
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.setMinimumWidth(900)
         self.setMinimumHeight(600)
