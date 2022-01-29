@@ -3912,12 +3912,20 @@ class TagLab(QMainWindow):
         Load a previously saved projects.
         """
 
-        self.resetAll()
+
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
         #TODO check if loadProject actually works!
-        self.project = loadProject(self.taglab_dir, filename, self.default_dictionary)
+        try:
+            self.project = loadProject(self.taglab_dir, filename, self.default_dictionary)
+        except:
+            box = QMessageBox()
+            box.setWindowTitle('Failed loading the project')
+            box.setText("Could not load the file " + filename)
+            box.exec()
+            return
 
+        self.resetAll()
         QApplication.restoreOverrideCursor()
 
         self.setProjectTitle(self.project.filename)
