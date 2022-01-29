@@ -3912,7 +3912,7 @@ class TagLab(QMainWindow):
         Load a previously saved projects.
         """
 
-
+        self.resetAll()
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
         #TODO check if loadProject actually works!
@@ -3925,7 +3925,6 @@ class TagLab(QMainWindow):
             box.exec()
             return
 
-        self.resetAll()
         QApplication.restoreOverrideCursor()
 
         self.setProjectTitle(self.project.filename)
