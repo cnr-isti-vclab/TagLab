@@ -517,7 +517,7 @@ class TagLab(QMainWindow):
 
         self.setDockOptions(self.AnimatedDocks)
 
-        self.compare_panel.setMinimumHeight(600)
+        self.compare_panel.setMinimumHeight(200)
 
         ##### MAIN LAYOUT
 
@@ -1605,8 +1605,9 @@ class TagLab(QMainWindow):
 
         self.viewerplus2.hide()
 
-        self.compare_panel.hide();
+        self.compare_panel.hide()
         self.table_panel.show()
+        self.datadock.setWindowTitle("Data panel")
 
         self.comboboxTargetImage.hide()
         self.blobdock.show()
@@ -1688,6 +1689,10 @@ class TagLab(QMainWindow):
 
             self.activeviewer = self.viewerplus
             self.layers_widget.setImage(self.viewerplus.image, self.viewerplus2.image)
+
+            self.compare_panel.show()
+            self.table_panel.hide()
+            self.datadock.setWindowTitle("Comparison panel")
 
 
     def createMatch(self):
@@ -3910,7 +3915,7 @@ class TagLab(QMainWindow):
         self.resetAll()
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
-
+        #TODO check if loadProject actually works!
         self.project = loadProject(self.taglab_dir, filename, self.default_dictionary)
 
         QApplication.restoreOverrideCursor()
