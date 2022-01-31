@@ -3670,8 +3670,8 @@ class TagLab(QMainWindow):
             new_dataset.createLabelImage(self.project.labels)
             new_dataset.convert_colors_to_labels(target_classes, self.project.labels)
             new_dataset.computeFrequencies(target_classes)
-            target_scale_factor = self.newDatasetWidget.getTargetScale()
-            new_dataset.workingAreaCropAndRescale(self.activeviewer.image.pixelSize(), target_scale_factor,
+            target_pixel_size = self.newDatasetWidget.getTargetScale()
+            new_dataset.workingAreaCropAndRescale(self.activeviewer.image.pixelSize(), target_pixel_size,
                                                   self.activeviewer.image.export_dataset_area)
 
             # create training, validation and test areas
@@ -3708,10 +3708,10 @@ class TagLab(QMainWindow):
             tilename = os.path.splitext(self.activeviewer.image.name)[0]
             new_dataset.export_tiles(basename=basename, tilename=tilename)
 
-            # save the target scale factor
-            target_scale_factor_file = os.path.join(basename, "target-scale-factor.txt")
-            fl = open(target_scale_factor_file, "w")
-            fl.write(str(target_scale_factor))
+            # save the target pixel size
+            target_pixel_size_file = os.path.join(basename, "target-pixel-size.txt")
+            fl = open(target_pixel_size_file, "w")
+            fl.write(str(target_pixel_size))
             fl.close()
 
             self.deleteProgressBar()
@@ -3825,13 +3825,13 @@ class TagLab(QMainWindow):
         new_classifier["Classes"] = list(self.dataset_train_info.dict_target)
 
         # read the target scale factor
-        target_scale_factor_file = os.path.join(self.trainResultsWidget.dataset_folder, "target-scale-factor.txt")
-        fl = open(target_scale_factor_file, "r")
+        target_pixel_size_file = os.path.join(self.trainResultsWidget.dataset_folder, "target-scale-factor.txt")
+        fl = open(target_pixel_size_file, "r")
         line = fl.readline()
         fl.close()
-        target_scale_factor = float(line)
+        target_pixel_size = float(line)
 
-        new_classifier["Scale"] = target_scale_factor
+        new_classifier["Scale"] = target_pixel_size
         self.available_classifiers.append(new_classifier)
         newconfig = dict()
         newconfig["Available Classifiers"] = self.available_classifiers
@@ -4071,8 +4071,8 @@ class TagLab(QMainWindow):
         if self.classifierWidget is not None:
 
             classifier_selected = self.classifierWidget.selected()
-            target_scale_factor = classifier_selected['Scale']
-            scale_factor = target_scale_factor / self.activeviewer.image.pixelSize()
+            target_pixel_size = classifier_selected['Scale']
+            scale_factor = self.activeviewer.image.pixelSize() / target_pixel_size
 
             x, y, w, h = self.classifierWidget.getPreviewArea()
             width = max(513 * scale_factor, w)
@@ -4119,8 +4119,8 @@ class TagLab(QMainWindow):
             self.progress_bar.setMessage("Initialization..")
 
             orthoimage = self.activeviewer.img_map
-            target_scale_factor = classifier_selected['Scale']
-            self.classifier.setup(orthoimage, self.activeviewer.image.pixelSize(), target_scale_factor,
+            target_pixel_size = classifier_selected['Scale']
+            self.classifier.setup(orthoimage, self.activeviewer.image.pixelSize(), target_pixel_size,
                                   working_area=[y, x, w, h], padding=256)
 
             self.progress_bar.showPerc()
@@ -4213,8 +4213,8 @@ class TagLab(QMainWindow):
                 QApplication.processEvents()
 
                 orthoimage = self.activeviewer.img_map
-                target_scale_factor = classifier_selected['Scale']
-                self.classifier.setup(orthoimage, self.activeviewer.image.pixelSize(), target_scale_factor,
+                target_pixel_size = classifier_selected['Scale']
+                self.classifier.setup(orthoimage, self.activeviewer.image.pixelSize(), target_pixel_size,
                                       working_area=self.project.working_area, padding=256)
 
                 self.progress_bar.showPerc()
