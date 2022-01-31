@@ -212,7 +212,7 @@ class TagLab(QMainWindow):
         self.btnRuler         = self.newButton("ruler.png",    "Measure tool",           flatbuttonstyle1, self.ruler)
         self.btnDeepExtreme   = self.newButton("dexter.png",   "4-clicks segmentation",  flatbuttonstyle2, self.deepExtreme)
         self.btnRitm          = self.newButton("ritm.png",     "Positive/negative clicks segmentation", flatbuttonstyle2, self.ritm)
-        self.btnAutoClassification = self.newButton("auto.png", "Fully automatic classification", flatbuttonstyle2, self.selectClassifier)
+        self.btnAutoClassification = self.newButton("auto.png", "Fully auto semantic segmentation", flatbuttonstyle2, self.selectClassifier)
 
         # Split Screen operation removed from the toolbar
         self.pxmapSeparator = QPixmap("icons/separator.png")
