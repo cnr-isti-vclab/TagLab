@@ -69,7 +69,7 @@ class QtLayersWidget(QTreeWidget):
                 if layer.isEnabled():
                     child.setCheckState(0, Qt.Checked)
                 else:
-                    child.setCheckState(0, Qt.Unhecked)
+                    child.setCheckState(0, Qt.Unchecked)
                 child.setFlags(Qt.NoItemFlags)
                 child.type = 'layer'
                 child.layer = layer
