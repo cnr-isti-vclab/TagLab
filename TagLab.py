@@ -1088,11 +1088,11 @@ class TagLab(QMainWindow):
         computeGenets.setStatusTip("Compute genet information.")
         computeGenets.triggered.connect(self.computeGenets)
 
-        exportGenetSVG = QAction("Export Genet Shapes", self)
+        exportGenetSVG = QAction("Export Genet Data As Shapes", self)
         exportGenetSVG.setStatusTip("Export genets history of corals in SVG.")
         exportGenetSVG.triggered.connect(self.exportGenetSVG)
 
-        exportGenetCSV = QAction("Export Genet as CSV", self)
+        exportGenetCSV = QAction("Export Genet Data as CSV", self)
         exportGenetCSV.setStatusTip("Export genets history of corals in CSV")
         exportGenetCSV.triggered.connect(self.exportGenetCSV)
 
@@ -1258,6 +1258,11 @@ class TagLab(QMainWindow):
         self.project.genet.updateGenets()
         self.project.genet.exportSVG(filename)
 
+        msgBox = QMessageBox(self)
+        msgBox.setWindowTitle(self.TAGLAB_VERSION)
+        msgBox.setText("Shapes history exported successfully!")
+        msgBox.exec()
+
     @pyqtSlot()
     def exportGenetCSV(self):
         filters = "CSV (*.csv)"
@@ -1267,6 +1272,11 @@ class TagLab(QMainWindow):
 
         self.project.genet.updateGenets()
         self.project.genet.exportCSV(filename)
+
+        msgBox = QMessageBox(self)
+        msgBox.setWindowTitle(self.TAGLAB_VERSION)
+        msgBox.setText("Genet data table exported successfully!")
+        msgBox.exec()
 
 
     @pyqtSlot()
