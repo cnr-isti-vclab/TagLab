@@ -1617,7 +1617,7 @@ class TagLab(QMainWindow):
 
         self.compare_panel.hide()
         self.table_panel.show()
-        self.datadock.setWindowTitle("Data panel")
+        self.datadock.setWindowTitle("Data table")
 
         self.comboboxTargetImage.hide()
         self.blobdock.show()
@@ -1700,7 +1700,7 @@ class TagLab(QMainWindow):
             self.compare_panel.setTable(self.project, index_to_set, index_to_set + 1)
             self.compare_panel.show()
             self.table_panel.hide()
-            self.datadock.setWindowTitle("Comparison panel")
+            self.datadock.setWindowTitle("Comparison table")
 
 
     def createMatch(self):
