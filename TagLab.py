@@ -1700,7 +1700,7 @@ class TagLab(QMainWindow):
             self.compare_panel.setTable(self.project, index_to_set, index_to_set + 1)
             self.compare_panel.show()
             self.table_panel.hide()
-            self.datadock.setWindowTitle("Comparison table")
+            self.datadock.setWindowTitle("Comparison Table")
 
 
     def createMatch(self):
