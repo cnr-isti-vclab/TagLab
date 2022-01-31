@@ -47,7 +47,7 @@ class QtNewDatasetWidget(QWidget):
         self.lblSplitMode = QLabel("Dataset split:")
         self.lblSplitMode.setFixedWidth(TEXT_SPACE)
         self.lblSplitMode.setAlignment(Qt.AlignRight)
-        self.lblTargetScale = QLabel("Target scale:")
+        self.lblTargetScale = QLabel("Target pixel size:")
         self.lblTargetScale.setFixedWidth(TEXT_SPACE)
         self.lblTargetScale.setAlignment(Qt.AlignRight)
 

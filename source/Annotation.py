@@ -494,9 +494,9 @@ class Annotation(QObject):
         qimg_label_map = qimg_label_map.convertToFormat(QImage.Format_RGB32)
 
         # label map rescaling (if necessary)
-        w_target = round(qimg_label_map.width() * scale[0])
-        h_target = round(qimg_label_map.height() * scale[1])
-        qimg_label_map = qimg_label_map.scaled(w_target, h_target, Qt.IgnoreAspectRatio, Qt.FastTransformation)
+        w_rescaled = round(qimg_label_map.width() * scale[0])
+        h_rescaled = round(qimg_label_map.height() * scale[1])
+        qimg_label_map = qimg_label_map.scaled(w_rescaled, h_rescaled, Qt.IgnoreAspectRatio, Qt.FastTransformation)
 
         label_map = utils.qimageToNumpyArray(qimg_label_map)
         label_map = label_map.astype(np.int32)

@@ -102,13 +102,12 @@ class MapClassifier(QObject):
 
         return classifier
 
-    def setup(self, img_map, pixel_size, target_scale, working_area=[], padding=0):
+    def setup(self, img_map, pixel_size, target_pixel_size, working_area=[], padding=0):
         """
         Initialize the image to classify.
         """
 
-        # self.scale_factor = target_scale / pixel_size
-        self.scale_factor = pixel_size / target_scale
+        self.scale_factor = target_pixel_size / pixel_size
         if not working_area:
             working_area = [0, 0, img_map.width(), img_map.height()]
 

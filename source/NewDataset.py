@@ -71,7 +71,7 @@ class NewDataset(object):
 		self.sP_max = 0.0
 
 
-	def workingAreaCropAndRescale(self, current_scale, target_scale, working_area):
+	def workingAreaCropAndRescale(self, current_pixel_size, target_pixel_size, working_area):
 
 		x = working_area[1]
 		y = working_area[0]
@@ -81,9 +81,9 @@ class NewDataset(object):
 		crop_ortho_image = self.ortho_image.copy(x, y, width, height)
 		crop_label_image = self.label_image.copy(x, y, width, height)
 
-		scale = target_scale/current_scale
-		w = crop_ortho_image.width()*scale
-		h = crop_ortho_image.height()*scale
+		scale = float(current_pixel_size / target_pixel_size)
+		w = int(crop_ortho_image.width() * scale)
+		h = int(crop_ortho_image.height() * scale)
 
 		self.ortho_image = crop_ortho_image.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
 		self.label_image = crop_label_image.scaled(w, h, Qt.IgnoreAspectRatio, Qt.FastTransformation)
