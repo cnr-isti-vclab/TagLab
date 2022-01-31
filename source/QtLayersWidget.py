@@ -25,7 +25,7 @@ class QtLayersWidget(QTreeWidget):
         self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
 
         self.setMinimumWidth(300)
-        self.setMinimumHeight(100)
+        self.setMinimumHeight(60)
 
         self.trash = QIcon(imdir+os.path.join("icons", "trash.png"))
         self.icon_eyeopen = QIcon(imdir+os.path.join("icons", "eye.png"))

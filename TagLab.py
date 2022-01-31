@@ -421,7 +421,7 @@ class TagLab(QMainWindow):
         self.scroll_area_labels_panel.setStyleSheet("background-color: rgb(40,40,40); border:none")
         self.scroll_area_labels_panel.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.scroll_area_labels_panel.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.scroll_area_labels_panel.setMinimumHeight(200)
+        self.scroll_area_labels_panel.setMinimumHeight(150)
         self.scroll_area_labels_panel.setWidget(self.labels_widget)
 
         groupbox_style = "QGroupBox\
