@@ -4,13 +4,13 @@ from source.Blob import Blob
 #we store a set of used genets (for creating new ones, and keep track of removed) map genet -> number of blobs
 #operations:
 
-
 #Could be the case to define plugins that attach to properties of the Blobs.
 #How it works:
 #blob properties -> plugin attach to a specific set of properties.
 #must be able to deal when properties are present.
 
-from source.Mask import jointBox;
+from source.Mask import jointBox
+from source.Annotation import Annotation
 
 class Genet:
 
@@ -97,17 +97,27 @@ class Genet:
     def exportCSV(self, filename):
         fields = ['genet']
 
+        working_area = self.project.working_area
+        self.blobs =[]
+
         for img in self.project.images:
             # writing both classes seems redundant in matching, but it's not for born and dead
             fields.append(img.name + " Class name")
             fields.append(img.name + " Object id")
             fields.append(img.name + " Area")
         lines = {}
+
         for img in self.project.images:
-            for blob in img.annotations.seg_blobs:
+            if working_area is None:
+                blobs = img.annotations.seg_blobs
+            else:
+                blobs = img.annotations.calculate_inner_blobs(working_area)
+
+            self.blobs.append(blobs)
+
+            for blob in blobs:
                 if not blob.genet in lines:
                     lines[blob.genet] = { }
-
         data = []
         #compact and sort lines.
         count = 0
@@ -119,15 +129,16 @@ class Genet:
             data.append(row)
 
         count = 1
-        for img in self.project.images:
+        for i,img in enumerate(self.project.images):
             scale_factor = img.pixelSize()
-            for blob in img.annotations.seg_blobs:
+            for blob in self.blobs[i]:
                 line = lines[blob.genet]
                 row = line['row']
                 area = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
-                data[row][count] += blob.class_name + " "
-                data[row][count+1] += str(blob.id) + " "
-                data[row][count+2] += str(area) + " "
+                data[row][count] += blob.class_name + "  "
+                data[row][count+1] += str(blob.id) + "  "
+                data[row][count+2] += str(area) + "  "
+
             count += 3
 
         import csv
@@ -142,9 +153,18 @@ class Genet:
     def exportSVG(self, filename):
         #remap genets to lines and find bbox per genet.
         lines = {}
+        working_area = self.project.working_area
+        self.blobs = []
 
         for img in self.project.images:
-            for blob in img.annotations.seg_blobs:
+            if working_area is None:
+                blobs = img.annotations.seg_blobs
+            else:
+                blobs = img.annotations.calculate_inner_blobs(working_area)
+
+            self.blobs.append(blobs)
+
+            for blob in blobs:
                 if not blob.genet in lines:
                     lines[blob.genet] = { 'box': blob.bbox }
                 else:
@@ -156,8 +176,6 @@ class Genet:
             lines[g]['row'] = count
             count += 1
 
-
-
         svg = "<svg>"
         column = 0
         y = 0
@@ -167,14 +185,14 @@ class Genet:
         for g in range(0, count):
             svg += '<text font-size="20px" x="' + str(-150) + '" y="' + str(g*(side + vpadding) + 80) + '">genet: ' + str(g) + '</text>'
 
-        for img in self.project.images:
+        for i, img in enumerate(self.project.images):
             dx = column*(side + hpadding)
 
             svg += '<text text-anchor="middle" text-length="' + str(side) + '"  x="' + str(dx + side/2) + '" y="' + str(-150) + '"> ' + \
                 '<tspan x="' + str(dx + side/2) + '" font-size="22px" dy="1.2em">' + str(img.name) + "</tspan>" + \
                 '<tspan x="' + str(dx + side/2) + '" font-size="18px" dy="1.6em">' + img.acquisition_date + '</tspan></text>'
 
-            for blob in img.annotations.seg_blobs:
+            for blob in self.blobs[i]:
                 line = lines[blob.genet]
                 box = line['box']
                 row = line['row']
