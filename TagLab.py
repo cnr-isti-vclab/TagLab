@@ -1641,9 +1641,6 @@ class TagLab(QMainWindow):
 
             self.viewerplus.viewChanged()
 
-            self.compare_panel.hide();
-            self.table_panel.show()
-
             index = self.comboboxSourceImage.currentIndex()
             if index < 0:
                 index = 0
@@ -1690,6 +1687,7 @@ class TagLab(QMainWindow):
             self.activeviewer = self.viewerplus
             self.layers_widget.setImage(self.viewerplus.image, self.viewerplus2.image)
 
+            self.compare_panel.setTable(self.project, index_to_set, index_to_set + 1)
             self.compare_panel.show()
             self.table_panel.hide()
             self.datadock.setWindowTitle("Comparison panel")
