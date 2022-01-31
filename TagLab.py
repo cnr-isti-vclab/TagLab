@@ -212,7 +212,7 @@ class TagLab(QMainWindow):
         self.btnRuler         = self.newButton("ruler.png",    "Measure tool",           flatbuttonstyle1, self.ruler)
         self.btnDeepExtreme   = self.newButton("dexter.png",   "4-clicks segmentation",  flatbuttonstyle2, self.deepExtreme)
         self.btnRitm          = self.newButton("ritm.png",     "Positive/negative clicks segmentation", flatbuttonstyle2, self.ritm)
-        self.btnAutoClassification = self.newButton("auto.png", "Fully automatic classification", flatbuttonstyle2, self.selectClassifier)
+        self.btnAutoClassification = self.newButton("auto.png", "Fully auto semantic segmentation", flatbuttonstyle2, self.selectClassifier)
 
         # Split Screen operation removed from the toolbar
         self.pxmapSeparator = QPixmap("icons/separator.png")
@@ -421,7 +421,7 @@ class TagLab(QMainWindow):
         self.scroll_area_labels_panel.setStyleSheet("background-color: rgb(40,40,40); border:none")
         self.scroll_area_labels_panel.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.scroll_area_labels_panel.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.scroll_area_labels_panel.setMinimumHeight(200)
+        self.scroll_area_labels_panel.setMinimumHeight(150)
         self.scroll_area_labels_panel.setWidget(self.labels_widget)
 
         groupbox_style = "QGroupBox\
@@ -1617,7 +1617,7 @@ class TagLab(QMainWindow):
 
         self.compare_panel.hide()
         self.table_panel.show()
-        self.datadock.setWindowTitle("Data panel")
+        self.datadock.setWindowTitle("Data table")
 
         self.comboboxTargetImage.hide()
         self.blobdock.show()
@@ -1700,7 +1700,7 @@ class TagLab(QMainWindow):
             self.compare_panel.setTable(self.project, index_to_set, index_to_set + 1)
             self.compare_panel.show()
             self.table_panel.hide()
-            self.datadock.setWindowTitle("Comparison panel")
+            self.datadock.setWindowTitle("Comparison Table")
 
 
     def createMatch(self):

@@ -51,7 +51,7 @@ class QtLabelsWidget(QWidget):
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
 
         self.setMinimumWidth(400)
-        self.setMinimumHeight(200)
+        self.setMinimumHeight(100)
 
         self.icon_eyeopen = QIcon(imdir+os.path.join("icons", "eye.png"))
         self.icon_eyeclosed = QIcon(imdir+os.path.join("icons", "cross.png"))
