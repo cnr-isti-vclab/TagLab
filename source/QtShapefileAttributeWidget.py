@@ -122,7 +122,7 @@ class QtAttributeWidget(QWidget):
 
 
         label_layout = QHBoxLayout()
-        my_lbl = QLabel("Select label field:")
+        my_lbl = QLabel("Select class name:")
 
         combo = QComboBox()
         combo.addItem("None")
