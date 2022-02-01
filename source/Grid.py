@@ -97,7 +97,7 @@ class Grid(QObject):
             cell_width = self.width / self.ncol
             cell_height = self.height / self.nrow
 
-            pen_white = QPen(Qt.white, 1, Qt.SolidLine)
+            pen_white = QPen(Qt.white, 2, Qt.SolidLine)
             pen_white.setCosmetic(True)
 
             brush = QBrush(Qt.SolidPattern)
@@ -118,11 +118,11 @@ class Grid(QObject):
                     value = self.cell_values[r, c]
 
                     if value == 0:
-                        rect = self.scene.addRect(xc, yc, cell_width, cell_height, pen=pen_white, brush=brush)
+                        rect = self.scene.addRect(xc, yc, cell_width-1, cell_height-1, pen=pen_white, brush=brush)
                     elif value == 1:
-                        rect = self.scene.addRect(xc, yc, cell_width, cell_height, pen=pen_white, brush=brush25)
+                        rect = self.scene.addRect(xc, yc, cell_width-1, cell_height-1, pen=pen_white, brush=brush25)
                     elif value == 2:
-                        rect = self.scene.addRect(xc, yc, cell_width, cell_height, pen=pen_white, brush=brush50)
+                        rect = self.scene.addRect(xc, yc, cell_width-1, cell_height-1, pen=pen_white, brush=brush50)
 
                     rect.setPos(self.offx, self.offy)
                     self.grid_rects.append(rect)
