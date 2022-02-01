@@ -324,12 +324,12 @@ class Annotation(QObject):
             y = point[1] - box[0]
 
             largest = 0
-            if original[y][x+1] != 0:
+            if original[y+1][x+1] != 0:
+                largest = max(label_image[y+1][x+1], largest)
+            elif original[y][x+1] != 0:
                 largest = max(label_image[y][x+1], largest)
-            elif original[y-1][x] != 0:
-                largest = max(label_image[y-1][x], largest)
-            elif original[y-1][x+1] != 0:
-                largest = max(label_image[y-1][x+1], largest)
+            elif original[y+1][x] != 0:
+                largest = max(label_image[y+1][x], largest)
             label_image[y][x] = largest
 
         regions = measure.regionprops(label_image)
