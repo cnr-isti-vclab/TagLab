@@ -1,6 +1,9 @@
 import numpy as np
 from skimage import measure
 
+def range2box(range):
+    return [range[0], range[1], range[3] - range[0], range[2] - range[1]]
+
 """
 Convert points to indices and swaps x, and y.
 """

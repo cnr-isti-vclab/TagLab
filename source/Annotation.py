@@ -22,6 +22,7 @@ import numpy as np
 from cv2 import fillPoly
 
 from skimage import measure
+from skimage.io import imsave
 
 from skimage.filters import sobel
 from scipy import ndimage as ndi
@@ -209,7 +210,6 @@ class Annotation(QObject):
 
         area_th = 30
         created_blobs = []
-        first = True
         for region in measure.regionprops(label_image):
 
             if region.area > area_th:
@@ -251,7 +251,6 @@ class Annotation(QObject):
         #TODO this should be moved to a function!
         area_th = 500
         created_blobs = []
-        first = True
         label_image = measure.label(mask, connectivity=1)
         for region in measure.regionprops(label_image):
             if region.area > area_th:
@@ -295,8 +294,79 @@ class Annotation(QObject):
 
         return created_blobs
 
-
     def editBorder(self, blob, lines):
+        points = blob.lineToPoints(lines, snap=False)
+        if points is None or len(points) == 0 or all(len(p) == 0 for p in points):
+            return
+
+        #get the bounding box of the points (we need to enlarge the mask box)
+        points_box = Mask.pointsBox(points, 4)
+
+        blob_mask = blob.getMask()
+        blob_box = blob.bbox
+        (mask, box) = Mask.jointMask(blob_box, points_box)
+
+        #2 is foregraound, 1 is background, 3 is the points
+        Mask.paintMask(mask, box, blob_mask, blob_box, 1)
+        mask[mask == 1] = 2
+        mask[mask == 0] = 1  #paint background, as points will be zero.
+
+        #we need to remember which point was what.
+        original = mask.copy()
+
+        #draw the points to separate the areas
+        Mask.paintPoints(mask, box, points, 3)
+
+        label_image = measure.label(mask, connectivity=1)
+        #reassing the rendered points bottom right area so the partitioning is properly done.
+        for point in points:
+            x = point[0] - box[1]
+            y = point[1] - box[0]
+
+            largest = 0
+            if original[y][x+1] != 0:
+                largest = max(label_image[y][x+1], largest)
+            elif original[y-1][x] != 0:
+                largest = max(label_image[y-1][x], largest)
+            elif original[y-1][x+1] != 0:
+                largest = max(label_image[y-1][x+1], largest)
+            label_image[y][x] = largest
+
+        regions = measure.regionprops(label_image)
+        #find the largest background and foreground regions
+        largest_fore = max(regions, key=lambda region: region.area if mask[region.coords[0][0], region.coords[0][1]] == 2 else 0)
+        largest_back = max(regions, key=lambda region: region.area if mask[region.coords[0][0], region.coords[0][1]] == 1 else 0)
+
+        final_mask = np.zeros((box[3], box[2])).astype(np.uint8)
+        #render larger background and foreground areas
+        final_mask[label_image == largest_back.label] = 0
+        final_mask[label_image == largest_fore.label] = 1
+
+        for region in regions:
+            if region == largest_fore:
+                continue
+            if region == largest_back:
+                continue
+
+            #this is a small aread, either carved in the original blob or from the background
+            was_not_blob = 0
+            was_blob = 0
+            for i in region.coords:
+                x = i[0]
+                y = i[1]
+                if mask[x][y] == 2:
+                    was_blob += 1
+                if mask[x][y] == 1:
+                    was_not_blob += 1
+                was_blob = 1 if was_blob > was_not_blob else 0
+
+            #if it was background (was_blob == 0) then make it foreground and viceversa
+            final_mask[label_image == region.label] = 1 - was_blob
+
+        blob.updateUsingMask(box, final_mask) 
+
+
+    def editBorder1(self, blob, lines):
         points = [blob.drawLine(line) for line in lines]
 
         if points is None or len(points) == 0 or all(len(p) == 0 for p in points):
@@ -360,8 +430,10 @@ class Annotation(QObject):
 
         Mask.paintPoints(mask, box, snapped_points, 1)
 
-        mask = ndi.binary_fill_holes(mask)
-
+        mask1 = ndi.binary_fill_holes(mask)
+        selem = np.array([[0, 0, 0], [0, 0, 1], [0, 1, 0]])
+        mask = binary_erosion(mask1, selem) | mask
+        
         # now draw in black the part of the points inside the contour
         Mask.paintPoints(mask, box, snapped_points, 0)
 
