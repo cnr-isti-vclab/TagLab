@@ -2734,7 +2734,7 @@ class TagLab(QMainWindow):
                 if len(created_blobs) == 0:
                     pass
                 if len(created_blobs) == 1:
-                    view.updateBlob(selected, created_blobs[0])
+                    view.updateBlob(selected, created_blobs[0], True)
                     self.logBlobInfo(created_blobs[0], "[OP-REFINE-BORDER][BLOB-CREATED]")
                     self.logBlobInfo(created_blobs[0], "[OP-REFINE-BORDER][BLOB-REFINED]")
                 else:
