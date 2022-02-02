@@ -1742,7 +1742,10 @@ class TagLab(QMainWindow):
         self.viewerplus.resetSelection()
 
         selected = self.table_panel.data_table.selectionModel().selectedRows()
-        for index in selected:
+        #convert proxyf sortfilter indexes to modelindexes which are the same of the .data_table
+        indexes = [self.table_panel.sortfilter.mapToSource(self.table_panel.sortfilter.index(index.row(), 0)) for index in selected]
+
+        for index in indexes:
             row = self.table_panel.data.iloc[index.row()]
             blob_id = row['Id']
             if blob_id < 0:
@@ -1771,8 +1774,9 @@ class TagLab(QMainWindow):
             row = self.table_panel.data.index[self.table_panel.data["Id"] == blob.id].to_list()
             if row is not None:
                 rows += row
-
+        self.table_panel.blockSignals(True)
         self.table_panel.selectRows(rows)
+        self.table_panel.blockSignals(False)
 
     @pyqtSlot()
     def showConnectionCluster(self):
