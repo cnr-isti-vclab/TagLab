@@ -456,9 +456,9 @@ class TagLab(QMainWindow):
         self.compare_panel.filterChanged[str].connect(self.updateVisibleMatches)
         self.compare_panel.areaModeChanged[str].connect(self.updateAreaMode)
         self.compare_panel.data_table.clicked.connect(self.showConnectionCluster)
-
+        
         self.table_panel = QtTablePanel()
-        self.table_panel.data_table.clicked.connect(self.showBlobOnViewer)
+        self.table_panel.selectionChanged.connect(self.showBlobOnViewer)
 
 
         self.groupbox_comparison = QGroupBox()
@@ -1739,20 +1739,20 @@ class TagLab(QMainWindow):
     @pyqtSlot()
     def showBlobOnViewer(self):
 
-        index = self.table_panel.data_table.selectionModel().selectedRows()
-        if len(index) == 0:
-            return
-        row = self.table_panel.data.iloc[index[0].row()]
+        self.viewerplus.resetSelection()
 
-        blob_id = row['Id']
-        if blob_id >= 0:
-
-            self.viewerplus.resetSelection()
+        selected = self.table_panel.data_table.selectionModel().selectedRows()
+        for index in selected:
+            row = self.table_panel.data.iloc[index.row()]
+            blob_id = row['Id']
+            if blob_id < 0:
+                print("OOOPS!")
+                continue
 
             blob = self.viewerplus.annotations.blobById(blob_id)
             self.viewerplus.addToSelectedList(blob)
 
-            scale = self.viewerplus.px_to_mm
+            #scale = self.viewerplus.px_to_mm
             box = blob.bbox
             x = box[1] + box[2] / 2
             y = box[0] + box[3] / 2
@@ -1761,16 +1761,18 @@ class TagLab(QMainWindow):
     @pyqtSlot()
     def showBlobOnTable(self):
 
-        if self.activeviewer is not None:
-            selected = self.activeviewer.selected_blobs
+        if self.activeviewer is None:
+            return
+        
+        selected = self.activeviewer.selected_blobs
 
-            rows = []
-            for blob in selected:
-                row = self.table_panel.data.index[self.table_panel.data["Id"] == blob.id].to_list()
-                if row is not None:
-                    rows += row
+        rows = []
+        for blob in selected:
+            row = self.table_panel.data.index[self.table_panel.data["Id"] == blob.id].to_list()
+            if row is not None:
+                rows += row
 
-            self.table_panel.selectRows(rows)
+        self.table_panel.selectRows(rows)
 
     @pyqtSlot()
     def showConnectionCluster(self):

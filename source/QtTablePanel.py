@@ -24,7 +24,6 @@ import pandas as pd
 from source.Blob import Blob
 
 class TableModel(QAbstractTableModel):
-
     def __init__(self, data):
         super(TableModel, self).__init__()
         self._data = data
@@ -94,7 +93,7 @@ class TableModel(QAbstractTableModel):
                 return str(self._data.index[section])
 
 class QtTablePanel(QWidget):
-
+    selectionChanged = pyqtSignal()
     filterChanged = pyqtSignal(str)
 
     def __init__(self, parent=None):
@@ -166,6 +165,7 @@ class QtTablePanel(QWidget):
         self.data_table.update()
 
         self.data_table.setStyleSheet("QHeaderView::section { background-color: rgb(40,40,40) }")
+        self.data_table.selectionModel().selectionChanged.connect(lambda x: self.selectionChanged.emit())
 
     @pyqtSlot(Blob)
     def addBlob(self, blob):
