@@ -52,29 +52,26 @@ class Ritm(Tool):
 
     def leftPressed(self, x, y, mods):
 
+        points = self.points.positive_points
+        if len(points) < self.MAX_POINTS and self.checkPointPosition(x,y) is True:
+            self.points.addPoint(x, y, positive=True)
+            message = "[TOOL][RITM] New positive point added (" + str(len(points)) + ")"
+            self.log.emit(message)
 
-        if mods & Qt.ShiftModifier:
-            points = self.points.positive_points
-            if len(points) < self.MAX_POINTS and self.checkPointPosition(x,y) is True:
-                self.points.addPoint(x, y, positive=True)
-                message = "[TOOL][RITM] New positive point added (" + str(len(points)) + ")"
-                self.log.emit(message)
-
-                # apply segmentation
-                self.segment()
+            # apply segmentation
+            self.segment()
 
 
     def rightPressed(self, x, y, mods):
 
-        if mods & Qt.ShiftModifier:
-            points = self.points.negative_points
-            if len(points) < self.MAX_POINTS and self.checkPointPosition(x,y) is True:
-                self.points.addPoint(x, y, positive=False)
-                message = "[TOOL][RITM] New negative point added (" + str(len(points)) + ")"
-                self.log.emit(message)
+        points = self.points.negative_points
+        if len(points) < self.MAX_POINTS and self.checkPointPosition(x,y) is True:
+            self.points.addPoint(x, y, positive=False)
+            message = "[TOOL][RITM] New negative point added (" + str(len(points)) + ")"
+            self.log.emit(message)
 
-                # apply segmentation
-                self.segment()
+            # apply segmentation
+            self.segment()
 
     def hasPoints(self):
         return self.points.nclicks() > 0

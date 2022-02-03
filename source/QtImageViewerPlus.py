@@ -619,7 +619,7 @@ class QtImageViewerPlus(QtImageViewer):
         else:
             self.setContextMenuPolicy(Qt.CustomContextMenu)
 
-        if tool == "SELECTAREA":
+        if tool == "SELECTAREA" or tool == "RITM":
             QApplication.setOverrideCursor(Qt.CrossCursor)
 
         if tool == "WATERSHED":
@@ -638,10 +638,10 @@ class QtImageViewerPlus(QtImageViewer):
             self.showCrossair = False
 
         # WHEN panning is active or not
-        if tool == "MOVE" or tool == "MATCH" or tool == "RITM":
+        if tool == "MOVE" or tool == "MATCH":
             self.enablePan()
         else:
-            self.disablePan()
+            self.disablePan()  # in this case, it is possible to PAN only moving the mouse and pressing the CTRL key
 
     def resetTools(self):
 
@@ -802,8 +802,7 @@ class QtImageViewerPlus(QtImageViewer):
 
     def keyPressEvent(self, event):
 
-        if event.key() == Qt.Key_Shift and self.tools.tool == "RITM":
-            QApplication.setOverrideCursor(Qt.CrossCursor)
+        # keys handling goes here..
 
         super().keyPressEvent(event)
 

@@ -1448,7 +1448,7 @@ class TagLab(QMainWindow):
 
         if event.key() == Qt.Key_Escape:
             for viewer in (self.viewerplus, self.viewerplus2):
-                #if self.activeviewer is not None:
+
                 # RESET CURRENT OPERATION
                 viewer.resetSelection()
                 viewer.resetTools()
