@@ -459,6 +459,8 @@ class TagLab(QMainWindow):
         
         self.table_panel = QtTablePanel()
         self.table_panel.selectionChanged.connect(self.showBlobOnViewer)
+        self.table_panel.selectionChanged.connect(self.updatePanelInfoSelected)
+
 
 
         self.groupbox_comparison = QGroupBox()
@@ -2327,9 +2329,22 @@ class TagLab(QMainWindow):
             for blob in self.activeviewer.selected_blobs:
                 blob.note = self.editNote.toPlainText()
     #
-    # @pyqtSlot(Blob, float)
-    # def updatePanelInfo(self, blob, scale_factor):
-    #     self.groupbox_blobpanel.update(blob, scale_factor)
+    @pyqtSlot()
+    def updatePanelInfoSelected(self):
+        selected = self.table_panel.data_table.selectionModel().selectedRows()
+        indexes = [self.table_panel.sortfilter.mapToSource(self.table_panel.sortfilter.index(index.row(), 0)) for index in selected]
+        if len(indexes) == 0:
+            self.resetPanelInfo()
+            return
+        index = indexes[0]
+        row = self.table_panel.data.iloc[index.row()]
+        blob_id = row['Id']
+        if blob_id < 0:
+            print("OOOPS!")
+            return
+
+        blob = self.viewerplus.annotations.blobById(blob_id)
+        self.updatePanelInfo(blob)
 
     @pyqtSlot(Blob)
     def updatePanelInfo(self, blob):
