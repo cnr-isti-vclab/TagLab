@@ -555,6 +555,48 @@ class Annotation(QObject):
 
         return inner_blobs
 
+    def create_label_table(self, project, image):
+
+        ''' create a data table for the label panel '''
+
+        labels = self.project.labels
+        conversion = image.pixelSize()
+
+        dict = {
+            'Visibility': np.zeros(len(labels), dtype=np.int),
+            'Color': [],
+            'Class': [],
+            '#': np.zeros(len(labels), dtype=np.int),
+            'Coverage': np.zeros(len(labels),dtype=np.float)
+        }
+
+        for i, label in enumerate(labels):
+            dict['Visibility'][i] = int(label.visible)
+            dict['Color'].append(str(label.fill))
+            dict['Class'].append(label.name)
+            count, new_area = self.calculate_perclass_blobs_value(label, conversion)
+            dict['#'][i] = count
+            dict['Coverage'][i] = new_area
+
+        # create dataframe
+        df = pd.DataFrame(dict, columns=['Visibility', 'Color', 'Class', '#', 'Coverage'])
+        return df
+
+
+    def calculate_perclass_blobs_value(self, label, pixel_size):
+        """
+        This consider all the existing blobs, inside and outside the working ara"
+        """
+        count = 0
+        tot_area = 0.0
+        for blob in self.seg_blobs:
+            if blob.class_name == label.name:
+                count = count + 1
+                new_area = round(blob.area * (pixel_size) * (pixel_size)/ 100.0,2)
+                tot_area = tot_area + new_area
+
+        return count, new_area
+
 
     def import_label_map(self, filename, labels_dictionary, offset, scale, create_holes=False):
         """

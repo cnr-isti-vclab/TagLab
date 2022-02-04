@@ -119,13 +119,6 @@ class QtLabelsWidget(QWidget):
 
         self.labels = project.labels
 
-        # FIXME: this does not work properly !
-        # for i in range(1, len(self.visibility_flags)):
-        #     item = self.labels_layout.itemAt(i)
-        #     if isinstance(item, QHBoxLayout):
-        #         self.labels_layout.removeItem(item)
-        #         item.setParent(None)
-
         self.btnVisible = []
         #self.visibility_flags = []
         self.btnClass = []
