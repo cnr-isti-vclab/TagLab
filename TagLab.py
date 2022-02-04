@@ -349,6 +349,14 @@ class TagLab(QMainWindow):
         self.checkBoxBorders.stateChanged[int].connect(self.viewerplus2.toggleBorders)
         self.checkBoxBorders.stateChanged[int].connect(self.saveGuiPreferences)
 
+        self.checkBoxIds = QCheckBox("Ids")
+        self.checkBoxIds.setChecked(True)
+        self.checkBoxIds.setFocusPolicy(Qt.NoFocus)
+        self.checkBoxIds.setMinimumWidth(40)
+        self.checkBoxIds.stateChanged[int].connect(self.viewerplus.toggleIds)
+        self.checkBoxIds.stateChanged[int].connect(self.viewerplus2.toggleIds)
+        self.checkBoxIds.stateChanged[int].connect(self.saveGuiPreferences)
+
         self.checkBoxGrid = QCheckBox("Grid")
         self.checkBoxGrid.setMinimumWidth(40)
         self.checkBoxGrid.setFocusPolicy(Qt.NoFocus)
@@ -378,6 +386,7 @@ class TagLab(QMainWindow):
         layout_header.addStretch()
         layout_header.addWidget(self.checkBoxFill)
         layout_header.addWidget(self.checkBoxBorders)
+        layout_header.addWidget(self.checkBoxIds)
         layout_header.addWidget(self.checkBoxGrid)
         layout_header.addStretch()
         layout_header.addWidget(self.labelZoom)
@@ -615,8 +624,10 @@ class TagLab(QMainWindow):
         self.checkBoxFill.setChecked(value)
         value = settings.value("gui-checkbox-borders", type=bool, defaultValue=True)
         self.checkBoxBorders.setChecked(value)
-        value = settings.value("gui-checkbox-grid", type=bool, defaultValue=False)
+        value = settings.value("gui-checkbox-ids", type=bool, defaultValue=True)
         self.checkBoxGrid.setChecked(value)
+        value = settings.value("gui-checkbox-grid", type=bool, defaultValue=False)
+        self.checkBoxIds.setChecked(value)
 
     @pyqtSlot()
     def saveGuiPreferences(self):
@@ -624,6 +635,7 @@ class TagLab(QMainWindow):
         settings = QSettings("VCLAB", "TagLab")
         settings.setValue("gui-checkbox-fill", self.checkBoxFill.isChecked())
         settings.setValue("gui-checkbox-borders", self.checkBoxBorders.isChecked())
+        settings.setValue("gui-checkbox-ids", self.checkBoxIds.isChecked())
         settings.setValue("gui-checkbox-grid", self.checkBoxGrid.isChecked())
 
     def checkNewVersion(self):
@@ -800,13 +812,13 @@ class TagLab(QMainWindow):
         menu.addAction(self.mergeAction)
         menu.addAction(self.divideAction)
         menu.addAction(self.subtractAction)
+        menu.addAction(self.attachBoundariesAction)
+        menu.addAction(self.fillAction)
 
         menu.addSeparator()
         menu.addAction(self.refineAction)
         menu.addAction(self.dilateAction)
         menu.addAction(self.erodeAction)
-        menu.addAction(self.attachBoundariesAction)
-        menu.addAction(self.fillAction)
 
         viewer = self.sender()
         self.contextMenuPosition = viewer.mapToGlobal(position)
@@ -1063,12 +1075,12 @@ class TagLab(QMainWindow):
         self.editmenu.addAction(self.mergeAction)
         self.editmenu.addAction(self.divideAction)
         self.editmenu.addAction(self.subtractAction)
+        self.editmenu.addAction(self.attachBoundariesAction)
+        self.editmenu.addAction(self.fillAction)
         self.editmenu.addSeparator()
         self.editmenu.addAction(self.refineAction)
         self.editmenu.addAction(self.dilateAction)
         self.editmenu.addAction(self.erodeAction)
-        self.editmenu.addAction(self.attachBoundariesAction)
-        self.editmenu.addAction(self.fillAction)
 
         splitScreenAction = QAction("Enable Split Screen", self)
         splitScreenAction.setShortcut('Alt+S')
@@ -1579,6 +1591,17 @@ class TagLab(QMainWindow):
                 self.viewerplus.toggleBorders(0)
                 self.viewerplus2.toggleBorders(0)
                 self.checkBoxBorders.setChecked(True)
+
+        elif event.key() == Qt.Key_E:
+            # toggle regions ids
+            if self.checkBoxIds.isChecked():
+                self.viewerplus.toggleIds(1)
+                self.viewerplus2.toggleIds(1)
+                self.checkBoxIds.setChecked(False)
+            else:
+                self.viewerplus.toggleIds(0)
+                self.viewerplus2.toggleIds(0)
+                self.checkBoxIds.setChecked(True)
 
         elif event.key() == Qt.Key_Home:
             # ASSIGN LABEL

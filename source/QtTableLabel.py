@@ -51,7 +51,7 @@ class TableModel(QAbstractTableModel):
 
         value = self._data.iloc[index.row(), index.column()]
 
-        if role == Qt.DisplayRole:
+        if role == Qt.DecorationRole:
 
             if index.column() == 0:
                 if int(value) == 0:
@@ -60,6 +60,12 @@ class TableModel(QAbstractTableModel):
                     icon = self.icon_eyeopen
 
                 return icon
+
+
+        if role == Qt.DisplayRole:
+
+            if index.column() == 0:
+                return ""
 
             if index.column() == 3:
                txt = int(value)

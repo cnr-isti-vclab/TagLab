@@ -142,6 +142,7 @@ class QtImageViewerPlus(QtImageViewer):
         # DRAWING SETTINGS
         self.fill_enabled = True
         self.border_enabled = True
+        self.ids_enable = True
 
         self.show_grid = False
 
@@ -459,6 +460,30 @@ class QtImageViewerPlus(QtImageViewer):
         else:
             self.enableBorders()
 
+    def enableIds(self):
+
+        for blob in self.annotations.seg_blobs:
+            if blob.id_item is not None:
+                blob.id_item.setVisible(True)
+
+        self.ids_enabled = True
+
+    def disableIds(self):
+
+        for blob in self.annotations.seg_blobs:
+            if blob.id_item is not None:
+                blob.id_item.setVisible(False)
+
+        self.ids_enabled = False
+
+    @pyqtSlot(int)
+    def toggleIds(self, checked):
+
+        if checked == 0:
+            self.disableIds()
+        else:
+            self.enableIds()
+
     def drawAllLayers(self):
         for layer in self.image.layers:
             if layer.isEnabled():
@@ -565,9 +590,6 @@ class QtImageViewerPlus(QtImageViewer):
         else:
             blob.id_item.setOpacity(0.7)
         self.scene.addItem(blob.id_item)
-
-
-
 
     def undrawBlob(self, blob):
 
