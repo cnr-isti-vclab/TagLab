@@ -16,11 +16,11 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License (http://www.gnu.org/licenses/gpl.txt)
 # for more details.
-from PyQt5.QtCore import Qt, QAbstractTableModel, QItemSelectionModel, QSortFilterProxyModel, QRegExp, QModelIndex, \
+from PyQt5.QtCore import Qt, QAbstractTableModel, QItemSelectionModel, QSortFilterProxyModel, QRegExp, QModelIndex,  QSize, \
     pyqtSlot, pyqtSignal
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QComboBox, QLabel, QTableView, QHeaderView, \
     QHBoxLayout, QVBoxLayout, QAbstractItemView, QStyledItemDelegate, QAction, QMenu, QToolButton, QGridLayout, \
-    QLineEdit
+    QLineEdit, QApplication, QLineEdit, QWidget, QSizePolicy, QPushButton
 from PyQt5.QtGui import QColor
 import pandas as pd
 from source.Blob import Blob
@@ -89,7 +89,6 @@ class TableModel(QAbstractTableModel):
 
             if orientation == Qt.Vertical:
                 return str(self._data.index[section])
-
 
 class QtTableLabel(QWidget):
     selectionChanged = pyqtSignal()
@@ -200,6 +199,164 @@ class QtTableLabel(QWidget):
             value = self.data_table.horizontalScrollBar().value()
             column = self.data_table.columnAt(value)
             self.data_table.scrollTo(self.data_table.model().index(indexes[0].row(), column))
+
+
+    def addLabel(self, key, name):
+
+        btnV = QPushButton()
+        btnV.setProperty('key', key)
+        btnV.setFlat(True)
+        btnV.setIcon(self.icon_eyeopen)
+        btnV.setIconSize(QSize(self.EYE_ICON_SIZE, self.EYE_ICON_SIZE))
+        btnV.setFixedWidth(self.CLASS_LABELS_HEIGHT)
+        btnV.setFixedHeight(self.CLASS_LABELS_HEIGHT)
+
+        btnC = QPushButton("")
+        btnV.setProperty('key', key)
+        btnC.setFlat(True)
+
+        color = self.labels[key].fill
+        r = color[0]
+        g = color[1]
+        b = color[2]
+        text = "QPushButton:flat {background-color: rgb(" + str(r) + "," + str(g) + "," + str(b) + "); border: none ;}"
+
+        btnC.setStyleSheet(text)
+        btnC.setAutoFillBackground(True)
+        btnC.setFixedWidth(self.CLASS_LABELS_HEIGHT)
+        btnC.setFixedHeight(self.CLASS_LABELS_HEIGHT)
+
+        lbl = QLineEdit(name)
+        lbl.setProperty('key', key)
+        lbl.setStyleSheet("QLineEdit { border: none; color : lightgray;}")
+        lbl.setFixedHeight(self.CLASS_LABELS_HEIGHT)
+        lbl.setReadOnly(True)
+        lbl.installEventFilter(self)
+
+        self.btnVisible.append(btnV)
+        #self.visibility_flags.append(True)
+        self.btnClass.append(btnC)
+        self.lineeditClass.append(lbl)
+
+        btnV.clicked.connect(self.toggleVisibility)
+        lbl.editingFinished.connect(self.editingFinished)
+
+        layout = QHBoxLayout()
+        layout.addWidget(btnV)
+        layout.addWidget(btnC)
+        layout.addWidget(lbl)
+
+        self.labels_layout.addLayout(layout)
+
+    def setLabels(self, project):
+        """
+        Labels are set according to the current project.
+        """
+
+        self.labels = project.labels
+
+        self.btnVisible = []
+        #self.visibility_flags = []
+        self.btnClass = []
+        self.lineeditClass = []
+
+        self.labels_layout = QVBoxLayout()
+        self.labels_layout.setSpacing(2)
+
+        # ADD VISIBILITY BUTTON-CLICKABLE LABELS FOR ALL THE CLASSES
+        #for label_name in sorted(self.labels.keys()):
+
+        for key in self.labels.keys():
+            label = self.labels[key]
+            self.addLabel(key, label.name)
+
+        # to replace a layout with another one you MUST reparent it..
+        tempwidget = QWidget()
+        tempwidget.setLayout(self.layout())
+        self.setLayout(self.labels_layout)
+
+        ### SET ACTIVE LABEL
+        txt = self.lineeditClass[0].text()
+        self.lineeditClass[0].setText(txt)
+        self.lineeditClass[0].setStyleSheet("QLineEdit { border: 1px; font-weight: bold; color : white;}")
+        self.active_label_name = self.lineeditClass[0].text()
+
+    def eventFilter(self, object, event):
+
+        if type(object) == QLineEdit and event.type() == QEvent.FocusIn :
+
+            self.highlightSelectedLabel(object)
+
+            return False
+
+        if type(object) == QLineEdit and event.type() == QEvent.MouseButtonDblClick :
+
+            label_name = object.text()
+            self.doubleClickLabel.emit(label_name)
+
+        return False
+
+
+    def setAllVisible(self):
+        for label in self.labels.values():
+            label.visible = True
+        for btn in self.btnVisible:
+            btn.setIcon(self.icon_eyeopen)
+
+    def setAllNotVisible(self):
+        for label in self.labels.values():
+            label.visible = False
+        for btn in self.btnVisible:
+            btn.setIcon(self.icon_eyeclosed)
+
+
+    @pyqtSlot()
+    def toggleVisibility(self):
+
+        button_clicked = self.sender()
+        key = button_clicked.property('key')
+        label = self.labels[key]
+
+        if QApplication.keyboardModifiers() == Qt.ControlModifier:
+            self.setAllNotVisible()
+            label.visible = True
+
+        elif QApplication.keyboardModifiers() == Qt.ShiftModifier:
+            self.setAllVisible()
+            label.visible = False
+
+        else:
+            label.visible = not label.visible
+
+        button_clicked.setIcon(self.icon_eyeopen if label.visible is True else self.icon_eyeclosed)
+
+        self.visibilityChanged.emit()
+
+    def highlightSelectedLabel(self, lbl_clicked):
+
+        # reset the text of all the clickable labels
+        for lbl in self.lineeditClass:
+            lbl.setText(lbl.text())
+            lbl.setStyleSheet("QLineEdit { border: none; font-weight: normal; color : lightgray;}")
+            lbl.setReadOnly(True)
+
+        txt = lbl_clicked.text()
+        lbl_clicked.setText(txt)
+        lbl_clicked.setReadOnly(True)
+        lbl_clicked.setStyleSheet("QLineEdit { border: 1 px; font-weight: bold; color : white;}")
+
+        self.active_label_name = lbl_clicked.property('key')
+        self.activeLabelChanged.emit(self.active_label_name)
+
+    def isClassVisible(self, key):
+
+        return self.labels[key].visible
+
+    def getActiveLabelName(self):
+
+        return self.active_label_name
+
+
 
 
 
