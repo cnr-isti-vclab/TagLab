@@ -137,10 +137,7 @@ class QtTablePanel(QWidget):
         self.project = project
         self.activeImg = img
 
-        n_receivers = self.activeImg.annotations.receivers(self.activeImg.annotations.blobUpdated)
-        if n_receivers > 1:
-            self.activeImg.annotations.blobUpdated.disconnect()
-
+        # FIXME: multiple connections should be avoided
         self.activeImg.annotations.blobUpdated.connect(self.updateBlob)
         self.activeImg.annotations.blobAdded.connect(self.addBlob)
         self.activeImg.annotations.blobRemoved.connect(self.removeBlob)

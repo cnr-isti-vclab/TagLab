@@ -109,6 +109,32 @@ class Image(object):
 
         self.channels.append(Channel(filename, type))
 
+
+    def create_labels_table(self, labels):
+
+        ''' create a data table for the label panel '''
+
+        dict = {
+            'Visibility': np.zeros(len(labels), dtype=np.int),
+            'Color': [],
+            'Class': [],
+            '#': np.zeros(len(labels), dtype=np.int),
+            'Coverage': np.zeros(len(labels),dtype=np.float)
+        }
+
+        for i, label in enumerate(labels):
+            dict['Visibility'][i] = int(label.visible)
+            dict['Color'].append(str(label.fill))
+            dict['Class'].append(label.name)
+            count, new_area = self.annotations.calculate_perclass_blobs_value(label, self.map_px_to_mm_factor)
+            dict['#'][i] = count
+            dict['Coverage'][i] = new_area
+
+        # create dataframe
+        df = pd.DataFrame(dict, columns=['Visibility', 'Color', 'Class', '#', 'Coverage'])
+        return df
+
+
     def create_data_table(self):
 
         ''''This create a data table only for the data panel view'''

@@ -21,15 +21,25 @@ from PyQt5.QtCore import Qt, QAbstractTableModel, QItemSelectionModel, QSortFilt
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QComboBox, QLabel, QTableView, QHeaderView, \
     QHBoxLayout, QVBoxLayout, QAbstractItemView, QStyledItemDelegate, QAction, QMenu, QToolButton, QGridLayout, \
     QLineEdit, QApplication, QLineEdit, QWidget, QSizePolicy, QPushButton
-from PyQt5.QtGui import QColor
+from PyQt5.QtGui import QIcon, QColor
+from pathlib import Path
+import os
 import pandas as pd
 from source.Blob import Blob
 
+path = Path(__file__).parent.absolute()
+imdir = str(path)
+imdir = imdir.replace('source', '')
 
 class TableModel(QAbstractTableModel):
+
     def __init__(self, data):
         super(TableModel, self).__init__()
         self._data = data
+
+        # load icons
+        self.icon_eyeopen = QIcon(os.path.join(imdir, os.path.join("icons", "eye.png")))
+        self.icon_eyeclosed = QIcon(os.path.join(imdir, os.path.join("icons", "cross.png")))
 
     def data(self, index, role):
         if role == Qt.TextAlignmentRole:
@@ -43,12 +53,19 @@ class TableModel(QAbstractTableModel):
 
         if role == Qt.DisplayRole:
 
-            # Non ho idea cosa mettere in colonna zero un widget??
-            if index.column() == 2:
+            if index.column() == 0:
+                if int(value) == 0:
+                    icon = self.icon_eyeclosed
+                else:
+                    icon = self.icon_eyeopen
+
+                return icon
+
+            if index.column() == 3:
                txt = int(value)
 
             # format floating point values
-            elif index.column() == 3:
+            elif index.column() == 4:
                 txt = "{:.1f}".format(value) if value > 0 else ""
             else:
                 txt = str(value)
@@ -91,15 +108,16 @@ class TableModel(QAbstractTableModel):
                 return str(self._data.index[section])
 
 class QtTableLabel(QWidget):
-    selectionChanged = pyqtSignal()
 
+    # custom signals
+    visibilityChanged = pyqtSignal()
+    activeLabelChanged = pyqtSignal(str)
+    doubleClickLabel = pyqtSignal(str)
+
+    selectionChanged = pyqtSignal()
 
     def __init__(self, parent=None):
         super(QtTableLabel, self).__init__(parent)
-
-        self.visibility_flags = []
-        self.visibility_buttons = []
-        self.labels_projects = []
 
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.setMinimumWidth(400)
@@ -107,7 +125,6 @@ class QtTableLabel(QWidget):
 
         self.data_table = QTableView()
         self.data_table.setMinimumWidth(400)
-        # self.data_table.setMinimumHeight(100)
         self.data_table.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.data_table.setSelectionMode(QAbstractItemView.MultiSelection)
         self.data_table.setSelectionMode(QAbstractItemView.ExtendedSelection)
@@ -122,20 +139,20 @@ class QtTableLabel(QWidget):
 
         self.setLayout(layout)
 
-    def setTable(self, project, img):
+        self.project = None
+        self.activeImg = None
 
-        self.project = project
+    def setLabels(self, project, img):
+
+        self.project = self.project
         self.activeImg = img
+        self.data = project.create_labels_table(self.activeImg)
 
-        n_receivers = self.activeImg.annotations.receivers(self.activeImg.annotations.blobUpdated)
-        if n_receivers > 1:
-            self.activeImg.annotations.blobUpdated.disconnect()
-
-        self.activeImg.annotations.blobUpdated.connect(self.updateBlob)
-        self.activeImg.annotations.blobAdded.connect(self.addBlob)
-        self.activeImg.annotations.blobRemoved.connect(self.removeBlob)
-
-        self.data = self.annotations.create_label_table()
+        # FIXME: multiple connections should be avoided
+        if self.activeImg is not None:
+            self.activeImg.annotations.blobUpdated.connect(self.updateBlob)
+            self.activeImg.annotations.blobAdded.connect(self.addBlob)
+            self.activeImg.annotations.blobRemoved.connect(self.removeBlob)
 
         self.model = TableModel(self.data)
         self.sortfilter = QSortFilterProxyModel(self)
@@ -148,9 +165,14 @@ class QtTableLabel(QWidget):
         self.data_table.setVisible(True)
         self.data_table.setEditTriggers(QAbstractItemView.DoubleClicked)
 
-        self.data_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
-        self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        self.data_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Fixed)
+        self.data_table.setColumnWidth(0, 20)
+        self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Fixed)
+        self.data_table.setColumnWidth(1, 20)
         self.data_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
+        self.data_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        self.data_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeToContents)
+
         self.data_table.horizontalHeader().showSection(0)
         self.data_table.update()
 
@@ -201,86 +223,6 @@ class QtTableLabel(QWidget):
             self.data_table.scrollTo(self.data_table.model().index(indexes[0].row(), column))
 
 
-    def addLabel(self, key, name):
-
-        btnV = QPushButton()
-        btnV.setProperty('key', key)
-        btnV.setFlat(True)
-        btnV.setIcon(self.icon_eyeopen)
-        btnV.setIconSize(QSize(self.EYE_ICON_SIZE, self.EYE_ICON_SIZE))
-        btnV.setFixedWidth(self.CLASS_LABELS_HEIGHT)
-        btnV.setFixedHeight(self.CLASS_LABELS_HEIGHT)
-
-        btnC = QPushButton("")
-        btnV.setProperty('key', key)
-        btnC.setFlat(True)
-
-        color = self.labels[key].fill
-        r = color[0]
-        g = color[1]
-        b = color[2]
-        text = "QPushButton:flat {background-color: rgb(" + str(r) + "," + str(g) + "," + str(b) + "); border: none ;}"
-
-        btnC.setStyleSheet(text)
-        btnC.setAutoFillBackground(True)
-        btnC.setFixedWidth(self.CLASS_LABELS_HEIGHT)
-        btnC.setFixedHeight(self.CLASS_LABELS_HEIGHT)
-
-        lbl = QLineEdit(name)
-        lbl.setProperty('key', key)
-        lbl.setStyleSheet("QLineEdit { border: none; color : lightgray;}")
-        lbl.setFixedHeight(self.CLASS_LABELS_HEIGHT)
-        lbl.setReadOnly(True)
-        lbl.installEventFilter(self)
-
-        self.btnVisible.append(btnV)
-        #self.visibility_flags.append(True)
-        self.btnClass.append(btnC)
-        self.lineeditClass.append(lbl)
-
-        btnV.clicked.connect(self.toggleVisibility)
-        lbl.editingFinished.connect(self.editingFinished)
-
-        layout = QHBoxLayout()
-        layout.addWidget(btnV)
-        layout.addWidget(btnC)
-        layout.addWidget(lbl)
-
-        self.labels_layout.addLayout(layout)
-
-    def setLabels(self, project):
-        """
-        Labels are set according to the current project.
-        """
-
-        self.labels = project.labels
-
-        self.btnVisible = []
-        #self.visibility_flags = []
-        self.btnClass = []
-        self.lineeditClass = []
-
-        self.labels_layout = QVBoxLayout()
-        self.labels_layout.setSpacing(2)
-
-        # ADD VISIBILITY BUTTON-CLICKABLE LABELS FOR ALL THE CLASSES
-        #for label_name in sorted(self.labels.keys()):
-
-        for key in self.labels.keys():
-            label = self.labels[key]
-            self.addLabel(key, label.name)
-
-        # to replace a layout with another one you MUST reparent it..
-        tempwidget = QWidget()
-        tempwidget.setLayout(self.layout())
-        self.setLayout(self.labels_layout)
-
-        ### SET ACTIVE LABEL
-        txt = self.lineeditClass[0].text()
-        self.lineeditClass[0].setText(txt)
-        self.lineeditClass[0].setStyleSheet("QLineEdit { border: 1px; font-weight: bold; color : white;}")
-        self.active_label_name = self.lineeditClass[0].text()
-
     def eventFilter(self, object, event):
 
         if type(object) == QLineEdit and event.type() == QEvent.FocusIn :
@@ -298,17 +240,30 @@ class QtTableLabel(QWidget):
 
 
     def setAllVisible(self):
+
+        # update the table data
+        for row in self.data.rows:
+            row['Visibility'] = 1
+
+        # update the labels
         for label in self.labels.values():
             label.visible = True
-        for btn in self.btnVisible:
-            btn.setIcon(self.icon_eyeopen)
+
+        # update the table view
+        self.data_table.update()
 
     def setAllNotVisible(self):
-        for label in self.labels.values():
-            label.visible = False
-        for btn in self.btnVisible:
-            btn.setIcon(self.icon_eyeclosed)
 
+        # update the table data
+        for row in self.data.rows:
+            row['Visibility'] = 0
+
+        # update the labels
+        for label in self.labels.values():
+            label.visible = True
+
+        # update the table view
+        self.data_table.update()
 
     @pyqtSlot()
     def toggleVisibility(self):

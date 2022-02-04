@@ -66,6 +66,7 @@ from source.QtTrainingResultsWidget import QtTrainingResultsWidget
 from source.QtTYNWidget import QtTYNWidget
 from source.QtComparePanel import QtComparePanel
 from source.QtTablePanel import QtTablePanel
+from source.QtTableLabel import QtTableLabel
 from source.QtProjectWidget import QtProjectWidget
 from source.QtProjectEditor import QtProjectEditor
 from source.Project import Project, loadProject
@@ -411,11 +412,11 @@ class TagLab(QMainWindow):
 
 
         # LABELS PANEL
-        self.labels_widget = QtLabelsWidget()
+        self.labels_widget = QtTableLabel()
         self.default_dictionary = self.settings_widget.settings.value("default-dictionary",
                                                 defaultValue="dictionaries/scripps.json", type=str)
         self.project.loadDictionary(self.default_dictionary)
-        self.labels_widget.setLabels(self.project)
+        self.labels_widget.setLabels(self.project, None)
 
         self.scroll_area_labels_panel = QScrollArea()
         self.scroll_area_labels_panel.setStyleSheet("background-color: rgb(40,40,40); border:none")
@@ -2940,13 +2941,20 @@ class TagLab(QMainWindow):
         Update labels widget re-creating it to ensure correct size inside the scroll area
         """
 
-        self.labels_widget = QtLabelsWidget()
+        self.labels_widget = QtTableLabel()
 
         # re-connect
         self.connectLabelsPanelWithViewers()
 
         self.layers_widget.setProject(self.project)
-        self.labels_widget.setLabels(self.project)       
+
+        image = None
+        if self.activeviewer is not None:
+            if self.activeviewer.image is not None:
+                image = self.activeviewer.image
+
+        self.labels_widget.setLabels(self.project, image)
+
         self.scroll_area_labels_panel.setWidget(self.labels_widget)
 
 

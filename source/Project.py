@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import datetime
 import json
+import numpy as np
 
 from PyQt5.QtCore import QDir, QFileInfo
 from PyQt5.QtGui import QBrush, QColor
@@ -478,6 +479,43 @@ class Project(object):
 
         self.genet.updateGenets()
         corr.updateGenets()
+
+
+    def create_labels_table(self, image):
+
+        '''
+        It creates a data table for the label panel.
+        If an active image is given, some statistics are added.
+        '''
+
+        dict = {
+            'Visibility': np.zeros(len(self.labels), dtype=np.int),
+            'Color': [],
+            'Class': [],
+            '#': np.zeros(len(self.labels), dtype=np.int),
+            'Coverage': np.zeros(len(self.labels),dtype=np.float)
+        }
+
+        for i, key in enumerate(list(self.labels.keys())):
+            label = self.labels[key]
+            dict['Visibility'][i] = int(label.visible)
+            dict['Color'].append(str(label.fill))
+            dict['Class'].append(label.name)
+
+            if image is None:
+                count = 0
+                new_area = 0.0
+            else:
+                count, new_area = self.image.annotations.calculate_perclass_blobs_value(label, self.map_px_to_mm_factor)
+
+            dict['#'][i] = count
+            dict['Coverage'][i] = new_area
+
+        # create dataframe
+        df = pd.DataFrame(dict, columns=['Visibility', 'Color', 'Class', '#', 'Coverage'])
+        return df
+
+
 
 
 
