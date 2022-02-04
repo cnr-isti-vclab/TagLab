@@ -137,12 +137,27 @@ class QtTablePanel(QWidget):
         self.project = project
         self.activeImg = img
 
-        # FIXME: multiple connections should be avoided
-        self.activeImg.annotations.blobUpdated.connect(self.updateBlob)
-        self.activeImg.annotations.blobAdded.connect(self.addBlob)
-        self.activeImg.annotations.blobRemoved.connect(self.removeBlob)
+        # establish UNIQUE connections, otherwise the slots will be called MORE THAN ONE TIME
+        # when the signal is emitted
 
-        self.data = self.activeImg.create_data_table()
+        if self.activeImg is not None:
+
+            try:
+                self.activeImg.annotations.blobUpdated.connect(self.updateBlob, type=Qt.UniqueConnection)
+            except:
+                pass
+
+            try:
+                self.activeImg.annotations.blobAdded.connect(self.addBlob, type=Qt.UniqueConnection)
+            except:
+                pass
+
+            try:
+                self.activeImg.annotations.blobRemoved.connect(self.removeBlob, type=Qt.UniqueConnection)
+            except:
+                pass
+
+            self.data = self.activeImg.create_data_table()
 
         self.model = TableModel(self.data)
         self.sortfilter = QSortFilterProxyModel(self)

@@ -152,13 +152,29 @@ class QtTableLabel(QWidget):
 
         self.project = self.project
         self.activeImg = img
+
+        # it works also if there is no active image (i.e. img is None)
         self.data = project.create_labels_table(self.activeImg)
 
-        # FIXME: multiple connections should be avoided
         if self.activeImg is not None:
-            self.activeImg.annotations.blobUpdated.connect(self.updateBlob)
-            self.activeImg.annotations.blobAdded.connect(self.addBlob)
-            self.activeImg.annotations.blobRemoved.connect(self.removeBlob)
+
+            # establish UNIQUE connections, otherwise the slots will be called MORE THAN ONE TIME
+            # when the signal is emitted
+
+            try:
+                self.activeImg.annotations.blobUpdated.connect(self.updateBlob, type=Qt.UniqueConnection)
+            except:
+                pass
+
+            try:
+                self.activeImg.annotations.blobAdded.connect(self.addBlob, type=Qt.UniqueConnection)
+            except:
+                pass
+
+            try:
+                self.activeImg.annotations.blobRemoved.connect(self.removeBlob, type=Qt.UniqueConnection)
+            except:
+                pass
 
         self.model = TableModel(self.data)
         self.sortfilter = QSortFilterProxyModel(self)

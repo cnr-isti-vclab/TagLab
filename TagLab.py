@@ -1524,8 +1524,9 @@ class TagLab(QMainWindow):
         elif event.key() == Qt.Key_F:
             self.fillLabel()
 
-        elif event.key() == Qt.Key_G:
+        elif event.key() == Qt.Key_U:
 
+            # update grid cell state
             if self.btnGrid.isChecked():
                 pos = self.cursor().pos()
                 self.activeviewer.updateCellState(pos.x(), pos.y(), None)
@@ -1602,6 +1603,17 @@ class TagLab(QMainWindow):
                 self.viewerplus.toggleIds(0)
                 self.viewerplus2.toggleIds(0)
                 self.checkBoxIds.setChecked(True)
+
+        elif event.key() == Qt.Key_G:
+            # toggle grid
+            if self.checkBoxGrid.isChecked():
+               self.viewerplus.toggleGrid(1)
+               self.viewerplus2.toggleGrid(1)
+               self.checkBoxGrid.setChecked(False)
+            else:
+                self.viewerplus.toggleGrid(0)
+                self.viewerplus2.toggleGrid(0)
+                self.checkBoxGrid.setChecked(True)
 
         elif event.key() == Qt.Key_Home:
             # ASSIGN LABEL
