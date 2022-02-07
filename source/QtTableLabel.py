@@ -68,8 +68,6 @@ class TableModel(QAbstractTableModel):
 
                 return pxmap
 
-
-
         if role == Qt.DisplayRole:
 
             if index.column() == 0:
@@ -201,10 +199,11 @@ class QtTableLabel(QWidget):
         self.data_table.setVisible(True)
         self.data_table.setEditTriggers(QAbstractItemView.DoubleClicked)
 
-        self.data_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        self.data_table.setColumnWidth(0, 5)
-        self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-        self.data_table.setColumnWidth(1, 5)
+        self.data_table.horizontalHeader().setMinimumSectionSize(10)
+        self.data_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Fixed)
+        self.data_table.setColumnWidth(0, 20)
+        self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Fixed)
+        self.data_table.setColumnWidth(1, 20)
         self.data_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
         self.data_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
         self.data_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeToContents)
@@ -217,7 +216,8 @@ class QtTableLabel(QWidget):
             btnC = self.createColorButton(color)
             self.data_table.setIndexWidget(self.data_table.model().index(i,1), btnC)
 
-        self.data_table.setStyleSheet("QHeaderView::section { background-color: rgb(40,40,40) }")
+        style = "QHeaderView::section { background-color: rgb(40,40,40) }"
+        self.data_table.setStyleSheet(style)
         self.data_table.selectionModel().selectionChanged.connect(lambda x: self.selectionChanged.emit())
 
 
