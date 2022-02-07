@@ -17,11 +17,11 @@
 # GNU General Public License (http://www.gnu.org/licenses/gpl.txt)
 # for more details.
 from PyQt5.QtCore import Qt, QAbstractTableModel, QItemSelectionModel, QSortFilterProxyModel, QRegExp, QModelIndex,  QSize, \
-    pyqtSlot, pyqtSignal
+    pyqtSlot, pyqtSignal, QEvent
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QComboBox, QLabel, QTableView, QHeaderView, \
     QHBoxLayout, QVBoxLayout, QAbstractItemView, QStyledItemDelegate, QAction, QMenu, QToolButton, QGridLayout, \
     QLineEdit, QApplication, QLineEdit, QWidget, QSizePolicy, QPushButton
-from PyQt5.QtGui import QIcon, QColor
+from PyQt5.QtGui import QIcon, QColor, QPixmap, QPainter
 from pathlib import Path
 import os
 import pandas as pd
@@ -38,10 +38,11 @@ class TableModel(QAbstractTableModel):
         self._data = data
 
         # load icons
-        self.icon_eyeopen = QIcon(os.path.join(imdir, os.path.join("icons", "eye.png")))
-        self.icon_eyeclosed = QIcon(os.path.join(imdir, os.path.join("icons", "cross.png")))
+        self.icon_eyeopen = QPixmap(os.path.join(imdir, os.path.join("icons", "eye.png")))
+        self.icon_eyeclosed = QPixmap(os.path.join(imdir, os.path.join("icons", "cross.png")))
 
     def data(self, index, role):
+
         if role == Qt.TextAlignmentRole:
             if index.column() < 5:
                 return Qt.AlignRight | Qt.AlignVCenter
@@ -55,11 +56,18 @@ class TableModel(QAbstractTableModel):
 
             if index.column() == 0:
                 if int(value) == 0:
-                    icon = self.icon_eyeclosed
+                    pxmap = QPixmap(20, 20)
+                    pxmap.fill(Qt.transparent)
+                    painter = QPainter(pxmap)
+                    painter = painter.drawPixmap(0, 0, 20, 20, self.icon_eyeclosed)
                 else:
-                    icon = self.icon_eyeopen
+                    pxmap = QPixmap(20, 20)
+                    pxmap.fill(Qt.transparent)
+                    painter = QPainter(pxmap)
+                    painter = painter.drawPixmap(0, 0, 20, 20, self.icon_eyeopen)
 
-                return icon
+                return pxmap
+
 
 
         if role == Qt.DisplayRole:
@@ -67,19 +75,26 @@ class TableModel(QAbstractTableModel):
             if index.column() == 0:
                 return ""
 
+            if index.column() == 1:
+                return ""
+
             if index.column() == 3:
                txt = int(value)
 
             # format floating point values
             elif index.column() == 4:
-                txt = "{:.1f}".format(value) if value > 0 else ""
+                txt = "{:.1f}".format(value)
+
+
             else:
                 txt = str(value)
 
             return txt
 
         if role == Qt.UserRole:
+
             if index.column() == 1:
+
                 return str(value)
 
             return float(value)
@@ -105,9 +120,8 @@ class TableModel(QAbstractTableModel):
         if role == Qt.DisplayRole:
             if orientation == Qt.Horizontal:
                 head = str(self._data.columns[section])
-                if head == "Visibility" or "Color":
+                if head == "Visibility" or head == "Color":
                     return " "
-
                 return head
 
             if orientation == Qt.Vertical:
@@ -150,7 +164,7 @@ class QtTableLabel(QWidget):
 
     def setLabels(self, project, img):
 
-        self.project = self.project
+        self.project = project
         self.activeImg = img
 
         # it works also if there is no active image (i.e. img is None)
@@ -187,10 +201,10 @@ class QtTableLabel(QWidget):
         self.data_table.setVisible(True)
         self.data_table.setEditTriggers(QAbstractItemView.DoubleClicked)
 
-        self.data_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Fixed)
-        self.data_table.setColumnWidth(0, 20)
-        self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Fixed)
-        self.data_table.setColumnWidth(1, 20)
+        self.data_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        self.data_table.setColumnWidth(0, 5)
+        self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        self.data_table.setColumnWidth(1, 5)
         self.data_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
         self.data_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
         self.data_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeToContents)
@@ -198,9 +212,33 @@ class QtTableLabel(QWidget):
         self.data_table.horizontalHeader().showSection(0)
         self.data_table.update()
 
+        for i,row in self.data.iterrows():
+            color = row['Color']
+            btnC = self.createColorButton(color)
+            self.data_table.setIndexWidget(self.data_table.model().index(i,1), btnC)
+
         self.data_table.setStyleSheet("QHeaderView::section { background-color: rgb(40,40,40) }")
         self.data_table.selectionModel().selectionChanged.connect(lambda x: self.selectionChanged.emit())
 
+
+
+    def createColorButton(self, color):
+
+        color = color[1:-1]
+        color = color.split(",")
+        btnC = QPushButton("")
+        btnC.setFlat(True)
+        r = color[0]
+        g = color[1]
+        b = color[2]
+        text = "QPushButton:flat {background-color: rgb(" + r + "," + g + "," + b + "); border: none ;}"
+
+        btnC.setStyleSheet(text)
+        btnC.setAutoFillBackground(True)
+        btnC.setFixedWidth(20)
+        btnC.setFixedHeight(20)
+
+        return btnC
 
     def clear(self):
 
