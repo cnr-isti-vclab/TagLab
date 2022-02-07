@@ -44,8 +44,7 @@ class TableModel(QAbstractTableModel):
     def data(self, index, role):
 
         if role == Qt.TextAlignmentRole:
-            if index.column() < 5:
-                return Qt.AlignRight | Qt.AlignVCenter
+            return Qt.AlignCenter
 
         if role == Qt.BackgroundRole:
             return QColor(40, 40, 40)
@@ -55,17 +54,25 @@ class TableModel(QAbstractTableModel):
         if role == Qt.DecorationRole:
 
             if index.column() == 0:
+
                 if int(value) == 0:
                     pxmap = QPixmap(20, 20)
                     pxmap.fill(Qt.transparent)
                     painter = QPainter(pxmap)
-                    painter = painter.drawPixmap(0, 0, 20, 20, self.icon_eyeclosed)
+                    painter.drawPixmap(0, 0, 20, 20, self.icon_eyeclosed)
                 else:
                     pxmap = QPixmap(20, 20)
                     pxmap.fill(Qt.transparent)
                     painter = QPainter(pxmap)
-                    painter = painter.drawPixmap(0, 0, 20, 20, self.icon_eyeopen)
+                    painter.drawPixmap(0, 0, 20, 20, self.icon_eyeopen)
 
+                return pxmap
+
+            if index.column() == 1:
+                value = value[1:-1]
+                value = value.split(",")
+                pxmap = QPixmap(20,20)
+                pxmap.fill(QColor(int(value[0]), int(value[1]), int(value[2])))
                 return pxmap
 
         if role == Qt.DisplayRole:
@@ -194,6 +201,8 @@ class QtTableLabel(QWidget):
         self.sortfilter.setSortRole(Qt.UserRole)
         self.data_table.setModel(self.sortfilter)
 
+        self.model.table = self.data_table
+
         self.data_table.setVisible(False)
         self.data_table.verticalHeader().hide()
         self.data_table.setVisible(True)
@@ -201,9 +210,9 @@ class QtTableLabel(QWidget):
 
         self.data_table.horizontalHeader().setMinimumSectionSize(10)
         self.data_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Fixed)
-        self.data_table.setColumnWidth(0, 20)
+        self.data_table.setColumnWidth(0, 25)
         self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Fixed)
-        self.data_table.setColumnWidth(1, 20)
+        self.data_table.setColumnWidth(1, 25)
         self.data_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
         self.data_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
         self.data_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeToContents)
@@ -211,16 +220,14 @@ class QtTableLabel(QWidget):
         self.data_table.horizontalHeader().showSection(0)
         self.data_table.update()
 
-        for i,row in self.data.iterrows():
-            color = row['Color']
-            btnC = self.createColorButton(color)
-            self.data_table.setIndexWidget(self.data_table.model().index(i,1), btnC)
+        # for i,row in self.data.iterrows():
+        #     color = row['Color']
+        #     btnC = self.createColorButton(color)
+        #     self.data_table.setIndexWidget(self.data_table.model().index(i,1), btnC)
 
         style = "QHeaderView::section { background-color: rgb(40,40,40) }"
         self.data_table.setStyleSheet(style)
         self.data_table.selectionModel().selectionChanged.connect(lambda x: self.selectionChanged.emit())
-
-
 
     def createColorButton(self, color):
 
