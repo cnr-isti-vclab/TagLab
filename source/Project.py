@@ -393,10 +393,6 @@ class Project(object):
         for corr in self.findCorrespondences(image):
             corr.updateBlob(image, old_blob, new_blob)
 
-    def setBlobClass(self, image, blob, class_name):
-
-        blob.class_name = class_name
-
     def getImageFromId(self, id):
         for img in self.images:
             if img.id == id:

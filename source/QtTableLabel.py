@@ -157,8 +157,7 @@ class QtTableLabel(QWidget):
         self.data_table = QTableView()
         self.data_table.setMinimumWidth(400)
         self.data_table.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        self.data_table.setSelectionMode(QAbstractItemView.MultiSelection)
-        self.data_table.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.data_table.setSelectionMode(QAbstractItemView.SingleSelection)
         self.data_table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.data_table.setSortingEnabled(True)
 
@@ -171,10 +170,11 @@ class QtTableLabel(QWidget):
         self.setLayout(layout)
 
         self.project = None
-        self.data_table.clicked.connect(self.clickedCell)
-
         self.activeImg = None
         self.active_label_name = None
+
+        self.data_table.clicked.connect(self.clickedCell)
+        self.data_table.doubleClicked.connect(self.doubleClickedCell)
 
     @pyqtSlot(QModelIndex)
     def clickedCell(self, index):
@@ -189,7 +189,13 @@ class QtTableLabel(QWidget):
            self.active_label_name = self.data['Class'][oldindex.row()]
            self.activeLabelChanged.emit(self.active_label_name)
 
+    @pyqtSlot(QModelIndex)
+    def doubleClickedCell(self, index):
 
+        if index.column() == 1 or index.column() == 2:
+           oldindex = self.sortfilter.mapToSource(index)
+           self.active_label_name = self.data['Class'][oldindex.row()]
+           self.doubleClickLabel.emit(self.active_label_name)
 
     def setLabels(self, project, img):
 
@@ -219,6 +225,11 @@ class QtTableLabel(QWidget):
             except:
                 pass
 
+            try:
+                self.activeImg.annotations.blobClassChanged[str,Blob].connect(self.updateBlobClass, type=Qt.UniqueConnection)
+            except:
+                pass
+
         self.model = TableModel(self.data)
         self.sortfilter = QSortFilterProxyModel(self)
         self.sortfilter.setSourceModel(self.model)
@@ -237,7 +248,7 @@ class QtTableLabel(QWidget):
         self.data_table.setColumnWidth(0, 25)
         self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Fixed)
         self.data_table.setColumnWidth(1, 25)
-        self.data_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        self.data_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
         self.data_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
         self.data_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeToContents)
 
@@ -280,6 +291,20 @@ class QtTableLabel(QWidget):
         self.removeBlob(oldblob)
         self.addBlob(newblob)
 
+    @pyqtSlot(str, Blob)
+    def updateBlobClass(self, old_class_name, newblob):
+
+        data_table_row = self.data[self.data['Class'] == old_class_name]
+        index = data_table_row.index
+        count = self.data['#'][index]
+        self.data.loc[index, '#'] = count - 1
+
+        data_table_row = self.data[self.data['Class'] == newblob.class_name]
+        index = data_table_row.index
+        count = self.data['#'][index]
+        self.data.loc[index, '#'] = count + 1
+
+        self.data_table.update()
 
     @pyqtSlot(Blob)
     def addBlob(self, blob):
@@ -287,10 +312,10 @@ class QtTableLabel(QWidget):
         scale_factor = self.activeImg.pixelSize()
         data_table_row = self.data[self.data['Class'] == blob.class_name]
         index = data_table_row.index
-        count = self.data['#'][index] + 1
+        newcount = self.data['#'][index] + 1
         blobarea = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
         newcover = self.data['Coverage'][index] + blobarea
-        self.data.loc[index, '#'] = count
+        self.data.loc[index, '#'] = newcount
         self.data.loc[index, 'Coverage'] = newcover
 
         self.data_table.update()
@@ -301,10 +326,10 @@ class QtTableLabel(QWidget):
         scale_factor = self.activeImg.pixelSize()
         data_table_row = self.data[self.data['Class'] == blob.class_name]
         index = data_table_row.index
-        count = self.data['#'][index] - 1
+        newcount = self.data['#'][index] - 1
         blobarea = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
         newcover = self.data['Coverage'][index] - blobarea
-        self.data.loc[index, '#'] = count
+        self.data.loc[index, '#'] = newcount
         self.data.loc[index, 'Coverage'] = newcover
 
         self.data_table.update()

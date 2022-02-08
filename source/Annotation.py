@@ -47,6 +47,7 @@ class Annotation(QObject):
     blobAdded = pyqtSignal(Blob)
     blobRemoved = pyqtSignal(Blob)
     blobUpdated = pyqtSignal(Blob,Blob)
+    blobClassChanged = pyqtSignal(str,Blob)
 
     def __init__(self):
         super(QObject, self).__init__()
@@ -86,6 +87,16 @@ class Annotation(QObject):
         self.addBlob(new_blob, notify=False)
         self.blobUpdated.emit(old_blob,new_blob)
 
+    def setBlobClass(self, blob, class_name):
+
+        if blob.class_name == class_name:
+            return
+        else:
+            old_class_name = blob.class_name
+            blob.class_name = class_name
+
+            # notify that the class name of 'blob' has changed
+            self.blobClassChanged.emit(old_class_name, blob)
 
     def blobById(self, id):
         for blob in self.seg_blobs:

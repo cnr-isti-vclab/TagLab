@@ -1146,13 +1146,11 @@ class QtImageViewerPlus(QtImageViewer):
         Assign the given class to the selected blobs.
         """
         for blob in self.selected_blobs:
-            self.project.setBlobClass(self.image, blob, class_name)
+
             self.undo_data.setBlobClass(blob, class_name)
+            self.annotations.setBlobClass(blob, class_name)
             brush = self.project.classBrushFromName(blob)
             blob.qpath_gitem.setBrush(brush)
-
-            # # notify the update of the class
-            # self.annotations.blobUpdated.emit(blob)
 
         self.scene.invalidate()
 
@@ -1160,21 +1158,16 @@ class QtImageViewerPlus(QtImageViewer):
 
         if blob.class_name == class_name:
             return
-        old_blob = blob.copy()
+
         self.undo_data.setBlobClass(blob, class_name)
-        self.project.setBlobClass(self.image, blob, class_name)
+        self.annotations.setBlobClass(blob, class_name)
 
         if blob.qpath_gitem:
             brush = self.project.classBrushFromName(blob)
             blob.qpath_gitem.setBrush(brush)
-
             self.scene.invalidate()
 
-        # notify the update of the class
-        self.annotations.blobUpdated.emit(old_blob,blob)
-
-#UNDO STUFF
-#UNDO STUFF
+###### UNDO STUFF #####
 
     def saveUndo(self):
         self.undo_data.saveUndo()

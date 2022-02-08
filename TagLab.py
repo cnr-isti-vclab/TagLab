@@ -427,13 +427,6 @@ class TagLab(QMainWindow):
         self.project.loadDictionary(self.default_dictionary)
         self.labels_widget.setLabels(self.project, None)
 
-        self.scroll_area_labels_panel = QScrollArea()
-        self.scroll_area_labels_panel.setStyleSheet("background-color: rgb(40,40,40); border:none")
-        self.scroll_area_labels_panel.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.scroll_area_labels_panel.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.scroll_area_labels_panel.setMinimumHeight(150)
-        self.scroll_area_labels_panel.setWidget(self.labels_widget)
-
         groupbox_style = "QGroupBox\
           {\
               border: 2px solid rgb(40,40,40);\
@@ -458,7 +451,7 @@ class TagLab(QMainWindow):
         self.groupbox_labels.setStyleSheet("border: 2px solid rgb(255,40,40); padding: 0px;")
 
         layout_groupbox = QVBoxLayout()
-        layout_groupbox.addWidget(self.scroll_area_labels_panel)
+        layout_groupbox.addWidget(self.labels_widget)
         self.groupbox_labels.setLayout(layout_groupbox)
 
         # COMPARE PANEL
@@ -466,11 +459,11 @@ class TagLab(QMainWindow):
         self.compare_panel.filterChanged[str].connect(self.updateVisibleMatches)
         self.compare_panel.areaModeChanged[str].connect(self.updateAreaMode)
         self.compare_panel.data_table.clicked.connect(self.showConnectionCluster)
-        
+
+        # SINGLE-VIEW DATA PANEL
         self.table_panel = QtTablePanel()
         self.table_panel.selectionChanged.connect(self.showBlobOnViewer)
         self.table_panel.selectionChanged.connect(self.updatePanelInfoSelected)
-
 
 
         self.groupbox_comparison = QGroupBox()
@@ -1676,6 +1669,10 @@ class TagLab(QMainWindow):
         self.split_screen_flag = False
 
         self.activeviewer = self.viewerplus
+
+        if self.activeviewer.image is not None:
+            self.labels_widget.setLabels(self.project, self.activeviewer.image)
+
         self.layers_widget.setImage(self.viewerplus.image)
 
     def enableSplitScreen(self):
@@ -1734,6 +1731,12 @@ class TagLab(QMainWindow):
             self.split_screen_flag = True
 
             self.activeviewer = self.viewerplus
+
+            # update labels panel
+            if self.activeviewer.image is not None:
+                self.labels_widget.setLabels(self.project, self.activeviewer.image)
+
+            # update layers
             self.layers_widget.setImage(self.viewerplus.image, self.viewerplus2.image)
 
             self.compare_panel.setTable(self.project, index_to_set, index_to_set + 1)
@@ -1984,7 +1987,12 @@ class TagLab(QMainWindow):
 
     @pyqtSlot()
     def setActiveViewer(self):
+
         self.activeviewer = self.sender()
+
+        if self.activeviewer.image is not None:
+            self.labels_widget.setLabels(self.project, self.activeviewer.image)
+
         if self.activeviewer is not self.viewerplus:
             self.inactiveviewer = self.viewerplus
         else:
@@ -2990,9 +2998,6 @@ class TagLab(QMainWindow):
                 image = self.activeviewer.image
 
         self.labels_widget.setLabels(self.project, image)
-
-        self.scroll_area_labels_panel.setWidget(self.labels_widget)
-
 
     #REFACTOR
     @pyqtSlot()

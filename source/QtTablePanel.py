@@ -109,7 +109,6 @@ class QtTablePanel(QWidget):
 
         self.data_table = QTableView()
         self.data_table.setMinimumWidth(400)
-        #self.data_table.setMinimumHeight(100)
         self.data_table.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.data_table.setSelectionMode(QAbstractItemView.MultiSelection)
         self.data_table.setSelectionMode(QAbstractItemView.ExtendedSelection)
@@ -143,17 +142,22 @@ class QtTablePanel(QWidget):
         if self.activeImg is not None:
 
             try:
-                self.activeImg.annotations.blobUpdated.connect(self.updateBlob, type=Qt.UniqueConnection)
+                self.activeImg.annotations.blobUpdated[Blob,Blob].connect(self.updateBlob, type=Qt.UniqueConnection)
             except:
                 pass
 
             try:
-                self.activeImg.annotations.blobAdded.connect(self.addBlob, type=Qt.UniqueConnection)
+                self.activeImg.annotations.blobAdded[Blob].connect(self.addBlob, type=Qt.UniqueConnection)
             except:
                 pass
 
             try:
-                self.activeImg.annotations.blobRemoved.connect(self.removeBlob, type=Qt.UniqueConnection)
+                self.activeImg.annotations.blobRemoved[Blob].connect(self.removeBlob, type=Qt.UniqueConnection)
+            except:
+                pass
+
+            try:
+                self.activeImg.annotations.blobClassChanged[str,Blob].connect(self.updateBlobClass, type=Qt.UniqueConnection)
             except:
                 pass
 
@@ -210,6 +214,15 @@ class QtTablePanel(QWidget):
             if row[0] == newblob.id:
                 scale_factor = self.activeImg.pixelSize()
                 self.data.loc[i, 'Area'] = round(newblob.area * (scale_factor) * (scale_factor) / 100, 2)
+                self.data.loc[i, 'Class'] = newblob.class_name
+
+        self.data_table.update()
+
+    @pyqtSlot(str,Blob)
+    def updateBlobClass(self, old_class_name, newblob):
+
+        for i, row in self.data.iterrows():
+            if row[0] == newblob.id:
                 self.data.loc[i, 'Class'] = newblob.class_name
 
         self.data_table.update()
