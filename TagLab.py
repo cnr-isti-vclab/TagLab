@@ -1150,6 +1150,7 @@ class TagLab(QMainWindow):
         self.labels_widget.doubleClickLabel[str].connect(self.viewerplus.assignClass)
         self.labels_widget.doubleClickLabel[str].connect(self.viewerplus2.assignClass)
 
+
     @pyqtSlot()
     def settings(self):
 

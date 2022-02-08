@@ -174,15 +174,22 @@ class QtTableLabel(QWidget):
         self.data_table.clicked.connect(self.clickedCell)
 
         self.activeImg = None
+        self.active_label_name = None
 
     @pyqtSlot(QModelIndex)
     def clickedCell(self, index):
 
         if index.column() == 0:
             oldindex = self.sortfilter.mapToSource(index)
-            #key = self.data['Class'][index.row()]
             self.toggleVisibility(oldindex.row())
             self.data_table.update()
+
+        if index.column() == 1 or index.column() == 2:
+           oldindex = self.sortfilter.mapToSource(index)
+           self.active_label_name = self.data['Class'][oldindex.row()]
+           self.activeLabelChanged.emit(self.active_label_name)
+
+
 
     def setLabels(self, project, img):
 
@@ -198,17 +205,17 @@ class QtTableLabel(QWidget):
             # when the signal is emitted
 
             try:
-                self.activeImg.annotations.blobUpdated.connect(self.updateBlob, type=Qt.UniqueConnection)
+                self.activeImg.annotations.blobUpdated[Blob,Blob].connect(self.updateBlob, type=Qt.UniqueConnection)
             except:
                 pass
 
             try:
-                self.activeImg.annotations.blobAdded.connect(self.addBlob, type=Qt.UniqueConnection)
+                self.activeImg.annotations.blobAdded[Blob].connect(self.addBlob, type=Qt.UniqueConnection)
             except:
                 pass
 
             try:
-                self.activeImg.annotations.blobRemoved.connect(self.removeBlob, type=Qt.UniqueConnection)
+                self.activeImg.annotations.blobRemoved[Blob].connect(self.removeBlob, type=Qt.UniqueConnection)
             except:
                 pass
 
@@ -267,6 +274,41 @@ class QtTableLabel(QWidget):
         self.data_table.setModel(self.model)
         self.data_table.update()
 
+    @pyqtSlot(Blob, Blob)
+    def updateBlob(self, oldblob, newblob):
+        self.removeBlob(oldblob)
+        self.addBlob(newblob)
+
+
+    @pyqtSlot(Blob)
+    def addBlob(self, blob):
+
+        scale_factor = self.activeImg.pixelSize()
+        data_table_row = self.data[self.data['Class'] == blob.class_name]
+        index = data_table_row.index
+        count = self.data['#'][index] + 1
+        blobarea = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
+        newcover = self.data['Coverage'][index] + blobarea
+        self.data.loc[index, '#'] = count
+        self.data.loc[index, 'Coverage'] = newcover
+
+        self.data_table.update()
+
+    @pyqtSlot(Blob)
+    def removeBlob(self, blob):
+
+        scale_factor = self.activeImg.pixelSize()
+        data_table_row = self.data[self.data['Class'] == blob.class_name]
+        index = data_table_row.index
+        count = self.data['#'][index] - 1
+        blobarea = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
+        newcover = self.data['Coverage'][index] - blobarea
+        self.data.loc[index, '#'] = count
+        self.data.loc[index, 'Coverage'] = newcover
+
+        self.data_table.update()
+
+
     def updateData(self):
 
         self.data_table.update()
@@ -302,22 +344,6 @@ class QtTableLabel(QWidget):
             self.data_table.scrollTo(self.data_table.model().index(indexes[0].row(), column))
 
 
-    def eventFilter(self, object, event):
-
-        if type(object) == QLineEdit and event.type() == QEvent.FocusIn :
-
-            self.highlightSelectedLabel(object)
-
-            return False
-
-        if type(object) == QLineEdit and event.type() == QEvent.MouseButtonDblClick :
-
-            label_name = object.text()
-            self.doubleClickLabel.emit(label_name)
-
-        return False
-
-
     def setAllVisible(self):
 
         # update the table data
@@ -329,7 +355,6 @@ class QtTableLabel(QWidget):
             label.visible = True
 
 
-
     def setAllNotVisible(self):
 
         # update the table data
@@ -339,8 +364,6 @@ class QtTableLabel(QWidget):
         # update the labels
         for label in self.project.labels.values():
             label.visible = False
-
-
 
 
     @pyqtSlot()
@@ -368,21 +391,6 @@ class QtTableLabel(QWidget):
 
         self.visibilityChanged.emit()
 
-    def highlightSelectedLabel(self, lbl_clicked):
-
-        # reset the text of all the clickable labels
-        for lbl in self.lineeditClass:
-            lbl.setText(lbl.text())
-            lbl.setStyleSheet("QLineEdit { border: none; font-weight: normal; color : lightgray;}")
-            lbl.setReadOnly(True)
-
-        txt = lbl_clicked.text()
-        lbl_clicked.setText(txt)
-        lbl_clicked.setReadOnly(True)
-        lbl_clicked.setStyleSheet("QLineEdit { border: 1 px; font-weight: bold; color : white;}")
-
-        self.active_label_name = lbl_clicked.property('key')
-        self.activeLabelChanged.emit(self.active_label_name)
 
     def isClassVisible(self, key):
 

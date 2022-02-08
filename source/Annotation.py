@@ -46,7 +46,7 @@ class Annotation(QObject):
     """
     blobAdded = pyqtSignal(Blob)
     blobRemoved = pyqtSignal(Blob)
-    blobUpdated = pyqtSignal(Blob)
+    blobUpdated = pyqtSignal(Blob,Blob)
 
     def __init__(self):
         super(QObject, self).__init__()
@@ -84,7 +84,7 @@ class Annotation(QObject):
         new_blob.id = old_blob.id;
         self.removeBlob(old_blob, notify=False)
         self.addBlob(new_blob, notify=False)
-        self.blobUpdated.emit(new_blob)
+        self.blobUpdated.emit(old_blob,new_blob)
 
 
     def blobById(self, id):
@@ -567,8 +567,8 @@ class Annotation(QObject):
             if blob.class_name == label.name:
                 count = count + 1
                 tot_area = tot_area + blob.area
-
         tot_area = round((tot_area * pixel_size * pixel_size) / 100.0, 2)
+
         return count, tot_area
 
 

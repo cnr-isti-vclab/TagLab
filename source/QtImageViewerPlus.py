@@ -1151,8 +1151,8 @@ class QtImageViewerPlus(QtImageViewer):
             brush = self.project.classBrushFromName(blob)
             blob.qpath_gitem.setBrush(brush)
 
-            # notify the update of the class
-            self.annotations.blobUpdated.emit(blob)
+            # # notify the update of the class
+            # self.annotations.blobUpdated.emit(blob)
 
         self.scene.invalidate()
 
@@ -1170,7 +1170,7 @@ class QtImageViewerPlus(QtImageViewer):
             self.scene.invalidate()
 
         # notify the update of the class
-        self.annotations.blobUpdated.emit(blob)
+        self.annotations.blobUpdated.emit(blob,blob)
 
 #UNDO STUFF
 #UNDO STUFF

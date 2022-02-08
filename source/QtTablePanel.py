@@ -203,14 +203,14 @@ class QtTablePanel(QWidget):
 
         self.updateTable(self.data)
 
-    @pyqtSlot(Blob)
-    def updateBlob(self, blob):
+    @pyqtSlot(Blob,Blob)
+    def updateBlob(self, oldblob, newblob):
 
         for i, row in self.data.iterrows():
-            if row[0] == blob.id:
+            if row[0] == newblob.id:
                 scale_factor = self.activeImg.pixelSize()
-                self.data.loc[i, 'Area'] = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
-                self.data.loc[i, 'Class'] = blob.class_name
+                self.data.loc[i, 'Area'] = round(newblob.area * (scale_factor) * (scale_factor) / 100, 2)
+                self.data.loc[i, 'Class'] = newblob.class_name
 
         self.data_table.update()
 
