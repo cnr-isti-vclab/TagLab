@@ -276,6 +276,7 @@ class QtTableLabel(QWidget):
 
     @pyqtSlot(Blob, Blob)
     def updateBlob(self, oldblob, newblob):
+
         self.removeBlob(oldblob)
         self.addBlob(newblob)
 
