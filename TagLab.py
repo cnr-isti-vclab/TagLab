@@ -4001,10 +4001,8 @@ class TagLab(QMainWindow):
 
         self.setProjectTitle(self.project.filename)
 
-        
         self.layers_widget.setProject(self.project)
         self.groupbox_blobpanel.updateRegionAttributes(self.project.region_attributes)
-        self.updateLabelsPanel()
 
         # show the first map present in project
         if len(self.project.images) > 0:
@@ -4013,6 +4011,7 @@ class TagLab(QMainWindow):
             self.layers_widget.setImage(image)
             self.move()
 
+        self.updateLabelsPanel()
         self.updateImageSelectionMenu()
 
         if self.timer is None:

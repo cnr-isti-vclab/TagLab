@@ -96,11 +96,17 @@ class TableModel(QAbstractTableModel):
 
             return txt
 
+
         if role == Qt.UserRole:
 
-            if index.column() == 1:
+            if index.column() == 0 or index.column() == 1:
+                return ""
 
+            if index.column() == 2:
                 return str(value)
+
+            if index.column() == 3:
+                return int(value)
 
             return float(value)
 
@@ -165,7 +171,18 @@ class QtTableLabel(QWidget):
         self.setLayout(layout)
 
         self.project = None
+        self.data_table.clicked.connect(self.clickedCell)
+
         self.activeImg = None
+
+    @pyqtSlot(QModelIndex)
+    def clickedCell(self, index):
+
+        if index.column() == 0:
+            oldindex = self.sortfilter.mapToSource(index)
+            #key = self.data['Class'][index.row()]
+            self.toggleVisibility(oldindex.row())
+            self.data_table.update()
 
     def setLabels(self, project, img):
 
@@ -213,17 +230,12 @@ class QtTableLabel(QWidget):
         self.data_table.setColumnWidth(0, 25)
         self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Fixed)
         self.data_table.setColumnWidth(1, 25)
-        self.data_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
+        self.data_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
         self.data_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
         self.data_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeToContents)
 
         self.data_table.horizontalHeader().showSection(0)
         self.data_table.update()
-
-        # for i,row in self.data.iterrows():
-        #     color = row['Color']
-        #     btnC = self.createColorButton(color)
-        #     self.data_table.setIndexWidget(self.data_table.model().index(i,1), btnC)
 
         style = "QHeaderView::section { background-color: rgb(40,40,40) }"
         self.data_table.setStyleSheet(style)
@@ -309,48 +321,50 @@ class QtTableLabel(QWidget):
     def setAllVisible(self):
 
         # update the table data
-        for row in self.data.rows:
-            row['Visibility'] = 1
+        for i,row in self.data.iterrows():
+            self.data.loc[i, 'Visibility'] = 1
 
         # update the labels
-        for label in self.labels.values():
+        for label in self.project.labels.values():
             label.visible = True
 
-        # update the table view
-        self.data_table.update()
+
 
     def setAllNotVisible(self):
 
         # update the table data
-        for row in self.data.rows:
-            row['Visibility'] = 0
+        for i,row in self.data.iterrows():
+            self.data.loc[i, 'Visibility'] = 0
 
         # update the labels
-        for label in self.labels.values():
-            label.visible = True
+        for label in self.project.labels.values():
+            label.visible = False
 
-        # update the table view
-        self.data_table.update()
+
+
 
     @pyqtSlot()
-    def toggleVisibility(self):
+    def toggleVisibility(self, index):
 
-        button_clicked = self.sender()
-        key = button_clicked.property('key')
-        label = self.labels[key]
+        key = self.data['Class'][index]
+        label = self.project.labels[key]
 
         if QApplication.keyboardModifiers() == Qt.ControlModifier:
             self.setAllNotVisible()
             label.visible = True
+            self.data.loc[index, 'Visibility'] = 1
 
         elif QApplication.keyboardModifiers() == Qt.ShiftModifier:
             self.setAllVisible()
             label.visible = False
+            self.data.loc[index, 'Visibility'] = 0
 
         else:
             label.visible = not label.visible
-
-        button_clicked.setIcon(self.icon_eyeopen if label.visible is True else self.icon_eyeclosed)
+            if self.data['Visibility'][index] == 1:
+                self.data.loc[index, 'Visibility'] = 0
+            else:
+                self.data.loc[index, 'Visibility'] = 1
 
         self.visibilityChanged.emit()
 

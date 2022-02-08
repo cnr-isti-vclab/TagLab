@@ -506,7 +506,7 @@ class Project(object):
                 count = 0
                 new_area = 0.0
             else:
-                count, new_area = self.image.annotations.calculate_perclass_blobs_value(label, self.map_px_to_mm_factor)
+                count, new_area = image.annotations.calculate_perclass_blobs_value(label, image.pixelSize())
 
             dict['#'][i] = count
             dict['Coverage'][i] = new_area
