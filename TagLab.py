@@ -2986,13 +2986,14 @@ class TagLab(QMainWindow):
         DATA TABLE IS MISSING HERE
         """
 
+        # update layers
         self.layers_widget.setProject(self.project)
 
+        # update labels widget
         image = None
         if self.activeviewer is not None:
             if self.activeviewer.image is not None:
                 image = self.activeviewer.image
-
 
         self.labels_widget.setLabels(self.project, image)
 

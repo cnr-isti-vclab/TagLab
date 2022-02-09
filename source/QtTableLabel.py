@@ -201,6 +201,7 @@ class QtTableLabel(QWidget):
 
         if self.project ==  project and self.activeImg == img :
            return
+
         self.project = project
         self.activeImg = img
         self.active_label_name = "Empty"
@@ -233,13 +234,14 @@ class QtTableLabel(QWidget):
             except:
                 pass
 
-        self.model = TableModel(self.data)
-        self.sortfilter = QSortFilterProxyModel(self)
-        self.sortfilter.setSourceModel(self.model)
-        self.sortfilter.setSortRole(Qt.UserRole)
-        self.data_table.setModel(self.sortfilter)
-
-        self.model.table = self.data_table
+        if self.model is None:
+            self.model = TableModel(self.data)
+            self.sortfilter = QSortFilterProxyModel(self)
+            self.sortfilter.setSourceModel(self.model)
+            self.sortfilter.setSortRole(Qt.UserRole)
+            self.data_table.setModel(self.sortfilter)
+        else:
+            self.updateTable(self.data)
 
         self.data_table.setVisible(False)
         self.data_table.verticalHeader().hide()
