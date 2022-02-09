@@ -171,7 +171,7 @@ class QtTableLabel(QWidget):
 
         self.project = None
         self.activeImg = None
-        self.active_label_name = None
+        self.active_label_name = "Empty"
 
         self.data_table.clicked.connect(self.clickedCell)
         self.data_table.doubleClicked.connect(self.doubleClickedCell)
@@ -199,8 +199,11 @@ class QtTableLabel(QWidget):
 
     def setLabels(self, project, img):
 
+        if self.project ==  project and self.activeImg == img :
+           return
         self.project = project
         self.activeImg = img
+        self.active_label_name = "Empty"
 
         # it works also if there is no active image (i.e. img is None)
         self.data = project.create_labels_table(self.activeImg)
@@ -257,7 +260,12 @@ class QtTableLabel(QWidget):
 
         style = "QHeaderView::section { background-color: rgb(40,40,40) }"
         self.data_table.setStyleSheet(style)
+        empty_row = self.data[self.data['Class'] == 'Empty']
+        self.selectRows(empty_row.index)
+
         self.data_table.selectionModel().selectionChanged.connect(lambda x: self.selectionChanged.emit())
+
+
 
     def createColorButton(self, color):
 
@@ -277,13 +285,6 @@ class QtTableLabel(QWidget):
 
         return btnC
 
-    def clear(self):
-
-        self.model = None
-        self.data = None
-
-        self.data_table.setModel(self.model)
-        self.data_table.update()
 
     @pyqtSlot(Blob, Blob)
     def updateBlob(self, oldblob, newblob):
@@ -294,15 +295,22 @@ class QtTableLabel(QWidget):
     @pyqtSlot(str, Blob)
     def updateBlobClass(self, old_class_name, newblob):
 
+        scale_factor = self.activeImg.pixelSize()
+        blobarea = round(newblob.area * (scale_factor) * (scale_factor) / 100, 2)
+
         data_table_row = self.data[self.data['Class'] == old_class_name]
         index = data_table_row.index
         count = self.data['#'][index]
         self.data.loc[index, '#'] = count - 1
+        newcover = self.data['Coverage'][index] - blobarea
+        self.data.loc[index, 'Coverage'] = newcover
 
         data_table_row = self.data[self.data['Class'] == newblob.class_name]
         index = data_table_row.index
         count = self.data['#'][index]
         self.data.loc[index, '#'] = count + 1
+        newcover = self.data['Coverage'][index] + blobarea
+        self.data.loc[index, 'Coverage'] = newcover
 
         self.data_table.update()
 
@@ -357,6 +365,7 @@ class QtTableLabel(QWidget):
 
 
     def selectRows(self, rows):
+
         self.data_table.clearSelection()
 
         indexes = [self.sortfilter.mapFromSource(self.model.index(r, 0)) for r in rows]

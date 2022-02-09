@@ -1156,9 +1156,9 @@ class QtImageViewerPlus(QtImageViewer):
 
     def setBlobClass(self, blob, class_name):
 
+
         if blob.class_name == class_name:
             return
-
         self.undo_data.setBlobClass(blob, class_name)
         self.annotations.setBlobClass(blob, class_name)
 

@@ -2969,7 +2969,7 @@ class TagLab(QMainWindow):
         self.project.setDictionaryFromListOfLabels(labels_list)
 
         # update labels widget
-        self.updateLabelsPanel()
+        self.updatePanels()
 
         # redraw all blobs
         if self.viewerplus is not None:
@@ -2980,15 +2980,11 @@ class TagLab(QMainWindow):
             if self.viewerplus2.image is not None:
                 self.viewerplus2.redrawAllBlobs()
 
-    def updateLabelsPanel(self):
+    def updatePanels(self):
         """
-        Update labels widget re-creating it to ensure correct size inside the scroll area
+        Update (labels and layers) panels
+        DATA TABLE IS MISSING HERE
         """
-
-        self.labels_widget = QtTableLabel()
-
-        # re-connect
-        self.connectLabelsPanelWithViewers()
 
         self.layers_widget.setProject(self.project)
 
@@ -2996,6 +2992,7 @@ class TagLab(QMainWindow):
         if self.activeviewer is not None:
             if self.activeviewer.image is not None:
                 image = self.activeviewer.image
+
 
         self.labels_widget.setLabels(self.project, image)
 
@@ -3158,7 +3155,7 @@ class TagLab(QMainWindow):
 
             index = self.project.images.index(image)
             self.updateComboboxSourceImage(index)
-            self.layers_widget.setImage(image);
+            self.layers_widget.setImage(image)
 
             if self.checkBoxFill.isChecked():
                 self.viewerplus.enableFill()
@@ -4017,7 +4014,7 @@ class TagLab(QMainWindow):
             self.layers_widget.setImage(image)
             self.move()
 
-        self.updateLabelsPanel()
+        self.updatePanels()
         self.updateImageSelectionMenu()
 
         if self.timer is None:

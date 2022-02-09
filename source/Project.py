@@ -196,32 +196,32 @@ class Project(object):
             self.labels[key] = Label(id=key, name=key, description=None, fill=color, border=[200, 200, 200], visible=True)
 
 
-    def checkDictionaryConsistency(self, labels):
-        """
-        Check the consistency between a list of labels and the current annotations.
-        """
-
-        messages = ""
-        inconsistencies = 0
-
-        # check for existing labels present in the annotations but not present in list of labels
-
-        for class_name in class_names:
-            if not class_name in labels:
-                msg = "\n" + str(inconsistencies) + ") Label '" + key + "' is missing. We automatically add it."
-                messages += msg
-                inconsistencies += 1
-
-                label = self.labels[class_name]
-                labels.append(label.copy())
-
-        if inconsistencies > 0:
-            box = QMessageBox()
-            box.setWindowTitle("There are dictionary inconsistencies. See below:\n")
-            box.setText(messages)
-            box.exec()
-
-        return True
+    # def checkDictionaryConsistency(self, labels):
+    #     """
+    #     Check the consistency between a list of labels and the current annotations.
+    #     """
+    #
+    #     messages = ""
+    #     inconsistencies = 0
+    #
+    #     # check for existing labels present in the annotations but not present in list of labels
+    #
+    #     for class_name in class_names:
+    #         if not class_name in labels:
+    #             msg = "\n" + str(inconsistencies) + ") Label '" + key + "' is missing. We automatically add it."
+    #             messages += msg
+    #             inconsistencies += 1
+    #
+    #             label = self.labels[class_name]
+    #             labels.append(label.copy())
+    #
+    #     if inconsistencies > 0:
+    #         box = QMessageBox()
+    #         box.setWindowTitle("There are dictionary inconsistencies. See below:\n")
+    #         box.setText(messages)
+    #         box.exec()
+    #
+    #     return True
 
 
     def labelsInUse(self):
