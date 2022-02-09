@@ -461,16 +461,16 @@ class TagLab(QMainWindow):
         self.compare_panel.data_table.clicked.connect(self.showConnectionCluster)
 
         # SINGLE-VIEW DATA PANEL
-        self.table_panel = QtTablePanel()
-        self.table_panel.selectionChanged.connect(self.showBlobOnViewer)
-        self.table_panel.selectionChanged.connect(self.updatePanelInfoSelected)
+        self.data_panel = QtTablePanel()
+        self.data_panel.selectionChanged.connect(self.showBlobOnViewer)
+        self.data_panel.selectionChanged.connect(self.updatePanelInfoSelected)
 
 
         self.groupbox_comparison = QGroupBox()
 
         layout_groupbox2 = QVBoxLayout()
         # in single view only show the table panel
-        layout_groupbox2.addWidget(self.table_panel)
+        layout_groupbox2.addWidget(self.data_panel)
         self.compare_panel.hide()
         layout_groupbox2.addWidget(self.compare_panel)
 
@@ -604,6 +604,8 @@ class TagLab(QMainWindow):
         self.updateToolStatus()
 
         self.split_screen_flag = False
+        self.update_panels_flag = True
+        self.counter = 0
         self.disableSplitScreen()
 
         self.setGuiPreferences()
@@ -1648,7 +1650,7 @@ class TagLab(QMainWindow):
         self.viewerplus2.hide()
 
         self.compare_panel.hide()
-        self.table_panel.show()
+        self.data_panel.show()
         self.datadock.setWindowTitle("Data table")
 
         self.comboboxTargetImage.hide()
@@ -1669,11 +1671,7 @@ class TagLab(QMainWindow):
         self.split_screen_flag = False
 
         self.activeviewer = self.viewerplus
-
-        if self.activeviewer.image is not None:
-            self.labels_widget.setLabels(self.project, self.activeviewer.image)
-
-        self.layers_widget.setImage(self.viewerplus.image)
+        self.updatePanels()
 
     def enableSplitScreen(self):
 
@@ -1702,12 +1700,14 @@ class TagLab(QMainWindow):
             self.comboboxSourceImage.setCurrentIndex(index_to_set)
             self.comboboxTargetImage.setCurrentIndex(index_to_set + 1)
 
+            self.doNotUpdatePanels()
             self.viewerplus.clear()
-            self.viewerplus2.clear()
             self.viewerplus.setProject(self.project)
-            self.viewerplus2.setProject(self.project)
             self.viewerplus.setImage(self.project.images[index_to_set])
+            self.viewerplus2.clear()
+            self.viewerplus2.setProject(self.project)
             self.viewerplus2.setImage(self.project.images[index_to_set + 1])
+            self.doUpdatePanels()
 
             self.comboboxSourceImage.currentIndexChanged.connect(self.sourceImageChanged)
             self.comboboxTargetImage.currentIndexChanged.connect(self.targetImageChanged)
@@ -1731,17 +1731,10 @@ class TagLab(QMainWindow):
             self.split_screen_flag = True
 
             self.activeviewer = self.viewerplus
+            self.updatePanels()
 
-            # update labels panel
-            if self.activeviewer.image is not None:
-                self.labels_widget.setLabels(self.project, self.activeviewer.image)
-
-            # update layers
-            self.layers_widget.setImage(self.viewerplus.image, self.viewerplus2.image)
-
-            self.compare_panel.setTable(self.project, index_to_set, index_to_set + 1)
             self.compare_panel.show()
-            self.table_panel.hide()
+            self.data_panel.hide()
             self.datadock.setWindowTitle("Comparison Table")
 
 
@@ -1783,12 +1776,12 @@ class TagLab(QMainWindow):
 
         self.viewerplus.resetSelection()
 
-        selected = self.table_panel.data_table.selectionModel().selectedRows()
+        selected = self.data_panel.data_table.selectionModel().selectedRows()
         #convert proxyf sortfilter indexes to modelindexes which are the same of the .data_table
-        indexes = [self.table_panel.sortfilter.mapToSource(self.table_panel.sortfilter.index(index.row(), 0)) for index in selected]
+        indexes = [self.data_panel.sortfilter.mapToSource(self.data_panel.sortfilter.index(index.row(), 0)) for index in selected]
 
         for index in indexes:
-            row = self.table_panel.data.iloc[index.row()]
+            row = self.data_panel.data.iloc[index.row()]
             blob_id = row['Id']
             if blob_id < 0:
                 print("OOOPS!")
@@ -1813,12 +1806,12 @@ class TagLab(QMainWindow):
 
         rows = []
         for blob in selected:
-            row = self.table_panel.data.index[self.table_panel.data["Id"] == blob.id].to_list()
+            row = self.data_panel.data.index[self.data_panel.data["Id"] == blob.id].to_list()
             if row is not None:
                 rows += row
-        self.table_panel.blockSignals(True)
-        self.table_panel.selectRows(rows)
-        self.table_panel.blockSignals(False)
+        self.data_panel.blockSignals(True)
+        self.data_panel.selectRows(rows)
+        self.data_panel.blockSignals(False)
 
     @pyqtSlot()
     def showConnectionCluster(self):
@@ -1988,17 +1981,21 @@ class TagLab(QMainWindow):
     @pyqtSlot()
     def setActiveViewer(self):
 
-        self.activeviewer = self.sender()
+        viewer = self.sender()
 
-        if self.activeviewer.image is not None:
-            self.labels_widget.setLabels(self.project, self.activeviewer.image)
+        if self.activeviewer != viewer:
 
-        if self.activeviewer is not self.viewerplus:
-            self.inactiveviewer = self.viewerplus
-        else:
-            self.inactiveviewer = self.viewerplus2
+            self.activeviewer = viewer
 
-        self.inactiveviewer.resetTools()
+            if self.activeviewer is not self.viewerplus:
+                self.inactiveviewer = self.viewerplus
+            else:
+                self.inactiveviewer = self.viewerplus2
+
+            self.inactiveviewer.resetTools()
+
+            # update panels accordingly
+            self.updatePanels()
 
     def updateImageSelectionMenu(self):
 
@@ -2058,18 +2055,17 @@ class TagLab(QMainWindow):
         index2 = self.comboboxTargetImage.currentIndex()
         if index1 == index2:
             index2 = (index1 + 1) % N
+
+            self.doNotUpdatePanels()
             self.viewerplus2.clear()
             self.viewerplus2.setProject(self.project)
             self.viewerplus2.setImage(self.project.images[index2])
+            self.doUpdatePanels()
+
             self.updateComboboxTargetImage(index2)
 
         self.viewerplus.setProject(self.project)
         self.viewerplus.setImage(image)
-
-        if self.compare_panel.isVisible():
-            self.compare_panel.setTable(self.project, index1, index2)
-
-        self.layers_widget.setImage(image)
 
     @pyqtSlot(int)
     def targetImageChanged(self, index2):
@@ -2085,16 +2081,17 @@ class TagLab(QMainWindow):
         index1 = self.comboboxSourceImage.currentIndex()
         if index1 == index2:
             index1 = (index2 - 1) % N
+
+            self.doNotUpdatePanels()
             self.viewerplus.clear()
             self.viewerplus.setProject(self.project)
             self.viewerplus.setImage(self.project.images[index1])
+            self.doUpdatePanels()
+
             self.updateComboboxSourceImage(index1)
 
         self.viewerplus2.setProject(self.project)
         self.viewerplus2.setImage(self.project.images[index2])
-
-        if self.compare_panel.isVisible():
-            self.compare_panel.setTable(self.project, index1, index2)
 
 
     @pyqtSlot()
@@ -2171,7 +2168,7 @@ class TagLab(QMainWindow):
         self.last_image_loaded = None
         self.activeviewer = None
         self.contextMenuPosition = None
-        self.table_panel.clear()
+        self.data_panel.clear()
         self.compare_panel.clear()
         self.comboboxSourceImage.clear()
         self.comboboxTargetImage.clear()
@@ -2376,13 +2373,13 @@ class TagLab(QMainWindow):
     #
     @pyqtSlot()
     def updatePanelInfoSelected(self):
-        selected = self.table_panel.data_table.selectionModel().selectedRows()
-        indexes = [self.table_panel.sortfilter.mapToSource(self.table_panel.sortfilter.index(index.row(), 0)) for index in selected]
+        selected = self.data_panel.data_table.selectionModel().selectedRows()
+        indexes = [self.data_panel.sortfilter.mapToSource(self.data_panel.sortfilter.index(index.row(), 0)) for index in selected]
         if len(indexes) == 0:
             self.resetPanelInfo()
             return
         index = indexes[0]
-        row = self.table_panel.data.iloc[index.row()]
+        row = self.data_panel.data.iloc[index.row()]
         blob_id = row['Id']
         if blob_id < 0:
             print("OOOPS!")
@@ -2980,22 +2977,61 @@ class TagLab(QMainWindow):
             if self.viewerplus2.image is not None:
                 self.viewerplus2.redrawAllBlobs()
 
+    def doNotUpdatePanels(self):
+
+        self.update_panels_flag = False
+
+    def doUpdatePanels(self):
+
+        self.update_panels_flag = True
+
     def updatePanels(self):
         """
-        Update (labels and layers) panels
-        DATA TABLE IS MISSING HERE
+        Update panels (labels, layers, data panel, compare panel and map viewer)
         """
 
-        # update layers
-        self.layers_widget.setProject(self.project)
+        self.counter = self.counter + 1
+        print("sono qui", self.counter)
 
-        # update labels widget
+        if self.update_panels_flag is False:
+            return
+
+        if self.split_screen_flag is True:
+            viewer = self.viewerplus
+
+        # update labels
         image = None
         if self.activeviewer is not None:
             if self.activeviewer.image is not None:
                 image = self.activeviewer.image
 
         self.labels_widget.setLabels(self.project, image)
+
+        # update layers
+        self.layers_widget.setProject(self.project)
+        self.layers_widget.setImage(image)
+
+        if self.split_screen_flag is True:
+            # update compare panel (only if it is visible)
+            index1 = self.comboboxSourceImage.currentIndex()
+            index2 = self.comboboxTargetImage.currentIndex()
+            if self.compare_panel.isVisible():
+                self.compare_panel.setTable(self.project, index1, index2)
+        else:
+            # update map viewer
+            w = self.mapviewer.width()
+            thumb = self.activeviewer.pixmap.scaled(w, w, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            self.mapviewer.setPixmap(thumb)
+            self.mapviewer.setOpacity(0.5)
+
+        # update data panel
+        self.updateDataPanel()
+
+        # molto sporco per collegare data panel, dovrebbe andare in data panel
+        if image is not None:
+            image.annotations.blobUpdated.connect(self.updatePanelInfo)
+            image.annotations.blobAdded.connect(self.updatePanelInfo)
+            image.annotations.blobRemoved.connect(self.resetPanelInfo)
 
     #REFACTOR
     @pyqtSlot()
@@ -3142,21 +3178,24 @@ class TagLab(QMainWindow):
 
     @pyqtSlot(Image)
     def showImage(self, image):
-
         """
         Show the image into the main view and update the map viewer accordingly.
         """
+
         try:
             QApplication.setOverrideCursor(Qt.WaitCursor)
 
+            self.doNotUpdatePanels()
             self.viewerplus.clear()
             self.viewerplus.setProject(self.project)
             self.viewerplus.setImage(image)
+            self.doUpdatePanels()
+
             self.last_image_loaded = image
 
             index = self.project.images.index(image)
             self.updateComboboxSourceImage(index)
-            self.layers_widget.setImage(image)
+            self.updateComboboxSourceImage(index)
 
             if self.checkBoxFill.isChecked():
                 self.viewerplus.enableFill()
@@ -3177,20 +3216,7 @@ class TagLab(QMainWindow):
             else:
                 self.viewerplus.hideGrid()
 
-            w = self.mapviewer.width()
-            thumb = self.viewerplus.pixmap.scaled(w, w, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-            self.mapviewer.setPixmap(thumb)
-            self.mapviewer.setOpacity(0.5)
-
             self.disableSplitScreen()
-            self.setDataTable()
-
-            # molto sporco per collegare panel info, dovrebbe andare in Panel Info
-
-            if image is not None:
-                 image.annotations.blobUpdated.connect(self.updatePanelInfo)
-                 image.annotations.blobAdded.connect(self.updatePanelInfo)
-                 image.annotations.blobRemoved.connect(self.resetPanelInfo)
 
             QApplication.restoreOverrideCursor()
 
@@ -3200,12 +3226,11 @@ class TagLab(QMainWindow):
             msgBox.setText("Error loading map:" + str(e))
             msgBox.exec()
 
-    def setDataTable(self):
+    def updateDataPanel(self):
 
         if self.activeviewer is not None:
             if self.activeviewer.image is not None:
-                self.table_panel.setTable(self.project, self.activeviewer.image)
-
+                self.data_panel.setTable(self.project, self.activeviewer.image)
     
     @pyqtSlot(Layer, bool)
     def toggleLayer(self, layer, enable):
@@ -4012,10 +4037,8 @@ class TagLab(QMainWindow):
         if len(self.project.images) > 0:
             image = self.project.images[0]
             self.showImage(image)
-            self.layers_widget.setImage(image)
             self.move()
 
-        self.updatePanels()
         self.updateImageSelectionMenu()
 
         if self.timer is None:

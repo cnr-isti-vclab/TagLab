@@ -131,7 +131,13 @@ class QtTablePanel(QWidget):
 
         self.setLayout(layout)
 
+        self.project = None
+        self.activeImg = None
+
     def setTable(self, project, img):
+
+        if self.project == project and self.activeImg == img:
+            return
 
         self.project = project
         self.activeImg = img
@@ -163,11 +169,14 @@ class QtTablePanel(QWidget):
 
             self.data = self.activeImg.create_data_table()
 
-        self.model = TableModel(self.data)
-        self.sortfilter = QSortFilterProxyModel(self)
-        self.sortfilter.setSourceModel(self.model)
-        self.sortfilter.setSortRole(Qt.UserRole)
-        self.data_table.setModel(self.sortfilter)
+        if self.model is None:
+            self.model = TableModel(self.data)
+            self.sortfilter = QSortFilterProxyModel(self)
+            self.sortfilter.setSourceModel(self.model)
+            self.sortfilter.setSortRole(Qt.UserRole)
+            self.data_table.setModel(self.sortfilter)
+        else:
+            self.updateTable(self.data)
 
         self.data_table.setVisible(False)
         self.data_table.verticalHeader().hide()
