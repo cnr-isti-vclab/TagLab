@@ -138,6 +138,17 @@ class TableModel(QAbstractTableModel):
             if orientation == Qt.Vertical:
                 return str(self._data.index[section])
 
+
+
+class QtLabelSortFilter(QSortFilterProxyModel):
+    def __init__(self, parent=None):
+        super(QtLabelSortFilter, self).__init__(parent)
+
+    def sort(self, column, order):
+        if column == 3 or column == 4:
+            order = 1 - order
+        super().sort(column, order)
+
 class QtTableLabel(QWidget):
 
     # custom signals
@@ -239,7 +250,7 @@ class QtTableLabel(QWidget):
 
         if self.model is None:
             self.model = TableModel(self.data)
-            self.sortfilter = QSortFilterProxyModel(self)
+            self.sortfilter = QtLabelSortFilter(self)
             self.sortfilter.setSourceModel(self.model)
             self.sortfilter.setSortRole(Qt.UserRole)
             self.data_table.setModel(self.sortfilter)
