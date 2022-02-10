@@ -974,9 +974,11 @@ class TagLab(QMainWindow):
         helpAct.setStatusTip("Help")
         helpAct.triggered.connect(self.help)
 
-        aboutAct = QAction("About", self)
-        #exportAct.setShortcut('Ctrl+Q')
-        #aboutAct.setStatusTip("About")
+        repAct = QAction("Report Issues", self)
+        repAct.setStatusTip("Report Issues")
+        repAct.triggered.connect(self.report)
+
+        aboutAct = QAction("About TagLab", self)
         aboutAct.triggered.connect(self.about)
 
         menubar = QMenuBar(self)
@@ -1130,6 +1132,7 @@ class TagLab(QMainWindow):
         self.helpmenu = menubar.addMenu("&Help")
         self.helpmenu.setStyleSheet(styleMenu)
         self.helpmenu.addAction(helpAct)
+        self.helpmenu.addAction(repAct)
         self.helpmenu.addAction(aboutAct)
 
         return menubar
@@ -3421,6 +3424,36 @@ class TagLab(QMainWindow):
             del self.trainYourNetworkWidget
             self.trainYourNetworkWidget = None
 
+
+    @pyqtSlot()
+    def report(self):
+
+        content = QLabel()
+        content.setTextFormat(Qt.RichText)
+
+        txt = "<b>{:s}</b> <p> If TagLab closes unexpectedly and you can reproduce the incriminated sequence of actions,"\
+              " please, send us a report from" \
+              "<a href='https://github.com/cnr-isti-vclab/TagLab/issues' style='color: white; font-weight: bold; text-decoration: none'>" \
+              " Github</a>.</p>".format(self.TAGLAB_VERSION)
+
+        content.setWordWrap(True)
+        content.setMinimumWidth(500)
+        content.setText(txt)
+        content.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        content.setStyleSheet("QLabel {padding: 10px; }");
+        content.setOpenExternalLinks(True)
+
+        layout = QHBoxLayout()
+        layout.addWidget(content)
+
+        widget = QWidget(self)
+        widget.setAutoFillBackground(True)
+        widget.setStyleSheet("background-color: rgba(40,40,40,100); color: white")
+        widget.setLayout(layout)
+        widget.setWindowTitle("Report Issues")
+        widget.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
+        widget.show()
+
     @pyqtSlot()
     def about(self):
 
@@ -3431,8 +3464,6 @@ class TagLab(QMainWindow):
         pxmap = pxmap.scaledToWidth(160)
         icon.setPixmap(pxmap)
         icon.setStyleSheet("QLabel {padding: 5px; }");
-
-
 
         content = QLabel()
         content.setTextFormat(Qt.RichText)

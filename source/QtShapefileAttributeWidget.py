@@ -85,9 +85,9 @@ class QtAttributeWidget(QWidget):
         lbltype = QLabel("Shapefile type:")
 
         self.types_layout = QHBoxLayout()
-        self.chkBoxlabel = QRadioButton("Labeled regions")
+        self.chkBoxlabel = QRadioButton("Labeling layer")
         self.chkBoxlabel.setChecked(True)
-        self.chkBoxsampling = QRadioButton("Sampling")
+        self.chkBoxsampling = QRadioButton("Reference layer")
         self.chkBoxother = QRadioButton("Other")
         self.types_layout.addWidget(self.chkBoxlabel)
         self.types_layout.addWidget(self.chkBoxsampling)
