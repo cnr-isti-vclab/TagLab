@@ -126,7 +126,6 @@ class QtDictionaryWidget(QWidget):
 
         buttons_layout = QVBoxLayout()
         buttons_layout.setAlignment(Qt.AlignRight)
-        # buttons_layout.setAlignment(Qt.AlignTop)
         buttons_layout.addStretch()
         buttons_layout.addWidget(self.btnOk)
         buttons_layout.addWidget(self.btnRemove)

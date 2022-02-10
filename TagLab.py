@@ -2990,8 +2990,6 @@ class TagLab(QMainWindow):
         Update panels (labels, layers, data panel, compare panel and map viewer)
         """
 
-        self.counter = self.counter + 1
-        print("sono qui", self.counter)
 
         if self.update_panels_flag is False:
             return

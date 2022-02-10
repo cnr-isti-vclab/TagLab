@@ -168,7 +168,7 @@ class QtTableLabel(QWidget):
         layout.addWidget(self.data_table)
 
         self.setLayout(layout)
-
+        self.labels = None
         self.project = None
         self.activeImg = None
         self.active_label_name = "Empty"
@@ -199,8 +199,11 @@ class QtTableLabel(QWidget):
 
     def setLabels(self, project, img):
 
-        if self.project ==  project and self.activeImg == img :
-           return
+        if self.project is not None:
+          if self.labels == project.labels and self.activeImg == img:
+             return
+
+        self.labels = project.labels.copy()
 
         self.project = project
         self.activeImg = img
@@ -428,10 +431,6 @@ class QtTableLabel(QWidget):
 
         self.visibilityChanged.emit()
 
-
-    def isClassVisible(self, key):
-
-        return self.labels[key].visible
 
     def getActiveLabelName(self):
 
