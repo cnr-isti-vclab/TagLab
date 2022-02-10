@@ -254,34 +254,32 @@ class QtTableLabel(QWidget):
             self.sortfilter.setSourceModel(self.model)
             self.sortfilter.setSortRole(Qt.UserRole)
             self.data_table.setModel(self.sortfilter)
+
+            self.data_table.setVisible(False)
+            self.data_table.verticalHeader().hide()
+            self.data_table.setVisible(True)
+            self.data_table.setEditTriggers(QAbstractItemView.DoubleClicked)
+
+            self.data_table.horizontalHeader().setMinimumSectionSize(10)
+            self.data_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Fixed)
+            self.data_table.setColumnWidth(0, 25)
+            self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Fixed)
+            self.data_table.setColumnWidth(1, 25)
+            self.data_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
+            self.data_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
+            self.data_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeToContents)
+
+            self.data_table.horizontalHeader().showSection(0)
+            self.data_table.update()
+
+            style = "QHeaderView::section { background-color: rgb(40,40,40) }"
+            self.data_table.setStyleSheet(style)
+            empty_row = self.data[self.data['Class'] == 'Empty']
+            self.selectRows(empty_row.index)
+
+            self.data_table.selectionModel().selectionChanged.connect(lambda x: self.selectionChanged.emit())
         else:
             self.updateTable(self.data)
-
-        self.data_table.setVisible(False)
-        self.data_table.verticalHeader().hide()
-        self.data_table.setVisible(True)
-        self.data_table.setEditTriggers(QAbstractItemView.DoubleClicked)
-
-        self.data_table.horizontalHeader().setMinimumSectionSize(10)
-        self.data_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Fixed)
-        self.data_table.setColumnWidth(0, 25)
-        self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Fixed)
-        self.data_table.setColumnWidth(1, 25)
-        self.data_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
-        self.data_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
-        self.data_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeToContents)
-
-        self.data_table.horizontalHeader().showSection(0)
-        self.data_table.update()
-
-        style = "QHeaderView::section { background-color: rgb(40,40,40) }"
-        self.data_table.setStyleSheet(style)
-        empty_row = self.data[self.data['Class'] == 'Empty']
-        self.selectRows(empty_row.index)
-
-        self.data_table.selectionModel().selectionChanged.connect(lambda x: self.selectionChanged.emit())
-
-
 
     def createColorButton(self, color):
 

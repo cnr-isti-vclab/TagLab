@@ -175,22 +175,22 @@ class QtTablePanel(QWidget):
             self.sortfilter.setSourceModel(self.model)
             self.sortfilter.setSortRole(Qt.UserRole)
             self.data_table.setModel(self.sortfilter)
+
+            self.data_table.setVisible(False)
+            self.data_table.verticalHeader().hide()
+            self.data_table.setVisible(True)
+            self.data_table.setEditTriggers(QAbstractItemView.DoubleClicked)
+
+            self.data_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+            self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+            self.data_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
+            self.data_table.horizontalHeader().showSection(0)
+            self.data_table.update()
+
+            self.data_table.setStyleSheet("QHeaderView::section { background-color: rgb(40,40,40) }")
+            self.data_table.selectionModel().selectionChanged.connect(lambda x: self.selectionChanged.emit())
         else:
             self.updateTable(self.data)
-
-        self.data_table.setVisible(False)
-        self.data_table.verticalHeader().hide()
-        self.data_table.setVisible(True)
-        self.data_table.setEditTriggers(QAbstractItemView.DoubleClicked)
-
-        self.data_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
-        self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-        self.data_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
-        self.data_table.horizontalHeader().showSection(0)
-        self.data_table.update()
-
-        self.data_table.setStyleSheet("QHeaderView::section { background-color: rgb(40,40,40) }")
-        self.data_table.selectionModel().selectionChanged.connect(lambda x: self.selectionChanged.emit())
 
     @pyqtSlot(Blob)
     def addBlob(self, blob):
