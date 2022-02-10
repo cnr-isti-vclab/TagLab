@@ -61,6 +61,9 @@ class Annotation(QObject):
         self.refine_depth_weight = 0.0
         self.refine_conservative = 0.1
 
+        # cache
+        self.table_needs_update = True
+
     def addBlob(self, blob, notify=True):
         used = [blob.id for blob in self.seg_blobs]
         if blob.id in used:
@@ -71,6 +74,8 @@ class Annotation(QObject):
         if notify:
             self.blobAdded.emit(blob)
 
+        self.table_needs_update = True
+
     def removeBlob(self, blob, notify=True):
 
         # notification that a blob is going to be removed
@@ -80,12 +85,16 @@ class Annotation(QObject):
         index = self.seg_blobs.index(blob)
         del self.seg_blobs[index]
 
+        self.table_needs_update = True
+
     def updateBlob(self, old_blob, new_blob):
 
         new_blob.id = old_blob.id;
         self.removeBlob(old_blob, notify=False)
         self.addBlob(new_blob, notify=False)
         self.blobUpdated.emit(old_blob,new_blob)
+
+        self.table_needs_update = True
 
     def setBlobClass(self, blob, class_name):
 
@@ -97,6 +106,8 @@ class Annotation(QObject):
 
             # notify that the class name of 'blob' has changed
             self.blobClassChanged.emit(old_class_name, blob)
+
+        self.table_needs_update = True
 
     def blobById(self, id):
         for blob in self.seg_blobs:

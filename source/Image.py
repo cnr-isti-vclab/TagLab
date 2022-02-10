@@ -59,6 +59,9 @@ class Image(object):
         else:
             self.grid = None
 
+        self.cache_data_table = None
+        self.cache_labels_table = None
+
     def deleteLayer(self, layer):
         self.layers.remove(layer)
 
@@ -111,63 +114,76 @@ class Image(object):
 
 
     def create_labels_table(self, labels):
+        '''
+        Creates a data table for the label panel
+        '''
 
-        ''' create a data table for the label panel '''
+        if self.annotations.table_needs_update is False:
+            return self.cache_labels_table
+        else:
+            dict = {
+                'Visibility': np.zeros(len(labels), dtype=np.int),
+                'Color': [],
+                'Class': [],
+                '#': np.zeros(len(labels), dtype=np.int),
+                'Coverage': np.zeros(len(labels),dtype=np.float)
+            }
 
-        dict = {
-            'Visibility': np.zeros(len(labels), dtype=np.int),
-            'Color': [],
-            'Class': [],
-            '#': np.zeros(len(labels), dtype=np.int),
-            'Coverage': np.zeros(len(labels),dtype=np.float)
-        }
+            for i, label in enumerate(labels):
+                dict['Visibility'][i] = int(label.visible)
+                dict['Color'].append(str(label.fill))
+                dict['Class'].append(label.name)
+                count, new_area = self.annotations.calculate_perclass_blobs_value(label, self.map_px_to_mm_factor)
+                dict['#'][i] = count
+                dict['Coverage'][i] = new_area
 
-        for i, label in enumerate(labels):
-            dict['Visibility'][i] = int(label.visible)
-            dict['Color'].append(str(label.fill))
-            dict['Class'].append(label.name)
-            count, new_area = self.annotations.calculate_perclass_blobs_value(label, self.map_px_to_mm_factor)
-            dict['#'][i] = count
-            dict['Coverage'][i] = new_area
-
-        # create dataframe
-        df = pd.DataFrame(dict, columns=['Visibility', 'Color', 'Class', '#', 'Coverage'])
-        return df
+            # create dataframe
+            df = pd.DataFrame(dict, columns=['Visibility', 'Color', 'Class', '#', 'Coverage'])
+            self.cache_labels_table = df
+            self.annotations.table_needs_update = False
+            return df
 
 
     def create_data_table(self):
+        '''
+        This create a data table only for the data panel view
+        '''
 
-        ''''This create a data table only for the data panel view'''
-        scale_factor = self.pixelSize()
+        if self.annotations.table_needs_update is False:
+            return self.cache_data_table
+        else:
+            scale_factor = self.pixelSize()
 
-        # create a list of instances
-        name_list = []
-        visible_blobs = []
-        for blob in self.annotations.seg_blobs:
-            if blob.qpath_gitem.isVisible():
-                index = blob.blob_name
-                name_list.append(index)
-                visible_blobs.append(blob)
+            # create a list of instances
+            name_list = []
+            visible_blobs = []
+            for blob in self.annotations.seg_blobs:
+                if blob.qpath_gitem.isVisible():
+                    index = blob.blob_name
+                    name_list.append(index)
+                    visible_blobs.append(blob)
 
-        number_of_seg = len(name_list)
-        dict = {
-            'Id': np.zeros(number_of_seg, dtype=np.int),
-            'Class': [],
-            'Area': np.zeros(number_of_seg),
-            #'Surf. area': np.zeros(number_of_seg)
-        }
+            number_of_seg = len(name_list)
+            dict = {
+                'Id': np.zeros(number_of_seg, dtype=np.int),
+                'Class': [],
+                'Area': np.zeros(number_of_seg),
+                #'Surf. area': np.zeros(number_of_seg)
+            }
 
-        for i, blob in enumerate(visible_blobs):
-            dict['Id'][i] = blob.id
-            dict['Class'].append(blob.class_name)
-            dict['Area'][i] = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
-#            if blob.surface_area > 0.0:
-#                dict['Surf. area'][i] = round(blob.surface_area * (scale_factor) * (scale_factor) / 100, 2)
+            for i, blob in enumerate(visible_blobs):
+                dict['Id'][i] = blob.id
+                dict['Class'].append(blob.class_name)
+                dict['Area'][i] = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
+    #            if blob.surface_area > 0.0:
+    #                dict['Surf. area'][i] = round(blob.surface_area * (scale_factor) * (scale_factor) / 100, 2)
 
-        # create dataframe
-        #df = pd.DataFrame(dict, columns=['Id', 'Class', 'Area', 'Surf. area'])
-        df = pd.DataFrame(dict, columns=['Id', 'Class', 'Area'])
-        return df
+            # create dataframe
+            #df = pd.DataFrame(dict, columns=['Id', 'Class', 'Area', 'Surf. area'])
+            df = pd.DataFrame(dict, columns=['Id', 'Class', 'Area'])
+            self.cache_data_table = df
+            self.annotations.table_needs_update = False
+            return df
 
 
     def updateChannel(self, filename, type):

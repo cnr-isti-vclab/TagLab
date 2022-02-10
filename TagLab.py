@@ -2993,7 +2993,6 @@ class TagLab(QMainWindow):
         Update panels (labels, layers, data panel, compare panel and map viewer)
         """
 
-
         if self.update_panels_flag is False:
             return
 
@@ -3001,6 +3000,7 @@ class TagLab(QMainWindow):
             viewer = self.viewerplus
 
         # update labels
+
         image = None
         if self.activeviewer is not None:
             if self.activeviewer.image is not None:
