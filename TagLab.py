@@ -22,6 +22,7 @@ import sys
 import os
 import json
 import time
+import timeit
 import datetime
 import shutil
 import json
@@ -1734,11 +1735,11 @@ class TagLab(QMainWindow):
             self.split_screen_flag = True
 
             self.activeviewer = self.viewerplus
-            self.updatePanels()
 
             self.compare_panel.show()
             self.data_panel.hide()
             self.datadock.setWindowTitle("Comparison Table")
+            self.updatePanels()
 
 
     def createMatch(self):
@@ -3000,7 +3001,6 @@ class TagLab(QMainWindow):
             viewer = self.viewerplus
 
         # update labels
-
         image = None
         if self.activeviewer is not None:
             if self.activeviewer.image is not None:
@@ -3018,8 +3018,9 @@ class TagLab(QMainWindow):
             index2 = self.comboboxTargetImage.currentIndex()
             if self.compare_panel.isVisible():
                 self.compare_panel.setTable(self.project, index1, index2)
-        else:
-            # update map viewer
+
+        # update map viewer
+        if self.mapviewer.isVisible():
             w = self.mapviewer.width()
             thumb = self.activeviewer.pixmap.scaled(w, w, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             self.mapviewer.setPixmap(thumb)

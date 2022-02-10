@@ -256,9 +256,6 @@ class QtComparePanel(QWidget):
         layout.addWidget(self.data_table)
         self.setLayout(layout)
 
-        self.correspondences = None
-        self.data = None
-
         self.setContextMenuPolicy(Qt.CustomContextMenu)
 
         self.genetAction = QAction("Genet", self)
@@ -300,6 +297,10 @@ class QtComparePanel(QWidget):
         self.comboboxFilter.currentTextChanged.connect(self.changeFilter)
         self.comboboxAreaMode.currentTextChanged.connect(self.changeAreaMode)
 
+        self.project = None
+        self.correspondences = None
+        self.img1idx = -1
+        self.img2idx = -1
         self.sourceImg = None
         self.targetImg = None
         self.sortfilter = None
@@ -325,58 +326,65 @@ class QtComparePanel(QWidget):
         action = menu.exec_(viewer.mapToGlobal(position))
 
     def setTable(self, project, img1idx, img2idx):
+
+        if self.project == project and self.img1idx == img1idx and self.img2idx == img2idx:
+            return
+
         self.project = project
         self.img1idx = img1idx
         self.img2idx = img2idx
         self.sourceImg = project.images[img1idx]
         self.targetImg = project.images[img2idx]
 
-        n_receivers = self.sourceImg.annotations.receivers(self.sourceImg.annotations.blobUpdated)
-        if n_receivers > 1:
-            self.sourceImg.annotations.blobUpdated.disconnect()
-        n_receivers = self.targetImg.annotations.receivers(self.targetImg.annotations.blobUpdated)
-        if n_receivers > 1:
-            self.targetImg.annotations.blobUpdated.disconnect()
-
-        self.sourceImg.annotations.blobUpdated.connect(self.sourceBlobUpdated)
-        self.targetImg.annotations.blobUpdated.connect(self.targetBlobUpdated)
-
         self.correspondences = project.getImagePairCorrespondences(img1idx, img2idx)
-        self.correspondences.updateAreas();
-
+        self.correspondences.updateAreas()
         self.data = self.correspondences.data
 
-        self.model = TableModel(self.data)
-        self.sortfilter = QSortFilterProxyModel(self)
-        self.sortfilter.setSourceModel(self.model)
-        self.sortfilter.setSortRole(Qt.UserRole)
-        self.data_table.setModel(self.sortfilter)
+        try:
+            self.sourceImg.annotations.blobUpdated.connect(self.sourceBlobUpdated, type=Qt.UniqueConnection)
+        except:
+            pass
 
-        self.data_table.setVisible(False)
-        self.data_table.verticalHeader().hide()
-        self.data_table.resizeColumnsToContents()
-        self.data_table.setVisible(True)
+        try:
+            self.targetImg.annotations.blobUpdated.connect(self.targetBlobUpdated, type=Qt.UniqueConnection)
+        except:
+            pass
 
-        self.data_table.setItemDelegateForColumn(5, self.combodelegate1)
-        self.data_table.setItemDelegateForColumn(6, self.combodelegate2)
-        self.data_table.setEditTriggers(QAbstractItemView.DoubleClicked)
+        if self.model is None:
 
-        self.data_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
-        self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
-        self.data_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
-        self.data_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.Fixed)
-        self.data_table.setColumnWidth(3, 80)
-        self.data_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.Fixed)
-        self.data_table.setColumnWidth(4, 80)
-        self.data_table.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeToContents)
-        self.data_table.horizontalHeader().setSectionResizeMode(6, QHeaderView.Stretch)
-        self.data_table.horizontalHeader().setSectionResizeMode(7, QHeaderView.Fixed)
-        self.data_table.setColumnWidth(7, 100)
+            self.model = TableModel(self.data)
+            self.sortfilter = QSortFilterProxyModel(self)
+            self.sortfilter.setSourceModel(self.model)
+            self.sortfilter.setSortRole(Qt.UserRole)
+            self.data_table.setModel(self.sortfilter)
 
-        self.data_table.horizontalHeader().showSection(0)
-        self.data_table.update()
+            self.data_table.setVisible(False)
+            self.data_table.verticalHeader().hide()
+            self.data_table.resizeColumnsToContents()
+            self.data_table.setVisible(True)
 
-        self.data_table.setStyleSheet("QHeaderView::section { background-color: rgb(40,40,40) }")
+            self.data_table.setItemDelegateForColumn(5, self.combodelegate1)
+            self.data_table.setItemDelegateForColumn(6, self.combodelegate2)
+            self.data_table.setEditTriggers(QAbstractItemView.DoubleClicked)
+
+            self.data_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+            self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+            self.data_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
+            self.data_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.Fixed)
+            self.data_table.setColumnWidth(3, 80)
+            self.data_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.Fixed)
+            self.data_table.setColumnWidth(4, 80)
+            self.data_table.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeToContents)
+            self.data_table.horizontalHeader().setSectionResizeMode(6, QHeaderView.Stretch)
+            self.data_table.horizontalHeader().setSectionResizeMode(7, QHeaderView.Fixed)
+            self.data_table.setColumnWidth(7, 100)
+
+            self.data_table.horizontalHeader().showSection(0)
+            self.data_table.update()
+
+            self.data_table.setStyleSheet("QHeaderView::section { background-color: rgb(40,40,40) }")
+        else:
+            self.updateTable(self.correspondences)
 
     def sourceBlobUpdated(self, blob):
         for i, row in self.data.iterrows():
