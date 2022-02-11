@@ -586,6 +586,7 @@ class TagLab(QMainWindow):
 
         # training results
         self.classifier_name = None
+        self.network_name = None
         self.dataset_train = None
 
         # NETWORKS
@@ -2165,6 +2166,7 @@ class TagLab(QMainWindow):
         self.trainResultsWidget = None
         self.progress_bar = None
         self.classifier_name = None
+        self.network_name = None
         self.dataset_train_info = None
         self.project = Project()
         self.project.loadDictionary(self.default_dictionary)
@@ -3875,7 +3877,7 @@ class TagLab(QMainWindow):
         L2 = self.trainYourNetworkWidget.getWeightDecay()
         batch_size = self.trainYourNetworkWidget.getBatchSize()
 
-        classifier_name = self.trainYourNetworkWidget.editClassifierName.text()
+        classifier_name = self.trainYourNetworkWidget.editNetworkName.text()
         network_name = self.trainYourNetworkWidget.editNetworkName.text() + ".net"
         network_filename = os.path.join(os.path.join(self.taglab_dir, "models"), network_name)
 
@@ -3921,6 +3923,7 @@ class TagLab(QMainWindow):
 
         # info about the classifier created
         self.classifier_name = classifier_name
+        self.network_name = network_name
         self.dataset_train_info = dataset_train_info
 
         self.deleteProgressBar()
@@ -3943,18 +3946,21 @@ class TagLab(QMainWindow):
 
         new_classifier = dict()
         new_classifier["Classifier Name"] = self.classifier_name
-        new_classifier["Average Norm."] = list(self.dataset_train_info.dataset_average)
+        new_classifier["Weights"] = self.network_name
         new_classifier["Num. Classes"] = self.dataset_train_info.num_classes
         new_classifier["Classes"] = list(self.dataset_train_info.dict_target)
 
-        # read the target scale factor
+        # scale
         target_pixel_size_file = os.path.join(self.trainResultsWidget.dataset_folder, "target-scale-factor.txt")
         fl = open(target_pixel_size_file, "r")
         line = fl.readline()
         fl.close()
         target_pixel_size = float(line)
-
         new_classifier["Scale"] = target_pixel_size
+
+        new_classifier["Average Norm."] = list(self.dataset_train_info.dataset_average)
+
+        # update config file
         self.available_classifiers.append(new_classifier)
         newconfig = dict()
         newconfig["Available Classifiers"] = self.available_classifiers
