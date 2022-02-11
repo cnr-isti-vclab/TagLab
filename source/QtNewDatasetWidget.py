@@ -91,7 +91,6 @@ class QtNewDatasetWidget(QWidget):
         ###############################################################
 
         self.btnChooseDatasetFolder = QPushButton("...")
-       # self.btnChooseDatasetFolder.setMaximumWidth(20)
         self.btnChooseDatasetFolder.clicked.connect(self.chooseDatasetFolder)
 
         self.btnChooseExportArea = QPushButton()
@@ -116,7 +115,7 @@ class QtNewDatasetWidget(QWidget):
         layoutH2 = QHBoxLayout()
         layoutH2.setAlignment(Qt.AlignCenter)
         layoutH2.addStretch()
-        layoutH2.addWidget(self.checkOversampling)
+        #layoutH2.addWidget(self.checkOversampling)
         layoutH2.addWidget(self.checkTiles)
         layoutH2.addStretch()
 

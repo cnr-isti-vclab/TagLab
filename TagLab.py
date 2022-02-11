@@ -3807,13 +3807,14 @@ class TagLab(QMainWindow):
             new_dataset.setupAreas(mode.upper(), target_classes)
 
             # cut the tiles
-            flag_oversampling = self.newDatasetWidget.checkOversampling.isChecked()
+            #flag_oversampling = self.newDatasetWidget.checkOversampling.isChecked()
+            flag_oversampling = False  # disable for now
 
             self.progress_bar.setProgress(50.0)
             QApplication.processEvents()
 
             if flag_oversampling is True:
-                class_to_sample, radii = new_dataset.computeRadii()
+                class_to_sample, radii = new_dataset.computeRadii(target_classes)
                 new_dataset.cut_tiles(regular=False, oversampling=True, classes_to_sample=class_to_sample, radii=radii)
             else:
                 new_dataset.cut_tiles(regular=True, oversampling=False, classes_to_sample=None, radii=None)

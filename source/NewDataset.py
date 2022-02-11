@@ -392,6 +392,9 @@ class NewDataset(object):
 			sc.append(s2)
 			sP.append(s3)
 
+			if i % 50 == 0:
+				sys.stdout.write("\rFinding biologically representative areas (pass 1/2)... %.2f %%" % ((i * 100.0) / 5000.0))
+
 		sn = np.array(sn)
 		sc = np.array(sc)
 		sP = np.array(sP)
@@ -416,13 +419,16 @@ class NewDataset(object):
 			area_number, area_coverage, area_PSCV = self.calculateMetrics(area_bbox, target_classes)
 			scores = self.calculateNormalizedScore(area_number, area_coverage, area_PSCV, landscape_number, landscape_coverage, landscape_PSCV)
 
-			for i, score in enumerate(scores):
+			for jj, score in enumerate(scores):
 				if math.isnan(score):
-					scores[i] = 0.0
+					scores[jj] = 0.0
 
 			aggregated_score = sum(scores) / len(scores)
 
 			area_info.append((area_bbox, scores, aggregated_score))
+
+			if i % 50 == 0:
+				sys.stdout.write("\rFinding biologically representative areas (pass 2/2)... %.2f %%" % ((i * 100.0) / 10000.0))
 
 
 		area_info.sort(key=lambda x:x[2])
