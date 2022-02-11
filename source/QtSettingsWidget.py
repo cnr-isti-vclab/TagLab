@@ -22,17 +22,17 @@ import os
 from PyQt5.QtCore import Qt, QSettings, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import QWidget, QColorDialog, QListWidget, QStackedWidget, QComboBox, QSizePolicy, QLineEdit, \
-    QLabel, QSpinBox, QCheckBox, QPushButton, QHBoxLayout, QVBoxLayout
-from source import utils
-from source.Grid import Grid
+    QLabel, QSpinBox, QCheckBox, QPushButton, QHBoxLayout, QVBoxLayout, QFileDialog
 
 class generalSettingsWidget(QWidget):
 
     researchFieldChanged = pyqtSignal(str)
     autosaveInfoChanged = pyqtSignal(int)
 
-    def __init__(self, settings, parent=None):
+    def __init__(self, settings, taglab_dir, parent=None):
         super(generalSettingsWidget, self).__init__(parent)
+
+        self.taglab_dir = taglab_dir
 
         self.settings = settings
 
@@ -44,12 +44,18 @@ class generalSettingsWidget(QWidget):
         self.lbl_autosave_1 = QLabel("Every ")
         self.lbl_autosave_2 = QLabel(" minutes.")
 
-        self.lbl_research_field = QLabel("Research field :  ")
+        self.lbl_research_field = QLabel("Research field: ")
         self.combo_research_field = QComboBox()
-        self.combo_research_field.setFixedWidth(200)
+        self.combo_research_field.setFixedWidth(240)
         self.combo_research_field.addItem("Marine Ecology/Biology")
-        self.combo_research_field.addItem("Architectural Heritage")
+        # self.combo_research_field.addItem("Architectural Heritage")
         self.combo_research_field.setCurrentIndex(0)
+
+        self.lbl_default_dict = QLabel("Default dictionary: ")
+        self.edit_default_dict = QLineEdit("dictionaries/scripps.json")
+        self.btn_default_dict = QPushButton("...")
+        self.btn_default_dict.setFixedWidth(20)
+        self.btn_default_dict.clicked.connect(self.chooseDict)
 
         layout_H1 = QHBoxLayout()
         layout_H1.addWidget(self.lbl_research_field)
@@ -63,15 +69,32 @@ class generalSettingsWidget(QWidget):
         layout_H2.addWidget(self.lbl_autosave_2)
         layout_H2.addStretch()
 
+        layout_H3 = QHBoxLayout()
+        layout_H3.addWidget(self.lbl_default_dict)
+        layout_H3.addWidget(self.edit_default_dict)
+        layout_H3.addWidget(self.btn_default_dict)
+
         layout = QVBoxLayout()
         layout.addLayout(layout_H1)
         layout.addLayout(layout_H2)
+        layout.addLayout(layout_H3)
 
         self.setLayout(layout)
 
         self.combo_research_field.currentTextChanged.connect(self.setResearchField)
         self.checkbox_autosave.stateChanged.connect(self.autosaveChanged)
         self.spinbox_autosave_interval.valueChanged.connect(self.autosaveIntervalChanged)
+
+    @pyqtSlot()
+    def chooseDict(self):
+
+        filters = "JSON (*.json)"
+        file_name, _ = QFileDialog.getOpenFileName(self, "Default Dictionary File", "", filters)
+        if file_name:
+            default_dict = os.path.relpath(file_name, start=self.taglab_dir)
+            self.edit_default_dict.setText(default_dict)
+            self.settings.setValue("default-dictionary", default_dict)
+
 
     @pyqtSlot(int)
     def autosaveChanged(self, status):
@@ -142,17 +165,20 @@ class drawingSettingsWidget(QWidget):
 
     borderPenChanged = pyqtSignal(str, int)
     selectionPenChanged = pyqtSignal(str, int)
+    workingAreaPenChanged = pyqtSignal(str, int)
 
     def __init__(self, settings, parent=None):
         super(drawingSettingsWidget, self).__init__(parent)
 
         self.settings = settings
 
-        self.border_pen_color = "255-255-255"
+        self.border_pen_color = "0-0-0"
         self.selection_pen_color = "255-255-255"
+        self.workingarea_pen_color = "255-255-255"
 
         self.lbl_border_color = QLabel("Border color :  ")
         self.lbl_selection_color = QLabel("Selection color :  ")
+        self.lbl_workingarea_color = QLabel("Working area color :  ")
 
         COLOR_SIZE = 40
 
@@ -171,8 +197,16 @@ class drawingSettingsWidget(QWidget):
         self.btn_selection_color.setFixedWidth(COLOR_SIZE)
         self.btn_selection_color.setFixedHeight(COLOR_SIZE)
 
+        self.btn_workingarea_color = QPushButton()
+        self.btn_workingarea_color.setFlat(True)
+        self.btn_workingarea_color.setStyleSheet(text)
+        self.btn_workingarea_color.setAutoFillBackground(True)
+        self.btn_workingarea_color.setFixedWidth(COLOR_SIZE)
+        self.btn_workingarea_color.setFixedHeight(COLOR_SIZE)
+
         self.lblBorderWidth = QLabel("Border width :  ")
-        self.lblSelectionWidth = QLabel("Selection Width :  ")
+        self.lblSelectionWidth = QLabel("Selection width :  ")
+        self.lblWorkingAreaWidth = QLabel("Working width :  ")
 
         self.spinbox_border_width = QSpinBox()
         self.spinbox_border_width.setFixedWidth(50)
@@ -184,6 +218,11 @@ class drawingSettingsWidget(QWidget):
         self.spinbox_selection_width.setRange(2, 6)
         self.spinbox_selection_width.setValue(3)
 
+        self.spinbox_workingarea_width = QSpinBox()
+        self.spinbox_workingarea_width.setFixedWidth(50)
+        self.spinbox_workingarea_width.setRange(2, 6)
+        self.spinbox_workingarea_width.setValue(3)
+
         layout_H1 = QHBoxLayout()
         layout_H1.addWidget(self.lbl_border_color)
         layout_H1.addWidget(self.btn_border_color)
@@ -193,20 +232,30 @@ class drawingSettingsWidget(QWidget):
         layout_H2.addWidget(self.btn_selection_color)
 
         layout_H3 = QHBoxLayout()
-        layout_H3.addWidget(self.lblBorderWidth)
-        layout_H3.addWidget(self.spinbox_border_width)
+        layout_H3.addWidget(self.lbl_workingarea_color)
+        layout_H3.addWidget(self.btn_workingarea_color)
 
         layout_H4 = QHBoxLayout()
-        layout_H4.addWidget(self.lblSelectionWidth)
-        layout_H4.addWidget(self.spinbox_selection_width)
+        layout_H4.addWidget(self.lblBorderWidth)
+        layout_H4.addWidget(self.spinbox_border_width)
+
+        layout_H5 = QHBoxLayout()
+        layout_H5.addWidget(self.lblSelectionWidth)
+        layout_H5.addWidget(self.spinbox_selection_width)
+
+        layout_H6 = QHBoxLayout()
+        layout_H6.addWidget(self.lblWorkingAreaWidth)
+        layout_H6.addWidget(self.spinbox_workingarea_width)
 
         layout_V1 = QVBoxLayout()
         layout_V1.addLayout(layout_H1)
         layout_V1.addLayout(layout_H2)
+        layout_V1.addLayout(layout_H3)
 
         layout_V2 = QVBoxLayout()
-        layout_V2.addLayout(layout_H3)
         layout_V2.addLayout(layout_H4)
+        layout_V2.addLayout(layout_H5)
+        layout_V2.addLayout(layout_H6)
 
         layout_H = QHBoxLayout()
         layout_H.addLayout(layout_V1)
@@ -217,9 +266,11 @@ class drawingSettingsWidget(QWidget):
 
         # connections
         self.btn_border_color.clicked.connect(self.chooseBorderColor)
-        self.btn_selection_color.clicked.connect(self.chooseSelectionColor)
         self.spinbox_border_width.valueChanged.connect(self.borderWidthChanged)
+        self.btn_selection_color.clicked.connect(self.chooseSelectionColor)
         self.spinbox_selection_width.valueChanged.connect(self.selectionWidthChanged)
+        self.btn_workingarea_color.clicked.connect(self.chooseWorkingAreaColor)
+        self.spinbox_workingarea_width.valueChanged.connect(self.workingAreaWidthChanged)
 
     @pyqtSlot()
     def chooseBorderColor(self):
@@ -239,6 +290,15 @@ class drawingSettingsWidget(QWidget):
         newcolor = "{:d}-{:d}-{:d}".format(color.red(), color.green(), color.blue())
         self.setSelectionColor(newcolor)
 
+    @pyqtSlot()
+    def chooseWorkingAreaColor(self):
+
+        color = QColorDialog.getColor()
+
+        # convert to string RR-GG-BB
+        newcolor = "{:d}-{:d}-{:d}".format(color.red(), color.green(), color.blue())
+        self.setWorkingAreaColor(newcolor)
+
     @pyqtSlot(int)
     def borderWidthChanged(self, value):
         self.setBorderWidth(value)
@@ -246,6 +306,10 @@ class drawingSettingsWidget(QWidget):
     @pyqtSlot(int)
     def selectionWidthChanged(self, value):
         self.setSelectionWidth(value)
+
+    @pyqtSlot(int)
+    def workingAreaWidthChanged(self, value):
+        self.setWorkingAreaWidth(value)
 
     def setBorderColor(self, color):
 
@@ -311,11 +375,44 @@ class drawingSettingsWidget(QWidget):
 
         return self.spinbox_selection_width.value()
 
+    def setWorkingAreaColor(self, color):
+
+        color_components = color.split("-")
+        if len(color_components) > 2:
+            r = color_components[0]
+            g = color_components[1]
+            b = color_components[2]
+            text = "QPushButton:flat {background-color: rgb(" + r + "," + g + "," + b + "); border: none ;}"
+            self.btn_workingarea_color.setStyleSheet(text)
+            self.workingarea_pen_color = color
+
+            self.settings.setValue("workingarea-pen-color", self.workingarea_pen_color)
+
+            workingarea_pen_width = self.spinbox_workingarea_width.value()
+            self.workingAreaPenChanged.emit(self.workingarea_pen_color, workingarea_pen_width)
+
+    def workingAreaColor(self):
+
+        return self.workingarea_pen_color
+
+    def setWorkingAreaWidth(self, width):
+
+        if self.spinbox_workingarea_width.minimum() <= width <= self.spinbox_workingarea_width.maximum():
+            self.spinbox_workingarea_width.setValue(width)
+            self.settings.setValue("workingarea-pen-width", width)
+
+            self.workingAreaPenChanged.emit(self.workingarea_pen_color, width)
+
+    def workingAreaWidth(self):
+
+        return self.spinbox_workingarea_width.value()
+
+
 class QtSettingsWidget(QWidget):
 
     accepted = pyqtSignal()
 
-    def __init__(self, parent=None):
+    def __init__(self, taglab_dir, parent=None):
         super(QtSettingsWidget, self).__init__(parent)
 
         self.settings = QSettings("VCLAB", "TagLab")
@@ -328,12 +425,13 @@ class QtSettingsWidget(QWidget):
         ###### LEFT PART
 
         self.listwidget = QListWidget()
+        self.listwidget.setMaximumWidth(100)
         self.listwidget.addItem("General")
         self.listwidget.addItem("Drawing")
 
         ###### CENTRAL PART
 
-        self.general_settings = generalSettingsWidget(self.settings)
+        self.general_settings = generalSettingsWidget(self.settings, taglab_dir)
         self.drawing_settings = drawingSettingsWidget(self.settings)
 
         self.stackedwidget = QStackedWidget()
@@ -343,20 +441,6 @@ class QtSettingsWidget(QWidget):
         layoutH = QHBoxLayout()
         layoutH.addWidget(self.listwidget)
         layoutH.addWidget(self.stackedwidget)
-
-        ###### CANCEL/APPLY
-
-        #self.btnCancel = QPushButton("Cancel")
-        #self.btnApply = QPushButton("Apply")
-
-        #layout_buttons = QHBoxLayout()
-        #layout_buttons.setAlignment(Qt.AlignRight)
-        #layout_buttons.addStretch()
-        #layout_buttons.addWidget(self.btnCancel)
-        #layout_buttons.addWidget(self.btnApply)
-
-        #self.btnCancel.clicked.connect(self.close)
-        #self.btnApply.clicked.connect(self.apply)
 
         ###########################################################
 
@@ -383,18 +467,20 @@ class QtSettingsWidget(QWidget):
         self.setWindowTitle("Settings")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
+
     def loadSettings(self):
 
-        self.settings_widget = QtSettingsWidget()
-
         # 0: autosave is disabled , >0: the project is saved every N seconds
-        self.autosave_interval = self.settings.value("autosave", type=int)
-        self.research_field = self.settings.value("research-field", type=str)
+        self.autosave_interval = self.settings.value("autosave", defaultValue=0, type=int)
+        self.research_field = self.settings.value("research-field", defaultValue="Marine Ecology/Biology", type=str)
+        self.default_dictionary = self.settings.value("default-dictionary", defaultValue="dictionaries/scripps.json", type=str)
 
-        self.selection_pen_color = self.settings.value("selection-pen-color", type=str)
-        self.selection_pen_width = self.settings.value("selection-pen-width", type=int)
-        self.border_pen_color = self.settings.value("border-pen-color", type=str)
-        self.border_pen_width = self.settings.value("border-pen-width", type=int)
+        self.selection_pen_color = self.settings.value("selection-pen-color", defaultValue="255-255-255", type=str)
+        self.selection_pen_width = self.settings.value("selection-pen-width", defaultValue=2, type=int)
+        self.border_pen_color = self.settings.value("border-pen-color", defaultValue="0-0-0", type=str)
+        self.border_pen_width = self.settings.value("border-pen-width", defaultValue=2, type=int)
+        self.workingarea_pen_color = self.settings.value("workingarea-pen-color", defaultValue="0-255-0", type=str)
+        self.workingarea_pen_width = self.settings.value("workingarea-pen-width", defaultValue=3, type=int)
 
         self.general_settings.setResearchField(self.research_field)
         self.general_settings.setAutosaveInterval(self.autosave_interval)
@@ -403,6 +489,8 @@ class QtSettingsWidget(QWidget):
         self.drawing_settings.setBorderWidth(self.border_pen_width)
         self.drawing_settings.setSelectionColor(self.selection_pen_color)
         self.drawing_settings.setSelectionWidth(self.selection_pen_width)
+        self.drawing_settings.setWorkingAreaColor(self.workingarea_pen_color)
+        self.drawing_settings.setWorkingAreaWidth(self.workingarea_pen_width)
 
     @pyqtSlot(int)
     def display(self, i):

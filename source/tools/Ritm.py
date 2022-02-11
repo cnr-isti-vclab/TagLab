@@ -52,29 +52,26 @@ class Ritm(Tool):
 
     def leftPressed(self, x, y, mods):
 
+        points = self.points.positive_points
+        if len(points) < self.MAX_POINTS and self.checkPointPosition(x,y) is True:
+            self.points.addPoint(x, y, positive=True)
+            message = "[TOOL][RITM] New positive point added (" + str(len(points)) + ")"
+            self.log.emit(message)
 
-        if mods & Qt.ShiftModifier:
-            points = self.points.positive_points
-            if len(points) < self.MAX_POINTS and self.checkPointPosition(x,y) is True:
-                self.points.addPoint(x, y, positive=True)
-                message = "[TOOL][RITM] New positive point added (" + str(len(points)) + ")"
-                self.log.emit(message)
-
-                # apply segmentation
-                self.segment()
+            # apply segmentation
+            self.segment()
 
 
     def rightPressed(self, x, y, mods):
 
-        if mods & Qt.ShiftModifier:
-            points = self.points.negative_points
-            if len(points) < self.MAX_POINTS and self.checkPointPosition(x,y) is True:
-                self.points.addPoint(x, y, positive=False)
-                message = "[TOOL][RITM] New negative point added (" + str(len(points)) + ")"
-                self.log.emit(message)
+        points = self.points.negative_points
+        if len(points) < self.MAX_POINTS and self.checkPointPosition(x,y) is True:
+            self.points.addPoint(x, y, positive=False)
+            message = "[TOOL][RITM] New negative point added (" + str(len(points)) + ")"
+            self.log.emit(message)
 
-                # apply segmentation
-                self.segment()
+            # apply segmentation
+            self.segment()
 
     def hasPoints(self):
         return self.points.nclicks() > 0
@@ -102,6 +99,7 @@ class Ritm(Tool):
         image_crop = cropQImage(self.viewerplus.img_map, self.work_area_bbox)
         input_image = qimageToNumpyArray(image_crop)
 
+        # check CUDA memory to prevent crash
         oom = False
         try:
             self.predictor.set_input_image(input_image)
@@ -109,9 +107,19 @@ class Ritm(Tool):
             oom = True
 
         if oom:
-            print('CUDA out of memory. Try to zoom less ')
+            box = QMessageBox()
+            box.setText("CUDA out of memory. Try to reduce the viewing area by zooming in.")
+            box.exec()
             return False
 
+        # check size of the input image to prevent stuck of the PC (for CPU version)
+        if torch.cuda.is_available() is False:
+            megapixels = (input_image.shape[0] * input_image.shape[1]) / (1024.0*1024.0)
+            if megapixels > 9.0:
+                box = QMessageBox()
+                box.setText("The input image is too big. Try to reduce the viewing area by zooming in.")
+                box.exec()
+                return False
 
         self.createWorkAreaMask()
         brush = QBrush(Qt.NoBrush)
@@ -216,12 +224,13 @@ class Ritm(Tool):
                 pred = self.predictor.get_prediction(self.clicker, prev_mask=self.init_mask)
             except RuntimeError:  # Out of memory
                 oom = True
+
             if oom:
                 self.reset()
-                print('CUDA out of memory. Try to zoom less ')
-
+                box = QMessageBox()
+                box.setText("CUDA out of memory. Try to reduce the viewing area by zooming in.")
+                box.exec()
             else:
-
                 segm_mask = pred > 0.5
                 segm_mask = segm_mask.astype(np.int32)
                 offsetx= self.work_area_bbox[1]
@@ -274,7 +283,6 @@ class Ritm(Tool):
                 self.infoMessage.emit("Segmentation done.")
 
         else:
-            print('The working area is too large, please go closer.')
             self.reset()
 
         self.log.emit("[TOOL][RITM] Segmentation ends.")

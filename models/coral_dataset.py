@@ -45,7 +45,7 @@ class CoralsDataset(Dataset):
 
         # if background does not exists it is added
         self.labels_dictionary = labels_dictionary.copy()
-        self.labels_dictionary["Background"] = Label(id-"Background", name="Background", fill=[0, 0, 0])
+        self.labels_dictionary["Background"] = Label(id="Background", name="Background", fill=[0, 0, 0])
 
         # DATA LOADING SETTINGS
         self.flagDataAugmentation = True

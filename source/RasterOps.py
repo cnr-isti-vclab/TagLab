@@ -1,5 +1,6 @@
 
 import numpy as np
+import json
 import ast
 from shapely.geometry import Polygon
 from osgeo import gdal, osr
@@ -9,6 +10,8 @@ from rasterio.plot import reshape_as_raster
 from rasterio.mask import mask
 import pandas as pd
 from source.Blob import Blob
+
+from source.Shape import Shape
 from source.Mask import subtract
 from numpy.linalg import inv
 
@@ -36,7 +39,7 @@ def changeFormat(contour, transform):
 
 def changeFormatInv(coord, transform):
     """
-    convert poligon coordinate in pixel coordinates
+    convert polygon coordinate in pixel coordinates
     # """
     # transformr = np.reshape(transform, (3, 3))
     # transformInv = inv(transformr)
@@ -49,6 +52,16 @@ def changeFormatInv(coord, transform):
             pointpix = ~transform * (xref, yref)
             pointpixels.append(pointpix)
         return pointpixels
+
+def changeFormatInvPoint(coord, transform):
+    """
+    convert poligon coordinate in pixel coordinates
+    # """
+    if transform is not None:
+        xref = coord[0]
+        yref = coord[1]
+        pointpix = ~transform * (xref, yref)
+        return pointpix
 
 
 def createPolygon(blob, transform):
@@ -67,97 +80,208 @@ def createPolygon(blob, transform):
     return newPolygon
 
 
+def createPolygonFromWorkingArea(working_area, transform):
+
+    wa_coord = [(working_area[1], working_area[0]), (working_area[1] + working_area[2], working_area[0]), (working_area[1] + working_area[2] , working_area[0] + working_area[3]),(working_area[1], working_area[0]+ working_area[3])]
+
+    # load blob.contour and transform coordinate
+    wa_coord_change = changeFormat(wa_coord, transform)
+    waPolygon = Polygon(wa_coord_change)
+
+    return waPolygon
 
 
-def open_shapefile(filename, georef_filename):
+def read_attributes(filename):
+    driver = ogr.GetDriverByName("ESRI Shapefile")
+    dataSource = driver.Open(filename, 0)
+    layer = dataSource.GetLayer(0)
+    Data = pd.DataFrame()
+    for feat in layer:
+        shpdict =json.loads(feat.ExportToJson())
+        properties = shpdict['properties']
+        if Data.empty:
+            Data = pd.DataFrame.from_dict([properties])
+        else:
+            data = pd.DataFrame.from_dict([properties])
+            Data = Data.append(data, ignore_index=True)
+    return Data
 
-    # #ci andrebbero self.labels_dictionary, self.activeviewer.img_map.width(), self.activeviewer.img_map.height()):
+
+def read_regions_geometry(filename, georef_filename):
+
     img = rio.open(georef_filename)
     transform = img.transform
+
     driver = ogr.GetDriverByName("ESRI Shapefile")
     dataSource = driver.Open(filename, 0)
     layer = dataSource.GetLayer(0)
 
-    # layerDefinition = layer.GetLayerDefn()
-    #
-    # GET FIELDS of layer's features
-    # fields = []
-    # for i in range(layerDefinition.GetFieldCount()):
-    #     fieldName = layerDefinition.GetFieldDefn(i).GetName()
-    #     fieldTypeCode = layerDefinition.GetFieldDefn(i).GetType()
-    #     fieldType = layerDefinition.GetFieldDefn(i).GetFieldTypeName(fieldTypeCode)
-    #     fieldWidth = layerDefinition.GetFieldDefn(i).GetWidth()
-    #     fieldPrecision = layerDefinition.GetFieldDefn(i).GetPrecision()
-    #     field = [fieldName, fieldType]
-    #     fields.append(field)
-
-    # #GET FEATURES
-    # num_features = layer.GetFeatureCount()
-    # pt = np.zeros((num_features, ), dtype=object)
-    # values = np.zeros((num_features, len(fields)), dtype=object)
-    # for i in range(0, num_features):
-    #     for j in range(0, len(fields)):
-    #         if fields[j][2] == str:
-    #             value_name = layer[i].GetFieldAsString(fields[j][0])
-    #         else:
-    #             value_name = layer[i].GetField(fields[j][0])
-    #         values[i][j] = value_name
-
-
     blobList = []
-    Data = pd.DataFrame()
     for feat in layer:
-        shpdict= ast.literal_eval(feat.ExportToJson())
+        shpdict = json.loads(feat.ExportToJson())
         if shpdict['geometry']['type'] == 'Polygon':
-           blob = Blob(None, 0, 0, '0')
-           coord = shpdict['geometry']['coordinates']
-           outercontourn = coord[0]
-           outpointpixels = changeFormatInv([outercontourn], transform)
-           blob.createFromClosedCurve([np.asarray(outpointpixels)])
-           for i in range(1, len(coord)):
-               innercontourn_i = coord[i]
-               innerpointpixels_i = changeFormatInv([innercontourn_i], transform)
-               innerblob = Blob(None, 0, 0, '0')
-               innerblob.createFromClosedCurve([np.asarray(innerpointpixels_i)])
-               (mask, box) = subtract(blob.getMask(), blob.bbox, innerblob.getMask(), innerblob.bbox)
-               if mask.any():
-                   blob.updateUsingMask(box, mask.astype(int))
-           blobList.append(blob)
-           # The attribute field can be empty
-           properties = shpdict['properties']
-           if Data.empty:
-            Data = pd.DataFrame.from_dict([properties])
-           else:
-            data = pd.DataFrame.from_dict([properties])
-            Data = Data.append(data, ignore_index=True)
+            blob = Blob(None, 0, 0, 0)
+            coord = shpdict['geometry']['coordinates']
+            outercontour = coord[0]
+            outpointpixels = changeFormatInv([outercontour], transform)
+            blob.createFromClosedCurve([np.asarray(outpointpixels)], False)
+            for i in range(1, len(coord)):
+                innercontourn_i = coord[i]
+                innerpointpixels_i = changeFormatInv([innercontourn_i], transform)
+                innerblob = Blob(None, 0, 0, 0)
+                innerblob.createFromClosedCurve([np.asarray(innerpointpixels_i)], False)
+                (mask, box) = subtract(blob.getMask(), blob.bbox, innerblob.getMask(), innerblob.bbox)
+                if mask.any():
+                    blob.updateUsingMask(box, mask.astype(int))
+            blobList.append(blob)
+
+    return blobList
 
 
-    return blobList, Data
+def read_geometry(filename, georef_filename):
+
+    img = rio.open(georef_filename)
+    transform = img.transform
+
+    driver = ogr.GetDriverByName("ESRI Shapefile")
+    dataSource = driver.Open(filename, 0)
+    layer = dataSource.GetLayer(0)
+
+    shape_list = []
+    for feat in layer:
+        shpdict = json.loads(feat.ExportToJson())
+
+        if shpdict['geometry']['type'] == 'Polygon':
+            coord = shpdict['geometry']['coordinates']
+            outercontour = coord[0]
+            outpointpixels = changeFormatInv([outercontour], transform)
+
+            inner_contours = []
+            for i in range(1, len(coord)):
+                innercontourn_i = coord[i]
+                innerpointpixels_i = changeFormatInv([innercontourn_i], transform)
+                inner_contours.append(np.asarray(innerpointpixels_i))
+
+            shape = Shape(np.asarray(outpointpixels), inner_contours)
+            shape_list.append(shape)
+
+        if shpdict['geometry']['type'] == 'Point':
+            coord = shpdict['geometry']['coordinates']
+            coord_map = changeFormatInv([[coord]], transform)
+
+            sh = Shape(np.asarray(coord_map), None)
+            shape_list.append(sh)
+
+    return shape_list
 
 
 
-def write_shapefile(project, blobs, georef_filename, out_shp):
+def write_shapefile( project, image, blobs, georef_filename, out_shp):
     """
     https://gis.stackexchange.com/a/52708/8104
     """
+    scale_factor = image.pixelSize()
+    date = image.acquisition_date
     # load georeference information to use
     img = rio.open(georef_filename)
     geoinfo = img.crs
     transform = img.transform
+    annotations = image.annotations
 
-    # convert blobs in polygons
-    polygons = []
-    ids = []
-    classnames = []
-    colors = []
+    working_area = project.working_area
 
+    if working_area is not None:
+        # only the blobs inside the working area are considered
+        blobs = annotations.calculate_inner_blobs(working_area)
+
+
+    # create the list of visible instances
+    name_list = []
+    visible_blobs = []
     for blob in blobs:
         if blob.qpath_gitem.isVisible():
+            index = blob.blob_name
+            name_list.append(index)
+            visible_blobs.append(blob)
+
+    # SHAPEFILE NAMES CANNOT BE LONGER THAN 10 characters
+
+    number_of_seg = len(name_list)
+    dict = {
+        'TL_id': np.zeros(number_of_seg, dtype = np.int64),
+        'TL_Date': [],
+        'TL_Class': [],
+        'TL_Genet': np.zeros(number_of_seg, dtype = np.int64),
+        'TL_Cx': np.zeros(number_of_seg),
+        'TL_Cy': np.zeros(number_of_seg),
+        'TL_Area': np.zeros(number_of_seg),
+        'TL_SurfA': np.zeros(number_of_seg),
+        'TL_Perim': np.zeros(number_of_seg),
+        'TL_Note': []}
+
+    for attribute in project.region_attributes.data:
+        key = attribute["name"]
+        if attribute['type'] in ['string', 'keyword']:
+            dict[key] = []
+        # elif attribute['type'] in ['number', 'boolean']:
+        elif attribute['type'] in ['integer number']:
+            dict[key] = np.zeros(number_of_seg, dtype = np.int64)
+        elif attribute['type'] in ['decimal number']:
+            dict[key] = np.zeros(number_of_seg, dtype = np.float64)
+        else:
+            # unknown attribute type, not saved
+            pass
+
+    for i, blob in enumerate(visible_blobs):
+        dict['TL_id'][i] = blob.id
+        dict['TL_Date'].append(date)
+        dict['TL_Class'].append(blob.class_name)
+        dict['TL_Cx'][i] = round(blob.centroid[0], 1)
+        dict['TL_Cy'][i] = round(blob.centroid[1], 1)
+        dict['TL_Area'][i] = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
+        if blob.surface_area > 0.0:
+            dict['TL_SurfA'][i] = round(blob.surface_area * (scale_factor) * (scale_factor) / 100, 2)
+        dict['TL_Perim'][i] = round(blob.perimeter * scale_factor / 10, 1)
+
+        if blob.genet is not None:
+            dict['TL_Genet'][i] = blob.genet
+
+        dict['TL_Note'].append(blob.note)
+
+        for attribute in project.region_attributes.data:
+
+            key = attribute["name"]
+
+            try:
+                value = blob.data[key]
+            except:
+                value = None
+
+            if attribute['type'] == 'integer number':
+
+                if value is not None:
+                    dict[key][i] = value
+                else:
+                    dict[key][i] = 0
+
+            elif attribute['type'] == 'decimal number':
+
+                if value is not None:
+                    dict[key][i] = value
+                else:
+                    dict[key][i] = np.NaN
+
+            else:
+                if value is not None:
+                    dict[key].append(value)
+                else:
+                    dict[key].append('')
+
+    # # convert blobs in polygons
+    polygons = []
+    for blob in visible_blobs:
+        if blob.qpath_gitem.isVisible():
             polygon = createPolygon(blob, transform)
-            ids.append(blob.id)
-            classnames.append(blob.class_name)
-            class_color = project.classColor(blob.class_name)
-            colors.append('#%02X%02X%02X' % tuple(class_color))
             polygons.append(polygon)
 
     # Now convert them to a shapefile with OGR
@@ -166,24 +290,39 @@ def write_shapefile(project, blobs, georef_filename, out_shp):
     srs = osr.SpatialReference()
     if geoinfo is not None:
         srs.ImportFromWkt(geoinfo.wkt)
+
+    # create a layer
     outLayer = outDataSource.CreateLayer("polygon", srs, geom_type=ogr.wkbPolygon)
-
-    # Add id to polygon
-    outLayer.CreateField(ogr.FieldDefn('id', ogr.OFTInteger))
-    outLayer.CreateField(ogr.FieldDefn('class', ogr.OFTString))
+    OGRTypes = {int: ogr.OFTInteger, str: ogr.OFTString, float: ogr.OFTReal}
     defn = outLayer.GetLayerDefn()
+    # Create attribute fields according to the data types
 
-    ## If there are multiple geometries, put the "for" loop here
-    for i in range(len(ids)):
-        # Create a new feature (attribute and geometry)
+
+    for key in list(dict.keys()):
+
+            if type(dict[key]) == list:
+                outLayer.CreateField(ogr.FieldDefn(key, OGRTypes[str]))
+            elif dict[key].dtype == np.int64 or dict[key].dtype == np.int32:
+                outLayer.CreateField(ogr.FieldDefn(key, OGRTypes[int]))
+            else:
+                outLayer.CreateField(ogr.FieldDefn(key, OGRTypes[float]))
+
+    for i in range(len(polygons)):
         feat = ogr.Feature(defn)
-        feat.SetField('id', ids[i])
-        feat.SetField('class', classnames[i])
-
-        # Make a geometry, from Shapely object
         geom = ogr.CreateGeometryFromWkb(polygons[i].wkb)
         feat.SetGeometry(geom)
-        feat.SetStyleString('BRUSH(fc:' + colors[i] + ')')
+
+        for key in list(dict.keys()):
+            if type(dict[key]) == list:
+                feat.SetField(key, dict[key][i])
+
+            elif dict[key].dtype == np.int64 or dict[key].dtype == np.int32:
+                feat.SetField(key, int(dict[key][i]))
+
+            else:
+                feat.SetField(key, float(dict[key][i]))
+
+        # Make a geometry, from Shapely object
         outLayer.CreateFeature(feat)
         feat = geom = None  # destroy these
 
@@ -218,21 +357,35 @@ def saveClippedTiff(input, blobs, georef_filename, name):
     with rio.open(name, "w", **out_meta) as dest:
         dest.write(out_image)
 
-def saveGeorefLabelMap(label_map, georef_filename, out_name):
+def saveGeorefLabelMap(label_map, georef_filename, working_area, out_name):
 
-    # load georeference information to use
+    # create a georeferenced label image (as raster)
     img = rio.open(georef_filename)
     meta = img.meta
+    transform = img.transform
 
     myLabel = reshape_as_raster(label_map)
     myLabel_meta = meta.copy()
-
     myLabel_meta.update({"dtype": rio.uint8,
                          "count": 3,
                          "nodata": None})
-
     with rio.open(out_name + ".tif", "w", **myLabel_meta) as dest:
         dest.write(myLabel)
+
+    dataset = rio.open(out_name + ".tif")
+    # convert the working area into a polygon
+    working_area_polygon = createPolygonFromWorkingArea(working_area, transform)
+    # crop the raster using the working area polygon
+    out_image, out_transform = rio.mask.mask(dataset, [working_area_polygon], crop=True)
+    out_meta = dataset.meta
+    # area= out_meta['transform'][0] ** 2*out_image
+    out_meta.update({"driver": "GTiff",
+                      "height": out_image.shape[1],
+                      "width": out_image.shape[2],
+                      "transform": out_transform})
+
+    with rio.open(out_name + ".tif", "w", **out_meta) as dest:
+        dest.write(out_image)
 
 def exportSlope(raster, filename):
 

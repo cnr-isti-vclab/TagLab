@@ -21,13 +21,13 @@ import os
 
 from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QPainter, QImage, QPixmap, QIcon, qRgb, qRed, qGreen, qBlue
-from PyQt5.QtWidgets import QSlider,QGroupBox, QWidget, QDialog, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
+from PyQt5.QtWidgets import QSlider,QGroupBox, QCheckBox,  QWidget, QDialog, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
 from source.Annotation import Annotation
+import numpy as np
 
 from source import utils
 
 class QtClassifierWidget(QWidget):
-
 
     closed = pyqtSignal()
 
@@ -71,26 +71,24 @@ class QtClassifierWidget(QWidget):
         layoutH1a.addWidget(self.lblAvgColor)
         self.lblAvgColor.hide()
 
-        LINEWIDTH = 300
         self.editFilename = QLineEdit(classifiers[0]["Weights"])
         self.editFilename.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
         self.editFilename.setReadOnly(True)
-        self.editFilename.setFixedWidth(LINEWIDTH)
+
         self.editNClasses = QLineEdit(str(classifiers[0]["Num. Classes"]))
         self.editNClasses.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
         self.editNClasses.setReadOnly(True)
-        self.editNClasses.setFixedWidth(LINEWIDTH)
+
         self.editClasses = QLineEdit(self.classes2str(classifiers[0]["Classes"]))
         self.editClasses.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
-        self.editClasses.setFixedWidth(LINEWIDTH)
+
         self.editClasses.setReadOnly(True)
         self.editScale = QLineEdit(str(classifiers[0]["Scale"]))
         self.editScale.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
-        self.editScale.setFixedWidth(LINEWIDTH)
+
         self.editScale.setReadOnly(True)
         self.editAvgColor = QLineEdit(self.avgcolor2str(classifiers[0]["Average Norm."]))
         self.editAvgColor.setStyleSheet("background-color: rgb(40,40,40); border: 1px solid rgb(90,90,90)")
-        self.editAvgColor.setFixedWidth(LINEWIDTH)
         self.editAvgColor.setReadOnly(True)
 
         layoutH1b = QVBoxLayout()
@@ -112,12 +110,61 @@ class QtClassifierWidget(QWidget):
         self.btnChooseArea = QPushButton()
         ChooseAreaIcon = QIcon("icons\\select_area.png")
         self.btnChooseArea.setIcon(ChooseAreaIcon)
+        self.chkAutocolor = QCheckBox("Auto color")
+        self.chkAutolevel = QCheckBox("Auto contrast")
         self.btnPrev = QPushButton("Preview")
+
+
+        SLIDER_WIDTH = 160
+
+        self.QlabelThresh = QLabel("Prediction threshold:")
+        self.QlabelThreshValue = QLabel("0.5")
+
+        self.QlabelTransparency = QLabel("Transparency:")
+        self.QlabelTransparencyValue = QLabel("50.0")
+
+        self.sliderTransparency = QSlider(Qt.Horizontal)
+        self.sliderTransparency.setFocusPolicy(Qt.StrongFocus)
+        self.sliderTransparency.setMinimumWidth(SLIDER_WIDTH)
+        self.sliderTransparency.setMinimum(0)
+        self.sliderTransparency.setMaximum(100)
+        self.sliderTransparency.setValue(50)
+        self.sliderTransparency.setTickInterval(20)
+        self.sliderTransparency.setAutoFillBackground(True)
+        self.sliderTransparency.valueChanged.connect(self.sliderTransparencyChanged)
+
+        layoutSliderTransparency = QHBoxLayout()
+        layoutSliderTransparency.addWidget(self.QlabelTransparency)
+        layoutSliderTransparency.addWidget(self.QlabelTransparencyValue)
+        layoutSliderTransparency.addWidget(self.sliderTransparency)
+
+        self.sliderScores = QSlider(Qt.Horizontal)
+        self.sliderScores.setFocusPolicy(Qt.StrongFocus)
+        self.sliderScores.setMinimumWidth(SLIDER_WIDTH)
+        self.sliderScores.setMinimum(0)
+        self.sliderScores.setMaximum(100)
+        self.sliderScores.setValue(50)
+        self.sliderScores.setTickInterval(20)
+        self.sliderScores.setAutoFillBackground(True)
+        self.sliderScores.valueChanged.connect(self.sliderScoresChanged)
+
+        layoutSliderScores = QHBoxLayout()
+        layoutSliderScores.addWidget(self.QlabelThresh)
+        layoutSliderScores.addWidget(self.QlabelThreshValue)
+        layoutSliderScores.addWidget(self.sliderScores)
 
         layoutButtons = QHBoxLayout()
         layoutButtons.setAlignment(Qt.AlignLeft)
         layoutButtons.addWidget(self.btnChooseArea)
+        layoutButtons.addWidget(self.chkAutocolor)
+        self.chkAutocolor.stateChanged.connect(self.useAutocolor)
+        layoutButtons.addWidget(self.chkAutolevel)
+        self.chkAutolevel.stateChanged.connect(self.useAutoLevel)
         layoutButtons.addWidget(self.btnPrev)
+        layoutButtons.addStretch()
+        layoutButtons.addLayout(layoutSliderTransparency)
+        layoutButtons.addSpacing(20)
+        layoutButtons.addLayout(layoutSliderScores)
 
         self.LABEL_SIZE = 600
 
@@ -136,62 +183,12 @@ class QtClassifierWidget(QWidget):
         layoutTiles.addWidget(self.QlabelRGB)
         layoutTiles.addWidget(self.QlabelPred)
 
-        self.QlabelThresh = QLabel("Uncertainty Threshold:")
-        self.QlabelThreshValue = QLabel("0.0")
-
-        self.QlabelTransparency = QLabel("Transparency:")
-        self.QlabelTransparencyValue = QLabel("50.0")
-
-
-        SLIDER_WIDTH = 200
-
-        self.sliderScores = QSlider(Qt.Horizontal)
-        self.sliderScores.setFocusPolicy(Qt.StrongFocus)
-        self.sliderScores.setMinimumWidth(SLIDER_WIDTH)
-        self.sliderScores.setMinimum(0)
-        self.sliderScores.setMaximum(50)
-        self.sliderScores.setValue(0)
-        self.sliderScores.setTickInterval(20)
-        self.sliderScores.setAutoFillBackground(True)
-        self.sliderScores.valueChanged.connect(self.sliderScoresChanged)
-
-        layoutSliderScores = QHBoxLayout()
-        layoutSliderScores.addWidget(self.QlabelThreshValue)
-        layoutSliderScores.addWidget(self.sliderScores)
-
-        self.sliderTransparency = QSlider(Qt.Horizontal)
-        self.sliderTransparency.setFocusPolicy(Qt.StrongFocus)
-        self.sliderTransparency.setMinimumWidth(SLIDER_WIDTH)
-        self.sliderTransparency.setMinimum(0)
-        self.sliderTransparency.setMaximum(100)
-        self.sliderTransparency.setValue(50)
-        self.sliderTransparency.setTickInterval(20)
-        self.sliderTransparency.setAutoFillBackground(True)
-        self.sliderTransparency.valueChanged.connect(self.sliderTransparencyChanged)
-
-        layoutSliderTransparency = QHBoxLayout()
-        layoutSliderTransparency.addWidget(self.QlabelTransparencyValue)
-        layoutSliderTransparency.addWidget(self.sliderTransparency)
-
-        layoutThreshold = QVBoxLayout()
-        layoutThreshold.setAlignment(Qt.AlignTop)
-        layoutThreshold.addWidget(self.QlabelThresh)
-        layoutThreshold.addLayout(layoutSliderScores)
-        layoutThreshold.setSpacing(20)
-        layoutThreshold.addWidget(self.QlabelTransparency)
-        layoutThreshold.addLayout(layoutSliderTransparency)
-
-        layoutPred= QHBoxLayout()
-        layoutPred.addLayout(layoutTiles)
-        layoutPred.addLayout(layoutThreshold)
-
         layoutPreview = QVBoxLayout()
         layoutPreview.addLayout(layoutButtons)
-        layoutPreview.addLayout(layoutPred)
+        layoutPreview.addLayout(layoutTiles)
 
         self.groupPrew = QGroupBox("Check Classifier Prediction")
         self.groupPrew.setLayout(layoutPreview)
-        #self.groupPrew.hide()
 
         self.btnCancel = QPushButton("Cancel")
         self.btnCancel.clicked.connect(self.close)
@@ -212,14 +209,79 @@ class QtClassifierWidget(QWidget):
         layoutV.setSpacing(3)
         self.setLayout(layoutV)
 
-        self.QlabelThresh.hide()
-        self.QlabelThreshValue.hide()
-
         self.setWindowTitle("Select Classifier")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
         self.rgb_image = None
         self.labelimage = None
+
+        self.preview_area = [0, 0, 0, 0]
+
+    def colorPreview(self):
+
+        if self.rgb_image is not None:
+
+            if not self.chkAutocolor.isChecked() and not self.chkAutolevel.isChecked():
+                self.setRGBPreview(self.rgb_image)
+
+            elif self.chkAutocolor.isChecked() and not self.chkAutolevel.isChecked():
+                color_rgb = self.rgb_image.convertToFormat(QImage.Format_RGB32)
+                color_rgb = utils.qimageToNumpyArray(color_rgb)
+                color_rgb = utils.whiteblance(color_rgb)
+                color_rgb_qimage = utils.rgbToQImage(color_rgb)
+                self.QPixmapRGB = QPixmap.fromImage(color_rgb_qimage)
+                size = self.LABEL_SIZE
+                self.QlabelRGB.setPixmap(self.QPixmapRGB.scaled(QSize(size, size), Qt.KeepAspectRatio))
+
+            elif not self.chkAutocolor.isChecked() and self.chkAutolevel.isChecked():
+                color_rgb = self.rgb_image.convertToFormat(QImage.Format_RGB32)
+                color_rgb = utils.qimageToNumpyArray(color_rgb)
+                color_rgb = utils.autolevel(color_rgb, 1.0)
+                color_rgb_qimage = utils.rgbToQImage(color_rgb)
+                self.QPixmapRGB = QPixmap.fromImage(color_rgb_qimage)
+                size = self.LABEL_SIZE
+                self.QlabelRGB.setPixmap(self.QPixmapRGB.scaled(QSize(size, size), Qt.KeepAspectRatio))
+
+            elif self.chkAutocolor.isChecked() and self.chkAutolevel.isChecked():
+
+                #always apply first auto color then autolevel
+                color_rgb = self.rgb_image.convertToFormat(QImage.Format_RGB32)
+                color_rgb = utils.qimageToNumpyArray(color_rgb)
+                #this returns a float64
+                color_rgb = utils.whiteblance(color_rgb)
+                color_rgb = color_rgb.astype(np.uint8)
+                level_rgb = utils.autolevel(color_rgb, 1.0)
+                color_rgb_qimage = utils.rgbToQImage(level_rgb)
+                self.QPixmapRGB = QPixmap.fromImage(color_rgb_qimage)
+                size = self.LABEL_SIZE
+                self.QlabelRGB.setPixmap(self.QPixmapRGB.scaled(QSize(size, size), Qt.KeepAspectRatio))
+
+
+    @pyqtSlot(int, int, int, int)
+    def updatePreviewArea(self, x, y, width, height):
+
+        width = min(2048, width)
+        height = min(2048, height)
+        self.preview_area = [x, y, width, height]
+
+    def getPreviewArea(self):
+
+        x = self.preview_area[0]
+        y = self.preview_area[1]
+        w = self.preview_area[2]
+        h = self.preview_area[3]
+
+        return x, y, w, h
+
+    @pyqtSlot(int)
+    def useAutocolor(self):
+        self.colorPreview()
+
+
+    @pyqtSlot(int)
+    def useAutoLevel(self):
+        self.colorPreview()
+
 
     def setRGBPreview(self, image):
 
@@ -296,13 +358,11 @@ class QtClassifierWidget(QWidget):
 
         self.sliderScores.setEnabled(True)
         self.sliderTransparency.setEnabled(True)
-        self.sliderScores.hide()
 
     def disableSliders(self):
 
         self.sliderScores.setEnabled(False)
         self.sliderTransparency.setEnabled(False)
-        self.sliderScores.hide()
 
     def closeEvent(self, event):
         self.closed.emit()

@@ -51,7 +51,7 @@ class QtLabelsWidget(QWidget):
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
 
         self.setMinimumWidth(400)
-        self.setMinimumHeight(200)
+        self.setMinimumHeight(100)
 
         self.icon_eyeopen = QIcon(imdir+os.path.join("icons", "eye.png"))
         self.icon_eyeclosed = QIcon(imdir+os.path.join("icons", "cross.png"))
@@ -118,13 +118,6 @@ class QtLabelsWidget(QWidget):
         """
 
         self.labels = project.labels
-
-        # FIXME: this does not work properly !
-        # for i in range(1, len(self.visibility_flags)):
-        #     item = self.labels_layout.itemAt(i)
-        #     if isinstance(item, QHBoxLayout):
-        #         self.labels_layout.removeItem(item)
-        #         item.setParent(None)
 
         self.btnVisible = []
         #self.visibility_flags = []

@@ -154,7 +154,6 @@ class QtCrackWidget(QWidget):
         for region in regions:
             if region.area > area_th:
                 b = Blob(region, box[1], box[0], self.annotations.getFreeId())
-                b.class_color = blob.class_color
                 b.class_name = blob.class_name
                 created_blobs.append(b)
 

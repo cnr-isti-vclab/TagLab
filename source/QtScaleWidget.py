@@ -117,7 +117,7 @@ class QtScaleWidget(QWidget):
 
         self.setLayout(layout)
 
-        self.setWindowTitle("Measure and Scale")
+        self.setWindowTitle("Measure And Set Scale")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint | Qt.WindowStaysOnTopHint)
 
 

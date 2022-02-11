@@ -126,7 +126,6 @@ class QtDictionaryWidget(QWidget):
 
         buttons_layout = QVBoxLayout()
         buttons_layout.setAlignment(Qt.AlignRight)
-        # buttons_layout.setAlignment(Qt.AlignTop)
         buttons_layout.addStretch()
         buttons_layout.addWidget(self.btnOk)
         buttons_layout.addWidget(self.btnRemove)
@@ -228,7 +227,7 @@ class QtDictionaryWidget(QWidget):
 
         self.setLayout(layout)
 
-        self.setWindowTitle("Dictionary Editor")
+        self.setWindowTitle("Labels Dictionary Editor")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
         self.selection_index = -1
@@ -245,6 +244,9 @@ class QtDictionaryWidget(QWidget):
 
     @pyqtSlot()
     def newDictionary(self):
+
+        self.edit_description.setText("")
+        self.edit_dname.setText("")
 
         self.labels = []
 
@@ -305,27 +307,26 @@ class QtDictionaryWidget(QWidget):
 
         name = self.edit_dname.text()
         description = self.edit_description.document().toPlainText()
-        if name!= '':
-            dir = os.path.join(self.taglab_dir, name + '.json')
-            filters = "DICTIONARY (*.json)"
-            filename, _ = QFileDialog.getSaveFileName(self, "Save dictionary", dir, filters)
+        dir = os.path.join(self.taglab_dir, name + '.json')
+        filters = "DICTIONARY (*.json)"
+        filename, _ = QFileDialog.getSaveFileName(self, "Save dictionary", dir, filters)
+
+        if filename:
             dict={'Name': name, 'Description': description, 'Labels': self.labels}
             text = json.dumps(dict, cls = DictionaryEncoder, indent = 2)
             f = open(filename, "w")
             f.write(text)
             f.close()
+            msgBox = QMessageBox(self)
+            msgBox.setWindowTitle('TagLab')
+            msgBox.setText("Dictionary successfully exported!")
+            msgBox.exec()
         else:
             box = QMessageBox()
             box.setWindowTitle('TagLab')
             box.setText("Please enter a dictionary name")
             box.exec()
             pass
-
-        msgBox = QMessageBox(self)
-        msgBox.setWindowTitle('TagLab')
-        msgBox.setText("Dictionary successfully exported!")
-        msgBox.exec()
-
 
     @pyqtSlot(int,int,int,str)
     def createLabel(self, r, g, b, name):
