@@ -1202,7 +1202,7 @@ class QtImageViewerPlus(QtImageViewer):
             self.drawBlob(blob)
 
         for (blob, class_name) in operation['class']:
-            blob.class_name = class_name
+            self.annotations.setBlobClass(blob, class_name)
             brush = self.project.classBrushFromName(blob)
             #this might apply to blobs NOT in this image (or rendered)
             if blob.qpath_gitem:
@@ -1231,7 +1231,7 @@ class QtImageViewerPlus(QtImageViewer):
             self.drawBlob(blob)
 
         for (blob, class_name) in operation['newclass']:
-            blob.class_name = class_name
+            self.annotations.setBlobClass(blob, class_name)
             brush = self.project.classBrushFromName(blob)
             blob.qpath_gitem.setBrush(brush)
 
