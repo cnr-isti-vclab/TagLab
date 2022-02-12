@@ -40,6 +40,9 @@ def loadProject(taglab_working_dir, filename, default_dict):
 
     f.close()
 
+    if project.dictionary_name == "":
+        project.dictionary_name = "My dictionary"
+
     project.filename = filename
 
     # check if a file exist for each image and each channel

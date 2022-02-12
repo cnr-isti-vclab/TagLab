@@ -1,8 +1,8 @@
 {
  "filename": "sampleProjects/small_annotated_area_project.json",
  "working_area": null,
- "dictionary_name": "",
- "dictionary_description": "",
+ "dictionary_name": "scripps",
+ "dictionary_description": "These color codes are the ones typically used by the Scripps Institution of Oceanography (UCSD)",
  "labels": {
   "Empty": {
    "id": "Empty",
