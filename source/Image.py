@@ -241,4 +241,9 @@ class Image(object):
 
     def save(self):
         data = self.__dict__.copy()
+
+        # cached tables MUST NOT be saved
+        del data["cache_data_table"]
+        del data["cache_labels_table"]
+
         return data
