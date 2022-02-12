@@ -26,13 +26,16 @@ def checkDataset(dataset_folder):
     """
 
     flag = 0
-    if os.path.exists(dataset_folder) and os.listdir(dataset_folder) == ['test', 'training', 'validation']:
-       for sub in os.listdir(dataset_folder):
-           subfolder = os.path.join(dataset_folder, sub)
-           if os.listdir(subfolder) == ['images', 'labels'] and len(set(os.listdir(os.path.join(subfolder, os.listdir(subfolder)[0]))) - set(os.listdir(os.path.join(subfolder, os.listdir(subfolder)[1]))))==0:
-               flag = 0 # Your training dataset is valid
-           else:
-               return 1 # A subfolder is missing or a files mismatch in subfolder
+    targetdirs = ["training", "validation", "test"]
+    if os.path.exists(dataset_folder):
+        for sub in targetdirs:
+            subfolder = os.path.join(dataset_folder, sub)
+            print(subfolder)
+            if os.path.exists(subfolder):
+                if os.listdir(subfolder) == ['images', 'labels'] and len(set(os.listdir(os.path.join(subfolder, os.listdir(subfolder)[0]))) - set(os.listdir(os.path.join(subfolder, os.listdir(subfolder)[1]))))==0:
+                    flag = 0 # Your training dataset is valid
+                else:
+                    return 1 # A subfolder is missing or a files mismatch in subfolder
     else:
         return 1 # This dataset contains mismatching files
 
@@ -78,7 +81,7 @@ def saveMetrics(metrics, filename):
 # VALIDATION
 def evaluateNetwork(dataset, dataloader, loss_to_use, CEloss, w_for_GDL, tversky_loss_alpha, tversky_loss_beta,
                     focal_tversky_gamma, epoch, epochs_switch, epochs_transition, nclasses, net,
-                    flag_compute_mIoU=False, savefolder=""):
+                    progress, flag_compute_mIoU=False, flag_test=False, savefolder=""):
     """
     It evaluates the network on the validation set.  
     :param dataloader: Pytorch DataLoader to load the dataset for the evaluation.
@@ -104,6 +107,9 @@ def evaluateNetwork(dataset, dataloader, loss_to_use, CEloss, w_for_GDL, tversky
 
     CM = np.zeros((nclasses, nclasses), dtype=int)
     class_indices = list(range(nclasses))
+
+    num_iter = 0
+    total_iter = int(len(dataset) / dataloader.batch_size)
 
     ypred_list = []
     ytrue_list = []
@@ -141,11 +147,17 @@ def evaluateNetwork(dataset, dataloader, loss_to_use, CEloss, w_for_GDL, tversky
 
             # CONFUSION MATRIX, PREDICTIONS ARE PER-COLUMN, GROUND TRUTH CLASSES ARE PER-ROW
             for i in range(batch_size):
-                print(i)
                 pred_index = pred_cpu[i].numpy().ravel()
                 true_index = labels_cpu[i].numpy().ravel()
                 confmat = confusion_matrix(true_index, pred_index, class_indices)
                 CM += confmat
+
+            if flag_test is True:
+                updateProgressBar(progress, "Test - Iteration ", num_iter, total_iter)
+            else:
+                updateProgressBar(progress, "Validation - Iteration ", num_iter, total_iter)
+
+            num_iter = num_iter + 1
 
             # SAVE THE OUTPUT OF THE NETWORK
             for i in range(batch_size):
@@ -222,8 +234,20 @@ def computeLoss(loss_name, CE, w_for_GDL, tversky_alpha, tversky_beta, focal_tve
     return loss
 
 
+def updateProgressBar(progress_bar, prefix_message, num_iter, total_iter):
+    """
+    Update progress bar according to the number of iterations done.
+    """
+
+    txt = prefix_message + str(num_iter + 1) + "/" + str(total_iter)
+    progress_bar.setMessage(txt)
+    perc_training = round((100.0 * num_iter) / total_iter)
+    progress_bar.setProgress(perc_training)
+    QApplication.processEvents()
+
+
 def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val, labels_folder_val,
-                    dictionary, target_classes, output_classes, save_network_as, classifier_name,
+                    labels_dictionary, target_classes, output_classes, save_network_as, classifier_name,
                     epochs, batch_sz, batch_mult, learning_rate, L2_penalty, validation_frequency, loss_to_use,
                     epochs_switch, epochs_transition, tversky_alpha, tversky_gamma, optimiz,
                     flag_shuffle, flag_training_accuracy, progress):
@@ -231,7 +255,7 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
     ##### DATA #####
 
     # setup the training dataset
-    datasetTrain = CoralsDataset(images_folder_train, labels_folder_train, dictionary, target_classes)
+    datasetTrain = CoralsDataset(images_folder_train, labels_folder_train, labels_dictionary, target_classes)
 
     print("Dataset setup..", end='')
     datasetTrain.computeAverage()
@@ -246,7 +270,7 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
 
     datasetTrain.enableAugumentation()
 
-    datasetVal = CoralsDataset(images_folder_val, labels_folder_val, dictionary, target_classes)
+    datasetVal = CoralsDataset(images_folder_val, labels_folder_val, labels_dictionary, target_classes)
     datasetVal.dataset_average = datasetTrain.dataset_average
     datasetVal.weights = datasetTrain.weights
 
@@ -338,10 +362,7 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
         loss_values_per_iter = []
         for i, minibatch in enumerate(dataloaderTrain):
 
-            txt = "Training - Iterations " + str(num_iter + 1) + "/" + str(total_iter)
-            progress.setMessage(txt)
-            progress.setProgress((100.0 * num_iter) / total_iter)
-            QApplication.processEvents()
+            updateProgressBar(progress, "Training - Iteration ", num_iter, total_iter)
             num_iter += 1
 
             # get the inputs
@@ -381,7 +402,8 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
             metrics_val, mean_loss_val = evaluateNetwork(datasetVal, dataloaderVal, loss_to_use, CEloss, w_for_GDL,
                                                          tversky_loss_alpha, tversky_loss_beta, focal_tversky_gamma,
                                                          epoch, epochs_switch, epochs_transition,
-                                                         output_classes, net, flag_compute_mIoU=False)
+                                                         output_classes, net, progress, flag_compute_mIoU=False,
+                                                         flag_test=False)
             accuracy = metrics_val['Accuracy']
             jaccard_score = metrics_val['JaccardScore']
             scheduler.step(mean_loss_val)
@@ -394,7 +416,8 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
                 metrics_train, mean_loss_train = evaluateNetwork(datasetTrain, dataloaderTrain, loss_to_use, CEloss, w_for_GDL,
                                                                  tversky_loss_alpha, tversky_loss_beta, focal_tversky_gamma,
                                                                  epoch, epochs_switch, epochs_transition,
-                                                                 output_classes, net, flag_compute_mIoU=False)
+                                                                 output_classes, net, progress,
+                                                                 flag_compute_mIoU=False, flag_test=False)
                 accuracy_training = metrics_train['Accuracy']
                 jaccard_training = metrics_train['JaccardScore']
 
@@ -410,6 +433,8 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
 
             print("-> CURRENT BEST ACCURACY ", best_accuracy)
 
+            # restore training messages
+            updateProgressBar(progress, "Training - Iteration ", num_iter, total_iter)
 
     # main loop ended
     torch.cuda.empty_cache()
@@ -422,15 +447,15 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
     return datasetTrain, loss_values_train, loss_values_val
 
 
-def testNetwork(images_folder, labels_folder, dictionary, target_classes, dataset_train,
-                network_filename, output_folder):
+def testNetwork(images_folder, labels_folder, labels_dictionary, target_classes, dataset_train,
+                network_filename, output_folder, progress):
     """
     Load a network and test it on the test dataset.
     :param network_filename: Full name of the network to load (PATH+name)
     """
 
     # TEST DATASET
-    datasetTest = CoralsDataset(images_folder, labels_folder, dictionary, target_classes)
+    datasetTest = CoralsDataset(images_folder, labels_folder, labels_dictionary, target_classes)
     datasetTest.disableAugumentation()
 
     datasetTest.num_classes = dataset_train.num_classes
@@ -450,7 +475,7 @@ def testNetwork(images_folder, labels_folder, dictionary, target_classes, datase
     print("Weights loaded.")
 
     metrics_test, loss = evaluateNetwork(datasetTest, dataloaderTest, "NONE", None, [0.0], 0.0, 0.0, 0.0, 0, 0, 0,
-                                         output_classes, net, True, output_folder)
+                                         output_classes, net, progress, True, True, output_folder)
     metrics_filename = network_filename[:len(network_filename) - 4] + "-test-metrics.txt"
     saveMetrics(metrics_test, metrics_filename)
     print("***** TEST FINISHED *****")

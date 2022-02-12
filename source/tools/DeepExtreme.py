@@ -10,7 +10,7 @@ import numpy as np
 
 try:
     import torch
-    from torch.nn.functional import upsample
+    from torch.nn.functional import interpolate
 except Exception as e:
     print("Incompatible version between pytorch, cuda and python.\n" +
           "Knowing working version combinations are\n: Cuda 10.0, pytorch 1.0.0, python 3.6.8" + str(e))
@@ -80,8 +80,10 @@ class DeepExtreme(Tool):
         return (arr, four_points_updated)
 
     def segmentWithDeepExtreme(self):
+
         if not self.viewerplus.img_map:
             return
+
         QApplication.setOverrideCursor(Qt.WaitCursor)
         self.infoMessage.emit("Segmentation is ongoing..")
         self.log.emit("[TOOL][DEEPEXTREME] Segmentation begins..")
@@ -134,14 +136,17 @@ class DeepExtreme(Tool):
             # Run a forward pass
             inputs = inputs.to(self.device)
             outputs = self.deepextreme_net.forward(inputs)
-            outputs = upsample(outputs, size=(512, 512), mode='bilinear', align_corners=True)
+            outputs = interpolate(outputs, size=(512, 512), mode='bilinear', align_corners=True)
             outputs = outputs.to(torch.device('cpu'))
 
             pred = np.transpose(outputs.data.numpy()[0, ...], (1, 2, 0))
             pred = 1 / (1 + np.exp(-pred))
             pred = np.squeeze(pred)
+
+            #
             #img_test = utils.floatmapToQImage(pred*255.0)
             #img_test.save("prediction.png")
+
             result = helpers.crop2fullmask(pred, bbox, im_size=img.shape[:2], zero_pad=True, relax=pad) > thres
 
 
@@ -149,9 +154,6 @@ class DeepExtreme(Tool):
 
             #TODO: move this function to blob!!!
             blobs = self.viewerplus.annotations.blobsFromMask(segm_mask, left_map_pos, top_map_pos, area_extreme_points)
-
-            for blob in blobs:
-                blob.deep_extreme_points = extreme_points_to_use
 
             self.viewerplus.resetSelection()
             for blob in blobs:

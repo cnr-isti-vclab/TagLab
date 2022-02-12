@@ -21,7 +21,8 @@ import os
 
 from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QImage, QPixmap, QIcon, qRgb, qRed, qGreen, qBlue
-from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QSizePolicy, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
+from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QSizePolicy, QLabel, QPushButton, \
+    QGridLayout, QHBoxLayout, QVBoxLayout
 import numpy as np
 import matplotlib
 matplotlib.use('agg')
@@ -34,28 +35,35 @@ import cv2
 
 class QtHistogramWidget(QWidget):
 
-    def __init__(self, annotations, labels_info, scale_factor, year, parent=None):
+    def __init__(self, annotations, labels_dictionary, scale_factor, year, working_area, parent=None):
 
         super(QtHistogramWidget, self).__init__(parent)
 
         self.scale_factor = scale_factor
         self.year = year
-        self.ann = annotations
-        self.labels_info = labels_info
+        self.labels_dictionary = labels_dictionary
         self.checkBoxes = []  # list of QCheckBox
-        self.setStyleSheet("background-color: rgba(40,40,40); color: white")
+        self.setStyleSheet("background-color: rgb(40,40,40); color: white")
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.setMinimumWidth(900)
         self.setMinimumHeight(600)
+        self.blobs = []
 
         # look for existing labels in annotations
         labels_set = set()
 
-        for blob in self.ann.seg_blobs:
+        if working_area is None:
+            # all the blobs are considered
+            self.blobs = annotations.seg_blobs
+        else:
+            # only the blobs inside the working area are considered
+            self.blobs = annotations.calculate_inner_blobs(working_area)
+
+        for blob in self.blobs:
             labels_set.add(blob.class_name)
 
         labels_set.discard('Empty')
-        labels_layout = QVBoxLayout()
+        labels_layout = QGridLayout()
 
         CLASS_LABELS_HEIGHT = 20
         LABELS_FOR_ROW = 4
@@ -69,7 +77,7 @@ class QtHistogramWidget(QWidget):
             btnC = QPushButton("")
             btnC.setFlat(True)
 
-            color = self.labels_info[label_name]
+            color = self.labels_dictionary[label_name].fill
             r = color[0]
             g = color[1]
             b = color[2]
@@ -80,21 +88,16 @@ class QtHistogramWidget(QWidget):
             btnC.setFixedWidth(CLASS_LABELS_HEIGHT)
             btnC.setFixedHeight(CLASS_LABELS_HEIGHT)
 
-            if i % LABELS_FOR_ROW == 0:
-                if layout is not None:
-                    layout.addStretch()
-                layout = QHBoxLayout()
-                layout.addStretch()
-                labels_layout.addLayout(layout)
-
             self.checkBoxes.append(chkBox)
+
+            layout = QHBoxLayout()
             layout.addWidget(chkBox)
             layout.addWidget(btnC)
+            layout.addStretch()
 
-            if i % LABELS_FOR_ROW < LABELS_FOR_ROW-1 and i < len(labels_set)-1:
-                layout.addSpacing(25)
-
-        layout.addStretch()
+            col = i % LABELS_FOR_ROW
+            row = int(i / LABELS_FOR_ROW)
+            labels_layout.addLayout(layout, row, col)
 
         self.btnCancel = QPushButton("Cancel")
         self.btnCancel.clicked.connect(self.close)
@@ -104,7 +107,6 @@ class QtHistogramWidget(QWidget):
         self.btnSaveAs.clicked.connect(self.saveas)
 
         buttons_layout = QHBoxLayout()
-        buttons_layout.setAlignment(Qt.AlignRight)
         buttons_layout.addStretch()
         buttons_layout.addWidget(self.btnCancel)
         buttons_layout.addWidget(self.btnPreview)
@@ -121,6 +123,7 @@ class QtHistogramWidget(QWidget):
         self.lblPreview.setUpdatesEnabled(True)
 
         layoutV = QVBoxLayout()
+        layoutV.setAlignment(Qt.AlignHCenter)
         layoutV.addWidget(self.lblPreview)
         layoutV.addLayout(labels_layout)
         layoutV.addLayout(buttons_layout)
@@ -144,7 +147,7 @@ class QtHistogramWidget(QWidget):
         for checkbox in self.checkBoxes:
             if checkbox.isChecked():
                list_selected.append(checkbox.text())
-               list_color.append(self.labels_info[checkbox.text()])
+               list_color.append(self.labels_dictionary[checkbox.text()].fill)
 
         if len(list_selected) > 0:
             self.create_histogram(list_selected,list_color)
@@ -154,7 +157,7 @@ class QtHistogramWidget(QWidget):
         class_area = []
         for my_class in list_selected:
             my_area = []
-            for blob in self.ann.seg_blobs:
+            for blob in self.blobs:
                 if blob.class_name == my_class:
                    blob_area = blob.area * self.scale_factor * self.scale_factor / 100
                    blob_area = np.around(blob_area, decimals=2)

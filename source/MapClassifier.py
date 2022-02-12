@@ -49,7 +49,7 @@ class MapClassifier(QObject):
     # custom signal
     updateProgress = pyqtSignal(float)
 
-    def __init__(self, classifier_info, labels_info, parent=None):
+    def __init__(self, classifier_info, labels_dictionary, parent=None):
         super(QObject, self).__init__(parent)
 
         self.label_colors = []
@@ -58,12 +58,15 @@ class MapClassifier(QObject):
         self.nclasses = classifier_info['Num. Classes']
         self.label_names = classifier_info['Classes']
 
-        for label_name in self.label_names:
+        self.background_index = -1
+
+        for index, label_name in enumerate(self.label_names):
 
             if label_name == "Background":
                 color = [0, 0, 0]
+                self.background_index = index
             else:
-                color = labels_info[label_name]
+                color = labels_dictionary[label_name].fill
 
             self.label_colors.append(color)
 
@@ -99,13 +102,12 @@ class MapClassifier(QObject):
 
         return classifier
 
-    def setup(self, img_map, pixel_size, target_scale, working_area=[], padding=0):
+    def setup(self, img_map, pixel_size, target_pixel_size, working_area=[], padding=0):
         """
         Initialize the image to classify.
         """
 
-        self.scale_factor = target_scale / pixel_size
-
+        self.scale_factor = target_pixel_size / pixel_size
         if not working_area:
             working_area = [0, 0, img_map.width(), img_map.height()]
 
@@ -120,12 +122,19 @@ class MapClassifier(QObject):
         crop_image = img_map.copy(left, top, width, height)
         self.input_image = utils.qimageToNumpyArray(crop_image)
 
+        # IMPORTNAT NOTE 1:
+        # The following information, together with the scale_factor, are used to put the results on the orthoimage
+        self.offset = [working_area[0], working_area[1]]
+
         # scale the input image
         w_target = round(crop_image.width() / self.scale_factor)
         h_target = round(crop_image.height() / self.scale_factor)
 
         self.input_image = cv2.resize(self.input_image, dsize=(w_target, h_target), interpolation=cv2.INTER_CUBIC)
 
+        # IMPORTANT NOTE 2:
+        # since the input image is cropped and resized the working area used for the tiles is
+        # always the same, i.e. [padding, padding, w_target -  2 padding , h_target - 2 padding]
         self.padding = round(self.padding / self.scale_factor)
         self.wa_top = self.padding
         self.wa_left = self.padding
@@ -133,7 +142,8 @@ class MapClassifier(QObject):
         self.wa_height = round(h_target - 2*self.padding)
 
 
-    def run(self, TILE_SIZE, AGGREGATION_WINDOW_SIZE, AGGREGATION_STEP, save_scores = False):
+    def run(self, TILE_SIZE, AGGREGATION_WINDOW_SIZE, AGGREGATION_STEP, prediction_threshold=0.5,
+            save_scores = False, autocolor = False,  autolevel = False):
         """
         :param TILE_SIZE: Base tile. This corresponds to the INPUT SIZE of the network.
         :param AGGREGATION_WINDOW_SIZE: Size of the center window considered for the aggregation.
@@ -181,15 +191,24 @@ class MapClassifier(QObject):
 
                         top = self.wa_top - DELTA_CROP + row * AGGREGATION_WINDOW_SIZE + i * AGGREGATION_STEP
                         left = self.wa_left - DELTA_CROP + col * AGGREGATION_WINDOW_SIZE + j * AGGREGATION_STEP
-
-
                         img_np = utils.cropImage(self.input_image, [top, left, TILE_SIZE, TILE_SIZE])
 
+                        if autocolor is True and autolevel is False:
+                            img_np = utils.whiteblance(img_np)
+
+                        if autolevel is True and autocolor is False:
+                            img_np = utils.autolevel(img_np, 1.0)
+
+                        if autolevel is True and autocolor is True:
+                            white = utils.whiteblance(img_np)
+                            white = white.astype(np.uint8)
+                            img_np = utils.autolevel(white, 1.0)
+
                         # if i == 0 and j == 0:
-                        #     tilename = "RGB_" + str(row) + "_" + str(col) + ".png"
-                        #     filename = os.path.join(self.temp_dir, tilename)
-                        #     tile =utils.rgbToQImage(img_np)
-                        #     tile.save(filename)
+                        # tilename = "RGB_r=" + str(row) + "_c=" + str(col) + "_i=" + str(i) + "_j=" + str(j) + ".png"
+                        # filename = os.path.join(self.temp_dir, tilename)
+                        # tile =utils.rgbToQImage(img_np)
+                        # tile.save(filename)
 
                         img_np = img_np.astype(np.float32)
                         img_np = img_np / 255.0
@@ -222,11 +241,37 @@ class MapClassifier(QObject):
                 if self.flagStopProcessing is True:
                     break
 
+                # import matplotlib.pyplot as plt
+                # for k in range(9):
+                #     plt.imshow(scores[k,0,513-256:513+256, 513-256:513+256])
+                #     filename = "C:\\temp\\predPorite_r=" + str(row) + "_c=" + str(col) + "-" + str(k) + ".png"
+                #     plt.savefig(filename)
+                #     plt.close('all')
+                #     plt.imshow(scores[k,1,513-256:513+256, 513-256:513+256])
+                #     filename = "C:\\temp\\predBack_r=" + str(row) + "_c=" + str(col) + "-" + str(k) + ".png"
+                #     plt.savefig(filename)
+                #     plt.close('all')
+                #
+                # por = scores[:,0,513-256:513+256, 513-256:513+256]
+                # por = np.average(por, axis=0)
+                # plt.imshow(por)
+                # filename = "C:\\temp\\por_r=" + str(row) + "_c=" + str(col) + ".png"
+                # plt.savefig(filename)
+                #
+                # back = scores[:,1,513-256:513+256, 513-256:513+256]
+                # back = np.average(back, axis=0)
+                # plt.imshow(back)
+                # filename = "C:\\temp\\backg_r=" + str(row) + "_c=" + str(col) + ".png"
+                # plt.savefig(filename)
+
                 preds_avg = self.aggregateScores(scores, tile_sz=TILE_SIZE,
                                                      center_window_size=AGGREGATION_WINDOW_SIZE, step=AGGREGATION_STEP)
 
                 values_t, predictions_t = torch.max(torch.from_numpy(preds_avg), 0)
                 preds = predictions_t.cpu().numpy()
+                values_t = values_t.cpu().numpy()
+                unc_matrix = values_t < prediction_threshold
+                preds[unc_matrix] = self.background_index  # assign background
 
                 resimg = np.zeros((preds.shape[0], preds.shape[1], 3), dtype='uint8')
                 for label_index in range(self.nclasses):
@@ -319,21 +364,15 @@ class MapClassifier(QObject):
         Given the output scores (C x H x W) it returns the label map.
         """
 
-        scoresCopy= self.scores.copy()
+        scores_copy= self.scores.copy()
         predictions = np.argmax(self.scores, 0)
-        mymax= np.max(self.scores,0)
+        max_scores = np.max(self.scores, 0)
 
-        for i in range(self.nclasses):
-            scoresCopy[i, predictions == i] = 0.0
-
-        delta = mymax - np.max(scoresCopy, 0)
-        uncMatrix = delta < tresh
-
-        predictions[uncMatrix] = self.nclasses
-        self.label_colors.append([255, 255, 255])
+        unc_matrix = max_scores < tresh
+        predictions[unc_matrix] = self.background_index  # assign background
 
         resimg = np.zeros((predictions.shape[0], predictions.shape[1], 3), dtype='uint8')
-        for label_index in range(self.nclasses + 1):
+        for label_index in range(self.nclasses):
             resimg[predictions == label_index, :] = self.label_colors[label_index]
 
         qimg = utils.rgbToQImage(resimg)
@@ -412,6 +451,10 @@ class MapClassifier(QObject):
             classification_scores_avg = classification_scores_avg + prob.numpy()
 
         classification_scores_avg = classification_scores_avg / nscores
+
+        #classification_scores = np.average(classification_scores, axis=0)
+        #classification_scores_avg = softmax(torch.from_numpy(classification_scores)).cpu().numpy()
+
 
         #####   AGGREGATE SCORES USING BAYESIAN FUSION   #############################################
 

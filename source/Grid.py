@@ -118,11 +118,11 @@ class Grid(QObject):
                     value = self.cell_values[r, c]
 
                     if value == 0:
-                        rect = self.scene.addRect(xc, yc, cell_width-1, cell_height-1, pen=pen_white, brush=brush)
+                        rect = self.scene.addRect(xc, yc, cell_width, cell_height, pen=pen_white, brush=brush)
                     elif value == 1:
-                        rect = self.scene.addRect(xc, yc, cell_width-1, cell_height-1, pen=pen_white, brush=brush25)
+                        rect = self.scene.addRect(xc, yc, cell_width, cell_height, pen=pen_white, brush=brush25)
                     elif value == 2:
-                        rect = self.scene.addRect(xc, yc, cell_width-1, cell_height-1, pen=pen_white, brush=brush50)
+                        rect = self.scene.addRect(xc, yc, cell_width, cell_height, pen=pen_white, brush=brush50)
 
                     rect.setPos(self.offx, self.offy)
                     self.grid_rects.append(rect)
@@ -192,6 +192,7 @@ class Grid(QObject):
 
         note_dict = { "x": x, "y": y, "txt": txt}
         self.notes.append(note_dict)
+
         self.drawGrid()
 
     @pyqtSlot()
@@ -208,9 +209,11 @@ class Grid(QObject):
         new_text = text_item.toPlainText()
 
         index = self.text_items.index(text_item)
-        if new_text == "":
-            # remove the note since no text has been inserted
-            del self.notes[index]
+        if new_text == "": # remove the note since no text has been inserted
+            try:
+                del self.notes[index]
+            except:
+                pass
         else:
             # get the corresponding note information and update it
             note = self.notes[index]

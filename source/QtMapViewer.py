@@ -21,8 +21,8 @@
 """
 
 from PyQt5.QtCore import Qt, QRectF, pyqtSignal, pyqtSlot
-from PyQt5.QtGui import QImage, QPixmap, QPainter, QBrush, QPen, QColor, qRgb, qRgba, qRed, qGreen, qBlue
-from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
+from PyQt5.QtGui import QImage, QPixmap, QPainter, QBrush, QPen, QPalette, QColor, qRgb, qRgba, qRed, qGreen, qBlue
+from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QSizePolicy
 
 
 class QtMapViewer(QGraphicsView):
@@ -51,8 +51,8 @@ class QtMapViewer(QGraphicsView):
         self.aspectRatioMode = Qt.KeepAspectRatio
 
         # Set scrollbar
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        #self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        #self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
         # Panning is enabled if and only if the image is greater than the viewport.
         self.panEnabled = False
@@ -71,8 +71,14 @@ class QtMapViewer(QGraphicsView):
 
         self.pixmapitem = None
 
-        self.setFixedWidth(preferred_size)
-        self.setFixedHeight(preferred_size)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        #self.setMinimumHeight(100)
+        #self.setMaximumHeight(350)
+        #self.setMinimumWidth(100)
+        #self.setMaximumWidth(600)
+
+        #self.setFixedWidth(preferred_size)
+        #self.setFixedHeight(preferred_size)
 
         self.imgwidth = 0
         self.imgheight = 0
@@ -103,10 +109,10 @@ class QtMapViewer(QGraphicsView):
 
         if self.imgwidth > self.imgheight:
             aspectratio = self.imgheight / self.imgwidth
-            h = (int)(aspectratio * self.width())
+            h = (int)(aspectratio * self.geometry().width())
             if h > self.PREFERRED_SIZE:
                 h = self.PREFERRED_SIZE
-            self.setFixedHeight(h)
+            #self.setFixedHeight(h)
 
 
         # calculate zoom factor
@@ -189,10 +195,13 @@ class QtMapViewer(QGraphicsView):
     def mousePressEvent(self, event):
 
         scenePos = self.mapToScene(event.pos())
+        if self.imgwidth == 0 or self.imgheight == 0:
+            return
 
         if event.button() == Qt.LeftButton:
             if self.panEnabled:
                 self.setDragMode(QGraphicsView.ScrollHandDrag)
+
 
             clippedCoords = self.clipScenePos(scenePos)
             clippedCoords[0] = clippedCoords[0] / self.imgwidth
@@ -204,6 +213,8 @@ class QtMapViewer(QGraphicsView):
         QGraphicsView.mouseMoveEvent(self, event)
         scenePos = self.mapToScene(event.pos())
 
+        if self.imgwidth == 0 or self.imgheight == 0:
+            return
         if event.buttons() == Qt.LeftButton:
             clippedCoords = self.clipScenePos(scenePos)
             clippedCoords[0] = clippedCoords[0] / self.imgwidth

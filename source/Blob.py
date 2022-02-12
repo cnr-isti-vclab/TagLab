@@ -22,15 +22,13 @@ import copy
 import numpy as np
 
 from skimage import measure
-from skimage.util import pad
 from scipy import ndimage as ndi
-from PyQt5.QtGui import QPainterPath, QPolygonF, QImage, QPixmap, qRgba
+from PyQt5.QtGui import QPainterPath, QPolygonF
 from PyQt5.QtCore import QPointF
 
-from skimage.morphology import square, flood, flood_fill, binary_dilation, binary_erosion
+from skimage.morphology import square, binary_dilation, binary_erosion
 from skimage.measure import points_in_poly
-from skimage.draw import polygon_perimeter, polygon
-import cv2
+
 from cv2 import fillPoly
 
 import source.Mask as Mask
@@ -49,6 +47,14 @@ class Blob(object):
         self.version = 0
         self.id = int(id)
         self.id_item = None
+        self.instance_name = "noname"
+        self.blob_name = "noname"
+        self.class_name = "Empty"
+
+        self.genet = None
+        # note about the coral, i.e. damage type
+        self.note = ""
+        self.data = {}
 
         self.area = 0.0
         self.surface_area = 0.0
@@ -62,18 +68,14 @@ class Blob(object):
         self.qpath = None
         self.qpath_gitem = None
 
-        self.instance_name = "noname"
-        self.blob_name = "noname"
 
         if region:
 
             # extract properties
 
             self.centroid = np.array(region.centroid)
-            cy = self.centroid[0]
-            cx = self.centroid[1]
-            self.centroid[0] = cx + offset_x
-            self.centroid[1] = cy + offset_y
+            self.centroid[0] += offset_x
+            self.centroid[1] += offset_y
 
             # Bounding box (min_row, min_col, max_row, max_col).
             # Pixels belonging to the bounding box are in the half-open
@@ -89,12 +91,6 @@ class Blob(object):
             self.bbox[2] = width
             self.bbox[3] = height
 
-            # QPainterPath associated with the contours
-            self.qpath = None
-
-            # QGraphicsItem associated with the QPainterPath
-            self.qpath_gitem = None
-
             # to extract the contour we use the mask cropped according to the bbox
             input_mask = region.image.astype(int)
             self.contour = np.zeros((2, 2))
@@ -109,47 +105,10 @@ class Blob(object):
             yc = self.centroid[1]
             self.blob_name = "c-{:d}-{:.1f}x-{:.1f}y".format(self.id, xc, yc)
 
-        # deep extreme points (for fine-tuning)
-        self.deep_extreme_points = np.zeros((4, 2))
-
-        # name of the class
-        self.class_name = "Empty"
-
-        # color of the class
-        self.class_color = [128, 128, 128]
-
-        self.genet = None
-
-        # note about the coral, i.e. damage type
-        self.note = ""
-
-        # QImage corresponding to the current mask
-        self.qimg_mask = None
-
-        # QPixmap associated with the mask (for pixel-level editing operations)
-        self.pxmap_mask = None
-
-        # QGraphicsItem associated with the pixmap mask
-        self.pxmap_mask_gitem = None
-
-        # membership group (if any)  # NOT USED(!)
-        self.group = None
-
+       
 
     def copy(self):
         blob = Blob(None, 0, 0, 0)
-
-        blob.area = self.area
-        blob.surface_area = self.surface_area
-        blob.perimeter = self.perimeter
-        blob.centroid = self.centroid
-        blob.bbox = self.bbox
-
-        blob.contour = self.contour.copy()
-        for inner in self.inner_contours:
-            blob.inner_contours.append(inner.copy())
-        blob.qpath_gitem = None
-        blob.qpath = None
 
         blob.instance_name = blob.instance_name
         blob.blob_name = self.blob_name
@@ -159,12 +118,21 @@ class Blob(object):
         blob.genet = self.genet
         blob.class_name = self.class_name
 
-        blob.deep_extreme_points = self.deep_extreme_points
+        blob.note = self.note
 
-        self.note = ""
-        self.qimg_mask = None
-        self.pxmap_mask = None
-        self.pxmap_mask_gitem = None
+        blob.area = self.area
+        blob.surface_area = self.surface_area
+        blob.perimeter = self.perimeter
+        blob.centroid = self.centroid
+        blob.bbox = self.bbox
+        blob.data = self.data.copy()
+
+        blob.contour = self.contour.copy()
+        for inner in self.inner_contours:
+            blob.inner_contours.append(inner.copy())
+
+        blob.qpath_gitem = None
+        blob.qpath = None
 
         return blob
 
@@ -228,7 +196,7 @@ class Blob(object):
         self.calculateArea(mask)
         self.bbox = Mask.pointsBox(self.contour,4)
 
-    def createFromClosedCurve(self, lines):
+    def createFromClosedCurve(self, lines, erode = True):
         """
         It creates a blob starting from a closed curve. If the curve is not closed False is returned.
         If the curve intersect itself many times the first segmented region is created.
@@ -246,7 +214,8 @@ class Blob(object):
             return False
 
         selem = np.array([[0, 0, 0], [0, 0, 1], [0, 1, 0]])
-        mask = binary_erosion(mask, selem)
+        if erode:
+            mask = binary_erosion(mask, selem)
         self.updateUsingMask(box, mask)
         return True
 
@@ -262,7 +231,8 @@ class Blob(object):
 
         # we need to pad the mask to avoid to break the contour that touches the borders
         PADDED_SIZE = 4
-        img_padded = pad(mask, (PADDED_SIZE, PADDED_SIZE), mode="constant", constant_values=(0, 0))
+
+        img_padded = np.pad(mask, (PADDED_SIZE, PADDED_SIZE), mode="constant", constant_values=(0, 0))
 
         contours = measure.find_contours(img_padded, 0.6)
         inner_contours = measure.find_contours(img_padded, 0.4)
@@ -422,31 +392,11 @@ class Blob(object):
         for inner_contour in self.inner_contours:
             qpoly_inner = QPolygonF()
             for i in range(inner_contour.shape[0]):
-                qpoly_inner << QPointF(inner_contour[i, 0], inner_contour[i, 1])
+                qpoly_inner << QPointF(inner_contour[i, 0] + 0.5, inner_contour[i, 1] + 0.5)
 
             path_inner = QPainterPath()
             path_inner.addPolygon(qpoly_inner)
             self.qpath = self.qpath.subtracted(path_inner)
-
-    def createQPixmapFromMask(self):
-
-        w = self.bbox[2]
-        h = self.bbox[3]
-        self.qimg_mask = QImage(w, h, QImage.Format_ARGB32)
-        self.qimg_mask.fill(qRgba(0, 0, 0, 0))
-
-        if self.class_name == "Empty":
-            rgba = qRgba(255, 255, 255, 255)
-        else:
-            rgba = qRgba(self.class_color[0], self.class_color[1], self.class_color[2], 100)
-
-        blob_mask = self.getMask()
-        for x in range(w):
-            for y in range(h):
-                if blob_mask[y, x] == 1:
-                    self.qimg_mask.setPixel(x, y, rgba)
-
-        self.pxmap_mask = QPixmap.fromImage(self.qimg_mask)
 
     #bbox is used to place the mask!
     def calculateCentroid(self, mask, bbox):
@@ -506,22 +456,59 @@ class Blob(object):
         self.area = dict["area"]
         self.perimeter = dict["perimeter"]
 
-        self.contour = np.asarray(dict["contour"])
+
+        #inner_contours = dict["inner contours"]
+        self.contour = self.toContour(dict["contour"])
         inner_contours = dict["inner contours"]
         self.inner_contours = []
         for c in inner_contours:
-            self.inner_contours.append(np.asarray(c))
+            #self.inner_contours.append(np.asarray(c))
+            self.inner_contours.append(self.toContour(c))
 
-        self.deep_extreme_points = np.asarray(dict["deep_extreme_points"])
+
+        #for the moment we just update genets on load.
+#        if "genet" in dict:
+#            self.genet = dict["genet"]
         self.class_name = dict["class name"]
-        self.class_color = dict["class color"]
         self.instance_name = dict["instance name"]
         self.blob_name = dict["blob name"]
         self.id = int(dict["id"])
         self.note = dict["note"]
+        if 'data' in dict:
+            self.data = dict["data"].copy()
+        else:
+            self.data = {}
 
     def save(self):
         return self.toDict()
+
+    def toPoints(self, c):
+
+        #return c.tolist()
+        d = (c * 10).astype(int)
+        d = np.diff(d, axis=0, prepend=[[0, 0]])
+        d = np.reshape(d, -1)
+        d = np.char.mod('%d', d)
+        # combine to a string
+        d = " ".join(d)
+        return d
+
+    def toContour(self, p):
+
+        if type(p) is str:
+            p = map(int, p.split(' '))
+            c = np.fromiter(p, dtype=int)
+        else:
+            c = np.asarray(p)
+
+        if len(c.shape) == 2:
+            return c
+
+        c = np.reshape(c, (-1, 2))
+        c = np.cumsum(c, axis=0)
+        c = c / 10.0
+        return c
+
 
     def toDict(self):
         """
@@ -532,25 +519,26 @@ class Blob(object):
 
         dict["bbox"] = self.bbox.tolist()
 
-        dict["centroid"] = self.centroid.tolist()
+        dict["centroid"] = [math.trunc(10 * v) / 10 for v in self.centroid.tolist()]
         dict["area"] = self.area
-        dict["perimeter"] = self.perimeter
+        dict["perimeter"] = math.trunc(10 *self.perimeter)/10;
 
-        dict["contour"] = self.contour.tolist()
+        #dict["contour"] = self.contour.tolist()
+        dict["contour"] = self.toPoints(self.contour)
 
         dict["inner contours"] = []
         for c in self.inner_contours:
-            dict["inner contours"].append(c.tolist())
+            #dict["inner contours"].append(c.tolist())
+            dict["inner contours"].append(self.toPoints(c))
 
-        dict["deep_extreme_points"] = self.deep_extreme_points.tolist()
-
+#        dict["genet"] = self.genet
         dict["class name"] = self.class_name
-        dict["class color"] = self.class_color
 
         dict["instance name"] = self.instance_name
         dict["blob name"] = self.blob_name
         dict["id"] = self.id
         dict["note"] = self.note
+        dict["data"] = self.data.copy()
 
         return dict
 

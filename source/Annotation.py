@@ -22,6 +22,7 @@ import numpy as np
 from cv2 import fillPoly
 
 from skimage import measure
+from skimage.io import imsave
 
 from skimage.filters import sobel
 from scipy import ndimage as ndi
@@ -43,7 +44,10 @@ class Annotation(QObject):
     """
         Annotation object contains all the annotations as a list of blobs.
     """
-    blobUpdated = pyqtSignal(Blob)
+    blobAdded = pyqtSignal(Blob)
+    blobRemoved = pyqtSignal(Blob)
+    blobUpdated = pyqtSignal(Blob,Blob)
+    blobClassChanged = pyqtSignal(str,Blob)
 
     def __init__(self):
         super(QObject, self).__init__()
@@ -57,25 +61,53 @@ class Annotation(QObject):
         self.refine_depth_weight = 0.0
         self.refine_conservative = 0.1
 
-#        self.undo = Undo()                       #not saved
+        # cache
+        self.table_needs_update = True
 
-    def addBlob(self, blob):
+    def addBlob(self, blob, notify=True):
         used = [blob.id for blob in self.seg_blobs]
         if blob.id in used:
             blob.id = self.getFreeId()
         self.seg_blobs.append(blob)
 
-    def removeBlob(self, blob):
+        # notification that a blob has been added
+        if notify:
+            self.blobAdded.emit(blob)
+
+        self.table_needs_update = True
+
+    def removeBlob(self, blob, notify=True):
+
+        # notification that a blob is going to be removed
+        if notify:
+            self.blobRemoved.emit(blob)
+
         index = self.seg_blobs.index(blob)
         del self.seg_blobs[index]
 
-    #just
-    def updateBlob(self, old_blob, new_blob):
-        new_blob.id = old_blob.id;
-        self.removeBlob(old_blob)
-        self.addBlob(new_blob)
-        self.blobUpdated.emit(new_blob)
+        self.table_needs_update = True
 
+    def updateBlob(self, old_blob, new_blob):
+
+        new_blob.id = old_blob.id;
+        self.removeBlob(old_blob, notify=False)
+        self.addBlob(new_blob, notify=False)
+        self.blobUpdated.emit(old_blob,new_blob)
+
+        self.table_needs_update = True
+
+    def setBlobClass(self, blob, class_name):
+
+        if blob.class_name == class_name:
+            return
+        else:
+            old_class_name = blob.class_name
+            blob.class_name = class_name
+
+            # notify that the class name of 'blob' has changed
+            self.blobClassChanged.emit(old_class_name, blob)
+
+        self.table_needs_update = True
 
     def blobById(self, id):
         for blob in self.seg_blobs:
@@ -83,12 +115,11 @@ class Annotation(QObject):
                 return blob
         return None
 
+    def blobByGenet(self, genet):
+        return [blob for blob in self.seg_blobs if blob.genet == genet]
+
     def save(self):
         return self.seg_blobs
-        #data = []
-        #for blob in self.seg_blobs:
-        #    data.append(blob.toDict())
-        #return data
 
     #move to BLOB!
     def blobsFromMask(self, seg_mask, map_pos_x, map_pos_y, area_mask):
@@ -191,6 +222,7 @@ class Annotation(QObject):
 
             if original[y][x] == 0:
                 continue
+            #the point in points were painted with zeros and we need to assign to some label (we pick the largest of the neighbors
             largest = 0
             largest = max(label_image[y+1][x], largest)
             largest = max(label_image[y-1][x], largest)
@@ -200,12 +232,10 @@ class Annotation(QObject):
 
         area_th = 30
         created_blobs = []
-        first = True
         for region in measure.regionprops(label_image):
 
             if region.area > area_th:
                 b = Blob(region, box[1], box[0], self.getFreeId())
-                b.class_color = blob.class_color
                 b.class_name = blob.class_name
                 created_blobs.append(b)
 
@@ -243,12 +273,10 @@ class Annotation(QObject):
         #TODO this should be moved to a function!
         area_th = 500
         created_blobs = []
-        first = True
         label_image = measure.label(mask, connectivity=1)
         for region in measure.regionprops(label_image):
             if region.area > area_th:
                 b = Blob(region, box[1], box[0], self.getFreeId())
-                b.class_color = blob.class_color
                 b.class_name = blob.class_name
                 created_blobs.append(b)
         return created_blobs
@@ -283,17 +311,87 @@ class Annotation(QObject):
         created_blobs = []
         for region in measure.regionprops(labels):
                 b = Blob(region, box[1], box[0], self.getFreeId())
-                b.class_color = blob.class_color
                 b.class_name = blob.class_name
                 created_blobs.append(b)
 
         return created_blobs
 
-
     def editBorder(self, blob, lines):
+        points = blob.lineToPoints(lines, snap=False)
+        if points is None or len(points) == 0 or all(len(p) == 0 for p in points):
+            return
+
+        #get the bounding box of the points (we need to enlarge the mask box)
+        points_box = Mask.pointsBox(points, 4)
+
+        blob_mask = blob.getMask()
+        blob_box = blob.bbox
+        (mask, box) = Mask.jointMask(blob_box, points_box)
+
+        #2 is foregraound, 1 is background, 3 is the points
+        Mask.paintMask(mask, box, blob_mask, blob_box, 1)
+        mask[mask == 1] = 2
+        mask[mask == 0] = 1  #paint background, as points will be zero.
+
+        #we need to remember which point was what.
+        original = mask.copy()
+
+        #draw the points to separate the areas
+        Mask.paintPoints(mask, box, points, 3)
+
+        label_image = measure.label(mask, connectivity=1)
+        #reassing the rendered points bottom right area so the partitioning is properly done.
+        for point in points:
+            x = point[0] - box[1]
+            y = point[1] - box[0]
+
+            largest = 0
+            if original[y+1][x+1] != 0:
+                largest = max(label_image[y+1][x+1], largest)
+            elif original[y][x+1] != 0:
+                largest = max(label_image[y][x+1], largest)
+            elif original[y+1][x] != 0:
+                largest = max(label_image[y+1][x], largest)
+            label_image[y][x] = largest
+
+        regions = measure.regionprops(label_image)
+        #find the largest background and foreground regions
+        largest_fore = max(regions, key=lambda region: region.area if mask[region.coords[0][0], region.coords[0][1]] == 2 else 0)
+        largest_back = max(regions, key=lambda region: region.area if mask[region.coords[0][0], region.coords[0][1]] == 1 else 0)
+
+        final_mask = np.zeros((box[3], box[2])).astype(np.uint8)
+        #render larger background and foreground areas
+        final_mask[label_image == largest_back.label] = 0
+        final_mask[label_image == largest_fore.label] = 1
+
+        for region in regions:
+            if region == largest_fore:
+                continue
+            if region == largest_back:
+                continue
+
+            #this is a small aread, either carved in the original blob or from the background
+            was_not_blob = 0
+            was_blob = 0
+            for i in region.coords:
+                x = i[0]
+                y = i[1]
+                if mask[x][y] == 2:
+                    was_blob += 1
+                if mask[x][y] == 1:
+                    was_not_blob += 1
+                was_blob = 1 if was_blob > was_not_blob else 0
+
+            #if it was background (was_blob == 0) then make it foreground and viceversa
+            final_mask[label_image == region.label] = 1 - was_blob
+
+        blob.updateUsingMask(box, final_mask) 
+
+
+    def editBorder1(self, blob, lines):
         points = [blob.drawLine(line) for line in lines]
 
-        if points is None or len(points) == 0:
+        if points is None or len(points) == 0 or all(len(p) == 0 for p in points):
             return
 
         # compute the box for the outer contour
@@ -317,7 +415,8 @@ class Annotation(QObject):
             origin = np.array([points_box[1], points_box[0]])
             Mask.paintPoints(points_mask, points_box, allpoints - origin, 1)
             points_mask = ndi.binary_fill_holes(points_mask)
-            points_mask = binary_erosion(points_mask)
+            selem = np.array([[0, 0, 0], [0, 0, 1], [0, 1, 0]])
+            points_mask = binary_erosion(points_mask, selem)
             Mask.paintMask(mask, box, points_mask, points_box, 0)
 
 
@@ -353,8 +452,10 @@ class Annotation(QObject):
 
         Mask.paintPoints(mask, box, snapped_points, 1)
 
-        mask = ndi.binary_fill_holes(mask)
-
+        mask1 = ndi.binary_fill_holes(mask)
+        selem = np.array([[0, 0, 0], [0, 0, 1], [0, 1, 0]])
+        mask = binary_erosion(mask1, selem) | mask
+        
         # now draw in black the part of the points inside the contour
         Mask.paintPoints(mask, box, snapped_points, 0)
 
@@ -413,7 +514,7 @@ class Annotation(QObject):
     ###########################################################################
     ### IMPORT / EXPORT
 
-    def create_label_map(self, size, labels_info):
+    def create_label_map(self, size, labels_dictionary, working_area):
         """
         Create a label map as a QImage and returns it.
         """
@@ -432,13 +533,11 @@ class Annotation(QObject):
             if blob.class_name == "Empty":
                 rgb = [255, 255, 255]
             else:
-                class_color = labels_info[blob.class_name]
-                rgb = class_color
+                rgb = labels_dictionary[blob.class_name].fill
 
-            mask = blob.getMask().astype(bool)  #bool is required for bitmask indexing
-            box = blob.bbox
-            (box[2], box[3]) = (box[3] + box[0], box[2] + box[1])
-            #box is now startx,starty,endx,endy
+            mask = blob.getMask().astype(bool)  # bool is required for bitmask indexing
+            box = blob.bbox.copy()  # blob.bbox is top, left, width, height
+            (box[2], box[3]) = (box[3] + box[0], box[2] + box[1])  # box is now startx, starty, endx, endy
 
             #range is the interection of box and imagebox
             range = [max(box[0], imagebox[0]), max(box[1], imagebox[1]), min(box[2], imagebox[2]), min(box[3], imagebox[3])]
@@ -456,19 +555,58 @@ class Annotation(QObject):
             subimage[border & samecolor] = [0, 0, 0]
 
         labelimg = utils.rgbToQImage(image)
-        return labelimg
 
-    def import_label_map(self, filename, labels_info, w_target, h_target, create_holes=False):
+        if working_area is not None:
+            # FIXME: this is inefficient! The working_area should be used during the drawing.
+            labelimg_cropped = utils.cropQImage(labelimg, working_area)
+            return labelimg_cropped
+        else:
+            return labelimg
+
+
+    def calculate_inner_blobs(self, working_area):
+        """
+        This consider only blobs falling ENTIRELY in the working area"
+        """
+
+        selected_blobs = self.seg_blobs
+        inner_blobs = []
+        for blob in selected_blobs:
+            if Mask.insideBox(working_area, blob.bbox):
+                inner_blobs.append(blob)
+
+        return inner_blobs
+
+
+    def calculate_perclass_blobs_value(self, label, pixel_size):
+        """
+        This consider all the existing blobs, inside and outside the working area.
+        It returns number of blobs and coverage.
+        """
+        count = 0
+        tot_area = 0.0
+        for blob in self.seg_blobs:
+            if blob.class_name == label.name:
+                count = count + 1
+                tot_area = tot_area + blob.area
+        tot_area = round((tot_area * pixel_size * pixel_size) / 100.0, 2)
+
+        return count, tot_area
+
+
+    def import_label_map(self, filename, labels_dictionary, offset, scale, create_holes=False):
         """
         It imports a label map and create the corresponding blobs.
-        The label map is rescaled such that it coincides with the reference map.
+        The offset is stored as a [top, left] coordinates and scale are the scale factors of X and Y axis respectively.
         """
 
         qimg_label_map = QImage(filename)
         qimg_label_map = qimg_label_map.convertToFormat(QImage.Format_RGB32)
 
-        if w_target > 0 and h_target > 0:
-            qimg_label_map = qimg_label_map.scaled(w_target, h_target, Qt.IgnoreAspectRatio, Qt.FastTransformation)
+        # label map rescaling (if necessary)
+        w_rescaled = round(qimg_label_map.width() * scale[0])
+        h_rescaled = round(qimg_label_map.height() * scale[1])
+        qimg_label_map = qimg_label_map.scaled(w_rescaled, h_rescaled, Qt.IgnoreAspectRatio, Qt.FastTransformation)
 
         label_map = utils.qimageToNumpyArray(qimg_label_map)
         label_map = label_map.astype(np.int32)
@@ -481,79 +619,132 @@ class Annotation(QObject):
         too_much_small_area = 50
         region_big = None
 
+        offset_x = offset[1]
+        offset_y = offset[0]
         created_blobs = []
         for region in measure.regionprops(labels):
             if region.area > too_much_small_area:
                 id = len(self.seg_blobs)
-                blob = Blob(region, 0, 0, self.getFreeId())
+
+                blob = Blob(region, offset_x, offset_y, self.getFreeId())
 
                 # assign class
                 row = region.coords[0, 0]
                 col = region.coords[0, 1]
                 color = label_map[row, col]
 
-                for label_name in labels_info.keys():
-                    c = labels_info[label_name]
+                for key in labels_dictionary.keys():
+                    c = labels_dictionary[key].fill
                     if c[0] == color[0] and c[1] == color[1] and c[2] == color[2]:
-                        blob.class_name = label_name
-                        blob.class_color = c
+                        blob.class_name = labels_dictionary[key].name
                         break
-                if create_holes or blob.class_name is not 'Empty':
+                if create_holes or blob.class_name != 'Empty':
                     created_blobs.append(blob)
 
         return created_blobs
 
 
-    def export_data_table_for_Scripps(self, scale_factor, filename):
+    def export_data_table(self, project, image, filename):
 
-        # create a list of properties
-        properties = ['Blob id','Class name', 'Centroid x', 'Centroid y', 'Coral area', 'Coral perimeter', 'Coral note']
-
+        working_area = project.working_area
+        scale_factor = image.pixelSize()
+        date = image.acquisition_date
+        
         # create a list of instances
         name_list = []
-        visible_blobs = []
-        for blob in self.seg_blobs:
 
+        if working_area is None:
+            # all the blobs are considered
+            self.blobs = self.seg_blobs
+        else:
+            # only the blobs inside the working area are considered
+            self.blobs = self.calculate_inner_blobs(working_area)
+
+        visible_blobs = []
+        for blob in self.blobs:
             if blob.qpath_gitem.isVisible():
                 index = blob.blob_name
                 name_list.append(index)
                 visible_blobs.append(blob)
 
+
         number_of_seg = len(name_list)
-        class_name = []
-        blob_id = np.zeros(number_of_seg)
-        centroid_x = np.zeros(number_of_seg)
-        centroid_y = np.zeros(number_of_seg)
-        coral_area = np.zeros(number_of_seg)
-        coral_perimeter = np.zeros(number_of_seg)
-        coral_maximum_diameter = np.zeros(number_of_seg)
-        coral_note = []
+        dict = {
+            'TagLab Region id': np.zeros(number_of_seg, dtype = np.int64),
+            'TagLab Date': [],
+            'TagLab Class name': [],
+            'TagLab Genet id': np.zeros(number_of_seg, dtype = np.int64),
+            'TagLab Centroid x': np.zeros(number_of_seg),
+            'TagLab Centroid y': np.zeros(number_of_seg),
+            'TagLab Area': np.zeros(number_of_seg),
+            'TagLab Surf. area': np.zeros(number_of_seg),
+            'TagLab Perimeter': np.zeros(number_of_seg),
+            'TagLab Note': [] }
+
+
+        for attribute in project.region_attributes.data:
+            key = attribute["name"]
+            if attribute['type'] in ['string', 'keyword']:
+                dict[key] = []
+            # elif attribute['type'] in ['number', 'boolean']:
+            elif attribute['type'] in ['integer number']:
+                dict[key] = np.zeros(number_of_seg, dtype=np.int64)
+            elif attribute['type'] in ['decimal number']:
+                dict[key] = np.zeros(number_of_seg, dtype=np.float64)
+            else:
+                # unknown attribute type, not saved
+                pass
 
         for i, blob in enumerate(visible_blobs):
+            dict['TagLab Region id'][i] = blob.id
+            dict['TagLab Date'].append(date)
+            dict['TagLab Class name'].append(blob.class_name)
+            dict['TagLab Centroid x'][i] = round(blob.centroid[0], 1)
+            dict['TagLab Centroid y'][i] = round(blob.centroid[1], 1)
+            dict['TagLab Area'][i] = round(blob.area * (scale_factor) * (scale_factor)/ 100,2)
+            if blob.surface_area > 0.0:
+               dict['TagLab Surf. area'][i] = round(blob.surface_area * (scale_factor) * (scale_factor) / 100, 2)
+            dict['TagLab Perimeter'][i] = round(blob.perimeter*scale_factor / 10,1)
 
-            blob_id[i] = blob.id
-            class_name.append(blob.class_name)
-            centroid_x[i] = round(blob.centroid[0], 1)
-            centroid_y[i] = round(blob.centroid[1], 1)
-            coral_area[i] = round(blob.area * (scale_factor) * (scale_factor)/ 100,2)
-            coral_perimeter[i] = round(blob.perimeter*scale_factor / 10,1)
-            coral_note.append(blob.note)
+            if blob.genet is not None:
+               dict['TagLab Genet id'][i] = blob.genet
 
+            dict['TagLab Note'].append(blob.note)
 
-        # create a dictionary
-        dic = {
-            'Blob id' : blob_id,
-            'Class name': class_name,
-            'Centroid x': centroid_x,
-            'Centroid y': centroid_y,
-            'Coral area': coral_area,
-            'Coral perimeter': coral_perimeter}
+            for attribute in project.region_attributes.data:
+
+                key = attribute["name"]
+
+                try:
+                    value = blob.data[key]
+                except:
+                    value = None
+
+                if attribute['type'] == 'integer number':
+
+                    if value is not None:
+                        dict[key][i] = value
+                    else:
+                        dict[key][i] = 0
+
+                elif attribute['type'] == 'decimal number':
+
+                    if value is not None:
+                        dict[key][i] = value
+                    else:
+                        dict[key][i] = np.NaN
+
+                else:
+                    if value is not None:
+                        dict[key].append(value)
+                    else:
+                        dict[key].append('')
 
         # create dataframe
-        df = pd.DataFrame(dic, columns=properties)
-        df.to_csv(filename, sep='\t', index=False)
+        df = pd.DataFrame(dict, columns=list(dict.keys()))
+        df.to_csv(filename, sep=',', index=False)
 
 
-    def export_image_data_for_Scripps(self, size, filename, labels_info):
-        label_map = self.create_label_map(size, labels_info)
+    def export_image_data_for_Scripps(self, size, filename, project):
+        label_map = self.create_label_map(size, labels_dictionary=project.labels, working_area=project.working_area)
         label_map.save(filename, 'png')

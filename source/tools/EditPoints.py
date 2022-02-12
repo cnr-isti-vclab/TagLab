@@ -64,3 +64,23 @@ class EditPoints(QObject):
             path.lineTo(QPointF(x, y))
             self.qpath_gitem.setPath(path)
             self.scene.invalidate()
+
+#return false if nothing to undo remains.
+    def undo(self):
+        if len(self.points) == 0:
+            return False
+
+        self.points.pop()
+
+        path = QPainterPath()
+        for line in self.points:
+            if len(line) == 0:
+                continue
+            path.moveTo(QPointF(line[0][0], line[0][1]))
+
+            for point in line:
+                path.lineTo(QPointF(point[0], point[1]))
+
+        self.qpath_gitem.setPath(path)
+        self.scene.invalidate()        
+        return True

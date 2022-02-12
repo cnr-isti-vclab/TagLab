@@ -9,12 +9,14 @@ class Label(object):
         # name is what the user will see on the interface
         # fill, and border are colors [r,g,b]
 
-        self.id = id              # unique, can't change ever. eg. 'porcillopora'
-        self.name = name          # human friendly label for a label eg. Porcillopora Putrescenses
+        self.id = id              # unique, can't change ever. eg. 'pocillopora'
+        self.name = name          # human friendly label for a label eg. Pocillopora Putrescenses
         self.description = None
         self.fill = fill
         self.border = border
         self.visible = True
+
+
 
     def save(self):
 

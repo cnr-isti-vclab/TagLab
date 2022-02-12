@@ -71,7 +71,7 @@ class NewDataset(object):
 		self.sP_max = 0.0
 
 
-	def workingAreaCropAndRescale(self, current_scale, target_scale, working_area):
+	def workingAreaCropAndRescale(self, current_pixel_size, target_pixel_size, working_area):
 
 		x = working_area[1]
 		y = working_area[0]
@@ -81,9 +81,9 @@ class NewDataset(object):
 		crop_ortho_image = self.ortho_image.copy(x, y, width, height)
 		crop_label_image = self.label_image.copy(x, y, width, height)
 
-		scale = target_scale/current_scale
-		w = crop_ortho_image.width()*scale
-		h = crop_ortho_image.height()*scale
+		scale = float(current_pixel_size / target_pixel_size)
+		w = int(crop_ortho_image.width() * scale)
+		h = int(crop_ortho_image.height() * scale)
 
 		self.ortho_image = crop_ortho_image.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
 		self.label_image = crop_label_image.scaled(w, h, Qt.IgnoreAspectRatio, Qt.FastTransformation)
@@ -392,6 +392,9 @@ class NewDataset(object):
 			sc.append(s2)
 			sP.append(s3)
 
+			if i % 50 == 0:
+				sys.stdout.write("\rFinding biologically representative areas (pass 1/2)... %.2f %%" % ((i * 100.0) / 5000.0))
+
 		sn = np.array(sn)
 		sc = np.array(sc)
 		sP = np.array(sP)
@@ -416,13 +419,16 @@ class NewDataset(object):
 			area_number, area_coverage, area_PSCV = self.calculateMetrics(area_bbox, target_classes)
 			scores = self.calculateNormalizedScore(area_number, area_coverage, area_PSCV, landscape_number, landscape_coverage, landscape_PSCV)
 
-			for i, score in enumerate(scores):
+			for jj, score in enumerate(scores):
 				if math.isnan(score):
-					scores[i] = 0.0
+					scores[jj] = 0.0
 
 			aggregated_score = sum(scores) / len(scores)
 
 			area_info.append((area_bbox, scores, aggregated_score))
+
+			if i % 50 == 0:
+				sys.stdout.write("\rFinding biologically representative areas (pass 2/2)... %.2f %%" % ((i * 100.0) / 10000.0))
 
 
 		area_info.sort(key=lambda x:x[2])
@@ -476,7 +482,7 @@ class NewDataset(object):
 
 
 
-	def createLabelImage(self, labels_info):
+	def createLabelImage(self, labels_dictionary):
 		"""
 		It converts the blobs in the label image.
 		"""
@@ -500,7 +506,7 @@ class NewDataset(object):
 					if blob.class_name == "Empty":
 						rgb = qRgb(0, 0, 0)
 					else:
-						class_color = labels_info[blob.class_name]
+						class_color = labels_dictionary[blob.class_name].fill
 						rgb = qRgb(class_color[0], class_color[1], class_color[2])
 
 					painter.setBrush(QBrush(QColor(rgb)))
@@ -526,12 +532,14 @@ class NewDataset(object):
 		# class 0 --> background
 		self.labels = np.zeros((label_h, label_w), dtype='int64')
 		for i, cl in enumerate(target_classes):
-			class_colors = labels_colors.get(cl)
-			if class_colors is None:
+			label = labels_colors.get(cl)
+			if label is None:
 				if cl == "Background":
 					class_colors = [0, 0, 0]
 				else:
 					class_colors = [255, 255, 255]
+			else:
+				class_colors = label.fill
 			idx = np.where((imglbl[:, :, 0] == class_colors[0]) & (imglbl[:, :, 1] == class_colors[1]) & (imglbl[:, :, 2] == class_colors[2]))
 			self.labels[idx] = i + 1
 
@@ -1008,7 +1016,7 @@ class NewDataset(object):
 			self.validation_tiles = self.cleaningValidationTiles(self.validation_tiles)
 
 
-	def export_tiles(self, basename, tilename, labels_info):
+	def export_tiles(self, basename, tilename):
 		"""
 		Exports the tiles INSIDE the given areas (val_area and test_area are stored as (top, left, width, height))
 		The training tiles are the ones of the entire map minus the ones inside the test validation and test area.
@@ -1128,7 +1136,7 @@ class NewDataset(object):
 		return coverage
 
 
-	def classFrequenciesOnDataset(self, labels_dir, target_classes, labels_colors):
+	def classFrequenciesOnDataset(self, labels_dir, target_classes, labels_dictionary):
 		"""
 		Returns the frequencies of the target classes on the given dataset.
         """
@@ -1151,7 +1159,7 @@ class NewDataset(object):
 			# class 0 --> background
 			labelsint = np.zeros((label_h, label_w), dtype='int64')
 			for i, cl in enumerate(target_classes):
-				class_colors = labels_colors[cl]
+				class_colors = labels_dictionary[cl].fill
 				idx = np.where((imglbl[:, :, 0] == class_colors[0]) & (imglbl[:, :, 1] == class_colors[1]) & (
 							imglbl[:, :, 2] == class_colors[2]))
 				labelsint[idx] = i + 1

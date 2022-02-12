@@ -2,23 +2,25 @@ import os
 import pandas as pd
 import datetime
 import json
+import numpy as np
 
 from PyQt5.QtCore import QDir, QFileInfo
 from PyQt5.QtGui import QBrush, QColor
-from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QFileDialog, QMessageBox
 
 from source.Image import Image
 from source.Channel import Channel
 from source.Annotation import Annotation
+from source.Shape import Layer, Shape
 from source.Blob import Blob
 from source.Label import Label
 from source.Correspondences import Correspondences
 from source.Genet import Genet
 from source import utils
 from source.Grid import Grid
+from source.RegionAttributes import RegionAttributes
 
-
-def loadProject(taglab_working_dir, filename, labels_dict):
+def loadProject(taglab_working_dir, filename, default_dict):
 
     dir = QDir(taglab_working_dir)
     filename = dir.relativeFilePath(filename)
@@ -28,12 +30,18 @@ def loadProject(taglab_working_dir, filename, labels_dict):
     except json.JSONDecodeError as e:
         raise Exception(str(e))
 
+
     if "Map File" in data:
-        project = loadOldProject(taglab_working_dir, data, labels_dict)
+        project = loadOldProject(taglab_working_dir, data)
+        project.loadDictionary(default_dict)
+        project.region_attributes = RegionAttributes()
     else:
         project = Project(**data)
 
     f.close()
+
+    if project.dictionary_name == "":
+        project.dictionary_name = "My dictionary"
 
     project.filename = filename
 
@@ -43,7 +51,7 @@ def loadProject(taglab_working_dir, filename, labels_dict):
         for channel in image.channels:
             if not os.path.exists(channel.filename):
                 (filename, filter) = QFileDialog.getOpenFileName(None, "Couldn't find "+ channel.filename + " please select it:", taglab_working_dir,
-                                                                 "Image Files (*.png *.jpg *.tif)")
+                                                                 "Image Files (*.png *.jpg *.jpeg *.tif *.tiff)")
                 dir = QDir(taglab_working_dir)
                 if image.georef_filename == channel.filename:
                    image.georef_filename = dir.relativeFilePath(filename)
@@ -82,11 +90,10 @@ def loadProject(taglab_working_dir, filename, labels_dict):
 
     return project
 
-# NOTE: old project NEEDS a pre-defined label dictionary
-def loadOldProject(taglab_working_dir, data, labels_dict):
+# WARNING!! The old-style projects do not include a labels dictionary
+def loadOldProject(taglab_working_dir, data):
 
     project = Project()
-    project.importLabelsFromConfiguration(labels_dict)
     map_filename = data["Map File"]
 
     #convert to relative paths in case:
@@ -121,27 +128,49 @@ class ProjectEncoder(json.JSONEncoder):
             return obj.save()
         elif isinstance(obj, Blob):
             return obj.save()
+        elif isinstance(obj, Layer):
+            return obj.save()
+        elif isinstance(obj, Shape):
+            return obj.save()
         elif isinstance(obj, Correspondences):
             return obj.save()
         elif isinstance(obj, Grid):
             return obj.save()
         elif isinstance(obj, Genet):
             return {}
+        elif isinstance(obj, RegionAttributes):
+            return obj.save()
         return json.JSONEncoder.default(self, obj)
 
 class Project(object):
 
     def __init__(self, filename=None, labels={}, images=[], correspondences=None,
-                 spatial_reference_system=None, metadata={}, image_metadata_template={}, genet={}):
+                 spatial_reference_system=None, metadata={}, image_metadata_template={}, genet={},
+                 dictionary_name="", dictionary_description="", working_area=None, region_attributes={}):
 
         self.filename = None                                             #filename with path of the project json
+
+        # area of the images where the user annotate the data
+        # NOTE 1: since the images are co-registered the working area is the same for all the images
+        # NOTE 2: the working area is a RECTANGULAR region stored as [top, left, width, height]
+        self.working_area = working_area
+
+        self.dictionary_name = dictionary_name
+        self.dictionary_description = dictionary_description
+
         self.labels = { key: Label(**value) for key, value in labels.items() }
         if not 'Empty' in self.labels:
             self.labels['Empty'] = Label(id='Empty', name='Empty', description=None, fill=[127, 127, 127], border=[200, 200, 200], visible=True)
 
+        # compatibility with previous TagLab versions (working_area does not exist anymore)
+        for img in images:
+            if img.get("working_area") is not None:
+                img.__delitem__("working_area")
+
         self.images = list(map(lambda img: Image(**img), images))       #list of annotated images
 
                                                                          # dict of tables (DataFrame) of correspondences betweeen a source and a target image
+
         self.correspondences = {}
         if correspondences is not None:
             for key in correspondences.keys():
@@ -151,13 +180,12 @@ class Project(object):
                 self.correspondences[key].fillTable(correspondences[key]['correspondences'])
 
         self.genet = Genet(self)
-
+        self.region_attributes = RegionAttributes(**region_attributes)
+        
         self.spatial_reference_system = spatial_reference_system        #if None we assume coordinates in pixels (but Y is up or down?!)
         self.metadata = metadata                                        # project metadata => keyword -> value
         self.image_metadata_template = image_metadata_template          # description of metadata keywords expected in images
                                                                          # name: { type: (integer, date, string), mandatory: (true|false), default: ... }
-
-
 
     def importLabelsFromConfiguration(self, dictionary):
         """
@@ -171,8 +199,62 @@ class Project(object):
             self.labels[key] = Label(id=key, name=key, description=None, fill=color, border=[200, 200, 200], visible=True)
 
 
+    # def checkDictionaryConsistency(self, labels):
+    #     """
+    #     Check the consistency between a list of labels and the current annotations.
+    #     """
+    #
+    #     messages = ""
+    #     inconsistencies = 0
+    #
+    #     # check for existing labels present in the annotations but not present in list of labels
+    #
+    #     for class_name in class_names:
+    #         if not class_name in labels:
+    #             msg = "\n" + str(inconsistencies) + ") Label '" + key + "' is missing. We automatically add it."
+    #             messages += msg
+    #             inconsistencies += 1
+    #
+    #             label = self.labels[class_name]
+    #             labels.append(label.copy())
+    #
+    #     if inconsistencies > 0:
+    #         box = QMessageBox()
+    #         box.setWindowTitle("There are dictionary inconsistencies. See below:\n")
+    #         box.setText(messages)
+    #         box.exec()
+    #
+    #     return True
+
+
+    def labelsInUse(self):
+        """
+        It returns the labels currently assigned to the annotations.
+        """
+
+        class_names = set()  # class names effectively used
+        for image in self.images:
+            for blob in image.annotations.seg_blobs:
+                class_names.add(blob.class_name)
+
+        if len(class_names) == 0:
+            return []
+        else:
+            return list(class_names)
+
+
     def save(self, filename = None):
-        #try:
+
+        # check inconsistencies. They can be caused by bugs during the regions update/editing
+        if self.correspondences is not None:
+            for key in self.correspondences.keys():
+                if self.correspondences[key].checkTable() is True:
+                    # there are inconsistencies, THIS MUST BE NOTIFIED
+                    msgBox = QMessageBox()
+                    msgBox.setWindowTitle("INCONSISTENT CORRESPONDENCES")
+                    msgBox.setText("Inconsistent correspondences has been found !!\nPlease, Notify this problem to the TagLab developers.")
+                    msgBox.exec()
+
         data = self.__dict__
         str = json.dumps(data, cls=ProjectEncoder, indent=1)
 
@@ -184,6 +266,50 @@ class Project(object):
         #except Exception as a:
         #    print(str(a))
 
+    def loadDictionary(self, filename):
+
+        f = open(filename)
+        dictionary = json.load(f)
+        f.close()
+
+        self.dictionary_name = dictionary['Name']
+        self.dictionary_description = dictionary['Description']
+        labels = dictionary['Labels']
+
+        self.labels = {}
+        for label in labels:
+            id = label['id']
+            name = label['name']
+            fill = label['fill']
+            border = label['border']
+            description = label['description']
+            self.labels[name] = Label(id=id, name=name, fill=fill, border=border)
+
+    def setDictionaryFromListOfLabels(self, labels):
+        """
+        Convert the list of labels into a labels dictionary.
+        """
+
+        self.labels = {}
+
+        label_names = []
+        for label in labels:
+            label_names.append(label.name)
+
+        # 'Empty' key must be be always present
+        if not 'Empty' in label_names:
+            self.labels['Empty'] = Label(id='Empty', name='Empty', description=None, fill=[127, 127, 127],
+                                         border=[200, 200, 200], visible=True)
+
+        for label in labels:
+            self.labels[label.name] = label
+
+    def classColor(self, class_name):
+        if class_name == "Empty":
+            return [128, 128, 128]
+        if not class_name in self.labels:
+            raise ("Missing label for " + class_name)
+        return self.labels[class_name].fill
 
     def classBrushFromName(self, blob):
         brush = QBrush()
@@ -270,15 +396,6 @@ class Project(object):
         for corr in self.findCorrespondences(image):
             corr.updateBlob(image, old_blob, new_blob)
 
-    def setBlobClass(self, image, blob, class_name):
-
-        blob.class_name = class_name
-        # THIS should be removed: the color comes from the labels!
-        blob.class_color = self.labels[blob.class_name].fill
-
-        for corr in self.findCorrespondences(image):
-            corr.setBlobClass(image, blob, class_name)
-
     def getImageFromId(self, id):
         for img in self.images:
             if img.id == id:
@@ -361,6 +478,43 @@ class Project(object):
 
         self.genet.updateGenets()
         corr.updateGenets()
+
+
+    def create_labels_table(self, image):
+
+        '''
+        It creates a data table for the label panel.
+        If an active image is given, some statistics are added.
+        '''
+
+        dict = {
+            'Visibility': np.zeros(len(self.labels), dtype=np.int),
+            'Color': [],
+            'Class': [],
+            '#': np.zeros(len(self.labels), dtype=np.int),
+            'Coverage': np.zeros(len(self.labels),dtype=np.float)
+        }
+
+        for i, key in enumerate(list(self.labels.keys())):
+            label = self.labels[key]
+            dict['Visibility'][i] = int(label.visible)
+            dict['Color'].append(str(label.fill))
+            dict['Class'].append(label.name)
+
+            if image is None:
+                count = 0
+                new_area = 0.0
+            else:
+                count, new_area = image.annotations.calculate_perclass_blobs_value(label, image.pixelSize())
+
+            dict['#'][i] = count
+            dict['Coverage'][i] = new_area
+
+        # create dataframe
+        df = pd.DataFrame(dict, columns=['Visibility', 'Color', 'Class', '#', 'Coverage'])
+        return df
+
+
 
 
 

@@ -60,19 +60,26 @@ class Correspondences(object):
             blob1 = self.source.annotations.blobById(id1)
             blob2 = self.target.annotations.blobById(id2)
 
+            if blob1 is None and blob2 is None:
+                print("BOOM")
+
+            self.data.loc[index, 'Class'] = blob1.class_name if blob1 is not None else blob2.class_name
+
+            area1 = 0
             if blob1 is not None:
                 area_pixel = blob1.area
                 if use_surface_area:
                     area_pixel = blob1.surface_area
                 area1 = self.area_in_sq_cm(area_pixel, True)
-                self.data.loc[index, 'Area1'] = area1
+            self.data.loc[index, 'Area1'] = area1
 
+            area2 = 0
             if blob2 is not None:
                 area_pixel = blob2.area
                 if use_surface_area:
                     area_pixel = blob2.surface_area
                 area2 = self.area_in_sq_cm(area_pixel, False)
-                self.data.loc[index, 'Area2'] = area2
+            self.data.loc[index, 'Area2'] = area2
 
             # update grow/shrink information
             if action == "grow" or action == "shrink" or action == "same":
@@ -102,10 +109,32 @@ class Correspondences(object):
 
         self.data.sort_values(by=['Action', 'Blob1', 'Blob2'], inplace=True, ignore_index=True)
 
+    def checkTable(self):
+        """
+        Table may contain inconsistencies. This function check and remove them.
+        """
+
+        inconsistencies = False
+        current_table = self.data.copy()
+        for index, row in current_table.iterrows():
+            id1 = int(row['Blob1'])
+            id2 = int(row['Blob2'])
+            blob1 = self.source.annotations.blobById(id1)
+            blob2 = self.target.annotations.blobById(id2)
+
+            if blob1 is None and blob2 is None:
+                self.data.drop(index, inplace=True)
+                inconsistencies = True
+
+        return inconsistencies
+
     def fillTable(self, lst):
         """
         Fill the table from a list of correspondences.
         """
+
+        if not lst:
+            return
 
         if len(lst[0]) == 7:
             # genet information is missing..
@@ -114,6 +143,12 @@ class Correspondences(object):
 
         columns = self.data.columns
         self.data = pd.DataFrame(lst, columns=columns)
+
+        self.checkTable()
+
+        #this is needed to ensure consistency between blob data and correspondences data (WHICH SHOULD NOT BE REPLICATED!!!!)
+        self.updateAreas()
+
         self.sort_data()
 
     def addBlob(self, image, blob):
@@ -130,7 +165,8 @@ class Correspondences(object):
         else:
             self.set([], [blob])
             self.data = self.data[self.data['Blob2'] != blob.id]
-        pass
+
+        self.data.reset_index(drop=True, inplace=True)
 
     def updateBlob(self, image, old_blob, new_blob):
         if old_blob.class_name != new_blob.class_name:
@@ -145,14 +181,7 @@ class Correspondences(object):
         else:
             self.data.loc[self.data["Blob2"] == old_blob.id, "Blob2"] = new_blob.id
             self.data.loc[self.data["Blob2"] == old_blob.id, "Area2"] = self.area_in_sq_cm(new_blob.area, False)
-
-    def setBlobClass(self, image, blob, class_name):
-        #break the correspondences
-        if self.source == image:
-            self.set([blob], [])
-        else:
-            self.set([], [blob])
-
+ 
     def set(self, sourceblobs, targetblobs):
 
         #assumes one oth the two list has 1 blob only.
@@ -191,6 +220,10 @@ class Correspondences(object):
         for id in targetorphaned:
             if id < 0: # born and dead result in orphaned
                 continue
+            #we need to check if the orphaned has other relationships.
+            relatives = self.data[self.data['Blob2'] == id]
+            if len(relatives):
+                continue
             target = self.target.annotations.blobById(id)
             row = [-1, -1, target.id, 0.0, self.area_in_sq_cm(target.area, False), target.class_name, "born", type]
             df = pd.DataFrame([row], columns=self.data.columns)
@@ -198,6 +231,10 @@ class Correspondences(object):
 
         for id in sourceorphaned:
             if id < 0:
+                continue
+            #we need to check if the orphaned has other relationships.
+            relatives = self.data[self.data['Blob1'] == id]
+            if len(relatives):
                 continue
             source = self.source.annotations.blobById(id)
             row = [-1, source.id, -1, self.area_in_sq_cm(source.area, True), 0.0, source.class_name, "dead", type]

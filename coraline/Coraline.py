@@ -22,8 +22,8 @@ try:
 except:
 	lib = None
 	
-if lib!=None:
-	print('libcoraline loaded')
+if lib == None:
+	print('Could not load libcoraline')
 
 #import numpy as np
 
