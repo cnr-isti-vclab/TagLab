@@ -1202,7 +1202,7 @@ class TagLab(QMainWindow):
             return
 
         # update views
-        index = min(self.comboboxSourceImage.currentIndex()-1, 0)
+        index = max(self.comboboxSourceImage.currentIndex()-1, 0)
 
         self.disableSplitScreen()
         
@@ -3045,6 +3045,8 @@ class TagLab(QMainWindow):
 
         # update data panel
         self.updateDataPanel()
+
+        self.updateImageSelectionMenu()
 
         # molto sporco per collegare data panel, dovrebbe andare in data panel
         if image is not None:
