@@ -1194,14 +1194,20 @@ class TagLab(QMainWindow):
         self.mapWidget.show()
 
     def deleteImage(self, img):
+
+        # update project
         self.project.deleteImage(img)
-        self.updateImageSelectionMenu()
         if len(self.project.images) == 0:
             self.resetAll()
             return
+
+        # update views
+        index = min(self.comboboxSourceImage.currentIndex()-1, 0)
+
+        self.disableSplitScreen()
         
         if self.viewerplus.image == img:
-            self.showImage(self.project.images[0])
+            self.showImage(self.project.images[index])
 
     def deleteLayer(self, img, layer):
         box = QMessageBox()
@@ -2003,6 +2009,7 @@ class TagLab(QMainWindow):
 
     def updateImageSelectionMenu(self):
 
+        # disconnect so that only the combobox are updated
         self.comboboxSourceImage.currentIndexChanged.disconnect()
         self.comboboxTargetImage.currentIndexChanged.disconnect()
 
@@ -2012,8 +2019,15 @@ class TagLab(QMainWindow):
         if index1 < 1:
             index1 = 0
 
+        n = len(self.project.images) - 1
+        if index1 > n:
+            index1 = n
+
         if index2 < 1:
             index2 = 0
+
+        if index2 > n:
+            index2 = n
 
         # update the image names
         self.comboboxSourceImage.clear()
@@ -2025,6 +2039,7 @@ class TagLab(QMainWindow):
         self.comboboxSourceImage.setCurrentIndex(index1)
         self.comboboxTargetImage.setCurrentIndex(index2)
 
+        # re-connect
         self.comboboxSourceImage.currentIndexChanged.connect(self.sourceImageChanged)
         self.comboboxTargetImage.currentIndexChanged.connect(self.targetImageChanged)
 
@@ -2998,9 +3013,6 @@ class TagLab(QMainWindow):
         if self.update_panels_flag is False:
             return
 
-        if self.split_screen_flag is True:
-            viewer = self.viewerplus
-
         # update labels
         image = None
         if self.activeviewer is not None:
@@ -3010,8 +3022,12 @@ class TagLab(QMainWindow):
         self.labels_widget.setLabels(self.project, image)
 
         # update layers
-        self.layers_widget.setProject(self.project)
-        self.layers_widget.setImage(image)
+        if self.split_screen_flag is False:
+            self.layers_widget.setProject(self.project)
+            self.layers_widget.setImage(image)
+        else:
+            self.layers_widget.setProject(self.project)
+            self.layers_widget.setImage(self.viewerplus.image, self.viewerplus2.image)
 
         if self.split_screen_flag is True:
             # update compare panel (only if it is visible)

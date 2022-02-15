@@ -38,7 +38,15 @@ class QtLayersWidget(QTreeWidget):
         self.header().setStretchLastSection(False)
         self.setColumnWidth(1, 24)
 
+        self.current_project = None
+
     def setProject(self, project):
+
+        if self.current_project == project:
+            return
+
+        self.current_project = project
+
         self.blockSignals(True)
         self.clear()
 

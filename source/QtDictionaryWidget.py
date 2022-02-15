@@ -119,15 +119,15 @@ class QtDictionaryWidget(QWidget):
         self.btnRemove = QPushButton("Delete")
         self.btnAdd = QPushButton("Add")
         self.btnAdd.setStyleSheet("background-color: rgb(55,55,55);")
-        self.btnOk = QPushButton("Update")
+        self.btnUpdate = QPushButton("Update")
         self.btnRemove.clicked.connect(self.removeLabel)
         self.btnAdd.clicked.connect(self.addLabel)
-        self.btnOk.clicked.connect(self.editLabel)
+        self.btnUpdate.clicked.connect(self.editLabel)
 
         buttons_layout = QVBoxLayout()
         buttons_layout.setAlignment(Qt.AlignRight)
         buttons_layout.addStretch()
-        buttons_layout.addWidget(self.btnOk)
+        buttons_layout.addWidget(self.btnUpdate)
         buttons_layout.addWidget(self.btnRemove)
 
 
@@ -473,6 +473,13 @@ class QtDictionaryWidget(QWidget):
 
         if self.selection_index > 0:
             label = self.labels[self.selection_index]
+
+            if label.name in self.labels_in_use:
+                box = QMessageBox()
+                box.setText("This label is currently in use and cannot be updated (!)")
+                box.exec()
+                return
+
             label.id = self.editLabel.text()
             label.name = self.editLabel.text()
             r, g, b = self.getRGB()
