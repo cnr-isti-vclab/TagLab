@@ -85,9 +85,14 @@ class NewDataset(object):
 		w = int(crop_ortho_image.width() * scale)
 		h = int(crop_ortho_image.height() * scale)
 
-		self.ortho_image = crop_ortho_image.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
-		self.label_image = crop_label_image.scaled(w, h, Qt.IgnoreAspectRatio, Qt.FastTransformation)
-
+		if w >= 32767 or h >= 32767:
+			self.ortho_image = None
+			self.label_image = None
+			return False
+		else:
+			self.ortho_image = crop_ortho_image.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+			self.label_image = crop_label_image.scaled(w, h, Qt.IgnoreAspectRatio, Qt.FastTransformation)
+			return True
 
 	def isFullyInsideBBox(self, bbox1, bbox2):
 		"""

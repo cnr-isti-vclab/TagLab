@@ -3813,8 +3813,19 @@ class TagLab(QMainWindow):
             new_dataset.convert_colors_to_labels(target_classes, self.project.labels)
             new_dataset.computeFrequencies(target_classes)
             target_pixel_size = self.newDatasetWidget.getTargetScale()
-            new_dataset.workingAreaCropAndRescale(self.activeviewer.image.pixelSize(), target_pixel_size,
-                                                  self.activeviewer.image.export_dataset_area)
+            check_size = new_dataset.workingAreaCropAndRescale(self.activeviewer.image.pixelSize(), target_pixel_size,
+                                                               self.activeviewer.image.export_dataset_area)
+
+            if check_size is False:
+                msgBox = QMessageBox()
+                msgBox.setWindowTitle(self.TAGLAB_VERSION)
+                msgBox.setText("The image to export is too big. Check the target pixel size.")
+                msgBox.exec()
+                self.deleteProgressBar()
+                self.deleteNewDatasetWidget()
+                self.disableAreaSelection()
+                QApplication.restoreOverrideCursor()
+                return
 
             # create training, validation and test areas
 
