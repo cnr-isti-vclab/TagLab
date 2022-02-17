@@ -2950,7 +2950,9 @@ class TagLab(QMainWindow):
     def createDictionary(self):
 
         self.create_dictionary = QtDictionaryWidget(self.taglab_dir, self.project, parent = self)
-        self.create_dictionary.btn_set.clicked.connect(self.setDictionary)
+        self.create_dictionary.addlabel.connect(self.addLabelDictionary)
+        self.create_dictionary.updatelabel[str,list,str,list].connect(self.updateLabelDictionary)
+        self.create_dictionary.deletelabel[str].connect(self.deleteLabelfromDictionary)
         self.create_dictionary.show()
 
     @pyqtSlot()
@@ -2965,8 +2967,41 @@ class TagLab(QMainWindow):
         self.groupbox_blobpanel.updateRegionAttributes(self.project.region_attributes)
 
 
+    # @pyqtSlot()
+    # def setDictionary(self):
+    #
+    #     # NOTES:
+    #     #
+    #     #  - same keys in use may have different colors -> recoloring of the annotations is needed
+    #     #  - at the moment, two different labels can have the same color
+    #
+    #     labels_list = self.create_dictionary.labels
+    #
+    #     if len(set(labels_list)) < len(labels_list):
+    #         msgBox = QMessageBox()
+    #         msgBox.setWindowTitle(self.TAGLAB_VERSION)
+    #         msgBox.setText("There are duplicated class names !! Please, remove the duplicates.")
+    #         msgBox.exec()
+    #         return
+    #
+    #     # set the dictionary in the project
+    #     self.project.setDictionaryFromListOfLabels(labels_list)
+    #
+    #     # update labels widget
+    #     self.updatePanels()
+    #
+    #     # redraw all blobs
+    #     if self.viewerplus is not None:
+    #         if self.viewerplus.image is not None:
+    #             self.viewerplus.redrawAllBlobs()
+    #
+    #     if self.viewerplus2 is not None:
+    #         if self.viewerplus2.image is not None:
+    #             self.viewerplus2.redrawAllBlobs()
+
+
     @pyqtSlot()
-    def setDictionary(self):
+    def addLabelDictionary(self):
 
         # NOTES:
         #
@@ -2974,13 +3009,6 @@ class TagLab(QMainWindow):
         #  - at the moment, two different labels can have the same color
 
         labels_list = self.create_dictionary.labels
-
-        if len(set(labels_list)) < len(labels_list):
-            msgBox = QMessageBox()
-            msgBox.setWindowTitle(self.TAGLAB_VERSION)
-            msgBox.setText("There are duplicated class names !! Please, remove the duplicates.")
-            msgBox.exec()
-            return
 
         # set the dictionary in the project
         self.project.setDictionaryFromListOfLabels(labels_list)
@@ -2992,7 +3020,56 @@ class TagLab(QMainWindow):
         if self.viewerplus is not None:
             if self.viewerplus.image is not None:
                 self.viewerplus.redrawAllBlobs()
+        if self.viewerplus2 is not None:
+            if self.viewerplus2.image is not None:
+                self.viewerplus2.redrawAllBlobs()
 
+    @pyqtSlot(str,list,str,list)
+    def updateLabelDictionary(self,oldname,oldcolor,newname,newcolor):
+
+        labels_list = self.create_dictionary.labels
+
+        for label in labels_list:
+            if label.fill == oldcolor:
+                label.fill = newcolor
+
+        for blob in self.activeviewer.image.annotations.seg_blobs:
+            if blob.class_name == oldname:
+               self.activeviewer.setBlobClass(blob, newname)
+
+        # set the dictionary in the project
+        self.project.setDictionaryFromListOfLabels(labels_list)
+
+        # update labels widget
+        self.updatePanels()
+
+        # redraw all blobs
+        if self.viewerplus is not None:
+            if self.viewerplus.image is not None:
+                self.viewerplus.redrawAllBlobs()
+        if self.viewerplus2 is not None:
+            if self.viewerplus2.image is not None:
+                self.viewerplus2.redrawAllBlobs()
+
+    @pyqtSlot(str)
+    def deleteLabelfromDictionary(self, labelname):
+
+        labels_list = self.create_dictionary.labels
+
+        for blob in self.activeviewer.image.annotations.seg_blobs:
+            if blob.class_name == labelname:
+              self.activeviewer.setBlobClass(blob, "Empty")
+
+        # set the dictionary in the project
+        self.project.setDictionaryFromListOfLabels(labels_list)
+
+        # update labels widget
+        self.updatePanels()
+
+        # redraw all blobs
+        if self.viewerplus is not None:
+            if self.viewerplus.image is not None:
+                self.viewerplus.redrawAllBlobs()
         if self.viewerplus2 is not None:
             if self.viewerplus2.image is not None:
                 self.viewerplus2.redrawAllBlobs()
