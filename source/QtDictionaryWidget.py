@@ -73,8 +73,6 @@ class QtDictionaryWidget(QWidget):
         self.btn_save = QPushButton("Save")
         self.btn_save.clicked.connect(self.saveDictionary)
 
-
-
         lbl_dname = QLabel("Dictionary name:")
         lbl_dname.setFixedWidth(160)
 
@@ -174,9 +172,8 @@ class QtDictionaryWidget(QWidget):
         self.editLabel.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editLabel.setPlaceholderText("Label name")
 
-        # self.btn_set = QPushButton("Ok")
-        # self.btn_set.setStyleSheet("font-weight: bold;")
-        # self.btn_set.clicked.connect(self.closewidget)
+        self.btn_ok = QPushButton("Ok")
+        self.btn_ok.clicked.connect(self.closewidget)
 
         layout_zerorow = QHBoxLayout()
         layout_zerorow.addWidget(self.button_new)
@@ -214,9 +211,9 @@ class QtDictionaryWidget(QWidget):
         layout_setColor.addWidget(self.btnAdd)
 
         # #6 row
-        # bottom = QHBoxLayout()
-        # bottom.setAlignment(Qt.AlignRight)
-        # bottom.addWidget(self.btn_set)
+        bottom = QHBoxLayout()
+        bottom.setAlignment(Qt.AlignHCenter)
+        bottom.addWidget(self.btn_ok)
 
         layout = QVBoxLayout()
         layout.addLayout(layout_zerorow)
@@ -225,7 +222,7 @@ class QtDictionaryWidget(QWidget):
         layout.addLayout(layout_thirdrow)
         layout.addLayout(layout_addremove)
         layout.addLayout(layout_setColor)
-        # layout.addLayout(bottom)
+        #layout.addLayout(bottom)
 
         self.setLayout(layout)
 
@@ -519,14 +516,16 @@ class QtDictionaryWidget(QWidget):
 
         if self.selection_index > 0:
             label = self.labels[self.selection_index]
-            oldname=label.name
+            oldname = label.name
 
+            delete_ok = True
             if label.name in self.labels_in_use:
 
                 box = QMessageBox()
                 box.setIcon(QMessageBox.Question)
                 box.setWindowTitle('TagLab')
-                box.setText('Pay attention, this label is in use. If you delete it, the Empty class will be assigned to the existing objects.')
+                box.setText('Pay attention, this label is in use. If you delete it, '
+                            'the Empty class will be assigned to the existing objects.')
                 box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
                 buttonY = box.button(QMessageBox.Yes)
                 buttonY.setText('Yes')
@@ -534,8 +533,12 @@ class QtDictionaryWidget(QWidget):
                 buttonC.setText('Cancel')
                 box.exec()
 
+                if box.clickedButton() == buttonY:
+                    delete_ok = True
+                else:
+                    delete_ok = False
 
-            if box.clickedButton() == buttonY:
+            if delete_ok is True:
                 self.labels.remove(label)
                 self.createAllLabels()
                 self.selection_index = -1
@@ -557,10 +560,6 @@ class QtDictionaryWidget(QWidget):
                 self.editB.blockSignals(False)
 
                 self.deletelabel.emit(oldname)
-
-            if box.clickedButton() == buttonC:
-               pass
-
 
         else:
             box = QMessageBox()

@@ -3033,12 +3033,17 @@ class TagLab(QMainWindow):
             if label.fill == oldcolor:
                 label.fill = newcolor
 
-        for blob in self.activeviewer.image.annotations.seg_blobs:
-            if blob.class_name == oldname:
-               self.activeviewer.setBlobClass(blob, newname)
-
         # set the dictionary in the project
         self.project.setDictionaryFromListOfLabels(labels_list)
+
+        if oldname == newname:
+            # only the color of the label changed
+            self.labels_widget.updateColor(newname, newcolor)
+        else:
+            # all the blobs need to be re-assigned
+            for blob in self.activeviewer.image.annotations.seg_blobs:
+                if blob.class_name == oldname:
+                    self.activeviewer.setBlobClass(blob, newname)
 
         # update labels widget
         self.updatePanels()

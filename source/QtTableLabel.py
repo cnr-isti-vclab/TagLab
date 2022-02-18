@@ -299,6 +299,14 @@ class QtTableLabel(QWidget):
 
         return btnC
 
+    def updateColor(self, labelname, newcolor):
+        """
+        Update the color of a given label.
+        """
+
+        for i, row in self.data.iterrows():
+            if row['Class'] == labelname:
+                self.data.loc[i, 'Color'] = str(newcolor)
 
     @pyqtSlot(Blob, Blob)
     def updateBlob(self, oldblob, newblob):
