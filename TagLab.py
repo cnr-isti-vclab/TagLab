@@ -170,6 +170,7 @@ class TagLab(QMainWindow):
         self.projectEditor = None
         self.editProjectWidget = None
         self.scale_widget = None
+        self.dictionary_widget = None
         self.working_area_widget = None
         self.classifierWidget = None
         self.newDatasetWidget = None
@@ -2949,11 +2950,20 @@ class TagLab(QMainWindow):
     @pyqtSlot()
     def createDictionary(self):
 
-        self.create_dictionary = QtDictionaryWidget(self.taglab_dir, self.project, parent = self)
-        self.create_dictionary.addlabel.connect(self.addLabelDictionary)
-        self.create_dictionary.updatelabel[str,list,str,list].connect(self.updateLabelDictionary)
-        self.create_dictionary.deletelabel[str].connect(self.deleteLabelfromDictionary)
-        self.create_dictionary.show()
+        if self.dictionary_widget is None:
+            self.dictionary_widget = QtDictionaryWidget(self.taglab_dir, self.project, parent = self)
+            self.dictionary_widget.addlabel.connect(self.addLabelDictionary)
+            self.dictionary_widget.updatelabel[str,list,str,list].connect(self.updateLabelDictionary)
+            self.dictionary_widget.deletelabel[str].connect(self.deleteLabelfromDictionary)
+            self.dictionary_widget.closewidget.connect(self.closeDictionaryWidget)
+            self.dictionary_widget.show()
+
+    @pyqtSlot()
+    def closeDictionaryWidget(self):
+
+        if self.dictionary_widget is not None:
+            del self.dictionary_widget
+            self.dictionary_widget = None
 
     @pyqtSlot()
     def editRegionAttributes(self):
@@ -2966,40 +2976,6 @@ class TagLab(QMainWindow):
     def updateRegionAttributes(self):
         self.groupbox_blobpanel.updateRegionAttributes(self.project.region_attributes)
 
-
-    # @pyqtSlot()
-    # def setDictionary(self):
-    #
-    #     # NOTES:
-    #     #
-    #     #  - same keys in use may have different colors -> recoloring of the annotations is needed
-    #     #  - at the moment, two different labels can have the same color
-    #
-    #     labels_list = self.create_dictionary.labels
-    #
-    #     if len(set(labels_list)) < len(labels_list):
-    #         msgBox = QMessageBox()
-    #         msgBox.setWindowTitle(self.TAGLAB_VERSION)
-    #         msgBox.setText("There are duplicated class names !! Please, remove the duplicates.")
-    #         msgBox.exec()
-    #         return
-    #
-    #     # set the dictionary in the project
-    #     self.project.setDictionaryFromListOfLabels(labels_list)
-    #
-    #     # update labels widget
-    #     self.updatePanels()
-    #
-    #     # redraw all blobs
-    #     if self.viewerplus is not None:
-    #         if self.viewerplus.image is not None:
-    #             self.viewerplus.redrawAllBlobs()
-    #
-    #     if self.viewerplus2 is not None:
-    #         if self.viewerplus2.image is not None:
-    #             self.viewerplus2.redrawAllBlobs()
-
-
     @pyqtSlot()
     def addLabelDictionary(self):
 
@@ -3008,7 +2984,7 @@ class TagLab(QMainWindow):
         #  - same keys in use may have different colors -> recoloring of the annotations is needed
         #  - at the moment, two different labels can have the same color
 
-        labels_list = self.create_dictionary.labels
+        labels_list = self.dictionary_widget.labels
 
         # set the dictionary in the project
         self.project.setDictionaryFromListOfLabels(labels_list)
@@ -3027,7 +3003,7 @@ class TagLab(QMainWindow):
     @pyqtSlot(str,list,str,list)
     def updateLabelDictionary(self,oldname,oldcolor,newname,newcolor):
 
-        labels_list = self.create_dictionary.labels
+        labels_list = self.dictionary_widget.labels
 
         for label in labels_list:
             if label.fill == oldcolor:
@@ -3059,7 +3035,7 @@ class TagLab(QMainWindow):
     @pyqtSlot(str)
     def deleteLabelfromDictionary(self, labelname):
 
-        labels_list = self.create_dictionary.labels
+        labels_list = self.dictionary_widget.labels
 
         for blob in self.activeviewer.image.annotations.seg_blobs:
             if blob.class_name == labelname:
