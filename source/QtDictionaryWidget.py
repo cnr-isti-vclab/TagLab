@@ -173,8 +173,8 @@ class QtDictionaryWidget(QWidget):
         self.editLabel.setPlaceholderText("Label name")
 
         self.btn_ok = QPushButton("Ok")
-        self.btn_ok.clicked.connect(self.closewidget)
         self.btn_ok.setMinimumWidth(150)
+        self.btn_ok.clicked.connect(self.close)
 
         layout_zerorow = QHBoxLayout()
         layout_zerorow.addWidget(self.button_new)
