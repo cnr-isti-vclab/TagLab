@@ -20,7 +20,7 @@
 
 from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal, QEvent
 from PyQt5.QtWidgets import QWidget, QScrollArea,QGroupBox, QColorDialog, QMessageBox, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, \
-    QHBoxLayout, QVBoxLayout, QTextEdit
+    QHBoxLayout, QVBoxLayout, QTextEdit, QFrame
 from source.Label import Label
 import json
 import os
@@ -174,6 +174,7 @@ class QtDictionaryWidget(QWidget):
 
         self.btn_ok = QPushButton("Ok")
         self.btn_ok.clicked.connect(self.closewidget)
+        self.btn_ok.setMinimumWidth(150)
 
         layout_zerorow = QHBoxLayout()
         layout_zerorow.addWidget(self.button_new)
@@ -212,8 +213,12 @@ class QtDictionaryWidget(QWidget):
 
         # #6 row
         bottom = QHBoxLayout()
-        bottom.setAlignment(Qt.AlignHCenter)
+        bottom.setAlignment(Qt.AlignCenter)
         bottom.addWidget(self.btn_ok)
+
+        line = QFrame()
+        line.setFrameShape(QFrame.HLine)
+        line.setFrameShadow(QFrame.Sunken)
 
         layout = QVBoxLayout()
         layout.addLayout(layout_zerorow)
@@ -222,7 +227,9 @@ class QtDictionaryWidget(QWidget):
         layout.addLayout(layout_thirdrow)
         layout.addLayout(layout_addremove)
         layout.addLayout(layout_setColor)
-        #layout.addLayout(bottom)
+        #layout.addSpacing(10)
+        layout.addWidget(line)
+        layout.addLayout(bottom)
 
         self.setLayout(layout)
 
