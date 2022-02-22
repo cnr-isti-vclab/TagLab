@@ -1317,28 +1317,22 @@ class TagLab(QMainWindow):
         img_source_index = self.comboboxSourceImage.currentIndex()
         img_target_index = self.comboboxTargetImage.currentIndex()
 
-        if img_source_index != img_target_index:
+        if img_source_index == img_target_index:
+            return
 
-            key = self.project.images[img_source_index].id + "-" + self.project.images[img_target_index].id
-            corr = self.project.correspondences.get(key)
+        key = self.project.images[img_source_index].id + "-" + self.project.images[img_target_index].id
+        corr = self.project.correspondences.get(key)
 
-            flag_compute = False
-            if corr is not None:
-                if corr.data.empty is False:
-                    reply = QMessageBox.question(self, self.TAGLAB_VERSION,
-                                                 "Would you like to clean up the table and replace all the existing matches?",
-                                                 QMessageBox.Yes | QMessageBox.No)
-                    if reply == QMessageBox.Yes:
-                        flag_compute = True
-                else:
-                    flag_compute = True
-            else:
-                flag_compute = True
+        if corr is not None and corr.data.empty is False:
+            reply = QMessageBox.question(self, self.TAGLAB_VERSION,
+                        "Would you like to clean up the table and replace all the existing matches?",
+                        QMessageBox.Yes | QMessageBox.No)
+            if reply != QMessageBox.Yes:
+                return
 
-            if flag_compute is True:
-                self.project.computeCorrespondences(img_source_index, img_target_index)
-                self.compare_panel.setTable(self.project, img_source_index, img_target_index)
-                self.setTool("MATCH")
+        self.project.computeCorrespondences(img_source_index, img_target_index)
+        self.compare_panel.setTable(self.project, img_source_index, img_target_index)
+        self.setTool("MATCH")
 
 
     @pyqtSlot()

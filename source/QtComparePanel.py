@@ -327,9 +327,6 @@ class QtComparePanel(QWidget):
 
     def setTable(self, project, img1idx, img2idx):
 
-        if self.project == project and self.img1idx == img1idx and self.img2idx == img2idx:
-            return
-
         self.project = project
         self.img1idx = img1idx
         self.img2idx = img2idx
