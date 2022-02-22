@@ -19,153 +19,141 @@
 
 import os
 
-from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal
-from PyQt5.QtGui import QImage, QPixmap, QIcon, qRgb, qRed, qGreen, qBlue
-from PyQt5.QtWidgets import QWidget, QDialog, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
-from source.Annotation import Annotation
+from PyQt5.Qt import QDesktopServices
+from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal, QUrl
+from PyQt5.QtWidgets import QWidget, QFileDialog, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout, \
+    QMessageBox, QGroupBox, QGridLayout, QCheckBox, QSizePolicy
 
-from source import utils
+from models.coral_dataset import CoralsDataset
+import models.training as training
+
 
 class QtTYNWidget(QWidget):
 
-    def __init__(self, annotations, parent=None):
+    launchTraining = pyqtSignal()
+
+    def __init__(self, labels, taglab_version, parent=None):
         super(QtTYNWidget, self).__init__(parent)
+
+        self.project_labels = labels
+        self.TAGLAB_VERSION = taglab_version
+
+        self.target_classes = None
+        self.freq_classes = None
 
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
 
-        TEXT_SPACE = 180
+        TEXT_SPACE = 200
 
         ###### Labels
 
-        self.lblDatasetFolder = QLabel("Dataset folder: ")
-        self.lblDatasetFolder.setFixedWidth(TEXT_SPACE)
-        self.lblDatasetFolder.setAlignment(Qt.AlignRight)
-
-        self.lblClassifierName = QLabel("Classifier name:")
-        self.lblClassifierName.setFixedWidth(TEXT_SPACE)
-        self.lblDatasetFolder.setAlignment(Qt.AlignRight)
-
         self.lblNetworkName = QLabel("Network name:")
-        self.lblNetworkName.setFixedWidth(TEXT_SPACE)
+        self.lblNetworkName.setMinimumWidth(TEXT_SPACE)
         self.lblNetworkName.setAlignment(Qt.AlignRight)
 
+        self.lblDatasetFolder = QLabel("Dataset folder: ")
+        self.lblDatasetFolder.setMinimumWidth(TEXT_SPACE)
+        self.lblDatasetFolder.setAlignment(Qt.AlignRight)
+
+        self.lblTargetClasses = QLabel("Classes to recognize: ")
+        self.lblTargetClasses.setMinimumWidth(TEXT_SPACE)
+        self.lblTargetClasses.setAlignment(Qt.AlignRight)
+
         self.lblEpochs = QLabel("Number of epochs:")
-        self.lblEpochs.setFixedWidth(TEXT_SPACE)
+        self.lblEpochs.setMinimumWidth(TEXT_SPACE)
         self.lblEpochs.setAlignment(Qt.AlignRight)
 
         self.lblLR = QLabel("Learning Rate: ")
-        self.lblLR.setFixedWidth(TEXT_SPACE)
+        self.lblLR.setMinimumWidth(TEXT_SPACE)
         self.lblLR.setAlignment(Qt.AlignRight)
 
         self.lblL2 = QLabel("L2 Regularization: ")
-        self.lblL2.setFixedWidth(TEXT_SPACE)
+        self.lblL2.setMinimumWidth(TEXT_SPACE)
         self.lblL2.setAlignment(Qt.AlignRight)
 
         self.lblBS = QLabel("Batch Size: ")
-        self.lblBS.setFixedWidth(TEXT_SPACE)
+        self.lblBS.setMinimumWidth(TEXT_SPACE)
         self.lblBS.setAlignment(Qt.AlignRight)
-
-        layoutLabels = QVBoxLayout()
-        layoutLabels.setAlignment(Qt.AlignRight)
-        layoutLabels.addWidget(self.lblDatasetFolder)
-        layoutLabels.addWidget(self.lblNetworkName)
-        layoutLabels.addWidget(self.lblEpochs)
-        layoutLabels.addWidget(self.lblLR)
-        layoutLabels.addWidget(self.lblL2)
-        layoutLabels.addWidget(self.lblBS)
 
         ##### Edits
 
-        LINEWIDTH = 300
-        self.editDatasetFolder = QLineEdit("temp")
-        self.editDatasetFolder.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        self.editDatasetFolder.setFixedWidth(LINEWIDTH)
-        self.editNetworkName = QLineEdit("mynetwork")
+        LINEWIDTH = 500
+        self.editNetworkName = QLineEdit("")
         self.editNetworkName.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        self.editNetworkName.setFixedWidth(LINEWIDTH)
+        self.editNetworkName.setMinimumWidth(LINEWIDTH)
+        self.editNetworkName.setPlaceholderText("Insert here the name of your network")
         self.editNetworkName.setReadOnly(False)
+        self.editDatasetFolder = QLineEdit("")
+        self.editDatasetFolder.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        self.editDatasetFolder.setMinimumWidth(LINEWIDTH)
+        self.editDatasetFolder.setPlaceholderText("Insert here the dataset folder")
+        self.groupbox_classes = self.createClassesToRecognizeWidgets()
         self.editEpochs = QLineEdit("2")
         self.editEpochs.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        self.editEpochs.setFixedWidth(LINEWIDTH)
+        self.editEpochs.setMinimumWidth(LINEWIDTH)
         self.editEpochs.setReadOnly(False)
         self.editLR = QLineEdit("0.00005")
         self.editLR.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editLR.setReadOnly(False)
-        self.editLR.setFixedWidth(LINEWIDTH)
+        self.editLR.setMinimumWidth(LINEWIDTH)
         self.editL2 = QLineEdit("0.0005")
         self.editL2.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editL2.setReadOnly(False)
-        self.editL2.setFixedWidth(LINEWIDTH)
+        self.editL2.setMinimumWidth(LINEWIDTH)
         self.editBatchSize = QLineEdit("4")
         self.editBatchSize.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editBatchSize.setReadOnly(False)
-        self.editBatchSize.setFixedWidth(LINEWIDTH)
+        self.editBatchSize.setMinimumWidth(LINEWIDTH)
 
-        layoutEdits = QVBoxLayout()
-        layoutEdits.setAlignment(Qt.AlignLeft)
-        layoutEdits.addWidget(self.editDatasetFolder)
-        layoutEdits.addWidget(self.editNetworkName)
-        layoutEdits.addWidget(self.editEpochs)
-        layoutEdits.addWidget(self.editLR)
-        layoutEdits.addWidget(self.editL2)
-        layoutEdits.addWidget(self.editBatchSize)
-
-        ###### Right buttons
+        ###### Right button
 
         self.btnChooseDatasetFolder = QPushButton("...")
         self.btnChooseDatasetFolder.setMaximumWidth(20)
         self.btnChooseDatasetFolder.clicked.connect(self.chooseDatasetFolder)
-        layoutRightButtons = QVBoxLayout()
-        layoutRightButtons.addWidget(self.btnChooseDatasetFolder)
-        layoutRightButtons.addStretch()
 
-        ##### Help (on the right)
+        layoutH1 = QHBoxLayout()
+        layoutH1.addWidget(self.lblNetworkName)
+        layoutH1.addWidget(self.editNetworkName)
 
-        helpTxt = "Train-Your-Network allows to train a DeepLab V3+ with a given dataset.\
-                   The dataset must be exported with the <em>Export New Dataset</em> option.\
-                   It is recommended to not change the default training parameters (learning rate and regularization).\
-                   Increase the <em>Batch Size</em> requires a lot of GPU memory."
+        layoutH2 = QHBoxLayout()
+        layoutH2.addWidget(self.lblDatasetFolder)
+        layoutH2.addWidget(self.editDatasetFolder)
+        layoutH2.addWidget(self.btnChooseDatasetFolder)
 
-        self.labelTopHelp = QLabel(helpTxt)
-        self.labelTopHelp.setWordWrap(True)
-        self.labelTopHelp.setMaximumWidth(550)
-        self.labelTopHelp.setMaximumHeight(300)
+        self.layoutClasses = QHBoxLayout()
+        self.layoutClasses.addWidget(self.lblTargetClasses)
+        self.layoutClasses.addWidget(self.groupbox_classes)
 
-        TEXT_SPACE = 400
-        self.lblH1 = QLabel("Folder containing the exported tiles")
-        self.lblH1.setWordWrap(True)
-        self.lblH1.setFixedWidth(TEXT_SPACE)
-        self.lblH2 = QLabel("Name of the network (saved network gets this name)")
-        self.lblH2.setWordWrap(True)
-        self.lblH2.setFixedWidth(TEXT_SPACE)
-        self.lblH3 = QLabel("Number of epochs to use for the training.")
-        self.lblH3.setWordWrap(True)
-        self.lblH3.setFixedWidth(TEXT_SPACE)
-        self.lblH4 = QLabel("Something to say?")
-        self.lblH4.setWordWrap(True)
-        self.lblH4.setFixedWidth(TEXT_SPACE)
-        self.lblH5 = QLabel("Something to say?")
-        self.lblH5.setWordWrap(True)
-        self.lblH5.setFixedWidth(TEXT_SPACE)
-        self.lblH6 = QLabel("The effective batch size is multiplied by 4.")
-        self.lblH6.setWordWrap(True)
-        self.lblH6.setFixedWidth(TEXT_SPACE)
+        layoutH4 = QHBoxLayout()
+        layoutH4.addWidget(self.lblEpochs)
+        layoutH4.addWidget(self.editEpochs)
 
-        layoutRightHelp = QVBoxLayout()
-        layoutRightHelp.addWidget(self.lblH1)
-        layoutRightHelp.addWidget(self.lblH2)
-        layoutRightHelp.addWidget(self.lblH3)
-        layoutRightHelp.addWidget(self.lblH4)
-        layoutRightHelp.addWidget(self.lblH5)
-        layoutRightHelp.addWidget(self.lblH6)
+        layoutH5 = QHBoxLayout()
+        layoutH5.addWidget(self.lblLR)
+        layoutH5.addWidget(self.editLR)
+
+        layoutH6 = QHBoxLayout()
+        layoutH6.addWidget(self.lblL2)
+        layoutH6.addWidget(self.editL2)
+
+        layoutH7 = QHBoxLayout()
+        layoutH7.addWidget(self.lblBS)
+        layoutH7.addWidget(self.editBatchSize)
+
+        self.layoutInputs = QVBoxLayout()
+        self.layoutInputs.addLayout(layoutH1)
+        self.layoutInputs.addLayout(layoutH2)
+        self.layoutInputs.addLayout(self.layoutClasses)
+        self.layoutInputs.addLayout(layoutH4)
+        self.layoutInputs.addLayout(layoutH5)
+        self.layoutInputs.addLayout(layoutH6)
+        self.layoutInputs.addLayout(layoutH7)
+
 
         ##### Main layout
 
         self.layoutMain = QHBoxLayout()
-        self.layoutMain.addLayout(layoutLabels)
-        self.layoutMain.addLayout(layoutEdits)
-        self.layoutMain.addLayout(layoutRightButtons)
-        self.layoutMain.addLayout(layoutRightHelp)
+        self.layoutMain.addLayout(self.layoutInputs)
 
         ###########################################################
 
@@ -174,6 +162,7 @@ class QtTYNWidget(QWidget):
         self.btnCancel = QPushButton("Cancel")
         self.btnCancel.clicked.connect(self.close)
         self.btnTrain = QPushButton("Train")
+        self.btnTrain.clicked.connect(self.checkBeforeTraining)
 
         layoutBottomButtons = QHBoxLayout()
         layoutBottomButtons.setAlignment(Qt.AlignRight)
@@ -185,23 +174,14 @@ class QtTYNWidget(QWidget):
         ###########################################################
 
         layoutFinal = QVBoxLayout()
-        layoutFinal.addWidget(self.labelTopHelp)
         layoutFinal.addLayout(self.layoutMain)
         layoutFinal.addLayout(layoutBottomButtons)
         self.setLayout(layoutFinal)
-        self.labelTopHelp.setVisible(False)
-        self.lblH1.setVisible(False)
-        self.lblH2.setVisible(False)
-        self.lblH3.setVisible(False)
-        self.lblH4.setVisible(False)
-        self.lblH5.setVisible(False)
-        self.lblH6.setVisible(False)
 
         self.setWindowTitle("Train Your Network - Settings")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
-        self.w = 0
-        self.h = 0
+        self.checkboxes = []
 
     @pyqtSlot()
     def chooseDatasetFolder(self):
@@ -210,30 +190,25 @@ class QtTYNWidget(QWidget):
         if folderName:
             self.editDatasetFolder.setText(folderName)
 
+            box = QMessageBox()
+            box.setWindowTitle(self.TAGLAB_VERSION)
+            box.setText("The dataset will be analyzed. This may take some minutes, please wait.. ")
+            box.show()
+            self.analyzeDataset()
+            box.close()
+
+            self.layoutClasses.removeWidget(self.groupbox_classes)
+            self.groupbox_classes.setParent(None)
+            self.groupbox_classes = None
+            self.groupbox_classes = self.createClassesToRecognizeWidgets()
+            self.layoutClasses.insertWidget(1, self.groupbox_classes)
+
+
     @pyqtSlot()
     def help(self):
 
-        if self.labelTopHelp.isVisible():
-            self.lblH1.hide()
-            self.lblH2.hide()
-            self.lblH3.hide()
-            self.lblH4.hide()
-            self.lblH5.hide()
-            self.lblH6.hide()
-            self.labelTopHelp.hide()
-            self.setMaximumWidth(self.w)
-            self.setMaximumHeight(self.h)
-            self.adjustSize()
-        else:
-            self.w = self.width()
-            self.h = self.height()
-            self.lblH1.show()
-            self.lblH2.show()
-            self.lblH3.show()
-            self.lblH4.show()
-            self.lblH5.show()
-            self.lblH6.show()
-            self.labelTopHelp.show()
+        url = QUrl("http://taglab.isti.cnr.it/docs")
+        QDesktopServices.openUrl(url)
 
     def getDatasetFolder(self):
 
@@ -254,4 +229,136 @@ class QtTYNWidget(QWidget):
     def getBatchSize(self):
 
         return int(self.editBatchSize.text())
+
+    def getTargetClasses(self):
+
+        target_classes = self.target_classes.copy()
+
+        for checkbox in self.checkboxes:
+            if not checkbox.isChecked():
+                key = checkbox.text()
+                del target_classes[key]
+
+        del target_classes["Background"]
+        count = 1
+        for key in target_classes.keys():
+            target_classes[key] = count
+            count += 1
+        target_classes["Background"] = 0
+
+        return target_classes
+
+    def createClassesToRecognizeWidgets(self):
+
+        groupbox = QGroupBox()
+        groupbox.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+
+        if self.freq_classes is None:
+            lbl = QLabel("No class founds in the dataset.")
+            layout = QVBoxLayout()
+            layout.addWidget(lbl)
+            groupbox.setLayout(layout)
+        else:
+            grid_layout = QGridLayout()
+            groupbox.setLayout(grid_layout)
+
+            self.checkboxes = []
+            CLASSES_PER_ROW = 3
+            for i, key in enumerate(self.freq_classes.keys()):
+                perc = round(self.freq_classes[key] * 100.0, 2)
+                hlayout = QHBoxLayout()
+                checkbox = QCheckBox(key)
+                checkbox.setChecked(True)
+                lbl_perc = QLabel(" " + str(perc) + "%")
+                if perc < 5.0:
+                    lbl_perc.setStyleSheet("QLabel { background-color : rgb(40,40,40); color : red; }")
+                else:
+                    lbl_perc.setStyleSheet("QLabel { background-color : rgb(40,40,40); color : green; }")
+
+                if key == "Background":
+                    checkbox.setAttribute(Qt.WA_TransparentForMouseEvents)
+                    checkbox.setFocusPolicy(Qt.NoFocus)
+
+                self.checkboxes.append(checkbox)
+
+                btnC = QPushButton("")
+                btnC.setFlat(True)
+
+                label = self.project_labels.get(key)
+                if label is not None:
+                    color = label.fill
+                else:
+                    color = [0,0,0]
+
+                r = color[0]
+                g = color[1]
+                b = color[2]
+                text = "QPushButton:flat {background-color: rgb(" + str(r) + "," + str(g) + "," + str(
+                    b) + "); border: none ;}"
+
+                btnC.setStyleSheet(text)
+                btnC.setAutoFillBackground(True)
+                btnC.setFixedWidth(20)
+                btnC.setFixedHeight(20)
+                hlayout.addWidget(checkbox)
+                hlayout.addWidget(btnC)
+                hlayout.addWidget(lbl_perc)
+
+                col = i % CLASSES_PER_ROW
+                row = int(i / CLASSES_PER_ROW)
+                grid_layout.addLayout(hlayout, row, col)
+
+        return groupbox
+
+    @pyqtSlot()
+    def checkBeforeTraining(self):
+
+        dataset_Folder = self.editDatasetFolder.text()
+
+        if not os.path.exists(self.editDatasetFolder.text()):
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("Dataset folder does not exists.")
+            msgBox.exec()
+            return
+
+        if self.editNetworkName.text() == "":
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("Please, enter a network name.")
+            msgBox.exec()
+            return
+
+        self.launchTraining.emit()
+
+    def analyzeDataset(self):
+
+        # check dataset
+        dataset_folder = self.editDatasetFolder.text()
+        check = training.checkDataset(dataset_folder)
+        if check > 0:
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+
+            if check == 1:
+                msgBox.setText("Dataset folder does not exists. Please, check.")
+
+            if check == 2:
+                msgBox.setText("An error occured with your dataset, a subfolder is missing."
+                               "Please, export a new dataset.")
+
+            if check == 3:
+                msgBox.setText("An error occured with your dataset, there is a mismatch between files. "
+                               "Please, export a new dataset.")
+
+            msgBox.exec()
+            return
+
+        # CLASSES TO RECOGNIZE (label name - label code)
+        labels_folder = os.path.join(dataset_folder, "training")
+        labels_folder = os.path.join(labels_folder, "labels")
+        target_classes, freq_classes = CoralsDataset.importClassesFromDataset(labels_folder, self.project_labels)
+
+        self.target_classes = target_classes
+        self.freq_classes = freq_classes
 

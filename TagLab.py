@@ -3938,15 +3938,6 @@ class TagLab(QMainWindow):
 
         dataset_folder = self.trainYourNetworkWidget.getDatasetFolder()
 
-        # check dataset
-        check = training.checkDataset(dataset_folder)
-        if check == 1:
-            msgBox = QMessageBox()
-            msgBox.setWindowTitle(self.TAGLAB_VERSION)
-            msgBox.setText("An error occured with your dataset, there is a mismatch between files. Please, export a new dataset.")
-            msgBox.exec()
-            return
-
         self.setupProgressBar()
         self.progress_bar.hidePerc()
         self.progress_bar.setMessage("Dataset setup..")
@@ -3955,7 +3946,8 @@ class TagLab(QMainWindow):
         # CLASSES TO RECOGNIZE (label name - label code)
         labels_folder = os.path.join(dataset_folder, "training")
         labels_folder = os.path.join(labels_folder, "labels")
-        target_classes = CoralsDataset.importClassesFromDataset(labels_folder, self.project.labels)
+
+        target_classes = self.trainYourNetworkWidget.getTargetClasses()
         num_classes = len(target_classes)
 
         # GO TRAINING GO...
@@ -4065,9 +4057,9 @@ class TagLab(QMainWindow):
     def trainYourNetwork(self):
 
         if self.trainYourNetworkWidget is None:
-            self.trainYourNetworkWidget = QtTYNWidget(annotations=None, parent=self)
+            self.trainYourNetworkWidget = QtTYNWidget(self.project.labels, self.TAGLAB_VERSION, parent=self)
             self.trainYourNetworkWidget.setWindowModality(Qt.WindowModal)
-            self.trainYourNetworkWidget.btnTrain.clicked.connect(self.trainNewNetwork)
+            self.trainYourNetworkWidget.launchTraining.connect(self.trainNewNetwork)
         self.trainYourNetworkWidget.show()
 
     @pyqtSlot()

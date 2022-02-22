@@ -30,14 +30,15 @@ def checkDataset(dataset_folder):
     if os.path.exists(dataset_folder):
         for sub in targetdirs:
             subfolder = os.path.join(dataset_folder, sub)
-            print(subfolder)
             if os.path.exists(subfolder):
                 if os.listdir(subfolder) == ['images', 'labels'] and len(set(os.listdir(os.path.join(subfolder, os.listdir(subfolder)[0]))) - set(os.listdir(os.path.join(subfolder, os.listdir(subfolder)[1]))))==0:
                     flag = 0 # Your training dataset is valid
                 else:
-                    return 1 # A subfolder is missing or a files mismatch in subfolder
+                    return 3  # Files mismatch in subfolder
+            else:
+                return 2  # A subfolder is missing
     else:
-        return 1 # This dataset contains mismatching files
+        return 1  # Dataset folder does not exist
 
     return flag
 

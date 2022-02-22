@@ -253,10 +253,14 @@ class CoralsDataset(Dataset):
         Check all the dataset and creates the corresponding target classes.
         """
         dict_classes = {}
+        dict_freq = {}
 
         CROP_SIZE = 513
         labels_names = [os.path.basename(x) for x in glob.glob(os.path.join(labels_folder, '*.png'))]
 
+        total_pixels = CROP_SIZE * CROP_SIZE * len(labels_names)
+
+        dict_counters = {}
         existing_color_codes = set([0])
         for i, label_name in enumerate(labels_names):
             label_filename = os.path.join(labels_folder, label_name)
@@ -270,23 +274,38 @@ class CoralsDataset(Dataset):
 
             # a color is transformed into a code
             color_codes = data_crop[:, :, 0] + data_crop[:, :, 1] * 256 + data_crop[:, :, 2] * 65536
-            unique_colors = np.unique(color_codes)
-            existing_color_codes.update(list(unique_colors))
+            unique_colors = list(np.unique(color_codes))
+            for color_code in unique_colors:
+                if dict_counters.get(color_code) is not None:
+                    dict_counters[color_code] += np.count_nonzero(color_codes == color_code)
+                else:
+                    dict_counters[color_code] = np.count_nonzero(color_codes == color_code)
+            existing_color_codes.update(unique_colors)
 
         dict_classes["Background"] = 0
+        dict_freq["Background"] = total_pixels
         class_code = 1
         for color_code in existing_color_codes:
             for key in labels_dictionary.keys():
                 color = labels_dictionary[key].fill
                 code = color[0] + color[1] * 256 + color[2] * 65536
                 if color_code == code:
-                    value = dict_classes.get(key)
-                    if value is None:
+                    dict_freq["Background"] -= dict_counters[color_code]
+
+                    if dict_freq.get(key) is None:
+                        dict_freq[key] = dict_counters[color_code]
+                    else:
+                        dict_freq[key] += dict_counters[color_code]
+
+                    if dict_classes.get(key) is None:
                         dict_classes[key] = class_code
                         class_code += 1
                     break
 
-        return dict_classes
+        for key in dict_freq.keys():
+            dict_freq[key] = float(dict_freq[key]) / float(total_pixels)
+
+        return dict_classes, dict_freq
 
     def computeWeights(self):
         """
