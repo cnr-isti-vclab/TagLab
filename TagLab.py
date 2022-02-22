@@ -2426,6 +2426,7 @@ class TagLab(QMainWindow):
         elif self.viewerplus.tools.tool == 'RITM' and self.viewerplus.tools.tools['RITM'].work_area_bbox[2] > 0:
             return False
         else:
+            self.activeviewer.tools.edit_points.reset()
             self.activeviewer.deleteSelectedBlobs()
             logfile.info("[OP-DELETE] Selected blobs has been DELETED")
 
