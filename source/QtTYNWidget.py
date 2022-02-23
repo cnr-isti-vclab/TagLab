@@ -21,8 +21,8 @@ import os
 
 from PyQt5.Qt import QDesktopServices
 from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal, QUrl
-from PyQt5.QtWidgets import QWidget, QFileDialog, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout, \
-    QMessageBox, QGroupBox, QGridLayout, QCheckBox, QSizePolicy
+from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QLineEdit, QLabel, QPushButton, \
+    QHBoxLayout, QVBoxLayout, QMessageBox, QGroupBox, QGridLayout, QCheckBox, QSizePolicy
 
 from models.coral_dataset import CoralsDataset
 import models.training as training
@@ -193,8 +193,12 @@ class QtTYNWidget(QWidget):
             box = QMessageBox()
             box.setWindowTitle(self.TAGLAB_VERSION)
             box.setText("The dataset will be analyzed. This may take some minutes, please wait.. ")
+            box.setStandardButtons(QMessageBox.NoButton)
             box.show()
+            QApplication.processEvents()
+            QApplication.setOverrideCursor(Qt.WaitCursor)
             self.analyzeDataset()
+            QApplication.restoreOverrideCursor()
             box.close()
 
             self.layoutClasses.removeWidget(self.groupbox_classes)

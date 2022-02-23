@@ -1767,6 +1767,15 @@ class TagLab(QMainWindow):
             self.datadock.setWindowTitle("Comparison Table")
             self.updatePanels()
 
+            # test
+
+            dict = { "Pocillopora": 2, "Pocil": 3 }
+
+            json_string = json.dumps(dict)
+
+            print(json_string)
+
+
 
     def createMatch(self):
         """
@@ -4047,7 +4056,7 @@ class TagLab(QMainWindow):
         new_classifier["Classifier Name"] = self.classifier_name
         new_classifier["Weights"] = self.network_name
         new_classifier["Num. Classes"] = self.dataset_train_info.num_classes
-        new_classifier["Classes"] = list(self.dataset_train_info.dict_target)
+        new_classifier["Classes"] = self.dataset_train_info.dict_target
 
         # scale
         target_pixel_size_file = os.path.join(self.trainResultsWidget.dataset_folder, "target-scale-factor.txt")

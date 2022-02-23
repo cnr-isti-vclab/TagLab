@@ -323,12 +323,15 @@ class QtClassifierWidget(QWidget):
 
         return self.classifiers[self.comboClassifier.currentIndex()]
 
-    def classes2str(self, classes_list):
+    def classes2str(self, classes_dict):
 
-        txt = str(classes_list)
-        txt = txt.replace('[', '')
-        txt = txt.replace(']', '')
-        txt = txt.replace("'", '')
+        txt = ""
+        for key in classes_dict.keys():
+            txt += key
+            txt += ", "
+
+        # remove the last commas
+        txt = txt[:-2]
         return txt
 
     def avgcolor2str(self, avgcolor_list):
