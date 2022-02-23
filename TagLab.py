@@ -1646,6 +1646,29 @@ class TagLab(QMainWindow):
                 self.activeviewer.tools.applyTool()
 
 
+    def setBlobVisualization(self):
+
+        if self.activeviewer.image is not None:
+
+            if self.checkBoxFill.isChecked():
+                self.viewerplus.enableFill()
+                self.viewerplus2.enableFill()
+            else:
+                self.viewerplus.disableFill()
+                self.viewerplus2.disableFill()
+
+            if self.checkBoxBorders.isChecked():
+                self.viewerplus.enableBorders()
+                self.viewerplus2.enableBorders()
+            else:
+                self.viewerplus.disableBorders()
+                self.viewerplus2.disableBorders()
+
+            if self.checkBoxGrid.isChecked():
+                self.viewerplus.showGrid()
+            else:
+                self.viewerplus.hideGrid()
+
     def disableSplitScreen(self):
 
         if self.activeviewer is not None:
@@ -1712,6 +1735,8 @@ class TagLab(QMainWindow):
             self.viewerplus2.clear()
             self.viewerplus2.setProject(self.project)
             self.viewerplus2.setImage(self.project.images[index_to_set + 1])
+            self.setBlobVisualization()
+
             self.doUpdatePanels()
 
             self.comboboxSourceImage.currentIndexChanged.connect(self.sourceImageChanged)
