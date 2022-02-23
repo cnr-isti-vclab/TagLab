@@ -93,9 +93,6 @@ class DeepExtreme(Tool):
 
         pad = 50
         thres = 0.8
-        #gpu_id = 0
-        #device = torch.device("cuda:" + str(gpu_id) if torch.cuda.is_available() else "cpu")
-        #self.deepextreme_net.to(device)
 
         extreme_points_to_use = np.asarray(self.pick_points.points).astype(int)
         pad_extreme = 100
@@ -143,12 +140,10 @@ class DeepExtreme(Tool):
             pred = 1 / (1 + np.exp(-pred))
             pred = np.squeeze(pred)
 
-            #
             #img_test = utils.floatmapToQImage(pred*255.0)
             #img_test.save("prediction.png")
 
             result = helpers.crop2fullmask(pred, bbox, im_size=img.shape[:2], zero_pad=True, relax=pad) > thres
-
 
             segm_mask = result.astype(int)
 

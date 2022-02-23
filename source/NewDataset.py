@@ -589,23 +589,43 @@ class NewDataset(object):
 
 		elif mode == "RANDOM":
 
-			area_w = int(math.sqrt(0.15) * map_w)
-			area_h = int(math.sqrt(0.15) * map_h)
+			ncrops_w = int((float)(map_w - self.crop_size*2) / float(self.crop_size))
+			ncrops_h = int((float)(map_h - self.crop_size*2) / float(self.crop_size))
+			ncrops_ref = round(ncrops_w * ncrops_h * 0.12)
 
-			for j in range(1000):
-				px1 = rnd.randint(0, map_w - area_w - 1)
-				py1 = rnd.randint(0, map_h - area_h - 1)
-				px2 = rnd.randint(0, map_w - area_w - 1)
-				py2 = rnd.randint(0, map_h - area_h - 1)
+			valid_comb = []
+			for j in range(1, ncrops_w):
+				for k in range(1, ncrops_h):
+					if j * k == ncrops_ref:
+						valid_comb.append([j,k])
 
-				area1 = [px1, py1, area_w, area_h]
-				area2 = [px2, py2, area_w, area_h]
+			delta = int(self.crop_size/2)
+			min_intersection = map_w * map_h
+			# initialize the random number generator using the system time
+			rnd.seed()
+			for j in range(30000):
+
+				comb = valid_comb[rnd.randint(0, len(valid_comb)-1)]
+				area_w1 = int(comb[0] * self.crop_size)
+				area_h1 = int(comb[1] * self.crop_size)
+				px1 = rnd.randint(delta, map_w - delta - area_w1 - 1)
+				py1 = rnd.randint(delta, map_h - delta - area_h1 - 1)
+
+				comb = valid_comb[rnd.randint(0, len(valid_comb)-1)]
+				area_w2 = int(comb[0] * self.crop_size)
+				area_h2 = int(comb[1] * self.crop_size)
+				px2 = rnd.randint(delta, map_w - delta - area_w2 - 1)
+				py2 = rnd.randint(delta, map_h - delta - area_h2 - 1)
+
+				area1 = [py1, px1, area_w1, area_h1]
+				area2 = [py2, px2, area_w2, area_h2]
 
 				intersection = self.bbox_intersection(area1, area2)
 
-				if intersection < 1.0:
+				if intersection < min_intersection:
 					val_area = area1
 					test_area = area2
+					min_intersection = intersection
 
 		elif mode == "BIOLOGICALLY-INSPIRED":
 
@@ -680,7 +700,8 @@ class NewDataset(object):
 				bbox2[3] = half_size * 2
 
 				area = self.bbox_intersection(bbox1, bbox2)
-				if area > 10.0:
+				area_perc = (100.0*area) / float(bbox1[2] * bbox1[3])
+				if area_perc > 10.0:
 					flag = False
 					break
 
@@ -693,7 +714,8 @@ class NewDataset(object):
 					bbox2[3] = half_size * 2
 
 					area = self.bbox_intersection(bbox1, bbox2)
-					if area > 10.0:
+					area_perc = (100.0 * area) / float(bbox1[2] * bbox1[3])
+					if area_perc > 10.0:
 						flag = False
 						break
 
@@ -730,7 +752,8 @@ class NewDataset(object):
 				bbox2[3] = half_size * 2
 
 				area = self.bbox_intersection(bbox1, bbox2)
-				if area > 10.0:
+				area_perc = (100.0*area) / float(bbox1[2] * bbox1[3])
+				if area_perc > 10.0:
 					flag = False
 
 			if flag is True:
@@ -742,7 +765,8 @@ class NewDataset(object):
 					bbox2[3] = half_size * 2
 
 					area = self.bbox_intersection(bbox1, bbox2)
-					if area > 10.0:
+					area_perc = (100.0 * area) / float(bbox1[2] * bbox1[3])
+					if area_perc > 10.0:
 						flag = False
 
 			if flag is True:
