@@ -270,7 +270,7 @@ class QtTYNWidget(QWidget):
             CLASSES_PER_ROW = 3
             for i, key in enumerate(self.freq_classes.keys()):
                 perc = round(self.freq_classes[key] * 100.0, 2)
-                hlayout = QHBoxLayout()
+
                 checkbox = QCheckBox(key)
                 checkbox.setChecked(True)
                 lbl_perc = QLabel(" " + str(perc) + "%")
@@ -304,13 +304,15 @@ class QtTYNWidget(QWidget):
                 btnC.setAutoFillBackground(True)
                 btnC.setFixedWidth(20)
                 btnC.setFixedHeight(20)
-                hlayout.addWidget(checkbox)
+
+                hlayout = QHBoxLayout()
                 hlayout.addWidget(btnC)
                 hlayout.addWidget(lbl_perc)
 
                 col = i % CLASSES_PER_ROW
                 row = int(i / CLASSES_PER_ROW)
-                grid_layout.addLayout(hlayout, row, col)
+                grid_layout.addWidget(checkbox, row, col*2)
+                grid_layout.addLayout(hlayout, row, col*2+1)
 
         return groupbox
 
