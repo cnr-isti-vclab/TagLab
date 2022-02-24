@@ -1210,6 +1210,9 @@ class TagLab(QMainWindow):
         if self.viewerplus.image == img:
             self.showImage(self.project.images[index])
 
+        # update tool buttons according to the current number of images
+        self.updateToolStatus()
+
     def deleteLayer(self, img, layer):
         box = QMessageBox()
         reply = box.question(self.working_area_widget, self.TAGLAB_VERSION, "Are you sure to delete layer: " + layer.name + " ?",
