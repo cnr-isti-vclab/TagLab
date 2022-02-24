@@ -171,6 +171,22 @@ class QtTableLabel(QWidget):
         self.data_table.setSelectionMode(QAbstractItemView.SingleSelection)
         self.data_table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.data_table.setSortingEnabled(True)
+        #remove buttons on top and bottom of the scrollbar
+        self.setStyleSheet("""
+QScrollBar::add-line:vertical {
+height: 0px;
+}
+
+QScrollBar::sub-line:vertical {
+height: 0px;
+}
+
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+height: 0px;
+}
+
+""");
+
 
         self.model = None
         self.data = None

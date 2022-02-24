@@ -191,6 +191,20 @@ class QtComparePanel(QWidget):
         self.data_table.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.data_table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.data_table.setSortingEnabled(True)
+        self.setStyleSheet("""
+QScrollBar::add-line:vertical {
+height: 0px;
+}
+
+QScrollBar::sub-line:vertical {
+height: 0px;
+}
+
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+height: 0px;
+}
+
+""");
 
         self.model = None
         self.data = None
