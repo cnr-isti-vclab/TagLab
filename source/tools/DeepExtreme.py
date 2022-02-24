@@ -34,7 +34,7 @@ class DeepExtreme(Tool):
     def leftPressed(self, x, y, mods):
         points = self.pick_points.points
 
-        if len(points) < 4:
+        if len(points) < 4 and mods == Qt.ShiftModifier:
             self.pick_points.addPoint(x, y, self.pick_style)
             message = "[TOOL][DEEPEXTREME] New point picked (" + str(len(points)) + ")"
             self.log.emit(message)

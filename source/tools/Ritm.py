@@ -53,7 +53,7 @@ class Ritm(Tool):
     def leftPressed(self, x, y, mods):
 
         points = self.points.positive_points
-        if len(points) < self.MAX_POINTS and self.checkPointPosition(x,y) is True:
+        if len(points) < self.MAX_POINTS and self.checkPointPosition(x,y) is True and mods == Qt.ShiftModifier:
             self.points.addPoint(x, y, positive=True)
             message = "[TOOL][RITM] New positive point added (" + str(len(points)) + ")"
             self.log.emit(message)
@@ -65,7 +65,7 @@ class Ritm(Tool):
     def rightPressed(self, x, y, mods):
 
         points = self.points.negative_points
-        if len(points) < self.MAX_POINTS and self.checkPointPosition(x,y) is True:
+        if len(points) < self.MAX_POINTS and self.checkPointPosition(x,y) is True and mods == Qt.ShiftModifier:
             self.points.addPoint(x, y, positive=False)
             message = "[TOOL][RITM] New negative point added (" + str(len(points)) + ")"
             self.log.emit(message)
