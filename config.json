@@ -1,1 +1,51 @@
-{"Available Classifiers": [{"Classifier Name": "Porite", "Weights": "porites.net", "Num. Classes": 2, "Classes": {"Porite": 0, "Background": 1}, "Scale": 0.9, "Average Norm.": [0.4651, 0.4765, 0.4634]}, {"Classifier Name": "Pocillopora", "Weights": "pocillopora.net", "Num. Classes": 2, "Classes": {"Pocillopora": 0, "Background": 1}, "Scale": 0.9, "Average Norm.": [0.445, 0.4441, 0.4351]}, {"Classifier Name": "Pocillopora_Porite_Montipora", "Weights": "pocillopora_porite_montipora.net", "Num. Classes": 4, "Classes": {"Porite": 0, "Montipora": 1, "Pocillopora": 2, "Background": 3}, "Scale": 0.9, "Average Norm.": [0.4433, 0.4499, 0.4408]}, {"Classifier Name": "prova23", "Weights": "prova23.net", "Num. Classes": 6, "Classes": {"Pocillopora_eydouxi": 1, "Montipora_crust/patula": 2, "Porite_massive": 3, "Pocillopora": 4, "Montipora_plate/flabellata": 5, "Background": 0}, "Scale": 0.81, "Average Norm.": [0.5610411769250787, 0.4574013775834346, 0.43082416758614106]}]}
+{
+  "Available Classifiers": [
+    {
+      "Classifier Name": "Porite",
+      "Weights": "porites.net",
+      "Num. Classes": 2,
+      "Classes": {
+        "Porite": 0,
+        "Background": 1
+      },
+      "Scale": 0.9,
+      "Average Norm.": [
+        0.4651,
+        0.4765,
+        0.4634
+      ]
+    },
+    {
+      "Classifier Name": "Pocillopora",
+      "Weights": "pocillopora.net",
+      "Num. Classes": 2,
+      "Classes": {
+        "Pocillopora": 0,
+        "Background": 1
+      },
+      "Scale": 0.9,
+      "Average Norm.": [
+        0.445,
+        0.4441,
+        0.4351
+      ]
+    },
+    {
+      "Classifier Name": "Pocillopora_Porite_Montipora",
+      "Weights": "pocillopora_porite_montipora.net",
+      "Num. Classes": 4,
+      "Classes": {
+        "Porite": 0,
+        "Montipora": 1,
+        "Pocillopora": 2,
+        "Background": 3
+      },
+      "Scale": 0.9,
+      "Average Norm.": [
+        0.4433,
+        0.4499,
+        0.4408
+      ]
+    }
+  ]
+}
