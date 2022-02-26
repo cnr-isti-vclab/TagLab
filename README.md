@@ -9,8 +9,10 @@ TagLab was created to support the activity of annotation and extraction of stati
 TagLab allows to :
 
 - zoom and navigate a large map using (zoom/mouse wheel, pan/'Move' tool selected + left button). With every other tool selected the pan is activated with ctrl + left button
-- segment coral instances in a semi-automatic way by simply clicks at the corals' extremes. This is achieved using the Deep Extreme Cut network fine-tuned on coral images. Deep Extreme Cut original code : https://github.com/scaelles/DEXTR-PyTorch/
-- assign a class with the 'Assign class' tool. Area and perimeter are now displayed in the segmentation info panel on the right
+- segment coral instances in a semi-automatic way by indicating the corals' extremes with the 4-clicks tool. This is achieved using the Deep Extreme Cut network fine-tuned on coral images. Deep Extreme Cut original code can be found here: https://github.com/scaelles/DEXTR-PyTorch
+- segment coral instances in a semi-automatic way by indicating the interior and the exterior of a coral using the positive-negative clicks tool. Use shift+left mouse button to assign the positive (the interior) points and shift+right mouse button to assign the negative (the exterior) points. This tool is based on the RITM interactive segmentation project, code and additional information can be found here: https://github.com/saic-vul/ritm_interactive_segmentation
+- assign a class with the 'Assign class' tool or double-clicking the class in the labels panel
+- Area, perimeter and other information are displayed in the region info panel on the right
 - simultaneously turn off the visibility of one or more classes, (ctrl + left button/disable all but the selected, shift + left button, inverse operation), change the class transparency using the above slider
 - perform boolean operations between existing labels (right button to open the menu)
 - refine the incorrect borders automatically with the Refine operation or manually with the 'Edit Border' tool
