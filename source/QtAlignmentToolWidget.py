@@ -1,3 +1,4 @@
+import numpy
 from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QVBoxLayout, QLabel, QHBoxLayout, QComboBox, QSlider, QApplication, \
     QCheckBox
@@ -24,17 +25,42 @@ class QtAlignmentToolWidget(QWidget):
         # Top buttons
         # ==============================================================
 
+        # Sync
         self.checkBoxSync = QCheckBox("Sync")
         self.checkBoxSync.setChecked(True)
         self.checkBoxSync.setFocusPolicy(Qt.NoFocus)
         self.checkBoxSync.setMinimumWidth(40)
-
         self.checkBoxSync.stateChanged[int].connect(self.toggleSync)
 
+        # Preview
+        self.previewButton = QCheckBox("Preview")
+        self.previewButton.setChecked(False)
+        self.previewButton.setFocusPolicy(Qt.NoFocus)
+        self.previewButton.setMinimumWidth(40)
+        self.previewButton.stateChanged[int].connect(self.togglePreview)
+
+        # Slider
+        self.alphaSlider = QSlider(Qt.Horizontal)
+        self.alphaSlider.setFocusPolicy(Qt.StrongFocus)
+        self.alphaSlider.setMinimumWidth(400)
+        self.alphaSlider.setMinimum(1)
+        self.alphaSlider.setMaximum(100)
+        self.alphaSlider.setValue(50)
+        self.alphaSlider.setTickInterval(1)
+        self.alphaSlider.setAutoFillBackground(True)
+        self.alphaSlider.valueChanged.connect(self.previewAlphaValueChanged)
+
+        # Layout
+        self.buttons = QHBoxLayout()
+        self.buttons.addWidget(self.checkBoxSync)
+        self.buttons.addWidget(self.previewButton)
+        self.buttons.addWidget(self.alphaSlider)
+
         # ==============================================================
-        # Left half of the UI containing map selector and map viewer
+        # Middle UI containing map selector and map viewer
         # ==============================================================
 
+        # Left
         self.leftCombobox = QComboBox()
         self.leftCombobox.setMinimumWidth(200)
 
@@ -50,10 +76,7 @@ class QtAlignmentToolWidget(QWidget):
         leftLayout.addWidget(self.leftCombobox)
         leftLayout.addWidget(self.leftImgViewer)
 
-        # ==============================================================
-        # Right half of the UI containing map selector and map viewer
-        # ==============================================================
-
+        # Right
         self.rightCombobox = QComboBox()
         self.rightCombobox.setMinimumWidth(200)
 
@@ -69,28 +92,37 @@ class QtAlignmentToolWidget(QWidget):
         rightLayout.addWidget(self.rightCombobox)
         rightLayout.addWidget(self.rightImgViewer)
 
+        # Layout
+        self.editLayout = QHBoxLayout()
+        self.editLayout.addLayout(leftLayout)
+        self.editLayout.addLayout(rightLayout)
+
+        # ==============================================================
+        # UI for preview
+        # ==============================================================
+
+        self.previewViewer = QtImageViewer()
+
+        self.previewLayout = QHBoxLayout()
+        self.previewLayout.addWidget(self.previewViewer)
+
         # ==============================================================
         # Initialize layouts
         # ==============================================================
 
-        content = QHBoxLayout()
-        content.addLayout(leftLayout)
-        content.addLayout(rightLayout)
+        content = QVBoxLayout()
+        content.addLayout(self.buttons)
+        content.addLayout(self.editLayout)
+        content.addLayout(self.previewLayout)
 
-        buttons = QHBoxLayout()
-        buttons.addWidget(self.checkBoxSync)
-
-        layout = QVBoxLayout()
-        layout.addLayout(buttons)
-        layout.addLayout(content)
-
-        self.setLayout(layout)
+        self.setLayout(content)
 
         # ==============================================================
         # Initialize views by simulating clicks on the UI
         # ==============================================================
 
         self.checkBoxSync.stateChanged.emit(1)
+        self.previewButton.stateChanged.emit(0)
 
         self.leftCombobox.currentIndexChanged.emit(0)
         self.rightCombobox.currentIndexChanged.emit(1)
@@ -155,3 +187,38 @@ class QtAlignmentToolWidget(QWidget):
         else:
             self.leftImgViewer.viewHasChanged[float, float, float].disconnect()
             self.rightImgViewer.viewHasChanged[float, float, float].disconnect()
+
+    def preparePreview(self):
+        index = self.leftCombobox.currentIndex()
+        baseImage = self.project.images[index].channels[0].qimage
+
+        self.previewViewer.setImg(baseImage)
+        self.alphaSlider.setValue(50)
+
+    def togglePreviewMode(self, isPreviewMode):
+        self.previewViewer.setVisible(isPreviewMode)
+        self.alphaSlider.setVisible(isPreviewMode)
+        self.leftImgViewer.setVisible(not isPreviewMode)
+        self.rightImgViewer.setVisible(not isPreviewMode)
+        self.checkBoxSync.setVisible(not isPreviewMode)
+        self.leftCombobox.setVisible(not isPreviewMode)
+        self.rightCombobox.setVisible(not isPreviewMode)
+
+    @pyqtSlot(int)
+    def togglePreview(self, value):
+        """
+        If preview mode is toggle, preview layout is set.
+        """
+        if value:
+            self.togglePreviewMode(True)
+            self.preparePreview()
+        else:
+            self.togglePreviewMode(False)
+
+    @pyqtSlot(int)
+    def previewAlphaValueChanged(self, value):
+        index = self.rightCombobox.currentIndex()
+        overlayImage = self.project.images[index].channels[0].qimage
+
+        self.previewViewer.setOpacity(numpy.clip(value, 0.0, 100.0) / 100.0)
+        self.previewViewer.setOverlayImage(overlayImage)
