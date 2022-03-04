@@ -150,7 +150,7 @@ def evaluateNetwork(dataset, dataloader, loss_to_use, CEloss, w_for_GDL, tversky
             for i in range(batch_size):
                 pred_index = pred_cpu[i].numpy().ravel()
                 true_index = labels_cpu[i].numpy().ravel()
-                confmat = confusion_matrix(true_index, pred_index, class_indices)
+                confmat = confusion_matrix(true_index, pred_index, labels=class_indices)
                 CM += confmat
 
             if flag_test is True:

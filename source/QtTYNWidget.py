@@ -335,6 +335,13 @@ class QtTYNWidget(QWidget):
             msgBox.exec()
             return
 
+        if self.getEpochs() < 2:
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("The minimum number of epoch is 2.")
+            msgBox.exec()
+            return
+
         self.launchTraining.emit()
 
     def analyzeDataset(self):
