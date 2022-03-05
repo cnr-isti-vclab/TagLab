@@ -228,9 +228,9 @@ class QtAlignmentToolWidget(QWidget):
             baseImage = self.project.images[index].channels[0].qimage
             img1 = baseImage.convertToFormat(QImage.Format_Grayscale8)
             width1, height1 = img1.width(), img1.height()
-            ptr1 = img1.constBits()
+            ptr1 = img1.bits()
             ptr1.setsize(height1 * width1 * 1)
-            self.arr1 = numpy.frombuffer(ptr1, numpy.uint8).reshape(height1, width1, 1)
+            self.arr1 = numpy.frombuffer(ptr1, numpy.uint8).reshape(height1, width1, 1).copy()
         else:
             self.leftPreviewViewer.clear()
 
@@ -239,9 +239,9 @@ class QtAlignmentToolWidget(QWidget):
             baseImage2 = self.project.images[index2].channels[0].qimage
             img2 = baseImage2.convertToFormat(QImage.Format_Grayscale8)
             width2, height2 = img2.width(), img2.height()
-            ptr2 = img2.constBits()
+            ptr2 = img2.bits()
             ptr2.setsize(height2 * width2 * 1)
-            self.arr2 = numpy.frombuffer(ptr2, numpy.uint8).reshape(height2, width2, 1)
+            self.arr2 = numpy.frombuffer(ptr2, numpy.uint8).reshape(height2, width2, 1).copy()
         else:
             self.leftPreviewViewer.clear()
 
@@ -254,30 +254,8 @@ class QtAlignmentToolWidget(QWidget):
         arrA = numpy.subtract(tmp1, tmp2)
         self.qimg1 = QImage(arrA.data, arrA.shape[1], arrA.shape[0], arrA.shape[1], QImage.Format_Grayscale8)
 
-        """
-        img3 = baseImage.convertToFormat(QImage.Format_RGB888)
-        img4 = baseImage2.convertToFormat(QImage.Format_RGB888)
-        width3, height3 = img3.width(), img3.height()
-        width4, height4 = img4.width(), img4.height()
-        ptr3 = img3.constBits()
-        ptr4 = img4.constBits()
-        ptr3.setsize(height3 * width3 * 3)
-        ptr4.setsize(height4 * width4 * 3)
-        arr3 = numpy.frombuffer(ptr3, numpy.uint8).reshape(height3, width3, 3)
-        arr4 = numpy.frombuffer(ptr4, numpy.uint8).reshape(height4, width4, 3)
-        if self.offset[0]:
-            arr3 = arr3[self.offset[0]:, ::]
-            arr4 = arr4[:-self.offset[0], ::]
-        if self.offset[1]:
-            arr3 = arr3[::, self.offset[1]:]
-            arr4 = arr4[::, -self.offset[1]]
-        arrB = numpy.subtract(arr3, arr4)
-
-        qimg2 = QImage(arrB, width3 - self.offset[0], height3 - self.offset[1], QImage.Format_RGB888)
-        """
-
         self.leftPreviewViewer.setImg(self.qimg1)
-        # self.rightPreviewViewer.setImg(qimg2)
+
         # self.aplhaPreviewViewer.setImg(baseImage)
         # self.alphaSlider.setValue(50)
 
