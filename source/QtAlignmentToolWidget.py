@@ -18,13 +18,13 @@ class QtAlignmentToolWidget(QWidget):
 
         self.project = project
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        self.setMinimumWidth(800)
+        self.setMinimumWidth(1200)
         self.setMinimumHeight(600)
         self.setWindowTitle("Alignment Tool")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
         self.alpha = 50
         self.threshold = 64
-        self.offset = [40, 20]
+        self.offset = [0, 0]
         self.arr1 = None
         self.arr2 = None
         self.arr3 = None
@@ -49,10 +49,11 @@ class QtAlignmentToolWidget(QWidget):
         self.checkBoxPreview.stateChanged[int].connect(self.togglePreview)
 
         # Slider
-        self.alphaSliderLabel = QLabel("Alpha")
+        self.alphaSliderLabel = QLabel("A:" + str(self.alpha))
+        self.alphaSliderLabel.setMinimumWidth(50)
         self.alphaSlider = QSlider(Qt.Horizontal)
         self.alphaSlider.setFocusPolicy(Qt.StrongFocus)
-        self.alphaSlider.setMinimum(1)
+        self.alphaSlider.setMinimum(0)
         self.alphaSlider.setMaximum(100)
         self.alphaSlider.setValue(50)
         self.alphaSlider.setTickInterval(1)
@@ -60,22 +61,22 @@ class QtAlignmentToolWidget(QWidget):
         self.alphaSlider.valueChanged.connect(self.previewAlphaValueChanged)
 
         # Manual offset
-        self.xSliderLabel = QLabel("X:")
-        self.xSliderLabel.setText("X:" + str(self.offset[0]))
+        self.xSliderLabel = QLabel("X:" + str(self.offset[0]))
+        self.xSliderLabel.setMinimumWidth(50)
         self.xSlider = QSlider(Qt.Horizontal)
         self.xSlider.setFocusPolicy(Qt.StrongFocus)
-        self.xSlider.setMinimum(1)
+        self.xSlider.setMinimum(0)
         self.xSlider.setMaximum(64)
         self.xSlider.setTickInterval(1)
         self.xSlider.setValue(self.offset[0])
         self.xSlider.setMinimumWidth(50)
         self.xSlider.setAutoFillBackground(True)
         self.xSlider.valueChanged.connect(self.xOffsetChanged)
-        self.ySliderLabel = QLabel("Y:")
-        self.ySliderLabel.setText("Y:" + str(self.offset[1]))
+        self.ySliderLabel = QLabel("Y:" + str(self.offset[1]))
+        self.ySliderLabel.setMinimumWidth(50)
         self.ySlider = QSlider(Qt.Horizontal)
         self.ySlider.setFocusPolicy(Qt.StrongFocus)
-        self.ySlider.setMinimum(1)
+        self.ySlider.setMinimum(0)
         self.ySlider.setMaximum(64)
         self.ySlider.setTickInterval(1)
         self.ySlider.setValue(self.offset[1])
@@ -84,7 +85,8 @@ class QtAlignmentToolWidget(QWidget):
         self.ySlider.valueChanged.connect(self.yOffsetChanged)
 
         # ThreshOld
-        self.thresholdSliderLabel = QLabel("Threshold")
+        self.thresholdSliderLabel = QLabel("T:" + str(self.threshold))
+        self.thresholdSliderLabel.setMinimumWidth(50)
         self.thresholdSlider = QSlider(Qt.Horizontal)
         self.thresholdSlider.setFocusPolicy(Qt.StrongFocus)
         self.thresholdSlider.setMinimum(0)
@@ -300,8 +302,8 @@ class QtAlignmentToolWidget(QWidget):
         # Retrieve the offset
         [dx, dy] = self.offset
         # Transform each array and return the tuple
-        tmp1 = a[:h-dy, :w-dx]
-        tmp2 = b[dy:, dx:]
+        tmp1 = a[dy:, dx:]
+        tmp2 = b[:h-dy, :w-dx]
         return tmp1, tmp2
 
     def __processPreviewArrays(self, a, b):
@@ -421,7 +423,7 @@ class QtAlignmentToolWidget(QWidget):
         """
         # Update alpha value and slider text
         self.alpha = value
-        self.alphaSliderLabel.setText("Alpha:" + str(value))
+        self.alphaSliderLabel.setText("A:" + str(value))
         # Update preview
         self.__updatePreview(onlyAlpha=True)
 
@@ -457,6 +459,6 @@ class QtAlignmentToolWidget(QWidget):
         """
         # Update threshold value and slider text
         self.threshold = value
-        self.thresholdSliderLabel.setText("Threshold:" + str(value))
+        self.thresholdSliderLabel.setText("T:" + str(value))
         # Update preview
         self.__updatePreview()
