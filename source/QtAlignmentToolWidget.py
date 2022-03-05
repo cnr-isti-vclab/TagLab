@@ -47,6 +47,7 @@ class QtAlignmentToolWidget(QWidget):
 
         # Manual offset
         self.xSliderLabel = QLabel("X:")
+        self.xSliderLabel.setText("X:" + str(self.offset[0]))
         self.xSlider = QSlider(Qt.Horizontal)
         self.xSlider.setMinimum(1)
         self.xSlider.setMaximum(64)
@@ -55,6 +56,7 @@ class QtAlignmentToolWidget(QWidget):
         self.xSlider.setMinimumWidth(50)
         self.xSlider.valueChanged.connect(self.xOffsetChanged)
         self.ySliderLabel = QLabel("Y:")
+        self.ySliderLabel.setText("Y:" + str(self.offset[1]))
         self.ySlider = QSlider(Qt.Horizontal)
         self.ySlider.setMinimum(1)
         self.ySlider.setMaximum(64)
@@ -222,42 +224,51 @@ class QtAlignmentToolWidget(QWidget):
             self.leftImgViewer.viewHasChanged[float, float, float].disconnect()
             self.rightImgViewer.viewHasChanged[float, float, float].disconnect()
 
+    def __toNumpyArray(self, imgIndex, imgFormat, channels):
+        img = self.project.images[imgIndex].channels[0].qimage
+        img = img.convertToFormat(imgFormat)
+        w, h = img.width(), img.height()
+        ptr = img.bits()
+        ptr.setsize(h * w * channels)
+        arr = numpy.frombuffer(ptr, numpy.uint8).reshape((h, w, channels))
+        return arr.copy()
+
+    def __toQImage(self, arr, imgFormat):
+        [h, w, c] = arr.shape
+        img = QImage(arr.data, w, h, c * w, imgFormat)
+        return img
+
+    def __processPreviewArrays(self, a, b):
+        [h, w, _] = b.shape
+        [dx, dy] = self.offset
+        tmp1 = a[dy:, dx:]
+        tmp2 = b[:h-dy, :w-dx]
+        tmp3 = tmp1 - tmp2
+        tmp4 = numpy.uint8(tmp1 < tmp2) * 254 + 1
+        return tmp3 * tmp4
+
+    def __initializePreview(self):
+        index = self.leftCombobox.currentIndex()
+        index2 = self.rightCombobox.currentIndex()
+        baseImage = self.project.images[index].channels[0].qimage
+        self.aplhaPreviewViewer.setImg(baseImage)
+        self.alphaSlider.setValue(50)
+        self.arr1 = self.__toNumpyArray(index, QImage.Format_Grayscale8, 1)
+        self.arr2 = self.__toNumpyArray(index2, QImage.Format_Grayscale8, 1)
+        self.arr3 = self.__toNumpyArray(index, QImage.Format_RGB888, 3)
+        self.arr4 = self.__toNumpyArray(index2, QImage.Format_RGB888, 3)
+
     def __updatePreview(self):
-        if self.arr1 is None:
-            index = self.leftCombobox.currentIndex()
-            baseImage = self.project.images[index].channels[0].qimage
-            img1 = baseImage.convertToFormat(QImage.Format_Grayscale8)
-            width1, height1 = img1.width(), img1.height()
-            ptr1 = img1.bits()
-            ptr1.setsize(height1 * width1 * 1)
-            self.arr1 = numpy.frombuffer(ptr1, numpy.uint8).reshape(height1, width1, 1).copy()
-        else:
-            self.leftPreviewViewer.clear()
-
-        if self.arr2 is None:
-            index2 = self.rightCombobox.currentIndex()
-            baseImage2 = self.project.images[index2].channels[0].qimage
-            img2 = baseImage2.convertToFormat(QImage.Format_Grayscale8)
-            width2, height2 = img2.width(), img2.height()
-            ptr2 = img2.bits()
-            ptr2.setsize(height2 * width2 * 1)
-            self.arr2 = numpy.frombuffer(ptr2, numpy.uint8).reshape(height2, width2, 1).copy()
-        else:
-            self.leftPreviewViewer.clear()
-
-        [h, w, c] = self.arr2.shape
-
-        tmp1 = self.arr1[self.offset[0]:, self.offset[1]:]
-        tmp2 = self.arr2[:w-self.offset[0], :h-self.offset[1]]
-
-        # Abs of (a-b) => 20-40 = 20 NOT 235 (255 - 20)
-        arrA = numpy.subtract(tmp1, tmp2)
-        self.qimg1 = QImage(arrA.data, arrA.shape[1], arrA.shape[0], arrA.shape[1], QImage.Format_Grayscale8)
-
-        self.leftPreviewViewer.setImg(self.qimg1)
-
-        # self.aplhaPreviewViewer.setImg(baseImage)
-        # self.alphaSlider.setValue(50)
+        # GRAY scale
+        self.leftPreviewViewer.clear()
+        tmp = self.__processPreviewArrays(self.arr1, self.arr2)
+        img = self.__toQImage(tmp, QImage.Format_Grayscale8)
+        self.leftPreviewViewer.setImg(img)
+        # RGB scale
+        self.rightPreviewViewer.clear()
+        tmp = self.__processPreviewArrays(self.arr3, self.arr4)
+        img = self.__toQImage(tmp, QImage.Format_RGB888)
+        self.rightPreviewViewer.setImg(img)
 
     def __togglePreviewMode(self, isPreviewMode):
         self.aplhaPreviewViewer.setVisible(isPreviewMode)
@@ -282,6 +293,7 @@ class QtAlignmentToolWidget(QWidget):
         """
         if value:
             self.__togglePreviewMode(True)
+            self.__initializePreview()
             self.__updatePreview()
         else:
             self.__togglePreviewMode(False)
@@ -296,9 +308,11 @@ class QtAlignmentToolWidget(QWidget):
     @pyqtSlot(int)
     def xOffsetChanged(self, value):
         self.offset[0] = value
+        self.xSliderLabel.setText("X:" + str(value))
         self.__updatePreview()
 
     @pyqtSlot(int)
     def yOffsetChanged(self, value):
         self.offset[1] = value
+        self.ySliderLabel.setText("Y:" + str(value))
         self.__updatePreview()
