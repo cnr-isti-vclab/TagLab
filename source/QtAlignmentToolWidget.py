@@ -1,5 +1,6 @@
 import numpy
 from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot
+from PyQt5.QtGui import QImage
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QVBoxLayout, QLabel, QHBoxLayout, QComboBox, QSlider, QApplication, \
     QCheckBox
 
@@ -20,6 +21,11 @@ class QtAlignmentToolWidget(QWidget):
         self.setMinimumHeight(600)
         self.setWindowTitle("Alignment Tool")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
+        self.offset = [40, 20]
+        self.arr1 = None
+        self.arr2 = None
+        self.arr3 = None
+        self.arr4 = None
 
         # ==============================================================
         # Top buttons
@@ -33,16 +39,35 @@ class QtAlignmentToolWidget(QWidget):
         self.checkBoxSync.stateChanged[int].connect(self.toggleSync)
 
         # Preview
-        self.previewButton = QCheckBox("Preview")
-        self.previewButton.setChecked(False)
-        self.previewButton.setFocusPolicy(Qt.NoFocus)
-        self.previewButton.setMinimumWidth(40)
-        self.previewButton.stateChanged[int].connect(self.togglePreview)
+        self.checkBoxPreview = QCheckBox("Preview")
+        self.checkBoxPreview.setChecked(False)
+        self.checkBoxPreview.setFocusPolicy(Qt.NoFocus)
+        self.checkBoxPreview.setMinimumWidth(40)
+        self.checkBoxPreview.stateChanged[int].connect(self.togglePreview)
+
+        # Manual offset
+        self.xSliderLabel = QLabel("X:")
+        self.xSlider = QSlider(Qt.Horizontal)
+        self.xSlider.setMinimum(1)
+        self.xSlider.setMaximum(64)
+        self.xSlider.setTickInterval(1)
+        self.xSlider.setValue(self.offset[0])
+        self.xSlider.setMinimumWidth(50)
+        self.xSlider.valueChanged.connect(self.xOffsetChanged)
+        self.ySliderLabel = QLabel("Y:")
+        self.ySlider = QSlider(Qt.Horizontal)
+        self.ySlider.setMinimum(1)
+        self.ySlider.setMaximum(64)
+        self.ySlider.setTickInterval(1)
+        self.ySlider.setValue(self.offset[1])
+        self.ySlider.setMinimumWidth(50)
+        self.ySlider.valueChanged.connect(self.yOffsetChanged)
 
         # Slider
+        self.alphaSliderLabel = QLabel("Alpha")
         self.alphaSlider = QSlider(Qt.Horizontal)
         self.alphaSlider.setFocusPolicy(Qt.StrongFocus)
-        self.alphaSlider.setMinimumWidth(400)
+        self.alphaSlider.setMinimumWidth(200)
         self.alphaSlider.setMinimum(1)
         self.alphaSlider.setMaximum(100)
         self.alphaSlider.setValue(50)
@@ -53,8 +78,13 @@ class QtAlignmentToolWidget(QWidget):
         # Layout
         self.buttons = QHBoxLayout()
         self.buttons.addWidget(self.checkBoxSync)
-        self.buttons.addWidget(self.previewButton)
+        self.buttons.addWidget(self.checkBoxPreview)
+        self.buttons.addWidget(self.alphaSliderLabel)
         self.buttons.addWidget(self.alphaSlider)
+        self.buttons.addWidget(self.xSliderLabel)
+        self.buttons.addWidget(self.xSlider)
+        self.buttons.addWidget(self.ySliderLabel)
+        self.buttons.addWidget(self.ySlider)
 
         # ==============================================================
         # Middle UI containing map selector and map viewer
@@ -101,10 +131,14 @@ class QtAlignmentToolWidget(QWidget):
         # UI for preview
         # ==============================================================
 
-        self.previewViewer = QtImageViewer()
+        self.aplhaPreviewViewer = QtImageViewer()
+        self.leftPreviewViewer = QtImageViewer()
+        self.rightPreviewViewer = QtImageViewer()
 
         self.previewLayout = QHBoxLayout()
-        self.previewLayout.addWidget(self.previewViewer)
+        self.previewLayout.addWidget(self.aplhaPreviewViewer)
+        self.previewLayout.addWidget(self.leftPreviewViewer)
+        self.previewLayout.addWidget(self.rightPreviewViewer)
 
         # ==============================================================
         # Initialize layouts
@@ -122,7 +156,7 @@ class QtAlignmentToolWidget(QWidget):
         # ==============================================================
 
         self.checkBoxSync.stateChanged.emit(1)
-        self.previewButton.stateChanged.emit(0)
+        self.checkBoxPreview.stateChanged.emit(0)
 
         self.leftCombobox.currentIndexChanged.emit(0)
         self.rightCombobox.currentIndexChanged.emit(1)
@@ -188,16 +222,75 @@ class QtAlignmentToolWidget(QWidget):
             self.leftImgViewer.viewHasChanged[float, float, float].disconnect()
             self.rightImgViewer.viewHasChanged[float, float, float].disconnect()
 
-    def preparePreview(self):
-        index = self.leftCombobox.currentIndex()
-        baseImage = self.project.images[index].channels[0].qimage
+    def __updatePreview(self):
+        if self.arr1 is None:
+            index = self.leftCombobox.currentIndex()
+            baseImage = self.project.images[index].channels[0].qimage
+            img1 = baseImage.convertToFormat(QImage.Format_Grayscale8)
+            width1, height1 = img1.width(), img1.height()
+            ptr1 = img1.constBits()
+            ptr1.setsize(height1 * width1 * 1)
+            self.arr1 = numpy.frombuffer(ptr1, numpy.uint8).reshape(height1, width1, 1)
+        else:
+            self.leftPreviewViewer.clear()
 
-        self.previewViewer.setImg(baseImage)
-        self.alphaSlider.setValue(50)
+        if self.arr2 is None:
+            index2 = self.rightCombobox.currentIndex()
+            baseImage2 = self.project.images[index2].channels[0].qimage
+            img2 = baseImage2.convertToFormat(QImage.Format_Grayscale8)
+            width2, height2 = img2.width(), img2.height()
+            ptr2 = img2.constBits()
+            ptr2.setsize(height2 * width2 * 1)
+            self.arr2 = numpy.frombuffer(ptr2, numpy.uint8).reshape(height2, width2, 1)
+        else:
+            self.leftPreviewViewer.clear()
 
-    def togglePreviewMode(self, isPreviewMode):
-        self.previewViewer.setVisible(isPreviewMode)
+        [h, w, c] = self.arr2.shape
+
+        tmp1 = self.arr1[self.offset[0]:, self.offset[1]:]
+        tmp2 = self.arr2[:w-self.offset[0], :h-self.offset[1]]
+
+        # Abs of (a-b) => 20-40 = 20 NOT 235 (255 - 20)
+        arrA = numpy.subtract(tmp1, tmp2)
+        self.qimg1 = QImage(arrA.data, arrA.shape[1], arrA.shape[0], arrA.shape[1], QImage.Format_Grayscale8)
+
+        """
+        img3 = baseImage.convertToFormat(QImage.Format_RGB888)
+        img4 = baseImage2.convertToFormat(QImage.Format_RGB888)
+        width3, height3 = img3.width(), img3.height()
+        width4, height4 = img4.width(), img4.height()
+        ptr3 = img3.constBits()
+        ptr4 = img4.constBits()
+        ptr3.setsize(height3 * width3 * 3)
+        ptr4.setsize(height4 * width4 * 3)
+        arr3 = numpy.frombuffer(ptr3, numpy.uint8).reshape(height3, width3, 3)
+        arr4 = numpy.frombuffer(ptr4, numpy.uint8).reshape(height4, width4, 3)
+        if self.offset[0]:
+            arr3 = arr3[self.offset[0]:, ::]
+            arr4 = arr4[:-self.offset[0], ::]
+        if self.offset[1]:
+            arr3 = arr3[::, self.offset[1]:]
+            arr4 = arr4[::, -self.offset[1]]
+        arrB = numpy.subtract(arr3, arr4)
+
+        qimg2 = QImage(arrB, width3 - self.offset[0], height3 - self.offset[1], QImage.Format_RGB888)
+        """
+
+        self.leftPreviewViewer.setImg(self.qimg1)
+        # self.rightPreviewViewer.setImg(qimg2)
+        # self.aplhaPreviewViewer.setImg(baseImage)
+        # self.alphaSlider.setValue(50)
+
+    def __togglePreviewMode(self, isPreviewMode):
+        self.aplhaPreviewViewer.setVisible(isPreviewMode)
+        self.leftPreviewViewer.setVisible(isPreviewMode)
+        self.rightPreviewViewer.setVisible(isPreviewMode)
+        self.alphaSliderLabel.setVisible(isPreviewMode)
         self.alphaSlider.setVisible(isPreviewMode)
+        self.xSliderLabel.setVisible(isPreviewMode)
+        self.xSlider.setVisible(isPreviewMode)
+        self.ySliderLabel.setVisible(isPreviewMode)
+        self.ySlider.setVisible(isPreviewMode)
         self.leftImgViewer.setVisible(not isPreviewMode)
         self.rightImgViewer.setVisible(not isPreviewMode)
         self.checkBoxSync.setVisible(not isPreviewMode)
@@ -210,15 +303,24 @@ class QtAlignmentToolWidget(QWidget):
         If preview mode is toggle, preview layout is set.
         """
         if value:
-            self.togglePreviewMode(True)
-            self.preparePreview()
+            self.__togglePreviewMode(True)
+            self.__updatePreview()
         else:
-            self.togglePreviewMode(False)
+            self.__togglePreviewMode(False)
 
     @pyqtSlot(int)
     def previewAlphaValueChanged(self, value):
         index = self.rightCombobox.currentIndex()
         overlayImage = self.project.images[index].channels[0].qimage
+        self.aplhaPreviewViewer.setOpacity(numpy.clip(value, 0.0, 100.0) / 100.0)
+        self.aplhaPreviewViewer.setOverlayImage(overlayImage)
 
-        self.previewViewer.setOpacity(numpy.clip(value, 0.0, 100.0) / 100.0)
-        self.previewViewer.setOverlayImage(overlayImage)
+    @pyqtSlot(int)
+    def xOffsetChanged(self, value):
+        self.offset[0] = value
+        self.__updatePreview()
+
+    @pyqtSlot(int)
+    def yOffsetChanged(self, value):
+        self.offset[1] = value
+        self.__updatePreview()
