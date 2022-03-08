@@ -1384,7 +1384,6 @@ class TagLab(QMainWindow):
 
         if self.gridWidget is None:
             self.gridWidget = QtGridWidget(self.activeviewer, self)
-            self.gridWidget.setWindowModality(Qt.WindowModal)
             self.gridWidget.show()
             self.gridWidget.accepted.connect(self.assignGrid)
             self.gridWidget.btnCancel.clicked.connect(self.cancelGrid)
