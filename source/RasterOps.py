@@ -116,8 +116,18 @@ def read_regions_geometry(filename, georef_filename):
     dataSource = driver.Open(filename, 0)
     layer = dataSource.GetLayer(0)
 
+
+    #set spatial reference and transformation
+    sourceprj = layer.GetSpatialRef()
+    targetprj = osr.SpatialReference(wkt = img.crs.wkt)
+    #need to check if sourceproj == targetproj
+    reproject = osr.CoordinateTransformation(sourceprj, targetprj) #this is a transform
+
     blobList = []
     for feat in layer:
+        transformed = feat.GetGeometryRef()
+        transformed.Transform(reproject)
+
         shpdict = json.loads(feat.ExportToJson())
         if shpdict['geometry']['type'] == 'Polygon':
             blob = Blob(None, 0, 0, 0)
