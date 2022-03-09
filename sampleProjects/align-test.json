@@ -1195,6 +1195,141 @@
    "georef_filename": "",
    "metadata": {},
    "grid": null
+  },
+  {
+   "rect": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "map_px_to_mm_factor": "1",
+   "width": 6836,
+   "height": 6822,
+   "annotations": [],
+   "layers": [],
+   "channels": [
+    {
+     "filename": "../00_2020_08_18_C1_orthoprojectionCC/2020_08_18_C1_orthoprojectionCC_25.png",
+     "type": "RGB"
+    }
+   ],
+   "id": "00_2020_08_18_C1",
+   "name": "00_2020_08_18_C1",
+   "workspace": [],
+   "export_dataset_area": [],
+   "acquisition_date": "2020-08-18",
+   "georef_filename": "",
+   "metadata": {},
+   "grid": null
+  },
+  {
+   "rect": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "map_px_to_mm_factor": "1",
+   "width": 6605,
+   "height": 7359,
+   "annotations": [],
+   "layers": [],
+   "channels": [
+    {
+     "filename": "../01_2021_12_08_C1_orthoprojection/2021_12_08_C1_orthoprojection_25.png",
+     "type": "RGB"
+    }
+   ],
+   "id": "01_2021_12_08_C1",
+   "name": "01_2021_12_08_C1",
+   "workspace": [],
+   "export_dataset_area": [],
+   "acquisition_date": "2021-12-08",
+   "georef_filename": "",
+   "metadata": {},
+   "grid": null
+  },
+  {
+   "rect": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "map_px_to_mm_factor": "1",
+   "width": 6797,
+   "height": 6183,
+   "annotations": [],
+   "layers": [],
+   "channels": [
+    {
+     "filename": "../02_2021_12_08_C1_orthoprojectionCC/2021_12_08_C1_orthoprojectionCC_25.png",
+     "type": "RGB"
+    }
+   ],
+   "id": "02_2021_12_08_C1",
+   "name": "02_2021_12_08_C1",
+   "workspace": [],
+   "export_dataset_area": [],
+   "acquisition_date": "2021-12-08",
+   "georef_filename": "",
+   "metadata": {},
+   "grid": null
+  },
+  {
+   "rect": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "map_px_to_mm_factor": "1",
+   "width": 6600,
+   "height": 7350,
+   "annotations": [],
+   "layers": [],
+   "channels": [
+    {
+     "filename": "../01_2021_12_08_C1_orthoprojection/2021_12_08_C1_orthoprojection_25_2.png",
+     "type": "RGB"
+    }
+   ],
+   "id": "01_2021_12_08_C1_2",
+   "name": "01_2021_12_08_C1_2",
+   "workspace": [],
+   "export_dataset_area": [],
+   "acquisition_date": "2021-12-08",
+   "georef_filename": "",
+   "metadata": {},
+   "grid": null
+  },
+  {
+   "rect": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "map_px_to_mm_factor": "1",
+   "width": 6796,
+   "height": 6180,
+   "annotations": [],
+   "layers": [],
+   "channels": [
+    {
+     "filename": "../02_2021_12_08_C1_orthoprojectionCC/2021_12_08_C1_orthoprojectionCC_25_2.png",
+     "type": "RGB"
+    }
+   ],
+   "id": "02_2021_12_08_C1_2",
+   "name": "02_2021_12_08_C1_2",
+   "workspace": [],
+   "export_dataset_area": [],
+   "acquisition_date": "2021-12-08",
+   "georef_filename": "",
+   "metadata": {},
+   "grid": null
   }
  ],
  "correspondences": {

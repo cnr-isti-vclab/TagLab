@@ -24,11 +24,16 @@ class QtAlignmentToolWidget(QWidget):
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
         self.alpha = 50
         self.threshold = 64
+        self.resolution = 1
+        self.previewSize = None
+        # TODO
+        self.rotation = 0
+        #
         self.offset = [0, 0]
-        self.arr1 = None
-        self.arr2 = None
-        self.arr3 = None
-        self.arr4 = None
+        self.cachedLeftGrayArray = None
+        self.cachedRightGrayArray = None
+        self.cachedLeftRGBArray = None
+        self.cachedRightRGBArray = None
 
         # ==============================================================
         # Top buttons
@@ -96,6 +101,21 @@ class QtAlignmentToolWidget(QWidget):
         self.thresholdSlider.setAutoFillBackground(True)
         self.thresholdSlider.valueChanged.connect(self.thresholdValueChanged)
 
+        # Resolution
+        self.resolutions = [{"name": "Original", "factor": 1},
+                            {"name": "Decreased", "factor": 2},
+                            {"name": "X-Decreased", "factor": 4},
+                            {"name": "XX-Decreased", "factor": 8},
+                            {"name": "Extreme", "factor": 16}]
+        self.resolutionCombobox = QComboBox()
+        self.resolutionCombobox.setMinimumWidth(200)
+
+        for res in self.resolutions:
+            self.resolutionCombobox.addItem(res["name"])
+
+        self.resolutionCombobox.setCurrentIndex(0)
+        self.resolutionCombobox.currentIndexChanged.connect(self.resolutionChanged)
+
         # Layout
         self.buttons = QHBoxLayout()
         self.buttons.addWidget(self.checkBoxSync)
@@ -108,6 +128,7 @@ class QtAlignmentToolWidget(QWidget):
         self.buttons.addWidget(self.ySlider)
         self.buttons.addWidget(self.thresholdSliderLabel)
         self.buttons.addWidget(self.thresholdSlider)
+        self.buttons.addWidget(self.resolutionCombobox)
 
         # ==============================================================
         # Middle UI containing map selector and map viewer
@@ -190,35 +211,6 @@ class QtAlignmentToolWidget(QWidget):
         self.closed.emit()
         super(QtAlignmentToolWidget, self).closeEvent(event)
 
-    def __updateImgViewer(self, index, isLeft):
-        """
-        Private method to update the viewer and ensure that two different images are selected.
-        :param: index the image to show
-        :param: isLeft a boolean to choose the view to update (left/right)
-        """
-        # Validate index
-        N = len(self.project.images)
-        if index == -1 or index >= N:
-            return
-        # Default channel (0)
-        channel = self.project.images[index].channels[0]
-        # Check if channel is loaded
-        if channel.qimage is None:
-            QApplication.setOverrideCursor(Qt.WaitCursor)
-            channel.loadData()
-            QApplication.restoreOverrideCursor()
-        # Check with viewer to update
-        if isLeft:
-            self.leftImgViewer.setImg(channel.qimage)
-            # Ensure indexes are different
-            if index == self.rightCombobox.currentIndex():
-                self.rightCombobox.setCurrentIndex((index + 1) % N)
-        else:
-            self.rightImgViewer.setImg(channel.qimage)
-            # Ensure indexes are different
-            if index == self.leftCombobox.currentIndex():
-                self.leftCombobox.setCurrentIndex((index + 1) % N)
-
     @pyqtSlot(int)
     def leftImageChanged(self, index):
         """
@@ -252,154 +244,6 @@ class QtAlignmentToolWidget(QWidget):
             # Disconnect the two widgets
             self.leftImgViewer.viewHasChanged[float, float, float].disconnect()
             self.rightImgViewer.viewHasChanged[float, float, float].disconnect()
-
-    def __toNumpyArray(self, imgIndex, imgFormat, channels):
-        """
-        Private method to create a numpy array from QImage.
-        :param: imgIndex contains the index of the image to transform
-        :param: imgFormat contains the format of the data
-        :param: channels contains the number of channels of the array
-        :return: an numpy array of shape (h, w, channels)
-        """
-        # Retrieve and convert image into selected format
-        img = self.project.images[imgIndex].channels[0].qimage
-        img = img.convertToFormat(imgFormat)
-        w, h = img.width(), img.height()
-        # Retrieve a pointer to the modifiable memory view of the image
-        ptr = img.bits()
-        # Update pointer size
-        ptr.setsize(h * w * channels)
-        # Create numpy array
-        arr = numpy.frombuffer(ptr, numpy.uint8).reshape((h, w, channels))
-        # Returns a copy
-        return arr.copy()
-
-    def __toQImage(self, arr, imgFormat):
-        """
-        Private method to transform a numpy array into a QImage.
-        :param: arr is the numpy array of shape (h, w, c)
-        :param: imgFormat is the format of the image to create
-        :return: a QImage
-        """
-        # Retrieve the shape
-        [h, w, c] = arr.shape
-        # Create and return the image
-        img = QImage(arr.data, w, h, c * w, imgFormat)
-        return img
-
-    def __offsetArrays(self, a, b):
-        """
-        Private method to offset two numpy arrays.
-        The array are offset in a "complementary" way:
-            - the first (a) is offset from the bottom right.
-            - the second (b) is offset from the top left.
-        :param: a the first numpy array of shape (h, w, c)
-        :param: b the second numpy array of shape (h, w, c)
-        :return: the tuple (offset(a), offset(b))
-        """
-        # Retrieve the shape
-        [h, w, _] = b.shape
-        # Retrieve the offset
-        [dx, dy] = self.offset
-        # Transform each array and return the tuple
-        tmp1 = a[dy:, dx:]
-        tmp2 = b[:h-dy, :w-dx]
-        return tmp1, tmp2
-
-    def __processPreviewArrays(self, a, b):
-        """
-        Private method to create a numpy array representing the difference image for the preview.
-        :param: a the first numpy array with shape (h, w, c)
-        :param: b the second numpy array with shape (h, w, c)
-        :return: the preview numpy array
-        """
-        # Offset arrays
-        [tmp1, tmp2] = self.__offsetArrays(a, b)
-        # Compute the absolute difference by multiplying by +1/-1 if tmp1<tmp2
-        tmp3 = tmp1 - tmp2
-        tmp4 = numpy.uint8(tmp1 < tmp2) * 254 + 1
-        tmp = tmp3 * tmp4
-        # Save the shape
-        shape = tmp.shape
-        # Blur the image
-        tmp = cv2.medianBlur(tmp, 3)
-        # tmp = scipy.ndimage.gaussian_filter(tmp, sigma=5) # TOO Slow
-        # Reshape
-        tmp = tmp.reshape(shape)
-        # Compute the threshold
-        tmp = numpy.where(tmp < self.threshold, 0, tmp)
-        return tmp
-
-    def __initializePreview(self):
-        """
-        Private method called once when the Preview Mode is turned on.
-        It initializes all the necessary numpy arrays.
-        """
-        # Retrieve indexes
-        index = self.leftCombobox.currentIndex()
-        index2 = self.rightCombobox.currentIndex()
-        # Load arrays: Gray Scale
-        self.arr1 = self.__toNumpyArray(index, QImage.Format_Grayscale8, 1)
-        self.arr2 = self.__toNumpyArray(index2, QImage.Format_Grayscale8, 1)
-        # Load arrays: RGB Scale
-        self.arr3 = self.__toNumpyArray(index, QImage.Format_RGB888, 3)
-        self.arr4 = self.__toNumpyArray(index2, QImage.Format_RGB888, 3)
-
-    def __updatePreview(self, onlyAlpha=False):
-        """
-        Private method to update the preview.
-        :param: onlyAlpha is a boolean that represents whether the changes are only on the alpha section.
-        """
-        # ==============================================================
-        # Update alpha section
-        # ==============================================================
-        self.aplhaPreviewViewer.clear()
-        tmp1, tmp2 = self.__offsetArrays(self.arr3, self.arr4)
-        img1 = self.__toQImage(tmp1.copy(), QImage.Format_RGB888)
-        img2 = self.__toQImage(tmp2.copy(), QImage.Format_RGB888)
-        self.aplhaPreviewViewer.setImg(img1)
-        self.aplhaPreviewViewer.setOpacity(numpy.clip(self.alpha, 0.0, 100.0) / 100.0)
-        self.aplhaPreviewViewer.setOverlayImage(img2)
-        # Jump this section to make the alpha changes apply faster
-        if not onlyAlpha:
-            # ==============================================================
-            # Gray scale
-            # ==============================================================
-            self.leftPreviewViewer.clear()
-            tmp = self.__processPreviewArrays(self.arr1, self.arr2)
-            img = self.__toQImage(tmp, QImage.Format_Grayscale8)
-            self.leftPreviewViewer.setImg(img)
-            # ==============================================================
-            # RGB scale
-            # ==============================================================
-            self.rightPreviewViewer.clear()
-            tmp = self.__processPreviewArrays(self.arr3, self.arr4)
-            img = self.__toQImage(tmp, QImage.Format_RGB888)
-            self.rightPreviewViewer.setImg(img)
-
-    def __togglePreviewMode(self, isPreviewMode):
-        """
-        Private method to set widget visibility to toggle the Preview Mode on/off.
-        :param: isPreviewMode a boolean value to enable / disable the Preview Mode
-        """
-        # (Preview-ONLY) widgets
-        self.aplhaPreviewViewer.setVisible(isPreviewMode)
-        self.leftPreviewViewer.setVisible(isPreviewMode)
-        self.rightPreviewViewer.setVisible(isPreviewMode)
-        self.alphaSliderLabel.setVisible(isPreviewMode)
-        self.alphaSlider.setVisible(isPreviewMode)
-        self.xSliderLabel.setVisible(isPreviewMode)
-        self.xSlider.setVisible(isPreviewMode)
-        self.ySliderLabel.setVisible(isPreviewMode)
-        self.ySlider.setVisible(isPreviewMode)
-        self.thresholdSliderLabel.setVisible(isPreviewMode)
-        self.thresholdSlider.setVisible(isPreviewMode)
-        # (NON-Preview-ONLY) widgets
-        self.leftImgViewer.setVisible(not isPreviewMode)
-        self.rightImgViewer.setVisible(not isPreviewMode)
-        self.checkBoxSync.setVisible(not isPreviewMode)
-        self.leftCombobox.setVisible(not isPreviewMode)
-        self.rightCombobox.setVisible(not isPreviewMode)
 
     @pyqtSlot(int)
     def togglePreview(self, value):
@@ -462,3 +306,203 @@ class QtAlignmentToolWidget(QWidget):
         self.thresholdSliderLabel.setText("T:" + str(value))
         # Update preview
         self.__updatePreview()
+
+    @pyqtSlot(int)
+    def resolutionChanged(self, index):
+        """
+        Callback called when the resolution changes.
+        :param: index of the new resolution
+        """
+        self.resolution = self.resolutions[index]["factor"]
+        # Update preview
+        self.__initializePreview()
+        self.__updatePreview()
+
+    def __updateImgViewer(self, index, isLeft):
+        """
+        Private method to update the viewer and ensure that two different images are selected.
+        :param: index the image to show
+        :param: isLeft a boolean to choose the view to update (left/right)
+        """
+        # Validate index
+        N = len(self.project.images)
+        if index == -1 or index >= N:
+            return
+        # Default channel (0)
+        channel = self.project.images[index].channels[0]
+        # Check if channel is loaded
+        if channel.qimage is None:
+            QApplication.setOverrideCursor(Qt.WaitCursor)
+            channel.loadData()
+            QApplication.restoreOverrideCursor()
+        # Check with viewer to update
+        if isLeft:
+            self.leftImgViewer.setImg(channel.qimage)
+            # Ensure indexes are different
+            if index == self.rightCombobox.currentIndex():
+                self.rightCombobox.setCurrentIndex((index + 1) % N)
+        else:
+            self.rightImgViewer.setImg(channel.qimage)
+            # Ensure indexes are different
+            if index == self.leftCombobox.currentIndex():
+                self.leftCombobox.setCurrentIndex((index + 1) % N)
+
+    def __toNumpyArray(self, img, imgFormat, channels):
+        """
+        Private method to create a numpy array from QImage.
+        :param: img contains the QImage to transform
+        :param: imgFormat contains the format of the data
+        :param: channels contains the number of channels of the array
+        :return: an numpy array of shape (h, w, channels)
+        """
+        # Retrieve and convert image into selected format
+        img = img.convertToFormat(imgFormat)
+        h, w = img.height(), img.width()
+        # Retrieve a pointer to the modifiable memory view of the image
+        ptr = img.bits()
+        # Update pointer size
+        ptr.setsize(h * w * channels)
+        # Create numpy array
+        arr = numpy.frombuffer(ptr, numpy.uint8).reshape((h, w, channels)).copy()
+        # Pad img
+        [rh, rw] = self.previewSize
+        [ph, pw] = [rh - h, rw - w]
+        arr = numpy.pad(arr, [(0, ph), (0, pw), (0, 0)], mode='constant')
+        # Scale down by resolution factor
+        arr = arr[::self.resolution, ::self.resolution]
+        return arr
+
+    def __toQImage(self, arr, imgFormat):
+        """
+        Private method to transform a numpy array into a QImage.
+        :param: arr is the numpy array of shape (h, w, c)
+        :param: imgFormat is the format of the image to create
+        :return: a QImage
+        """
+        # Retrieve the shape
+        [h, w, c] = arr.shape
+        # Create and return the image
+        img = QImage(arr.data, w, h, c * w, imgFormat)
+        return img
+
+    def __offsetArrays(self, a, b):
+        """
+        Private method to offset two numpy arrays.
+        The array are offset in a "complementary" way:
+            - the first (a) is offset from the bottom right.
+            - the second (b) is offset from the top left.
+        :param: a the first numpy array of shape (h, w, c)
+        :param: b the second numpy array of shape (h, w, c)
+        :return: the tuple (offset(a), offset(b))
+        """
+        # Retrieve the shape
+        [h, w, _] = b.shape
+        # Retrieve the offset
+        [dx, dy] = self.offset
+        # Scale offset down by the resolution factor
+        dx = dx // self.resolution
+        dy = dy // self.resolution
+        # Transform each array and return the tuple
+        tmp1 = a[dy:, dx:]
+        tmp2 = b[:h - dy, :w - dx]
+        return tmp1, tmp2
+
+    def __processPreviewArrays(self, a, b):
+        """
+        Private method to create a numpy array representing the difference image for the preview.
+        :param: a the first numpy array with shape (h, w, c)
+        :param: b the second numpy array with shape (h, w, c)
+        :return: the preview numpy array
+        """
+        # Offset arrays
+        [tmp1, tmp2] = self.__offsetArrays(a, b)
+        # Compute the absolute difference by multiplying by +1/-1 if tmp1<tmp2
+        tmp3 = tmp1 - tmp2
+        tmp4 = numpy.uint8(tmp1 < tmp2) * 254 + 1
+        tmp = tmp3 * tmp4
+        # Save the shape
+        shape = tmp.shape
+        # Blur the image
+        tmp = cv2.medianBlur(tmp, 3)
+        # tmp = scipy.ndimage.gaussian_filter(tmp, sigma=5) # TOO Slow
+        # Reshape
+        tmp = tmp.reshape(shape)
+        # Compute the threshold
+        tmp = numpy.where(tmp < self.threshold, 0, tmp)
+        return tmp
+
+    def __initializePreview(self):
+        """
+        Private method called once when the Preview Mode is turned on.
+        It initializes all the necessary numpy arrays.
+        """
+        # Retrieve indexes
+        index1 = self.leftCombobox.currentIndex()
+        index2 = self.rightCombobox.currentIndex()
+        # Update preview size
+        img1 = self.project.images[index1].channels[0].qimage
+        img2 = self.project.images[index2].channels[0].qimage
+        self.previewSize = [max(img1.height(), img2.height()), max(img1.width(), img2.width())]
+        # Load arrays: Gray Scale
+        self.cachedLeftGrayArray = self.__toNumpyArray(img1, QImage.Format_Grayscale8, 1)
+        self.cachedRightGrayArray = self.__toNumpyArray(img2, QImage.Format_Grayscale8, 1)
+        # Load arrays: RGB Scale
+        self.cachedLeftRGBArray = self.__toNumpyArray(img1, QImage.Format_RGB888, 3)
+        self.cachedRightRGBArray = self.__toNumpyArray(img2, QImage.Format_RGB888, 3)
+
+    def __updatePreview(self, onlyAlpha=False):
+        """
+        Private method to update the preview.
+        :param: onlyAlpha is a boolean that represents whether the changes are only on the alpha section.
+        """
+        # ==============================================================
+        # Update alpha section
+        # ==============================================================
+        self.aplhaPreviewViewer.clear()
+        tmp1, tmp2 = self.__offsetArrays(self.cachedLeftRGBArray, self.cachedRightRGBArray)
+        img1 = self.__toQImage(tmp1.copy(), QImage.Format_RGB888)
+        img2 = self.__toQImage(tmp2.copy(), QImage.Format_RGB888)
+        self.aplhaPreviewViewer.setImg(img1)
+        self.aplhaPreviewViewer.setOpacity(numpy.clip(self.alpha, 0.0, 100.0) / 100.0)
+        self.aplhaPreviewViewer.setOverlayImage(img2)
+        # Jump this section to make the alpha changes apply faster
+        if not onlyAlpha:
+            # ==============================================================
+            # Gray scale
+            # ==============================================================
+            self.leftPreviewViewer.clear()
+            tmp = self.__processPreviewArrays(self.cachedLeftGrayArray, self.cachedRightGrayArray)
+            img = self.__toQImage(tmp, QImage.Format_Grayscale8)
+            self.leftPreviewViewer.setImg(img)
+            # ==============================================================
+            # RGB scale
+            # ==============================================================
+            self.rightPreviewViewer.clear()
+            tmp = self.__processPreviewArrays(self.cachedLeftRGBArray, self.cachedRightRGBArray)
+            img = self.__toQImage(tmp, QImage.Format_RGB888)
+            self.rightPreviewViewer.setImg(img)
+
+    def __togglePreviewMode(self, isPreviewMode):
+        """
+        Private method to set widget visibility to toggle the Preview Mode on/off.
+        :param: isPreviewMode a boolean value to enable / disable the Preview Mode
+        """
+        # (Preview-ONLY) widgets
+        self.aplhaPreviewViewer.setVisible(isPreviewMode)
+        self.leftPreviewViewer.setVisible(isPreviewMode)
+        self.rightPreviewViewer.setVisible(isPreviewMode)
+        self.alphaSliderLabel.setVisible(isPreviewMode)
+        self.alphaSlider.setVisible(isPreviewMode)
+        self.xSliderLabel.setVisible(isPreviewMode)
+        self.xSlider.setVisible(isPreviewMode)
+        self.ySliderLabel.setVisible(isPreviewMode)
+        self.ySlider.setVisible(isPreviewMode)
+        self.thresholdSliderLabel.setVisible(isPreviewMode)
+        self.thresholdSlider.setVisible(isPreviewMode)
+        self.resolutionCombobox.setVisible(isPreviewMode)
+        # (NON-Preview-ONLY) widgets
+        self.leftImgViewer.setVisible(not isPreviewMode)
+        self.rightImgViewer.setVisible(not isPreviewMode)
+        self.checkBoxSync.setVisible(not isPreviewMode)
+        self.leftCombobox.setVisible(not isPreviewMode)
+        self.rightCombobox.setVisible(not isPreviewMode)
