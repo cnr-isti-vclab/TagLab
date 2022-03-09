@@ -903,7 +903,7 @@ class TagLab(QMainWindow):
         createDicAct = QAction("Labels Dictionary Editor...", self)
         createDicAct.triggered.connect(self.createDictionary)
 
-        alignToolAct = QAction("Open Alignment Tool", self)
+        alignToolAct = QAction("Alignment Tool", self)
         alignToolAct.triggered.connect(self.openAlignmentTool)
 
         regionAttributesAct = QAction("Region Attributes...", self)
