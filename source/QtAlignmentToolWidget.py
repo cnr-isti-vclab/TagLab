@@ -32,8 +32,8 @@ class QtAlignmentToolWidget(QWidget):
         self.offset = [0, 0]
         self.cachedLeftGrayArray = None
         self.cachedRightGrayArray = None
-        self.cachedLeftRGBArray = None
-        self.cachedRightRGBArray = None
+        self.cachedLeftRGBAArray = None
+        self.cachedRightRGBAArray = None
 
         # ==============================================================
         # Top buttons
@@ -54,7 +54,7 @@ class QtAlignmentToolWidget(QWidget):
         self.checkBoxPreview.stateChanged[int].connect(self.togglePreview)
 
         # Slider
-        self.alphaSliderLabel = QLabel("A:" + str(self.alpha))
+        self.alphaSliderLabel = QLabel("A: " + str(self.alpha))
         self.alphaSliderLabel.setMinimumWidth(50)
         self.alphaSlider = QSlider(Qt.Horizontal)
         self.alphaSlider.setFocusPolicy(Qt.StrongFocus)
@@ -66,7 +66,7 @@ class QtAlignmentToolWidget(QWidget):
         self.alphaSlider.valueChanged.connect(self.previewAlphaValueChanged)
 
         # Manual offset
-        self.xSliderLabel = QLabel("X:" + str(self.offset[0]))
+        self.xSliderLabel = QLabel("X: " + str(self.offset[0]))
         self.xSliderLabel.setMinimumWidth(50)
         self.xSlider = QSlider(Qt.Horizontal)
         self.xSlider.setFocusPolicy(Qt.StrongFocus)
@@ -77,7 +77,7 @@ class QtAlignmentToolWidget(QWidget):
         self.xSlider.setMinimumWidth(50)
         self.xSlider.setAutoFillBackground(True)
         self.xSlider.valueChanged.connect(self.xOffsetChanged)
-        self.ySliderLabel = QLabel("Y:" + str(self.offset[1]))
+        self.ySliderLabel = QLabel("Y: " + str(self.offset[1]))
         self.ySliderLabel.setMinimumWidth(50)
         self.ySlider = QSlider(Qt.Horizontal)
         self.ySlider.setFocusPolicy(Qt.StrongFocus)
@@ -90,7 +90,7 @@ class QtAlignmentToolWidget(QWidget):
         self.ySlider.valueChanged.connect(self.yOffsetChanged)
 
         # ThreshOld
-        self.thresholdSliderLabel = QLabel("T:" + str(self.threshold))
+        self.thresholdSliderLabel = QLabel("T: " + str(self.threshold))
         self.thresholdSliderLabel.setMinimumWidth(50)
         self.thresholdSlider = QSlider(Qt.Horizontal)
         self.thresholdSlider.setFocusPolicy(Qt.StrongFocus)
@@ -175,12 +175,13 @@ class QtAlignmentToolWidget(QWidget):
         # UI for preview
         # ==============================================================
 
-        self.aplhaPreviewViewer = QtImageViewer()
         self.leftPreviewViewer = QtImageViewer()
         self.rightPreviewViewer = QtImageViewer()
 
+        self.leftPreviewViewer.viewHasChanged[float, float, float].connect(self.rightPreviewViewer.setViewParameters)
+        self.rightPreviewViewer.viewHasChanged[float, float, float].connect(self.leftPreviewViewer.setViewParameters)
+
         self.previewLayout = QHBoxLayout()
-        self.previewLayout.addWidget(self.aplhaPreviewViewer)
         self.previewLayout.addWidget(self.leftPreviewViewer)
         self.previewLayout.addWidget(self.rightPreviewViewer)
 
@@ -267,7 +268,7 @@ class QtAlignmentToolWidget(QWidget):
         """
         # Update alpha value and slider text
         self.alpha = value
-        self.alphaSliderLabel.setText("A:" + str(value))
+        self.alphaSliderLabel.setText("A: " + str(value))
         # Update preview
         self.__updatePreview(onlyAlpha=True)
 
@@ -279,7 +280,7 @@ class QtAlignmentToolWidget(QWidget):
         """
         # Update offset value and slider text
         self.offset[0] = value
-        self.xSliderLabel.setText("X:" + str(value))
+        self.xSliderLabel.setText("X: " + str(value))
         # Update preview
         self.__updatePreview()
 
@@ -291,7 +292,7 @@ class QtAlignmentToolWidget(QWidget):
         """
         # Update offset value and slider text
         self.offset[1] = value
-        self.ySliderLabel.setText("Y:" + str(value))
+        self.ySliderLabel.setText("Y: " + str(value))
         # Update preview
         self.__updatePreview()
 
@@ -303,7 +304,7 @@ class QtAlignmentToolWidget(QWidget):
         """
         # Update threshold value and slider text
         self.threshold = value
-        self.thresholdSliderLabel.setText("T:" + str(value))
+        self.thresholdSliderLabel.setText("T: " + str(value))
         # Update preview
         self.__updatePreview()
 
@@ -369,8 +370,11 @@ class QtAlignmentToolWidget(QWidget):
         [ph, pw] = [rh - h, rw - w]
         arr = numpy.pad(arr, [(0, ph), (0, pw), (0, 0)], mode='constant')
         # Scale down by resolution factor
-        arr = arr[::self.resolution, ::self.resolution]
-        return arr
+        [ah, aw] = [rh // self.resolution, rw // self.resolution]
+        shape = arr.shape
+        arr = cv2.resize(arr, (aw, ah), interpolation=cv2.INTER_AREA)
+        arr = arr.reshape(shape)
+        return arr.copy()
 
     def __toQImage(self, arr, imgFormat):
         """
@@ -446,9 +450,11 @@ class QtAlignmentToolWidget(QWidget):
         # Load arrays: Gray Scale
         self.cachedLeftGrayArray = self.__toNumpyArray(img1, QImage.Format_Grayscale8, 1)
         self.cachedRightGrayArray = self.__toNumpyArray(img2, QImage.Format_Grayscale8, 1)
-        # Load arrays: RGB Scale
-        self.cachedLeftRGBArray = self.__toNumpyArray(img1, QImage.Format_RGB888, 3)
-        self.cachedRightRGBArray = self.__toNumpyArray(img2, QImage.Format_RGB888, 3)
+        # Load arrays: RGBA Scale
+        self.cachedLeftRGBAArray = self.__toNumpyArray(img1, QImage.Format_RGBA8888, 4)
+        self.cachedRightRGBAArray = self.__toNumpyArray(img2, QImage.Format_RGBA8888, 4)
+        self.cachedLeftRGBAArray[:, :, 3] = 255
+        self.cachedRightRGBAArray[:, :, 3] = 255
 
     def __updatePreview(self, onlyAlpha=False):
         """
@@ -458,28 +464,21 @@ class QtAlignmentToolWidget(QWidget):
         # ==============================================================
         # Update alpha section
         # ==============================================================
-        self.aplhaPreviewViewer.clear()
-        tmp1, tmp2 = self.__offsetArrays(self.cachedLeftRGBArray, self.cachedRightRGBArray)
-        img1 = self.__toQImage(tmp1.copy(), QImage.Format_RGB888)
-        img2 = self.__toQImage(tmp2.copy(), QImage.Format_RGB888)
-        self.aplhaPreviewViewer.setImg(img1)
-        self.aplhaPreviewViewer.setOpacity(numpy.clip(self.alpha, 0.0, 100.0) / 100.0)
-        self.aplhaPreviewViewer.setOverlayImage(img2)
+        self.leftPreviewViewer.clear()
+        tmp1, tmp2 = self.__offsetArrays(self.cachedLeftRGBAArray, self.cachedRightRGBAArray)
+        img1 = self.__toQImage(tmp1.copy(), QImage.Format_RGBA8888)
+        img2 = self.__toQImage(tmp2.copy(), QImage.Format_RGBA8888)
+        self.leftPreviewViewer.setImg(img1)
+        self.leftPreviewViewer.setOpacity(numpy.clip(self.alpha, 0.0, 100.0) / 100.0)
+        self.leftPreviewViewer.setOverlayImage(img2)
         # Jump this section to make the alpha changes apply faster
         if not onlyAlpha:
             # ==============================================================
             # Gray scale
             # ==============================================================
-            self.leftPreviewViewer.clear()
-            tmp = self.__processPreviewArrays(self.cachedLeftGrayArray, self.cachedRightGrayArray)
-            img = self.__toQImage(tmp, QImage.Format_Grayscale8)
-            self.leftPreviewViewer.setImg(img)
-            # ==============================================================
-            # RGB scale
-            # ==============================================================
             self.rightPreviewViewer.clear()
-            tmp = self.__processPreviewArrays(self.cachedLeftRGBArray, self.cachedRightRGBArray)
-            img = self.__toQImage(tmp, QImage.Format_RGB888)
+            tmp = self.__processPreviewArrays(self.cachedLeftGrayArray, self.cachedRightGrayArray)
+            img = self.__toQImage(tmp.copy(), QImage.Format_Grayscale8)
             self.rightPreviewViewer.setImg(img)
 
     def __togglePreviewMode(self, isPreviewMode):
@@ -488,7 +487,6 @@ class QtAlignmentToolWidget(QWidget):
         :param: isPreviewMode a boolean value to enable / disable the Preview Mode
         """
         # (Preview-ONLY) widgets
-        self.aplhaPreviewViewer.setVisible(isPreviewMode)
         self.leftPreviewViewer.setVisible(isPreviewMode)
         self.rightPreviewViewer.setVisible(isPreviewMode)
         self.alphaSliderLabel.setVisible(isPreviewMode)
