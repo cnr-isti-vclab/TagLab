@@ -1,15 +1,17 @@
 import cv2
 import numpy
-from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot
-from PyQt5.QtGui import QImage
+from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot, QSize
+from PyQt5.QtGui import QImage, QIcon
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QVBoxLayout, QLabel, QHBoxLayout, QComboBox, QSlider, QApplication, \
-    QCheckBox
+    QCheckBox, QPushButton
 
 from source.QtImageViewer import QtImageViewer
 
 
 class QtAlignmentToolWidget(QWidget):
     closed = pyqtSignal()
+
+    OFFSET_LIMIT = 256
 
     def __init__(self, project, parent=None):
         super(QtAlignmentToolWidget, self).__init__(parent)
@@ -23,7 +25,7 @@ class QtAlignmentToolWidget(QWidget):
         self.setWindowTitle("Alignment Tool")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
         self.alpha = 50
-        self.threshold = 64
+        self.threshold = 32
         self.resolution = 1
         self.previewSize = None
         # TODO
@@ -57,41 +59,64 @@ class QtAlignmentToolWidget(QWidget):
 
         # Slider
         self.alphaSliderLabel = QLabel("A: " + str(self.alpha))
-        self.alphaSliderLabel.setMinimumWidth(50)
+        self.alphaSliderLabel.setMinimumWidth(100)
         self.alphaSlider = QSlider(Qt.Horizontal)
         self.alphaSlider.setFocusPolicy(Qt.StrongFocus)
         self.alphaSlider.setMinimum(0)
         self.alphaSlider.setMaximum(100)
         self.alphaSlider.setValue(50)
         self.alphaSlider.setTickInterval(1)
+        self.alphaSlider.setMaximumWidth(200)
         self.alphaSlider.setAutoFillBackground(True)
         self.alphaSlider.valueChanged.connect(self.previewAlphaValueChanges)
 
         # Manual offset
         self.xSliderLabel = QLabel("X: " + str(self.offset[0]))
         self.xSliderLabel.setMinimumWidth(50)
+        self.ySliderLabel = QLabel("Y: " + str(self.offset[1]))
+        self.ySliderLabel.setMinimumWidth(50)
+
+        # Arrows (<, ^, ...)
+        self.moveLeftButton = QPushButton("LEFT")
+        self.moveLeftButton.setFixedWidth(100)
+        self.moveLeftButton.setFixedHeight(50)
+        self.moveLeftButton.clicked.connect(self.onXValueDecremented)
+        self.moveRightButton = QPushButton("RIGHT")
+        self.moveRightButton.setFixedWidth(100)
+        self.moveRightButton.setFixedHeight(50)
+        self.moveRightButton.clicked.connect(self.onXValueIncremented)
+        self.moveUpButton = QPushButton("UP")
+        self.moveUpButton.setFixedWidth(100)
+        self.moveUpButton.setFixedHeight(50)
+        self.moveUpButton.clicked.connect(self.onYValueDecremented)
+        self.moveDownButton = QPushButton("DOWN")
+        self.moveDownButton.setFixedWidth(100)
+        self.moveDownButton.setFixedHeight(50)
+        self.moveDownButton.clicked.connect(self.onYValueIncremented)
+
+        # Debug Slider (X)
         self.xSlider = QSlider(Qt.Horizontal)
         self.xSlider.setFocusPolicy(Qt.StrongFocus)
         self.xSlider.setMinimum(0)
-        self.xSlider.setMaximum(64)
+        self.xSlider.setMaximum(self.OFFSET_LIMIT)
         self.xSlider.setTickInterval(1)
         self.xSlider.setValue(self.offset[0])
         self.xSlider.setMinimumWidth(50)
         self.xSlider.setAutoFillBackground(True)
         self.xSlider.valueChanged.connect(self.xOffsetChanges)
-        self.ySliderLabel = QLabel("Y: " + str(self.offset[1]))
-        self.ySliderLabel.setMinimumWidth(50)
+
+        # Debug Slider (Y)
         self.ySlider = QSlider(Qt.Horizontal)
         self.ySlider.setFocusPolicy(Qt.StrongFocus)
         self.ySlider.setMinimum(0)
-        self.ySlider.setMaximum(64)
+        self.ySlider.setMaximum(self.OFFSET_LIMIT)
         self.ySlider.setTickInterval(1)
         self.ySlider.setValue(self.offset[1])
         self.ySlider.setMinimumWidth(50)
         self.ySlider.setAutoFillBackground(True)
         self.ySlider.valueChanged.connect(self.yOffsetChanges)
 
-        # ThreshOld
+        # Debug Slider (Threshold)
         self.thresholdSliderLabel = QLabel("T: " + str(self.threshold))
         self.thresholdSliderLabel.setMinimumWidth(50)
         self.thresholdSlider = QSlider(Qt.Horizontal)
@@ -119,18 +144,30 @@ class QtAlignmentToolWidget(QWidget):
         self.resolutionCombobox.currentIndexChanged.connect(self.resolutionChanges)
 
         # Layout
-        self.buttons = QHBoxLayout()
-        self.buttons.addWidget(self.checkBoxSync)
-        self.buttons.addWidget(self.checkBoxPreview)
-        self.buttons.addWidget(self.alphaSliderLabel)
-        self.buttons.addWidget(self.alphaSlider)
-        self.buttons.addWidget(self.xSliderLabel)
-        self.buttons.addWidget(self.xSlider)
-        self.buttons.addWidget(self.ySliderLabel)
-        self.buttons.addWidget(self.ySlider)
-        self.buttons.addWidget(self.thresholdSliderLabel)
-        self.buttons.addWidget(self.thresholdSlider)
-        self.buttons.addWidget(self.resolutionCombobox)
+        self.buttons = QVBoxLayout()
+        layout1 = QHBoxLayout()
+        layout1.addWidget(self.checkBoxSync)
+        layout1.addWidget(self.checkBoxPreview)
+        layout1.addWidget(self.resolutionCombobox)
+        self.buttons.addLayout(layout1)
+        layout2 = QHBoxLayout()
+        layout2.addWidget(self.alphaSliderLabel)
+        layout2.addWidget(self.alphaSlider)
+        layout2.addWidget(self.thresholdSliderLabel)
+        layout2.addWidget(self.thresholdSlider)
+        self.buttons.addLayout(layout2)
+        layout3 = QHBoxLayout()
+        layout3.addWidget(self.xSliderLabel)
+        layout3.addWidget(self.xSlider)
+        layout3.addWidget(self.moveLeftButton)
+        layout3.addWidget(self.moveRightButton)
+        self.buttons.addLayout(layout3)
+        layout4 = QHBoxLayout()
+        layout4.addWidget(self.ySliderLabel)
+        layout4.addWidget(self.ySlider)
+        layout4.addWidget(self.moveUpButton)
+        layout4.addWidget(self.moveDownButton)
+        self.buttons.addLayout(layout4)
 
         # ==============================================================
         # Middle UI containing map selector and map viewer
@@ -277,6 +314,22 @@ class QtAlignmentToolWidget(QWidget):
         # Update preview
         self.__updatePreview(onlyAlpha=True)
 
+    @pyqtSlot()
+    def onXValueIncremented(self):
+        """
+        Callback called when the x value of the offset changes by +1.
+        """
+        # Forward
+        self.xSlider.setValue(self.offset[0] + 1)
+
+    @pyqtSlot()
+    def onXValueDecremented(self):
+        """
+        Callback called when the x value of the offset changes by -1.
+        """
+        # Forward
+        self.xSlider.setValue(self.offset[0] - 1)
+
     @pyqtSlot(int)
     def xOffsetChanges(self, value):
         """
@@ -288,6 +341,22 @@ class QtAlignmentToolWidget(QWidget):
         self.xSliderLabel.setText("X: " + str(value))
         # Update preview
         self.__updatePreview()
+
+    @pyqtSlot()
+    def onYValueIncremented(self):
+        """
+        Callback called when the - value of the offset changes by +1.
+        """
+        # Forward
+        self.ySlider.setValue(self.offset[1] + 1)
+
+    @pyqtSlot()
+    def onYValueDecremented(self):
+        """
+        Callback called when the - value of the offset changes by -1.
+        """
+        # Forward
+        self.ySlider.setValue(self.offset[1] - 1)
 
     @pyqtSlot(int)
     def yOffsetChanges(self, value):
@@ -451,18 +520,14 @@ class QtAlignmentToolWidget(QWidget):
         """
         # Offset arrays
         [tmp1, tmp2] = self.__offsetArrays(a, b)
-        # Blur the image 1
+        # Compute the absolute difference
         shape = tmp1.shape
-        tmp1 = cv2.medianBlur(tmp1, 3)
-        tmp1 = tmp1.reshape(shape)
-        # Blur the image 2
-        shape = tmp2.shape
-        tmp2 = cv2.medianBlur(tmp2, 3)
-        tmp2 = tmp2.reshape(shape)
-        # Compute the absolute difference by multiplying by +1/-1 if tmp1<tmp2
-        tmp3 = tmp1 - tmp2
-        tmp4 = numpy.uint8(tmp1 < tmp2) * 254 + 1
-        tmp = tmp3 * tmp4
+        tmp = cv2.absdiff(
+            # Blur to reduce small errors
+            cv2.medianBlur(tmp1, 7),
+            cv2.medianBlur(tmp2, 7)
+        )
+        tmp = tmp.reshape(shape)
         # Compute the threshold
         tmp = numpy.where(tmp < self.threshold, 0, tmp)
         return tmp
@@ -480,7 +545,7 @@ class QtAlignmentToolWidget(QWidget):
         # Find box containing both images
         ph, pw = max(h1, h2), max(w1, w2)
         # Update preview size (w & h must be even)
-        self.previewSize = [(ph // 2 + 1) * 2, (pw // 2 + 1) * 2]
+        self.previewSize = [ph, pw]
 
     def __initializePreview(self):
         """
@@ -547,13 +612,16 @@ class QtAlignmentToolWidget(QWidget):
         self.rightPreviewViewer.setVisible(isPreviewMode)
         self.alphaSliderLabel.setVisible(isPreviewMode)
         self.alphaSlider.setVisible(isPreviewMode)
-        self.xSliderLabel.setVisible(isPreviewMode)
-        self.xSlider.setVisible(isPreviewMode)
-        self.ySliderLabel.setVisible(isPreviewMode)
-        self.ySlider.setVisible(isPreviewMode)
         self.thresholdSliderLabel.setVisible(isPreviewMode)
         self.thresholdSlider.setVisible(isPreviewMode)
-        self.resolutionCombobox.setVisible(isPreviewMode)
+        self.xSliderLabel.setVisible(isPreviewMode)
+        self.xSlider.setVisible(isPreviewMode)
+        self.moveLeftButton.setVisible(isPreviewMode)
+        self.moveRightButton.setVisible(isPreviewMode)
+        self.ySliderLabel.setVisible(isPreviewMode)
+        self.ySlider.setVisible(isPreviewMode)
+        self.moveUpButton.setVisible(isPreviewMode)
+        self.moveDownButton.setVisible(isPreviewMode)
         # (NON-Preview-ONLY) widgets
         self.leftImgViewer.setVisible(not isPreviewMode)
         self.rightImgViewer.setVisible(not isPreviewMode)
