@@ -34,6 +34,8 @@ class QtAlignmentToolWidget(QWidget):
         self.cachedRightGrayArray = None
         self.cachedLeftRGBAArray = None
         self.cachedRightRGBAArray = None
+        self.leftPreviewParams = [0, 0, 0]
+        self.rightPreviewParams = [0, 0, 0]
 
         # ==============================================================
         # Top buttons
@@ -63,7 +65,7 @@ class QtAlignmentToolWidget(QWidget):
         self.alphaSlider.setValue(50)
         self.alphaSlider.setTickInterval(1)
         self.alphaSlider.setAutoFillBackground(True)
-        self.alphaSlider.valueChanged.connect(self.previewAlphaValueChanged)
+        self.alphaSlider.valueChanged.connect(self.previewAlphaValueChanges)
 
         # Manual offset
         self.xSliderLabel = QLabel("X: " + str(self.offset[0]))
@@ -76,7 +78,7 @@ class QtAlignmentToolWidget(QWidget):
         self.xSlider.setValue(self.offset[0])
         self.xSlider.setMinimumWidth(50)
         self.xSlider.setAutoFillBackground(True)
-        self.xSlider.valueChanged.connect(self.xOffsetChanged)
+        self.xSlider.valueChanged.connect(self.xOffsetChanges)
         self.ySliderLabel = QLabel("Y: " + str(self.offset[1]))
         self.ySliderLabel.setMinimumWidth(50)
         self.ySlider = QSlider(Qt.Horizontal)
@@ -87,7 +89,7 @@ class QtAlignmentToolWidget(QWidget):
         self.ySlider.setValue(self.offset[1])
         self.ySlider.setMinimumWidth(50)
         self.ySlider.setAutoFillBackground(True)
-        self.ySlider.valueChanged.connect(self.yOffsetChanged)
+        self.ySlider.valueChanged.connect(self.yOffsetChanges)
 
         # ThreshOld
         self.thresholdSliderLabel = QLabel("T: " + str(self.threshold))
@@ -99,7 +101,7 @@ class QtAlignmentToolWidget(QWidget):
         self.thresholdSlider.setValue(64)
         self.thresholdSlider.setTickInterval(1)
         self.thresholdSlider.setAutoFillBackground(True)
-        self.thresholdSlider.valueChanged.connect(self.thresholdValueChanged)
+        self.thresholdSlider.valueChanged.connect(self.thresholdValueChanges)
 
         # Resolution
         self.resolutions = [{"name": "Original", "factor": 1},
@@ -114,7 +116,7 @@ class QtAlignmentToolWidget(QWidget):
             self.resolutionCombobox.addItem(res["name"])
 
         self.resolutionCombobox.setCurrentIndex(0)
-        self.resolutionCombobox.currentIndexChanged.connect(self.resolutionChanged)
+        self.resolutionCombobox.currentIndexChanged.connect(self.resolutionChanges)
 
         # Layout
         self.buttons = QHBoxLayout()
@@ -142,7 +144,7 @@ class QtAlignmentToolWidget(QWidget):
             self.leftCombobox.addItem(image.name)
 
         self.leftCombobox.setCurrentIndex(0)
-        self.leftCombobox.currentIndexChanged.connect(self.leftImageChanged)
+        self.leftCombobox.currentIndexChanged.connect(self.leftImageChanges)
 
         self.leftImgViewer = QtImageViewer()
 
@@ -158,7 +160,7 @@ class QtAlignmentToolWidget(QWidget):
             self.rightCombobox.addItem(image.name)
 
         self.rightCombobox.setCurrentIndex(0)
-        self.rightCombobox.currentIndexChanged.connect(self.rightImageChanged)
+        self.rightCombobox.currentIndexChanged.connect(self.rightImageChanges)
 
         self.rightImgViewer = QtImageViewer()
 
@@ -180,6 +182,9 @@ class QtAlignmentToolWidget(QWidget):
 
         self.leftPreviewViewer.viewHasChanged[float, float, float].connect(self.rightPreviewViewer.setViewParameters)
         self.rightPreviewViewer.viewHasChanged[float, float, float].connect(self.leftPreviewViewer.setViewParameters)
+
+        self.leftPreviewViewer.viewHasChanged[float, float, float].connect(self.onLeftPreviewParamsChanged)
+        self.rightPreviewViewer.viewHasChanged[float, float, float].connect(self.onRightPreviewParamsChanged)
 
         self.previewLayout = QHBoxLayout()
         self.previewLayout.addWidget(self.leftPreviewViewer)
@@ -213,7 +218,7 @@ class QtAlignmentToolWidget(QWidget):
         super(QtAlignmentToolWidget, self).closeEvent(event)
 
     @pyqtSlot(int)
-    def leftImageChanged(self, index):
+    def leftImageChanges(self, index):
         """
         Callback called when the user select a new image for the left view.
         :param: index of the new image
@@ -222,7 +227,7 @@ class QtAlignmentToolWidget(QWidget):
         self.__updateImgViewer(index, True)
 
     @pyqtSlot(int)
-    def rightImageChanged(self, index):
+    def rightImageChanges(self, index):
         """
         Callback called when the user select a new image for the right view.
         :param: index of the new image
@@ -261,7 +266,7 @@ class QtAlignmentToolWidget(QWidget):
             self.__updatePreview()
 
     @pyqtSlot(int)
-    def previewAlphaValueChanged(self, value):
+    def previewAlphaValueChanges(self, value):
         """
         Callback called when the alpha value changes.
         :param: value the new value
@@ -273,7 +278,7 @@ class QtAlignmentToolWidget(QWidget):
         self.__updatePreview(onlyAlpha=True)
 
     @pyqtSlot(int)
-    def xOffsetChanged(self, value):
+    def xOffsetChanges(self, value):
         """
         Callback called when the x value of the offset changes.
         :param: value the new value
@@ -285,7 +290,7 @@ class QtAlignmentToolWidget(QWidget):
         self.__updatePreview()
 
     @pyqtSlot(int)
-    def yOffsetChanged(self, value):
+    def yOffsetChanges(self, value):
         """
         Callback called when the y value of the offset changes.
         :param: value the new value
@@ -297,7 +302,7 @@ class QtAlignmentToolWidget(QWidget):
         self.__updatePreview()
 
     @pyqtSlot(int)
-    def thresholdValueChanged(self, value):
+    def thresholdValueChanges(self, value):
         """
         Callback called when the threshold value changes.
         :param: value the new value
@@ -308,8 +313,30 @@ class QtAlignmentToolWidget(QWidget):
         # Update preview
         self.__updatePreview()
 
+    @pyqtSlot(float, float, float)
+    def onLeftPreviewParamsChanged(self, posx, posy, zoom):
+        """
+        Callback called when left preview viewer's view params changes.
+        :param: posx the new posx param
+        :param: posy the new posy param
+        :param: zoom the new zoom param
+        """
+        # Store parameters
+        self.leftPreviewParams = [posx, posy, zoom]
+
+    @pyqtSlot(float, float, float)
+    def onRightPreviewParamsChanged(self, posx, posy, zoom):
+        """
+        Callback called when right preview viewer's view params changes.
+        :param: posx the new posx param
+        :param: posy the new posy param
+        :param: zoom the new zoom param
+        """
+        # Store parameters
+        self.rightPreviewParams = [posx, posy, zoom]
+
     @pyqtSlot(int)
-    def resolutionChanged(self, index):
+    def resolutionChanges(self, index):
         """
         Callback called when the resolution changes.
         :param: index of the new resolution
@@ -348,7 +375,7 @@ class QtAlignmentToolWidget(QWidget):
             if index == self.leftCombobox.currentIndex():
                 self.leftCombobox.setCurrentIndex((index + 1) % N)
 
-    def __toNumpyArray(self, img, imgFormat, channels):
+    def __toNumpyArray(self, img, isGrayScale):
         """
         Private method to create a numpy array from QImage.
         :param: img contains the QImage to transform
@@ -357,24 +384,28 @@ class QtAlignmentToolWidget(QWidget):
         :return: an numpy array of shape (h, w, channels)
         """
         # Retrieve and convert image into selected format
-        img = img.convertToFormat(imgFormat)
+        img = img.convertToFormat(QImage.Format_RGBA8888)
         h, w = img.height(), img.width()
         # Retrieve a pointer to the modifiable memory view of the image
         ptr = img.bits()
         # Update pointer size
-        ptr.setsize(h * w * channels)
+        ptr.setsize(h * w * 4)
         # Create numpy array
-        arr = numpy.frombuffer(ptr, numpy.uint8).reshape((h, w, channels)).copy()
+        arr = numpy.frombuffer(ptr, numpy.uint8).reshape((h, w, 4))
         # Pad img
         [rh, rw] = self.previewSize
         [ph, pw] = [rh - h, rw - w]
         arr = numpy.pad(arr, [(0, ph), (0, pw), (0, 0)], mode='constant')
         # Scale down by resolution factor
         [ah, aw] = [rh // self.resolution, rw // self.resolution]
-        shape = arr.shape
         arr = cv2.resize(arr, (aw, ah), interpolation=cv2.INTER_AREA)
-        arr = arr.reshape(shape)
-        return arr.copy()
+        arr = arr.reshape((ah, aw, 4))
+        arr[:, :, 3] = 255
+        # Gray scale
+        if isGrayScale:
+            arr = cv2.cvtColor(arr, cv2.COLOR_RGBA2GRAY)
+            arr = arr.reshape((ah, aw, 1))
+        return arr
 
     def __toQImage(self, arr, imgFormat):
         """
@@ -420,41 +451,58 @@ class QtAlignmentToolWidget(QWidget):
         """
         # Offset arrays
         [tmp1, tmp2] = self.__offsetArrays(a, b)
+        # Blur the image 1
+        shape = tmp1.shape
+        tmp1 = cv2.medianBlur(tmp1, 3)
+        tmp1 = tmp1.reshape(shape)
+        # Blur the image 2
+        shape = tmp2.shape
+        tmp2 = cv2.medianBlur(tmp2, 3)
+        tmp2 = tmp2.reshape(shape)
         # Compute the absolute difference by multiplying by +1/-1 if tmp1<tmp2
         tmp3 = tmp1 - tmp2
         tmp4 = numpy.uint8(tmp1 < tmp2) * 254 + 1
         tmp = tmp3 * tmp4
-        # Save the shape
-        shape = tmp.shape
-        # Blur the image
-        tmp = cv2.medianBlur(tmp, 3)
-        # tmp = scipy.ndimage.gaussian_filter(tmp, sigma=5) # TOO Slow
-        # Reshape
-        tmp = tmp.reshape(shape)
         # Compute the threshold
         tmp = numpy.where(tmp < self.threshold, 0, tmp)
         return tmp
+
+    def __updatePreviewSize(self, img1, img2):
+        """
+        Private method to update internal reference size for preview images.
+        The preview size must contains both images.
+        :param: img1 the first image to contain
+        :param: img2 the second image to contain
+        """
+        # Retrieve sizes
+        h1, w1 = img1.height(), img1.width()
+        h2, w2 = img2.height(), img2.width()
+        # Find box containing both images
+        ph, pw = max(h1, h2), max(w1, w2)
+        # Update preview size (w & h must be even)
+        self.previewSize = [(ph // 2 + 1) * 2, (pw // 2 + 1) * 2]
 
     def __initializePreview(self):
         """
         Private method called once when the Preview Mode is turned on.
         It initializes all the necessary numpy arrays.
         """
+        # Clear stored preview's view parameters
+        self.leftPreviewParams = [0, 0, 0]
+        self.rightPreviewParams = [0, 0, 0]
         # Retrieve indexes
         index1 = self.leftCombobox.currentIndex()
         index2 = self.rightCombobox.currentIndex()
         # Update preview size
         img1 = self.project.images[index1].channels[0].qimage
         img2 = self.project.images[index2].channels[0].qimage
-        self.previewSize = [max(img1.height(), img2.height()), max(img1.width(), img2.width())]
+        self.__updatePreviewSize(img1, img2)
         # Load arrays: Gray Scale
-        self.cachedLeftGrayArray = self.__toNumpyArray(img1, QImage.Format_Grayscale8, 1)
-        self.cachedRightGrayArray = self.__toNumpyArray(img2, QImage.Format_Grayscale8, 1)
+        self.cachedLeftGrayArray = self.__toNumpyArray(img1, True)
+        self.cachedRightGrayArray = self.__toNumpyArray(img2, True)
         # Load arrays: RGBA Scale
-        self.cachedLeftRGBAArray = self.__toNumpyArray(img1, QImage.Format_RGBA8888, 4)
-        self.cachedRightRGBAArray = self.__toNumpyArray(img2, QImage.Format_RGBA8888, 4)
-        self.cachedLeftRGBAArray[:, :, 3] = 255
-        self.cachedRightRGBAArray[:, :, 3] = 255
+        self.cachedLeftRGBAArray = self.__toNumpyArray(img1, False)
+        self.cachedRightRGBAArray = self.__toNumpyArray(img2, False)
 
     def __updatePreview(self, onlyAlpha=False):
         """
@@ -464,11 +512,15 @@ class QtAlignmentToolWidget(QWidget):
         # ==============================================================
         # Update alpha section
         # ==============================================================
+        # Clear view
         self.leftPreviewViewer.clear()
+        # Compute offset for RGBA preview
         tmp1, tmp2 = self.__offsetArrays(self.cachedLeftRGBAArray, self.cachedRightRGBAArray)
+        # Transform cached array into QImage
         img1 = self.__toQImage(tmp1.copy(), QImage.Format_RGBA8888)
         img2 = self.__toQImage(tmp2.copy(), QImage.Format_RGBA8888)
-        self.leftPreviewViewer.setImg(img1)
+        # Update preview img, opacity and overlay img
+        self.leftPreviewViewer.setImg(img1, self.leftPreviewParams[2])
         self.leftPreviewViewer.setOpacity(numpy.clip(self.alpha, 0.0, 100.0) / 100.0)
         self.leftPreviewViewer.setOverlayImage(img2)
         # Jump this section to make the alpha changes apply faster
@@ -476,10 +528,14 @@ class QtAlignmentToolWidget(QWidget):
             # ==============================================================
             # Gray scale
             # ==============================================================
+            # Clear view
             self.rightPreviewViewer.clear()
+            # Apply transformations to GRAY preview
             tmp = self.__processPreviewArrays(self.cachedLeftGrayArray, self.cachedRightGrayArray)
+            # Transform cached array into QImage
             img = self.__toQImage(tmp.copy(), QImage.Format_Grayscale8)
-            self.rightPreviewViewer.setImg(img)
+            # Update preview img
+            self.rightPreviewViewer.setImg(img, self.rightPreviewParams[2])
 
     def __togglePreviewMode(self, isPreviewMode):
         """
