@@ -242,11 +242,14 @@ class QtAlignmentToolWidget(QWidget):
         # Initialize views by simulating clicks on the UI
         # ==============================================================
 
-        self.checkBoxSync.stateChanged.emit(1)
-        self.checkBoxPreview.stateChanged.emit(0)
+        self.project.images[0].channels[0].loadData()
+        self.project.images[1].channels[0].loadData()
 
         self.leftCombobox.currentIndexChanged.emit(0)
         self.rightCombobox.currentIndexChanged.emit(1)
+
+        self.checkBoxSync.stateChanged.emit(1)
+        self.checkBoxPreview.stateChanged.emit(0)
 
         # ==============================================================
 
@@ -260,8 +263,16 @@ class QtAlignmentToolWidget(QWidget):
         Callback called when the user select a new image for the left view.
         :param: index of the new image
         """
-        # Forward to private method
-        self.__updateImgViewer(index, True)
+        # Validate index
+        N = len(self.project.images)
+        if index == -1 or index >= N:
+            return
+        # Ensure indexes are different
+        if index == self.rightCombobox.currentIndex():
+            self.rightCombobox.setCurrentIndex((index + 1) % N)
+        else:
+            # Forward to private method
+            self.__updateImgViewers()
 
     @pyqtSlot(int)
     def rightImageChanges(self, index):
@@ -269,8 +280,16 @@ class QtAlignmentToolWidget(QWidget):
         Callback called when the user select a new image for the right view.
         :param: index of the new image
         """
-        # Forward to private method
-        self.__updateImgViewer(index, False)
+        # Validate index
+        N = len(self.project.images)
+        if index == -1 or index >= N:
+            return
+        # Ensure indexes are different
+        if index == self.leftCombobox.currentIndex():
+            self.leftCombobox.setCurrentIndex((index + 1) % N)
+        else:
+            # Forward to private method
+            self.__updateImgViewers()
 
     @pyqtSlot(int)
     def toggleSync(self, value):
@@ -411,38 +430,41 @@ class QtAlignmentToolWidget(QWidget):
         :param: index of the new resolution
         """
         self.resolution = self.resolutions[index]["factor"]
+        # Update edit
+        self.__updateImgViewers()
         # Update preview
         self.__initializePreview()
         self.__updatePreview()
 
-    def __updateImgViewer(self, index, isLeft):
+    def __updateImgViewers(self):
         """
-        Private method to update the viewer and ensure that two different images are selected.
-        :param: index the image to show
-        :param: isLeft a boolean to choose the view to update (left/right)
+        Private method to update the viewers
         """
-        # Validate index
-        N = len(self.project.images)
-        if index == -1 or index >= N:
-            return
+        # Retrieve indexes
+        index1 = self.leftCombobox.currentIndex()
+        index2 = self.rightCombobox.currentIndex()
         # Default channel (0)
-        channel = self.project.images[index].channels[0]
+        channel1 = self.project.images[index1].channels[0]
+        channel2 = self.project.images[index2].channels[0]
         # Check if channel is loaded
-        if channel.qimage is None:
+        if channel1.qimage is None:
             QApplication.setOverrideCursor(Qt.WaitCursor)
-            channel.loadData()
+            channel1.loadData()
             QApplication.restoreOverrideCursor()
-        # Check with viewer to update
-        if isLeft:
-            self.leftImgViewer.setImg(channel.qimage)
-            # Ensure indexes are different
-            if index == self.rightCombobox.currentIndex():
-                self.rightCombobox.setCurrentIndex((index + 1) % N)
-        else:
-            self.rightImgViewer.setImg(channel.qimage)
-            # Ensure indexes are different
-            if index == self.leftCombobox.currentIndex():
-                self.leftCombobox.setCurrentIndex((index + 1) % N)
+        if channel2.qimage is None:
+            QApplication.setOverrideCursor(Qt.WaitCursor)
+            channel2.loadData()
+            QApplication.restoreOverrideCursor()
+        # Update preview size
+        self.__updatePreviewSize(channel1.qimage, channel2.qimage)
+        # Image
+        img1 = self.__toNumpyArray(channel1.qimage, False)
+        img1 = self.__toQImage(img1, QImage.Format_RGBA8888)
+        img2 = self.__toNumpyArray(channel2.qimage, False)
+        img2 = self.__toQImage(img2, QImage.Format_RGBA8888)
+        # Update viewer
+        self.leftImgViewer.setImg(img1)
+        self.rightImgViewer.setImg(img2)
 
     def __toNumpyArray(self, img, isGrayScale):
         """
@@ -558,10 +580,9 @@ class QtAlignmentToolWidget(QWidget):
         # Retrieve indexes
         index1 = self.leftCombobox.currentIndex()
         index2 = self.rightCombobox.currentIndex()
-        # Update preview size
+        # Images
         img1 = self.project.images[index1].channels[0].qimage
         img2 = self.project.images[index2].channels[0].qimage
-        self.__updatePreviewSize(img1, img2)
         # Load arrays: Gray Scale
         self.cachedLeftGrayArray = self.__toNumpyArray(img1, True)
         self.cachedRightGrayArray = self.__toNumpyArray(img2, True)
