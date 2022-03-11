@@ -11,8 +11,6 @@ from source.QtImageViewer import QtImageViewer
 class QtAlignmentToolWidget(QWidget):
     closed = pyqtSignal()
 
-    OFFSET_LIMIT = 256
-
     def __init__(self, project, parent=None):
         super(QtAlignmentToolWidget, self).__init__(parent)
 
@@ -98,7 +96,7 @@ class QtAlignmentToolWidget(QWidget):
         self.xSlider = QSlider(Qt.Horizontal)
         self.xSlider.setFocusPolicy(Qt.StrongFocus)
         self.xSlider.setMinimum(0)
-        self.xSlider.setMaximum(self.OFFSET_LIMIT)
+        self.xSlider.setMaximum(256)
         self.xSlider.setTickInterval(1)
         self.xSlider.setValue(self.offset[0])
         self.xSlider.setMinimumWidth(50)
@@ -109,7 +107,7 @@ class QtAlignmentToolWidget(QWidget):
         self.ySlider = QSlider(Qt.Horizontal)
         self.ySlider.setFocusPolicy(Qt.StrongFocus)
         self.ySlider.setMinimum(0)
-        self.ySlider.setMaximum(self.OFFSET_LIMIT)
+        self.ySlider.setMaximum(256)
         self.ySlider.setTickInterval(1)
         self.ySlider.setValue(self.offset[1])
         self.ySlider.setMinimumWidth(50)
@@ -566,8 +564,10 @@ class QtAlignmentToolWidget(QWidget):
         h2, w2 = img2.height(), img2.width()
         # Find box containing both images
         ph, pw = max(h1, h2), max(w1, w2)
-        # Update preview size (w & h must be even)
+        # Update preview size
         self.previewSize = [ph, pw]
+        self.xSlider.setMaximum(pw // 2)
+        self.ySlider.setMaximum(ph // 2)
 
     def __initializePreview(self):
         """
