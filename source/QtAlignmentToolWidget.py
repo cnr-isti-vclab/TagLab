@@ -1,7 +1,7 @@
 import cv2
 import numpy
-from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot, QSize
-from PyQt5.QtGui import QImage, QIcon
+from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot
+from PyQt5.QtGui import QImage, QMouseEvent
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QVBoxLayout, QLabel, QHBoxLayout, QComboBox, QSlider, QApplication, \
     QCheckBox, QPushButton
 
@@ -34,8 +34,12 @@ class QtAlignmentToolWidget(QWidget):
         self.cachedRightGrayArray = None
         self.cachedLeftRGBAArray = None
         self.cachedRightRGBAArray = None
+        self.overlayLeftArray = None
+        self.overlayRightArray = None
         self.leftPreviewParams = [0, 0, 0]
         self.rightPreviewParams = [0, 0, 0]
+        self.isDragging = False
+        self.markerPositions = []
 
         # ==============================================================
         # Top buttons
@@ -182,6 +186,10 @@ class QtAlignmentToolWidget(QWidget):
         self.leftCombobox.currentIndexChanged.connect(self.leftImageChanges)
 
         self.leftImgViewer = QtImageViewer()
+        self.leftImgViewer.setOpacity(1)
+        self.leftImgViewer.mouseDown.connect(self.onLeftViewMouseDown)
+        self.leftImgViewer.mouseUp.connect(self.onLeftViewMouseUp)
+        self.leftImgViewer.mouseMove.connect(self.onLeftViewMouseMove)
 
         leftLayout = QVBoxLayout()
         leftLayout.addWidget(self.leftCombobox)
@@ -198,6 +206,10 @@ class QtAlignmentToolWidget(QWidget):
         self.rightCombobox.currentIndexChanged.connect(self.rightImageChanges)
 
         self.rightImgViewer = QtImageViewer()
+        self.rightImgViewer.setOpacity(1)
+        self.rightImgViewer.mouseDown.connect(self.onRightViewMouseDown)
+        self.rightImgViewer.mouseUp.connect(self.onRightViewMouseUp)
+        self.rightImgViewer.mouseMove.connect(self.onRightViewMouseMove)
 
         rightLayout = QVBoxLayout()
         rightLayout.addWidget(self.rightCombobox)
@@ -434,6 +446,53 @@ class QtAlignmentToolWidget(QWidget):
         self.__initializePreview()
         self.__updatePreview()
 
+    @pyqtSlot(QMouseEvent)
+    def onLeftViewMouseDown(self, event: QMouseEvent):
+        if event.button() != Qt.RightButton:
+            return
+        pos = self.leftImgViewer.clipScenePos(self.leftImgViewer.mapToScene(event.pos()))
+
+    @pyqtSlot(QMouseEvent)
+    def onLeftViewMouseMove(self, event):
+        if event.button() != Qt.RightButton:
+            return
+        pos = self.leftImgViewer.clipScenePos(self.leftImgViewer.mapToScene(event.pos()))
+
+    @pyqtSlot(QMouseEvent)
+    def onLeftViewMouseUp(self, event: QMouseEvent):
+        if event.button() != Qt.RightButton:
+            return
+        pos = self.leftImgViewer.clipScenePos(self.leftImgViewer.mapToScene(event.pos()))
+        self.__addMarker(pos[0], pos[1])
+
+    @pyqtSlot(QMouseEvent)
+    def onRightViewMouseDown(self, event):
+        pass
+
+    @pyqtSlot(QMouseEvent)
+    def onRightViewMouseUp(self, event):
+        pass
+
+    @pyqtSlot(QMouseEvent)
+    def onRightViewMouseMove(self, event):
+        pass
+
+    def __addMarker(self, x, y):
+        self.markerPositions.append([x, y])
+        self.__drawMarkers()
+
+    def __drawMarkers(self):
+        mkSize = round(max(32 / (self.resolution / 2), 1))
+        mkWidth = round(max(8 / (self.resolution / 2), 1))
+        h, w = self.previewSize[0] // self.resolution, self.previewSize[1] // self.resolution
+        tmp = numpy.zeros([h, w, 4], dtype=numpy.uint8)
+        for [x, y] in self.markerPositions:
+            tmp = cv2.line(tmp, [x - mkSize, y - mkSize], [x + mkSize, y + mkSize], [255, 0, 0, 255], mkWidth)
+            tmp = cv2.line(tmp, [x - mkSize, y + mkSize], [x + mkSize, y - mkSize], [255, 0, 0, 255], mkWidth)
+        self.overlayLeftArray = tmp
+        img = self.__toQImage(self.overlayLeftArray, QImage.Format_RGBA8888)
+        self.leftImgViewer.setOverlayImage(img)
+
     def __updateImgViewers(self):
         """
         Private method to update the viewers
@@ -463,6 +522,9 @@ class QtAlignmentToolWidget(QWidget):
         # Update viewer
         self.leftImgViewer.setImg(img1)
         self.rightImgViewer.setImg(img2)
+        # Update overlay images
+        self.markerPositions = []
+        self.__drawMarkers()
 
     def __toNumpyArray(self, img, isGrayScale):
         """
