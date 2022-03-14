@@ -3,7 +3,7 @@ import numpy
 from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot
 from PyQt5.QtGui import QImage, QMouseEvent
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QVBoxLayout, QLabel, QHBoxLayout, QComboBox, QSlider, QApplication, \
-    QCheckBox, QPushButton
+    QCheckBox, QPushButton, QColorDialog
 
 from source.QtImageViewer import QtImageViewer
 
@@ -25,6 +25,9 @@ class QtAlignmentToolWidget(QWidget):
         self.alpha = 50
         self.threshold = 32
         self.resolution = 1
+        self.mkSize = 32
+        self.mkWidth = 8
+        self.markerColor = [255, 0, 0, 255]
         self.previewSize = None
         # TODO
         self.rotation = 0
@@ -51,6 +54,17 @@ class QtAlignmentToolWidget(QWidget):
         self.checkBoxSync.setFocusPolicy(Qt.NoFocus)
         self.checkBoxSync.setMinimumWidth(40)
         self.checkBoxSync.stateChanged[int].connect(self.toggleSync)
+
+        # Marker Color
+        self.markerColorButtonLabel = QLabel("Marker Color: ")
+        text = "QPushButton:flat {background-color: rgb(255,0,0); border: 1px ;}"
+        self.markerColorButton = QPushButton()
+        self.markerColorButton.setFlat(True)
+        self.markerColorButton.setStyleSheet(text)
+        self.markerColorButton.setAutoFillBackground(True)
+        self.markerColorButton.setFixedWidth(40)
+        self.markerColorButton.setFixedHeight(40)
+        self.markerColorButton.clicked.connect(self.onMarkerColorChangeRequested)
 
         # Preview
         self.checkBoxPreview = QCheckBox("Preview")
@@ -149,6 +163,8 @@ class QtAlignmentToolWidget(QWidget):
         self.buttons = QVBoxLayout()
         layout1 = QHBoxLayout()
         layout1.addWidget(self.checkBoxSync)
+        layout1.addWidget(self.markerColorButtonLabel)
+        layout1.addWidget(self.markerColorButton)
         layout1.addWidget(self.checkBoxPreview)
         layout1.addWidget(self.resolutionCombobox)
         self.buttons.addLayout(layout1)
@@ -477,18 +493,46 @@ class QtAlignmentToolWidget(QWidget):
     def onRightViewMouseMove(self, event):
         pass
 
+    @pyqtSlot()
+    def onMarkerColorChangeRequested(self):
+        """
+
+        """
+        color = QColorDialog.getColor()
+        (r, g, b) = (color.red(), color.green(), color.blue())
+        text = "QPushButton:flat {background-color: rgb(" + str(r) + "," + str(g) + "," + str(b) + "); border: 1px ;}"
+        self.markerColorButton.setStyleSheet(text)
+        self.markerColor = [r, g, b, 255]
+        self.__drawMarkers()
+
     def __addMarker(self, x, y):
+        """
+
+        """
         self.markerPositions.append([x, y])
         self.__drawMarkers()
 
     def __drawMarkers(self):
-        mkSize = round(max(32 / (self.resolution / 2), 1))
-        mkWidth = round(max(8 / (self.resolution / 2), 1))
+        """
+
+        """
         h, w = self.previewSize[0] // self.resolution, self.previewSize[1] // self.resolution
         tmp = numpy.zeros([h, w, 4], dtype=numpy.uint8)
         for [x, y] in self.markerPositions:
-            tmp = cv2.line(tmp, [x - mkSize, y - mkSize], [x + mkSize, y + mkSize], [255, 0, 0, 255], mkWidth)
-            tmp = cv2.line(tmp, [x - mkSize, y + mkSize], [x + mkSize, y - mkSize], [255, 0, 0, 255], mkWidth)
+            tmp = cv2.line(
+                tmp,
+                [x - self.mkSize, y - self.mkSize],
+                [x + self.mkSize, y + self.mkSize],
+                self.markerColor,
+                self.mkWidth
+            )
+            tmp = cv2.line(
+                tmp,
+                [x - self.mkSize, y + self.mkSize],
+                [x + self.mkSize, y - self.mkSize],
+                self.markerColor,
+                self.mkWidth
+            )
         self.overlayLeftArray = tmp
         img = self.__toQImage(self.overlayLeftArray, QImage.Format_RGBA8888)
         self.leftImgViewer.setOverlayImage(img)
@@ -523,6 +567,8 @@ class QtAlignmentToolWidget(QWidget):
         self.leftImgViewer.setImg(img1)
         self.rightImgViewer.setImg(img2)
         # Update overlay images
+        self.mkSize = round(max(32 / (self.resolution / 2), 1))
+        self.mkWidth = round(max(8 / (self.resolution / 2), 1))
         self.markerPositions = []
         self.__drawMarkers()
 
@@ -709,5 +755,6 @@ class QtAlignmentToolWidget(QWidget):
         self.leftImgViewer.setVisible(not isPreviewMode)
         self.rightImgViewer.setVisible(not isPreviewMode)
         self.checkBoxSync.setVisible(not isPreviewMode)
+        self.markerColorButton.setVisible(not isPreviewMode)
         self.leftCombobox.setVisible(not isPreviewMode)
         self.rightCombobox.setVisible(not isPreviewMode)
