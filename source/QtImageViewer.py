@@ -16,6 +16,8 @@ class QtImageViewer(QGraphicsView):
     mouseMove = pyqtSignal(QMouseEvent)
     mouseUp = pyqtSignal(QMouseEvent)
 
+    mouseOut = pyqtSignal()
+
     def __init__(self):
         QGraphicsView.__init__(self)
 
@@ -266,6 +268,9 @@ class QtImageViewer(QGraphicsView):
         QGraphicsView.mouseReleaseEvent(self, event)
         if event.button() == Qt.LeftButton:
             self.setDragMode(QGraphicsView.NoDrag)
+
+    def leaveEvent(self, event) -> None:
+        self.mouseOut.emit()
 
     def wheelEvent(self, event):
         """
