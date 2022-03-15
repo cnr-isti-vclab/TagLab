@@ -1,9 +1,9 @@
 import cv2
 import numpy
 from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot
-from PyQt5.QtGui import QImage, QMouseEvent, QPen
+from PyQt5.QtGui import QImage, QMouseEvent, QPen, QFont
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QVBoxLayout, QLabel, QHBoxLayout, QComboBox, QSlider, QApplication, \
-    QCheckBox, QPushButton, QMessageBox
+    QCheckBox, QPushButton, QMessageBox, QGraphicsTextItem
 
 from source.QtImageViewer import QtImageViewer
 
@@ -73,13 +73,13 @@ class QtAlignmentToolWidget(QWidget):
         # Auto Align
         self.autoAlignButton = QPushButton("Auto-Align")
         self.autoAlignButton.setFixedWidth(150)
-        self.autoAlignButton.setFixedHeight(40)
+        self.autoAlignButton.setFixedHeight(30)
         self.autoAlignButton.clicked.connect(self.onAutoAlignRequested)
 
         # Confirm Alignment
         self.confirmAlignmentButton = QPushButton("Confirm")
         self.confirmAlignmentButton.setFixedWidth(100)
-        self.confirmAlignmentButton.setFixedHeight(40)
+        self.confirmAlignmentButton.setFixedHeight(30)
         self.confirmAlignmentButton.clicked.connect(self.onConfirmAlignment)
 
         # Slider
@@ -104,19 +104,19 @@ class QtAlignmentToolWidget(QWidget):
         # Arrows (<, ^, ...)
         self.moveLeftButton = QPushButton("Left")
         self.moveLeftButton.setFixedWidth(100)
-        self.moveLeftButton.setFixedHeight(50)
+        self.moveLeftButton.setFixedHeight(30)
         self.moveLeftButton.clicked.connect(self.onXValueDecremented)
         self.moveRightButton = QPushButton("Right")
         self.moveRightButton.setFixedWidth(100)
-        self.moveRightButton.setFixedHeight(50)
+        self.moveRightButton.setFixedHeight(30)
         self.moveRightButton.clicked.connect(self.onXValueIncremented)
         self.moveUpButton = QPushButton("Up")
         self.moveUpButton.setFixedWidth(100)
-        self.moveUpButton.setFixedHeight(50)
+        self.moveUpButton.setFixedHeight(30)
         self.moveUpButton.clicked.connect(self.onYValueDecremented)
         self.moveDownButton = QPushButton("Down")
         self.moveDownButton.setFixedWidth(100)
-        self.moveDownButton.setFixedHeight(50)
+        self.moveDownButton.setFixedHeight(30)
         self.moveDownButton.clicked.connect(self.onYValueIncremented)
 
         # Debug Slider (X)
@@ -201,8 +201,8 @@ class QtAlignmentToolWidget(QWidget):
         # ==============================================================
 
         # Left
+        self.leftComboboxLabel = QLabel("Reference Image")
         self.leftCombobox = QComboBox()
-        self.leftCombobox.setMinimumWidth(200)
 
         for image in self.project.images:
             self.leftCombobox.addItem(image.name)
@@ -217,13 +217,18 @@ class QtAlignmentToolWidget(QWidget):
         self.leftImgViewer.mouseMove.connect(self.onLeftViewMouseMove)
         self.leftImgViewer.mouseOut.connect(self.onLeftViewMouseOut)
 
+        layout5 = QHBoxLayout()
+        layout5.addWidget(self.leftComboboxLabel)
+        layout5.addWidget(self.leftCombobox)
+        layout5.setStretchFactor(self.leftComboboxLabel, 1)
+        layout5.setStretchFactor(self.leftCombobox, 1)
         leftLayout = QVBoxLayout()
-        leftLayout.addWidget(self.leftCombobox)
+        leftLayout.addLayout(layout5)
         leftLayout.addWidget(self.leftImgViewer)
 
         # Right
+        self.rightComboboxLabel = QLabel("Image to align")
         self.rightCombobox = QComboBox()
-        self.rightCombobox.setMinimumWidth(200)
 
         for image in self.project.images:
             self.rightCombobox.addItem(image.name)
@@ -238,8 +243,13 @@ class QtAlignmentToolWidget(QWidget):
         self.rightImgViewer.mouseMove.connect(self.onRightViewMouseMove)
         self.rightImgViewer.mouseOut.connect(self.onRightViewMouseOut)
 
+        layout6 = QHBoxLayout()
+        layout6.addWidget(self.rightComboboxLabel)
+        layout6.addWidget(self.rightCombobox)
+        layout6.setStretchFactor(self.rightComboboxLabel, 1)
+        layout6.setStretchFactor(self.rightCombobox, 1)
         rightLayout = QVBoxLayout()
-        rightLayout.addWidget(self.rightCombobox)
+        rightLayout.addLayout(layout6)
         rightLayout.addWidget(self.rightImgViewer)
 
         # Layout
@@ -548,10 +558,10 @@ class QtAlignmentToolWidget(QWidget):
         """
         Callback called when the user request the auto alignment process to start.
         """
-        # Ensure at least 2 marker is placed
-        if len(self.markers) < 2:
+        # Ensure at least 3 marker is placed
+        if len(self.markers) < 3:
             msgBox = QMessageBox()
-            msgBox.setText("At least 2 marker is required. Use the right button to place markers.")
+            msgBox.setText("At least 3 marker is required. Use the right button to place markers.")
             msgBox.exec()
             return
         # Process markers
@@ -682,7 +692,9 @@ class QtAlignmentToolWidget(QWidget):
 
     def __getMarkerBBOX(self, i):
         """
-
+        Private method to retrieve bbox of selected marker.
+        :param: i the index of the marker to evaluate
+        :return: [bboxL, bboxR] the bbox of each view
         """
         # Unpack pos
         [lmx, lmy] = self.markers[i]["lViewPos"]
@@ -731,7 +743,7 @@ class QtAlignmentToolWidget(QWidget):
 
     def __clearHoveringMarker(self):
         """
-
+        Private method to clear hovering data.
         """
         # Clear only if exists
         if self.hoveringMarker is not None:
@@ -748,7 +760,9 @@ class QtAlignmentToolWidget(QWidget):
 
     def __drawHoveringMarker(self, i):
         """
-
+        Private method to draw hovering box.
+        :param: i the index of the marker to hover
+        :return: the objs created
         """
         # Create drawing pen
         pen = QPen(Qt.white, 1)
@@ -772,30 +786,34 @@ class QtAlignmentToolWidget(QWidget):
         :param: i the index of the marker to clear.
         """
         # Remove items from scene
-        for [lineL, lineR] in self.markers[i]["sceneObjs"]:
-            self.leftImgViewer.scene.removeItem(lineL)
-            self.leftImgViewer.scene.removeItem(lineR)
+        for [objL, objR] in self.markers[i]["sceneObjs"]:
+            self.leftImgViewer.scene.removeItem(objL)
+            self.leftImgViewer.scene.removeItem(objR)
         # Clear array
         self.markers[i]["sceneObjs"] = []
 
     def __addMarker(self, pos):
         """
-        Private method to add a SOFT marker at pos [x, y].
+        Private method to add a marker at pos [x, y].
         :param: pos the position where to add the marker
         """
+        # Find ID
+        identifier = max(self.markers, key=lambda x: x["id"], default={"id": 0})["id"] + 1
         # Create a marker obj
         self.markers.append({
-            "lViewPos": [pos[0], pos[1]],                 # left view position
-            "rViewPos": [pos[0], pos[1]],                 # right view position
+            "id": identifier,  # identifier
+            "lViewPos": [pos[0], pos[1]],  # left view position
+            "rViewPos": [pos[0], pos[1]],  # right view position
             "mkType": QtAlignmentToolWidget.SOFT_MARKER,  # marker type
-            "sceneObjs": []                               # Scene objects
+            "sceneObjs": []  # Scene objects
         })
         # Redraw markers
         self.__drawMarkers()
 
-    def __drawMarkerSymb(self, lpos, rpos, pen):
+    def __drawMarkerSymb(self, identifier, lpos, rpos, pen):
         """
         Private method to draw a marker.
+        :param: identifier the marker id
         :param: lpos the position where to draw the marker
         :param: rpos the position where to draw the marker
         :return: the added objects
@@ -805,22 +823,40 @@ class QtAlignmentToolWidget(QWidget):
         [rx, ry] = rpos
         # Lines to draw
         lines = [
-            ([-self.mkSize, -self.mkSize], [+self.mkSize, +self.mkSize]),  # BL - TR
-            ([-self.mkSize, +self.mkSize], [+self.mkSize, -self.mkSize]),  # TL - BR
+            ([-self.mkSize, -self.mkSize], [-1 * self.mkWidth / 2, -1 * self.mkWidth / 2]),  # TL - 0
+            ([+1 * self.mkWidth / 2, +1 * self.mkWidth / 2], [+self.mkSize, +self.mkSize]),  # 0 - BR
+            ([-self.mkSize, +self.mkSize], [-1 * self.mkWidth / 2, +1 * self.mkWidth / 2]),  # BL - 0
+            ([+1 * self.mkWidth / 2, -1 * self.mkWidth / 2], [+self.mkSize, -self.mkSize]),  # 0 - TR
         ]
         objs = []
         # Draw lines
-        for ([x1, y1], [x2, y2]) in lines:
-            lineL = self.leftImgViewer.scene.addLine(lx + x1, ly + y1, lx + x2, ly + y2, pen)
-            lineR = self.rightImgViewer.scene.addLine(rx + x1, ry + y1, rx + x2, ry + y2, pen)
+        for ([dxs, dys], [dxe, dye]) in lines:
+            lineL = self.leftImgViewer.scene.addLine(lx + dxs, ly + dys, lx + dxe, ly + dye, pen)
+            lineR = self.rightImgViewer.scene.addLine(rx + dxs, ry + dys, rx + dxe, ry + dye, pen)
             lineL.setZValue(5)
             lineR.setZValue(5)
             objs.append([lineL, lineR])
+        # Draw texts
+        textL = QGraphicsTextItem()
+        textL.setPos(lx, ly - self.mkSize * 2)
+        textR = QGraphicsTextItem()
+        textR.setPos(rx, ry - self.mkSize * 2)
+        for text in [textL, textR]:
+            text.setHtml('<div style="background:#000000;">' + str(identifier) + '</p>')
+            text.setFont(QFont("Roboto", 8, QFont.Bold))
+            text.setDefaultTextColor(Qt.white)
+            text.setZValue(7)
+        # Add text to scenes
+        self.leftImgViewer.scene.addItem(textL)
+        self.rightImgViewer.scene.addItem(textR)
+        # Add objs
+        objs.append([textL, textR])
         return objs
 
     def __drawMarker(self, marker):
         """
-
+        Private method to draw marker obj.
+        :param: marker the marker to draw
         """
         # Redraw only "cleared" one
         if len(marker["sceneObjs"]) > 0:
@@ -836,7 +872,7 @@ class QtAlignmentToolWidget(QWidget):
         else:
             pen = QPen(Qt.white, self.mkWidth)
         # Draw symbol
-        marker["sceneObjs"] = self.__drawMarkerSymb(lpos, rpos, pen)
+        marker["sceneObjs"] = self.__drawMarkerSymb(marker["id"], lpos, rpos, pen)
 
     def __drawMarkers(self):
         """
@@ -858,6 +894,9 @@ class QtAlignmentToolWidget(QWidget):
         # Retrieve indexes
         index1 = self.leftCombobox.currentIndex()
         index2 = self.rightCombobox.currentIndex()
+        # Pixel size
+        pxSize1 = self.project.images[index1].pixelSize()
+        pxSize2 = self.project.images[index2].pixelSize()
         # Default channel (0)
         channel1 = self.project.images[index1].channels[0]
         channel2 = self.project.images[index2].channels[0]
@@ -873,23 +912,25 @@ class QtAlignmentToolWidget(QWidget):
         # Update preview size
         self.__updatePreviewSize(channel1.qimage, channel2.qimage)
         # Image
-        img1 = self.__toNumpyArray(channel1.qimage, False)
+        img1 = self.__toNumpyArray(channel1.qimage, False, False)
         img1 = self.__toQImage(img1, QImage.Format_RGBA8888)
-        img2 = self.__toNumpyArray(channel2.qimage, False)
+        img2 = self.__toNumpyArray(channel2.qimage, False, False)
         img2 = self.__toQImage(img2, QImage.Format_RGBA8888)
         # Update viewer
         self.leftImgViewer.setImg(img1)
+        self.leftImgViewer.px_to_mm = pxSize1
         self.rightImgViewer.setImg(img2)
+        self.rightImgViewer.px_to_mm = pxSize2
         # Update overlay images
         self.markers = []
         self.__drawMarkers()
 
-    def __toNumpyArray(self, img, isGrayScale):
+    def __toNumpyArray(self, img, applyResolution, isGrayScale):
         """
         Private method to create a numpy array from QImage.
         :param: img contains the QImage to transform
-        :param: imgFormat contains the format of the data
-        :param: channels contains the number of channels of the array
+        :param: applyResolution a boolean to toggle resolution
+        :param: isGrayScale a boolean to add conversion in grayscale
         :return: an numpy array of shape (h, w, channels)
         """
         # Retrieve and convert image into selected format
@@ -906,14 +947,16 @@ class QtAlignmentToolWidget(QWidget):
         [ph, pw] = [rh - h, rw - w]
         arr = numpy.pad(arr, [(0, ph), (0, pw), (0, 0)], mode='constant')
         # Scale down by resolution factor
-        [ah, aw] = [rh // self.resolution, rw // self.resolution]
-        arr = cv2.resize(arr, (aw, ah), interpolation=cv2.INTER_AREA)
-        arr = arr.reshape((ah, aw, 4))
-        arr[:, :, 3] = 255
+        if applyResolution:
+            [ah, aw] = [rh // self.resolution, rw // self.resolution]
+            arr = cv2.resize(arr, (aw, ah), interpolation=cv2.INTER_AREA)
+            arr = arr.reshape((ah, aw, 4))
+            arr[:, :, 3] = 255
+            [rh, rw] = [ah, aw]
         # Gray scale
         if isGrayScale:
             arr = cv2.cvtColor(arr, cv2.COLOR_RGBA2GRAY)
-            arr = arr.reshape((ah, aw, 1))
+            arr = arr.reshape((rh, rw, 1))
         return arr
 
     def __toQImage(self, arr, imgFormat):
@@ -1004,11 +1047,11 @@ class QtAlignmentToolWidget(QWidget):
         img1 = self.project.images[index1].channels[0].qimage
         img2 = self.project.images[index2].channels[0].qimage
         # Load arrays: Gray Scale
-        self.cachedLeftGrayArray = self.__toNumpyArray(img1, True)
-        self.cachedRightGrayArray = self.__toNumpyArray(img2, True)
+        self.cachedLeftGrayArray = self.__toNumpyArray(img1, True, True)
+        self.cachedRightGrayArray = self.__toNumpyArray(img2, True, True)
         # Load arrays: RGBA Scale
-        self.cachedLeftRGBAArray = self.__toNumpyArray(img1, False)
-        self.cachedRightRGBAArray = self.__toNumpyArray(img2, False)
+        self.cachedLeftRGBAArray = self.__toNumpyArray(img1, True, False)
+        self.cachedRightRGBAArray = self.__toNumpyArray(img2, True, False)
 
     def __updatePreview(self, onlyAlpha=False):
         """
@@ -1052,6 +1095,7 @@ class QtAlignmentToolWidget(QWidget):
         self.leftPreviewViewer.setVisible(isPreviewMode)
         self.rightPreviewViewer.setVisible(isPreviewMode)
         self.confirmAlignmentButton.setVisible(isPreviewMode)
+        self.resolutionCombobox.setVisible(isPreviewMode)
         self.alphaSliderLabel.setVisible(isPreviewMode)
         self.alphaSlider.setVisible(isPreviewMode)
         self.thresholdSliderLabel.setVisible(isPreviewMode)
@@ -1069,7 +1113,9 @@ class QtAlignmentToolWidget(QWidget):
         self.rightImgViewer.setVisible(not isPreviewMode)
         self.checkBoxSync.setVisible(not isPreviewMode)
         self.autoAlignButton.setVisible(not isPreviewMode)
+        self.leftComboboxLabel.setVisible(not isPreviewMode)
         self.leftCombobox.setVisible(not isPreviewMode)
+        self.rightComboboxLabel.setVisible(not isPreviewMode)
         self.rightCombobox.setVisible(not isPreviewMode)
 
     def __leastSquaresWithSVD(self):
