@@ -3,7 +3,7 @@ import numpy
 from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot
 from PyQt5.QtGui import QImage, QMouseEvent, QPen, QFont
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QVBoxLayout, QLabel, QHBoxLayout, QComboBox, QSlider, QApplication, \
-    QCheckBox, QPushButton, QMessageBox, QGraphicsTextItem
+    QCheckBox, QPushButton, QMessageBox, QGraphicsTextItem, QGraphicsItem
 
 from source.QtImageViewer import QtImageViewer
 
@@ -17,8 +17,8 @@ class QtAlignmentToolWidget(QWidget):
     SOFT_MARKER_W = 1
     HARD_MARKER_W = 1
 
-    MARKER_SIZE = 16
-    MARKER_WIDTH = 4
+    MARKER_SIZE = 8
+    MARKER_WIDTH = 5
 
     def __init__(self, project, parent=None):
         super(QtAlignmentToolWidget, self).__init__(parent)
@@ -700,10 +700,10 @@ class QtAlignmentToolWidget(QWidget):
         [lmx, lmy] = self.markers[i]["lViewPos"]
         [rmx, rmy] = self.markers[i]["rViewPos"]
         # Create bbox
-        side = self.mkSize + self.mkWidth
+        side = self.mkSize
         return [
-            [lmx - side, lmy - side, lmx + side, lmy + side],
-            [rmx - side, rmy - side, rmx + side, rmy + side],
+            [lmx - side, lmy - side, lmx + side + 1, lmy + side + 1],
+            [rmx - side, rmy - side, rmx + side + 1, rmy + side + 1],
         ]
 
     def __findMarkerAt(self, pos, isLeft):
@@ -766,6 +766,7 @@ class QtAlignmentToolWidget(QWidget):
         """
         # Create drawing pen
         pen = QPen(Qt.white, 1)
+        pen.setCosmetic(True)
         # Retrieve bbox
         [bboxL, bboxR] = self.__getMarkerBBOX(i)
         [lx1, ly1, lx2, ly2] = bboxL
@@ -822,11 +823,12 @@ class QtAlignmentToolWidget(QWidget):
         [lx, ly] = lpos
         [rx, ry] = rpos
         # Lines to draw
+        side = self.mkSize
         lines = [
-            ([-self.mkSize, -self.mkSize], [-1 * self.mkWidth / 2, -1 * self.mkWidth / 2]),  # TL - 0
-            ([+1 * self.mkWidth / 2, +1 * self.mkWidth / 2], [+self.mkSize, +self.mkSize]),  # 0 - BR
-            ([-self.mkSize, +self.mkSize], [-1 * self.mkWidth / 2, +1 * self.mkWidth / 2]),  # BL - 0
-            ([+1 * self.mkWidth / 2, -1 * self.mkWidth / 2], [+self.mkSize, -self.mkSize]),  # 0 - TR
+            ([-side+1, -side+1], [0, 0]),  # TL - c
+            ([+1, +1], [+side, +side]),  # c - BR
+            ([-side+1, +side], [0, +1]),  # BL - c
+            ([1, 0], [+side, -side+1]),  # c - TR
         ]
         objs = []
         # Draw lines
@@ -837,15 +839,17 @@ class QtAlignmentToolWidget(QWidget):
             lineR.setZValue(5)
             objs.append([lineL, lineR])
         # Draw texts
-        textL = QGraphicsTextItem()
-        textL.setPos(lx, ly - self.mkSize * 2)
-        textR = QGraphicsTextItem()
-        textR.setPos(rx, ry - self.mkSize * 2)
+        textL = QGraphicsTextItem(str(identifier))
+        textR = QGraphicsTextItem(str(identifier))
         for text in [textL, textR]:
-            text.setHtml('<div style="background:#000000;">' + str(identifier) + '</p>')
-            text.setFont(QFont("Roboto", 8, QFont.Bold))
-            text.setDefaultTextColor(Qt.white)
+            text.setHtml('<div style="background:' + pen.color().name() + ';">' + str(identifier) + '</p>')
+            text.setFont(QFont("Roboto", 12, QFont.Bold))
+            text.setOpacity(0.75)
+            text.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+            text.setDefaultTextColor(Qt.black)
             text.setZValue(7)
+        textL.setPos(lx + self.mkSize, ly - self.mkSize)
+        textR.setPos(rx + self.mkSize, ry - self.mkSize)
         # Add text to scenes
         self.leftImgViewer.scene.addItem(textL)
         self.rightImgViewer.scene.addItem(textR)
@@ -871,6 +875,7 @@ class QtAlignmentToolWidget(QWidget):
             pen = QPen(Qt.red, self.mkWidth)
         else:
             pen = QPen(Qt.white, self.mkWidth)
+        pen.setCosmetic(True)
         # Draw symbol
         marker["sceneObjs"] = self.__drawMarkerSymb(marker["id"], lpos, rpos, pen)
 
