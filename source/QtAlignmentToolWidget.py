@@ -1,7 +1,7 @@
 from typing import Optional
 
 import cv2
-import numpy
+import numpy as np
 from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot, QLineF, QRectF
 from PyQt5.QtGui import QImage, QMouseEvent, QPen, QFont, QCloseEvent, QKeyEvent
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QVBoxLayout, QLabel, QHBoxLayout, QComboBox, QSlider, QApplication, \
@@ -34,7 +34,7 @@ class MarkerObjData:
     """
 
     SOFT_MARKER_W = 1
-    HARD_MARKER_W = 1
+    HARD_MARKER_W = 2
 
     SOFT_MARKER = 0
     HARD_MARKER = 1
@@ -42,12 +42,14 @@ class MarkerObjData:
     MARKER_SIZE = 8
     MARKER_WIDTH = 5
 
-    def __init__(self, identifier: int, pos: [], typ: SOFT_MARKER | HARD_MARKER, objs: [QGraphicsItem]):
-        self.id = identifier
+    def __init__(self, identifier: int, pos: [int], typ: SOFT_MARKER | HARD_MARKER):
+        self.identifier = identifier
         self.lViewPos = [pos[0], pos[1]]
         self.rViewPos = [pos[0], pos[1]]
         self.typ = typ
-        self.objs = objs
+        self.sceneObjs = []
+        self.textObjs = []
+        self.error = None
         self.weight = 0
         self.pen = QPen(Qt.white, MarkerObjData.MARKER_WIDTH)
         self.pen.setCosmetic(True)
@@ -65,7 +67,7 @@ class MarkerObjData:
         # Update data
         self.__update()
 
-    def getBBox(self) -> (QRectF, QRectF):
+    def getBBox(self) -> tuple[QRectF, QRectF]:
         """
         Retrieve bbox of marker for left and right view.
         :return: (bboxL, bboxR) the two boxes
@@ -80,7 +82,7 @@ class MarkerObjData:
             QRectF(rmx - side, rmy - side, side * 2 + 1, side * 2 + 1),
         )
 
-    def getLines(self) -> [(QLineF, QLineF)]:
+    def getLines(self) -> list[tuple[QLineF, QLineF]]:
         """
         Retrieve the lines to draw the marker inside the two views.
         :return: [(lineLeft, lineRight)] the lines list
@@ -97,10 +99,10 @@ class MarkerObjData:
             ([1, 0], [+side, -side + 1]),  # c - TR
         ]
         # Create lines and zip them
-        return zip(
-            [QLineF(lmx + dxs, lmy + dys, lmx + dxe, lmy + dye) for ([dxs, dys], [dxe, dye]) in lines],
-            [QLineF(rmx + dxs, rmy + dys, rmx + dxe, rmy + dye) for ([dxs, dys], [dxe, dye]) in lines],
-        )
+        return [(
+            QLineF(lmx + dxs, lmy + dys, lmx + dxe, lmy + dye),
+            QLineF(rmx + dxs, rmy + dys, rmx + dxe, rmy + dye)
+        ) for ([dxs, dys], [dxe, dye]) in lines]
 
     def __update(self) -> None:
         """
@@ -138,14 +140,14 @@ class QtAlignmentToolWidget(QWidget):
         self.alpha = 50
         self.threshold = 32
         self.previewSize = None
-        self.rotation = numpy.identity(2)
-        self.offset = [0, 0]
+        self.R = np.identity(2)
+        self.T = np.array([0, 0])
         self.lastMousePos = None
         self.isDragging = False
         self.selectedMarker = None
         self.hoveringSceneObjs = None
         self.hoveringMarker = None
-        self.markers: [MarkerObjData] = []
+        self.markers: list[MarkerObjData] = []
 
         # ==============================================================
         # Top buttons
@@ -191,9 +193,9 @@ class QtAlignmentToolWidget(QWidget):
         self.alphaSlider.valueChanged.connect(self.previewAlphaValueChanges)
 
         # Manual offset
-        self.xSliderLabel = QLabel("X: " + str(self.offset[0]))
+        self.xSliderLabel = QLabel("X: " + str(self.T[0]))
         self.xSliderLabel.setMinimumWidth(50)
-        self.ySliderLabel = QLabel("Y: " + str(self.offset[1]))
+        self.ySliderLabel = QLabel("Y: " + str(self.T[1]))
         self.ySliderLabel.setMinimumWidth(50)
 
         # Arrows (<, ^, ...)
@@ -220,7 +222,7 @@ class QtAlignmentToolWidget(QWidget):
         self.xSlider.setMinimum(0)
         self.xSlider.setMaximum(256)
         self.xSlider.setTickInterval(1)
-        self.xSlider.setValue(self.offset[0])
+        self.xSlider.setValue(self.T[0])
         self.xSlider.setMinimumWidth(50)
         self.xSlider.setAutoFillBackground(True)
         self.xSlider.valueChanged.connect(self.xOffsetChanges)
@@ -231,7 +233,7 @@ class QtAlignmentToolWidget(QWidget):
         self.ySlider.setMinimum(0)
         self.ySlider.setMaximum(256)
         self.ySlider.setTickInterval(1)
-        self.ySlider.setValue(self.offset[1])
+        self.ySlider.setValue(self.T[1])
         self.ySlider.setMinimumWidth(50)
         self.ySlider.setAutoFillBackground(True)
         self.ySlider.valueChanged.connect(self.yOffsetChanges)
@@ -394,7 +396,7 @@ class QtAlignmentToolWidget(QWidget):
             if self.hoveringMarker is not None:
                 i = self.hoveringMarker
                 self.__clearHoveringMarker()
-                self.__clearMarker(i)
+                self.__clearMarker(i, False)
                 self.markers = self.markers[:i] + self.markers[i + 1:]
         # Default
         super(QtAlignmentToolWidget, self).keyPressEvent(event)
@@ -481,7 +483,7 @@ class QtAlignmentToolWidget(QWidget):
         Callback called when the x value of the offset changes by +1.
         """
         # Forward
-        self.xSlider.setValue(self.offset[0] + 1)
+        self.xSlider.setValue(self.T[0] + 1)
 
     @pyqtSlot()
     def onXValueDecremented(self) -> None:
@@ -489,7 +491,7 @@ class QtAlignmentToolWidget(QWidget):
         Callback called when the x value of the offset changes by -1.
         """
         # Forward
-        self.xSlider.setValue(self.offset[0] - 1)
+        self.xSlider.setValue(self.T[0] - 1)
 
     @pyqtSlot(int)
     def xOffsetChanges(self, value: int) -> None:
@@ -498,7 +500,7 @@ class QtAlignmentToolWidget(QWidget):
         :param: value the new x value
         """
         # Update offset value and slider text
-        self.offset[0] = value
+        self.T[0] = value
         self.xSliderLabel.setText("X: " + str(value))
         # Update preview
         self.__updatePreview()
@@ -509,7 +511,7 @@ class QtAlignmentToolWidget(QWidget):
         Callback called when the y value of the offset changes by +1.
         """
         # Forward
-        self.ySlider.setValue(self.offset[1] + 1)
+        self.ySlider.setValue(self.T[1] + 1)
 
     @pyqtSlot()
     def onYValueDecremented(self) -> None:
@@ -517,7 +519,7 @@ class QtAlignmentToolWidget(QWidget):
         Callback called when the y value of the offset changes by -1.
         """
         # Forward
-        self.ySlider.setValue(self.offset[1] - 1)
+        self.ySlider.setValue(self.T[1] - 1)
 
     @pyqtSlot(int)
     def yOffsetChanges(self, value: int) -> None:
@@ -526,7 +528,7 @@ class QtAlignmentToolWidget(QWidget):
         :param: value the new y value
         """
         # Update offset value and slider text
-        self.offset[1] = value
+        self.T[1] = value
         self.ySliderLabel.setText("Y: " + str(value))
         # Update preview
         self.__updatePreview()
@@ -624,8 +626,6 @@ class QtAlignmentToolWidget(QWidget):
             msgBox.setText("At least 3 marker is required. Use the right button to place markers.")
             msgBox.exec()
             return
-        # Process markers
-        self.__leastSquaresWithSVD()
         # Switch to preview mode
         self.checkBoxPreview.setChecked(True)
 
@@ -717,7 +717,7 @@ class QtAlignmentToolWidget(QWidget):
                 self.markers[self.selectedMarker].lViewPos[0] += dx
                 self.markers[self.selectedMarker].lViewPos[1] += dy
             # Redraw markers
-            self.__clearMarker(self.selectedMarker)
+            self.__clearMarker(self.selectedMarker, False)
             self.__updateMarkers()
         else:
             # Check for hover
@@ -777,7 +777,7 @@ class QtAlignmentToolWidget(QWidget):
         # Forward
         self.markers[i].toggleType()
         # Redraw markers
-        self.__clearMarker(i)
+        self.__clearMarker(i, False)
         self.__updateMarkers()
 
     def __clearHoveringMarker(self) -> None:
@@ -797,7 +797,7 @@ class QtAlignmentToolWidget(QWidget):
             self.leftImgViewer.scene.invalidate()
             self.rightImgViewer.scene.invalidate()
 
-    def __drawHoveringMarker(self, i: int) -> (QGraphicsRectItem, QGraphicsRectItem):
+    def __drawHoveringMarker(self, i: int) -> tuple[QGraphicsRectItem, QGraphicsRectItem]:
         """
         Private method to draw hovering box.
         :param: i the index of the marker to hover
@@ -818,17 +818,25 @@ class QtAlignmentToolWidget(QWidget):
         self.rightImgViewer.scene.invalidate()
         return rectL, rectR
 
-    def __clearMarker(self, i: int) -> None:
+    def __clearMarker(self, i: int, onlyText: bool) -> None:
         """
         Private method to clear marker scene objs.
         :param: i the index of the marker to clear.
+        :param: onlyText is a boolean that specifies to only clear textObjs.
         """
         # Remove items from scene
-        for [objL, objR] in self.markers[i].objs:
+        for [objL, objR] in self.markers[i].textObjs:
             self.leftImgViewer.scene.removeItem(objL)
             self.leftImgViewer.scene.removeItem(objR)
         # Clear array
-        self.markers[i].objs = []
+        self.markers[i].textObjs = []
+        if not onlyText:
+            # Remove items from scene
+            for [objL, objR] in self.markers[i].sceneObjs:
+                self.leftImgViewer.scene.removeItem(objL)
+                self.leftImgViewer.scene.removeItem(objR)
+            # Clear array
+            self.markers[i].sceneObjs = []
 
     def __addMarker(self, pos: [int]) -> None:
         """
@@ -836,9 +844,9 @@ class QtAlignmentToolWidget(QWidget):
         :param: pos the position where to add the marker
         """
         # Find next available ID
-        identifier = max(self.markers, key=lambda x: x.id).id + 1 if len(self.markers) > 0 else 1
+        identifier = max(self.markers, key=lambda x: x.identifier).identifier + 1 if len(self.markers) > 0 else 1
         # Create a marker obj
-        self.markers.append(MarkerObjData(identifier, pos, MarkerObjData.SOFT_MARKER, []))
+        self.markers.append(MarkerObjData(identifier, pos, MarkerObjData.SOFT_MARKER))
         # Redraw markers
         self.__updateMarkers()
 
@@ -847,42 +855,79 @@ class QtAlignmentToolWidget(QWidget):
         Private method to draw marker obj.
         :param: marker the marker to draw
         """
-        # Redraw only "cleared" one
-        if len(marker.objs) > 0:
-            return
-        # Draw lines
-        objs = []
-        for (leftLine, rightLine) in marker.getLines():
-            lineL = self.leftImgViewer.scene.addLine(leftLine, marker.pen)
-            lineR = self.rightImgViewer.scene.addLine(rightLine, marker.pen)
-            lineL.setZValue(5)
-            lineR.setZValue(5)
-            objs.append([lineL, lineR])
-        # Draw texts
-        textL = QGraphicsTextItem(str(marker.id))
-        textR = QGraphicsTextItem(str(marker.id))
-        for text in [textL, textR]:
-            text.setHtml('<div style="background:' + marker.pen.color().name() + ';">' + str(marker.id) + '</p>')
-            text.setFont(QFont("Roboto", 12, QFont.Bold))
-            text.setOpacity(0.75)
-            text.setFlag(QGraphicsItem.ItemIgnoresTransformations)
-            text.setDefaultTextColor(Qt.black)
-            text.setZValue(7)
-        # Update text pos
-        (bboxL, bboxR) = marker.getBBox()
-        textL.setPos(bboxL.topRight())
-        textR.setPos(bboxR.topRight())
-        # Add text to scenes
-        self.leftImgViewer.scene.addItem(textL)
-        self.rightImgViewer.scene.addItem(textR)
-        objs.append([textL, textR])
-        # Update list
-        marker.objs = objs
+        # Redraw only if needed
+        if len(marker.sceneObjs) == 0:
+            # Draw lines
+            sceneObjs = []
+            for (leftLine, rightLine) in marker.getLines():
+                lineL = self.leftImgViewer.scene.addLine(leftLine, marker.pen)
+                lineR = self.rightImgViewer.scene.addLine(rightLine, marker.pen)
+                lineL.setZValue(5)
+                lineR.setZValue(5)
+                sceneObjs.append([lineL, lineR])
+            # Update list
+            marker.sceneObjs = sceneObjs
+
+        # Redraw only if needed
+        if len(marker.textObjs) == 0:
+            # Draw labels
+            textObjs = []
+            # Left identifier
+            textL = QGraphicsTextItem()
+            textL.setHtml(
+                '<div style="background:' + marker.pen.color().name() + ';">' + str(marker.identifier) + '</p>')
+            textL.setFont(QFont("Roboto", 12, QFont.Bold))
+            textL.setOpacity(0.75)
+            textL.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+            textL.setDefaultTextColor(Qt.black)
+            textL.setZValue(8)
+            # Right identifier
+            textR = QGraphicsTextItem()
+            textR.setHtml(
+                '<div style="background:' + marker.pen.color().name() + ';">' + str(marker.identifier) + '</p>')
+            textR.setFont(QFont("Roboto", 12, QFont.Bold))
+            textR.setOpacity(0.75)
+            textR.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+            textR.setDefaultTextColor(Qt.black)
+            textR.setZValue(8)
+            # Left error
+            errL = QGraphicsTextItem()
+            errL.setHtml('<div style="background:' + marker.pen.color().name() + ';">' + str(marker.error) + '</p>')
+            errL.setFont(QFont("Roboto", 12, QFont.Bold))
+            errL.setOpacity(0.5)
+            errL.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+            errL.setDefaultTextColor(Qt.black)
+            errL.setZValue(7)
+            # Right error
+            errR = QGraphicsTextItem()
+            errR.setHtml('<div style="background:' + marker.pen.color().name() + ';">' + str(marker.error) + '</p>')
+            errR.setFont(QFont("Roboto", 12, QFont.Bold))
+            errR.setOpacity(0.5)
+            errR.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+            errR.setDefaultTextColor(Qt.black)
+            errR.setZValue(7)
+            # Update text pos
+            (bboxL, bboxR) = marker.getBBox()
+            textL.setPos(bboxL.topRight())
+            textR.setPos(bboxR.topRight())
+            errL.setPos(bboxL.topLeft())
+            errR.setPos(bboxR.topLeft())
+            # Add text to scenes
+            self.leftImgViewer.scene.addItem(textL)
+            self.rightImgViewer.scene.addItem(textR)
+            self.leftImgViewer.scene.addItem(errL)
+            self.rightImgViewer.scene.addItem(errR)
+            textObjs.append([textL, textR])
+            textObjs.append([errL, errR])
+            # Update list
+            marker.textObjs = textObjs
 
     def __updateMarkers(self) -> None:
         """
         Private method to redraw markers.
         """
+        # Try pre-computing the align algorithm
+        self.__leastSquaresWithSVD()
         # Draw markers
         for marker in self.markers:
             self.__drawMarker(marker)
@@ -928,7 +973,7 @@ class QtAlignmentToolWidget(QWidget):
         self.markers = []
         self.__updateMarkers()
 
-    def __toNumpyArray(self, img: QImage, isGrayScale: bool) -> numpy.ndarray:
+    def __toNumpyArray(self, img: QImage, isGrayScale: bool) -> np.ndarray:
         """
         Private method to create a numpy array from QImage.
         :param: img contains the QImage to transform
@@ -943,18 +988,18 @@ class QtAlignmentToolWidget(QWidget):
         # Update pointer size
         ptr.setsize(h * w * 4)
         # Create numpy array
-        arr = numpy.frombuffer(ptr, numpy.uint8).reshape((h, w, 4))
+        arr = np.frombuffer(ptr, np.uint8).reshape((h, w, 4))
         # Pad img
         [rh, rw] = self.previewSize
         [ph, pw] = [rh - h, rw - w]
-        arr = numpy.pad(arr, [(0, ph), (0, pw), (0, 0)], mode='constant')
+        arr = np.pad(arr, [(0, ph), (0, pw), (0, 0)], mode='constant')
         # Gray scale
         if isGrayScale:
             arr = cv2.cvtColor(arr, cv2.COLOR_RGBA2GRAY)
             arr = arr.reshape((rh, rw, 1))
         return arr
 
-    def __toQImage(self, arr: numpy.ndarray, imgFormat: int) -> QImage:
+    def __toQImage(self, arr: np.ndarray, imgFormat: int) -> QImage:
         """
         Private method to transform a numpy array into a QImage.
         :param: arr is the numpy array of shape (h, w, c)
@@ -1037,6 +1082,105 @@ class QtAlignmentToolWidget(QWidget):
     def __leastSquaresWithSVD(self) -> None:
         """
         Private method to compute the Least-Squares Rigid Motion using SVD.
+        This algorithm tries to MINIMIZE the equation:
+            sum(
+                w[i] * abs(
+                        (R * p[i] + T) - q[i]
+                    ) ^ 2
+            )
+        where R is the rotation matrix and T is the translation vec (to find)
         """
-        R = None
-        T = None
+        # Ensure at least 3 marker are placed
+        if len(self.markers) < 3:
+            return
+
+        # ==================================================================================
+        # [0] Retrieve vars
+        # ==================================================================================
+        # n  = #points
+        # d  = dim of points (2 for 2D, etc...)
+        # w  = weights
+        # sw = sum of weights
+        # q  = points (reference)
+        # p  = points (to align)
+        # ==================================================================================
+        n = len(self.markers)
+        d = 2
+        w = [marker.weight for marker in self.markers]
+        sw = sum(w)
+        q = [marker.lViewPos for marker in self.markers]
+        p = [marker.rViewPos for marker in self.markers]
+
+        # ==================================================================================
+        # [1] Compute the weighted centroids _q (for q) and _p (for p)
+        # ==================================================================================
+        _p = [0, 0]
+        _q = [0, 0]
+        for i in range(0, n):
+            f = w[i] / sw
+            _p[0] += (p[i][0] * f)
+            _p[1] += (p[i][1] * f)
+            _q[0] += (q[i][0] * f)
+            _q[1] += (q[i][1] * f)
+
+        # ==================================================================================
+        # [2] Compute the centered vectors y (for q) and x (for p)
+        # ==================================================================================
+        y = [[qi[0] - _q[0], qi[1] - _q[1]] for qi in q]
+        x = [[pi[0] - _p[0], pi[1] - _p[1]] for pi in p]
+
+        # ==================================================================================
+        # [3] Compute the covariance matrix S (dxd)
+        # ==================================================================================
+        # X = [[x[0][0], x[1][0], x[2][0], ...],
+        #      [x[0][1], x[1][1], x[2][1], ...],
+        #      ...]
+        # Y = [[y[0][0], y[1][0], y[2][0], ...],
+        #      [y[0][1], y[1][1], y[2][1], ...],
+        #      ...]
+        # W = diagonal(w[0], w[1], ..., w[n])
+        # ==================================================================================
+        X = np.transpose(np.asmatrix(x))
+        Xt = np.transpose(X)
+        Y = np.transpose(np.asmatrix(y))
+        Yt = np.transpose(Y)
+        W = np.identity(n) * w
+        S = X @ W @ Yt
+
+        # ==================================================================================
+        # [4] Compute SVD & Find rotation
+        # ==================================================================================
+        u, s, vt = np.linalg.svd(S)
+        v = np.transpose(vt)
+        ut = np.transpose(u)
+        detvut = np.linalg.det(v @ ut)
+        tmp = np.identity(d)
+        tmp[-1, -1] = detvut
+        R = v @ tmp @ ut
+
+        # ==================================================================================
+        # [5] Find translation
+        # ==================================================================================
+        T = _q - R @ _p
+
+        # ==================================================================================
+        # [6] Compute solution found
+        # ==================================================================================
+        sol = [(R @ pi + T) for pi in p]
+        sol = [[s[0, 0], s[0, 1]] for s in sol]
+
+        # Save results
+        err = [(a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 for (a, b) in zip(sol, q)]
+        for (i, (e, marker)) in enumerate(zip(err, self.markers)):
+            # TODO pixel -> mm
+            marker.error = round(e, 2)
+            self.__clearMarker(i, True)
+
+        T = [T[0, 0], T[0, 1]]
+        self.T = T
+        self.xSlider.setValue(T[0])
+        self.ySlider.setValue(T[1])
+
+        R = [[R[0, 0], R[0, 1]],
+              R[1, 0], R[1, 1]]
+        self.R = R
