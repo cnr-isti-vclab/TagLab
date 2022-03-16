@@ -3,7 +3,7 @@ import numpy
 from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot
 from PyQt5.QtGui import QImage, QMouseEvent, QPen, QFont
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QVBoxLayout, QLabel, QHBoxLayout, QComboBox, QSlider, QApplication, \
-    QCheckBox, QPushButton, QMessageBox, QGraphicsTextItem, QGraphicsItem
+    QCheckBox, QPushButton, QMessageBox, QGraphicsTextItem, QGraphicsItem, QGraphicsView
 
 from source.QtImageViewer import QtImageViewer
 
@@ -33,23 +33,16 @@ class QtAlignmentToolWidget(QWidget):
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
         self.alpha = 50
         self.threshold = 32
-        self.resolution = 1
-        self.mkSize = QtAlignmentToolWidget.MARKER_SIZE
-        self.mkWidth = QtAlignmentToolWidget.MARKER_WIDTH
         self.previewSize = None
         self.rotation = numpy.identity(2)
         self.offset = [0, 0]
-        self.cachedLeftGrayArray = None
-        self.cachedRightGrayArray = None
-        self.cachedLeftRGBAArray = None
-        self.cachedRightRGBAArray = None
-        self.leftPreviewParams = [0, 0, 0]
-        self.rightPreviewParams = [0, 0, 0]
         self.lastMousePos = None
         self.isDragging = False
         self.selectedMarker = None
         self.hoveringSceneObjs = None
         self.hoveringMarker = None
+        self.mkSize = QtAlignmentToolWidget.MARKER_SIZE
+        self.mkWidth = QtAlignmentToolWidget.MARKER_WIDTH
         self.markers = []
 
         # ==============================================================
@@ -153,21 +146,6 @@ class QtAlignmentToolWidget(QWidget):
         self.thresholdSlider.setAutoFillBackground(True)
         self.thresholdSlider.valueChanged.connect(self.thresholdValueChanges)
 
-        # Resolution
-        self.resolutions = [{"name": "Original", "factor": 1},
-                            {"name": "Decreased", "factor": 2},
-                            {"name": "X-Decreased", "factor": 4},
-                            {"name": "XX-Decreased", "factor": 8},
-                            {"name": "Extreme", "factor": 16}]
-        self.resolutionCombobox = QComboBox()
-        self.resolutionCombobox.setMaximumWidth(200)
-
-        for res in self.resolutions:
-            self.resolutionCombobox.addItem(res["name"])
-
-        self.resolutionCombobox.setCurrentIndex(0)
-        self.resolutionCombobox.currentIndexChanged.connect(self.resolutionChanges)
-
         # Layout
         self.buttons = QVBoxLayout()
         layout1 = QHBoxLayout()
@@ -175,7 +153,6 @@ class QtAlignmentToolWidget(QWidget):
         layout1.addWidget(self.checkBoxPreview)
         layout1.addWidget(self.autoAlignButton)
         layout1.addWidget(self.confirmAlignmentButton)
-        layout1.addWidget(self.resolutionCombobox)
         self.buttons.addLayout(layout1)
         layout2 = QHBoxLayout()
         layout2.addWidget(self.alphaSliderLabel)
@@ -261,14 +238,8 @@ class QtAlignmentToolWidget(QWidget):
         # UI for preview
         # ==============================================================
 
-        self.leftPreviewViewer = QtImageViewer()
-        self.rightPreviewViewer = QtImageViewer()
-
-        self.leftPreviewViewer.viewHasChanged[float, float, float].connect(self.rightPreviewViewer.setViewParameters)
-        self.rightPreviewViewer.viewHasChanged[float, float, float].connect(self.leftPreviewViewer.setViewParameters)
-
-        self.leftPreviewViewer.viewHasChanged[float, float, float].connect(self.onLeftPreviewParamsChanged)
-        self.rightPreviewViewer.viewHasChanged[float, float, float].connect(self.onRightPreviewParamsChanged)
+        self.leftPreviewViewer = QGraphicsView()
+        self.rightPreviewViewer = QGraphicsView()
 
         self.previewLayout = QHBoxLayout()
         self.previewLayout.addWidget(self.leftPreviewViewer)
@@ -480,19 +451,6 @@ class QtAlignmentToolWidget(QWidget):
         """
         # Store parameters
         self.rightPreviewParams = [posx, posy, zoom]
-
-    @pyqtSlot(int)
-    def resolutionChanges(self, index):
-        """
-        Callback called when the resolution changes.
-        :param: index of the new resolution
-        """
-        self.resolution = self.resolutions[index]["factor"]
-        # Update edit
-        self.__updateImgViewers()
-        # Update preview
-        self.__initializePreview()
-        self.__updatePreview()
 
     @pyqtSlot(QMouseEvent)
     def onLeftViewMouseDown(self, event):
@@ -894,8 +852,6 @@ class QtAlignmentToolWidget(QWidget):
         """
         Private method to update markers overlay image.
         """
-        # Create empty arrays
-        h, w = self.previewSize[0] // self.resolution, self.previewSize[1] // self.resolution
         # Draw markers
         for marker in self.markers:
             self.__drawMarker(marker)
@@ -962,13 +918,6 @@ class QtAlignmentToolWidget(QWidget):
         [rh, rw] = self.previewSize
         [ph, pw] = [rh - h, rw - w]
         arr = numpy.pad(arr, [(0, ph), (0, pw), (0, 0)], mode='constant')
-        # Scale down by resolution factor
-        if applyResolution:
-            [ah, aw] = [rh // self.resolution, rw // self.resolution]
-            arr = cv2.resize(arr, (aw, ah), interpolation=cv2.INTER_AREA)
-            arr = arr.reshape((ah, aw, 4))
-            arr[:, :, 3] = 255
-            [rh, rw] = [ah, aw]
         # Gray scale
         if isGrayScale:
             arr = cv2.cvtColor(arr, cv2.COLOR_RGBA2GRAY)
@@ -987,49 +936,6 @@ class QtAlignmentToolWidget(QWidget):
         # Create and return the image
         img = QImage(arr.data, w, h, c * w, imgFormat)
         return img
-
-    def __offsetArrays(self, a, b):
-        """
-        Private method to offset two numpy arrays.
-        The array are offset in a "complementary" way:
-            - the first (a) is offset from the bottom right.
-            - the second (b) is offset from the top left.
-        :param: a the first numpy array of shape (h, w, c)
-        :param: b the second numpy array of shape (h, w, c)
-        :return: the tuple (offset(a), offset(b))
-        """
-        # Retrieve the shape
-        [h, w, _] = b.shape
-        # Retrieve the offset
-        [dx, dy] = self.offset
-        # Scale offset down by the resolution factor
-        dx = dx // self.resolution
-        dy = dy // self.resolution
-        # Transform each array and return the tuple
-        tmp1 = a[dy:, dx:]
-        tmp2 = b[:h - dy, :w - dx]
-        return tmp1, tmp2
-
-    def __processPreviewArrays(self, a, b):
-        """
-        Private method to create a numpy array representing the difference image for the preview.
-        :param: a the first numpy array with shape (h, w, c)
-        :param: b the second numpy array with shape (h, w, c)
-        :return: the preview numpy array
-        """
-        # Offset arrays
-        [tmp1, tmp2] = self.__offsetArrays(a, b)
-        # Compute the absolute difference
-        shape = tmp1.shape
-        tmp = cv2.absdiff(
-            # Blur to reduce small errors
-            cv2.medianBlur(tmp1, 7),
-            cv2.medianBlur(tmp2, 7)
-        )
-        tmp = tmp.reshape(shape)
-        # Compute the threshold
-        tmp = numpy.where(tmp < self.threshold, 0, tmp)
-        return tmp
 
     def __updatePreviewSize(self, img1, img2):
         """
@@ -1053,21 +959,7 @@ class QtAlignmentToolWidget(QWidget):
         Private method called once when the Preview Mode is turned on.
         It initializes all the necessary numpy arrays.
         """
-        # Clear stored preview's view parameters
-        self.leftPreviewParams = [0, 0, 0]
-        self.rightPreviewParams = [0, 0, 0]
-        # Retrieve indexes
-        index1 = self.leftCombobox.currentIndex()
-        index2 = self.rightCombobox.currentIndex()
-        # Images
-        img1 = self.project.images[index1].channels[0].qimage
-        img2 = self.project.images[index2].channels[0].qimage
-        # Load arrays: Gray Scale
-        self.cachedLeftGrayArray = self.__toNumpyArray(img1, True, True)
-        self.cachedRightGrayArray = self.__toNumpyArray(img2, True, True)
-        # Load arrays: RGBA Scale
-        self.cachedLeftRGBAArray = self.__toNumpyArray(img1, True, False)
-        self.cachedRightRGBAArray = self.__toNumpyArray(img2, True, False)
+        pass
 
     def __updatePreview(self, onlyAlpha=False):
         """
@@ -1077,30 +969,11 @@ class QtAlignmentToolWidget(QWidget):
         # ==============================================================
         # Update alpha section
         # ==============================================================
-        # Clear view
-        self.leftPreviewViewer.clear()
-        # Compute offset for RGBA preview
-        tmp1, tmp2 = self.__offsetArrays(self.cachedLeftRGBAArray, self.cachedRightRGBAArray)
-        # Transform cached array into QImage
-        img1 = self.__toQImage(tmp1.copy(), QImage.Format_RGBA8888)
-        img2 = self.__toQImage(tmp2.copy(), QImage.Format_RGBA8888)
-        # Update preview img, opacity and overlay img
-        self.leftPreviewViewer.setImg(img1, self.leftPreviewParams[2])
-        self.leftPreviewViewer.setOpacity(numpy.clip(self.alpha, 0.0, 100.0) / 100.0)
-        self.leftPreviewViewer.setOverlayImage(img2)
-        # Jump this section to make the alpha changes apply faster
         if not onlyAlpha:
             # ==============================================================
             # Gray scale
             # ==============================================================
-            # Clear view
-            self.rightPreviewViewer.clear()
-            # Apply transformations to GRAY preview
-            tmp = self.__processPreviewArrays(self.cachedLeftGrayArray, self.cachedRightGrayArray)
-            # Transform cached array into QImage
-            img = self.__toQImage(tmp.copy(), QImage.Format_Grayscale8)
-            # Update preview img
-            self.rightPreviewViewer.setImg(img, self.rightPreviewParams[2])
+            pass
 
     def __togglePreviewMode(self, isPreviewMode):
         """
@@ -1111,7 +984,6 @@ class QtAlignmentToolWidget(QWidget):
         self.leftPreviewViewer.setVisible(isPreviewMode)
         self.rightPreviewViewer.setVisible(isPreviewMode)
         self.confirmAlignmentButton.setVisible(isPreviewMode)
-        self.resolutionCombobox.setVisible(isPreviewMode)
         self.alphaSliderLabel.setVisible(isPreviewMode)
         self.alphaSlider.setVisible(isPreviewMode)
         self.thresholdSliderLabel.setVisible(isPreviewMode)
