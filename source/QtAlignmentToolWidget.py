@@ -396,8 +396,9 @@ class QtAlignmentToolWidget(QWidget):
             if self.hoveringMarker is not None:
                 i = self.hoveringMarker
                 self.__clearHoveringMarker()
-                self.__clearMarker(i, False)
-                self.markers = self.markers[:i] + self.markers[i + 1:]
+                self.__deleteMarker(i)
+                # Redraw markers
+                self.__updateMarkers()
         # Default
         super(QtAlignmentToolWidget, self).keyPressEvent(event)
 
@@ -660,6 +661,8 @@ class QtAlignmentToolWidget(QWidget):
         if hovering is not None:
             self.hoveringMarker = hovering
             self.hoveringSceneObjs = self.__drawHoveringMarker(hovering)
+        # Redraw markers
+        self.__updateMarkers()
 
     def __onMouseUp(self, event: QMouseEvent, isLeft: bool) -> None:
         """
@@ -690,6 +693,8 @@ class QtAlignmentToolWidget(QWidget):
         if hovering is not None:
             self.hoveringMarker = hovering
             self.hoveringSceneObjs = self.__drawHoveringMarker(hovering)
+        # Redraw markers
+        self.__updateMarkers()
 
     def __onMouseMove(self, event: QMouseEvent, isLeft: bool) -> None:
         """
@@ -716,8 +721,8 @@ class QtAlignmentToolWidget(QWidget):
                 # Update also the right one
                 self.markers[self.selectedMarker].lViewPos[0] += dx
                 self.markers[self.selectedMarker].lViewPos[1] += dy
-            # Redraw markers
             self.__clearMarker(self.selectedMarker, False)
+            # Redraw markers
             self.__updateMarkers()
         else:
             # Check for hover
@@ -729,6 +734,8 @@ class QtAlignmentToolWidget(QWidget):
                 if hovering is not None:
                     self.hoveringMarker = hovering
                     self.hoveringSceneObjs = self.__drawHoveringMarker(hovering)
+                # Redraw markers
+                self.__updateMarkers()
 
     def __onMouseOut(self, isLeft: bool) -> None:
         """
@@ -739,6 +746,8 @@ class QtAlignmentToolWidget(QWidget):
         self.isDragging = False
         self.selectedMarker = None
         self.__clearHoveringMarker()
+        # Redraw markers
+        self.__updateMarkers()
 
     def __mapToViewer(self, pos: [int], isLeft: bool) -> [int]:
         """
@@ -776,9 +785,7 @@ class QtAlignmentToolWidget(QWidget):
         """
         # Forward
         self.markers[i].toggleType()
-        # Redraw markers
         self.__clearMarker(i, False)
-        self.__updateMarkers()
 
     def __clearHoveringMarker(self) -> None:
         """
@@ -793,9 +800,6 @@ class QtAlignmentToolWidget(QWidget):
             self.rightImgViewer.scene.removeItem(rectR)
             self.hoveringMarker = None
             self.hoveringSceneObjs = None
-            # Invalidate scenes
-            self.leftImgViewer.scene.invalidate()
-            self.rightImgViewer.scene.invalidate()
 
     def __drawHoveringMarker(self, i: int) -> tuple[QGraphicsRectItem, QGraphicsRectItem]:
         """
@@ -813,10 +817,15 @@ class QtAlignmentToolWidget(QWidget):
         rectR = self.rightImgViewer.scene.addRect(bboxR, pen)
         rectL.setZValue(6)
         rectR.setZValue(6)
-        # Invalidate scenes
-        self.leftImgViewer.scene.invalidate()
-        self.rightImgViewer.scene.invalidate()
         return rectL, rectR
+
+    def __deleteMarker(self, i: int) -> None:
+        """
+        Private method to remove a marker from the markers list.
+        :param: i the index of the marker
+        """
+        self.__clearMarker(i, False)
+        self.markers = self.markers[:i] + self.markers[i + 1:]
 
     def __clearMarker(self, i: int, onlyText: bool) -> None:
         """
@@ -847,8 +856,6 @@ class QtAlignmentToolWidget(QWidget):
         identifier = max(self.markers, key=lambda x: x.identifier).identifier + 1 if len(self.markers) > 0 else 1
         # Create a marker obj
         self.markers.append(MarkerObjData(identifier, pos, MarkerObjData.SOFT_MARKER))
-        # Redraw markers
-        self.__updateMarkers()
 
     def __drawMarker(self, marker: MarkerObjData) -> None:
         """
@@ -958,26 +965,30 @@ class QtAlignmentToolWidget(QWidget):
             channel2.loadData()
             QApplication.restoreOverrideCursor()
         # Update preview size
-        self.__updatePreviewSize(channel1.qimage, channel2.qimage)
-        # Image
-        img1 = self.__toNumpyArray(channel1.qimage, False)
-        img1 = self.__toQImage(img1, QImage.Format_RGBA8888)
-        img2 = self.__toNumpyArray(channel2.qimage, False)
-        img2 = self.__toQImage(img2, QImage.Format_RGBA8888)
+        self.__updatePreviewSize(channel1.qimage, pxSize1, channel2.qimage, pxSize2)
         # Update viewer
-        self.leftImgViewer.setImg(img1)
+        self.leftImgViewer.setImg(self.__padImage(channel1.qimage))
         self.leftImgViewer.px_to_mm = pxSize1
-        self.rightImgViewer.setImg(img2)
+        self.rightImgViewer.setImg(self.__padImage(channel2.qimage))
         self.rightImgViewer.px_to_mm = pxSize2
         # Update overlay images
-        self.markers = []
+        for i in range(0, len(self.markers)):
+            self.__deleteMarker(i)
+        # Redraw markers
         self.__updateMarkers()
 
-    def __toNumpyArray(self, img: QImage, isGrayScale: bool) -> np.ndarray:
+    def __padImage(self, img: QImage) -> QImage:
+        """
+        Private method to create a padded image of size self.previewSize
+        :param: img the image to pad
+        :return: a new image with [0, 0, 0, 0] as padding (right and bottom)
+        """
+        return self.__toQImage(self.__toNumpyArray(img), QImage.Format_RGBA8888)
+
+    def __toNumpyArray(self, img: QImage) -> np.ndarray:
         """
         Private method to create a numpy array from QImage.
         :param: img contains the QImage to transform
-        :param: isGrayScale a boolean to add conversion in grayscale
         :return: an numpy array of shape (h, w, channels)
         """
         # Retrieve and convert image into selected format
@@ -991,12 +1002,8 @@ class QtAlignmentToolWidget(QWidget):
         arr = np.frombuffer(ptr, np.uint8).reshape((h, w, 4))
         # Pad img
         [rh, rw] = self.previewSize
-        [ph, pw] = [rh - h, rw - w]
+        [ph, pw] = [int(rh - h), int(rw - w)]
         arr = np.pad(arr, [(0, ph), (0, pw), (0, 0)], mode='constant')
-        # Gray scale
-        if isGrayScale:
-            arr = cv2.cvtColor(arr, cv2.COLOR_RGBA2GRAY)
-            arr = arr.reshape((rh, rw, 1))
         return arr
 
     def __toQImage(self, arr: np.ndarray, imgFormat: int) -> QImage:
@@ -1011,16 +1018,18 @@ class QtAlignmentToolWidget(QWidget):
         # Create and return the image
         return QImage(arr.data, w, h, c * w, imgFormat)
 
-    def __updatePreviewSize(self, img1: QImage, img2: QImage) -> None:
+    def __updatePreviewSize(self, img1: QImage, pxSize1: float, img2: QImage, pxSize2: float) -> None:
         """
         Private method to update internal reference size for preview images.
         The preview size must contains both images.
         :param: img1 the first image to contain
+        :param: pxSize1 the px_to_mm of the img1
         :param: img2 the second image to contain
+        :param: pxSize2 the px_to_mm of the img2
         """
         # Retrieve sizes
-        h1, w1 = img1.height(), img1.width()
-        h2, w2 = img2.height(), img2.width()
+        h1, w1 = img1.height() * pxSize1, img1.width() * pxSize1
+        h2, w2 = img2.height() * pxSize2, img2.width() * pxSize2
         # Find box containing both images
         ph, pw = max(h1, h2), max(w1, w2)
         # Update preview size
