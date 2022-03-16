@@ -304,6 +304,17 @@ class QtAlignmentToolWidget(QWidget):
         self.closed.emit()
         super(QtAlignmentToolWidget, self).closeEvent(event)
 
+    def keyPressEvent(self, event):
+        # Keyboard handling
+        if event.key() == Qt.Key_Delete:
+            # Delete hovering marker
+            if self.hoveringMarker is not None:
+                i = self.hoveringMarker
+                self.__clearHoveringMarker()
+                self.__clearMarker(i)
+                self.markers = self.markers[:i] + self.markers[i+1:]
+        super(QtAlignmentToolWidget, self).keyPressEvent(event)
+
     @pyqtSlot(int)
     def leftImageChanges(self, index):
         """
