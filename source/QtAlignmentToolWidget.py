@@ -1,3 +1,4 @@
+import math
 from typing import Optional
 
 import cv2
@@ -819,6 +820,14 @@ class QtAlignmentToolWidget(QWidget):
         rectR.setZValue(6)
         return rectL, rectR
 
+    def __deleteAllMarkers(self) -> None:
+        """
+        Private method to remove all the markers.
+        """
+        for i in range(0, len(self.markers)):
+            self.__clearMarker(i, False)
+        self.markers = []
+
     def __deleteMarker(self, i: int) -> None:
         """
         Private method to remove a marker from the markers list.
@@ -967,28 +976,28 @@ class QtAlignmentToolWidget(QWidget):
         # Update preview size
         self.__updatePreviewSize(channel1.qimage, pxSize1, channel2.qimage, pxSize2)
         # Update viewer
-        self.leftImgViewer.setImg(self.__padImage(channel1.qimage))
+        self.leftImgViewer.setImg(self.__padImage(channel1.qimage, pxSize1))
         self.leftImgViewer.px_to_mm = pxSize1
-        self.rightImgViewer.setImg(self.__padImage(channel2.qimage))
+        self.rightImgViewer.setImg(self.__padImage(channel2.qimage, pxSize2))
         self.rightImgViewer.px_to_mm = pxSize2
         # Update overlay images
-        for i in range(0, len(self.markers)):
-            self.__deleteMarker(i)
-        # Redraw markers
+        self.__deleteAllMarkers()
         self.__updateMarkers()
 
-    def __padImage(self, img: QImage) -> QImage:
+    def __padImage(self, img: QImage, pxSize: float) -> QImage:
         """
         Private method to create a padded image of size self.previewSize
         :param: img the image to pad
+        :param: pxSize the px_to_mm of the img
         :return: a new image with [0, 0, 0, 0] as padding (right and bottom)
         """
-        return self.__toQImage(self.__toNumpyArray(img), QImage.Format_RGBA8888)
+        return self.__toQImage(self.__toNumpyArray(img, pxSize), QImage.Format_RGBA8888)
 
-    def __toNumpyArray(self, img: QImage) -> np.ndarray:
+    def __toNumpyArray(self, img: QImage, pxSize: float) -> np.ndarray:
         """
         Private method to create a numpy array from QImage.
         :param: img contains the QImage to transform
+        :param: pxSize the px_to_mm of the img
         :return: an numpy array of shape (h, w, channels)
         """
         # Retrieve and convert image into selected format
@@ -1001,7 +1010,7 @@ class QtAlignmentToolWidget(QWidget):
         # Create numpy array
         arr = np.frombuffer(ptr, np.uint8).reshape((h, w, 4))
         # Pad img
-        [rh, rw] = self.previewSize
+        [rh, rw] = [self.previewSize[0] / pxSize, self.previewSize[1] / pxSize]
         [ph, pw] = [int(rh - h), int(rw - w)]
         arr = np.pad(arr, [(0, ph), (0, pw), (0, 0)], mode='constant')
         return arr
@@ -1099,6 +1108,11 @@ class QtAlignmentToolWidget(QWidget):
             )
         where R is the rotation matrix and T is the translation vec (to find)
         """
+        # Reset each marker error
+        for (i, marker) in enumerate(self.markers):
+            marker.error = None
+            self.__clearMarker(i, True)
+
         # Ensure at least 3 marker are placed
         if len(self.markers) < 3:
             return
@@ -1173,17 +1187,19 @@ class QtAlignmentToolWidget(QWidget):
         T = _q - R @ _p
 
         # ==================================================================================
-        # [6] Compute solution found
+        # [6] Solution
         # ==================================================================================
         sol = [(R @ pi + T) for pi in p]
         sol = [[s[0, 0], s[0, 1]] for s in sol]
 
-        # Save results
-        err = [(a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 for (a, b) in zip(sol, q)]
+        # Compute errors
+        err = [[a[0] - b[0], a[1] - b[1]] for (a, b) in zip(sol, q)]
+        err = [math.sqrt(x ** 2 + y ** 2) for (x, y) in err]
         for (i, (e, marker)) in enumerate(zip(err, self.markers)):
             # TODO pixel -> mm
             marker.error = round(e, 2)
-            self.__clearMarker(i, True)
+
+        # Save results
 
         T = [T[0, 0], T[0, 1]]
         self.T = T
