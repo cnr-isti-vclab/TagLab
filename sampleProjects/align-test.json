@@ -1203,6 +1203,33 @@
     0.0,
     0.0
    ],
+   "map_px_to_mm_factor": "2",
+   "width": 1000,
+   "height": 1000,
+   "annotations": [],
+   "layers": [],
+   "channels": [
+    {
+     "filename": "sampleProjects/data/2014_RGB_cropped_2.png",
+     "type": "RGB"
+    }
+   ],
+   "id": "2014_cropped_2",
+   "name": "2014_cropped_2",
+   "workspace": [],
+   "export_dataset_area": [],
+   "acquisition_date": "2014-01-01",
+   "georef_filename": "",
+   "metadata": {},
+   "grid": null
+  },
+  {
+   "rect": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
    "map_px_to_mm_factor": "1",
    "width": 6836,
    "height": 6822,
