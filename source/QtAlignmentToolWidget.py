@@ -1,7 +1,6 @@
 import math
 from typing import Optional
 
-import cv2
 import numpy as np
 from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot, QLineF, QRectF
 from PyQt5.QtGui import QImage, QMouseEvent, QPen, QFont, QCloseEvent, QKeyEvent
@@ -141,7 +140,7 @@ class QtAlignmentToolWidget(QWidget):
         self.alpha = 50
         self.threshold = 32
         self.previewSize = None
-        self.R = np.identity(2)
+        self.R = np.rad2deg(0)
         self.T = np.array([0, 0])
         self.lastMousePos = None
         self.isDragging = False
@@ -189,15 +188,35 @@ class QtAlignmentToolWidget(QWidget):
         self.alphaSlider.setMaximum(100)
         self.alphaSlider.setValue(50)
         self.alphaSlider.setTickInterval(1)
-        self.alphaSlider.setMaximumWidth(200)
+        self.alphaSlider.setMinimumWidth(50)
         self.alphaSlider.setAutoFillBackground(True)
         self.alphaSlider.valueChanged.connect(self.previewAlphaValueChanges)
 
-        # Manual offset
+        # Slider (X)
         self.xSliderLabel = QLabel("X: " + str(self.T[0]))
         self.xSliderLabel.setMinimumWidth(50)
+        self.xSlider = QSlider(Qt.Horizontal)
+        self.xSlider.setFocusPolicy(Qt.StrongFocus)
+        self.xSlider.setMinimum(0)
+        self.xSlider.setMaximum(256)
+        self.xSlider.setTickInterval(1)
+        self.xSlider.setValue(self.T[0])
+        self.xSlider.setMinimumWidth(50)
+        self.xSlider.setAutoFillBackground(True)
+        self.xSlider.valueChanged.connect(self.xOffsetChanges)
+
+        # Slider (Y)
         self.ySliderLabel = QLabel("Y: " + str(self.T[1]))
         self.ySliderLabel.setMinimumWidth(50)
+        self.ySlider = QSlider(Qt.Horizontal)
+        self.ySlider.setFocusPolicy(Qt.StrongFocus)
+        self.ySlider.setMinimum(0)
+        self.ySlider.setMaximum(256)
+        self.ySlider.setTickInterval(1)
+        self.ySlider.setValue(self.T[1])
+        self.ySlider.setMinimumWidth(50)
+        self.ySlider.setAutoFillBackground(True)
+        self.ySlider.valueChanged.connect(self.yOffsetChanges)
 
         # Arrows (<, ^, ...)
         self.moveLeftButton = QPushButton("Left")
@@ -217,27 +236,28 @@ class QtAlignmentToolWidget(QWidget):
         self.moveDownButton.setFixedHeight(30)
         self.moveDownButton.clicked.connect(self.onYValueIncremented)
 
-        # Debug Slider (X)
-        self.xSlider = QSlider(Qt.Horizontal)
-        self.xSlider.setFocusPolicy(Qt.StrongFocus)
-        self.xSlider.setMinimum(0)
-        self.xSlider.setMaximum(256)
-        self.xSlider.setTickInterval(1)
-        self.xSlider.setValue(self.T[0])
-        self.xSlider.setMinimumWidth(50)
-        self.xSlider.setAutoFillBackground(True)
-        self.xSlider.valueChanged.connect(self.xOffsetChanges)
+        # Slider (Rot)
+        self.rSliderLabel = QLabel("R: " + str(self.R))
+        self.rSliderLabel.setMinimumWidth(100)
+        self.rSlider = QSlider(Qt.Horizontal)
+        self.rSlider.setFocusPolicy(Qt.StrongFocus)
+        self.rSlider.setMinimum(0)
+        self.rSlider.setMaximum(3600)
+        self.rSlider.setTickInterval(1)
+        self.rSlider.setValue(self.R)
+        self.rSlider.setMinimumWidth(50)
+        self.rSlider.setAutoFillBackground(True)
+        self.rSlider.valueChanged.connect(self.rotationAngleChanges)
 
-        # Debug Slider (Y)
-        self.ySlider = QSlider(Qt.Horizontal)
-        self.ySlider.setFocusPolicy(Qt.StrongFocus)
-        self.ySlider.setMinimum(0)
-        self.ySlider.setMaximum(256)
-        self.ySlider.setTickInterval(1)
-        self.ySlider.setValue(self.T[1])
-        self.ySlider.setMinimumWidth(50)
-        self.ySlider.setAutoFillBackground(True)
-        self.ySlider.valueChanged.connect(self.yOffsetChanges)
+        # Rotate Left / Right
+        self.rotateLeftButton = QPushButton("Rotate Left")
+        self.rotateLeftButton.setFixedWidth(200)
+        self.rotateLeftButton.setFixedHeight(30)
+        self.rotateLeftButton.clicked.connect(self.onRotValueDecremented)
+        self.rotateRightButton = QPushButton("Rotate Right")
+        self.rotateRightButton.setFixedWidth(200)
+        self.rotateRightButton.setFixedHeight(30)
+        self.rotateRightButton.clicked.connect(self.onRotValueIncremented)
 
         # Debug Slider (Threshold)
         self.thresholdSliderLabel = QLabel("T: " + str(self.threshold))
@@ -248,6 +268,7 @@ class QtAlignmentToolWidget(QWidget):
         self.thresholdSlider.setMaximum(256)
         self.thresholdSlider.setValue(64)
         self.thresholdSlider.setTickInterval(1)
+        self.thresholdSlider.setMinimumWidth(50)
         self.thresholdSlider.setAutoFillBackground(True)
         self.thresholdSlider.valueChanged.connect(self.thresholdValueChanges)
 
@@ -277,6 +298,12 @@ class QtAlignmentToolWidget(QWidget):
         layout4.addWidget(self.moveUpButton)
         layout4.addWidget(self.moveDownButton)
         self.buttons.addLayout(layout4)
+        layout5 = QHBoxLayout()
+        layout5.addWidget(self.rSliderLabel)
+        layout5.addWidget(self.rSlider)
+        layout5.addWidget(self.rotateLeftButton)
+        layout5.addWidget(self.rotateRightButton)
+        self.buttons.addLayout(layout5)
 
         # ==============================================================
         # Middle UI containing map selector and map viewer
@@ -299,13 +326,13 @@ class QtAlignmentToolWidget(QWidget):
         self.leftImgViewer.mouseMove.connect(self.onLeftViewMouseMove)
         self.leftImgViewer.mouseOut.connect(self.onLeftViewMouseOut)
 
-        layout5 = QHBoxLayout()
-        layout5.addWidget(self.leftComboboxLabel)
-        layout5.addWidget(self.leftCombobox)
-        layout5.setStretchFactor(self.leftComboboxLabel, 1)
-        layout5.setStretchFactor(self.leftCombobox, 1)
+        layout8 = QHBoxLayout()
+        layout8.addWidget(self.leftComboboxLabel)
+        layout8.addWidget(self.leftCombobox)
+        layout8.setStretchFactor(self.leftComboboxLabel, 1)
+        layout8.setStretchFactor(self.leftCombobox, 1)
         leftLayout = QVBoxLayout()
-        leftLayout.addLayout(layout5)
+        leftLayout.addLayout(layout8)
         leftLayout.addWidget(self.leftImgViewer)
 
         # Right
@@ -325,13 +352,13 @@ class QtAlignmentToolWidget(QWidget):
         self.rightImgViewer.mouseMove.connect(self.onRightViewMouseMove)
         self.rightImgViewer.mouseOut.connect(self.onRightViewMouseOut)
 
-        layout6 = QHBoxLayout()
-        layout6.addWidget(self.rightComboboxLabel)
-        layout6.addWidget(self.rightCombobox)
-        layout6.setStretchFactor(self.rightComboboxLabel, 1)
-        layout6.setStretchFactor(self.rightCombobox, 1)
+        layout9 = QHBoxLayout()
+        layout9.addWidget(self.rightComboboxLabel)
+        layout9.addWidget(self.rightCombobox)
+        layout9.setStretchFactor(self.rightComboboxLabel, 1)
+        layout9.setStretchFactor(self.rightCombobox, 1)
         rightLayout = QVBoxLayout()
-        rightLayout.addLayout(layout6)
+        rightLayout.addLayout(layout9)
         rightLayout.addWidget(self.rightImgViewer)
 
         # Layout
@@ -532,6 +559,33 @@ class QtAlignmentToolWidget(QWidget):
         # Update offset value and slider text
         self.T[1] = value
         self.ySliderLabel.setText("Y: " + str(value))
+        # Update preview
+        self.__updatePreview()
+
+    @pyqtSlot()
+    def onRotValueIncremented(self) -> None:
+        """
+        Callback called when the value of the rotation changes by +1.
+        """
+        # Forward
+        self.rSlider.setValue(self.R * 10 + 1)
+
+    @pyqtSlot()
+    def onRotValueDecremented(self) -> None:
+        """
+        Callback called when the value of the rotation changes by -1.
+        """
+        # Forward
+        self.rSlider.setValue(self.R * 10 - 1)
+
+    @pyqtSlot(int)
+    def rotationAngleChanges(self, value: int) -> None:
+        """
+        Callback called when the value of the rotation changes.
+        :param: value the new rot value
+        """
+        self.R = value / 10.0
+        self.rSliderLabel.setText("R: " + str(self.R))
         # Update preview
         self.__updatePreview()
 
@@ -1087,6 +1141,10 @@ class QtAlignmentToolWidget(QWidget):
         self.ySlider.setVisible(isPreviewMode)
         self.moveUpButton.setVisible(isPreviewMode)
         self.moveDownButton.setVisible(isPreviewMode)
+        self.rSliderLabel.setVisible(isPreviewMode)
+        self.rSlider.setVisible(isPreviewMode)
+        self.rotateLeftButton.setVisible(isPreviewMode)
+        self.rotateRightButton.setVisible(isPreviewMode)
         # (NON-Preview-ONLY) widgets
         self.leftImgViewer.setVisible(not isPreviewMode)
         self.rightImgViewer.setVisible(not isPreviewMode)
@@ -1208,4 +1266,5 @@ class QtAlignmentToolWidget(QWidget):
 
         R = [[R[0, 0], R[0, 1]],
               R[1, 0], R[1, 1]]
+        R = np.rad2deg(math.acos(R[0][0]))
         self.R = R
