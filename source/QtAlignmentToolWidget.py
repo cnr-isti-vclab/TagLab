@@ -2,10 +2,12 @@ import math
 from typing import Optional
 
 import numpy as np
-from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot, QLineF, QRectF
-from PyQt5.QtGui import QImage, QMouseEvent, QPen, QFont, QCloseEvent, QKeyEvent
+from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot, QLineF, QRectF, QPoint
+from PyQt5.QtGui import QImage, QMouseEvent, QPen, QFont, QCloseEvent, QKeyEvent, QOpenGLShaderProgram, QOpenGLShader, \
+    QOpenGLVersionProfile, QMatrix4x4
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QVBoxLayout, QLabel, QHBoxLayout, QComboBox, QSlider, QApplication, \
     QCheckBox, QPushButton, QMessageBox, QGraphicsTextItem, QGraphicsItem, QOpenGLWidget, QGraphicsRectItem
+from PyQt5._QOpenGLFunctions_2_0 import QOpenGLFunctions_2_0
 
 from source.QtImageViewer import QtImageViewer
 
@@ -15,17 +17,137 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
     Custom widget to handle img preview with shaders.
     """
 
+    V_SHADER_SOURCE = """
+    precision highp float;
+    attribute vec2 aPos;
+    attribute vec2 aTex;
+    uniform mat4 uMatrix;
+    varying vec2 vTex;
+    void main(void) {
+        vTex = aTex;
+        gl_Position = uMatrix * vec4(aPos, 0, 1);
+    }
+    """
+
+    F_SHADER_SOURCE = """
+    precision highp float;
+    varying vec2 vTex;
+    // uniform sampler2D uTexture;
+    void main(void) {
+        // gl_FragColor = texture2D(uTexture, vTex);
+        gl_FragColor = vec4(vTex.x, vTex.y, 0, 1);
+    }
+    """
+
     def __init__(self, parent=None):
         super(QtSimpleOpenGlShaderViewer, self).__init__(parent)
 
-    def paintGL(self) -> None:
-        pass
+        self.gl: Optional[QOpenGLFunctions_2_0] = None
+        self.program: Optional[QOpenGLShaderProgram] = None
+        self.textures = []
+        self.vertPos = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
+        self.vertTex = [(0, 1), (0, 0), (1, 1), (1, 0)]
 
-    def resizeGL(self, w: int, h: int) -> None:
-        pass
+        self.t = [0.0, 0.0]
+        self.r = 0.0
+        self.s = 1.0
+
+        self.w = 100
+        self.h = 100
+
+        self.lastPos = QPoint()
 
     def initializeGL(self) -> None:
-        pass
+        """
+
+        """
+        profile = QOpenGLVersionProfile()
+        profile.setVersion(2, 0)
+        self.gl = self.context().versionFunctions(versionProfile=profile)
+        self.gl.initializeOpenGLFunctions()
+
+        def check(obj, res):
+            if not res:
+                print(obj.log())
+
+        vshader = QOpenGLShader(QOpenGLShader.Vertex, self)
+        fshader = QOpenGLShader(QOpenGLShader.Fragment, self)
+        check(vshader, vshader.compileSourceCode(QtSimpleOpenGlShaderViewer.V_SHADER_SOURCE))
+        check(fshader, fshader.compileSourceCode(QtSimpleOpenGlShaderViewer.F_SHADER_SOURCE))
+
+        self.program = QOpenGLShaderProgram()
+        check(self.program, self.program.addShader(vshader))
+        check(self.program, self.program.addShader(fshader))
+        self.program.bindAttributeLocation('aPos', 0)
+        self.program.bindAttributeLocation('aTex', 1)
+        check(self.program, self.program.link())
+        check(self.program, self.program.bind())
+        self.program.enableAttributeArray(0)
+        self.program.enableAttributeArray(1)
+        self.program.setAttributeArray(0, self.vertPos)
+        self.program.setAttributeArray(1, self.vertTex)
+
+    def paintGL(self) -> None:
+        """
+
+        """
+        matrix = QMatrix4x4()
+        matrix.translate(self.t[0], self.t[1], 0)
+        matrix.rotate(self.r, 0, 0, 1)
+        matrix.scale(self.s, self.s, 1)
+
+        self.gl.glClearColor(0.0, 0.0, 0.0, 1.0)
+        self.gl.glClear(self.gl.GL_COLOR_BUFFER_BIT)
+        self.program.setUniformValue("uMatrix", matrix)
+        self.gl.glDrawArrays(self.gl.GL_TRIANGLE_STRIP, 0, 4)
+
+    def resizeGL(self, w: int, h: int) -> None:
+        """
+
+        """
+        self.w = w
+        self.h = h
+        self.gl.glViewport(0, 0, w, h)
+        side = min(w, h)
+        self.vertPos = [(-side/w, -side/h), (-side/w, side/h), (side/w, -side/h), (side/w, side/h)]
+        self.program.setAttributeArray(0, self.vertPos)
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        """
+
+        """
+        if event.button() != Qt.LeftButton:
+            return
+        self.lastPos = event.pos()
+
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        """
+
+        """
+        dx = (event.x() - self.lastPos.x()) / (self.w // 2)
+        dy = (event.y() - self.lastPos.y()) / (self.h // 2)
+        self.t[0] += dx
+        self.t[1] -= dy
+        self.lastPos = event.pos()
+        self.update()
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        """
+
+        """
+        if event.button() != Qt.LeftButton:
+            return
+
+    def wheelEvent(self, event):
+        """
+
+        """
+        dy = event.angleDelta().y()
+
+        self.s += dy / 360
+        self.s = min(max(self.s, 1.0), 8.0)
+
+        self.update()
 
 
 class MarkerObjData:
@@ -1265,6 +1387,6 @@ class QtAlignmentToolWidget(QWidget):
         self.ySlider.setValue(T[1])
 
         R = [[R[0, 0], R[0, 1]],
-              R[1, 0], R[1, 1]]
+             R[1, 0], R[1, 1]]
         R = np.rad2deg(math.acos(R[0][0]))
         self.R = R
