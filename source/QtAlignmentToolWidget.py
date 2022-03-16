@@ -1,24 +1,128 @@
+from typing import Optional
+
 import cv2
 import numpy
-from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot
-from PyQt5.QtGui import QImage, QMouseEvent, QPen, QFont
+from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot, QLineF, QRectF
+from PyQt5.QtGui import QImage, QMouseEvent, QPen, QFont, QCloseEvent, QKeyEvent
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QVBoxLayout, QLabel, QHBoxLayout, QComboBox, QSlider, QApplication, \
-    QCheckBox, QPushButton, QMessageBox, QGraphicsTextItem, QGraphicsItem, QGraphicsView
+    QCheckBox, QPushButton, QMessageBox, QGraphicsTextItem, QGraphicsItem, QOpenGLWidget, QGraphicsRectItem
 
 from source.QtImageViewer import QtImageViewer
 
 
-class QtAlignmentToolWidget(QWidget):
-    closed = pyqtSignal()
+class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
+    """
+    Custom widget to handle img preview with shaders.
+    """
 
-    SOFT_MARKER = 0
-    HARD_MARKER = 1
+    def __init__(self, parent=None):
+        super(QtSimpleOpenGlShaderViewer, self).__init__(parent)
+
+    def paintGL(self) -> None:
+        pass
+
+    def resizeGL(self, w: int, h: int) -> None:
+        pass
+
+    def initializeGL(self) -> None:
+        pass
+
+
+class MarkerObjData:
+    """
+    Marker data class.
+    """
 
     SOFT_MARKER_W = 1
     HARD_MARKER_W = 1
 
+    SOFT_MARKER = 0
+    HARD_MARKER = 1
+
     MARKER_SIZE = 8
     MARKER_WIDTH = 5
+
+    def __init__(self, identifier: int, pos: [], typ: SOFT_MARKER | HARD_MARKER, objs: [QGraphicsItem]):
+        self.id = identifier
+        self.lViewPos = [pos[0], pos[1]]
+        self.rViewPos = [pos[0], pos[1]]
+        self.typ = typ
+        self.objs = objs
+        self.weight = 0
+        self.pen = QPen(Qt.white, MarkerObjData.MARKER_WIDTH)
+        self.pen.setCosmetic(True)
+        # Update data
+        self.__update()
+
+    def toggleType(self) -> None:
+        """
+        Toggle type from SOFT to HARD and back.
+        """
+        if self.typ == MarkerObjData.HARD_MARKER:
+            self.typ = MarkerObjData.SOFT_MARKER
+        elif self.typ == MarkerObjData.SOFT_MARKER:
+            self.typ = MarkerObjData.HARD_MARKER
+        # Update data
+        self.__update()
+
+    def getBBox(self) -> (QRectF, QRectF):
+        """
+        Retrieve bbox of marker for left and right view.
+        :return: (bboxL, bboxR) the two boxes
+        """
+        # Unpack pos
+        [lmx, lmy] = self.lViewPos
+        [rmx, rmy] = self.rViewPos
+        # Create bbox
+        side = MarkerObjData.MARKER_SIZE
+        return (
+            QRectF(lmx - side, lmy - side, side * 2 + 1, side * 2 + 1),
+            QRectF(rmx - side, rmy - side, side * 2 + 1, side * 2 + 1),
+        )
+
+    def getLines(self) -> [(QLineF, QLineF)]:
+        """
+        Retrieve the lines to draw the marker inside the two views.
+        :return: [(lineLeft, lineRight)] the lines list
+        """
+        # Unpack pos
+        [lmx, lmy] = self.lViewPos
+        [rmx, rmy] = self.rViewPos
+        # Create line list
+        side = MarkerObjData.MARKER_SIZE
+        lines = [
+            ([-side + 1, -side + 1], [0, 0]),  # TL - c
+            ([+1, +1], [+side, +side]),  # c - BR
+            ([-side + 1, +side], [0, +1]),  # BL - c
+            ([1, 0], [+side, -side + 1]),  # c - TR
+        ]
+        # Create lines and zip them
+        return zip(
+            [QLineF(lmx + dxs, lmy + dys, lmx + dxe, lmy + dye) for ([dxs, dys], [dxe, dye]) in lines],
+            [QLineF(rmx + dxs, rmy + dys, rmx + dxe, rmy + dye) for ([dxs, dys], [dxe, dye]) in lines],
+        )
+
+    def __update(self) -> None:
+        """
+        Private method to keep internal data coherent.
+        """
+        # Update data on type
+        if self.typ == MarkerObjData.SOFT_MARKER:
+            self.pen.setColor(Qt.yellow)
+            self.weight = MarkerObjData.SOFT_MARKER_W
+        elif self.typ == MarkerObjData.HARD_MARKER:
+            self.pen.setColor(Qt.red)
+            self.weight = MarkerObjData.HARD_MARKER_W
+
+
+class QtAlignmentToolWidget(QWidget):
+    """
+    A custom widget that show two images and, with the help of the user, can align the right image to the left one.
+    The user needs to place some markers to declare the matches.
+    This tool contains also a preview page that shows a "preview" of the results before confirming the alignment.
+    """
+
+    closed = pyqtSignal()
 
     def __init__(self, project, parent=None):
         super(QtAlignmentToolWidget, self).__init__(parent)
@@ -41,9 +145,7 @@ class QtAlignmentToolWidget(QWidget):
         self.selectedMarker = None
         self.hoveringSceneObjs = None
         self.hoveringMarker = None
-        self.mkSize = QtAlignmentToolWidget.MARKER_SIZE
-        self.mkWidth = QtAlignmentToolWidget.MARKER_WIDTH
-        self.markers = []
+        self.markers: [MarkerObjData] = []
 
         # ==============================================================
         # Top buttons
@@ -238,8 +340,8 @@ class QtAlignmentToolWidget(QWidget):
         # UI for preview
         # ==============================================================
 
-        self.leftPreviewViewer = QGraphicsView()
-        self.rightPreviewViewer = QGraphicsView()
+        self.leftPreviewViewer = QtSimpleOpenGlShaderViewer()
+        self.rightPreviewViewer = QtSimpleOpenGlShaderViewer()
 
         self.previewLayout = QHBoxLayout()
         self.previewLayout.addWidget(self.leftPreviewViewer)
@@ -271,11 +373,21 @@ class QtAlignmentToolWidget(QWidget):
 
         # ==============================================================
 
-    def closeEvent(self, event):
+    def closeEvent(self, event: QCloseEvent) -> None:
+        """
+        Override parent's method to intercept close events.
+        :param: event the close event
+        """
+        # Emit signal
         self.closed.emit()
+        # Default
         super(QtAlignmentToolWidget, self).closeEvent(event)
 
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        """
+        Override parent's method to intercept key events.
+        :param: event the key press event
+        """
         # Keyboard handling
         if event.key() == Qt.Key_Delete:
             # Delete hovering marker
@@ -283,11 +395,12 @@ class QtAlignmentToolWidget(QWidget):
                 i = self.hoveringMarker
                 self.__clearHoveringMarker()
                 self.__clearMarker(i)
-                self.markers = self.markers[:i] + self.markers[i+1:]
+                self.markers = self.markers[:i] + self.markers[i + 1:]
+        # Default
         super(QtAlignmentToolWidget, self).keyPressEvent(event)
 
     @pyqtSlot(int)
-    def leftImageChanges(self, index):
+    def leftImageChanges(self, index: int) -> None:
         """
         Callback called when the user select a new image for the left view.
         :param: index of the new image
@@ -304,7 +417,7 @@ class QtAlignmentToolWidget(QWidget):
             self.__updateImgViewers()
 
     @pyqtSlot(int)
-    def rightImageChanges(self, index):
+    def rightImageChanges(self, index: int) -> None:
         """
         Callback called when the user select a new image for the right view.
         :param: index of the new image
@@ -321,10 +434,10 @@ class QtAlignmentToolWidget(QWidget):
             self.__updateImgViewers()
 
     @pyqtSlot(int)
-    def toggleSync(self, value):
+    def toggleSync(self, value: int) -> None:
         """
-        Callback called when the sync mode is toggled on/off.
-        :param: value a boolean to set the enable/disable the sync mode.
+        Callback called when the sync mode is turned on/off.
+        :param: value a boolean to enable/disable the sync mode.
         """
         # If Enabled
         if value:
@@ -337,13 +450,13 @@ class QtAlignmentToolWidget(QWidget):
             self.rightImgViewer.viewHasChanged[float, float, float].disconnect()
 
     @pyqtSlot(int)
-    def togglePreview(self, value):
+    def togglePreview(self, value: int) -> None:
         """
-        Callback called when the Preview Mode is toggled on/off.
-        :param: value a boolean representing if the mode is toggled.
+        Callback called when the Preview Mode is turned on/off.
+        :param: value a boolean representing if the mode is checked.
         """
         # Hide / Show widgets
-        self.__togglePreviewMode(value)
+        self.__togglePreviewMode(value != 0)
         # If preview is set
         if value:
             # Initialize and update the view
@@ -351,10 +464,10 @@ class QtAlignmentToolWidget(QWidget):
             self.__updatePreview()
 
     @pyqtSlot(int)
-    def previewAlphaValueChanges(self, value):
+    def previewAlphaValueChanges(self, value: int) -> None:
         """
         Callback called when the alpha value changes.
-        :param: value the new value
+        :param: value the new alpha value
         """
         # Update alpha value and slider text
         self.alpha = value
@@ -363,7 +476,7 @@ class QtAlignmentToolWidget(QWidget):
         self.__updatePreview(onlyAlpha=True)
 
     @pyqtSlot()
-    def onXValueIncremented(self):
+    def onXValueIncremented(self) -> None:
         """
         Callback called when the x value of the offset changes by +1.
         """
@@ -371,7 +484,7 @@ class QtAlignmentToolWidget(QWidget):
         self.xSlider.setValue(self.offset[0] + 1)
 
     @pyqtSlot()
-    def onXValueDecremented(self):
+    def onXValueDecremented(self) -> None:
         """
         Callback called when the x value of the offset changes by -1.
         """
@@ -379,10 +492,10 @@ class QtAlignmentToolWidget(QWidget):
         self.xSlider.setValue(self.offset[0] - 1)
 
     @pyqtSlot(int)
-    def xOffsetChanges(self, value):
+    def xOffsetChanges(self, value: int) -> None:
         """
         Callback called when the x value of the offset changes.
-        :param: value the new value
+        :param: value the new x value
         """
         # Update offset value and slider text
         self.offset[0] = value
@@ -391,26 +504,26 @@ class QtAlignmentToolWidget(QWidget):
         self.__updatePreview()
 
     @pyqtSlot()
-    def onYValueIncremented(self):
+    def onYValueIncremented(self) -> None:
         """
-        Callback called when the - value of the offset changes by +1.
+        Callback called when the y value of the offset changes by +1.
         """
         # Forward
         self.ySlider.setValue(self.offset[1] + 1)
 
     @pyqtSlot()
-    def onYValueDecremented(self):
+    def onYValueDecremented(self) -> None:
         """
-        Callback called when the - value of the offset changes by -1.
+        Callback called when the y value of the offset changes by -1.
         """
         # Forward
         self.ySlider.setValue(self.offset[1] - 1)
 
     @pyqtSlot(int)
-    def yOffsetChanges(self, value):
+    def yOffsetChanges(self, value: int) -> None:
         """
         Callback called when the y value of the offset changes.
-        :param: value the new value
+        :param: value the new y value
         """
         # Update offset value and slider text
         self.offset[1] = value
@@ -419,10 +532,10 @@ class QtAlignmentToolWidget(QWidget):
         self.__updatePreview()
 
     @pyqtSlot(int)
-    def thresholdValueChanges(self, value):
+    def thresholdValueChanges(self, value: int) -> None:
         """
         Callback called when the threshold value changes.
-        :param: value the new value
+        :param: value the new threshold value
         """
         # Update threshold value and slider text
         self.threshold = value
@@ -430,30 +543,8 @@ class QtAlignmentToolWidget(QWidget):
         # Update preview
         self.__updatePreview()
 
-    @pyqtSlot(float, float, float)
-    def onLeftPreviewParamsChanged(self, posx, posy, zoom):
-        """
-        Callback called when left preview viewer's view params changes.
-        :param: posx the new posx param
-        :param: posy the new posy param
-        :param: zoom the new zoom param
-        """
-        # Store parameters
-        self.leftPreviewParams = [posx, posy, zoom]
-
-    @pyqtSlot(float, float, float)
-    def onRightPreviewParamsChanged(self, posx, posy, zoom):
-        """
-        Callback called when right preview viewer's view params changes.
-        :param: posx the new posx param
-        :param: posy the new posy param
-        :param: zoom the new zoom param
-        """
-        # Store parameters
-        self.rightPreviewParams = [posx, posy, zoom]
-
     @pyqtSlot(QMouseEvent)
-    def onLeftViewMouseDown(self, event):
+    def onLeftViewMouseDown(self, event: QMouseEvent) -> None:
         """
         Callback called on a mouse down event over the left viewer.
         :param: event the mouse event
@@ -462,7 +553,7 @@ class QtAlignmentToolWidget(QWidget):
         self.__onMouseDown(event, True)
 
     @pyqtSlot(QMouseEvent)
-    def onLeftViewMouseMove(self, event):
+    def onLeftViewMouseMove(self, event: QMouseEvent) -> None:
         """
         Callback called on a mouse move event over the left viewer.
         :param: event the mouse event
@@ -471,7 +562,7 @@ class QtAlignmentToolWidget(QWidget):
         self.__onMouseMove(event, True)
 
     @pyqtSlot(QMouseEvent)
-    def onLeftViewMouseUp(self, event):
+    def onLeftViewMouseUp(self, event: QMouseEvent) -> None:
         """
         Callback called on a mouse up event over the left viewer.
         :param: event the mouse event
@@ -480,7 +571,7 @@ class QtAlignmentToolWidget(QWidget):
         self.__onMouseUp(event, True)
 
     @pyqtSlot()
-    def onLeftViewMouseOut(self):
+    def onLeftViewMouseOut(self) -> None:
         """
         Callback called when the mouse left the left viewer space.
         """
@@ -488,7 +579,7 @@ class QtAlignmentToolWidget(QWidget):
         self.__onMouseOut(True)
 
     @pyqtSlot(QMouseEvent)
-    def onRightViewMouseDown(self, event):
+    def onRightViewMouseDown(self, event: QMouseEvent) -> None:
         """
         Callback called on a mouse down event over the right viewer.
         :param: event the mouse event
@@ -497,7 +588,7 @@ class QtAlignmentToolWidget(QWidget):
         self.__onMouseDown(event, False)
 
     @pyqtSlot(QMouseEvent)
-    def onRightViewMouseMove(self, event):
+    def onRightViewMouseMove(self, event: QMouseEvent) -> None:
         """
         Callback called on a mouse move event over the right viewer.
         :param: event the mouse event
@@ -506,7 +597,7 @@ class QtAlignmentToolWidget(QWidget):
         self.__onMouseMove(event, False)
 
     @pyqtSlot(QMouseEvent)
-    def onRightViewMouseUp(self, event):
+    def onRightViewMouseUp(self, event: QMouseEvent) -> None:
         """
         Callback called on a mouse up event over the right viewer.
         :param: event the mouse event
@@ -515,7 +606,7 @@ class QtAlignmentToolWidget(QWidget):
         self.__onMouseUp(event, False)
 
     @pyqtSlot()
-    def onRightViewMouseOut(self):
+    def onRightViewMouseOut(self) -> None:
         """
         Callback called when the mouse left the right viewer space.
         """
@@ -523,7 +614,7 @@ class QtAlignmentToolWidget(QWidget):
         self.__onMouseOut(False)
 
     @pyqtSlot()
-    def onAutoAlignRequested(self):
+    def onAutoAlignRequested(self) -> None:
         """
         Callback called when the user request the auto alignment process to start.
         """
@@ -534,12 +625,12 @@ class QtAlignmentToolWidget(QWidget):
             msgBox.exec()
             return
         # Process markers
-        [R, T] = self.__leastSquaresWithSVD()
+        self.__leastSquaresWithSVD()
         # Switch to preview mode
         self.checkBoxPreview.setChecked(True)
 
     @pyqtSlot()
-    def onConfirmAlignment(self):
+    def onConfirmAlignment(self) -> None:
         """
         Callback called when the user request to confirm and save alignment data.
         """
@@ -548,7 +639,7 @@ class QtAlignmentToolWidget(QWidget):
         # Close widget (?)
         self.close()
 
-    def __onMouseDown(self, event, isLeft):
+    def __onMouseDown(self, event: QMouseEvent, isLeft: bool) -> None:
         """
         Private method called on mouse down event.
         :param: event the mouse event
@@ -570,7 +661,7 @@ class QtAlignmentToolWidget(QWidget):
             self.hoveringMarker = hovering
             self.hoveringSceneObjs = self.__drawHoveringMarker(hovering)
 
-    def __onMouseUp(self, event, isLeft):
+    def __onMouseUp(self, event: QMouseEvent, isLeft: bool) -> None:
         """
         Private method called on mouse up event.
         :param: event the mouse event
@@ -600,7 +691,7 @@ class QtAlignmentToolWidget(QWidget):
             self.hoveringMarker = hovering
             self.hoveringSceneObjs = self.__drawHoveringMarker(hovering)
 
-    def __onMouseMove(self, event, isLeft):
+    def __onMouseMove(self, event: QMouseEvent, isLeft: bool) -> None:
         """
         Private method called on mouse move event.
         :param: event the mouse event
@@ -618,16 +709,16 @@ class QtAlignmentToolWidget(QWidget):
             dy = (pos[1] - self.lastMousePos[1])
             self.lastMousePos = pos
             # Update marker position
-            self.markers[self.selectedMarker]["rViewPos"][0] += dx
-            self.markers[self.selectedMarker]["rViewPos"][1] += dy
+            self.markers[self.selectedMarker].rViewPos[0] += dx
+            self.markers[self.selectedMarker].rViewPos[1] += dy
             # If user is dragging marker on the left viewer
             if isLeft:
                 # Update also the right one
-                self.markers[self.selectedMarker]["lViewPos"][0] += dx
-                self.markers[self.selectedMarker]["lViewPos"][1] += dy
+                self.markers[self.selectedMarker].lViewPos[0] += dx
+                self.markers[self.selectedMarker].lViewPos[1] += dy
             # Redraw markers
             self.__clearMarker(self.selectedMarker)
-            self.__drawMarkers()
+            self.__updateMarkers()
         else:
             # Check for hover
             hovering = self.__findMarkerAt(pos, isLeft)
@@ -639,7 +730,7 @@ class QtAlignmentToolWidget(QWidget):
                     self.hoveringMarker = hovering
                     self.hoveringSceneObjs = self.__drawHoveringMarker(hovering)
 
-    def __onMouseOut(self, isLeft):
+    def __onMouseOut(self, isLeft: bool) -> None:
         """
         Private method called when the mouse left a viewer space.
         :param: isLeft a boolean to choose emitting viewer
@@ -649,7 +740,7 @@ class QtAlignmentToolWidget(QWidget):
         self.selectedMarker = None
         self.__clearHoveringMarker()
 
-    def __mapToViewer(self, pos, isLeft):
+    def __mapToViewer(self, pos: [int], isLeft: bool) -> [int]:
         """
         Private method that maps a pos [x, y] into the viewer space.
         :param: pos the position to map
@@ -659,23 +750,7 @@ class QtAlignmentToolWidget(QWidget):
         viewer = self.leftImgViewer if isLeft else self.rightImgViewer
         return viewer.clipScenePos(viewer.mapToScene(pos))
 
-    def __getMarkerBBOX(self, i):
-        """
-        Private method to retrieve bbox of selected marker.
-        :param: i the index of the marker to evaluate
-        :return: [bboxL, bboxR] the bbox of each view
-        """
-        # Unpack pos
-        [lmx, lmy] = self.markers[i]["lViewPos"]
-        [rmx, rmy] = self.markers[i]["rViewPos"]
-        # Create bbox
-        side = self.mkSize
-        return [
-            [lmx - side, lmy - side, lmx + side + 1, lmy + side + 1],
-            [rmx - side, rmy - side, rmx + side + 1, rmy + side + 1],
-        ]
-
-    def __findMarkerAt(self, pos, isLeft):
+    def __findMarkerAt(self, pos: [int], isLeft: bool) -> Optional[int]:
         """
         Private method to find marker under [x, y].
         :param: pos the position to check
@@ -687,37 +762,32 @@ class QtAlignmentToolWidget(QWidget):
         # Iterate over the markers list to check if any marker exists at [x, y]
         for (i, marker) in enumerate(self.markers):
             # Find marker bbox
-            [bboxL, bboxR] = self.__getMarkerBBOX(i)
-            [x1, y1, x2, y2] = bboxL if isLeft else bboxR
+            (bboxL, bboxR) = self.markers[i].getBBox()
+            bbox: QRectF = bboxL if isLeft else bboxR
             # Check if bbox contains pos
-            if x1 <= x <= x2 and y1 <= y <= y2:
+            if bbox.contains(x, y):
                 return i
         return None
 
-    def __toggleMarker(self, i):
+    def __toggleMarker(self, i: int) -> None:
         """
         Private method to "toggle" marker with index i.
-        By toggling a marker, it changes type until deleted.
         :param: i the index of the marker to toggle.
         """
-        # HARD -> SOFT
-        if self.markers[i]["mkType"] == QtAlignmentToolWidget.HARD_MARKER:
-            self.markers[i]["mkType"] = QtAlignmentToolWidget.SOFT_MARKER
-        # SOFT -> HARD
-        elif self.markers[i]["mkType"] == QtAlignmentToolWidget.SOFT_MARKER:
-            self.markers[i]["mkType"] = QtAlignmentToolWidget.HARD_MARKER
+        # Forward
+        self.markers[i].toggleType()
         # Redraw markers
         self.__clearMarker(i)
-        self.__drawMarkers()
+        self.__updateMarkers()
 
-    def __clearHoveringMarker(self):
+    def __clearHoveringMarker(self) -> None:
         """
         Private method to clear hovering data.
         """
         # Clear only if exists
         if self.hoveringMarker is not None:
             # Retrieve scene objs
-            [rectL, rectR] = self.hoveringSceneObjs
+            (rectL, rectR) = self.hoveringSceneObjs
             # Remove them from scenes
             self.leftImgViewer.scene.removeItem(rectL)
             self.rightImgViewer.scene.removeItem(rectR)
@@ -727,130 +797,91 @@ class QtAlignmentToolWidget(QWidget):
             self.leftImgViewer.scene.invalidate()
             self.rightImgViewer.scene.invalidate()
 
-    def __drawHoveringMarker(self, i):
+    def __drawHoveringMarker(self, i: int) -> (QGraphicsRectItem, QGraphicsRectItem):
         """
         Private method to draw hovering box.
         :param: i the index of the marker to hover
-        :return: the objs created
+        :return: the (leftRect, rightRect) created
         """
         # Create drawing pen
         pen = QPen(Qt.white, 1)
         pen.setCosmetic(True)
         # Retrieve bbox
-        [bboxL, bboxR] = self.__getMarkerBBOX(i)
-        [lx1, ly1, lx2, ly2] = bboxL
-        [rx1, ry1, rx2, ry2] = bboxR
+        (bboxL, bboxR) = self.markers[i].getBBox()
         # Draw rects
-        rectL = self.leftImgViewer.scene.addRect(lx1, ly1, lx2 - lx1, ly2 - ly1, pen)
-        rectR = self.rightImgViewer.scene.addRect(rx1, ry1, rx2 - rx1, ry2 - ry1, pen)
+        rectL = self.leftImgViewer.scene.addRect(bboxL, pen)
+        rectR = self.rightImgViewer.scene.addRect(bboxR, pen)
         rectL.setZValue(6)
         rectR.setZValue(6)
         # Invalidate scenes
         self.leftImgViewer.scene.invalidate()
         self.rightImgViewer.scene.invalidate()
-        return [rectL, rectR]
+        return rectL, rectR
 
-    def __clearMarker(self, i):
+    def __clearMarker(self, i: int) -> None:
         """
         Private method to clear marker scene objs.
         :param: i the index of the marker to clear.
         """
         # Remove items from scene
-        for [objL, objR] in self.markers[i]["sceneObjs"]:
+        for [objL, objR] in self.markers[i].objs:
             self.leftImgViewer.scene.removeItem(objL)
             self.leftImgViewer.scene.removeItem(objR)
         # Clear array
-        self.markers[i]["sceneObjs"] = []
+        self.markers[i].objs = []
 
-    def __addMarker(self, pos):
+    def __addMarker(self, pos: [int]) -> None:
         """
         Private method to add a marker at pos [x, y].
         :param: pos the position where to add the marker
         """
-        # Find ID
-        identifier = max(self.markers, key=lambda x: x["id"], default={"id": 0})["id"] + 1
+        # Find next available ID
+        identifier = max(self.markers, key=lambda x: x.id).id + 1 if len(self.markers) > 0 else 1
         # Create a marker obj
-        self.markers.append({
-            "id": identifier,  # identifier
-            "lViewPos": [pos[0], pos[1]],  # left view position
-            "rViewPos": [pos[0], pos[1]],  # right view position
-            "mkType": QtAlignmentToolWidget.SOFT_MARKER,  # marker type
-            "sceneObjs": []  # Scene objects
-        })
+        self.markers.append(MarkerObjData(identifier, pos, MarkerObjData.SOFT_MARKER, []))
         # Redraw markers
-        self.__drawMarkers()
+        self.__updateMarkers()
 
-    def __drawMarkerSymb(self, identifier, lpos, rpos, pen):
-        """
-        Private method to draw a marker.
-        :param: identifier the marker id
-        :param: lpos the position where to draw the marker
-        :param: rpos the position where to draw the marker
-        :return: the added objects
-        """
-        # Unpack coords
-        [lx, ly] = lpos
-        [rx, ry] = rpos
-        # Lines to draw
-        side = self.mkSize
-        lines = [
-            ([-side+1, -side+1], [0, 0]),  # TL - c
-            ([+1, +1], [+side, +side]),  # c - BR
-            ([-side+1, +side], [0, +1]),  # BL - c
-            ([1, 0], [+side, -side+1]),  # c - TR
-        ]
-        objs = []
-        # Draw lines
-        for ([dxs, dys], [dxe, dye]) in lines:
-            lineL = self.leftImgViewer.scene.addLine(lx + dxs, ly + dys, lx + dxe, ly + dye, pen)
-            lineR = self.rightImgViewer.scene.addLine(rx + dxs, ry + dys, rx + dxe, ry + dye, pen)
-            lineL.setZValue(5)
-            lineR.setZValue(5)
-            objs.append([lineL, lineR])
-        # Draw texts
-        textL = QGraphicsTextItem(str(identifier))
-        textR = QGraphicsTextItem(str(identifier))
-        for text in [textL, textR]:
-            text.setHtml('<div style="background:' + pen.color().name() + ';">' + str(identifier) + '</p>')
-            text.setFont(QFont("Roboto", 12, QFont.Bold))
-            text.setOpacity(0.75)
-            text.setFlag(QGraphicsItem.ItemIgnoresTransformations)
-            text.setDefaultTextColor(Qt.black)
-            text.setZValue(7)
-        textL.setPos(lx + self.mkSize, ly - self.mkSize)
-        textR.setPos(rx + self.mkSize, ry - self.mkSize)
-        # Add text to scenes
-        self.leftImgViewer.scene.addItem(textL)
-        self.rightImgViewer.scene.addItem(textR)
-        # Add objs
-        objs.append([textL, textR])
-        return objs
-
-    def __drawMarker(self, marker):
+    def __drawMarker(self, marker: MarkerObjData) -> None:
         """
         Private method to draw marker obj.
         :param: marker the marker to draw
         """
         # Redraw only "cleared" one
-        if len(marker["sceneObjs"]) > 0:
+        if len(marker.objs) > 0:
             return
-        # Unpack pos
-        lpos = marker["lViewPos"]
-        rpos = marker["rViewPos"]
-        # Switch pen on marker
-        if marker["mkType"] == QtAlignmentToolWidget.SOFT_MARKER:
-            pen = QPen(Qt.yellow, self.mkWidth)
-        elif marker["mkType"] == QtAlignmentToolWidget.HARD_MARKER:
-            pen = QPen(Qt.red, self.mkWidth)
-        else:
-            pen = QPen(Qt.white, self.mkWidth)
-        pen.setCosmetic(True)
-        # Draw symbol
-        marker["sceneObjs"] = self.__drawMarkerSymb(marker["id"], lpos, rpos, pen)
+        # Draw lines
+        objs = []
+        for (leftLine, rightLine) in marker.getLines():
+            lineL = self.leftImgViewer.scene.addLine(leftLine, marker.pen)
+            lineR = self.rightImgViewer.scene.addLine(rightLine, marker.pen)
+            lineL.setZValue(5)
+            lineR.setZValue(5)
+            objs.append([lineL, lineR])
+        # Draw texts
+        textL = QGraphicsTextItem(str(marker.id))
+        textR = QGraphicsTextItem(str(marker.id))
+        for text in [textL, textR]:
+            text.setHtml('<div style="background:' + marker.pen.color().name() + ';">' + str(marker.id) + '</p>')
+            text.setFont(QFont("Roboto", 12, QFont.Bold))
+            text.setOpacity(0.75)
+            text.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+            text.setDefaultTextColor(Qt.black)
+            text.setZValue(7)
+        # Update text pos
+        (bboxL, bboxR) = marker.getBBox()
+        textL.setPos(bboxL.topRight())
+        textR.setPos(bboxR.topRight())
+        # Add text to scenes
+        self.leftImgViewer.scene.addItem(textL)
+        self.rightImgViewer.scene.addItem(textR)
+        objs.append([textL, textR])
+        # Update list
+        marker.objs = objs
 
-    def __drawMarkers(self):
+    def __updateMarkers(self) -> None:
         """
-        Private method to update markers overlay image.
+        Private method to redraw markers.
         """
         # Draw markers
         for marker in self.markers:
@@ -859,9 +890,9 @@ class QtAlignmentToolWidget(QWidget):
         self.leftImgViewer.scene.invalidate()
         self.rightImgViewer.scene.invalidate()
 
-    def __updateImgViewers(self):
+    def __updateImgViewers(self) -> None:
         """
-        Private method to update the viewers
+        Private method to update the edit page viewers
         """
         # Retrieve indexes
         index1 = self.leftCombobox.currentIndex()
@@ -884,9 +915,9 @@ class QtAlignmentToolWidget(QWidget):
         # Update preview size
         self.__updatePreviewSize(channel1.qimage, channel2.qimage)
         # Image
-        img1 = self.__toNumpyArray(channel1.qimage, False, False)
+        img1 = self.__toNumpyArray(channel1.qimage, False)
         img1 = self.__toQImage(img1, QImage.Format_RGBA8888)
-        img2 = self.__toNumpyArray(channel2.qimage, False, False)
+        img2 = self.__toNumpyArray(channel2.qimage, False)
         img2 = self.__toQImage(img2, QImage.Format_RGBA8888)
         # Update viewer
         self.leftImgViewer.setImg(img1)
@@ -895,13 +926,12 @@ class QtAlignmentToolWidget(QWidget):
         self.rightImgViewer.px_to_mm = pxSize2
         # Update overlay images
         self.markers = []
-        self.__drawMarkers()
+        self.__updateMarkers()
 
-    def __toNumpyArray(self, img, applyResolution, isGrayScale):
+    def __toNumpyArray(self, img: QImage, isGrayScale: bool) -> numpy.ndarray:
         """
         Private method to create a numpy array from QImage.
         :param: img contains the QImage to transform
-        :param: applyResolution a boolean to toggle resolution
         :param: isGrayScale a boolean to add conversion in grayscale
         :return: an numpy array of shape (h, w, channels)
         """
@@ -924,20 +954,19 @@ class QtAlignmentToolWidget(QWidget):
             arr = arr.reshape((rh, rw, 1))
         return arr
 
-    def __toQImage(self, arr, imgFormat):
+    def __toQImage(self, arr: numpy.ndarray, imgFormat: int) -> QImage:
         """
         Private method to transform a numpy array into a QImage.
         :param: arr is the numpy array of shape (h, w, c)
         :param: imgFormat is the format of the image to create
-        :return: a QImage
+        :return: the QImage
         """
         # Retrieve the shape
         [h, w, c] = arr.shape
         # Create and return the image
-        img = QImage(arr.data, w, h, c * w, imgFormat)
-        return img
+        return QImage(arr.data, w, h, c * w, imgFormat)
 
-    def __updatePreviewSize(self, img1, img2):
+    def __updatePreviewSize(self, img1: QImage, img2: QImage) -> None:
         """
         Private method to update internal reference size for preview images.
         The preview size must contains both images.
@@ -954,14 +983,13 @@ class QtAlignmentToolWidget(QWidget):
         self.xSlider.setMaximum(pw // 2)
         self.ySlider.setMaximum(ph // 2)
 
-    def __initializePreview(self):
+    def __initializePreview(self) -> None:
         """
-        Private method called once when the Preview Mode is turned on.
-        It initializes all the necessary numpy arrays.
+        Private method called to initialize the preview.
         """
         pass
 
-    def __updatePreview(self, onlyAlpha=False):
+    def __updatePreview(self, onlyAlpha: bool = False) -> None:
         """
         Private method to update the preview.
         :param: onlyAlpha is a boolean that represents whether the changes are only on the alpha section.
@@ -975,7 +1003,7 @@ class QtAlignmentToolWidget(QWidget):
             # ==============================================================
             pass
 
-    def __togglePreviewMode(self, isPreviewMode):
+    def __togglePreviewMode(self, isPreviewMode: bool) -> None:
         """
         Private method to set widget visibility to toggle the Preview Mode on/off.
         :param: isPreviewMode a boolean value to enable / disable the Preview Mode
@@ -1006,10 +1034,9 @@ class QtAlignmentToolWidget(QWidget):
         self.rightComboboxLabel.setVisible(not isPreviewMode)
         self.rightCombobox.setVisible(not isPreviewMode)
 
-    def __leastSquaresWithSVD(self):
+    def __leastSquaresWithSVD(self) -> None:
         """
-
+        Private method to compute the Least-Squares Rigid Motion using SVD.
         """
         R = None
         T = None
-        return [R, T]
