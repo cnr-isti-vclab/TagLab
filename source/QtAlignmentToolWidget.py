@@ -46,6 +46,9 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
     }
     """
 
+    QUAD_V = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
+    QUAD_T = [(0, 1), (0, 0), (1, 1), (1, 0)]
+
     def __init__(self, vSrc, fSrc, parent=None):
         super(QtSimpleOpenGlShaderViewer, self).__init__(parent)
         # Open GL
@@ -53,12 +56,12 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.programs: list[QOpenGLShaderProgram] = []
         self.textures: list[QOpenGLTexture] = []
         self.framebuffers: list[QOpenGLFramebufferObject] = []
-        self.vertPos1 = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
-        self.vertPos2 = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
-        self.vertPos3 = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
-        self.vertTex = [(0, 1), (0, 0), (1, 1), (1, 0)]
+        self.vertPos = [self.QUAD_V.copy(), self.QUAD_V.copy()]
+        self.mainQuad = self.QUAD_V.copy()
+        self.vertTex = self.QUAD_T.copy()
         self.vSrc = vSrc
         self.fSrc = fSrc
+        self.keepFB = False
         # Transformation status
         self.t = [0.0, 0.0]
         self.s = 1.0
@@ -72,154 +75,137 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.rot = 0
         self.tra = QVector2D(0, 0)
 
+    def __createProgram(self, vSrc: str, fSrc: str) -> Optional[QOpenGLShaderProgram]:
+        """
+        Private method to create a Shader Program with passed v-shader and f-shader.
+        :param: vSrc the source code of the vertex shader
+        :param: fSrc the source code of the fragment shader
+        :return: the created program or None (on error)
+        """
+        # Create & Compile Vertex Shader
+        vShader = QOpenGLShader(QOpenGLShader.Vertex, self)
+        checkGL(vShader, vShader.compileSourceCode(vSrc))
+        # Create & Compile Fragment Shader
+        fShader = QOpenGLShader(QOpenGLShader.Fragment, self)
+        checkGL(fShader, fShader.compileSourceCode(fSrc))
+        # Create Program
+        program = QOpenGLShaderProgram()
+        # Attach shaders
+        checkGL(program, program.addShader(vShader))
+        checkGL(program, program.addShader(fShader))
+        # Create def attrs
+        program.bindAttributeLocation('aPos', 0)
+        program.bindAttributeLocation('aTex', 1)
+        # Link program
+        checkGL(program, program.link())
+        # Return newly created program
+        return program
+
     def initializeGL(self) -> None:
         """
         Sets up the OpenGL resources and state.
         Gets called once before the first time resizeGL() or paintGL() is called.
         """
-        # Load openg from requested profile
+        # Load opengl for requested profile
         profile = QOpenGLVersionProfile()
         profile.setVersion(2, 0)
         self.gl = self.context().versionFunctions(versionProfile=profile)
         self.gl.initializeOpenGLFunctions()
+        # Create Program #0 (default pass)
+        self.programs.append(self.__createProgram(
+            QtSimpleOpenGlShaderViewer.V_SHADER_SOURCE,
+            QtSimpleOpenGlShaderViewer.F_SHADER_SOURCE
+        ))
+        # Create Program #1 (scriptable pass)
+        self.programs.append(self.__createProgram(self.vSrc, self.fSrc))
 
-        # PROGRAM 0
+    def __drawTexturePass(self, i: int, mat: QMatrix4x4) -> None:
+        """
+        Private method to draw texture onto framebuffer.
+        :param: i the index of texture & dest framebuffer
+        :param: mat the matrix for the transformation
+        """
+        # Bind FB and Program
+        checkGL(self.framebuffers[i], self.framebuffers[i].bind())
+        checkGL(self.programs[0], self.programs[0].bind())
+        # Bind texture
+        self.gl.glActiveTexture(self.gl.GL_TEXTURE0)
+        self.gl.glBindTexture(self.gl.GL_TEXTURE_2D, self.textures[i].textureId())
+        # Update uniforms
+        self.programs[0].setUniformValue("uTex", 0)
+        self.programs[0].setUniformValue("uMatrix", mat)
+        # Reload quad data
+        self.programs[0].enableAttributeArray(0)
+        self.programs[0].setAttributeArray(0, self.vertPos[i])
+        self.programs[0].enableAttributeArray(1)
+        self.programs[0].setAttributeArray(1, self.vertTex)
+        # Draw quad
+        self.gl.glClearColor(0.0, 0.0, 0.0, 0.0)
+        self.gl.glClear(self.gl.GL_COLOR_BUFFER_BIT)
+        self.gl.glDrawArrays(self.gl.GL_TRIANGLE_STRIP, 0, 4)
+        # Release FB and Program
+        checkGL(self.framebuffers[i], self.framebuffers[i].release())
+        self.programs[0].release()
 
-        # Create shaders
-        vshader0 = QOpenGLShader(QOpenGLShader.Vertex, self)
-        fshader0 = QOpenGLShader(QOpenGLShader.Fragment, self)
-        checkGL(vshader0, vshader0.compileSourceCode(QtSimpleOpenGlShaderViewer.V_SHADER_SOURCE))
-        checkGL(fshader0, fshader0.compileSourceCode(QtSimpleOpenGlShaderViewer.F_SHADER_SOURCE))
-
-        # Create & Compile program for simple blit
-        program = QOpenGLShaderProgram()
-        checkGL(program, program.addShader(vshader0))
-        checkGL(program, program.addShader(fshader0))
-        program.bindAttributeLocation('aPos', 0)
-        program.bindAttributeLocation('aTex', 1)
-        checkGL(program, program.link())
-        # Bind program
-        checkGL(program, program.bind())
-        # Position array
-        program.enableAttributeArray(0)
-        # Texture Coords array
-        program.enableAttributeArray(1)
-        program.setAttributeArray(1, self.vertTex)
-        # Release
-        program.release()
-        self.programs.append(program)
-
-        # PROGRAM 1
-
-        # Create shaders
-        vshader1 = QOpenGLShader(QOpenGLShader.Vertex, self)
-        fshader1 = QOpenGLShader(QOpenGLShader.Fragment, self)
-        checkGL(vshader1, vshader1.compileSourceCode(self.vSrc))
-        checkGL(fshader1, fshader1.compileSourceCode(self.fSrc))
-
-        # Create & Compile program for simple blit
-        program = QOpenGLShaderProgram()
-        checkGL(program, program.addShader(vshader1))
-        checkGL(program, program.addShader(fshader1))
-        program.bindAttributeLocation('aPos', 0)
-        program.bindAttributeLocation('aTex', 1)
-        checkGL(program, program.link())
-        # Bind program
-        checkGL(program, program.bind())
-        # Position array
-        program.enableAttributeArray(0)
-        program.setAttributeArray(0, self.vertPos3)
-        # Texture Coords array
-        program.enableAttributeArray(1)
-        program.setAttributeArray(1, self.vertTex)
-        # Release
-        program.release()
-        self.programs.append(program)
+    def __drawFrameBufferPass(self, mat: QMatrix4x4) -> None:
+        """
+        Private method to draw framebuffer with scripted program.
+        :param: mat the transformation matrix
+        """
+        # Bind Program
+        checkGL(self.programs[1], self.programs[1].bind())
+        # Bind Textures (from Frame Buffers)
+        self.gl.glActiveTexture(self.gl.GL_TEXTURE0)
+        self.gl.glBindTexture(self.gl.GL_TEXTURE_2D, self.framebuffers[0].texture())
+        self.gl.glActiveTexture(self.gl.GL_TEXTURE1)
+        self.gl.glBindTexture(self.gl.GL_TEXTURE_2D, self.framebuffers[1].texture())
+        # Update uniforms
+        self.programs[1].setUniformValue("uMatrix", mat)
+        self.programs[1].setUniformValue("uTexL", 0)
+        self.programs[1].setUniformValue("uTexR", 1)
+        # Pass custom uniforms
+        self.customUniforms(self.programs[1])
+        # Reload quad data
+        self.programs[1].enableAttributeArray(0)
+        self.programs[1].setAttributeArray(0, self.mainQuad)
+        self.programs[1].enableAttributeArray(1)
+        self.programs[1].setAttributeArray(1, self.vertTex)
+        # Draw quad
+        self.gl.glClearColor(0.0, 0.0, 0.0, 1.0)
+        self.gl.glClear(self.gl.GL_COLOR_BUFFER_BIT)
+        self.gl.glDrawArrays(self.gl.GL_TRIANGLE_STRIP, 0, 4)
+        # Release Program
+        self.programs[1].release()
 
     def paintGL(self) -> None:
         """
         Renders the OpenGL scene.
         Gets called whenever the widget needs to be updated.
         """
-        # Create 1st matrix
-        matrix1 = QMatrix4x4()
-        matrix1.rotate(self.rot, 0.0, 0.0, 1.0)
-        matrix1.translate(self.tra[0], self.tra[1], 0)
-
-        # Create 2st matrix
-        matrix2 = QMatrix4x4()
-
-        # Create 3rd matrix
-        matrix3 = QMatrix4x4()
-        matrix3.translate(self.t[0], -self.t[1], 0)
-        matrix3.scale(self.s, self.s, 1)
-
-        # Combine transformations
-        matrix1 = matrix3 * matrix1
-        matrix2 = matrix3 * matrix2
-
-        # Draw step (1)
-        checkGL(self.framebuffers[0], self.framebuffers[0].bind())
-        checkGL(self.programs[0], self.programs[0].bind())
-
-        self.gl.glActiveTexture(self.gl.GL_TEXTURE0)
-        self.gl.glBindTexture(self.gl.GL_TEXTURE_2D, self.textures[0].textureId())
-
-        self.gl.glClearColor(0.0, 0.0, 0.0, 0.0)
-        self.gl.glClear(self.gl.GL_COLOR_BUFFER_BIT)
-        self.programs[0].setUniformValue("uTex", 0)
-        self.programs[0].setUniformValue("uMatrix", matrix1)
-        self.programs[0].setAttributeArray(0, self.vertPos1)
-        self.gl.glDrawArrays(self.gl.GL_TRIANGLE_STRIP, 0, 4)
-
-        checkGL(self.framebuffers[0], self.framebuffers[0].release())
-        self.programs[0].release()
-
-        # Draw step (2)
-        checkGL(self.framebuffers[1], self.framebuffers[1].bind())
-        checkGL(self.programs[0], self.programs[0].bind())
-
-        self.gl.glActiveTexture(self.gl.GL_TEXTURE0)
-        self.gl.glBindTexture(self.gl.GL_TEXTURE_2D, self.textures[1].textureId())
-
-        self.gl.glClearColor(0.0, 0.0, 0.0, 0.0)
-        self.gl.glClear(self.gl.GL_COLOR_BUFFER_BIT)
-        self.programs[0].setUniformValue("uTex", 0)
-        self.programs[0].setUniformValue("uMatrix", matrix2)
-        self.programs[0].setAttributeArray(0, self.vertPos2)
-        self.gl.glDrawArrays(self.gl.GL_TRIANGLE_STRIP, 0, 4)
-
-        checkGL(self.framebuffers[1], self.framebuffers[1].release())
-        self.programs[0].release()
-
-        # Create 4th matrix (for reversing framebuffer)
-        matrix4 = QMatrix4x4()
-        matrix4.scale(1, -1, 1)
-
-        # Draw step (3)
-        checkGL(self.programs[1], self.programs[1].bind())
-
-        self.gl.glActiveTexture(self.gl.GL_TEXTURE0)
-        self.gl.glBindTexture(self.gl.GL_TEXTURE_2D, self.framebuffers[0].texture())
-        self.gl.glActiveTexture(self.gl.GL_TEXTURE1)
-        self.gl.glBindTexture(self.gl.GL_TEXTURE_2D, self.framebuffers[1].texture())
-
-        self.gl.glClearColor(0.0, 0.0, 0.0, 1.0)
-        self.gl.glClear(self.gl.GL_COLOR_BUFFER_BIT)
-        self.programs[1].setUniformValue("uMatrix", matrix4)
-        self.programs[1].setUniformValue("uTexL", 0)
-        self.programs[1].setUniformValue("uTexR", 1)
-        self.customUniforms(self.programs[1])
-        self.programs[1].setAttributeArray(0, self.vertPos3)
-        self.gl.glDrawArrays(self.gl.GL_TRIANGLE_STRIP, 0, 4)
-
-        self.programs[1].release()
-
-    def customUniforms(self, program: QOpenGLShaderProgram) -> None:
-        """
-        To be implemented by inheriting class.
-        """
-        pass
+        # Check if needs to redraw buffers
+        # (Needed only when user zoom or pan or manually changes offset or rotation)
+        if not self.keepFB:
+            # Create Matrix for 1st Quad
+            matrix1 = QMatrix4x4()
+            matrix1.rotate(self.rot, 0.0, 0.0, 1.0)
+            matrix1.translate(self.tra[0], self.tra[1], 0)
+            # Create Matrix for 2nd Quad
+            matrix2 = QMatrix4x4()
+            # Create Transformation Matrix (for zoom and panning)
+            matrix3 = QMatrix4x4()
+            matrix3.translate(self.t[0], -self.t[1], 0)
+            matrix3.scale(self.s, self.s, 1)
+            # Draw tex 0 into fb 0
+            self.__drawTexturePass(0, matrix3 * matrix1)
+            # Draw tex 1 into fb 1
+            self.__drawTexturePass(1, matrix3 * matrix2)
+            # Clear dirty flag
+            self.keepFB = True
+        # Create Matrix (for reversing framebuffer)
+        matrix = QMatrix4x4()
+        matrix.scale(1, -1, 1)
+        # Draw fb into screen (scriptable)
+        self.__drawFrameBufferPass(matrix)
 
     def resizeGL(self, w: int, h: int) -> None:
         """
@@ -240,7 +226,9 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         ]
         # Recreate viewport quad to keep aspect ratio
         side = max(w, h)
-        self.vertPos3 = [(-side / w, -side / h), (-side / w, side / h), (side / w, -side / h), (side / w, side / h)]
+        self.mainQuad = [(-side / w, -side / h), (-side / w, side / h), (side / w, -side / h), (side / w, side / h)]
+        # Redraw
+        self.redraw(False)
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         """
@@ -269,7 +257,7 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.t[0] += dx
         self.t[1] += dy
         # Redraw
-        self.update()
+        self.redraw(False)
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         """
@@ -298,7 +286,7 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.t[0] = mx - (mx - self.t[0]) * factor
         self.t[1] = my - (my - self.t[1]) * factor
         # Redraw
-        self.update()
+        self.redraw(False)
 
     def setImages(self, referenceImg: QImage, imgToAlign: QImage, ratioWH: float) -> None:
         """
@@ -307,6 +295,9 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         :param: imgToAlign the QImage to beg aligned
         :param: ratioWH the w/h ratio
         """
+        # Clear status
+        self.t = [0.0, 0.0]
+        self.s = 1.0
         # Create textures
         self.textures = [
             QOpenGLTexture(referenceImg),
@@ -317,8 +308,10 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
             tex.setMinMagFilters(QOpenGLTexture.Nearest, QOpenGLTexture.Nearest)
             # tex.generateMipMaps()
         # Update quads to keep aspect ratio
-        self.vertPos1 = [(-ratioWH, -1), (-ratioWH, 1), (ratioWH, -1), (ratioWH, 1)]
-        self.vertPos2 = [(-ratioWH, -1), (-ratioWH, 1), (ratioWH, -1), (ratioWH, 1)]
+        self.vertPos[0] = [(-ratioWH, -1), (-ratioWH, 1), (ratioWH, -1), (ratioWH, 1)]
+        self.vertPos[1] = [(-ratioWH, -1), (-ratioWH, 1), (ratioWH, -1), (ratioWH, 1)]
+        # Redraw
+        self.redraw(False)
 
     def updateRotation(self, rot: float) -> None:
         """
@@ -326,7 +319,7 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         :param: rot the new value for rotation (in degrees)
         """
         self.rot = max(min(rot, 180.0), -180.0)
-        self.update()
+        self.redraw(False)
 
     def updateTranslation(self, tra: np.array) -> None:
         """
@@ -334,6 +327,20 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         :param: tra the new value for translation (normalized [0.0, 1.0])
         """
         self.tra = QVector2D(tra[0], tra[1])
+        self.redraw(False)
+
+    def customUniforms(self, program: QOpenGLShaderProgram) -> None:
+        """
+        To be implemented by inheriting class.
+        """
+        pass
+
+    def redraw(self, keepFB: bool = True) -> None:
+        """
+        Public method to schedule an update.
+        :param: keepFB is a boolean that tries to schedule a fast update by not redrawing tex onto fb
+        """
+        self.keepFB = self.keepFB and keepFB
         self.update()
 
 
@@ -411,7 +418,7 @@ class AlphaPreviewViewer(QtSimpleOpenGlShaderViewer):
         :param: alpha the new value for alpha [0.0, 1.0]
         """
         self.alpha = max(min(alpha, 1.0), 0.0)
-        self.update()
+        self.redraw()
 
 
 class GrayPreviewViewer(QtSimpleOpenGlShaderViewer):
@@ -507,7 +514,7 @@ class GrayPreviewViewer(QtSimpleOpenGlShaderViewer):
         :param: thr the new value for threshold [0, 255]
         """
         self.thr = min(max(thr / 255.0, 0.0), 1.0)
-        self.update()
+        self.redraw()
 
 
 class MarkerObjData:
