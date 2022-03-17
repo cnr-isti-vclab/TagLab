@@ -4,7 +4,7 @@ from typing import Optional
 import numpy as np
 from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot, QLineF, QRectF, QPoint
 from PyQt5.QtGui import QImage, QMouseEvent, QPen, QFont, QCloseEvent, QKeyEvent, QOpenGLShaderProgram, QOpenGLShader, \
-    QOpenGLVersionProfile, QMatrix4x4, QWheelEvent, QOpenGLTexture
+    QOpenGLVersionProfile, QMatrix4x4, QWheelEvent, QOpenGLTexture, QVector2D
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QVBoxLayout, QLabel, QHBoxLayout, QComboBox, QSlider, QApplication, \
     QCheckBox, QPushButton, QMessageBox, QGraphicsTextItem, QGraphicsItem, QOpenGLWidget, QGraphicsRectItem
 from PyQt5._QOpenGLFunctions_2_0 import QOpenGLFunctions_2_0
@@ -25,29 +25,7 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
     Custom widget to handle img preview with shaders.
     """
 
-    V_SHADER_SOURCE = """
-    precision highp float;
-    attribute vec2 aPos;
-    attribute vec2 aTex;
-    uniform mat4 uMatrix;
-    varying vec2 vTex;
-    void main(void) {
-        vTex = aTex;
-        gl_Position = uMatrix * vec4(aPos, 0, 1);
-    }
-    """
-
-    F_SHADER_SOURCE = """
-    precision highp float;
-    varying vec2 vTex;
-    uniform sampler2D uTexL;
-    uniform sampler2D uTexR;
-    void main(void) {
-        gl_FragColor = texture2D((vTex.x > 0.5) ? uTexL : uTexR, vTex);
-    }
-    """
-
-    def __init__(self, parent=None):
+    def __init__(self, vSrc, fSrc, parent=None):
         super(QtSimpleOpenGlShaderViewer, self).__init__(parent)
         # Open GL
         self.gl: Optional[QOpenGLFunctions_2_0] = None
@@ -55,9 +33,10 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.textures: list[QOpenGLTexture] = []
         self.vertPos = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
         self.vertTex = [(0, 1), (0, 0), (1, 1), (1, 0)]
+        self.vSrc = vSrc
+        self.fSrc = fSrc
         # Transformation status
         self.t = [0.0, 0.0]
-        self.r = 0.0
         self.s = 1.0
         self.w = 100
         self.h = 100
@@ -77,8 +56,8 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         # Create shaders
         vshader = QOpenGLShader(QOpenGLShader.Vertex, self)
         fshader = QOpenGLShader(QOpenGLShader.Fragment, self)
-        checkGL(vshader, vshader.compileSourceCode(QtSimpleOpenGlShaderViewer.V_SHADER_SOURCE))
-        checkGL(fshader, fshader.compileSourceCode(QtSimpleOpenGlShaderViewer.F_SHADER_SOURCE))
+        checkGL(vshader, vshader.compileSourceCode(self.vSrc))
+        checkGL(fshader, fshader.compileSourceCode(self.fSrc))
         # Create & Compile program
         self.program = QOpenGLShaderProgram()
         checkGL(self.program, self.program.addShader(vshader))
@@ -105,7 +84,6 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         """
         # Create TRS matrix
         matrix = QMatrix4x4()
-        matrix.rotate(self.r, 0, 0, 1)
         matrix.translate(self.t[0], self.t[1], 0)
         matrix.scale(self.s, self.s, 1)
         # Clear
@@ -133,7 +111,7 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.gl.glViewport(0, 0, w, h)
         # Update quad to always fitCenter
         side = min(w, h)
-        self.vertPos = [(-side/w, -side/h), (-side/w, side/h), (side/w, -side/h), (side/w, side/h)]
+        self.vertPos = [(-side / w, -side / h), (-side / w, side / h), (side / w, -side / h), (side / w, side / h)]
         # Upload new array
         self.program.setAttributeArray(0, self.vertPos)
 
@@ -185,7 +163,7 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         # Update scale
         lastScale = self.s
         self.s += event.angleDelta().y() / 180
-        self.s = min(max(self.s, 1.0), 16.0)
+        self.s = min(max(self.s, 0.75), 16.0)
         factor = self.s / lastScale
         # Find normalized mouse pos
         [mx, my] = [event.pos().x() / (self.w // 2) - 1, event.pos().y() / (self.h // 2) - 1]
@@ -206,13 +184,160 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
             tex.release()
         # Create textures
         self.textures = [
-            QOpenGLTexture(referenceImg.mirrored(vertical=True)),
-            QOpenGLTexture(imgToAlign.mirrored(vertical=True))
+            QOpenGLTexture(referenceImg),
+            QOpenGLTexture(imgToAlign)
         ]
         # Update texture parameters
         for tex in self.textures:
             tex.setMinMagFilters(QOpenGLTexture.Nearest, QOpenGLTexture.Nearest)
             # tex.generateMipMaps()
+
+
+class AlphaPreviewViewer(QtSimpleOpenGlShaderViewer):
+    """
+    Implementation of QtSimpleOpenGlShaderViewer to customize shaders and uniforms.
+    """
+
+    V_SHADER_SOURCE = """
+    precision highp float;
+    attribute vec2 aPos;
+    attribute vec2 aTex;
+    uniform mat4 uMatrix;
+    varying vec2 vTex;
+    void main(void) {
+        vTex = aTex;
+        gl_Position = uMatrix * vec4(aPos, 0, 1);
+    }
+    """
+
+    F_SHADER_SOURCE = """
+    precision highp float;
+    varying vec2 vTex;
+    uniform sampler2D uTexL;
+    uniform sampler2D uTexR;
+    uniform float uAlpha;
+    uniform float uRot;
+    uniform vec2 uTra;
+    void main(void) {
+        vec4 leftSample = texture2D(uTexL, vTex);
+        vec4 rightSample = texture2D(uTexR, vTex);
+        gl_FragColor = mix(rightSample, leftSample, uAlpha);
+    }
+    """
+
+    def __init__(self, parent=None):
+        super(AlphaPreviewViewer, self).__init__(
+            AlphaPreviewViewer.V_SHADER_SOURCE,
+            AlphaPreviewViewer.F_SHADER_SOURCE,
+            parent
+        )
+        # Custom parameters
+        self.alpha = 0.5
+        self.rot = 0
+        self.tra = QVector2D(0, 0)
+
+    def paintGL(self) -> None:
+        """
+        Override to update uniforms before painting
+        """
+        # Update uniforms
+        self.program.setUniformValue("uAlpha", self.alpha)
+        self.program.setUniformValue("uRot", self.rot)
+        self.program.setUniformValue("uTra", self.tra)
+        # Forward
+        super(AlphaPreviewViewer, self).paintGL()
+
+    def updateAlpha(self, alpha: float) -> None:
+        """
+        Public method to update Alpha parameter.
+        :param: alpha the new value for alpha [0.0, 1.0]
+        """
+        self.alpha = max(min(alpha, 1.0), 0.0)
+        self.update()
+
+    def updateRot(self, rot: float) -> None:
+        """
+        Public method to update Rotation parameter.
+        :param: rot the new value for rotation (in degrees)
+        """
+        self.rot = np.deg2rad(max(min(rot, 180.0), -180.0))
+        self.update()
+
+    def updateTra(self, tra: np.array) -> None:
+        """
+        Public method to update Translation parameter.
+        :param: tra the new value for translation (in pixels)
+        """
+        self.tra = QVector2D(tra[0], tra[1])
+        self.update()
+
+
+class GrayPreviewViewer(QtSimpleOpenGlShaderViewer):
+    """
+    Implementation of QtSimpleOpenGlShaderViewer to customize shaders and uniforms.
+    """
+
+    V_SHADER_SOURCE = """
+    precision highp float;
+    attribute vec2 aPos;
+    attribute vec2 aTex;
+    uniform mat4 uMatrix;
+    varying vec2 vTex;
+    void main(void) {
+        vTex = aTex;
+        gl_Position = uMatrix * vec4(aPos, 0, 1);
+    }
+    """
+
+    F_SHADER_SOURCE = """
+    precision highp float;
+    varying vec2 vTex;
+    uniform sampler2D uTexL;
+    uniform sampler2D uTexR;
+    uniform float uRot;
+    uniform vec2 uTra;
+    void main(void) {
+        vec4 leftSample = texture2D(uTexL, vTex);
+        vec4 rightSample = texture2D(uTexR, vTex);
+        gl_FragColor = leftSample;
+    }
+    """
+
+    def __init__(self, parent=None):
+        super(GrayPreviewViewer, self).__init__(
+            GrayPreviewViewer.V_SHADER_SOURCE,
+            GrayPreviewViewer.F_SHADER_SOURCE,
+            parent
+        )
+        # Custom parameters
+        self.rot = 0
+        self.tra = QVector2D(0, 0)
+
+    def paintGL(self) -> None:
+        """
+        Override to update uniforms before painting
+        """
+        # Update uniforms
+        self.program.setUniformValue("uRot", self.rot)
+        self.program.setUniformValue("uTra", self.tra)
+        # Forward
+        super(GrayPreviewViewer, self).paintGL()
+
+    def updateRot(self, rot: float) -> None:
+        """
+        Public method to update Rotation parameter.
+        :param: rot the new value for rotation (in degrees)
+        """
+        self.rot = np.deg2rad(max(min(rot, 180.0), -180.0))
+        self.update()
+
+    def updateTra(self, tra: np.array) -> None:
+        """
+        Public method to update Translation parameter.
+        :param: tra the new value for translation (in pixels)
+        """
+        self.tra = QVector2D(tra[0], tra[1])
+        self.update()
 
 
 class MarkerObjData:
@@ -557,8 +682,8 @@ class QtAlignmentToolWidget(QWidget):
         # UI for preview
         # ==============================================================
 
-        self.leftPreviewViewer = QtSimpleOpenGlShaderViewer()
-        self.rightPreviewViewer = QtSimpleOpenGlShaderViewer()
+        self.leftPreviewViewer = AlphaPreviewViewer()
+        self.rightPreviewViewer = GrayPreviewViewer()
 
         self.previewLayout = QHBoxLayout()
         self.previewLayout.addWidget(self.leftPreviewViewer)
@@ -1304,16 +1429,16 @@ class QtAlignmentToolWidget(QWidget):
     def __updatePreview(self, onlyAlpha: bool = False) -> None:
         """
         Private method to update the preview.
-        :param: onlyAlpha is a boolean that represents whether the changes are only on the alpha section.
+        :param: onlyAlpha is a boolean that represents whether the changes are only on the alpha.
         """
-        # ==============================================================
-        # Update alpha section
-        # ==============================================================
+        # Update alpha value
+        self.leftPreviewViewer.updateAlpha(self.alpha / 100.0)
         if not onlyAlpha:
-            # ==============================================================
-            # Gray scale
-            # ==============================================================
-            pass
+            # Update R and T values
+            self.leftPreviewViewer.updateRot(self.R)
+            self.leftPreviewViewer.updateTra(self.T)
+            self.rightPreviewViewer.updateRot(self.R)
+            self.rightPreviewViewer.updateTra(self.T)
 
     def __togglePreviewMode(self, isPreviewMode: bool) -> None:
         """
@@ -1455,7 +1580,7 @@ class QtAlignmentToolWidget(QWidget):
         # Save results
 
         T = [T[0, 0], T[0, 1]]
-        self.T = T
+        self.T = np.array(T)
         self.xSlider.setValue(T[0])
         self.ySlider.setValue(T[1])
 
