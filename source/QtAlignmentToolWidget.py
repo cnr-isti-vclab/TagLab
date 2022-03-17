@@ -4,7 +4,7 @@ from typing import Optional
 import numpy as np
 from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot, QLineF, QRectF, QPoint
 from PyQt5.QtGui import QImage, QMouseEvent, QPen, QFont, QCloseEvent, QKeyEvent, QOpenGLShaderProgram, QOpenGLShader, \
-    QOpenGLVersionProfile, QMatrix4x4, QWheelEvent, QOpenGLTexture, QVector2D
+    QOpenGLVersionProfile, QMatrix4x4, QWheelEvent, QOpenGLTexture, QVector2D, QOpenGLFramebufferObject
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QVBoxLayout, QLabel, QHBoxLayout, QComboBox, QSlider, QApplication, \
     QCheckBox, QPushButton, QMessageBox, QGraphicsTextItem, QGraphicsItem, QOpenGLWidget, QGraphicsRectItem
 from PyQt5._QOpenGLFunctions_2_0 import QOpenGLFunctions_2_0
@@ -25,12 +25,34 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
     Custom widget to handle img preview with shaders.
     """
 
+    V_SHADER_SOURCE = """
+    precision highp float;
+    attribute vec2 aPos;
+    attribute vec2 aTex;
+    varying vec2 vTex;
+    uniform mat4 uMatrix;
+    void main(void) {
+        vTex = aTex;
+        gl_Position = uMatrix * vec4(aPos, 0, 1);
+    }
+    """
+
+    F_SHADER_SOURCE = """
+    precision highp float;
+    varying vec2 vTex;
+    uniform sampler2D uTex;
+    void main(void) {
+        gl_FragColor = texture2D(uTex, vTex);
+    }
+    """
+
     def __init__(self, vSrc, fSrc, parent=None):
         super(QtSimpleOpenGlShaderViewer, self).__init__(parent)
         # Open GL
         self.gl: Optional[QOpenGLFunctions_2_0] = None
-        self.program: Optional[QOpenGLShaderProgram] = None
+        self.programs: list[QOpenGLShaderProgram] = []
         self.textures: list[QOpenGLTexture] = []
+        self.framebuffers: list[QOpenGLFramebufferObject] = []
         self.vertPos = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
         self.vertTex = [(0, 1), (0, 0), (1, 1), (1, 0)]
         self.vSrc = vSrc
@@ -42,6 +64,9 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.h = 100
         # Gesture
         self.lastPos = None
+        # Alignment data
+        self.rot = 0
+        self.tra = QVector2D(0, 0)
 
     def initializeGL(self) -> None:
         """
@@ -53,49 +78,142 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         profile.setVersion(2, 0)
         self.gl = self.context().versionFunctions(versionProfile=profile)
         self.gl.initializeOpenGLFunctions()
+
+        # PROGRAM 0
+
         # Create shaders
-        vshader = QOpenGLShader(QOpenGLShader.Vertex, self)
-        fshader = QOpenGLShader(QOpenGLShader.Fragment, self)
-        checkGL(vshader, vshader.compileSourceCode(self.vSrc))
-        checkGL(fshader, fshader.compileSourceCode(self.fSrc))
-        # Create & Compile program
-        self.program = QOpenGLShaderProgram()
-        checkGL(self.program, self.program.addShader(vshader))
-        checkGL(self.program, self.program.addShader(fshader))
-        self.program.bindAttributeLocation('aPos', 0)
-        self.program.bindAttributeLocation('aTex', 1)
-        checkGL(self.program, self.program.link())
+        vshader0 = QOpenGLShader(QOpenGLShader.Vertex, self)
+        fshader0 = QOpenGLShader(QOpenGLShader.Fragment, self)
+        checkGL(vshader0, vshader0.compileSourceCode(QtSimpleOpenGlShaderViewer.V_SHADER_SOURCE))
+        checkGL(fshader0, fshader0.compileSourceCode(QtSimpleOpenGlShaderViewer.F_SHADER_SOURCE))
+
+        # Create & Compile program for simple blit
+        program = QOpenGLShaderProgram()
+        checkGL(program, program.addShader(vshader0))
+        checkGL(program, program.addShader(fshader0))
+        program.bindAttributeLocation('aPos', 0)
+        program.bindAttributeLocation('aTex', 1)
+        checkGL(program, program.link())
         # Bind program
-        checkGL(self.program, self.program.bind())
+        checkGL(program, program.bind())
         # Position array
-        self.program.enableAttributeArray(0)
-        self.program.setAttributeArray(0, self.vertPos)
-        # Texture array
-        self.program.enableAttributeArray(1)
-        self.program.setAttributeArray(1, self.vertTex)
-        # Constant uniforms
-        self.program.setUniformValue('uTexL', 0)
-        self.program.setUniformValue('uTexR', 1)
+        program.enableAttributeArray(0)
+        program.setAttributeArray(0, self.vertPos)
+        # Texture Coords array
+        program.enableAttributeArray(1)
+        program.setAttributeArray(1, self.vertTex)
+        # Release
+        program.release()
+        self.programs.append(program)
+
+        # PROGRAM 1
+
+        # Create shaders
+        vshader1 = QOpenGLShader(QOpenGLShader.Vertex, self)
+        fshader1 = QOpenGLShader(QOpenGLShader.Fragment, self)
+        checkGL(vshader1, vshader1.compileSourceCode(self.vSrc))
+        checkGL(fshader1, fshader1.compileSourceCode(self.fSrc))
+
+        # Create & Compile program for simple blit
+        program = QOpenGLShaderProgram()
+        checkGL(program, program.addShader(vshader1))
+        checkGL(program, program.addShader(fshader1))
+        program.bindAttributeLocation('aPos', 0)
+        program.bindAttributeLocation('aTex', 1)
+        checkGL(program, program.link())
+        # Bind program
+        checkGL(program, program.bind())
+        # Position array
+        program.enableAttributeArray(0)
+        program.setAttributeArray(0, self.vertPos)
+        # Texture Coords array
+        program.enableAttributeArray(1)
+        program.setAttributeArray(1, self.vertTex)
+        # Release
+        program.release()
+        self.programs.append(program)
 
     def paintGL(self) -> None:
         """
         Renders the OpenGL scene.
         Gets called whenever the widget needs to be updated.
         """
-        # Create TRS matrix
-        matrix = QMatrix4x4()
-        matrix.translate(self.t[0], self.t[1], 0)
-        matrix.scale(self.s, self.s, 1)
-        # Clear
+        # Create 1st matrix
+        matrix1 = QMatrix4x4()
+        matrix1.rotate(self.rot, 0.0, 0.0, 1.0)
+        matrix1.translate(self.tra[0], self.tra[1], 0)
+
+        # Create 2st matrix
+        matrix2 = QMatrix4x4()
+
+        # Create 3rd matrix
+        matrix3 = QMatrix4x4()
+        matrix3.translate(self.t[0], -self.t[1], 0)
+        matrix3.scale(self.s, self.s, 1)
+
+        # Combine transformations
+        matrix1 = matrix3 * matrix1
+        matrix2 = matrix3 * matrix2
+
+        # Draw step (1)
+        self.framebuffers[0].bind()
+        self.programs[0].bind()
+
+        self.gl.glActiveTexture(self.gl.GL_TEXTURE0)
+        self.gl.glBindTexture(self.gl.GL_TEXTURE_2D, self.textures[0].textureId())
+
+        self.gl.glClearColor(0.0, 0.0, 0.0, 0.0)
+        self.gl.glClear(self.gl.GL_COLOR_BUFFER_BIT)
+        self.programs[0].setUniformValue("uTex", 0)
+        self.programs[0].setUniformValue("uMatrix", matrix1)
+        self.gl.glDrawArrays(self.gl.GL_TRIANGLE_STRIP, 0, 4)
+
+        self.framebuffers[0].release()
+        self.programs[0].release()
+
+        # Draw step (2)
+        self.framebuffers[1].bind()
+        self.programs[0].bind()
+
+        self.gl.glActiveTexture(self.gl.GL_TEXTURE0)
+        self.gl.glBindTexture(self.gl.GL_TEXTURE_2D, self.textures[1].textureId())
+
+        self.gl.glClearColor(0.0, 0.0, 0.0, 0.0)
+        self.gl.glClear(self.gl.GL_COLOR_BUFFER_BIT)
+        self.programs[0].setUniformValue("uTex", 0)
+        self.programs[0].setUniformValue("uMatrix", matrix2)
+        self.gl.glDrawArrays(self.gl.GL_TRIANGLE_STRIP, 0, 4)
+
+        self.framebuffers[1].release()
+        self.programs[0].release()
+
+        # Create 4th matrix (for reversing framebuffer)
+        matrix4 = QMatrix4x4()
+        matrix4.scale(1, -1, 1)
+
+        # Draw step (3)
+        self.programs[1].bind()
+
+        self.gl.glActiveTexture(self.gl.GL_TEXTURE0)
+        self.gl.glBindTexture(self.gl.GL_TEXTURE_2D, self.framebuffers[0].texture())
+        self.gl.glActiveTexture(self.gl.GL_TEXTURE1)
+        self.gl.glBindTexture(self.gl.GL_TEXTURE_2D, self.framebuffers[1].texture())
+
         self.gl.glClearColor(0.0, 0.0, 0.0, 1.0)
         self.gl.glClear(self.gl.GL_COLOR_BUFFER_BIT)
-        # Update uniforms
-        self.program.setUniformValue("uMatrix", matrix)
-        # Textures MUST be loaded by the time paint is called
-        self.textures[0].bind(0)
-        self.textures[1].bind(1)
-        # Draw quad
+        self.programs[1].setUniformValue("uMatrix", matrix4)
+        self.programs[1].setUniformValue("uTexL", 0)
+        self.programs[1].setUniformValue("uTexR", 1)
+        self.customUniforms(self.programs[1])
         self.gl.glDrawArrays(self.gl.GL_TRIANGLE_STRIP, 0, 4)
+
+        self.programs[1].release()
+
+    def customUniforms(self, program: QOpenGLShaderProgram) -> None:
+        """
+        To be implemented by inheriting class.
+        """
+        pass
 
     def resizeGL(self, w: int, h: int) -> None:
         """
@@ -110,10 +228,15 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         # Update gl viewport
         self.gl.glViewport(0, 0, w, h)
         # Update quad to always fitCenter
-        side = min(w, h)
-        self.vertPos = [(-side / w, -side / h), (-side / w, side / h), (side / w, -side / h), (side / w, side / h)]
+        # side = min(w, h)
+        # self.vertPos = [(-side / w, -side / h), (-side / w, side / h), (side / w, -side / h), (side / w, side / h)]
         # Upload new array
-        self.program.setAttributeArray(0, self.vertPos)
+        # self.programs[0].setAttributeArray(0, self.vertPos)
+        #
+        self.framebuffers = [
+            QOpenGLFramebufferObject(w, h),
+            QOpenGLFramebufferObject(w, h)
+        ]
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         """
@@ -140,7 +263,7 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.lastPos = event.pos()
         # Update translation
         self.t[0] += dx
-        self.t[1] -= dy
+        self.t[1] += dy
         # Redraw
         self.update()
 
@@ -168,8 +291,8 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         # Find normalized mouse pos
         [mx, my] = [event.pos().x() / (self.w // 2) - 1, event.pos().y() / (self.h // 2) - 1]
         # Zoom towards mouse pos
-        self.t[0] = (mx - (mx - self.t[0]) * factor)
-        self.t[1] = (my - (my + self.t[1]) * factor) * -1
+        self.t[0] = mx - (mx - self.t[0]) * factor
+        self.t[1] = my - (my - self.t[1]) * factor
         # Redraw
         self.update()
 
@@ -179,9 +302,6 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         :param: referenceImg the QImage to take as reference
         :param: imgToAlign the QImage to beg aligned
         """
-        # Release old textures
-        for tex in self.textures:
-            tex.release()
         # Create textures
         self.textures = [
             QOpenGLTexture(referenceImg),
@@ -191,6 +311,22 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         for tex in self.textures:
             tex.setMinMagFilters(QOpenGLTexture.Nearest, QOpenGLTexture.Nearest)
             # tex.generateMipMaps()
+
+    def updateRotation(self, rot: float) -> None:
+        """
+        Public method to update Rotation parameter.
+        :param: rot the new value for rotation (in degrees)
+        """
+        self.rot = max(min(rot, 180.0), -180.0)
+        self.update()
+
+    def updateTranslation(self, tra: np.array) -> None:
+        """
+        Public method to update Translation parameter.
+        :param: tra the new value for translation (normalized [0.0, 1.0])
+        """
+        self.tra = QVector2D(tra[0], tra[1])
+        self.update()
 
 
 class AlphaPreviewViewer(QtSimpleOpenGlShaderViewer):
@@ -202,8 +338,8 @@ class AlphaPreviewViewer(QtSimpleOpenGlShaderViewer):
     precision highp float;
     attribute vec2 aPos;
     attribute vec2 aTex;
-    uniform mat4 uMatrix;
     varying vec2 vTex;
+    uniform mat4 uMatrix;
     void main(void) {
         vTex = aTex;
         gl_Position = uMatrix * vec4(aPos, 0, 1);
@@ -216,36 +352,31 @@ class AlphaPreviewViewer(QtSimpleOpenGlShaderViewer):
     uniform sampler2D uTexL;
     uniform sampler2D uTexR;
     uniform float uAlpha;
-    uniform float uRot;
-    uniform vec2 uTra;
     void main(void) {
-        vec2 lTex = vec2(vTex.x / (1 - uTra.x), vTex.y / (1 - uTra.y));
-        vec2 rTex = vec2((vTex.x - uTra.x) / (1 - uTra.x), (vTex.y - uTra.y) / (1 - uTra.y));
-    
-        vec4 lColRGBA = texture2D(uTexL, lTex);
-        vec4 rColRGBA = texture2D(uTexR, rTex);
+        // Sample textures
+        vec4 lColRGBA = texture2D(uTexL, vTex);
+        vec4 rColRGBA = texture2D(uTexR, vTex);
+        
+        // Check for valid pixel
+        bool hasLeftPixel  = (lColRGBA.a != 0.0);
+        bool hasRightPixel = (rColRGBA.a != 0.0);
 
-        bool isInB = (vTex.x >= uTra.x && vTex.y >= uTra.y);
-        bool isInA = (vTex.x <= (1-uTra.x) && vTex.y <= (1-uTra.y));
+        // Result color (default value is black)
+        vec4 col = vec4(0, 0, 0, 1);
         
-        // .______________.
-        // |AAAAAAAAAA    |  A is the "Reference Image"
-        // |AAAAAAAAAA    |  B is the "Image to Align"
-        // |AAAAAA####BBBB|  # is where the two images overlap
-        // |AAAAAA####BBBB|
-        // |      BBBBBBBB|
-        // |      BBBBBBBB|
-        // |______________|
-        
-        if (isInA && isInB) {
-            float alpha = uAlpha;
-            if (lColRGBA.r == 0.0 && lColRGBA.g == 0.0 && lColRGBA.b == 0.0 && lColRGBA.a == 0.0) alpha = 1.0;
-            if (rColRGBA.r == 0.0 && rColRGBA.g == 0.0 && rColRGBA.b == 0.0 && rColRGBA.a == 0.0) alpha = 0.0;
-            gl_FragColor = mix(lColRGBA, rColRGBA, alpha);
+        // Check if is an overlapping pixel
+        if (hasLeftPixel && hasRightPixel) {
+            
+            // Mix colors
+            col = mix(lColRGBA, rColRGBA, uAlpha);
+            
         } else {
-            vec4 col = (isInA) ? lColRGBA : (isInB) ? rColRGBA : vec4(0, 0, 0, 1);
-            gl_FragColor = col;
+            if (hasLeftPixel)  col = lColRGBA;
+            if (hasRightPixel) col = rColRGBA;
         }
+        
+        // Output color
+        gl_FragColor = col;
     }
     """
 
@@ -257,19 +388,14 @@ class AlphaPreviewViewer(QtSimpleOpenGlShaderViewer):
         )
         # Custom parameters
         self.alpha = 0.5
-        self.rot = 0
-        self.tra = QVector2D(0, 0)
 
-    def paintGL(self) -> None:
+    def customUniforms(self, program: QOpenGLShaderProgram) -> None:
         """
         Override to update uniforms before painting
+        :param: program the ShaderProgram to use to upload custom uniforms
         """
         # Update uniforms
-        self.program.setUniformValue("uAlpha", self.alpha)
-        self.program.setUniformValue("uRot", self.rot)
-        self.program.setUniformValue("uTra", self.tra)
-        # Forward
-        super(AlphaPreviewViewer, self).paintGL()
+        program.setUniformValue("uAlpha", self.alpha)
 
     def updateAlpha(self, alpha: float) -> None:
         """
@@ -277,22 +403,6 @@ class AlphaPreviewViewer(QtSimpleOpenGlShaderViewer):
         :param: alpha the new value for alpha [0.0, 1.0]
         """
         self.alpha = max(min(alpha, 1.0), 0.0)
-        self.update()
-
-    def updateRotation(self, rot: float) -> None:
-        """
-        Public method to update Rotation parameter.
-        :param: rot the new value for rotation (in degrees)
-        """
-        self.rot = np.deg2rad(max(min(rot, 180.0), -180.0))
-        self.update()
-
-    def updateTranslation(self, tra: np.array) -> None:
-        """
-        Public method to update Translation parameter.
-        :param: tra the new value for translation (normalized [0.0, 1.0])
-        """
-        self.tra = QVector2D(tra[0], tra[1])
         self.update()
 
 
@@ -305,8 +415,8 @@ class GrayPreviewViewer(QtSimpleOpenGlShaderViewer):
     precision highp float;
     attribute vec2 aPos;
     attribute vec2 aTex;
-    uniform mat4 uMatrix;
     varying vec2 vTex;
+    uniform mat4 uMatrix;
     void main(void) {
         vTex = aTex;
         gl_Position = uMatrix * vec4(aPos, 0, 1);
@@ -315,42 +425,54 @@ class GrayPreviewViewer(QtSimpleOpenGlShaderViewer):
 
     F_SHADER_SOURCE = """
     precision highp float;
+
     varying vec2 vTex;
+
     uniform sampler2D uTexL;
     uniform sampler2D uTexR;
-    uniform float uRot;
-    uniform vec2 uTra;
     uniform float uThr;
+
+    // Utility function to convert RGBA color to GRAY scale (keeping alpha)
+    vec4 rgba2gray(vec4 RGBA) {
+        // Wikipedia article about luminance conversion:
+        // https://en.wikipedia.org/wiki/Luma_(video)
+        vec3 RGBA_TO_GRAY = vec3(0.2126, 0.7152, 0.0722);
+        float col = dot(RGBA_TO_GRAY, RGBA.rgb);
+        return vec4(col, col, col, RGBA.a);
+    }
+
     void main(void) {
-        vec2 lTex = vec2(vTex.x / (1 - uTra.x), vTex.y / (1 - uTra.y));
-        vec2 rTex = vec2((vTex.x - uTra.x) / (1 - uTra.x), (vTex.y - uTra.y) / (1 - uTra.y));
-    
-        vec4 lColRGBA = texture2D(uTexL, lTex);
-        vec4 rColRGBA = texture2D(uTexR, rTex);
+        // Sample textures
+        vec4 lColRGBA = texture2D(uTexL, vTex);
+        vec4 rColRGBA = texture2D(uTexR, vTex);
         
-        float lGray = dot(vec3(0.2126, 0.7152, 0.0722), lColRGBA.rgb);
-        float rGray = dot(vec3(0.2126, 0.7152, 0.0722), rColRGBA.rgb);
+        // Convert to gray scale
+        vec4 lColGray = rgba2gray(lColRGBA);
+        vec4 rColGray = rgba2gray(rColRGBA);
         
-        bool isInB = (vTex.x >= uTra.x && vTex.y >= uTra.y);
-        bool isInA = (vTex.x <= (1-uTra.x) && vTex.y <= (1-uTra.y));
+        // Check for valid pixel
+        bool hasLeftPixel  = (lColRGBA.a != 0.0);
+        bool hasRightPixel = (rColRGBA.a != 0.0);
+
+        // Result color (default value is black)
+        vec4 col = vec4(0, 0, 0, 1);
         
-        // .______________.
-        // |AAAAAAAAAA    |  A is the "Reference Image"
-        // |AAAAAAAAAA    |  B is the "Image to Align"
-        // |AAAAAA####BBBB|  # is where the two images overlap
-        // |AAAAAA####BBBB|
-        // |      BBBBBBBB|
-        // |      BBBBBBBB|
-        // |______________|
-        
-        if (isInA && isInB) {
-            float col = abs(lGray - rGray);
-            if (col <= uThr) col = 0.0;
-            gl_FragColor = vec4(col, col, col, 1);
+        // Check if is an overlapping pixel
+        if (hasLeftPixel && hasRightPixel) {
+            
+            // Compute the abs-diff
+            col = vec4(abs(lColGray.rgb - rColGray.rgb).rgb, 1.0);
+            
+            // Threshold
+            if (col.r <= uThr) col.rgb = 0.0;
+            
         } else {
-            float col = (isInA) ? lGray : (isInB) ? rGray : 0;
-            gl_FragColor = vec4(col, col, col, 1);
+            if (hasLeftPixel)  col = lColRGBA;
+            if (hasRightPixel) col = rColRGBA;
         }
+        
+        // Output color
+        gl_FragColor = col;
     }
     """
 
@@ -361,36 +483,15 @@ class GrayPreviewViewer(QtSimpleOpenGlShaderViewer):
             parent
         )
         # Custom parameters
-        self.rot = 0.0
-        self.tra = QVector2D(0.0, 0.0)
         self.thr = 0.0
 
-    def paintGL(self) -> None:
+    def customUniforms(self, program: QOpenGLShaderProgram) -> None:
         """
         Override to update uniforms before painting
+        :param: program the ShaderProgram to use to upload custom uniforms
         """
         # Update uniforms
-        self.program.setUniformValue("uRot", self.rot)
-        self.program.setUniformValue("uTra", self.tra)
-        self.program.setUniformValue("uThr", self.thr)
-        # Forward
-        super(GrayPreviewViewer, self).paintGL()
-
-    def updateRotation(self, rot: float) -> None:
-        """
-        Public method to update Rotation parameter.
-        :param: rot the new value for rotation (in degrees)
-        """
-        self.rot = np.deg2rad(max(min(rot, 180.0), -180.0))
-        self.update()
-
-    def updateTranslation(self, tra: np.array) -> None:
-        """
-        Public method to update Translation parameter.
-        :param: tra the new value for translation (normalized [0.0, 1.0])
-        """
-        self.tra = QVector2D(tra[0], tra[1])
-        self.update()
+        program.setUniformValue("uThr", self.thr)
 
     def updateThreshold(self, thr: int) -> None:
         """
@@ -571,8 +672,8 @@ class QtAlignmentToolWidget(QWidget):
         self.xSliderLabel.setMinimumWidth(50)
         self.xSlider = QSlider(Qt.Horizontal)
         self.xSlider.setFocusPolicy(Qt.StrongFocus)
-        self.xSlider.setMinimum(0)
-        self.xSlider.setMaximum(256)
+        self.xSlider.setMinimum(-256)
+        self.xSlider.setMaximum(+256)
         self.xSlider.setTickInterval(1)
         self.xSlider.setValue(self.T[0])
         self.xSlider.setMinimumWidth(50)
@@ -584,8 +685,8 @@ class QtAlignmentToolWidget(QWidget):
         self.ySliderLabel.setMinimumWidth(50)
         self.ySlider = QSlider(Qt.Horizontal)
         self.ySlider.setFocusPolicy(Qt.StrongFocus)
-        self.ySlider.setMinimum(0)
-        self.ySlider.setMaximum(256)
+        self.ySlider.setMinimum(-256)
+        self.ySlider.setMaximum(+256)
         self.ySlider.setTickInterval(1)
         self.ySlider.setValue(self.T[1])
         self.ySlider.setMinimumWidth(50)
@@ -1510,8 +1611,10 @@ class QtAlignmentToolWidget(QWidget):
         ph, pw = max(h1, h2), max(w1, w2)
         # Update preview size
         self.previewSize = [ph, pw]
-        self.xSlider.setMaximum(pw // 2)
-        self.ySlider.setMaximum(ph // 2)
+        self.xSlider.setMinimum(-pw)
+        self.xSlider.setMaximum(+pw)
+        self.ySlider.setMinimum(-ph)
+        self.ySlider.setMaximum(+ph)
 
     def __initializePreview(self) -> None:
         """
@@ -1608,8 +1711,9 @@ class QtAlignmentToolWidget(QWidget):
         d = 2
         w = [marker.weight for marker in self.markers]
         sw = sum(w)
-        q = [marker.lViewPos for marker in self.markers]
-        p = [marker.rViewPos for marker in self.markers]
+        [offX, offY] = [self.previewSize[0] / 2, self.previewSize[1] / 2]
+        q = [[marker.lViewPos[0] - offX, marker.lViewPos[1] - offY] for marker in self.markers]
+        p = [[marker.rViewPos[0] - offX, marker.rViewPos[1] - offY] for marker in self.markers]
 
         # ==================================================================================
         # [1] Compute the weighted centroids _q (for q) and _p (for p)
