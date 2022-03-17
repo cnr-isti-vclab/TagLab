@@ -510,6 +510,7 @@ class QtAlignmentToolWidget(QWidget):
         self.setMinimumHeight(600)
         self.setWindowTitle("Alignment Tool")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
+        self.syncEnabled = True
         self.alpha = 50
         self.threshold = 32
         self.previewSize = None
@@ -698,6 +699,7 @@ class QtAlignmentToolWidget(QWidget):
         self.leftImgViewer.mouseUp.connect(self.onLeftViewMouseUp)
         self.leftImgViewer.mouseMove.connect(self.onLeftViewMouseMove)
         self.leftImgViewer.mouseOut.connect(self.onLeftViewMouseOut)
+        self.leftImgViewer.viewHasChanged[float, float, float].connect(self.leftImgViewerParamsChanges)
 
         layout8 = QHBoxLayout()
         layout8.addWidget(self.leftComboboxLabel)
@@ -724,6 +726,7 @@ class QtAlignmentToolWidget(QWidget):
         self.rightImgViewer.mouseUp.connect(self.onRightViewMouseUp)
         self.rightImgViewer.mouseMove.connect(self.onRightViewMouseMove)
         self.rightImgViewer.mouseOut.connect(self.onRightViewMouseOut)
+        self.rightImgViewer.viewHasChanged[float, float, float].connect(self.rightImgViewerParamsChanges)
 
         layout9 = QHBoxLayout()
         layout9.addWidget(self.rightComboboxLabel)
@@ -837,21 +840,49 @@ class QtAlignmentToolWidget(QWidget):
             # Forward to private method
             self.__updateImgViewers()
 
+    @pyqtSlot(float, float, float)
+    def leftImgViewerParamsChanges(self, posx: float, posy: float, zoom: float) -> None:
+        """
+        Callback called on view params changes.
+        :param: posx the new x offset from left
+        :param: posy the new y offset from top
+        :param: zoom the new zoom (pixel_size agnostic)
+        """
+        # Clear text items to update visibility
+        for i in range(0, len(self.markers)):
+            self.__clearMarker(i, True)
+        # Redraw
+        self.__updateMarkers()
+        # Update right one (if sync is enabled)
+        if self.syncEnabled:
+            self.rightImgViewer.setViewParameters(posx, posy, zoom)
+
+    @pyqtSlot(float, float, float)
+    def rightImgViewerParamsChanges(self, posx: float, posy: float, zoom: float) -> None:
+        """
+        Callback called on view params changes.
+        :param: posx the new x offset from left
+        :param: posy the new y offset from top
+        :param: zoom the new zoom (pixel_size agnostic)
+        """
+        # Clear text items to update visibility
+        for i in range(0, len(self.markers)):
+            self.__clearMarker(i, True)
+        # Redraw
+        self.__updateMarkers()
+        # Update left one (if sync is enabled)
+        if self.syncEnabled:
+            self.leftImgViewer.setViewParameters(posx, posy, zoom)
+
     @pyqtSlot(int)
     def toggleSync(self, value: int) -> None:
         """
         Callback called when the sync mode is turned on/off.
         :param: value a boolean to enable/disable the sync mode.
         """
-        # If Enabled
-        if value:
-            # Share each action with the other widget
-            self.leftImgViewer.viewHasChanged[float, float, float].connect(self.rightImgViewer.setViewParameters)
-            self.rightImgViewer.viewHasChanged[float, float, float].connect(self.leftImgViewer.setViewParameters)
-        else:
-            # Disconnect the two widgets
-            self.leftImgViewer.viewHasChanged[float, float, float].disconnect()
-            self.rightImgViewer.viewHasChanged[float, float, float].disconnect()
+        # Update mode
+        self.syncEnabled = value
+        # Changes can be forwarded if needed by storing last values and forcing update here
 
     @pyqtSlot(int)
     def togglePreview(self, value: int) -> None:
@@ -1267,7 +1298,7 @@ class QtAlignmentToolWidget(QWidget):
         """
         Private method to clear marker scene objs.
         :param: i the index of the marker to clear.
-        :param: onlyText is a boolean that specifies to only clear textObjs.
+        :param: onlyText is a boolean that specifies to only clear text items.
         """
         # Remove items from scene
         for [objL, objR] in self.markers[i].textObjs:
@@ -1310,15 +1341,17 @@ class QtAlignmentToolWidget(QWidget):
                 sceneObjs.append([lineL, lineR])
             # Update list
             marker.sceneObjs = sceneObjs
-
         # Redraw only if needed
         if len(marker.textObjs) == 0:
             # Draw labels
             textObjs = []
+            color = marker.pen.color().name()
+            lErrorLabelVisibility = (self.leftImgViewer.zoom_factor > 3.25)
+            rErrorLabelVisibility = (self.rightImgViewer.zoom_factor > 3.25)
             # Left identifier
             textL = QGraphicsTextItem()
             textL.setHtml(
-                '<div style="background:' + marker.pen.color().name() + ';">' + str(marker.identifier) + '</p>')
+                '<div style="background:' + color + ';">' + str(marker.identifier) + '</p>')
             textL.setFont(QFont("Roboto", 12, QFont.Bold))
             textL.setOpacity(0.75)
             textL.setFlag(QGraphicsItem.ItemIgnoresTransformations)
@@ -1326,8 +1359,7 @@ class QtAlignmentToolWidget(QWidget):
             textL.setZValue(8)
             # Right identifier
             textR = QGraphicsTextItem()
-            textR.setHtml(
-                '<div style="background:' + marker.pen.color().name() + ';">' + str(marker.identifier) + '</p>')
+            textR.setHtml('<div style="background:' + color + ';">' + str(marker.identifier) + '</p>')
             textR.setFont(QFont("Roboto", 12, QFont.Bold))
             textR.setOpacity(0.75)
             textR.setFlag(QGraphicsItem.ItemIgnoresTransformations)
@@ -1335,20 +1367,22 @@ class QtAlignmentToolWidget(QWidget):
             textR.setZValue(8)
             # Left error
             errL = QGraphicsTextItem()
-            errL.setHtml('<div style="background:' + marker.pen.color().name() + ';">' + str(marker.error) + '</p>')
+            errL.setHtml('<div style="background:' + color + ';">' + str(marker.error) + '</p>')
             errL.setFont(QFont("Roboto", 12, QFont.Bold))
             errL.setOpacity(0.5)
             errL.setFlag(QGraphicsItem.ItemIgnoresTransformations)
             errL.setDefaultTextColor(Qt.black)
             errL.setZValue(7)
+            errL.setVisible(lErrorLabelVisibility)
             # Right error
             errR = QGraphicsTextItem()
-            errR.setHtml('<div style="background:' + marker.pen.color().name() + ';">' + str(marker.error) + '</p>')
+            errR.setHtml('<div style="background:' + color + ';">' + str(marker.error) + '</p>')
             errR.setFont(QFont("Roboto", 12, QFont.Bold))
             errR.setOpacity(0.5)
             errR.setFlag(QGraphicsItem.ItemIgnoresTransformations)
             errR.setDefaultTextColor(Qt.black)
             errR.setZValue(7)
+            errR.setVisible(rErrorLabelVisibility)
             # Update text pos
             (bboxL, bboxR) = marker.getBBox()
             textL.setPos(bboxL.topRight())
