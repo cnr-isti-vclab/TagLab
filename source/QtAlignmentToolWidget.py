@@ -219,9 +219,33 @@ class AlphaPreviewViewer(QtSimpleOpenGlShaderViewer):
     uniform float uRot;
     uniform vec2 uTra;
     void main(void) {
-        vec4 leftSample = texture2D(uTexL, vTex);
-        vec4 rightSample = texture2D(uTexR, vTex);
-        gl_FragColor = mix(rightSample, leftSample, uAlpha);
+        vec2 lTex = vec2(vTex.x / (1 - uTra.x), vTex.y / (1 - uTra.y));
+        vec2 rTex = vec2((vTex.x - uTra.x) / (1 - uTra.x), (vTex.y - uTra.y) / (1 - uTra.y));
+    
+        vec4 lColRGBA = texture2D(uTexL, lTex);
+        vec4 rColRGBA = texture2D(uTexR, rTex);
+
+        bool isInB = (vTex.x >= uTra.x && vTex.y >= uTra.y);
+        bool isInA = (vTex.x <= (1-uTra.x) && vTex.y <= (1-uTra.y));
+        
+        // .______________.
+        // |AAAAAAAAAA    |  A is the "Reference Image"
+        // |AAAAAAAAAA    |  B is the "Image to Align"
+        // |AAAAAA####BBBB|  # is where the two images overlap
+        // |AAAAAA####BBBB|
+        // |      BBBBBBBB|
+        // |      BBBBBBBB|
+        // |______________|
+        
+        if (isInA && isInB) {
+            float alpha = uAlpha;
+            if (lColRGBA.r == 0.0 && lColRGBA.g == 0.0 && lColRGBA.b == 0.0 && lColRGBA.a == 0.0) alpha = 1.0;
+            if (rColRGBA.r == 0.0 && rColRGBA.g == 0.0 && rColRGBA.b == 0.0 && rColRGBA.a == 0.0) alpha = 0.0;
+            gl_FragColor = mix(lColRGBA, rColRGBA, alpha);
+        } else {
+            vec4 col = (isInA) ? lColRGBA : (isInB) ? rColRGBA : vec4(0, 0, 0, 1);
+            gl_FragColor = col;
+        }
     }
     """
 
@@ -255,7 +279,7 @@ class AlphaPreviewViewer(QtSimpleOpenGlShaderViewer):
         self.alpha = max(min(alpha, 1.0), 0.0)
         self.update()
 
-    def updateRot(self, rot: float) -> None:
+    def updateRotation(self, rot: float) -> None:
         """
         Public method to update Rotation parameter.
         :param: rot the new value for rotation (in degrees)
@@ -263,10 +287,10 @@ class AlphaPreviewViewer(QtSimpleOpenGlShaderViewer):
         self.rot = np.deg2rad(max(min(rot, 180.0), -180.0))
         self.update()
 
-    def updateTra(self, tra: np.array) -> None:
+    def updateTranslation(self, tra: np.array) -> None:
         """
         Public method to update Translation parameter.
-        :param: tra the new value for translation (in pixels)
+        :param: tra the new value for translation (normalized [0.0, 1.0])
         """
         self.tra = QVector2D(tra[0], tra[1])
         self.update()
@@ -296,10 +320,37 @@ class GrayPreviewViewer(QtSimpleOpenGlShaderViewer):
     uniform sampler2D uTexR;
     uniform float uRot;
     uniform vec2 uTra;
+    uniform float uThr;
     void main(void) {
-        vec4 leftSample = texture2D(uTexL, vTex);
-        vec4 rightSample = texture2D(uTexR, vTex);
-        gl_FragColor = leftSample;
+        vec2 lTex = vec2(vTex.x / (1 - uTra.x), vTex.y / (1 - uTra.y));
+        vec2 rTex = vec2((vTex.x - uTra.x) / (1 - uTra.x), (vTex.y - uTra.y) / (1 - uTra.y));
+    
+        vec4 lColRGBA = texture2D(uTexL, lTex);
+        vec4 rColRGBA = texture2D(uTexR, rTex);
+        
+        float lGray = dot(vec3(0.2126, 0.7152, 0.0722), lColRGBA.rgb);
+        float rGray = dot(vec3(0.2126, 0.7152, 0.0722), rColRGBA.rgb);
+        
+        bool isInB = (vTex.x >= uTra.x && vTex.y >= uTra.y);
+        bool isInA = (vTex.x <= (1-uTra.x) && vTex.y <= (1-uTra.y));
+        
+        // .______________.
+        // |AAAAAAAAAA    |  A is the "Reference Image"
+        // |AAAAAAAAAA    |  B is the "Image to Align"
+        // |AAAAAA####BBBB|  # is where the two images overlap
+        // |AAAAAA####BBBB|
+        // |      BBBBBBBB|
+        // |      BBBBBBBB|
+        // |______________|
+        
+        if (isInA && isInB) {
+            float col = abs(lGray - rGray);
+            if (col <= uThr) col = 0.0;
+            gl_FragColor = vec4(col, col, col, 1);
+        } else {
+            float col = (isInA) ? lGray : (isInB) ? rGray : 0;
+            gl_FragColor = vec4(col, col, col, 1);
+        }
     }
     """
 
@@ -310,8 +361,9 @@ class GrayPreviewViewer(QtSimpleOpenGlShaderViewer):
             parent
         )
         # Custom parameters
-        self.rot = 0
-        self.tra = QVector2D(0, 0)
+        self.rot = 0.0
+        self.tra = QVector2D(0.0, 0.0)
+        self.thr = 0.0
 
     def paintGL(self) -> None:
         """
@@ -320,10 +372,11 @@ class GrayPreviewViewer(QtSimpleOpenGlShaderViewer):
         # Update uniforms
         self.program.setUniformValue("uRot", self.rot)
         self.program.setUniformValue("uTra", self.tra)
+        self.program.setUniformValue("uThr", self.thr)
         # Forward
         super(GrayPreviewViewer, self).paintGL()
 
-    def updateRot(self, rot: float) -> None:
+    def updateRotation(self, rot: float) -> None:
         """
         Public method to update Rotation parameter.
         :param: rot the new value for rotation (in degrees)
@@ -331,12 +384,20 @@ class GrayPreviewViewer(QtSimpleOpenGlShaderViewer):
         self.rot = np.deg2rad(max(min(rot, 180.0), -180.0))
         self.update()
 
-    def updateTra(self, tra: np.array) -> None:
+    def updateTranslation(self, tra: np.array) -> None:
         """
         Public method to update Translation parameter.
-        :param: tra the new value for translation (in pixels)
+        :param: tra the new value for translation (normalized [0.0, 1.0])
         """
         self.tra = QVector2D(tra[0], tra[1])
+        self.update()
+
+    def updateThreshold(self, thr: int) -> None:
+        """
+        Public method to update Threshold parameter.
+        :param: thr the new value for threshold [0, 255]
+        """
+        self.thr = min(max(thr / 255.0, 0.0), 1.0)
         self.update()
 
 
@@ -549,7 +610,7 @@ class QtAlignmentToolWidget(QWidget):
         self.moveDownButton.clicked.connect(self.onYValueIncremented)
 
         # Slider (Rot)
-        self.rSliderLabel = QLabel("R: " + str(self.R))
+        self.rSliderLabel = QLabel("R: " + str(self.R / 10.0))
         self.rSliderLabel.setMinimumWidth(100)
         self.rSlider = QSlider(Qt.Horizontal)
         self.rSlider.setFocusPolicy(Qt.StrongFocus)
@@ -880,7 +941,7 @@ class QtAlignmentToolWidget(QWidget):
         Callback called when the value of the rotation changes by +1.
         """
         # Forward
-        self.rSlider.setValue(self.R * 10 + 1)
+        self.rSlider.setValue(self.R + 1)
 
     @pyqtSlot()
     def onRotValueDecremented(self) -> None:
@@ -888,7 +949,7 @@ class QtAlignmentToolWidget(QWidget):
         Callback called when the value of the rotation changes by -1.
         """
         # Forward
-        self.rSlider.setValue(self.R * 10 - 1)
+        self.rSlider.setValue(self.R - 1)
 
     @pyqtSlot(int)
     def rotationAngleChanges(self, value: int) -> None:
@@ -896,8 +957,8 @@ class QtAlignmentToolWidget(QWidget):
         Callback called when the value of the rotation changes.
         :param: value the new rot value
         """
-        self.R = value / 10.0
-        self.rSliderLabel.setText("R: " + str(self.R))
+        self.R = value
+        self.rSliderLabel.setText("R: " + str(self.R / 10.0))
         # Update preview
         self.__updatePreview()
 
@@ -1349,6 +1410,12 @@ class QtAlignmentToolWidget(QWidget):
         # Update overlay images
         self.__deleteAllMarkers()
         self.__updateMarkers()
+        # Clear data of last comparison
+        self.alphaSlider.setValue(50)
+        self.thresholdSlider.setValue(32)
+        self.rSlider.setValue(0)
+        self.xSlider.setValue(0)
+        self.ySlider.setValue(0)
 
     def __padImage(self, img: QImage, pxSize: float) -> QImage:
         """
@@ -1378,7 +1445,7 @@ class QtAlignmentToolWidget(QWidget):
         # Pad img
         [rh, rw] = [self.previewSize[0] / pxSize, self.previewSize[1] / pxSize]
         [ph, pw] = [int(rh - h), int(rw - w)]
-        arr = np.pad(arr, [(0, ph), (0, pw), (0, 0)], mode='constant')
+        arr = np.pad(arr, [(0, ph), (0, pw), (0, 0)], mode='constant', constant_values=0)
         return arr
 
     def __toQImage(self, arr: np.ndarray, imgFormat: int) -> QImage:
@@ -1416,12 +1483,9 @@ class QtAlignmentToolWidget(QWidget):
         """
         Private method called to initialize the preview.
         """
-        # Retrieve indexes
-        index1 = self.leftCombobox.currentIndex()
-        index2 = self.rightCombobox.currentIndex()
         # Retrieve images
-        img1 = self.project.images[index1].channels[0].qimage
-        img2 = self.project.images[index2].channels[0].qimage
+        img1 = self.leftImgViewer.img_map
+        img2 = self.rightImgViewer.img_map
         # Pass images to viewers
         self.leftPreviewViewer.setImages(img1, img2)
         self.rightPreviewViewer.setImages(img1, img2)
@@ -1435,10 +1499,11 @@ class QtAlignmentToolWidget(QWidget):
         self.leftPreviewViewer.updateAlpha(self.alpha / 100.0)
         if not onlyAlpha:
             # Update R and T values
-            self.leftPreviewViewer.updateRot(self.R)
-            self.leftPreviewViewer.updateTra(self.T)
-            self.rightPreviewViewer.updateRot(self.R)
-            self.rightPreviewViewer.updateTra(self.T)
+            self.leftPreviewViewer.updateRotation(self.R / 10.0)
+            self.leftPreviewViewer.updateTranslation(self.T / self.previewSize)
+            self.rightPreviewViewer.updateRotation(self.R / 10.0)
+            self.rightPreviewViewer.updateTranslation(self.T / self.previewSize)
+            self.rightPreviewViewer.updateThreshold(self.threshold)
 
     def __togglePreviewMode(self, isPreviewMode: bool) -> None:
         """
