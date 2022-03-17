@@ -53,7 +53,9 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.programs: list[QOpenGLShaderProgram] = []
         self.textures: list[QOpenGLTexture] = []
         self.framebuffers: list[QOpenGLFramebufferObject] = []
-        self.vertPos = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
+        self.vertPos1 = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
+        self.vertPos2 = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
+        self.vertPos3 = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
         self.vertTex = [(0, 1), (0, 0), (1, 1), (1, 0)]
         self.vSrc = vSrc
         self.fSrc = fSrc
@@ -64,6 +66,8 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.h = 100
         # Gesture
         self.lastPos = None
+        self.minZoom = 0.25
+        self.maxZoom = 16.0
         # Alignment data
         self.rot = 0
         self.tra = QVector2D(0, 0)
@@ -98,7 +102,6 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         checkGL(program, program.bind())
         # Position array
         program.enableAttributeArray(0)
-        program.setAttributeArray(0, self.vertPos)
         # Texture Coords array
         program.enableAttributeArray(1)
         program.setAttributeArray(1, self.vertTex)
@@ -125,7 +128,7 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         checkGL(program, program.bind())
         # Position array
         program.enableAttributeArray(0)
-        program.setAttributeArray(0, self.vertPos)
+        program.setAttributeArray(0, self.vertPos3)
         # Texture Coords array
         program.enableAttributeArray(1)
         program.setAttributeArray(1, self.vertTex)
@@ -156,8 +159,8 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         matrix2 = matrix3 * matrix2
 
         # Draw step (1)
-        self.framebuffers[0].bind()
-        self.programs[0].bind()
+        checkGL(self.framebuffers[0], self.framebuffers[0].bind())
+        checkGL(self.programs[0], self.programs[0].bind())
 
         self.gl.glActiveTexture(self.gl.GL_TEXTURE0)
         self.gl.glBindTexture(self.gl.GL_TEXTURE_2D, self.textures[0].textureId())
@@ -166,14 +169,15 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.gl.glClear(self.gl.GL_COLOR_BUFFER_BIT)
         self.programs[0].setUniformValue("uTex", 0)
         self.programs[0].setUniformValue("uMatrix", matrix1)
+        self.programs[0].setAttributeArray(0, self.vertPos1)
         self.gl.glDrawArrays(self.gl.GL_TRIANGLE_STRIP, 0, 4)
 
-        self.framebuffers[0].release()
+        checkGL(self.framebuffers[0], self.framebuffers[0].release())
         self.programs[0].release()
 
         # Draw step (2)
-        self.framebuffers[1].bind()
-        self.programs[0].bind()
+        checkGL(self.framebuffers[1], self.framebuffers[1].bind())
+        checkGL(self.programs[0], self.programs[0].bind())
 
         self.gl.glActiveTexture(self.gl.GL_TEXTURE0)
         self.gl.glBindTexture(self.gl.GL_TEXTURE_2D, self.textures[1].textureId())
@@ -182,9 +186,10 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.gl.glClear(self.gl.GL_COLOR_BUFFER_BIT)
         self.programs[0].setUniformValue("uTex", 0)
         self.programs[0].setUniformValue("uMatrix", matrix2)
+        self.programs[0].setAttributeArray(0, self.vertPos2)
         self.gl.glDrawArrays(self.gl.GL_TRIANGLE_STRIP, 0, 4)
 
-        self.framebuffers[1].release()
+        checkGL(self.framebuffers[1], self.framebuffers[1].release())
         self.programs[0].release()
 
         # Create 4th matrix (for reversing framebuffer)
@@ -192,7 +197,7 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         matrix4.scale(1, -1, 1)
 
         # Draw step (3)
-        self.programs[1].bind()
+        checkGL(self.programs[1], self.programs[1].bind())
 
         self.gl.glActiveTexture(self.gl.GL_TEXTURE0)
         self.gl.glBindTexture(self.gl.GL_TEXTURE_2D, self.framebuffers[0].texture())
@@ -205,6 +210,7 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.programs[1].setUniformValue("uTexL", 0)
         self.programs[1].setUniformValue("uTexR", 1)
         self.customUniforms(self.programs[1])
+        self.programs[1].setAttributeArray(0, self.vertPos3)
         self.gl.glDrawArrays(self.gl.GL_TRIANGLE_STRIP, 0, 4)
 
         self.programs[1].release()
@@ -227,16 +233,14 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.h = h
         # Update gl viewport
         self.gl.glViewport(0, 0, w, h)
-        # Update quad to always fitCenter
-        # side = min(w, h)
-        # self.vertPos = [(-side / w, -side / h), (-side / w, side / h), (side / w, -side / h), (side / w, side / h)]
-        # Upload new array
-        # self.programs[0].setAttributeArray(0, self.vertPos)
-        #
+        # Recreate frame buffers
         self.framebuffers = [
             QOpenGLFramebufferObject(w, h),
             QOpenGLFramebufferObject(w, h)
         ]
+        # Recreate viewport quad to keep aspect ratio
+        side = max(w, h)
+        self.vertPos3 = [(-side / w, -side / h), (-side / w, side / h), (side / w, -side / h), (side / w, side / h)]
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         """
@@ -285,8 +289,8 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         """
         # Update scale
         lastScale = self.s
-        self.s += event.angleDelta().y() / 180
-        self.s = min(max(self.s, 0.75), 16.0)
+        self.s = self.s * pow(pow(2, 0.5), event.angleDelta().y() / 100.0)
+        self.s = min(max(self.s, self.minZoom), self.maxZoom)
         factor = self.s / lastScale
         # Find normalized mouse pos
         [mx, my] = [event.pos().x() / (self.w // 2) - 1, event.pos().y() / (self.h // 2) - 1]
@@ -296,11 +300,12 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         # Redraw
         self.update()
 
-    def setImages(self, referenceImg: QImage, imgToAlign: QImage) -> None:
+    def setImages(self, referenceImg: QImage, imgToAlign: QImage, ratioWH: float) -> None:
         """
         Called by the container widget to set the images to compare.
         :param: referenceImg the QImage to take as reference
         :param: imgToAlign the QImage to beg aligned
+        :param: ratioWH the w/h ratio
         """
         # Create textures
         self.textures = [
@@ -311,6 +316,9 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         for tex in self.textures:
             tex.setMinMagFilters(QOpenGLTexture.Nearest, QOpenGLTexture.Nearest)
             # tex.generateMipMaps()
+        # Update quads to keep aspect ratio
+        self.vertPos1 = [(-ratioWH, -1), (-ratioWH, 1), (ratioWH, -1), (ratioWH, 1)]
+        self.vertPos2 = [(-ratioWH, -1), (-ratioWH, 1), (ratioWH, -1), (ratioWH, 1)]
 
     def updateRotation(self, rot: float) -> None:
         """
@@ -467,8 +475,8 @@ class GrayPreviewViewer(QtSimpleOpenGlShaderViewer):
             if (col.r <= uThr) col.rgb = 0.0;
             
         } else {
-            if (hasLeftPixel)  col = lColRGBA;
-            if (hasRightPixel) col = rColRGBA;
+            if (hasLeftPixel)  col = lColGray;
+            if (hasRightPixel) col = rColGray;
         }
         
         // Output color
@@ -1623,9 +1631,12 @@ class QtAlignmentToolWidget(QWidget):
         # Retrieve images
         img1 = self.leftImgViewer.img_map
         img2 = self.rightImgViewer.img_map
+        # Compute ratio
+        [h, w] = self.previewSize
+        ratioWH = w / h
         # Pass images to viewers
-        self.leftPreviewViewer.setImages(img1, img2)
-        self.rightPreviewViewer.setImages(img1, img2)
+        self.leftPreviewViewer.setImages(img1, img2, ratioWH)
+        self.rightPreviewViewer.setImages(img1, img2, ratioWH)
 
     def __updatePreview(self, onlyAlpha: bool = False) -> None:
         """
@@ -1711,7 +1722,7 @@ class QtAlignmentToolWidget(QWidget):
         d = 2
         w = [marker.weight for marker in self.markers]
         sw = sum(w)
-        [offX, offY] = [self.previewSize[0] / 2, self.previewSize[1] / 2]
+        [offY, offX] = [self.previewSize[0] / 2, self.previewSize[1] / 2]
         q = [[marker.lViewPos[0] - offX, marker.lViewPos[1] - offY] for marker in self.markers]
         p = [[marker.rViewPos[0] - offX, marker.rViewPos[1] - offY] for marker in self.markers]
 
