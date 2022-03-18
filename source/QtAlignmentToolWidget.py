@@ -49,10 +49,10 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
     V_SHADER_SOURCE_POINTS = """
     precision highp float;
     attribute vec2 aPos;
-    uniform vec4 uCol;
+    uniform float uSize;
     uniform mat4 uMatrix;
     void main(void) {
-        gl_PointSize = 5.0;
+        gl_PointSize = uSize;
         gl_Position = uMatrix * vec4(aPos, 0, 1);
     }
     """
@@ -61,7 +61,13 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
     precision highp float;
     uniform vec4 uCol;
     void main(void) {
-        gl_FragColor = uCol;
+        vec2 coord = (gl_PointCoord - 0.5) * 2.0;
+        float distFromCenter = length(coord);
+        if (distFromCenter >= 1.0) {
+            gl_FragColor = vec4(0, 0, 0, 0);
+        } else {
+            gl_FragColor = uCol;
+        }
     }
     """
 
@@ -80,6 +86,7 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.vSrc = vSrc
         self.fSrc = fSrc
         self.keepFB = False
+        self.drawPoints = True
         # Transformation status
         self.t = [0.0, 0.0]
         self.s = 1.0
@@ -89,7 +96,7 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         # Gesture
         self.lastPos = None
         self.minZoom = 0.25
-        self.maxZoom = 16.0
+        self.maxZoom = 128.0
         # Alignment data
         self.rot = 0
         self.tra = QVector2D(0, 0)
@@ -220,13 +227,19 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         # Update uniforms
         self.pointProgram.setUniformValue("uMatrix", mat)
         self.pointProgram.setUniformValue("uCol", col)
+        self.pointProgram.setUniformValue("uSize", 10.0)
         # Reload points data
         self.pointProgram.enableAttributeArray(0)
         self.pointProgram.setAttributeArray(0, self.points[i])
         # Draw points
+        self.gl.glEnable(self.gl.GL_BLEND)
+        self.gl.glBlendFunc(self.gl.GL_SRC_ALPHA, self.gl.GL_ONE_MINUS_SRC_ALPHA)
+        self.gl.glEnable(self.gl.GL_POINT_SPRITE)
         self.gl.glEnable(self.gl.GL_VERTEX_PROGRAM_POINT_SIZE)
         self.gl.glDrawArrays(self.gl.GL_POINTS, 0, len(self.points[i]))
         self.gl.glDisable(self.gl.GL_VERTEX_PROGRAM_POINT_SIZE)
+        self.gl.glDisable(self.gl.GL_POINT_SPRITE)
+        self.gl.glDisable(self.gl.GL_BLEND)
         # Release Program
         self.pointProgram.release()
 
@@ -263,8 +276,9 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         # Draw fb into screen (scriptable)
         self.__drawFrameBufferPass(matrix4)
         # Draw marker points
-        self.__drawPointsPass(0, matrix3 * matrix1, QVector4D(1.0, 0.0, 0.0, 1.0))
-        self.__drawPointsPass(1, matrix3 * matrix2, QVector4D(1.0, 1.0, 0.0, 1.0))
+        if self.drawPoints:
+            self.__drawPointsPass(0, matrix3 * matrix1, QVector4D(1.0, 0.0, 0.0, 1.0))
+            self.__drawPointsPass(1, matrix3 * matrix2, QVector4D(1.0, 1.0, 0.0, 1.0))
 
     def resizeGL(self, w: int, h: int) -> None:
         """
@@ -387,6 +401,14 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         """
         self.tra = QVector2D(tra[0], tra[1])
         self.redraw(False)
+
+    def setPointsVisibility(self, visibility: bool) -> None:
+        """
+        Public method to turn on/off points.
+        :param: visibility a boolean that set visibility
+        """
+        self.drawPoints = visibility
+        self.redraw(True)
 
     def customUniforms(self, program: QOpenGLShaderProgram) -> None:
         """
@@ -709,18 +731,23 @@ class QtAlignmentToolWidget(QWidget):
         self.checkBoxSync.setMaximumWidth(80)
         self.checkBoxSync.stateChanged[int].connect(self.toggleSync)
 
-        # Preview
-        self.checkBoxPreview = QCheckBox("Preview")
-        self.checkBoxPreview.setChecked(False)
-        self.checkBoxPreview.setFocusPolicy(Qt.NoFocus)
-        self.checkBoxSync.setMaximumWidth(80)
-        self.checkBoxPreview.stateChanged[int].connect(self.togglePreview)
-
         # Auto Align
         self.autoAlignButton = QPushButton("Auto-Align")
         self.autoAlignButton.setFixedWidth(150)
         self.autoAlignButton.setFixedHeight(30)
         self.autoAlignButton.clicked.connect(self.onAutoAlignRequested)
+
+        # Back to Edit
+        self.backToEditButton = QPushButton("Back to Edit")
+        self.backToEditButton.setFixedWidth(150)
+        self.backToEditButton.setFixedHeight(30)
+        self.backToEditButton.clicked.connect(self.onBackToEditRequested)
+
+        # Show Markers
+        self.checkShowMarkers = QCheckBox("Show Markers")
+        self.checkShowMarkers.setChecked(True)
+        self.checkShowMarkers.setFocusPolicy(Qt.NoFocus)
+        self.checkShowMarkers.stateChanged[int].connect(self.toggleMarkersVisibility)
 
         # Confirm Alignment
         self.confirmAlignmentButton = QPushButton("Confirm")
@@ -825,9 +852,14 @@ class QtAlignmentToolWidget(QWidget):
         self.buttons = QVBoxLayout()
         layout1 = QHBoxLayout()
         layout1.addWidget(self.checkBoxSync)
-        layout1.addWidget(self.checkBoxPreview)
+        layout1.setAlignment(self.checkBoxSync, Qt.AlignLeft)
+        layout1.addWidget(self.backToEditButton)
+        layout1.setAlignment(self.backToEditButton, Qt.AlignLeft)
         layout1.addWidget(self.autoAlignButton)
+        layout1.setAlignment(self.autoAlignButton, Qt.AlignRight)
+        layout1.addWidget(self.checkShowMarkers)
         layout1.addWidget(self.confirmAlignmentButton)
+        layout1.setAlignment(self.confirmAlignmentButton, Qt.AlignRight)
         self.buttons.addLayout(layout1)
         layout2 = QHBoxLayout()
         layout2.addWidget(self.alphaSliderLabel)
@@ -950,7 +982,8 @@ class QtAlignmentToolWidget(QWidget):
         self.rightCombobox.currentIndexChanged.emit(1)
 
         self.checkBoxSync.stateChanged.emit(1)
-        self.checkBoxPreview.stateChanged.emit(0)
+
+        self.__togglePreviewMode(False)
 
         # ==============================================================
 
@@ -977,7 +1010,7 @@ class QtAlignmentToolWidget(QWidget):
                 self.__clearHoveringMarker()
                 self.__deleteMarker(i)
                 # Redraw markers
-                self.__updateMarkers()
+                self.__updateMarkers(keepAlgResults=False)
         # Default
         super(QtAlignmentToolWidget, self).keyPressEvent(event)
 
@@ -1027,7 +1060,7 @@ class QtAlignmentToolWidget(QWidget):
         for i in range(0, len(self.markers)):
             self.__clearMarker(i, True)
         # Redraw
-        self.__updateMarkers()
+        self.__updateMarkers(keepAlgResults=True)
         # Update right one (if sync is enabled)
         if self.syncEnabled:
             self.rightImgViewer.setViewParameters(posx, posy, zoom)
@@ -1044,7 +1077,7 @@ class QtAlignmentToolWidget(QWidget):
         for i in range(0, len(self.markers)):
             self.__clearMarker(i, True)
         # Redraw
-        self.__updateMarkers()
+        self.__updateMarkers(keepAlgResults=True)
         # Update left one (if sync is enabled)
         if self.syncEnabled:
             self.leftImgViewer.setViewParameters(posx, posy, zoom)
@@ -1060,18 +1093,22 @@ class QtAlignmentToolWidget(QWidget):
         # Changes can be forwarded if needed by storing last values and forcing update here
 
     @pyqtSlot(int)
-    def togglePreview(self, value: int) -> None:
+    def toggleMarkersVisibility(self, value: int) -> None:
+        """
+        Callback called when the checkbox for marker visibility it toggled.
+        :param: value a boolean representing the checkbox status.
+        """
+        self.leftPreviewViewer.setPointsVisibility(value != 0)
+        self.rightPreviewViewer.setPointsVisibility(value != 0)
+
+    @pyqtSlot()
+    def onBackToEditRequested(self) -> None:
         """
         Callback called when the Preview Mode is turned on/off.
         :param: value a boolean representing if the mode is checked.
         """
-        # Hide / Show widgets
-        self.__togglePreviewMode(value != 0)
-        # If preview is set
-        if value:
-            # Initialize and update the view
-            self.__initializePreview()
-            self.__updatePreview()
+        # Hide preview widgets
+        self.__togglePreviewMode(False)
 
     @pyqtSlot(int)
     def previewAlphaValueChanges(self, value: int) -> None:
@@ -1262,7 +1299,10 @@ class QtAlignmentToolWidget(QWidget):
             msgBox.exec()
             return
         # Switch to preview mode
-        self.checkBoxPreview.setChecked(True)
+        self.__togglePreviewMode(True)
+        # Initialize and update the view
+        self.__initializePreview()
+        self.__updatePreview()
 
     @pyqtSlot()
     def onConfirmAlignment(self) -> None:
@@ -1296,7 +1336,7 @@ class QtAlignmentToolWidget(QWidget):
             self.hoveringMarker = hovering
             self.hoveringSceneObjs = self.__drawHoveringMarker(hovering)
         # Redraw markers
-        self.__updateMarkers()
+        self.__updateMarkers(keepAlgResults=True)
 
     def __onMouseUp(self, event: QMouseEvent, isLeft: bool) -> None:
         """
@@ -1328,7 +1368,7 @@ class QtAlignmentToolWidget(QWidget):
             self.hoveringMarker = hovering
             self.hoveringSceneObjs = self.__drawHoveringMarker(hovering)
         # Redraw markers
-        self.__updateMarkers()
+        self.__updateMarkers(keepAlgResults=False)
 
     def __onMouseMove(self, event: QMouseEvent, isLeft: bool) -> None:
         """
@@ -1357,7 +1397,7 @@ class QtAlignmentToolWidget(QWidget):
                 self.markers[self.selectedMarker].lViewPos[1] += dy
             self.__clearMarker(self.selectedMarker, False)
             # Redraw markers
-            self.__updateMarkers()
+            self.__updateMarkers(keepAlgResults=False)
         else:
             # Check for hover
             hovering = self.__findMarkerAt(pos, isLeft)
@@ -1369,7 +1409,7 @@ class QtAlignmentToolWidget(QWidget):
                     self.hoveringMarker = hovering
                     self.hoveringSceneObjs = self.__drawHoveringMarker(hovering)
                 # Redraw markers
-                self.__updateMarkers()
+                self.__updateMarkers(keepAlgResults=True)
 
     def __onMouseOut(self, isLeft: bool) -> None:
         """
@@ -1381,7 +1421,7 @@ class QtAlignmentToolWidget(QWidget):
         self.selectedMarker = None
         self.__clearHoveringMarker()
         # Redraw markers
-        self.__updateMarkers()
+        self.__updateMarkers(keepAlgResults=True)
 
     def __mapToViewer(self, pos: [int], isLeft: bool) -> [int]:
         """
@@ -1574,12 +1614,14 @@ class QtAlignmentToolWidget(QWidget):
             # Update list
             marker.textObjs = textObjs
 
-    def __updateMarkers(self) -> None:
+    def __updateMarkers(self, keepAlgResults: bool) -> None:
         """
         Private method to redraw markers.
+        :param: keepAlgResults is a boolean that speeds up redraw when no calculation are required.
         """
         # Try pre-computing the align algorithm
-        self.__leastSquaresWithSVD()
+        if not keepAlgResults:
+            self.__leastSquaresWithSVD()
         # Draw markers
         for marker in self.markers:
             self.__drawMarker(marker)
@@ -1618,7 +1660,7 @@ class QtAlignmentToolWidget(QWidget):
         self.rightImgViewer.px_to_mm = pxSize2
         # Update overlay images
         self.__deleteAllMarkers()
-        self.__updateMarkers()
+        self.__updateMarkers(keepAlgResults=False)
         # Clear data of last comparison
         self.alphaSlider.setValue(50)
         self.thresholdSlider.setValue(32)
@@ -1734,6 +1776,8 @@ class QtAlignmentToolWidget(QWidget):
         # (Preview-ONLY) widgets
         self.leftPreviewViewer.setVisible(isPreviewMode)
         self.rightPreviewViewer.setVisible(isPreviewMode)
+        self.backToEditButton.setVisible(isPreviewMode)
+        self.checkShowMarkers.setVisible(isPreviewMode)
         self.confirmAlignmentButton.setVisible(isPreviewMode)
         self.alphaSliderLabel.setVisible(isPreviewMode)
         self.alphaSlider.setVisible(isPreviewMode)
@@ -1776,6 +1820,8 @@ class QtAlignmentToolWidget(QWidget):
         for (i, marker) in enumerate(self.markers):
             marker.error = None
             self.__clearMarker(i, True)
+
+        # print("__leastSquaresWithSVD called")
 
         # Ensure at least 3 marker are placed
         if len(self.markers) < 3:
