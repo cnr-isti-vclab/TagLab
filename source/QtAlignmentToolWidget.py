@@ -250,17 +250,17 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         """
         # Create Matrix for 1st Quad
         matrix1 = QMatrix4x4()
-        matrix1.scale(self.ratioWH, 1, 1)               # Keep aspect ratio
+        matrix1.scale(self.ratioWH, 1, 1)  # Keep aspect ratio
         # Create Matrix for 2nd Quad
         matrix2 = QMatrix4x4()
-        matrix2.scale(self.ratioWH, 1, 1)               # Keep aspect ratio
-        matrix2.rotate(self.rot, 0.0, 0.0, 1.0)         # Rotation (pivot is the image center)
+        matrix2.scale(self.ratioWH, 1, 1)  # Keep aspect ratio
+        matrix2.rotate(self.rot, 0.0, 0.0, 1.0)  # Rotation (pivot is the image center)
         matrix2.translate(self.tra[0], self.tra[1], 0)  # Translation
         # Create Transformation Matrix
         matrix3 = QMatrix4x4()
         matrix3.scale(min(self.w, self.h) / self.w, min(self.w, self.h) / self.h, 1)  # Keep aspect ratio
-        matrix3.translate(self.t[0], -self.t[1], 0)                                   # Pan
-        matrix3.scale(self.s, self.s, 1)                                              # Zoom
+        matrix3.translate(self.t[0], -self.t[1], 0)  # Pan
+        matrix3.scale(self.s, self.s, 1)  # Zoom
         # Check if needs to redraw buffers
         # (Needed only when user zoom or pan or manually changes offset or rotation)
         if not self.keepFB:
@@ -619,7 +619,6 @@ class MarkerObjData:
         self.pxSizeR = pxSizeR
         self.lViewPos = [pos[0], pos[1]]
         self.rViewPos = [pos[0], pos[1]]
-        print(self.lViewPos, self.rViewPos)
         self.typ = typ
         self.sceneObjs = []
         self.textObjs = []
@@ -646,37 +645,40 @@ class MarkerObjData:
         Retrieve bbox of marker for left and right view.
         :return: (bboxL, bboxR) the two boxes
         """
-        # Unpack pos
+        # Create bbox for left viewer
         [lmx, lmy] = [self.lViewPos[0] / self.pxSizeL, self.lViewPos[1] / self.pxSizeL]
+        sideL = MarkerObjData.MARKER_SIZE / self.pxSizeL
+        bboxL = QRectF(lmx - sideL, lmy - sideL, sideL * 2 + 1, sideL * 2 + 1)
+        # Create bbox for right viewer
         [rmx, rmy] = [self.rViewPos[0] / self.pxSizeR, self.rViewPos[1] / self.pxSizeR]
-        # Create bbox
-        side = MarkerObjData.MARKER_SIZE
-        return (
-            QRectF(lmx - side, lmy - side, side * 2 + 1, side * 2 + 1),
-            QRectF(rmx - side, rmy - side, side * 2 + 1, side * 2 + 1),
-        )
+        sideR = MarkerObjData.MARKER_SIZE / self.pxSizeR
+        bboxR = QRectF(rmx - sideR, rmy - sideR, sideR * 2 + 1, sideR * 2 + 1)
+        return bboxL, bboxR
 
     def getLines(self) -> list[tuple[QLineF, QLineF]]:
         """
         Retrieve the lines to draw the marker inside the two views.
         :return: [(lineLeft, lineRight)] the lines list
         """
-        # Unpack pos
+        # Create line list for left viewer
         [lmx, lmy] = [self.lViewPos[0] / self.pxSizeL, self.lViewPos[1] / self.pxSizeL]
+        sideL = MarkerObjData.MARKER_SIZE / self.pxSizeL
+        linesL = [
+            ([-sideL + 1, -sideL + 1], [0, 0]), ([1, 1], [+sideL, +sideL + 0]),  # Top Left -> Bot Right
+            ([-sideL + 1, +sideL + 0], [0, 1]), ([1, 0], [+sideL, -sideL + 1]),  # Top Right -> Bot Left
+        ]
+        # Create line list for right viewer
         [rmx, rmy] = [self.rViewPos[0] / self.pxSizeR, self.rViewPos[1] / self.pxSizeR]
-        # Create line list
-        side = MarkerObjData.MARKER_SIZE
-        lines = [
-            ([-side + 1, -side + 1], [0, 0]),  # TL - c
-            ([+1, +1], [+side, +side]),  # c - BR
-            ([-side + 1, +side], [0, +1]),  # BL - c
-            ([1, 0], [+side, -side + 1]),  # c - TR
+        sideR = MarkerObjData.MARKER_SIZE / self.pxSizeR
+        linesR = [
+            ([-sideR + 1, -sideR + 1], [0, 0]), ([1, 1], [+sideR, +sideR + 0]),  # Top Left -> Bot Right
+            ([-sideR + 1, +sideR + 0], [0, 1]), ([1, 0], [+sideR, -sideR + 1]),  # Top Right -> Bot Left
         ]
         # Create lines and zip them
         return [(
-            QLineF(lmx + dxs, lmy + dys, lmx + dxe, lmy + dye),
-            QLineF(rmx + dxs, rmy + dys, rmx + dxe, rmy + dye)
-        ) for ([dxs, dys], [dxe, dye]) in lines]
+            QLineF(lmx + lStart[0], lmy + lStart[1], lmx + lEnd[0], lmy + lEnd[1]),
+            QLineF(rmx + rStart[0], rmy + rStart[1], rmx + rEnd[0], rmy + rEnd[1])
+        ) for ([lStart, lEnd], [rStart, rEnd]) in zip(linesL, linesR)]
 
     def __update(self) -> None:
         """
@@ -1361,9 +1363,9 @@ class QtAlignmentToolWidget(QWidget):
         if not self.isDragging:
             if hovering is None:
                 # Create marker
-                # pxSize = self.pxSizeL if isLeft else self.pxSizeR
-                # mkPos = [pos[0] * pxSize, pos[1] * pxSize]
-                self.__addMarker(pos)
+                pxSize = self.pxSizeL if isLeft else self.pxSizeR
+                mkPos = (pos[0] * pxSize, pos[1] * pxSize)
+                self.__addMarker(mkPos)
             else:
                 # Toggle marker
                 self.__toggleMarker(hovering)
@@ -1392,17 +1394,18 @@ class QtAlignmentToolWidget(QWidget):
         # Check if user is dragging a marker
         if self.isDragging:
             # Calculate delta
-            dx = (pos[0] - self.lastMousePos[0])
-            dy = (pos[1] - self.lastMousePos[1])
+            pxSize = self.pxSizeL if isLeft else self.pxSizeR
+            dx = (pos[0] - self.lastMousePos[0]) * pxSize
+            dy = (pos[1] - self.lastMousePos[1]) * pxSize
             self.lastMousePos = pos
             # Update marker position
-            self.markers[self.selectedMarker].rViewPos[0] += dx * self.pxSizeR
-            self.markers[self.selectedMarker].rViewPos[1] += dy * self.pxSizeR
+            self.markers[self.selectedMarker].rViewPos[0] += dx
+            self.markers[self.selectedMarker].rViewPos[1] += dy
             # If user is dragging marker on the left viewer
             if isLeft:
                 # Update also the right one
-                self.markers[self.selectedMarker].lViewPos[0] += dx * self.pxSizeL
-                self.markers[self.selectedMarker].lViewPos[1] += dy * self.pxSizeL
+                self.markers[self.selectedMarker].lViewPos[0] += dx
+                self.markers[self.selectedMarker].lViewPos[1] += dy
             self.__clearMarker(self.selectedMarker, False)
             # Redraw markers
             self.__updateMarkers(keepAlgResults=False)
@@ -1431,7 +1434,7 @@ class QtAlignmentToolWidget(QWidget):
         # Redraw markers
         self.__updateMarkers(keepAlgResults=True)
 
-    def __mapToViewer(self, pos: tuple[float, float], isLeft: bool) -> tuple[float, float]:
+    def __mapToViewer(self, pos: QPoint, isLeft: bool) -> tuple[float, float]:
         """
         Private method that maps a pos [x, y] into the viewer space.
         :param: pos the position to map
@@ -1439,8 +1442,9 @@ class QtAlignmentToolWidget(QWidget):
         :return: the converted 2d vector
         """
         viewer = self.leftImgViewer if isLeft else self.rightImgViewer
-        pos = viewer.clipScenePos(viewer.mapToScene(pos))
-        return pos
+        tmp = viewer.mapToScene(pos)
+        tmp = (min(max(tmp.x(), 0), viewer.imgwidth), min(max(tmp.y(), 0), viewer.imgheight))
+        return tmp
 
     def __findMarkerAt(self, pos: tuple[float, float], isLeft: bool) -> Optional[int]:
         """
@@ -1753,8 +1757,8 @@ class QtAlignmentToolWidget(QWidget):
         ratioWH = w / h
         # Retrieve markers
         [ph, pw] = self.previewSize
-        q = [[(marker.lViewPos[0] / pw) * 2 - 1.0, (marker.lViewPos[1] / ph) * -2 + 1.0] for marker in self.markers]
-        p = [[(marker.rViewPos[0] / pw) * 2 - 1.0, (marker.rViewPos[1] / ph) * -2 + 1.0] for marker in self.markers]
+        q = [((marker.lViewPos[0] / pw) * 2 - 1.0, (marker.lViewPos[1] / ph) * -2 + 1.0) for marker in self.markers]
+        p = [((marker.rViewPos[0] / pw) * 2 - 1.0, (marker.rViewPos[1] / ph) * -2 + 1.0) for marker in self.markers]
         # Pass images to viewers
         self.leftPreviewViewer.initializeData(img1, img2, ratioWH, q, p)
         self.rightPreviewViewer.initializeData(img1, img2, ratioWH, q, p)
