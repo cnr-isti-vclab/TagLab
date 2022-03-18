@@ -4,7 +4,7 @@ from typing import Optional
 import numpy as np
 from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot, QLineF, QRectF, QPoint
 from PyQt5.QtGui import QImage, QMouseEvent, QPen, QFont, QCloseEvent, QKeyEvent, QOpenGLShaderProgram, QOpenGLShader, \
-    QOpenGLVersionProfile, QMatrix4x4, QWheelEvent, QOpenGLTexture, QVector2D, QOpenGLFramebufferObject
+    QOpenGLVersionProfile, QMatrix4x4, QWheelEvent, QOpenGLTexture, QVector2D, QOpenGLFramebufferObject, QVector4D
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QVBoxLayout, QLabel, QHBoxLayout, QComboBox, QSlider, QApplication, \
     QCheckBox, QPushButton, QMessageBox, QGraphicsTextItem, QGraphicsItem, QOpenGLWidget, QGraphicsRectItem
 from PyQt5._QOpenGLFunctions_2_0 import QOpenGLFunctions_2_0
@@ -46,6 +46,25 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
     }
     """
 
+    V_SHADER_SOURCE_POINTS = """
+    precision highp float;
+    attribute vec2 aPos;
+    uniform vec4 uCol;
+    uniform mat4 uMatrix;
+    void main(void) {
+        gl_PointSize = 5.0;
+        gl_Position = uMatrix * vec4(aPos, 0, 1);
+    }
+    """
+
+    F_SHADER_SOURCE_POINTS = """
+    precision highp float;
+    uniform vec4 uCol;
+    void main(void) {
+        gl_FragColor = uCol;
+    }
+    """
+
     QUAD_V = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
     QUAD_T = [(0, 1), (0, 0), (1, 1), (1, 0)]
 
@@ -56,9 +75,8 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.programs: list[QOpenGLShaderProgram] = []
         self.textures: list[QOpenGLTexture] = []
         self.framebuffers: list[QOpenGLFramebufferObject] = []
-        self.vertPos = [self.QUAD_V.copy(), self.QUAD_V.copy()]
-        self.mainQuad = self.QUAD_V.copy()
-        self.vertTex = self.QUAD_T.copy()
+        self.pointProgram: Optional[QOpenGLShaderProgram] = None
+        self.points = [[], []]
         self.vSrc = vSrc
         self.fSrc = fSrc
         self.keepFB = False
@@ -67,6 +85,7 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.s = 1.0
         self.w = 100
         self.h = 100
+        self.ratioWH = 1.0
         # Gesture
         self.lastPos = None
         self.minZoom = 0.25
@@ -75,11 +94,12 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.rot = 0
         self.tra = QVector2D(0, 0)
 
-    def __createProgram(self, vSrc: str, fSrc: str) -> Optional[QOpenGLShaderProgram]:
+    def __createProgram(self, vSrc: str, fSrc: str, hasTex: bool) -> Optional[QOpenGLShaderProgram]:
         """
         Private method to create a Shader Program with passed v-shader and f-shader.
         :param: vSrc the source code of the vertex shader
         :param: fSrc the source code of the fragment shader
+        :param: loadQuad a boolean to toggle pre upload of quad data
         :return: the created program or None (on error)
         """
         # Create & Compile Vertex Shader
@@ -93,13 +113,14 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         # Attach shaders
         checkGL(program, program.addShader(vShader))
         checkGL(program, program.addShader(fShader))
-        # Create def attrs
+        # Bind attrs
         program.bindAttributeLocation('aPos', 0)
-        program.bindAttributeLocation('aTex', 1)
+        if hasTex:
+            program.bindAttributeLocation('aTex', 1)
         # Link program
         checkGL(program, program.link())
         # Return newly created program
-        return program
+        return program if program.isLinked() else None
 
     def initializeGL(self) -> None:
         """
@@ -114,10 +135,17 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         # Create Program #0 (default pass)
         self.programs.append(self.__createProgram(
             QtSimpleOpenGlShaderViewer.V_SHADER_SOURCE,
-            QtSimpleOpenGlShaderViewer.F_SHADER_SOURCE
+            QtSimpleOpenGlShaderViewer.F_SHADER_SOURCE,
+            hasTex=True
         ))
         # Create Program #1 (scriptable pass)
-        self.programs.append(self.__createProgram(self.vSrc, self.fSrc))
+        self.programs.append(self.__createProgram(self.vSrc, self.fSrc, hasTex=True))
+        # Create Program for drawing points
+        self.pointProgram = self.__createProgram(
+            QtSimpleOpenGlShaderViewer.V_SHADER_SOURCE_POINTS,
+            QtSimpleOpenGlShaderViewer.F_SHADER_SOURCE_POINTS,
+            hasTex=False
+        )
 
     def __drawTexturePass(self, i: int, mat: QMatrix4x4) -> None:
         """
@@ -136,9 +164,9 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.programs[0].setUniformValue("uMatrix", mat)
         # Reload quad data
         self.programs[0].enableAttributeArray(0)
-        self.programs[0].setAttributeArray(0, self.vertPos[i])
+        self.programs[0].setAttributeArray(0, QtSimpleOpenGlShaderViewer.QUAD_V.copy())
         self.programs[0].enableAttributeArray(1)
-        self.programs[0].setAttributeArray(1, self.vertTex)
+        self.programs[0].setAttributeArray(1, QtSimpleOpenGlShaderViewer.QUAD_T.copy())
         # Draw quad
         self.gl.glClearColor(0.0, 0.0, 0.0, 0.0)
         self.gl.glClear(self.gl.GL_COLOR_BUFFER_BIT)
@@ -167,9 +195,9 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.customUniforms(self.programs[1])
         # Reload quad data
         self.programs[1].enableAttributeArray(0)
-        self.programs[1].setAttributeArray(0, self.mainQuad)
+        self.programs[1].setAttributeArray(0, QtSimpleOpenGlShaderViewer.QUAD_V.copy())
         self.programs[1].enableAttributeArray(1)
-        self.programs[1].setAttributeArray(1, self.vertTex)
+        self.programs[1].setAttributeArray(1, QtSimpleOpenGlShaderViewer.QUAD_T.copy())
         # Draw quad
         self.gl.glClearColor(0.0, 0.0, 0.0, 1.0)
         self.gl.glClear(self.gl.GL_COLOR_BUFFER_BIT)
@@ -177,24 +205,52 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         # Release Program
         self.programs[1].release()
 
+    def __drawPointsPass(self, i: int, mat: QMatrix4x4, col: QVector4D) -> None:
+        """
+        Private method to draw points over the final draw pass.
+        :param: i the index of the points list to draw
+        :param: mat the transformation matrix
+        :param: col a vec4 containing the color (normalized)
+        """
+        # Jump draw pass if points size is zero
+        if len(self.points[i]) == 0:
+            return
+        # Bind Program
+        checkGL(self.pointProgram, self.pointProgram.bind())
+        # Update uniforms
+        self.pointProgram.setUniformValue("uMatrix", mat)
+        self.pointProgram.setUniformValue("uCol", col)
+        # Reload points data
+        self.pointProgram.enableAttributeArray(0)
+        self.pointProgram.setAttributeArray(0, self.points[i])
+        # Draw points
+        self.gl.glEnable(self.gl.GL_VERTEX_PROGRAM_POINT_SIZE)
+        self.gl.glDrawArrays(self.gl.GL_POINTS, 0, len(self.points[i]))
+        self.gl.glDisable(self.gl.GL_VERTEX_PROGRAM_POINT_SIZE)
+        # Release Program
+        self.pointProgram.release()
+
     def paintGL(self) -> None:
         """
         Renders the OpenGL scene.
         Gets called whenever the widget needs to be updated.
         """
+        # Create Matrix for 1st Quad
+        matrix1 = QMatrix4x4()
+        matrix1.scale(self.ratioWH, 1, 1)               # Keep aspect ratio
+        # Create Matrix for 2nd Quad
+        matrix2 = QMatrix4x4()
+        matrix2.scale(self.ratioWH, 1, 1)               # Keep aspect ratio
+        matrix2.rotate(self.rot, 0.0, 0.0, 1.0)         # Rotation (pivot is the image center)
+        matrix2.translate(self.tra[0], self.tra[1], 0)  # Translation
+        # Create Transformation Matrix
+        matrix3 = QMatrix4x4()
+        matrix3.scale(min(self.w, self.h) / self.w, min(self.w, self.h) / self.h, 1)  # Keep aspect ratio
+        matrix3.translate(self.t[0], -self.t[1], 0)                                   # Pan
+        matrix3.scale(self.s, self.s, 1)                                              # Zoom
         # Check if needs to redraw buffers
         # (Needed only when user zoom or pan or manually changes offset or rotation)
         if not self.keepFB:
-            # Create Matrix for 1st Quad
-            matrix1 = QMatrix4x4()
-            matrix1.rotate(self.rot, 0.0, 0.0, 1.0)
-            matrix1.translate(self.tra[0], self.tra[1], 0)
-            # Create Matrix for 2nd Quad
-            matrix2 = QMatrix4x4()
-            # Create Transformation Matrix (for zoom and panning)
-            matrix3 = QMatrix4x4()
-            matrix3.translate(self.t[0], -self.t[1], 0)
-            matrix3.scale(self.s, self.s, 1)
             # Draw tex 0 into fb 0
             self.__drawTexturePass(0, matrix3 * matrix1)
             # Draw tex 1 into fb 1
@@ -202,10 +258,13 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
             # Clear dirty flag
             self.keepFB = True
         # Create Matrix (for reversing framebuffer)
-        matrix = QMatrix4x4()
-        matrix.scale(1, -1, 1)
+        matrix4 = QMatrix4x4()
+        matrix4.scale(1, -1, 1)
         # Draw fb into screen (scriptable)
-        self.__drawFrameBufferPass(matrix)
+        self.__drawFrameBufferPass(matrix4)
+        # Draw marker points
+        self.__drawPointsPass(0, matrix3 * matrix1, QVector4D(1.0, 0.0, 0.0, 1.0))
+        self.__drawPointsPass(1, matrix3 * matrix2, QVector4D(1.0, 1.0, 0.0, 1.0))
 
     def resizeGL(self, w: int, h: int) -> None:
         """
@@ -224,9 +283,6 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
             QOpenGLFramebufferObject(w, h),
             QOpenGLFramebufferObject(w, h)
         ]
-        # Recreate viewport quad to keep aspect ratio
-        side = max(w, h)
-        self.mainQuad = [(-side / w, -side / h), (-side / w, side / h), (side / w, -side / h), (side / w, side / h)]
         # Redraw
         self.redraw(False)
 
@@ -254,8 +310,10 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         dy = (event.y() - self.lastPos.y()) / (self.h // 2)
         self.lastPos = event.pos()
         # Update translation
-        self.t[0] += dx
-        self.t[1] += dy
+        wh = min(self.w, self.h) / self.w
+        hw = min(self.w, self.h) / self.h
+        self.t[0] += dx / wh
+        self.t[1] += dy / hw
         # Redraw
         self.redraw(False)
 
@@ -288,16 +346,16 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         # Redraw
         self.redraw(False)
 
-    def setImages(self, referenceImg: QImage, imgToAlign: QImage, ratioWH: float) -> None:
+    def initializeData(self, referenceImg: QImage, imgToAlign: QImage, ratioWH: float,
+                       referencePoints: list[tuple[float, float]], pointsToAlign: list[tuple[float, float]]) -> None:
         """
-        Called by the container widget to set the images to compare.
+        Called by the container widget to upload data to show.
         :param: referenceImg the QImage to take as reference
         :param: imgToAlign the QImage to beg aligned
         :param: ratioWH the w/h ratio
+        :param: referencePoints the list of points on the "reference image"
+        :param: pointsToAlign the list of points on the "image to align"
         """
-        # Clear status
-        self.t = [0.0, 0.0]
-        self.s = 1.0
         # Create textures
         self.textures = [
             QOpenGLTexture(referenceImg),
@@ -307,9 +365,10 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         for tex in self.textures:
             tex.setMinMagFilters(QOpenGLTexture.Nearest, QOpenGLTexture.Nearest)
             # tex.generateMipMaps()
-        # Update quads to keep aspect ratio
-        self.vertPos[0] = [(-ratioWH, -1), (-ratioWH, 1), (ratioWH, -1), (ratioWH, 1)]
-        self.vertPos[1] = [(-ratioWH, -1), (-ratioWH, 1), (ratioWH, -1), (ratioWH, 1)]
+        # Store image ratio
+        self.ratioWH = ratioWH
+        # Save points
+        self.points = [referencePoints.copy(), pointsToAlign.copy()]
         # Redraw
         self.redraw(False)
 
@@ -324,7 +383,7 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
     def updateTranslation(self, tra: np.array) -> None:
         """
         Public method to update Translation parameter.
-        :param: tra the new value for translation (normalized [0.0, 1.0])
+        :param: tra the new value for translation (normalized [-1.0, 1.0])
         """
         self.tra = QVector2D(tra[0], tra[1])
         self.redraw(False)
@@ -717,14 +776,14 @@ class QtAlignmentToolWidget(QWidget):
         self.moveRightButton.setFixedWidth(100)
         self.moveRightButton.setFixedHeight(30)
         self.moveRightButton.clicked.connect(self.onXValueIncremented)
-        self.moveUpButton = QPushButton("Up")
-        self.moveUpButton.setFixedWidth(100)
-        self.moveUpButton.setFixedHeight(30)
-        self.moveUpButton.clicked.connect(self.onYValueDecremented)
         self.moveDownButton = QPushButton("Down")
         self.moveDownButton.setFixedWidth(100)
         self.moveDownButton.setFixedHeight(30)
-        self.moveDownButton.clicked.connect(self.onYValueIncremented)
+        self.moveDownButton.clicked.connect(self.onYValueDecremented)
+        self.moveUpButton = QPushButton("Up")
+        self.moveUpButton.setFixedWidth(100)
+        self.moveUpButton.setFixedHeight(30)
+        self.moveUpButton.clicked.connect(self.onYValueIncremented)
 
         # Slider (Rot)
         self.rSliderLabel = QLabel("R: " + str(self.R / 10.0))
@@ -743,11 +802,11 @@ class QtAlignmentToolWidget(QWidget):
         self.rotateLeftButton = QPushButton("Rotate Left")
         self.rotateLeftButton.setFixedWidth(200)
         self.rotateLeftButton.setFixedHeight(30)
-        self.rotateLeftButton.clicked.connect(self.onRotValueDecremented)
+        self.rotateLeftButton.clicked.connect(self.onRotValueIncremented)
         self.rotateRightButton = QPushButton("Rotate Right")
         self.rotateRightButton.setFixedWidth(200)
         self.rotateRightButton.setFixedHeight(30)
-        self.rotateRightButton.clicked.connect(self.onRotValueIncremented)
+        self.rotateRightButton.clicked.connect(self.onRotValueDecremented)
 
         # Debug Slider (Threshold)
         self.thresholdSliderLabel = QLabel("T: " + str(self.threshold))
@@ -785,8 +844,8 @@ class QtAlignmentToolWidget(QWidget):
         layout4 = QHBoxLayout()
         layout4.addWidget(self.ySliderLabel)
         layout4.addWidget(self.ySlider)
-        layout4.addWidget(self.moveUpButton)
         layout4.addWidget(self.moveDownButton)
+        layout4.addWidget(self.moveUpButton)
         self.buttons.addLayout(layout4)
         layout5 = QHBoxLayout()
         layout5.addWidget(self.rSliderLabel)
@@ -1638,12 +1697,16 @@ class QtAlignmentToolWidget(QWidget):
         # Retrieve images
         img1 = self.leftImgViewer.img_map
         img2 = self.rightImgViewer.img_map
-        # Compute ratio
+        # Retrieve ratio
         [h, w] = self.previewSize
         ratioWH = w / h
+        # Retrieve markers
+        [ph, pw] = self.previewSize
+        q = [[(marker.lViewPos[0] / pw) * 2 - 1.0, (marker.lViewPos[1] / ph) * -2 + 1.0] for marker in self.markers]
+        p = [[(marker.rViewPos[0] / pw) * 2 - 1.0, (marker.rViewPos[1] / ph) * -2 + 1.0] for marker in self.markers]
         # Pass images to viewers
-        self.leftPreviewViewer.setImages(img1, img2, ratioWH)
-        self.rightPreviewViewer.setImages(img1, img2, ratioWH)
+        self.leftPreviewViewer.initializeData(img1, img2, ratioWH, q, p)
+        self.rightPreviewViewer.initializeData(img1, img2, ratioWH, q, p)
 
     def __updatePreview(self, onlyAlpha: bool = False) -> None:
         """
@@ -1654,10 +1717,13 @@ class QtAlignmentToolWidget(QWidget):
         self.leftPreviewViewer.updateAlpha(self.alpha / 100.0)
         if not onlyAlpha:
             # Update R and T values
-            self.leftPreviewViewer.updateRotation(self.R / 10.0)
-            self.leftPreviewViewer.updateTranslation(self.T / self.previewSize)
-            self.rightPreviewViewer.updateRotation(self.R / 10.0)
-            self.rightPreviewViewer.updateTranslation(self.T / self.previewSize)
+            tra = (self.T * 2.0) / self.previewSize
+            rot = self.R / 10.0
+            self.leftPreviewViewer.updateRotation(rot)
+            self.leftPreviewViewer.updateTranslation(tra)
+            self.rightPreviewViewer.updateRotation(rot)
+            self.rightPreviewViewer.updateTranslation(tra)
+            # Update threshold
             self.rightPreviewViewer.updateThreshold(self.threshold)
 
     def __togglePreviewMode(self, isPreviewMode: bool) -> None:
@@ -1729,9 +1795,9 @@ class QtAlignmentToolWidget(QWidget):
         d = 2
         w = [marker.weight for marker in self.markers]
         sw = sum(w)
-        [offY, offX] = [self.previewSize[0] / 2, self.previewSize[1] / 2]
-        q = [[marker.lViewPos[0] - offX, marker.lViewPos[1] - offY] for marker in self.markers]
-        p = [[marker.rViewPos[0] - offX, marker.rViewPos[1] - offY] for marker in self.markers]
+        [ph, pw] = self.previewSize
+        q = [[(marker.lViewPos[0] - pw / 2), -(marker.lViewPos[1] - ph / 2)] for marker in self.markers]
+        p = [[(marker.rViewPos[0] - pw / 2), -(marker.rViewPos[1] - ph / 2)] for marker in self.markers]
 
         # ==================================================================================
         # [1] Compute the weighted centroids _q (for q) and _p (for p)
@@ -1798,14 +1864,11 @@ class QtAlignmentToolWidget(QWidget):
             # TODO pixel -> mm
             marker.error = round(e, 2)
 
-        # Save results
-
         T = [T[0, 0], T[0, 1]]
         self.T = np.array(T)
         self.xSlider.setValue(T[0])
         self.ySlider.setValue(T[1])
 
-        # R = [[R[0, 0], R[0, 1]],
-        #       R[1, 0], R[1, 1]]
         R = np.rad2deg(math.acos(round(R[0, 0], 4)))
-        self.R = R
+        self.R = R * 10.0
+        self.rSlider.setValue(R)
