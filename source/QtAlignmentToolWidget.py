@@ -612,10 +612,14 @@ class MarkerObjData:
     MARKER_SIZE = 8
     MARKER_WIDTH = 5
 
-    def __init__(self, identifier: int, pos: [int], typ: SOFT_MARKER | HARD_MARKER):
+    def __init__(self, identifier: int, pos: tuple[float, float], pxSizeL: float, pxSizeR: float,
+                 typ: SOFT_MARKER | HARD_MARKER):
         self.identifier = identifier
+        self.pxSizeL = pxSizeL
+        self.pxSizeR = pxSizeR
         self.lViewPos = [pos[0], pos[1]]
         self.rViewPos = [pos[0], pos[1]]
+        print(self.lViewPos, self.rViewPos)
         self.typ = typ
         self.sceneObjs = []
         self.textObjs = []
@@ -643,8 +647,8 @@ class MarkerObjData:
         :return: (bboxL, bboxR) the two boxes
         """
         # Unpack pos
-        [lmx, lmy] = self.lViewPos
-        [rmx, rmy] = self.rViewPos
+        [lmx, lmy] = [self.lViewPos[0] / self.pxSizeL, self.lViewPos[1] / self.pxSizeL]
+        [rmx, rmy] = [self.rViewPos[0] / self.pxSizeR, self.rViewPos[1] / self.pxSizeR]
         # Create bbox
         side = MarkerObjData.MARKER_SIZE
         return (
@@ -658,8 +662,8 @@ class MarkerObjData:
         :return: [(lineLeft, lineRight)] the lines list
         """
         # Unpack pos
-        [lmx, lmy] = self.lViewPos
-        [rmx, rmy] = self.rViewPos
+        [lmx, lmy] = [self.lViewPos[0] / self.pxSizeL, self.lViewPos[1] / self.pxSizeL]
+        [rmx, rmy] = [self.rViewPos[0] / self.pxSizeR, self.rViewPos[1] / self.pxSizeR]
         # Create line list
         side = MarkerObjData.MARKER_SIZE
         lines = [
@@ -719,6 +723,8 @@ class QtAlignmentToolWidget(QWidget):
         self.hoveringSceneObjs = None
         self.hoveringMarker = None
         self.markers: list[MarkerObjData] = []
+        self.pxSizeL = 1.0
+        self.pxSizeR = 1.0
 
         # ==============================================================
         # Top buttons
@@ -1355,6 +1361,8 @@ class QtAlignmentToolWidget(QWidget):
         if not self.isDragging:
             if hovering is None:
                 # Create marker
+                # pxSize = self.pxSizeL if isLeft else self.pxSizeR
+                # mkPos = [pos[0] * pxSize, pos[1] * pxSize]
                 self.__addMarker(pos)
             else:
                 # Toggle marker
@@ -1388,13 +1396,13 @@ class QtAlignmentToolWidget(QWidget):
             dy = (pos[1] - self.lastMousePos[1])
             self.lastMousePos = pos
             # Update marker position
-            self.markers[self.selectedMarker].rViewPos[0] += dx
-            self.markers[self.selectedMarker].rViewPos[1] += dy
+            self.markers[self.selectedMarker].rViewPos[0] += dx * self.pxSizeR
+            self.markers[self.selectedMarker].rViewPos[1] += dy * self.pxSizeR
             # If user is dragging marker on the left viewer
             if isLeft:
                 # Update also the right one
-                self.markers[self.selectedMarker].lViewPos[0] += dx
-                self.markers[self.selectedMarker].lViewPos[1] += dy
+                self.markers[self.selectedMarker].lViewPos[0] += dx * self.pxSizeL
+                self.markers[self.selectedMarker].lViewPos[1] += dy * self.pxSizeL
             self.__clearMarker(self.selectedMarker, False)
             # Redraw markers
             self.__updateMarkers(keepAlgResults=False)
@@ -1423,7 +1431,7 @@ class QtAlignmentToolWidget(QWidget):
         # Redraw markers
         self.__updateMarkers(keepAlgResults=True)
 
-    def __mapToViewer(self, pos: [int], isLeft: bool) -> [int]:
+    def __mapToViewer(self, pos: tuple[float, float], isLeft: bool) -> tuple[float, float]:
         """
         Private method that maps a pos [x, y] into the viewer space.
         :param: pos the position to map
@@ -1431,9 +1439,10 @@ class QtAlignmentToolWidget(QWidget):
         :return: the converted 2d vector
         """
         viewer = self.leftImgViewer if isLeft else self.rightImgViewer
-        return viewer.clipScenePos(viewer.mapToScene(pos))
+        pos = viewer.clipScenePos(viewer.mapToScene(pos))
+        return pos
 
-    def __findMarkerAt(self, pos: [int], isLeft: bool) -> Optional[int]:
+    def __findMarkerAt(self, pos: tuple[float, float], isLeft: bool) -> Optional[int]:
         """
         Private method to find marker under [x, y].
         :param: pos the position to check
@@ -1529,7 +1538,7 @@ class QtAlignmentToolWidget(QWidget):
             # Clear array
             self.markers[i].sceneObjs = []
 
-    def __addMarker(self, pos: [int]) -> None:
+    def __addMarker(self, pos: tuple[float, float]) -> None:
         """
         Private method to add a marker at pos [x, y].
         :param: pos the position where to add the marker
@@ -1537,7 +1546,7 @@ class QtAlignmentToolWidget(QWidget):
         # Find next available ID
         identifier = max(self.markers, key=lambda x: x.identifier).identifier + 1 if len(self.markers) > 0 else 1
         # Create a marker obj
-        self.markers.append(MarkerObjData(identifier, pos, MarkerObjData.SOFT_MARKER))
+        self.markers.append(MarkerObjData(identifier, pos, self.pxSizeL, self.pxSizeR, MarkerObjData.SOFT_MARKER))
 
     def __drawMarker(self, marker: MarkerObjData) -> None:
         """
@@ -1637,8 +1646,8 @@ class QtAlignmentToolWidget(QWidget):
         index1 = self.leftCombobox.currentIndex()
         index2 = self.rightCombobox.currentIndex()
         # Pixel size
-        pxSize1 = self.project.images[index1].pixelSize()
-        pxSize2 = self.project.images[index2].pixelSize()
+        self.pxSizeL = self.project.images[index1].pixelSize()
+        self.pxSizeR = self.project.images[index2].pixelSize()
         # Default channel (0)
         channel1 = self.project.images[index1].channels[0]
         channel2 = self.project.images[index2].channels[0]
@@ -1652,12 +1661,12 @@ class QtAlignmentToolWidget(QWidget):
             channel2.loadData()
             QApplication.restoreOverrideCursor()
         # Update preview size
-        self.__updatePreviewSize(channel1.qimage, pxSize1, channel2.qimage, pxSize2)
+        self.__updatePreviewSize(channel1.qimage, self.pxSizeL, channel2.qimage, self.pxSizeR)
         # Update viewer
-        self.leftImgViewer.setImg(self.__padImage(channel1.qimage, pxSize1))
-        self.leftImgViewer.px_to_mm = pxSize1
-        self.rightImgViewer.setImg(self.__padImage(channel2.qimage, pxSize2))
-        self.rightImgViewer.px_to_mm = pxSize2
+        self.leftImgViewer.setImg(self.__padImage(channel1.qimage, self.pxSizeL))
+        self.leftImgViewer.px_to_mm = self.pxSizeL
+        self.rightImgViewer.setImg(self.__padImage(channel2.qimage, self.pxSizeR))
+        self.rightImgViewer.px_to_mm = self.pxSizeR
         # Update overlay images
         self.__deleteAllMarkers()
         self.__updateMarkers(keepAlgResults=False)
