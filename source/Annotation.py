@@ -35,7 +35,8 @@ from source import utils
 
 import pandas as pd
 from scipy import ndimage as ndi
-from skimage.morphology import watershed, binary_dilation, binary_erosion
+from skimage.morphology import binary_dilation, binary_erosion
+from skimage.segmentation import watershed
 from source.Blob import Blob
 import source.Mask as Mask
 
