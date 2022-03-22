@@ -92,7 +92,7 @@ Just start `TagLab.py` from a command shell or your preferred Python IDE.
 From a terminal simply write:
 
 ```
-python3 taglab.py
+python3 TagLab.py
 ```
 or, on Windows:
 
