@@ -772,6 +772,7 @@ class QtAlignmentToolWidget(QWidget):
         self.alpha = 50
         self.threshold = 32
         self.previewSize = None
+        self.svdRes = [0, [0, 0]]
         self.R = np.rad2deg(0)
         self.T = np.array([0, 0])
         self.lastMousePos = None
@@ -808,11 +809,23 @@ class QtAlignmentToolWidget(QWidget):
         self.backToEditButton.setFixedHeight(30)
         self.backToEditButton.clicked.connect(self.onBackToEditRequested)
 
+        # Clear Markers
+        self.clearMarkersButton = QPushButton("Clear Markers")
+        self.clearMarkersButton.setFixedWidth(200)
+        self.clearMarkersButton.setFixedHeight(30)
+        self.clearMarkersButton.clicked.connect(self.onClearMarkersRequested)
+
         # Show Markers
         self.checkShowMarkers = QCheckBox("Show Markers")
         self.checkShowMarkers.setChecked(True)
         self.checkShowMarkers.setFocusPolicy(Qt.NoFocus)
         self.checkShowMarkers.stateChanged[int].connect(self.toggleMarkersVisibility)
+
+        # Reset transformations
+        self.resetTransfButton = QPushButton("Reset Transformations")
+        self.resetTransfButton.setFixedWidth(300)
+        self.resetTransfButton.setFixedHeight(30)
+        self.resetTransfButton.clicked.connect(self.onResetTransformations)
 
         # Confirm Alignment
         self.confirmAlignmentButton = QPushButton("Confirm")
@@ -918,10 +931,12 @@ class QtAlignmentToolWidget(QWidget):
         layout1 = QHBoxLayout()
         layout1.addWidget(self.checkBoxSync)
         layout1.setAlignment(self.checkBoxSync, Qt.AlignLeft)
+        layout1.addWidget(self.clearMarkersButton)
         layout1.addWidget(self.backToEditButton)
         layout1.setAlignment(self.backToEditButton, Qt.AlignLeft)
         layout1.addWidget(self.autoAlignButton)
         layout1.setAlignment(self.autoAlignButton, Qt.AlignRight)
+        layout1.addWidget(self.resetTransfButton)
         layout1.addWidget(self.checkShowMarkers)
         layout1.addWidget(self.confirmAlignmentButton)
         layout1.setAlignment(self.confirmAlignmentButton, Qt.AlignRight)
@@ -1351,6 +1366,25 @@ class QtAlignmentToolWidget(QWidget):
         """
         # Forward
         self.__onMouseOut(False)
+
+    @pyqtSlot()
+    def onResetTransformations(self) -> None:
+        """
+        Callback called when the user reset transformations (to improve quality of life in the manual pipeline)
+        """
+        # Reset transformation values
+        self.rSlider.setValue(self.svdRes[0])
+        self.xSlider.setValue(self.svdRes[1][0])
+        self.ySlider.setValue(self.svdRes[1][1])
+
+    @pyqtSlot()
+    def onClearMarkersRequested(self) -> None:
+        """
+        Callback called when the user request the auto alignment process to start.
+        """
+        # Clear all markers
+        self.__deleteAllMarkers()
+        self.__updateMarkers(keepAlgResults=False)
 
     @pyqtSlot()
     def onAutoAlignRequested(self) -> None:
@@ -1853,6 +1887,7 @@ All markers must be valid to proceed.
         self.leftPreviewViewer.setVisible(isPreviewMode)
         self.rightPreviewViewer.setVisible(isPreviewMode)
         self.backToEditButton.setVisible(isPreviewMode)
+        self.resetTransfButton.setVisible(isPreviewMode)
         self.checkShowMarkers.setVisible(isPreviewMode)
         self.confirmAlignmentButton.setVisible(isPreviewMode)
         self.alphaSliderLabel.setVisible(isPreviewMode)
@@ -1874,6 +1909,7 @@ All markers must be valid to proceed.
         # (NON-Preview-ONLY) widgets
         self.leftImgViewer.setVisible(not isPreviewMode)
         self.rightImgViewer.setVisible(not isPreviewMode)
+        self.clearMarkersButton.setVisible(not isPreviewMode)
         self.checkBoxSync.setVisible(not isPreviewMode)
         self.autoAlignButton.setVisible(not isPreviewMode)
         self.leftComboboxLabel.setVisible(not isPreviewMode)
@@ -1907,6 +1943,9 @@ All markers must be valid to proceed.
             )
         where R is the rotation matrix and T is the translation vec (to find)
         """
+        # Reset results
+        self.svdRes = [0, [0, 0]]
+
         # Reset each marker error
         for (i, marker) in enumerate(self.markers):
             marker.error = None
@@ -2003,9 +2042,11 @@ All markers must be valid to proceed.
 
         T = [T[0, 0], T[0, 1]]
         self.T = np.array(T)
+        self.svdRes[1] = [self.T[0], self.T[1]]
         self.xSlider.setValue(self.T[0])
         self.ySlider.setValue(self.T[1])
 
         R = np.rad2deg(math.acos(round(R[0, 0], 4)))
         self.R = R * 10.0
+        self.svdRes[0] = self.R
         self.rSlider.setValue(self.R)
