@@ -1150,6 +1150,60 @@
     0.0
    ],
    "map_px_to_mm_factor": "1",
+   "width": 3675,
+   "height": 3675,
+   "annotations": [],
+   "layers": [],
+   "channels": [
+    {
+     "filename": "../../../Downloads/2014_RGB_15.png",
+     "type": "RGB"
+    }
+   ],
+   "id": "0001",
+   "name": "0001",
+   "workspace": [],
+   "export_dataset_area": [],
+   "acquisition_date": "2000-1-01",
+   "georef_filename": "",
+   "metadata": {},
+   "grid": null
+  },
+  {
+   "rect": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "map_px_to_mm_factor": "1",
+   "width": 2055,
+   "height": 2038,
+   "annotations": [],
+   "layers": [],
+   "channels": [
+    {
+     "filename": "../../../Downloads/2014_RGB_bad.png",
+     "type": "RGB"
+    }
+   ],
+   "id": "0002",
+   "name": "0002",
+   "workspace": [],
+   "export_dataset_area": [],
+   "acquisition_date": "2000-1-01",
+   "georef_filename": "",
+   "metadata": {},
+   "grid": null
+  },
+  {
+   "rect": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "map_px_to_mm_factor": "1",
    "width": 2000,
    "height": 2000,
    "annotations": [],
