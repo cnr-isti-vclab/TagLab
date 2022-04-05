@@ -1204,6 +1204,249 @@
     0.0
    ],
    "map_px_to_mm_factor": "1",
+   "width": 1000,
+   "height": 1000,
+   "annotations": [],
+   "layers": [],
+   "channels": [
+    {
+     "filename": "sampleProjects/data/align-ex/base.png",
+     "type": "RGB"
+    }
+   ],
+   "id": "EX_base",
+   "name": "EX_base",
+   "workspace": [],
+   "export_dataset_area": [],
+   "acquisition_date": "2000-01-01",
+   "georef_filename": "",
+   "metadata": {},
+   "grid": null
+  },
+  {
+   "rect": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "map_px_to_mm_factor": "1",
+   "width": 900,
+   "height": 900,
+   "annotations": [],
+   "layers": [],
+   "channels": [
+    {
+     "filename": "sampleProjects/data/align-ex/tra_100.png",
+     "type": "RGB"
+    }
+   ],
+   "id": "EX_tra_100",
+   "name": "EX_tra_100",
+   "workspace": [],
+   "export_dataset_area": [],
+   "acquisition_date": "2000-01-01",
+   "georef_filename": "",
+   "metadata": {},
+   "grid": null
+  },
+  {
+   "rect": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "map_px_to_mm_factor": "1",
+   "width": 900,
+   "height": 900,
+   "annotations": [],
+   "layers": [],
+   "channels": [
+    {
+     "filename": "sampleProjects/data/align-ex/tra_neg_100.png",
+     "type": "RGB"
+    }
+   ],
+   "id": "EX_tra_-100",
+   "name": "EX_tra_-100",
+   "workspace": [],
+   "export_dataset_area": [],
+   "acquisition_date": "2000-01-01",
+   "georef_filename": "",
+   "metadata": {},
+   "grid": null
+  },
+  {
+   "rect": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "map_px_to_mm_factor": "1",
+   "width": 900,
+   "height": 900,
+   "annotations": [],
+   "layers": [],
+   "channels": [
+    {
+     "filename": "sampleProjects/data/align-ex/tra_100_rot_10.png",
+     "type": "RGB"
+    }
+   ],
+   "id": "EX_tra_100_rot_10",
+   "name": "EX_tra_100_rot_10",
+   "workspace": [],
+   "export_dataset_area": [],
+   "acquisition_date": "2000-01-01",
+   "georef_filename": "",
+   "metadata": {},
+   "grid": null
+  },
+  {
+   "rect": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "map_px_to_mm_factor": "1",
+   "width": 1000,
+   "height": 1000,
+   "annotations": [],
+   "layers": [],
+   "channels": [
+    {
+     "filename": "sampleProjects/data/align-ex/rot_90.png",
+     "type": "RGB"
+    }
+   ],
+   "id": "EX_rot_90",
+   "name": "EX_rot_90",
+   "workspace": [],
+   "export_dataset_area": [],
+   "acquisition_date": "2000-01-01",
+   "georef_filename": "",
+   "metadata": {},
+   "grid": null
+  },
+  {
+   "rect": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "map_px_to_mm_factor": "1",
+   "width": 1000,
+   "height": 1000,
+   "annotations": [],
+   "layers": [],
+   "channels": [
+    {
+     "filename": "sampleProjects/data/align-ex/rot_180.png",
+     "type": "RGB"
+    }
+   ],
+   "id": "EX_rot_180",
+   "name": "EX_rot_180",
+   "workspace": [],
+   "export_dataset_area": [],
+   "acquisition_date": "2000-01-01",
+   "georef_filename": "",
+   "metadata": {},
+   "grid": null
+  },
+  {
+   "rect": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "map_px_to_mm_factor": "5",
+   "width": 200,
+   "height": 200,
+   "annotations": [],
+   "layers": [],
+   "channels": [
+    {
+     "filename": "sampleProjects/data/align-ex/sca_20.png",
+     "type": "RGB"
+    }
+   ],
+   "id": "EX_sca_20",
+   "name": "EX_sca_20",
+   "workspace": [],
+   "export_dataset_area": [],
+   "acquisition_date": "2000-01-01",
+   "georef_filename": "",
+   "metadata": {},
+   "grid": null
+  },
+  {
+   "rect": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "map_px_to_mm_factor": "5",
+   "width": 200,
+   "height": 200,
+   "annotations": [],
+   "layers": [],
+   "channels": [
+    {
+     "filename": "sampleProjects/data/align-ex/sca_20_rot_5.png",
+     "type": "RGB"
+    }
+   ],
+   "id": "EX_sca_20_rot_5",
+   "name": "EX_sca_20_rot_5",
+   "workspace": [],
+   "export_dataset_area": [],
+   "acquisition_date": "2000-01-01",
+   "georef_filename": "",
+   "metadata": {},
+   "grid": null
+  },
+  {
+   "rect": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "map_px_to_mm_factor": "1.66667",
+   "width": 600,
+   "height": 600,
+   "annotations": [],
+   "layers": [],
+   "channels": [
+    {
+     "filename": "sampleProjects/data/align-ex/sca_60.png",
+     "type": "RGB"
+    }
+   ],
+   "id": "EX_sca_60",
+   "name": "EX_sca_60",
+   "workspace": [],
+   "export_dataset_area": [],
+   "acquisition_date": "2000-01-01",
+   "georef_filename": "",
+   "metadata": {},
+   "grid": null
+  },
+  {
+   "rect": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "map_px_to_mm_factor": "1",
    "width": 2000,
    "height": 2000,
    "annotations": [],
