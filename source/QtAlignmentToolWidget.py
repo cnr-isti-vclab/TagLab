@@ -265,40 +265,35 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         Renders the OpenGL scene.
         Gets called whenever the widget needs to be updated.
         """
-        # Compute sizes
-        maxw = max(self.sizeL[0], self.sizeR[0])
-        maxh = max(self.sizeL[1], self.sizeR[1])
-        # Create Matrix for 1st Quad
-        matrix1 = QMatrix4x4()
-        # matrix1.scale(self.sizeL[0] / maxw, self.sizeL[1] / maxh, 1)  # Keep aspect ratio
-        # Create Matrix for 2nd Quad
-        matrix2 = QMatrix4x4()
-        # matrix2.scale(self.sizeR[0] / maxw, self.sizeR[1] / maxh, 1)  # Keep aspect ratio
-        matrix2.rotate(self.rot, 0.0, 0.0, 1.0)  # Rotation (pivot is the image center)
-        matrix2.translate(self.tra[0], self.tra[1], 0)  # Translation
-        # Create Transformation Matrix
-        matrix3 = QMatrix4x4()
+        matrix1 = QMatrix4x4()  # For 1st Quad
+        matrix2 = QMatrix4x4()  # For 2nd Quad
+        matrix3 = QMatrix4x4()  # Transformation Matrix
+        matrix4 = QMatrix4x4()  # For reversing framebuffer
+        matrix5 = QMatrix4x4()  # For normalizing points to [-1, 1]
+        # Rotation and Translation (pivot is the top left corner)
+        matrix2.translate(self.tra[0], -self.tra[1], 0)
+        matrix2.translate(-1.0,  1.0, 0.0)
+        matrix2.rotate(-self.rot, 0.0, 0.0, 1.0)
+        matrix2.translate( 1.0, -1.0, 0.0)
+        # Aspect Ratio / Pan / Zoom
         matrix3.scale(min(self.w, self.h) / self.w, min(self.w, self.h) / self.h, 1)  # Keep aspect ratio
         matrix3.translate(self.t[0], -self.t[1], 0)  # Pan
         matrix3.scale(self.s, self.s, 1)  # Zoom
         # Check if needs to redraw buffers
         # (Needed only when user zoom or pan or manually changes offset or rotation)
         if not self.keepFB:
-            # Draw tex 0 into fb 0
-            self.__drawTexturePass(0, matrix3 * matrix1)
-            # Draw tex 1 into fb 1
-            self.__drawTexturePass(1, matrix3 * matrix2)
-            # Clear dirty flag
-            self.keepFB = True
-        # Create Matrix (for reversing framebuffer)
-        matrix4 = QMatrix4x4()
-        matrix4.scale(1, -1, 1)
+            self.__drawTexturePass(0, matrix3 * matrix1)  # Draw tex 0 into fb 0
+            self.__drawTexturePass(1, matrix3 * matrix2)  # Draw tex 1 into fb 1
+            self.keepFB = True  # Clear dirty flag
         # Draw fb into screen (scriptable)
+        matrix4.scale(1, -1, 1)
         self.__drawFrameBufferPass(matrix4)
         # Draw marker points
+        matrix5.translate(-1, 1, 0)
+        matrix5.scale(2, -2, 1)
         if self.drawPoints:
-            self.__drawPointsPass(0, matrix3 * matrix1, QVector4D(1.0, 0.0, 0.0, 1.0))
-            self.__drawPointsPass(1, matrix3 * matrix2, QVector4D(1.0, 1.0, 0.0, 1.0))
+            self.__drawPointsPass(0, matrix3 * matrix1 * matrix5, QVector4D(1.0, 0.0, 0.0, 1.0))
+            self.__drawPointsPass(1, matrix3 * matrix2 * matrix5, QVector4D(1.0, 1.0, 0.0, 1.0))
 
     def resizeGL(self, w: int, h: int) -> None:
         """
@@ -414,13 +409,13 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         Public method to update Rotation parameter.
         :param: rot the new value for rotation (in degrees)
         """
-        self.rot = -max(min(rot, 180.0), -180.0)
+        self.rot = max(min(rot, 180.0), -180.0)
         self.redraw(False)
 
     def updateTranslation(self, tra: Size2f) -> None:
         """
         Public method to update Translation parameter.
-        :param: tra the new value for translation (normalized [-1.0, 1.0])
+        :param: tra the new value for translation
         """
         self.tra = QVector2D(tra[0], tra[1])
         self.redraw(False)
@@ -1208,6 +1203,8 @@ class QtAlignmentToolWidget(QWidget):
         Callback called when the Preview Mode is turned on/off.
         :param: value a boolean representing if the mode is checked.
         """
+        # Recompute svd
+        self.__leastSquaresWithSVD()
         # Hide preview widgets
         self.__togglePreviewMode(False)
 
@@ -1958,8 +1955,8 @@ All markers must be valid to proceed.
         # Normalize markers relative to max side
         maxw = max(self.sizeL[0], self.sizeR[0])
         maxh = max(self.sizeL[1], self.sizeR[1])
-        leftPoints = [((marker.lViewPos[0] / maxw) * 2 - 1.0, (marker.lViewPos[1] / maxh) * -2 + 1.0) for marker in self.markers]
-        rightPoints = [((marker.rViewPos[0] / maxw) * 2 - 1.0, (marker.rViewPos[1] / maxh) * -2 + 1.0) for marker in self.markers]
+        leftPoints = [(marker.lViewPos[0] / maxw, marker.lViewPos[1] / maxh) for marker in self.markers]
+        rightPoints = [(marker.rViewPos[0] / maxw, marker.rViewPos[1] / maxh) for marker in self.markers]
         return leftPoints, rightPoints
 
     def __leastSquaresWithSVD(self) -> None:
@@ -1980,8 +1977,6 @@ All markers must be valid to proceed.
         for (i, marker) in enumerate(self.markers):
             marker.error = None
             self.__clearMarker(i, True)
-
-        # print("__leastSquaresWithSVD called")
 
         # Ensure at least 3 marker are placed
         if not self.__hasValidMarkers():
@@ -2068,16 +2063,16 @@ All markers must be valid to proceed.
         err = [(x * maxw, y * maxh) for (x, y) in err]
         err = [math.sqrt(x ** 2 + y ** 2) for (x, y) in err]
         for (i, (e, marker)) in enumerate(zip(err, self.markers)):
-            # TODO pixel -> mm
             marker.error = round(e, 2)
 
-        T = [T[0, 0], T[0, 1]]
+        T = [T[0, 0] * maxw, T[0, 1] * maxh]
         self.T = np.array(T)
         self.svdRes[1] = [self.T[0], self.T[1]]
         self.xSlider.setValue(self.T[0])
         self.ySlider.setValue(self.T[1])
 
-        R = np.rad2deg(math.acos(round(R[0, 0], 4)))
+        R = math.atan2(R[1, 0], R[0, 0])
+        R = np.rad2deg(R)
         self.R = R * 10.0
         self.svdRes[0] = self.R
         self.rSlider.setValue(self.R)
