@@ -12,9 +12,10 @@ from PyQt5._QOpenGLFunctions_2_0 import QOpenGLFunctions_2_0
 from source.QtImageViewer import QtImageViewer
 
 """
-Type alias for Point
+Type aliases
 """
 Point2f = tuple[float, float]
+Size2f = tuple[float, float]
 
 
 def checkGL(obj, res):
@@ -47,7 +48,12 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
     varying vec2 vTex;
     uniform sampler2D uTex;
     void main(void) {
-        gl_FragColor = texture2D(uTex, vTex);
+        if (vTex.x > 1.0 || vTex.y > 1.0) {
+            gl_FragColor = vec4(0.0);
+        }
+        else {    
+            gl_FragColor = texture2D(uTex, vTex);
+        }
     }
     """
 
@@ -97,7 +103,8 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.s = 1.0
         self.w = 100
         self.h = 100
-        self.ratioWH = 1.0
+        self.sizeL = [0, 0]
+        self.sizeR = [0, 0]
         # Gesture
         self.lastPos = None
         self.minZoom = 0.25
@@ -174,11 +181,16 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         # Update uniforms
         self.programs[0].setUniformValue("uTex", 0)
         self.programs[0].setUniformValue("uMatrix", mat)
+        # Compute sizes
+        maxw = max(self.sizeL[0], self.sizeR[0])
+        maxh = max(self.sizeL[1], self.sizeR[1])
+        wratio = maxw / (self.sizeL[0] if i == 0 else self.sizeR[0])
+        hratio = maxh / (self.sizeL[1] if i == 0 else self.sizeR[1])
         # Reload quad data
         self.programs[0].enableAttributeArray(0)
         self.programs[0].setAttributeArray(0, QtSimpleOpenGlShaderViewer.QUAD_V.copy())
         self.programs[0].enableAttributeArray(1)
-        self.programs[0].setAttributeArray(1, QtSimpleOpenGlShaderViewer.QUAD_T.copy())
+        self.programs[0].setAttributeArray(1, [(x * wratio, y * hratio) for (x, y) in QtSimpleOpenGlShaderViewer.QUAD_T])
         # Draw quad
         self.gl.glClearColor(0.0, 0.0, 0.0, 0.0)
         self.gl.glClear(self.gl.GL_COLOR_BUFFER_BIT)
@@ -253,12 +265,15 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         Renders the OpenGL scene.
         Gets called whenever the widget needs to be updated.
         """
+        # Compute sizes
+        maxw = max(self.sizeL[0], self.sizeR[0])
+        maxh = max(self.sizeL[1], self.sizeR[1])
         # Create Matrix for 1st Quad
         matrix1 = QMatrix4x4()
-        matrix1.scale(self.ratioWH, 1, 1)  # Keep aspect ratio
+        # matrix1.scale(self.sizeL[0] / maxw, self.sizeL[1] / maxh, 1)  # Keep aspect ratio
         # Create Matrix for 2nd Quad
         matrix2 = QMatrix4x4()
-        matrix2.scale(self.ratioWH, 1, 1)  # Keep aspect ratio
+        # matrix2.scale(self.sizeR[0] / maxw, self.sizeR[1] / maxh, 1)  # Keep aspect ratio
         matrix2.rotate(self.rot, 0.0, 0.0, 1.0)  # Rotation (pivot is the image center)
         matrix2.translate(self.tra[0], self.tra[1], 0)  # Translation
         # Create Transformation Matrix
@@ -365,13 +380,14 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         # Redraw
         self.redraw(False)
 
-    def initializeData(self, referenceImg: QImage, imgToAlign: QImage, ratioWH: float,
+    def initializeData(self, referenceImg: QImage, imgToAlign: QImage, sizeL: Size2f, sizeR: Size2f,
                        referencePoints: list[Point2f], pointsToAlign: list[Point2f]) -> None:
         """
         Called by the container widget to upload data to show.
         :param: referenceImg the QImage to take as reference
         :param: imgToAlign the QImage to beg aligned
-        :param: ratioWH the w/h ratio
+        :param: sizeL the size of the left image
+        :param: sizeR the size of the right image
         :param: referencePoints the list of points on the "reference image"
         :param: pointsToAlign the list of points on the "image to align"
         """
@@ -383,9 +399,11 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         # Update texture parameters
         for tex in self.textures:
             tex.setMinMagFilters(QOpenGLTexture.Nearest, QOpenGLTexture.Nearest)
-            # tex.generateMipMaps()
-        # Store image ratio
-        self.ratioWH = ratioWH
+            tex.setWrapMode(QOpenGLTexture.ClampToEdge)
+            tex.generateMipMaps()
+        # Store image sizes
+        self.sizeL = sizeL
+        self.sizeR = sizeR
         # Save points
         self.points = [referencePoints.copy(), pointsToAlign.copy()]
         # Redraw
@@ -399,7 +417,7 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.rot = -max(min(rot, 180.0), -180.0)
         self.redraw(False)
 
-    def updateTranslation(self, tra: np.array) -> None:
+    def updateTranslation(self, tra: Size2f) -> None:
         """
         Public method to update Translation parameter.
         :param: tra the new value for translation (normalized [-1.0, 1.0])
@@ -771,7 +789,8 @@ class QtAlignmentToolWidget(QWidget):
         self.syncEnabled = True
         self.alpha = 50
         self.threshold = 32
-        self.previewSize = None
+        self.sizeL: Size2f = (0.0, 0.0)
+        self.sizeR: Size2f = (0.0, 0.0)
         self.svdRes = [0, [0, 0]]
         self.R = np.rad2deg(0)
         self.T = np.array([0, 0])
@@ -1027,7 +1046,9 @@ class QtAlignmentToolWidget(QWidget):
         # Layout
         self.editLayout = QHBoxLayout()
         self.editLayout.addLayout(leftLayout)
+        self.editLayout.setStretchFactor(leftLayout, 1)
         self.editLayout.addLayout(rightLayout)
+        self.editLayout.setStretchFactor(rightLayout, 1)
 
         # ==============================================================
         # UI for preview
@@ -1805,7 +1826,7 @@ All markers must be valid to proceed.
             channel2.loadData()
             QApplication.restoreOverrideCursor()
         # Update preview size
-        self.__updatePreviewSize(channel1.qimage, self.pxSizeL, channel2.qimage, self.pxSizeR)
+        self.__updateSizes(channel1.qimage, self.pxSizeL, channel2.qimage, self.pxSizeR)
         # Update viewer
         self.leftImgViewer.setImg(channel1.qimage)
         self.leftImgViewer.px_to_mm = self.pxSizeL
@@ -1821,7 +1842,7 @@ All markers must be valid to proceed.
         self.xSlider.setValue(0)
         self.ySlider.setValue(0)
 
-    def __updatePreviewSize(self, img1: QImage, pxSize1: float, img2: QImage, pxSize2: float) -> None:
+    def __updateSizes(self, img1: QImage, pxSize1: float, img2: QImage, pxSize2: float) -> None:
         """
         Private method to update internal reference size for preview images.
         The preview size must contains both images.
@@ -1832,11 +1853,12 @@ All markers must be valid to proceed.
         """
         # Retrieve sizes
         h1, w1 = img1.height() * pxSize1, img1.width() * pxSize1
+        self.sizeL = [w1, h1]
         h2, w2 = img2.height() * pxSize2, img2.width() * pxSize2
+        self.sizeR = [w2, h2]
         # Find box containing both images
         ph, pw = max(h1, h2), max(w1, w2)
         # Update preview size
-        self.previewSize = [ph, pw]
         self.xSlider.setMinimum(-pw)
         self.xSlider.setMaximum(+pw)
         self.ySlider.setMinimum(-ph)
@@ -1849,16 +1871,11 @@ All markers must be valid to proceed.
         # Retrieve images
         img1 = self.leftImgViewer.img_map
         img2 = self.rightImgViewer.img_map
-        # Retrieve ratio
-        [h, w] = self.previewSize
-        ratioWH = w / h
         # Retrieve markers
-        [ph, pw] = self.previewSize
-        q = [((marker.lViewPos[0] / pw) * 2 - 1.0, (marker.lViewPos[1] / ph) * -2 + 1.0) for marker in self.markers]
-        p = [((marker.rViewPos[0] / pw) * 2 - 1.0, (marker.rViewPos[1] / ph) * -2 + 1.0) for marker in self.markers]
+        [q, p] = self.__normalizedMarkers()
         # Pass images to viewers
-        self.leftPreviewViewer.initializeData(img1, img2, ratioWH, q, p)
-        self.rightPreviewViewer.initializeData(img1, img2, ratioWH, q, p)
+        self.leftPreviewViewer.initializeData(img1, img2, self.sizeL, self.sizeR, q, p)
+        self.rightPreviewViewer.initializeData(img1, img2, self.sizeL, self.sizeR, q, p)
 
     def __updatePreview(self, onlyAlpha: bool = False) -> None:
         """
@@ -1869,12 +1886,13 @@ All markers must be valid to proceed.
         self.leftPreviewViewer.updateAlpha(self.alpha / 100.0)
         if not onlyAlpha:
             # Update R and T values
-            tra = (self.T * 2.0) / self.previewSize
+            trax = (self.T[0] * 2.0) / max(self.sizeL[0], self.sizeR[0])
+            tray = (self.T[1] * 2.0) / max(self.sizeL[1], self.sizeR[1])
             rot = self.R / 10.0
             self.leftPreviewViewer.updateRotation(rot)
-            self.leftPreviewViewer.updateTranslation(tra)
+            self.leftPreviewViewer.updateTranslation((trax, tray))
             self.rightPreviewViewer.updateRotation(rot)
-            self.rightPreviewViewer.updateTranslation(tra)
+            self.rightPreviewViewer.updateTranslation((trax, tray))
             # Update threshold
             self.rightPreviewViewer.updateThreshold(self.threshold)
 
@@ -1932,6 +1950,18 @@ All markers must be valid to proceed.
         # Valid !
         return True
 
+    def __normalizedMarkers(self) -> tuple[list[Point2f], list[Point2f]]:
+        """
+        Private method to retrieve markers with normalized coord.
+        :return: tuple with the two list of markers
+        """
+        # Normalize markers relative to max side
+        maxw = max(self.sizeL[0], self.sizeR[0])
+        maxh = max(self.sizeL[1], self.sizeR[1])
+        leftPoints = [((marker.lViewPos[0] / maxw) * 2 - 1.0, (marker.lViewPos[1] / maxh) * -2 + 1.0) for marker in self.markers]
+        rightPoints = [((marker.rViewPos[0] / maxw) * 2 - 1.0, (marker.rViewPos[1] / maxh) * -2 + 1.0) for marker in self.markers]
+        return leftPoints, rightPoints
+
     def __leastSquaresWithSVD(self) -> None:
         """
         Private method to compute the Least-Squares Rigid Motion using SVD.
@@ -1971,9 +2001,7 @@ All markers must be valid to proceed.
         d = 2
         w = [marker.weight for marker in self.markers]
         sw = sum(w)
-        [ph, pw] = self.previewSize
-        q = [[(marker.lViewPos[0] - pw / 2), -(marker.lViewPos[1] - ph / 2)] for marker in self.markers]
-        p = [[(marker.rViewPos[0] - pw / 2), -(marker.rViewPos[1] - ph / 2)] for marker in self.markers]
+        (q, p) = self.__normalizedMarkers()
 
         # ==================================================================================
         # [1] Compute the weighted centroids _q (for q) and _p (for p)
@@ -2035,6 +2063,9 @@ All markers must be valid to proceed.
 
         # Compute errors
         err = [[a[0] - b[0], a[1] - b[1]] for (a, b) in zip(sol, q)]
+        maxw = max(self.sizeL[0], self.sizeR[0])
+        maxh = max(self.sizeL[1], self.sizeR[1])
+        err = [(x * maxw, y * maxh) for (x, y) in err]
         err = [math.sqrt(x ** 2 + y ** 2) for (x, y) in err]
         for (i, (e, marker)) in enumerate(zip(err, self.markers)):
             # TODO pixel -> mm

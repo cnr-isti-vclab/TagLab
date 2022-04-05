@@ -1447,6 +1447,60 @@
     0.0
    ],
    "map_px_to_mm_factor": "1",
+   "width": 1000,
+   "height": 500,
+   "annotations": [],
+   "layers": [],
+   "channels": [
+    {
+     "filename": "sampleProjects/data/align-ex/rect_hor.png",
+     "type": "RGB"
+    }
+   ],
+   "id": "EX_rect_hor",
+   "name": "EX_rect_hor",
+   "workspace": [],
+   "export_dataset_area": [],
+   "acquisition_date": "2000-01-01",
+   "georef_filename": "",
+   "metadata": {},
+   "grid": null
+  },
+  {
+   "rect": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "map_px_to_mm_factor": "1",
+   "width": 500,
+   "height": 1000,
+   "annotations": [],
+   "layers": [],
+   "channels": [
+    {
+     "filename": "sampleProjects/data/align-ex/rect_ver.png",
+     "type": "RGB"
+    }
+   ],
+   "id": "EX_rect_ver",
+   "name": "EX_rect_ver",
+   "workspace": [],
+   "export_dataset_area": [],
+   "acquisition_date": "2000-01-01",
+   "georef_filename": "",
+   "metadata": {},
+   "grid": null
+  },
+  {
+   "rect": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "map_px_to_mm_factor": "1",
    "width": 2000,
    "height": 2000,
    "annotations": [],
