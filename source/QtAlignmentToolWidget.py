@@ -461,15 +461,15 @@ class AlphaPreviewViewer(QtSimpleOpenGlShaderViewer):
         vec4 col = vec4(0, 0, 0, 1);
         
         // Check if is an overlapping pixel
-        if (hasLeftPixel && hasRightPixel) {
+        // if (hasLeftPixel && hasRightPixel) {
             
             // Mix colors
             col = mix(lColRGBA, rColRGBA, uAlpha);
             
-        } else {
-            if (hasLeftPixel)  col = lColRGBA;
-            if (hasRightPixel) col = rColRGBA;
-        }
+        // } else {
+        //     if (hasLeftPixel)  col = lColRGBA;
+        //     if (hasRightPixel) col = rColRGBA;
+        // }
         
         // Output color
         gl_FragColor = col;
