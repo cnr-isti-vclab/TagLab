@@ -11,6 +11,11 @@ from PyQt5._QOpenGLFunctions_2_0 import QOpenGLFunctions_2_0
 
 from source.QtImageViewer import QtImageViewer
 
+"""
+Type alias for Point
+"""
+Point2f = tuple[float, float]
+
 
 def checkGL(obj, res):
     """
@@ -361,7 +366,7 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.redraw(False)
 
     def initializeData(self, referenceImg: QImage, imgToAlign: QImage, ratioWH: float,
-                       referencePoints: list[tuple[float, float]], pointsToAlign: list[tuple[float, float]]) -> None:
+                       referencePoints: list[Point2f], pointsToAlign: list[Point2f]) -> None:
         """
         Called by the container widget to upload data to show.
         :param: referenceImg the QImage to take as reference
@@ -391,7 +396,7 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         Public method to update Rotation parameter.
         :param: rot the new value for rotation (in degrees)
         """
-        self.rot = max(min(rot, 180.0), -180.0)
+        self.rot = -max(min(rot, 180.0), -180.0)
         self.redraw(False)
 
     def updateTranslation(self, tra: np.array) -> None:
@@ -612,13 +617,13 @@ class MarkerObjData:
     MARKER_SIZE = 8
     MARKER_WIDTH = 5
 
-    def __init__(self, identifier: int, pos: tuple[float, float], pxSizeL: float, pxSizeR: float,
-                 typ: SOFT_MARKER | HARD_MARKER):
+    def __init__(self, identifier: int, lpos: Optional[Point2f], rpos: Optional[Point2f],
+                       pxSizeL: float, pxSizeR: float, typ: SOFT_MARKER | HARD_MARKER):
         self.identifier = identifier
         self.pxSizeL = pxSizeL
         self.pxSizeR = pxSizeR
-        self.lViewPos = [pos[0], pos[1]]
-        self.rViewPos = [pos[0], pos[1]]
+        self.lViewPos: Optional[Point2f] = lpos
+        self.rViewPos: Optional[Point2f] = rpos
         self.typ = typ
         self.sceneObjs = []
         self.textObjs = []
@@ -640,45 +645,95 @@ class MarkerObjData:
         # Update data
         self.__update()
 
-    def getBBox(self) -> tuple[QRectF, QRectF]:
+    def getBBox(self) -> tuple[Optional[QRectF], Optional[QRectF]]:
         """
         Retrieve bbox of marker for left and right view.
         :return: (bboxL, bboxR) the two boxes
         """
+        bboxL = bboxR = None
         # Create bbox for left viewer
-        [lmx, lmy] = [self.lViewPos[0] / self.pxSizeL, self.lViewPos[1] / self.pxSizeL]
-        sideL = MarkerObjData.MARKER_SIZE / self.pxSizeL
-        bboxL = QRectF(lmx - sideL, lmy - sideL, sideL * 2 + 1, sideL * 2 + 1)
+        if self.lViewPos is not None:
+            [lmx, lmy] = [self.lViewPos[0] / self.pxSizeL, self.lViewPos[1] / self.pxSizeL]
+            sideL = MarkerObjData.MARKER_SIZE / self.pxSizeL
+            bboxL = QRectF(lmx - sideL, lmy - sideL, sideL * 2 + 1, sideL * 2 + 1)
         # Create bbox for right viewer
-        [rmx, rmy] = [self.rViewPos[0] / self.pxSizeR, self.rViewPos[1] / self.pxSizeR]
-        sideR = MarkerObjData.MARKER_SIZE / self.pxSizeR
-        bboxR = QRectF(rmx - sideR, rmy - sideR, sideR * 2 + 1, sideR * 2 + 1)
+        if self.rViewPos is not None:
+            [rmx, rmy] = [self.rViewPos[0] / self.pxSizeR, self.rViewPos[1] / self.pxSizeR]
+            sideR = MarkerObjData.MARKER_SIZE / self.pxSizeR
+            bboxR = QRectF(rmx - sideR, rmy - sideR, sideR * 2 + 1, sideR * 2 + 1)
         return bboxL, bboxR
 
-    def getLines(self) -> list[tuple[QLineF, QLineF]]:
+    def getLines(self) -> list[tuple[Optional[QLineF], Optional[QLineF]]]:
         """
         Retrieve the lines to draw the marker inside the two views.
         :return: [(lineLeft, lineRight)] the lines list
         """
+        linesL = linesR = []
         # Create line list for left viewer
-        [lmx, lmy] = [self.lViewPos[0] / self.pxSizeL, self.lViewPos[1] / self.pxSizeL]
-        sideL = MarkerObjData.MARKER_SIZE / self.pxSizeL
-        linesL = [
-            ([-sideL + 1, -sideL + 1], [0, 0]), ([1, 1], [+sideL, +sideL + 0]),  # Top Left -> Bot Right
-            ([-sideL + 1, +sideL + 0], [0, 1]), ([1, 0], [+sideL, -sideL + 1]),  # Top Right -> Bot Left
-        ]
+        if self.lViewPos is not None:
+            [lmx, lmy] = [self.lViewPos[0] / self.pxSizeL, self.lViewPos[1] / self.pxSizeL]
+            sideL = MarkerObjData.MARKER_SIZE / self.pxSizeL
+            linesL = [
+                ([-sideL + 1, -sideL + 1], [0, 0]), ([1, 1], [+sideL, +sideL + 0]),  # Top Left -> Bot Right
+                ([-sideL + 1, +sideL + 0], [0, 1]), ([1, 0], [+sideL, -sideL + 1]),  # Top Right -> Bot Left
+            ]
+            linesL = [
+                QLineF(lmx + lStart[0], lmy + lStart[1], lmx + lEnd[0], lmy + lEnd[1])
+                for ([lStart, lEnd]) in linesL
+            ]
         # Create line list for right viewer
-        [rmx, rmy] = [self.rViewPos[0] / self.pxSizeR, self.rViewPos[1] / self.pxSizeR]
-        sideR = MarkerObjData.MARKER_SIZE / self.pxSizeR
-        linesR = [
-            ([-sideR + 1, -sideR + 1], [0, 0]), ([1, 1], [+sideR, +sideR + 0]),  # Top Left -> Bot Right
-            ([-sideR + 1, +sideR + 0], [0, 1]), ([1, 0], [+sideR, -sideR + 1]),  # Top Right -> Bot Left
-        ]
+        if self.rViewPos is not None:
+            [rmx, rmy] = [self.rViewPos[0] / self.pxSizeR, self.rViewPos[1] / self.pxSizeR]
+            sideR = MarkerObjData.MARKER_SIZE / self.pxSizeR
+            linesR = [
+                ([-sideR + 1, -sideR + 1], [0, 0]), ([1, 1], [+sideR, +sideR + 0]),  # Top Left -> Bot Right
+                ([-sideR + 1, +sideR + 0], [0, 1]), ([1, 0], [+sideR, -sideR + 1]),  # Top Right -> Bot Left
+            ]
+            linesR = [
+                QLineF(rmx + rStart[0], rmy + rStart[1], rmx + rEnd[0], rmy + rEnd[1])
+                for ([rStart, rEnd]) in linesR
+            ]
+        # Ensure same size
+        if len(linesL) < len(linesR):
+            linesL = [None] * len(linesR)
+        if len(linesR) < len(linesL):
+            linesR = [None] * len(linesL)
         # Create lines and zip them
-        return [(
-            QLineF(lmx + lStart[0], lmy + lStart[1], lmx + lEnd[0], lmy + lEnd[1]),
-            QLineF(rmx + rStart[0], rmy + rStart[1], rmx + rEnd[0], rmy + rEnd[1])
-        ) for ([lStart, lEnd], [rStart, rEnd]) in zip(linesL, linesR)]
+        return [(lineL, lineR) for (lineL, lineR) in zip(linesL, linesR)]
+
+    def setLPos(self, pos: Point2f) -> None:
+        """
+        Update the marker position on the left viewer.
+        :param: lpos the new lpos
+        """
+        self.lViewPos = [pos[0], pos[1]]
+
+    def setRPos(self, pos: Point2f) -> None:
+        """
+        Update the marker position on the right viewer.
+        :param: rpos the new rpos
+        """
+        self.rViewPos = [pos[0], pos[1]]
+
+    def isComplete(self) -> bool:
+        """
+        Public method to query the marker "status".
+        :return: a boolean that indicates if the marker is complete.
+        """
+        return self.lViewPos is not None and self.rViewPos is not None
+
+    def move(self, dx: float, dy: float, moveLeft: bool, moveRight: bool) -> None:
+        """
+        Private method to "move" the marker.
+        :param: dx the delta on the x axis
+        :param: dy the delta on the y axis
+        :param: moveLeft a boolean to turn on/off movement of the position in the left view
+        :param: moveRight a boolean to turn on/off movement of the position in the right view
+        """
+        if moveLeft and self.lViewPos is not None:
+            self.lViewPos = [self.lViewPos[0] + dx, self.lViewPos[1] + dy]
+        if moveRight and self.rViewPos is not None:
+            self.rViewPos = [self.rViewPos[0] + dx, self.rViewPos[1] + dy]
 
     def __update(self) -> None:
         """
@@ -724,6 +779,8 @@ class QtAlignmentToolWidget(QWidget):
         self.selectedMarker = None
         self.hoveringSceneObjs = None
         self.hoveringMarker = None
+        self.lMarkerIndex = 0
+        self.rMarkerIndex = 0
         self.markers: list[MarkerObjData] = []
         self.pxSizeL = 1.0
         self.pxSizeR = 1.0
@@ -837,11 +894,11 @@ class QtAlignmentToolWidget(QWidget):
         self.rotateLeftButton = QPushButton("Rotate Left")
         self.rotateLeftButton.setFixedWidth(200)
         self.rotateLeftButton.setFixedHeight(30)
-        self.rotateLeftButton.clicked.connect(self.onRotValueIncremented)
+        self.rotateLeftButton.clicked.connect(self.onRotValueDecremented)
         self.rotateRightButton = QPushButton("Rotate Right")
         self.rotateRightButton.setFixedWidth(200)
         self.rotateRightButton.setFixedHeight(30)
-        self.rotateRightButton.clicked.connect(self.onRotValueDecremented)
+        self.rotateRightButton.clicked.connect(self.onRotValueIncremented)
 
         # Debug Slider (Threshold)
         self.thresholdSliderLabel = QLabel("T: " + str(self.threshold))
@@ -1300,10 +1357,14 @@ class QtAlignmentToolWidget(QWidget):
         """
         Callback called when the user request the auto alignment process to start.
         """
-        # Ensure at least 3 marker is placed
-        if len(self.markers) < 3:
+        # Ensure enough valid markers were added
+        if not self.__hasValidMarkers():
             msgBox = QMessageBox()
-            msgBox.setText("At least 3 marker is required. Use the right button to place markers.")
+            msgBox.setText("""
+At least 3 marker are required. Use the right button to place markers.
+Markers that do not apper in both views are considered invalid.
+All markers must be valid to proceed.
+            """)
             msgBox.exec()
             return
         # Switch to preview mode
@@ -1365,7 +1426,7 @@ class QtAlignmentToolWidget(QWidget):
                 # Create marker
                 pxSize = self.pxSizeL if isLeft else self.pxSizeR
                 mkPos = (pos[0] * pxSize, pos[1] * pxSize)
-                self.__addMarker(mkPos)
+                self.__addMarker(mkPos, isLeft)
             else:
                 # Toggle marker
                 self.__toggleMarker(hovering)
@@ -1399,13 +1460,7 @@ class QtAlignmentToolWidget(QWidget):
             dy = (pos[1] - self.lastMousePos[1]) * pxSize
             self.lastMousePos = pos
             # Update marker position
-            self.markers[self.selectedMarker].rViewPos[0] += dx
-            self.markers[self.selectedMarker].rViewPos[1] += dy
-            # If user is dragging marker on the left viewer
-            if isLeft:
-                # Update also the right one
-                self.markers[self.selectedMarker].lViewPos[0] += dx
-                self.markers[self.selectedMarker].lViewPos[1] += dy
+            self.markers[self.selectedMarker].move(dx, dy, isLeft, True)
             self.__clearMarker(self.selectedMarker, False)
             # Redraw markers
             self.__updateMarkers(keepAlgResults=False)
@@ -1434,7 +1489,7 @@ class QtAlignmentToolWidget(QWidget):
         # Redraw markers
         self.__updateMarkers(keepAlgResults=True)
 
-    def __mapToViewer(self, pos: QPoint, isLeft: bool) -> tuple[float, float]:
+    def __mapToViewer(self, pos: QPoint, isLeft: bool) -> Point2f:
         """
         Private method that maps a pos [x, y] into the viewer space.
         :param: pos the position to map
@@ -1446,7 +1501,7 @@ class QtAlignmentToolWidget(QWidget):
         tmp = (min(max(tmp.x(), 0), viewer.imgwidth), min(max(tmp.y(), 0), viewer.imgheight))
         return tmp
 
-    def __findMarkerAt(self, pos: tuple[float, float], isLeft: bool) -> Optional[int]:
+    def __findMarkerAt(self, pos: Point2f, isLeft: bool) -> Optional[int]:
         """
         Private method to find marker under [x, y].
         :param: pos the position to check
@@ -1461,7 +1516,7 @@ class QtAlignmentToolWidget(QWidget):
             (bboxL, bboxR) = self.markers[i].getBBox()
             bbox: QRectF = bboxL if isLeft else bboxR
             # Check if bbox contains pos
-            if bbox.contains(x, y):
+            if bbox is not None and bbox.contains(x, y):
                 return i
         return None
 
@@ -1483,12 +1538,14 @@ class QtAlignmentToolWidget(QWidget):
             # Retrieve scene objs
             (rectL, rectR) = self.hoveringSceneObjs
             # Remove them from scenes
-            self.leftImgViewer.scene.removeItem(rectL)
-            self.rightImgViewer.scene.removeItem(rectR)
+            if rectL is not None:
+                self.leftImgViewer.scene.removeItem(rectL)
+            if rectR is not None:
+                self.rightImgViewer.scene.removeItem(rectR)
             self.hoveringMarker = None
             self.hoveringSceneObjs = None
 
-    def __drawHoveringMarker(self, i: int) -> tuple[QGraphicsRectItem, QGraphicsRectItem]:
+    def __drawHoveringMarker(self, i: int) -> tuple[Optional[QGraphicsRectItem], Optional[QGraphicsRectItem]]:
         """
         Private method to draw hovering box.
         :param: i the index of the marker to hover
@@ -1500,10 +1557,13 @@ class QtAlignmentToolWidget(QWidget):
         # Retrieve bbox
         (bboxL, bboxR) = self.markers[i].getBBox()
         # Draw rects
-        rectL = self.leftImgViewer.scene.addRect(bboxL, pen)
-        rectR = self.rightImgViewer.scene.addRect(bboxR, pen)
-        rectL.setZValue(6)
-        rectR.setZValue(6)
+        rectL = rectR = None
+        if bboxL is not None:
+            rectL = self.leftImgViewer.scene.addRect(bboxL, pen)
+            rectL.setZValue(6)
+        if bboxR is not None:
+            rectR = self.rightImgViewer.scene.addRect(bboxR, pen)
+            rectR.setZValue(6)
         return rectL, rectR
 
     def __deleteAllMarkers(self) -> None:
@@ -1513,6 +1573,8 @@ class QtAlignmentToolWidget(QWidget):
         for i in range(0, len(self.markers)):
             self.__clearMarker(i, False)
         self.markers = []
+        self.lMarkerIndex = 0
+        self.rMarkerIndex = 0
 
     def __deleteMarker(self, i: int) -> None:
         """
@@ -1520,7 +1582,12 @@ class QtAlignmentToolWidget(QWidget):
         :param: i the index of the marker
         """
         self.__clearMarker(i, False)
+        marker = self.markers[i]
         self.markers = self.markers[:i] + self.markers[i + 1:]
+        if marker.lViewPos is not None:
+            self.lMarkerIndex -= 1
+        if marker.rViewPos is not None:
+            self.rMarkerIndex -= 1
 
     def __clearMarker(self, i: int, onlyText: bool) -> None:
         """
@@ -1530,27 +1597,57 @@ class QtAlignmentToolWidget(QWidget):
         """
         # Remove items from scene
         for [objL, objR] in self.markers[i].textObjs:
-            self.leftImgViewer.scene.removeItem(objL)
-            self.leftImgViewer.scene.removeItem(objR)
+            if objL is not None:
+                self.leftImgViewer.scene.removeItem(objL)
+            if objR is not None:
+                self.leftImgViewer.scene.removeItem(objR)
         # Clear array
         self.markers[i].textObjs = []
         if not onlyText:
             # Remove items from scene
             for [objL, objR] in self.markers[i].sceneObjs:
-                self.leftImgViewer.scene.removeItem(objL)
-                self.leftImgViewer.scene.removeItem(objR)
+                if objL is not None:
+                    self.leftImgViewer.scene.removeItem(objL)
+                if objR is not None:
+                    self.leftImgViewer.scene.removeItem(objR)
             # Clear array
             self.markers[i].sceneObjs = []
 
-    def __addMarker(self, pos: tuple[float, float]) -> None:
+    def __createNewMarker(self, lpos: Optional[Point2f], rpos: Optional[Point2f]) -> None:
         """
         Private method to add a marker at pos [x, y].
-        :param: pos the position where to add the marker
+        :param: lpos the position where to add the marker (left viewer)
+        :param: rpos the position where to add the marker (right viewer)
         """
         # Find next available ID
         identifier = max(self.markers, key=lambda x: x.identifier).identifier + 1 if len(self.markers) > 0 else 1
         # Create a marker obj
-        self.markers.append(MarkerObjData(identifier, pos, self.pxSizeL, self.pxSizeR, MarkerObjData.SOFT_MARKER))
+        marker = MarkerObjData(identifier, lpos, rpos, self.pxSizeL, self.pxSizeR, MarkerObjData.SOFT_MARKER)
+        self.markers.append(marker)
+
+    def __addMarker(self, pos: Point2f, isLeft: bool) -> None:
+        """
+        Private method to add a marker at pos [x, y].
+        :param: pos the position where to add the marker
+        :param: isLeft a boolean to flag right / left viewer
+        """
+        # Find marker obj at index and update its position
+        if isLeft:
+            # Check if we must create a *NEW* marker
+            if self.lMarkerIndex >= self.rMarkerIndex:
+                self.__createNewMarker(pos, None)
+            else:
+                self.markers[self.lMarkerIndex].setLPos(pos)
+            self.__clearMarker(self.lMarkerIndex, False)
+            self.lMarkerIndex += 1
+        else:
+            # Check if we must create a *NEW* marker
+            if self.rMarkerIndex >= self.lMarkerIndex:
+                self.__createNewMarker(None, pos)
+            else:
+                self.markers[self.rMarkerIndex].setRPos(pos)
+            self.__clearMarker(self.rMarkerIndex, False)
+            self.rMarkerIndex += 1
 
     def __drawMarker(self, marker: MarkerObjData) -> None:
         """
@@ -1562,10 +1659,13 @@ class QtAlignmentToolWidget(QWidget):
             # Draw lines
             sceneObjs = []
             for (leftLine, rightLine) in marker.getLines():
-                lineL = self.leftImgViewer.scene.addLine(leftLine, marker.pen)
-                lineR = self.rightImgViewer.scene.addLine(rightLine, marker.pen)
-                lineL.setZValue(5)
-                lineR.setZValue(5)
+                lineL = lineR = None
+                if leftLine is not None:
+                    lineL = self.leftImgViewer.scene.addLine(leftLine, marker.pen)
+                    lineL.setZValue(5)
+                if rightLine is not None:
+                    lineR = self.rightImgViewer.scene.addLine(rightLine, marker.pen)
+                    lineR.setZValue(5)
                 sceneObjs.append([lineL, lineR])
             # Update list
             marker.sceneObjs = sceneObjs
@@ -1574,57 +1674,63 @@ class QtAlignmentToolWidget(QWidget):
             # Draw labels
             textObjs = []
             color = marker.pen.color().name()
-            lErrorLabelVisibility = (self.leftImgViewer.zoom_factor > 3.25)
-            rErrorLabelVisibility = (self.rightImgViewer.zoom_factor > 3.25)
-            # Left identifier
-            textL = QGraphicsTextItem()
-            textL.setHtml(
-                '<div style="background:' + color + ';">' + str(marker.identifier) + '</p>')
-            textL.setFont(QFont("Roboto", 12, QFont.Bold))
-            textL.setOpacity(0.75)
-            textL.setFlag(QGraphicsItem.ItemIgnoresTransformations)
-            textL.setDefaultTextColor(Qt.black)
-            textL.setZValue(8)
-            # Right identifier
-            textR = QGraphicsTextItem()
-            textR.setHtml('<div style="background:' + color + ';">' + str(marker.identifier) + '</p>')
-            textR.setFont(QFont("Roboto", 12, QFont.Bold))
-            textR.setOpacity(0.75)
-            textR.setFlag(QGraphicsItem.ItemIgnoresTransformations)
-            textR.setDefaultTextColor(Qt.black)
-            textR.setZValue(8)
-            # Left error
-            errL = QGraphicsTextItem()
-            errL.setHtml('<div style="background:' + color + ';">' + str(marker.error) + '</p>')
-            errL.setFont(QFont("Roboto", 12, QFont.Bold))
-            errL.setOpacity(0.5)
-            errL.setFlag(QGraphicsItem.ItemIgnoresTransformations)
-            errL.setDefaultTextColor(Qt.black)
-            errL.setZValue(7)
-            errL.setVisible(lErrorLabelVisibility)
-            # Right error
-            errR = QGraphicsTextItem()
-            errR.setHtml('<div style="background:' + color + ';">' + str(marker.error) + '</p>')
-            errR.setFont(QFont("Roboto", 12, QFont.Bold))
-            errR.setOpacity(0.5)
-            errR.setFlag(QGraphicsItem.ItemIgnoresTransformations)
-            errR.setDefaultTextColor(Qt.black)
-            errR.setZValue(7)
-            errR.setVisible(rErrorLabelVisibility)
-            # Update text pos
             (bboxL, bboxR) = marker.getBBox()
-            textL.setPos(bboxL.topRight())
-            textR.setPos(bboxR.topRight())
-            errL.setPos(bboxL.topLeft())
-            errR.setPos(bboxR.topLeft())
-            # Add text to scenes
-            self.leftImgViewer.scene.addItem(textL)
-            self.rightImgViewer.scene.addItem(textR)
-            self.leftImgViewer.scene.addItem(errL)
-            self.rightImgViewer.scene.addItem(errR)
+            textL = textR = None
+            errL = errR = None
+            # Left viewer
+            if marker.lViewPos is not None:
+                # Left identifier
+                textL = QGraphicsTextItem()
+                textL.setHtml(
+                    '<div style="background:' + color + ';">' + str(marker.identifier) + '</p>')
+                textL.setFont(QFont("Roboto", 12, QFont.Bold))
+                textL.setOpacity(0.75)
+                textL.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+                textL.setDefaultTextColor(Qt.black)
+                textL.setZValue(8)
+                textL.setPos(bboxL.topRight())
+                # Left error
+                lErrorLabelVisibility = (self.leftImgViewer.zoom_factor > 3.25)
+                errL = QGraphicsTextItem()
+                errL.setHtml('<div style="background:' + color + ';">' + str(marker.error) + '</p>')
+                errL.setFont(QFont("Roboto", 12, QFont.Bold))
+                errL.setOpacity(0.5)
+                errL.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+                errL.setDefaultTextColor(Qt.black)
+                errL.setZValue(7)
+                errL.setVisible(lErrorLabelVisibility)
+                errL.setPos(bboxL.topLeft())
+                # Add text to scenes
+                self.leftImgViewer.scene.addItem(textL)
+                self.leftImgViewer.scene.addItem(errL)
+            # Right viewer
+            if marker.rViewPos is not None:
+                # Right identifier
+                textR = QGraphicsTextItem()
+                textR.setHtml('<div style="background:' + color + ';">' + str(marker.identifier) + '</p>')
+                textR.setFont(QFont("Roboto", 12, QFont.Bold))
+                textR.setOpacity(0.75)
+                textR.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+                textR.setDefaultTextColor(Qt.black)
+                textR.setZValue(8)
+                textR.setPos(bboxR.topRight())
+                # Right error
+                rErrorLabelVisibility = (self.rightImgViewer.zoom_factor > 3.25)
+                errR = QGraphicsTextItem()
+                errR.setHtml('<div style="background:' + color + ';">' + str(marker.error) + '</p>')
+                errR.setFont(QFont("Roboto", 12, QFont.Bold))
+                errR.setOpacity(0.5)
+                errR.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+                errR.setDefaultTextColor(Qt.black)
+                errR.setZValue(7)
+                errR.setVisible(rErrorLabelVisibility)
+                errR.setPos(bboxR.topLeft())
+                # Add text to scenes
+                self.rightImgViewer.scene.addItem(textR)
+                self.rightImgViewer.scene.addItem(errR)
+            # Update list
             textObjs.append([textL, textR])
             textObjs.append([errL, errR])
-            # Update list
             marker.textObjs = textObjs
 
     def __updateMarkers(self, keepAlgResults: bool) -> None:
@@ -1667,9 +1773,9 @@ class QtAlignmentToolWidget(QWidget):
         # Update preview size
         self.__updatePreviewSize(channel1.qimage, self.pxSizeL, channel2.qimage, self.pxSizeR)
         # Update viewer
-        self.leftImgViewer.setImg(self.__padImage(channel1.qimage, self.pxSizeL))
+        self.leftImgViewer.setImg(channel1.qimage)
         self.leftImgViewer.px_to_mm = self.pxSizeL
-        self.rightImgViewer.setImg(self.__padImage(channel2.qimage, self.pxSizeR))
+        self.rightImgViewer.setImg(channel2.qimage)
         self.rightImgViewer.px_to_mm = self.pxSizeR
         # Update overlay images
         self.__deleteAllMarkers()
@@ -1680,49 +1786,6 @@ class QtAlignmentToolWidget(QWidget):
         self.rSlider.setValue(0)
         self.xSlider.setValue(0)
         self.ySlider.setValue(0)
-
-    def __padImage(self, img: QImage, pxSize: float) -> QImage:
-        """
-        Private method to create a padded image of size self.previewSize
-        :param: img the image to pad
-        :param: pxSize the px_to_mm of the img
-        :return: a new image with [0, 0, 0, 0] as padding (right and bottom)
-        """
-        return self.__toQImage(self.__toNumpyArray(img, pxSize), QImage.Format_RGBA8888)
-
-    def __toNumpyArray(self, img: QImage, pxSize: float) -> np.ndarray:
-        """
-        Private method to create a numpy array from QImage.
-        :param: img contains the QImage to transform
-        :param: pxSize the px_to_mm of the img
-        :return: an numpy array of shape (h, w, channels)
-        """
-        # Retrieve and convert image into selected format
-        img = img.convertToFormat(QImage.Format_RGBA8888)
-        h, w = img.height(), img.width()
-        # Retrieve a pointer to the modifiable memory view of the image
-        ptr = img.bits()
-        # Update pointer size
-        ptr.setsize(h * w * 4)
-        # Create numpy array
-        arr = np.frombuffer(ptr, np.uint8).reshape((h, w, 4))
-        # Pad img
-        [rh, rw] = [self.previewSize[0] / pxSize, self.previewSize[1] / pxSize]
-        [ph, pw] = [int(rh - h), int(rw - w)]
-        arr = np.pad(arr, [(0, ph), (0, pw), (0, 0)], mode='constant', constant_values=0)
-        return arr
-
-    def __toQImage(self, arr: np.ndarray, imgFormat: int) -> QImage:
-        """
-        Private method to transform a numpy array into a QImage.
-        :param: arr is the numpy array of shape (h, w, c)
-        :param: imgFormat is the format of the image to create
-        :return: the QImage
-        """
-        # Retrieve the shape
-        [h, w, c] = arr.shape
-        # Create and return the image
-        return QImage(arr.data, w, h, c * w, imgFormat)
 
     def __updatePreviewSize(self, img1: QImage, pxSize1: float, img2: QImage, pxSize2: float) -> None:
         """
@@ -1818,6 +1881,21 @@ class QtAlignmentToolWidget(QWidget):
         self.rightComboboxLabel.setVisible(not isPreviewMode)
         self.rightCombobox.setVisible(not isPreviewMode)
 
+    def __hasValidMarkers(self) -> bool:
+        """
+        Private method to check if we have enough markers to compute the alignment.
+        :return: a boolean to indicates if we have enough valid markers to proceed.
+        """
+        # At least 3 markers
+        if len(self.markers) < 3:
+            return False
+        # All markers must be "complete" (have lpos and rpos)
+        for marker in self.markers:
+            if not marker.isComplete():
+                return False
+        # Valid !
+        return True
+
     def __leastSquaresWithSVD(self) -> None:
         """
         Private method to compute the Least-Squares Rigid Motion using SVD.
@@ -1837,7 +1915,7 @@ class QtAlignmentToolWidget(QWidget):
         # print("__leastSquaresWithSVD called")
 
         # Ensure at least 3 marker are placed
-        if len(self.markers) < 3:
+        if not self.__hasValidMarkers():
             return
 
         # ==================================================================================
@@ -1925,9 +2003,9 @@ class QtAlignmentToolWidget(QWidget):
 
         T = [T[0, 0], T[0, 1]]
         self.T = np.array(T)
-        self.xSlider.setValue(T[0])
-        self.ySlider.setValue(T[1])
+        self.xSlider.setValue(self.T[0])
+        self.ySlider.setValue(self.T[1])
 
         R = np.rad2deg(math.acos(round(R[0, 0], 4)))
         self.R = R * 10.0
-        self.rSlider.setValue(R)
+        self.rSlider.setValue(self.R)
