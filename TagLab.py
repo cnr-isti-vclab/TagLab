@@ -3003,7 +3003,7 @@ class TagLab(QMainWindow):
             self.alignToolWidget = QtAlignmentToolWidget(self.project, parent=self)
             self.alignToolWidget.setWindowModality(Qt.WindowModal)
             self.alignToolWidget.closed.connect(self.closeAlignmentTool)
-            self.alignToolWidget.show()
+            self.alignToolWidget.showMaximized()
 
     @pyqtSlot()
     def createDictionary(self):
