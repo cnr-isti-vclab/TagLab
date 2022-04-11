@@ -30,6 +30,9 @@ def checkGL(obj, res):
 class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
     """
     Custom widget to handle img preview with shaders.
+    It handles zoom and pan of the view.
+    It has a scriptable pass (defined by its derived class).
+    Uses a dirty flag to ensure the update does not use extra compute power if not needed.
     """
 
     V_SHADER_SOURCE = """
@@ -120,7 +123,7 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         Private method to create a Shader Program with passed v-shader and f-shader.
         :param: vSrc the source code of the vertex shader
         :param: fSrc the source code of the fragment shader
-        :param: loadQuad a boolean to toggle pre upload of quad data
+        :param: hasTex a boolean to toggle "aTex" attr for vertex buffer
         :return: the created program or None (on error)
         """
         # Create & Compile Vertex Shader
@@ -458,7 +461,7 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
 
 class AlphaPreviewViewer(QtSimpleOpenGlShaderViewer):
     """
-    Implementation of QtSimpleOpenGlShaderViewer to customize shaders and uniforms.
+    Implementation of QtSimpleOpenGlShaderViewer that apply alpha transformation to the two textures.
     """
 
     V_SHADER_SOURCE = """
@@ -535,7 +538,7 @@ class AlphaPreviewViewer(QtSimpleOpenGlShaderViewer):
 
 class GrayPreviewViewer(QtSimpleOpenGlShaderViewer):
     """
-    Implementation of QtSimpleOpenGlShaderViewer to customize shaders and uniforms.
+    Implementation of QtSimpleOpenGlShaderViewer that apply the "absolute difference" pixel-perfect.
     """
 
     V_SHADER_SOURCE = """
@@ -632,14 +635,18 @@ class GrayPreviewViewer(QtSimpleOpenGlShaderViewer):
 class MarkerObjData:
     """
     Marker data class.
+    Contains position inside each viewer (left and right).
     """
 
+    # Weights
     SOFT_MARKER_W = 1
     HARD_MARKER_W = 2
 
+    # Types
     SOFT_MARKER = 0
     HARD_MARKER = 1
 
+    # Draw properties
     MARKER_SIZE = 8
     MARKER_WIDTH = 5
 
@@ -783,6 +790,7 @@ class QtAlignmentToolWidget(QWidget):
 
     closed = pyqtSignal()
 
+    # Number of samples used when calculating approx scale
     SCALE_SAMPLING_COUNT = 64
 
     def __init__(self, project, parent=None):
