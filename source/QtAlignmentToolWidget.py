@@ -1,4 +1,5 @@
 import math
+import random
 from typing import Optional
 
 import numpy as np
@@ -112,6 +113,7 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         # Alignment data
         self.rot = 0
         self.tra = QVector2D(0, 0)
+        self.sca = 1
 
     def __createProgram(self, vSrc: str, fSrc: str, hasTex: bool) -> Optional[QOpenGLShaderProgram]:
         """
@@ -270,15 +272,16 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         matrix3 = QMatrix4x4()  # Transformation Matrix
         matrix4 = QMatrix4x4()  # For reversing framebuffer
         matrix5 = QMatrix4x4()  # For normalizing points to [-1, 1]
-        # Rotation and Translation (pivot is the top left corner)
+        # Rotation (pivot is the top left corner), Translation and Scale
         matrix2.translate(self.tra[0], -self.tra[1], 0)
         matrix2.translate(-1.0,  1.0, 0.0)
         matrix2.rotate(-self.rot, 0.0, 0.0, 1.0)
+        matrix2.scale(self.sca, self.sca, 1.0)
         matrix2.translate( 1.0, -1.0, 0.0)
         # Aspect Ratio / Pan / Zoom
-        matrix3.scale(min(self.w, self.h) / self.w, min(self.w, self.h) / self.h, 1)  # Keep aspect ratio
-        matrix3.translate(self.t[0], -self.t[1], 0)  # Pan
-        matrix3.scale(self.s, self.s, 1)  # Zoom
+        matrix3.scale(min(self.w, self.h) / self.w, min(self.w, self.h) / self.h, 1)
+        matrix3.translate(self.t[0], -self.t[1], 0)
+        matrix3.scale(self.s, self.s, 1)
         # Check if needs to redraw buffers
         # (Needed only when user zoom or pan or manually changes offset or rotation)
         if not self.keepFB:
@@ -418,6 +421,16 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         :param: tra the new value for translation
         """
         self.tra = QVector2D(tra[0], tra[1])
+        self.redraw(False)
+
+    def updateScale(self, sca: float) -> None:
+        """
+        Public method to update Scale parameter.
+        :param: sca the new value for scale
+        """
+        if sca <= 0.0:
+            raise Exception("Invalid scale value")
+        self.sca = sca
         self.redraw(False)
 
     def setPointsVisibility(self, visibility: bool) -> None:
@@ -770,6 +783,8 @@ class QtAlignmentToolWidget(QWidget):
 
     closed = pyqtSignal()
 
+    SCALE_SAMPLING_COUNT = 64
+
     def __init__(self, project, parent=None):
         super(QtAlignmentToolWidget, self).__init__(parent)
 
@@ -786,9 +801,11 @@ class QtAlignmentToolWidget(QWidget):
         self.threshold = 32
         self.sizeL: Size2f = (0.0, 0.0)
         self.sizeR: Size2f = (0.0, 0.0)
-        self.svdRes = [0, [0, 0]]
+        self.canScale = False
+        self.svdRes = [0, [0, 0], 0]
         self.R = np.rad2deg(0)
         self.T = np.array([0, 0])
+        self.S = 1
         self.lastMousePos = None
         self.isDragging = False
         self.selectedMarker = None
@@ -805,11 +822,11 @@ class QtAlignmentToolWidget(QWidget):
         # ==============================================================
 
         # Sync
-        self.checkBoxSync = QCheckBox("Sync")
-        self.checkBoxSync.setChecked(True)
-        self.checkBoxSync.setFocusPolicy(Qt.NoFocus)
-        self.checkBoxSync.setMaximumWidth(80)
-        self.checkBoxSync.stateChanged[int].connect(self.toggleSync)
+        self.syncCheck = QCheckBox("Sync")
+        self.syncCheck.setChecked(True)
+        self.syncCheck.setFocusPolicy(Qt.NoFocus)
+        self.syncCheck.setMaximumWidth(80)
+        self.syncCheck.stateChanged[int].connect(self.toggleSync)
 
         # Auto Align
         self.autoAlignButton = QPushButton("Auto-Align")
@@ -829,11 +846,17 @@ class QtAlignmentToolWidget(QWidget):
         self.clearMarkersButton.setFixedHeight(30)
         self.clearMarkersButton.clicked.connect(self.onClearMarkersRequested)
 
+        # Allow Scale
+        self.allowScaleButton = QCheckBox("Allow Scale")
+        self.allowScaleButton.setChecked(False)
+        self.allowScaleButton.setFocusPolicy(Qt.NoFocus)
+        self.allowScaleButton.stateChanged[int].connect(self.toggleScaleLock)
+
         # Show Markers
-        self.checkShowMarkers = QCheckBox("Show Markers")
-        self.checkShowMarkers.setChecked(True)
-        self.checkShowMarkers.setFocusPolicy(Qt.NoFocus)
-        self.checkShowMarkers.stateChanged[int].connect(self.toggleMarkersVisibility)
+        self.showMarkersCheck = QCheckBox("Show Markers")
+        self.showMarkersCheck.setChecked(True)
+        self.showMarkersCheck.setFocusPolicy(Qt.NoFocus)
+        self.showMarkersCheck.stateChanged[int].connect(self.toggleMarkersVisibility)
 
         # Reset transformations
         self.resetTransfButton = QPushButton("Reset Transformations")
@@ -943,16 +966,21 @@ class QtAlignmentToolWidget(QWidget):
         # Layout
         self.buttons = QVBoxLayout()
         layout1 = QHBoxLayout()
-        layout1.addWidget(self.checkBoxSync)
-        layout1.setAlignment(self.checkBoxSync, Qt.AlignLeft)
-        layout1.addWidget(self.clearMarkersButton)
+        layout1.addWidget(self.syncCheck)
         layout1.addWidget(self.backToEditButton)
-        layout1.setAlignment(self.backToEditButton, Qt.AlignLeft)
-        layout1.addWidget(self.autoAlignButton)
-        layout1.setAlignment(self.autoAlignButton, Qt.AlignRight)
+        layout1.addWidget(self.clearMarkersButton)
         layout1.addWidget(self.resetTransfButton)
-        layout1.addWidget(self.checkShowMarkers)
+        layout1.addWidget(self.showMarkersCheck)
+        layout1.addWidget(self.allowScaleButton)
+        layout1.addWidget(self.autoAlignButton)
         layout1.addWidget(self.confirmAlignmentButton)
+        layout1.setAlignment(self.syncCheck, Qt.AlignLeft)
+        layout1.setAlignment(self.backToEditButton, Qt.AlignLeft)
+        layout1.setAlignment(self.clearMarkersButton, Qt.AlignCenter)
+        layout1.setAlignment(self.resetTransfButton, Qt.AlignCenter)
+        layout1.setAlignment(self.showMarkersCheck, Qt.AlignCenter)
+        layout1.setAlignment(self.allowScaleButton, Qt.AlignCenter)
+        layout1.setAlignment(self.autoAlignButton, Qt.AlignRight)
         layout1.setAlignment(self.confirmAlignmentButton, Qt.AlignRight)
         self.buttons.addLayout(layout1)
         layout2 = QHBoxLayout()
@@ -1077,7 +1105,7 @@ class QtAlignmentToolWidget(QWidget):
         self.leftCombobox.currentIndexChanged.emit(0)
         self.rightCombobox.currentIndexChanged.emit(1)
 
-        self.checkBoxSync.stateChanged.emit(1)
+        self.syncCheck.stateChanged.emit(1)
 
         self.__togglePreviewMode(False)
 
@@ -1194,8 +1222,22 @@ class QtAlignmentToolWidget(QWidget):
         Callback called when the checkbox for marker visibility it toggled.
         :param: value a boolean representing the checkbox status.
         """
+        # Forward to viewer
         self.leftPreviewViewer.setPointsVisibility(value != 0)
         self.rightPreviewViewer.setPointsVisibility(value != 0)
+
+    @pyqtSlot(int)
+    def toggleScaleLock(self, value: int) -> None:
+        """
+        Callback called when the checkbox that allow scale is toggled.
+        :param: value a boolean representing the checkbox status.
+        """
+        # Update canScale
+        self.canScale = value != 0
+        # Recompute svd
+        self.__leastSquaresWithSVD()
+        # Update preview (if needed)
+        self.__updatePreview()
 
     @pyqtSlot()
     def onBackToEditRequested(self) -> None:
@@ -1218,7 +1260,7 @@ class QtAlignmentToolWidget(QWidget):
         self.alpha = value
         self.alphaSliderLabel.setText("A: " + str(value))
         # Update preview
-        self.__updatePreview(onlyAlpha=True)
+        self.__updatePreview()
 
     @pyqtSlot()
     def onXValueIncremented(self) -> None:
@@ -1394,6 +1436,9 @@ class QtAlignmentToolWidget(QWidget):
         self.rSlider.setValue(self.svdRes[0])
         self.xSlider.setValue(self.svdRes[1][0])
         self.ySlider.setValue(self.svdRes[1][1])
+        self.S = self.svdRes[2]
+        # Redraw preview
+        self.__updatePreview()
 
     @pyqtSlot()
     def onClearMarkersRequested(self) -> None:
@@ -1869,29 +1914,30 @@ All markers must be valid to proceed.
         img1 = self.leftImgViewer.img_map
         img2 = self.rightImgViewer.img_map
         # Retrieve markers
-        [q, p] = self.__normalizedMarkers()
+        (q, p) = self.__normalizedMarkers()
         # Pass images to viewers
         self.leftPreviewViewer.initializeData(img1, img2, self.sizeL, self.sizeR, q, p)
         self.rightPreviewViewer.initializeData(img1, img2, self.sizeL, self.sizeR, q, p)
 
-    def __updatePreview(self, onlyAlpha: bool = False) -> None:
+    def __updatePreview(self) -> None:
         """
         Private method to update the preview.
-        :param: onlyAlpha is a boolean that represents whether the changes are only on the alpha.
         """
+        # Update R and T values
+        trax = (self.T[0] * 2.0) / max(self.sizeL[0], self.sizeR[0])
+        tray = (self.T[1] * 2.0) / max(self.sizeL[1], self.sizeR[1])
+        rot = self.R / 10.0
+        sca = self.S
+        self.leftPreviewViewer.updateRotation(rot)
+        self.leftPreviewViewer.updateTranslation((trax, tray))
+        self.leftPreviewViewer.updateScale(sca)
+        self.rightPreviewViewer.updateRotation(rot)
+        self.rightPreviewViewer.updateTranslation((trax, tray))
+        self.rightPreviewViewer.updateScale(sca)
+        # Update threshold
+        self.rightPreviewViewer.updateThreshold(self.threshold)
         # Update alpha value
         self.leftPreviewViewer.updateAlpha(self.alpha / 100.0)
-        if not onlyAlpha:
-            # Update R and T values
-            trax = (self.T[0] * 2.0) / max(self.sizeL[0], self.sizeR[0])
-            tray = (self.T[1] * 2.0) / max(self.sizeL[1], self.sizeR[1])
-            rot = self.R / 10.0
-            self.leftPreviewViewer.updateRotation(rot)
-            self.leftPreviewViewer.updateTranslation((trax, tray))
-            self.rightPreviewViewer.updateRotation(rot)
-            self.rightPreviewViewer.updateTranslation((trax, tray))
-            # Update threshold
-            self.rightPreviewViewer.updateThreshold(self.threshold)
 
     def __togglePreviewMode(self, isPreviewMode: bool) -> None:
         """
@@ -1903,7 +1949,7 @@ All markers must be valid to proceed.
         self.rightPreviewViewer.setVisible(isPreviewMode)
         self.backToEditButton.setVisible(isPreviewMode)
         self.resetTransfButton.setVisible(isPreviewMode)
-        self.checkShowMarkers.setVisible(isPreviewMode)
+        self.showMarkersCheck.setVisible(isPreviewMode)
         self.confirmAlignmentButton.setVisible(isPreviewMode)
         self.alphaSliderLabel.setVisible(isPreviewMode)
         self.alphaSlider.setVisible(isPreviewMode)
@@ -1925,7 +1971,7 @@ All markers must be valid to proceed.
         self.leftImgViewer.setVisible(not isPreviewMode)
         self.rightImgViewer.setVisible(not isPreviewMode)
         self.clearMarkersButton.setVisible(not isPreviewMode)
-        self.checkBoxSync.setVisible(not isPreviewMode)
+        self.syncCheck.setVisible(not isPreviewMode)
         self.autoAlignButton.setVisible(not isPreviewMode)
         self.leftComboboxLabel.setVisible(not isPreviewMode)
         self.leftCombobox.setVisible(not isPreviewMode)
@@ -1971,7 +2017,7 @@ All markers must be valid to proceed.
         where R is the rotation matrix and T is the translation vec (to find)
         """
         # Reset results
-        self.svdRes = [0, [0, 0]]
+        self.svdRes = [0, [0, 0], 0]
 
         # Reset each marker error
         for (i, marker) in enumerate(self.markers):
@@ -1999,6 +2045,25 @@ All markers must be valid to proceed.
         (q, p) = self.__normalizedMarkers()
 
         # ==================================================================================
+        # [Extra] Pre-Scale
+        # ==================================================================================
+        def dist(a, b):
+            return math.sqrt(((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2))
+
+        S = 1.0
+        if self.canScale:
+            samples = []
+            for si in range(QtAlignmentToolWidget.SCALE_SAMPLING_COUNT):
+                i = random.randint(0, n - 1)
+                j = random.randint(0, n - 1)
+                if i != j:
+                    samples.append(dist(p[i], p[j]) / dist(q[i], q[j]))
+            S = float(sum(samples)) / len(samples)
+            S = 1.0 / S
+
+        p = [[x * S, y * S] for [x, y] in p]
+
+        # ==================================================================================
         # [1] Compute the weighted centroids _q (for q) and _p (for p)
         # ==================================================================================
         _p = [0, 0]
@@ -2017,7 +2082,7 @@ All markers must be valid to proceed.
         x = [[pi[0] - _p[0], pi[1] - _p[1]] for pi in p]
 
         # ==================================================================================
-        # [3] Compute the covariance matrix S (dxd)
+        # [3] Compute the covariance matrix C (dxd)
         # ==================================================================================
         # X = [[x[0][0], x[1][0], x[2][0], ...],
         #      [x[0][1], x[1][1], x[2][1], ...],
@@ -2032,12 +2097,12 @@ All markers must be valid to proceed.
         Y = np.transpose(np.asmatrix(y))
         Yt = np.transpose(Y)
         W = np.identity(n) * w
-        S = X @ W @ Yt
+        C = X @ W @ Yt
 
         # ==================================================================================
         # [4] Compute SVD & Find rotation
         # ==================================================================================
-        u, s, vt = np.linalg.svd(S)
+        u, s, vt = np.linalg.svd(C)
         v = np.transpose(vt)
         ut = np.transpose(u)
         detvut = np.linalg.det(v @ ut)
@@ -2065,6 +2130,7 @@ All markers must be valid to proceed.
         for (i, (e, marker)) in enumerate(zip(err, self.markers)):
             marker.error = round(e, 2)
 
+        # Results
         T = [T[0, 0] * maxw, T[0, 1] * maxh]
         self.T = np.array(T)
         self.svdRes[1] = [self.T[0], self.T[1]]
@@ -2076,3 +2142,7 @@ All markers must be valid to proceed.
         self.R = R * 10.0
         self.svdRes[0] = self.R
         self.rSlider.setValue(self.R)
+
+        S = round(S, 4)
+        self.S = S
+        self.svdRes[2] = self.S
