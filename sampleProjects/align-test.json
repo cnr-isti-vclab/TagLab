@@ -1501,6 +1501,60 @@
     0.0
    ],
    "map_px_to_mm_factor": "1",
+   "width": 330,
+   "height": 330,
+   "annotations": [],
+   "layers": [],
+   "channels": [
+    {
+     "filename": "sampleProjects/data/align-ex/wrong_scale_simple.png",
+     "type": "RGB"
+    }
+   ],
+   "id": "EX_wrong_scale_simple",
+   "name": "EX_wrong_scale_simple",
+   "workspace": [],
+   "export_dataset_area": [],
+   "acquisition_date": "2000-01-01",
+   "georef_filename": "",
+   "metadata": {},
+   "grid": null
+  },
+  {
+   "rect": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "map_px_to_mm_factor": "1",
+   "width": 500,
+   "height": 500,
+   "annotations": [],
+   "layers": [],
+   "channels": [
+    {
+     "filename": "sampleProjects/data/align-ex/wrong_scale_complex.png",
+     "type": "RGB"
+    }
+   ],
+   "id": "EX_wrong_scale_complex",
+   "name": "EX_wrong_scale_complex",
+   "workspace": [],
+   "export_dataset_area": [],
+   "acquisition_date": "2000-01-01",
+   "georef_filename": "",
+   "metadata": {},
+   "grid": null
+  },
+  {
+   "rect": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "map_px_to_mm_factor": "1",
    "width": 2000,
    "height": 2000,
    "annotations": [],
