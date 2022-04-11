@@ -1156,7 +1156,7 @@
    "layers": [],
    "channels": [
     {
-     "filename": "../../../Downloads/2014_RGB_15.png",
+     "filename": "sampleProjects/data/2014_RGB_15.png",
      "type": "RGB"
     }
    ],
@@ -1183,7 +1183,7 @@
    "layers": [],
    "channels": [
     {
-     "filename": "../../../Downloads/2014_RGB_bad.png",
+     "filename": "sampleProjects/data/2014_RGB_bad.png",
      "type": "RGB"
     }
    ],
