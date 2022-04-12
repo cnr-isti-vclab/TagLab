@@ -1,6 +1,6 @@
 import math
 import random
-from typing import Optional
+from typing import Optional, Tuple, List
 
 import numpy as np
 from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot, QLineF, QRectF, QPoint
@@ -15,8 +15,8 @@ from source.QtImageViewer import QtImageViewer
 """
 Type aliases
 """
-Point2f = tuple[float, float]
-Size2f = tuple[float, float]
+Point2f = Tuple[float, float]
+Size2f = Tuple[float, float]
 
 
 def checkGL(obj, res):
@@ -93,9 +93,9 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         super(QtSimpleOpenGlShaderViewer, self).__init__(parent)
         # Open GL
         self.gl: Optional[QOpenGLFunctions_2_0] = None
-        self.programs: list[QOpenGLShaderProgram] = []
-        self.textures: list[QOpenGLTexture] = []
-        self.framebuffers: list[QOpenGLFramebufferObject] = []
+        self.programs: List[QOpenGLShaderProgram] = []
+        self.textures: List[QOpenGLTexture] = []
+        self.framebuffers: List[QOpenGLFramebufferObject] = []
         self.pointProgram: Optional[QOpenGLShaderProgram] = None
         self.points = [[], []]
         self.vSrc = vSrc
@@ -382,7 +382,7 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.redraw(False)
 
     def initializeData(self, referenceImg: QImage, imgToAlign: QImage, sizeL: Size2f, sizeR: Size2f,
-                       referencePoints: list[Point2f], pointsToAlign: list[Point2f]) -> None:
+                       referencePoints: List[Point2f], pointsToAlign: List[Point2f]) -> None:
         """
         Called by the container widget to upload data to show.
         :param: referenceImg the QImage to take as reference
@@ -678,7 +678,7 @@ class MarkerObjData:
         # Update data
         self.__update()
 
-    def getBBox(self) -> tuple[Optional[QRectF], Optional[QRectF]]:
+    def getBBox(self) -> Tuple[Optional[QRectF], Optional[QRectF]]:
         """
         Retrieve bbox of marker for left and right view.
         :return: (bboxL, bboxR) the two boxes
@@ -696,7 +696,7 @@ class MarkerObjData:
             bboxR = QRectF(rmx - sideR, rmy - sideR, sideR * 2 + 1, sideR * 2 + 1)
         return bboxL, bboxR
 
-    def getLines(self) -> list[tuple[Optional[QLineF], Optional[QLineF]]]:
+    def getLines(self) -> List[Tuple[Optional[QLineF], Optional[QLineF]]]:
         """
         Retrieve the lines to draw the marker inside the two views.
         :return: [(lineLeft, lineRight)] the lines list
@@ -821,7 +821,7 @@ class QtAlignmentToolWidget(QWidget):
         self.hoveringMarker = None
         self.lMarkerIndex = 0
         self.rMarkerIndex = 0
-        self.markers: list[MarkerObjData] = []
+        self.markers: List[MarkerObjData] = []
         self.pxSizeL = 1.0
         self.pxSizeR = 1.0
 
@@ -1650,7 +1650,7 @@ All markers must be valid to proceed.
             self.hoveringMarker = None
             self.hoveringSceneObjs = None
 
-    def __drawHoveringMarker(self, i: int) -> tuple[Optional[QGraphicsRectItem], Optional[QGraphicsRectItem]]:
+    def __drawHoveringMarker(self, i: int) -> Tuple[Optional[QGraphicsRectItem], Optional[QGraphicsRectItem]]:
         """
         Private method to draw hovering box.
         :param: i the index of the marker to hover
@@ -2001,7 +2001,7 @@ All markers must be valid to proceed.
         # Valid !
         return True
 
-    def __normalizedMarkers(self) -> tuple[list[Point2f], list[Point2f]]:
+    def __normalizedMarkers(self) -> Tuple[List[Point2f], List[Point2f]]:
         """
         Private method to retrieve markers with normalized coord.
         :return: tuple with the two list of markers
