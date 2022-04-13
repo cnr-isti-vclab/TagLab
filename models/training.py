@@ -48,12 +48,13 @@ def createTargetClasses(annotations):
     """
 
     labels_set = set()
-    for blob in annotations.seg_blobs:
-        if blob.qpath_gitem.isVisible():
-            labels_set.add(blob.class_name)
 
     # Background class must be present
     labels_set.add("Background")
+
+    for blob in annotations.seg_blobs:
+        if blob.qpath_gitem.isVisible():
+            labels_set.add(blob.class_name)
 
     target_dict = {}
     for i, label in enumerate(labels_set):
@@ -271,7 +272,7 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
 
     datasetTrain.enableAugumentation()
 
-    datasetVal = CoralsDataset(images_folder_val, labels_folder_val, labels_dictionary, target_classes)
+    datasetVal = CoralsDataset(images_folder_val, labels_folder_val, labels_dictionary, datasetTrain.dict_target)
     datasetVal.dataset_average = datasetTrain.dataset_average
     datasetVal.weights = datasetTrain.weights
 

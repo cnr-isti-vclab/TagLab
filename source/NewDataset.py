@@ -178,15 +178,17 @@ class NewDataset(object):
 		map_h = self.ortho_image.height()
 		area_map = map_w * map_h
 
-		frequencies = []
-		for class_name in target_classes:
-			area = 0.0
-			for blob in self.blobs:
-				if blob.class_name == class_name:
-					area += blob.area
+		frequencies = {}
+		for key in target_classes.keys():
+
+			if class_name != "Background":
+				area = 0.0
+				for blob in self.blobs:
+					if blob.class_name == key:
+						area += blob.area
 
 			freq = area / area_map
-			frequencies.append(freq)
+			frequencies[key] = freq
 
 		self.frequencies = frequencies
 
@@ -205,11 +207,13 @@ class NewDataset(object):
 
 		A = float(area[2] * area[3])
 
-		coverage_per_class = []
-		for i in range(len(target_classes)):
-			i = i + 1  # background is skipped
-			coverage = float(np.count_nonzero(labelsint == i)) / A
-			coverage_per_class.append(coverage)
+		# background is skipped
+		coverage_per_class = {}
+		for key in target_classes.keys():
+			if key != "Background":
+				label_code = target_classes[key]
+				coverage = float(np.count_nonzero(labelsint == label_code)) / A
+				coverage_per_class[key] = coverage
 
 		return coverage_per_class
 
@@ -522,9 +526,10 @@ class NewDataset(object):
 		self.label_image = labelimg
 
 
-	def convert_colors_to_labels(self, target_classes, labels_colors):
+	def convertColorsToLabels(self, target_classes, labels_colors):
 		"""
 		Convert the label image to a numpy array with the labels' values.
+		NOTE: target_classes is a dictionary. The key is the label name which maps to the label code.
 		"""
 
 		label_w = self.label_image.width()
@@ -532,21 +537,19 @@ class NewDataset(object):
 
 		imglbl = utils.qimageToNumpyArray(self.label_image)
 
-		num_classes = len(target_classes)
-
-		# class 0 --> background
+		# classes with unknown color (color not present in the given dictionary) are assigned to white
 		self.labels = np.zeros((label_h, label_w), dtype='int64')
-		for i, cl in enumerate(target_classes):
-			label = labels_colors.get(cl)
+		for key in target_classes.keys():
+			label = labels_colors.get(key)
+			label_code = target_classes[key]
+
 			if label is None:
-				if cl == "Background":
-					class_colors = [0, 0, 0]
-				else:
-					class_colors = [255, 255, 255]
+				class_colors = [255, 255, 255]
 			else:
 				class_colors = label.fill
+
 			idx = np.where((imglbl[:, :, 0] == class_colors[0]) & (imglbl[:, :, 1] == class_colors[1]) & (imglbl[:, :, 2] == class_colors[2]))
-			self.labels[idx] = i + 1
+			self.labels[idx] = label_code
 
 
 	def setupAreas(self, mode, target_classes=None):
@@ -1143,61 +1146,6 @@ class NewDataset(object):
 			cropimg.save(filenameRGB)
 			croplabel.save(filenameLabel)
 
-
-	##### SERVICE FUNCTIONS
-
-	def classFrequenciesOnTiles(self, target_classes):
-
-		num_classes = len(target_classes)
-		delta = int(self.crop_size / 2)
-		area = [0, 0, 0, 0]
-		coverage = np.zeros(num_classes, dtype='float')
-		for tile in self.training_tiles:
-			area[0] = int(tile[1] - delta)
-			area[1] = int(tile[0] - delta)
-			area[2] = self.crop_size
-			area[3] = self.crop_size
-
-			cov = self.computeExactCoverage(area, target_classes)
-			coverage += np.array(cov)
-
-		coverage = coverage / len(self.training_tiles)
-		return coverage
-
-
-	def classFrequenciesOnDataset(self, labels_dir, target_classes, labels_dictionary):
-		"""
-		Returns the frequencies of the target classes on the given dataset.
-        """
-
-		num_classes = len(target_classes)
-
-		image_label_names = [x for x in glob.glob(os.path.join(labels_dir, '*.png'))]
-
-		total_pixels = 0
-		counters = np.zeros(num_classes, dtype='float')
-		for label_name in image_label_names:
-
-			image_label = QImage(label_name)
-			# image_label = image_label.convertToFormat(QImage.Format_RGB32)
-			label_w = image_label.width()
-			label_h = image_label.height()
-			total_pixels += label_w * label_h
-			imglbl = utils.qimageToNumpyArray(image_label)
-
-			# class 0 --> background
-			labelsint = np.zeros((label_h, label_w), dtype='int64')
-			for i, cl in enumerate(target_classes):
-				class_colors = labels_dictionary[cl].fill
-				idx = np.where((imglbl[:, :, 0] == class_colors[0]) & (imglbl[:, :, 1] == class_colors[1]) & (
-							imglbl[:, :, 2] == class_colors[2]))
-				labelsint[idx] = i + 1
-
-			for i in range(len(target_classes)):
-				counters[i] += float(np.count_nonzero(labelsint == i + 1))
-
-		freq = counters / float(total_pixels)
-		print(freq)
 
 	##### VISUALIZATION FUNCTIONS - FOR DEBUG PURPOSES
 

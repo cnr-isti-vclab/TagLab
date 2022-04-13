@@ -463,15 +463,16 @@ class CoralsDataset(Dataset):
 
         img = np.zeros((pred_indices.shape[0], pred_indices.shape[1], 3), dtype='uint8')
 
-        class_names = list(self.dict_target)
-
+        color_name = "Background"
         for i in range(pred_indices.shape[0]):
             for j in range(pred_indices.shape[1]):
-                label = pred_indices[i][j]
+                label_code = pred_indices[i][j]
 
-                color_name = class_names[label]
+                for key in self.dict_target.keys():
+                    if label_code == self.dict_target[key]:
+                        color_name = key
+
                 color = self.labels_dictionary[color_name].fill
-
                 img[i][j][0] = color[0]
                 img[i][j][1] = color[1]
                 img[i][j][2] = color[2]

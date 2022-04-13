@@ -3878,10 +3878,9 @@ class TagLab(QMainWindow):
             new_dataset = NewDataset(self.activeviewer.img_map, self.activeviewer.annotations.seg_blobs, tile_size=1026, step=513)
 
             target_classes = training.createTargetClasses(self.activeviewer.annotations)
-            target_classes = list(target_classes.keys())
 
             new_dataset.createLabelImage(self.project.labels)
-            new_dataset.convert_colors_to_labels(target_classes, self.project.labels)
+            new_dataset.convertColorsToLabels(target_classes, self.project.labels)
             new_dataset.computeFrequencies(target_classes)
             target_pixel_size = self.newDatasetWidget.getTargetScale()
             check_size = new_dataset.workingAreaCropAndRescale(self.activeviewer.image.pixelSize(), target_pixel_size,
@@ -3915,6 +3914,7 @@ class TagLab(QMainWindow):
             QApplication.processEvents()
 
             if flag_oversampling is True:
+                # FIXME: oversampling requires to be rewritten taking into account that target_classes is a dictionary now.
                 class_to_sample, radii = new_dataset.computeRadii(target_classes)
                 new_dataset.cut_tiles(regular=False, oversampling=True, classes_to_sample=class_to_sample, radii=radii)
             else:
@@ -4009,7 +4009,7 @@ class TagLab(QMainWindow):
         QApplication.processEvents()
 
         metrics = training.testNetwork(images_dir_test, labels_dir_test, labels_dictionary=self.project.labels,
-                                       target_classes=target_classes, dataset_train=dataset_train_info,
+                                       target_classes=dataset_train_info.dict_target, dataset_train=dataset_train_info,
                                        network_filename=network_filename, output_folder=output_folder,
                                        progress=self.progress_bar)
 
@@ -4043,7 +4043,7 @@ class TagLab(QMainWindow):
         new_classifier["Classes"] = self.dataset_train_info.dict_target
 
         # scale
-        target_pixel_size_file = os.path.join(self.trainResultsWidget.dataset_folder, "target-scale-factor.txt")
+        target_pixel_size_file = os.path.join(self.trainResultsWidget.dataset_folder, "target-pixel-size.txt")
         fl = open(target_pixel_size_file, "r")
         line = fl.readline()
         fl.close()
