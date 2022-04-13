@@ -86,6 +86,9 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
     }
     """
 
+    REF_POINT_COLOR = QVector4D(1.0, 1.0, 1.0, 1.0)
+    ALI_POINT_COLOR = QVector4D(0.0, 1.0, 1.0, 1.0)
+
     QUAD_V = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
     QUAD_T = [(0, 1), (0, 0), (1, 1), (1, 0)]
 
@@ -298,8 +301,8 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         matrix5.translate(-1, 1, 0)
         matrix5.scale(2, -2, 1)
         if self.drawPoints:
-            self.__drawPointsPass(0, matrix3 * matrix1 * matrix5, QVector4D(1.0, 0.0, 0.0, 1.0))
-            self.__drawPointsPass(1, matrix3 * matrix2 * matrix5, QVector4D(1.0, 1.0, 0.0, 1.0))
+            self.__drawPointsPass(0, matrix3 * matrix1 * matrix5, QtSimpleOpenGlShaderViewer.REF_POINT_COLOR)
+            self.__drawPointsPass(1, matrix3 * matrix2 * matrix5, QtSimpleOpenGlShaderViewer.ALI_POINT_COLOR)
 
     def resizeGL(self, w: int, h: int) -> None:
         """
@@ -638,17 +641,21 @@ class MarkerObjData:
     Contains position inside each viewer (left and right).
     """
 
-    # Weights
-    SOFT_MARKER_W = 1
-    HARD_MARKER_W = 2
-
     # Types
     SOFT_MARKER = 0
     HARD_MARKER = 1
 
+    # Weights
+    SOFT_MARKER_W = 1
+    HARD_MARKER_W = 3
+
     # Draw properties
     MARKER_SIZE = 8
     MARKER_WIDTH = 5
+    HARD_MARKER_COLOR = Qt.red
+    SOFT_MARKER_COLOR = Qt.yellow
+    MARKER_HOVER_COLOR = Qt.white
+    MARKER_HOVER_WIDTH = 3
 
     def __init__(self, identifier: int, lpos: Optional[Point2f], rpos: Optional[Point2f],
                        pxSizeL: float, pxSizeR: float, typ: SOFT_MARKER | HARD_MARKER):
@@ -774,10 +781,10 @@ class MarkerObjData:
         """
         # Update data on type
         if self.typ == MarkerObjData.SOFT_MARKER:
-            self.pen.setColor(Qt.yellow)
+            self.pen.setColor(MarkerObjData.SOFT_MARKER_COLOR)
             self.weight = MarkerObjData.SOFT_MARKER_W
         elif self.typ == MarkerObjData.HARD_MARKER:
-            self.pen.setColor(Qt.red)
+            self.pen.setColor(MarkerObjData.HARD_MARKER_COLOR)
             self.weight = MarkerObjData.HARD_MARKER_W
 
 
@@ -1657,7 +1664,7 @@ All markers must be valid to proceed.
         :return: the (leftRect, rightRect) created
         """
         # Create drawing pen
-        pen = QPen(Qt.white, 1)
+        pen = QPen(MarkerObjData.MARKER_HOVER_COLOR, MarkerObjData.MARKER_HOVER_WIDTH)
         pen.setCosmetic(True)
         # Retrieve bbox
         (bboxL, bboxR) = self.markers[i].getBBox()
@@ -1782,6 +1789,8 @@ All markers must be valid to proceed.
             (bboxL, bboxR) = marker.getBBox()
             textL = textR = None
             errL = errR = None
+            zoomL = self.leftImgViewer.zoom_factor
+            zoomR = self.rightImgViewer.zoom_factor
             # Left viewer
             if marker.lViewPos is not None:
                 # Left identifier
@@ -1793,7 +1802,12 @@ All markers must be valid to proceed.
                 textL.setFlag(QGraphicsItem.ItemIgnoresTransformations)
                 textL.setDefaultTextColor(Qt.black)
                 textL.setZValue(8)
-                textL.setPos(bboxL.topRight())
+                # Center text to top side
+                textL.adjustSize()
+                pos = bboxL.topLeft()
+                pos.setX(pos.x() + 0.5 + (MarkerObjData.MARKER_SIZE - textL.textWidth() / 2.0 / zoomL) / self.pxSizeL)
+                pos.setY(pos.y() - textL.boundingRect().height() / zoomL / self.pxSizeL)
+                textL.setPos(pos)
                 # Left error
                 lErrorLabelVisibility = (self.leftImgViewer.zoom_factor > 3.25)
                 errL = QGraphicsTextItem()
@@ -1804,7 +1818,11 @@ All markers must be valid to proceed.
                 errL.setDefaultTextColor(Qt.black)
                 errL.setZValue(7)
                 errL.setVisible(lErrorLabelVisibility)
-                errL.setPos(bboxL.topLeft())
+                # Center text to bottom side
+                errL.adjustSize()
+                pos = bboxL.bottomLeft()
+                pos.setX(pos.x() + 0.5 + (MarkerObjData.MARKER_SIZE - errL.textWidth() / 2.0 / zoomL) / self.pxSizeL)
+                errL.setPos(pos)
                 # Add text to scenes
                 self.leftImgViewer.scene.addItem(textL)
                 self.leftImgViewer.scene.addItem(errL)
@@ -1818,7 +1836,12 @@ All markers must be valid to proceed.
                 textR.setFlag(QGraphicsItem.ItemIgnoresTransformations)
                 textR.setDefaultTextColor(Qt.black)
                 textR.setZValue(8)
-                textR.setPos(bboxR.topRight())
+                # Center text to top side
+                textR.adjustSize()
+                pos = bboxR.topLeft()
+                pos.setX(pos.x() + 0.5 + (MarkerObjData.MARKER_SIZE - textR.textWidth() / 2.0 / zoomR) / self.pxSizeR)
+                pos.setY(pos.y() - textR.boundingRect().height() / zoomR / self.pxSizeR)
+                textR.setPos(pos)
                 # Right error
                 rErrorLabelVisibility = (self.rightImgViewer.zoom_factor > 3.25)
                 errR = QGraphicsTextItem()
@@ -1829,7 +1852,11 @@ All markers must be valid to proceed.
                 errR.setDefaultTextColor(Qt.black)
                 errR.setZValue(7)
                 errR.setVisible(rErrorLabelVisibility)
-                errR.setPos(bboxR.topLeft())
+                # Center text to bottom side
+                errR.adjustSize()
+                pos = bboxR.bottomLeft()
+                pos.setX(pos.x() + 0.5 + (MarkerObjData.MARKER_SIZE - errR.textWidth() / 2.0 / zoomR) / self.pxSizeR)
+                errR.setPos(pos)
                 # Add text to scenes
                 self.rightImgViewer.scene.addItem(textR)
                 self.rightImgViewer.scene.addItem(errR)
