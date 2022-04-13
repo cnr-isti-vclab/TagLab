@@ -3,20 +3,14 @@ import random
 from typing import Optional, Tuple, List
 
 import numpy as np
-from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot, QLineF, QRectF, QPoint
+from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot, QLineF, QRectF, QPoint, QPointF
 from PyQt5.QtGui import QImage, QMouseEvent, QPen, QFont, QCloseEvent, QKeyEvent, QOpenGLShaderProgram, QOpenGLShader, \
-    QOpenGLVersionProfile, QMatrix4x4, QWheelEvent, QOpenGLTexture, QVector2D, QOpenGLFramebufferObject, QVector4D
+    QOpenGLVersionProfile, QMatrix4x4, QWheelEvent, QOpenGLTexture, QOpenGLFramebufferObject, QVector4D, QVector2D
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QVBoxLayout, QLabel, QHBoxLayout, QComboBox, QSlider, QApplication, \
     QCheckBox, QPushButton, QMessageBox, QGraphicsTextItem, QGraphicsItem, QOpenGLWidget, QGraphicsRectItem
 from PyQt5._QOpenGLFunctions_2_0 import QOpenGLFunctions_2_0
 
 from source.QtImageViewer import QtImageViewer
-
-"""
-Type aliases
-"""
-Point2f = Tuple[float, float]
-Size2f = Tuple[float, float]
 
 
 def checkGL(obj, res):
@@ -100,25 +94,25 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.textures: List[QOpenGLTexture] = []
         self.framebuffers: List[QOpenGLFramebufferObject] = []
         self.pointProgram: Optional[QOpenGLShaderProgram] = None
-        self.points = [[], []]
+        self.points: Tuple[List[QVector2D], List[QVector2D]] = ([], [])
         self.vSrc = vSrc
         self.fSrc = fSrc
         self.keepFB = False
         self.drawPoints = True
         # Transformation status
-        self.t = [0.0, 0.0]
+        self.t: QPointF = QPointF(0.0, 0.0)
         self.s = 1.0
         self.w = 100
         self.h = 100
-        self.sizeL = [0, 0]
-        self.sizeR = [0, 0]
+        self.sizeL = QPointF(0, 0)
+        self.sizeR = QPointF(0, 0)
         # Gesture
         self.lastPos = None
         self.minZoom = 0.25
         self.maxZoom = 128.0
         # Alignment data
         self.rot = 0
-        self.tra = QVector2D(0, 0)
+        self.tra: QPointF = QPointF(0, 0)
         self.sca = 1
 
     def __createProgram(self, vSrc: str, fSrc: str, hasTex: bool) -> Optional[QOpenGLShaderProgram]:
@@ -190,10 +184,10 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.programs[0].setUniformValue("uTex", 0)
         self.programs[0].setUniformValue("uMatrix", mat)
         # Compute sizes
-        maxw = max(self.sizeL[0], self.sizeR[0])
-        maxh = max(self.sizeL[1], self.sizeR[1])
-        wratio = maxw / (self.sizeL[0] if i == 0 else self.sizeR[0])
-        hratio = maxh / (self.sizeL[1] if i == 0 else self.sizeR[1])
+        maxw = max(self.sizeL.x(), self.sizeR.x())
+        maxh = max(self.sizeL.y(), self.sizeR.y())
+        wratio = maxw / (self.sizeL.x() if i == 0 else self.sizeR.x())
+        hratio = maxh / (self.sizeL.y() if i == 0 else self.sizeR.y())
         # Reload quad data
         self.programs[0].enableAttributeArray(0)
         self.programs[0].setAttributeArray(0, QtSimpleOpenGlShaderViewer.QUAD_V.copy())
@@ -279,14 +273,14 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         matrix4 = QMatrix4x4()  # For reversing framebuffer
         matrix5 = QMatrix4x4()  # For normalizing points to [-1, 1]
         # Rotation (pivot is the top left corner), Translation and Scale
-        matrix2.translate(self.tra[0], -self.tra[1], 0)
+        matrix2.translate(self.tra.x(), -self.tra.y(), 0)
         matrix2.translate(-1.0,  1.0, 0.0)
         matrix2.rotate(-self.rot, 0.0, 0.0, 1.0)
         matrix2.scale(self.sca, self.sca, 1.0)
         matrix2.translate( 1.0, -1.0, 0.0)
         # Aspect Ratio / Pan / Zoom
         matrix3.scale(min(self.w, self.h) / self.w, min(self.w, self.h) / self.h, 1)
-        matrix3.translate(self.t[0], -self.t[1], 0)
+        matrix3.translate(self.t.x(), -self.t.y(), 0)
         matrix3.scale(self.s, self.s, 1)
         # Check if needs to redraw buffers
         # (Needed only when user zoom or pan or manually changes offset or rotation)
@@ -350,8 +344,8 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         # Update translation
         wh = min(self.w, self.h) / self.w
         hw = min(self.w, self.h) / self.h
-        self.t[0] += dx / wh
-        self.t[1] += dy / hw
+        self.t.setX(self.t.x() + dx / wh)
+        self.t.setY(self.t.y() + dy / hw)
         # Redraw
         self.redraw(False)
 
@@ -379,13 +373,13 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         # Find normalized mouse pos
         [mx, my] = [event.pos().x() / (self.w // 2) - 1, event.pos().y() / (self.h // 2) - 1]
         # Zoom towards mouse pos
-        self.t[0] = mx - (mx - self.t[0]) * factor
-        self.t[1] = my - (my - self.t[1]) * factor
+        self.t.setX(mx - (mx - self.t.x()) * factor)
+        self.t.setY(my - (my - self.t.y()) * factor)
         # Redraw
         self.redraw(False)
 
-    def initializeData(self, referenceImg: QImage, imgToAlign: QImage, sizeL: Size2f, sizeR: Size2f,
-                       referencePoints: List[Point2f], pointsToAlign: List[Point2f]) -> None:
+    def initializeData(self, referenceImg: QImage, imgToAlign: QImage, sizeL: QPointF, sizeR: QPointF,
+                       referencePoints: List[QPointF], pointsToAlign: List[QPointF]) -> None:
         """
         Called by the container widget to upload data to show.
         :param: referenceImg the QImage to take as reference
@@ -409,7 +403,7 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.sizeL = sizeL
         self.sizeR = sizeR
         # Save points
-        self.points = [referencePoints.copy(), pointsToAlign.copy()]
+        self.points = ([QVector2D(p) for p in referencePoints.copy()], [QVector2D(p) for p in pointsToAlign.copy()])
         # Redraw
         self.redraw(False)
 
@@ -421,12 +415,12 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.rot = max(min(rot, 180.0), -180.0)
         self.redraw(False)
 
-    def updateTranslation(self, tra: Size2f) -> None:
+    def updateTranslation(self, tra: QPointF) -> None:
         """
         Public method to update Translation parameter.
         :param: tra the new value for translation
         """
-        self.tra = QVector2D(tra[0], tra[1])
+        self.tra = QPointF(tra.x(), tra.y())
         self.redraw(False)
 
     def updateScale(self, sca: float) -> None:
@@ -657,13 +651,13 @@ class MarkerObjData:
     MARKER_HOVER_COLOR = Qt.white
     MARKER_HOVER_WIDTH = 3
 
-    def __init__(self, identifier: int, lpos: Optional[Point2f], rpos: Optional[Point2f],
+    def __init__(self, identifier: int, lpos: Optional[QPointF], rpos: Optional[QPointF],
                        pxSizeL: float, pxSizeR: float, typ: SOFT_MARKER | HARD_MARKER):
         self.identifier = identifier
         self.pxSizeL = pxSizeL
         self.pxSizeR = pxSizeR
-        self.lViewPos: Optional[Point2f] = lpos
-        self.rViewPos: Optional[Point2f] = rpos
+        self.lViewPos: Optional[QPointF] = lpos
+        self.rViewPos: Optional[QPointF] = rpos
         self.typ = typ
         self.sceneObjs = []
         self.textObjs = []
@@ -693,12 +687,12 @@ class MarkerObjData:
         bboxL = bboxR = None
         # Create bbox for left viewer
         if self.lViewPos is not None:
-            [lmx, lmy] = [self.lViewPos[0] / self.pxSizeL, self.lViewPos[1] / self.pxSizeL]
+            [lmx, lmy] = [self.lViewPos.x() / self.pxSizeL, self.lViewPos.y() / self.pxSizeL]
             sideL = MarkerObjData.MARKER_SIZE / self.pxSizeL
             bboxL = QRectF(lmx - sideL, lmy - sideL, sideL * 2 + 1, sideL * 2 + 1)
         # Create bbox for right viewer
         if self.rViewPos is not None:
-            [rmx, rmy] = [self.rViewPos[0] / self.pxSizeR, self.rViewPos[1] / self.pxSizeR]
+            [rmx, rmy] = [self.rViewPos.x() / self.pxSizeR, self.rViewPos.y() / self.pxSizeR]
             sideR = MarkerObjData.MARKER_SIZE / self.pxSizeR
             bboxR = QRectF(rmx - sideR, rmy - sideR, sideR * 2 + 1, sideR * 2 + 1)
         return bboxL, bboxR
@@ -711,7 +705,7 @@ class MarkerObjData:
         linesL = linesR = []
         # Create line list for left viewer
         if self.lViewPos is not None:
-            [lmx, lmy] = [self.lViewPos[0] / self.pxSizeL, self.lViewPos[1] / self.pxSizeL]
+            [lmx, lmy] = [self.lViewPos.x() / self.pxSizeL, self.lViewPos.y() / self.pxSizeL]
             sideL = MarkerObjData.MARKER_SIZE / self.pxSizeL
             linesL = [
                 ([-sideL + 1, -sideL + 1], [0, 0]), ([1, 1], [+sideL, +sideL + 0]),  # Top Left -> Bot Right
@@ -723,7 +717,7 @@ class MarkerObjData:
             ]
         # Create line list for right viewer
         if self.rViewPos is not None:
-            [rmx, rmy] = [self.rViewPos[0] / self.pxSizeR, self.rViewPos[1] / self.pxSizeR]
+            [rmx, rmy] = [self.rViewPos.x() / self.pxSizeR, self.rViewPos.y() / self.pxSizeR]
             sideR = MarkerObjData.MARKER_SIZE / self.pxSizeR
             linesR = [
                 ([-sideR + 1, -sideR + 1], [0, 0]), ([1, 1], [+sideR, +sideR + 0]),  # Top Left -> Bot Right
@@ -741,19 +735,19 @@ class MarkerObjData:
         # Create lines and zip them
         return [(lineL, lineR) for (lineL, lineR) in zip(linesL, linesR)]
 
-    def setLPos(self, pos: Point2f) -> None:
+    def setLPos(self, pos: QPointF) -> None:
         """
         Update the marker position on the left viewer.
         :param: lpos the new lpos
         """
-        self.lViewPos = [pos[0], pos[1]]
+        self.lViewPos = QPointF(pos.x(), pos.y())
 
-    def setRPos(self, pos: Point2f) -> None:
+    def setRPos(self, pos: QPointF) -> None:
         """
         Update the marker position on the right viewer.
         :param: rpos the new rpos
         """
-        self.rViewPos = [pos[0], pos[1]]
+        self.rViewPos = QPointF(pos.x(), pos.y())
 
     def isComplete(self) -> bool:
         """
@@ -771,9 +765,9 @@ class MarkerObjData:
         :param: moveRight a boolean to turn on/off movement of the position in the right view
         """
         if moveLeft and self.lViewPos is not None:
-            self.lViewPos = [self.lViewPos[0] + dx, self.lViewPos[1] + dy]
+            self.lViewPos = QPointF(self.lViewPos.x() + dx, self.lViewPos.y() + dy)
         if moveRight and self.rViewPos is not None:
-            self.rViewPos = [self.rViewPos[0] + dx, self.rViewPos[1] + dy]
+            self.rViewPos = QPointF(self.rViewPos.x() + dx, self.rViewPos.y() + dy)
 
     def __update(self) -> None:
         """
@@ -800,6 +794,10 @@ class QtAlignmentToolWidget(QWidget):
     # Number of samples used when calculating approx scale
     SCALE_SAMPLING_COUNT = 64
 
+    ROT_PRECISION = 10     # 1 / 10
+    SCALE_PRECISION = 100  # 1 / 100
+    SCALE_RANGE = 0.50     # [-50%, +50%]
+
     def __init__(self, project, parent=None):
         super(QtAlignmentToolWidget, self).__init__(parent)
 
@@ -814,13 +812,13 @@ class QtAlignmentToolWidget(QWidget):
         self.syncEnabled = True
         self.alpha = 50
         self.threshold = 32
-        self.sizeL: Size2f = (0.0, 0.0)
-        self.sizeR: Size2f = (0.0, 0.0)
+        self.sizeL: QPointF = QPointF(0.0, 0.0)
+        self.sizeR: QPointF = QPointF(0.0, 0.0)
         self.canScale = False
         self.svdRes = [0, [0, 0], 0]
-        self.R = np.rad2deg(0)
+        self.R = np.rad2deg(0) * 10
         self.T = np.array([0, 0])
-        self.S = 1
+        self.S = 1 * 10
         self.lastMousePos = None
         self.isDragging = False
         self.selectedMarker = None
@@ -844,7 +842,7 @@ class QtAlignmentToolWidget(QWidget):
         self.syncCheck.stateChanged[int].connect(self.toggleSync)
 
         # Auto Align
-        self.autoAlignButton = QPushButton("Auto-Align")
+        self.autoAlignButton = QPushButton("Preview Alignment")
         self.autoAlignButton.setFixedWidth(150)
         self.autoAlignButton.setFixedHeight(30)
         self.autoAlignButton.clicked.connect(self.onAutoAlignRequested)
@@ -886,7 +884,7 @@ class QtAlignmentToolWidget(QWidget):
         self.confirmAlignmentButton.clicked.connect(self.onConfirmAlignment)
 
         # Slider
-        self.alphaSliderLabel = QLabel("A: " + str(self.alpha))
+        self.alphaSliderLabel = QLabel("Alpha: " + str(self.alpha))
         self.alphaSliderLabel.setMinimumWidth(100)
         self.alphaSlider = QSlider(Qt.Horizontal)
         self.alphaSlider.setFocusPolicy(Qt.StrongFocus)
@@ -899,8 +897,8 @@ class QtAlignmentToolWidget(QWidget):
         self.alphaSlider.valueChanged.connect(self.previewAlphaValueChanges)
 
         # Slider (X)
-        self.xSliderLabel = QLabel("X: " + str(self.T[0]))
-        self.xSliderLabel.setMinimumWidth(50)
+        self.xSliderLabel = QLabel("Tx: " + str(self.T[0]))
+        self.xSliderLabel.setMinimumWidth(100)
         self.xSlider = QSlider(Qt.Horizontal)
         self.xSlider.setFocusPolicy(Qt.StrongFocus)
         self.xSlider.setMinimum(-256)
@@ -912,8 +910,8 @@ class QtAlignmentToolWidget(QWidget):
         self.xSlider.valueChanged.connect(self.xOffsetChanges)
 
         # Slider (Y)
-        self.ySliderLabel = QLabel("Y: " + str(self.T[1]))
-        self.ySliderLabel.setMinimumWidth(50)
+        self.ySliderLabel = QLabel("Ty: " + str(self.T[1]))
+        self.ySliderLabel.setMinimumWidth(100)
         self.ySlider = QSlider(Qt.Horizontal)
         self.ySlider.setFocusPolicy(Qt.StrongFocus)
         self.ySlider.setMinimum(-256)
@@ -943,7 +941,7 @@ class QtAlignmentToolWidget(QWidget):
         self.moveUpButton.clicked.connect(self.onYValueIncremented)
 
         # Slider (Rot)
-        self.rSliderLabel = QLabel("R: " + str(self.R / 10.0))
+        self.rSliderLabel = QLabel("R: " + str(self.R / QtAlignmentToolWidget.ROT_PRECISION))
         self.rSliderLabel.setMinimumWidth(100)
         self.rSlider = QSlider(Qt.Horizontal)
         self.rSlider.setFocusPolicy(Qt.StrongFocus)
@@ -965,9 +963,23 @@ class QtAlignmentToolWidget(QWidget):
         self.rotateRightButton.setFixedHeight(30)
         self.rotateRightButton.clicked.connect(self.onRotValueIncremented)
 
-        # Debug Slider (Threshold)
-        self.thresholdSliderLabel = QLabel("T: " + str(self.threshold))
-        self.thresholdSliderLabel.setMinimumWidth(50)
+        # Slider (Scale)
+        self.sSliderLabel = QLabel("S: " + str(self.S / QtAlignmentToolWidget.SCALE_PRECISION))
+        self.sSliderLabel.setMinimumWidth(100)
+        self.sSlider = QSlider(Qt.Horizontal)
+        self.sSlider.setFocusPolicy(Qt.StrongFocus)
+        self.sSlider.setMinimum(1)
+        self.sSlider.setMaximum(200)
+        self.sSlider.setTickInterval(1)
+        self.sSlider.setValue(self.S)
+        self.sSlider.setMinimumWidth(50)
+        self.sSlider.setAutoFillBackground(True)
+        self.sSlider.valueChanged.connect(self.scaleValueChanges)
+        self.sSlider.setEnabled(False)
+
+        # Slider (Threshold)
+        self.thresholdSliderLabel = QLabel("Threshold: " + str(self.threshold))
+        self.thresholdSliderLabel.setMinimumWidth(100)
         self.thresholdSlider = QSlider(Qt.Horizontal)
         self.thresholdSlider.setFocusPolicy(Qt.StrongFocus)
         self.thresholdSlider.setMinimum(0)
@@ -1022,6 +1034,10 @@ class QtAlignmentToolWidget(QWidget):
         layout5.addWidget(self.rotateLeftButton)
         layout5.addWidget(self.rotateRightButton)
         self.buttons.addLayout(layout5)
+        layout6 = QHBoxLayout()
+        layout6.addWidget(self.sSliderLabel)
+        layout6.addWidget(self.sSlider)
+        self.buttons.addLayout(layout6)
 
         # ==============================================================
         # Middle UI containing map selector and map viewer
@@ -1273,7 +1289,7 @@ class QtAlignmentToolWidget(QWidget):
         """
         # Update alpha value and slider text
         self.alpha = value
-        self.alphaSliderLabel.setText("A: " + str(value))
+        self.alphaSliderLabel.setText("Alpha: " + str(value))
         # Update preview
         self.__updatePreview()
 
@@ -1301,7 +1317,7 @@ class QtAlignmentToolWidget(QWidget):
         """
         # Update offset value and slider text
         self.T[0] = value
-        self.xSliderLabel.setText("X: " + str(value))
+        self.xSliderLabel.setText("Tx: " + str(value))
         # Update preview
         self.__updatePreview()
 
@@ -1329,7 +1345,7 @@ class QtAlignmentToolWidget(QWidget):
         """
         # Update offset value and slider text
         self.T[1] = value
-        self.ySliderLabel.setText("Y: " + str(value))
+        self.ySliderLabel.setText("Ty: " + str(value))
         # Update preview
         self.__updatePreview()
 
@@ -1356,7 +1372,18 @@ class QtAlignmentToolWidget(QWidget):
         :param: value the new rot value
         """
         self.R = value
-        self.rSliderLabel.setText("R: " + str(self.R / 10.0))
+        self.rSliderLabel.setText("R: " + str(self.R / QtAlignmentToolWidget.ROT_PRECISION))
+        # Update preview
+        self.__updatePreview()
+
+    @pyqtSlot(int)
+    def scaleValueChanges(self, value: int) -> None:
+        """
+        Callback called when the value of the scale changes.
+        :param: value the new sca value
+        """
+        self.S = value
+        self.sSliderLabel.setText("S: " + str(self.S / QtAlignmentToolWidget.SCALE_PRECISION))
         # Update preview
         self.__updatePreview()
 
@@ -1368,7 +1395,7 @@ class QtAlignmentToolWidget(QWidget):
         """
         # Update threshold value and slider text
         self.threshold = value
-        self.thresholdSliderLabel.setText("T: " + str(value))
+        self.thresholdSliderLabel.setText("Threshold: " + str(value))
         # Update preview
         self.__updatePreview()
 
@@ -1451,7 +1478,7 @@ class QtAlignmentToolWidget(QWidget):
         self.rSlider.setValue(self.svdRes[0])
         self.xSlider.setValue(self.svdRes[1][0])
         self.ySlider.setValue(self.svdRes[1][1])
-        self.S = self.svdRes[2]
+        self.sSlider.setValue(self.svdRes[2])
         # Redraw preview
         self.__updatePreview()
 
@@ -1537,7 +1564,7 @@ All markers must be valid to proceed.
             if hovering is None:
                 # Create marker
                 pxSize = self.pxSizeL if isLeft else self.pxSizeR
-                mkPos = (pos[0] * pxSize, pos[1] * pxSize)
+                mkPos = QPointF(pos.x() * pxSize, pos.y() * pxSize)
                 self.__addMarker(mkPos, isLeft)
             else:
                 # Toggle marker
@@ -1568,8 +1595,8 @@ All markers must be valid to proceed.
         if self.isDragging:
             # Calculate delta
             pxSize = self.pxSizeL if isLeft else self.pxSizeR
-            dx = (pos[0] - self.lastMousePos[0]) * pxSize
-            dy = (pos[1] - self.lastMousePos[1]) * pxSize
+            dx = (pos.x() - self.lastMousePos.x()) * pxSize
+            dy = (pos.y() - self.lastMousePos.y()) * pxSize
             self.lastMousePos = pos
             # Update marker position
             self.markers[self.selectedMarker].move(dx, dy, isLeft, True)
@@ -1601,7 +1628,7 @@ All markers must be valid to proceed.
         # Redraw markers
         self.__updateMarkers(keepAlgResults=True)
 
-    def __mapToViewer(self, pos: QPoint, isLeft: bool) -> Point2f:
+    def __mapToViewer(self, pos: QPoint, isLeft: bool) -> QPointF:
         """
         Private method that maps a pos [x, y] into the viewer space.
         :param: pos the position to map
@@ -1610,25 +1637,23 @@ All markers must be valid to proceed.
         """
         viewer = self.leftImgViewer if isLeft else self.rightImgViewer
         tmp = viewer.mapToScene(pos)
-        tmp = (min(max(tmp.x(), 0), viewer.imgwidth), min(max(tmp.y(), 0), viewer.imgheight))
+        tmp = QPointF(min(max(tmp.x(), 0), viewer.imgwidth), min(max(tmp.y(), 0), viewer.imgheight))
         return tmp
 
-    def __findMarkerAt(self, pos: Point2f, isLeft: bool) -> Optional[int]:
+    def __findMarkerAt(self, pos: QPointF, isLeft: bool) -> Optional[int]:
         """
         Private method to find marker under [x, y].
         :param: pos the position to check
         :param: isLeft a boolean to choose which viewer to use
         :return: the index of the marker found or None
         """
-        # Unpack pos
-        [x, y] = pos
         # Iterate over the markers list to check if any marker exists at [x, y]
         for (i, marker) in enumerate(self.markers):
             # Find marker bbox
             (bboxL, bboxR) = self.markers[i].getBBox()
             bbox: QRectF = bboxL if isLeft else bboxR
             # Check if bbox contains pos
-            if bbox is not None and bbox.contains(x, y):
+            if bbox is not None and bbox.contains(pos):
                 return i
         return None
 
@@ -1725,7 +1750,7 @@ All markers must be valid to proceed.
             # Clear array
             self.markers[i].sceneObjs = []
 
-    def __createNewMarker(self, lpos: Optional[Point2f], rpos: Optional[Point2f]) -> None:
+    def __createNewMarker(self, lpos: Optional[QPointF], rpos: Optional[QPointF]) -> None:
         """
         Private method to add a marker at pos [x, y].
         :param: lpos the position where to add the marker (left viewer)
@@ -1737,7 +1762,7 @@ All markers must be valid to proceed.
         marker = MarkerObjData(identifier, lpos, rpos, self.pxSizeL, self.pxSizeR, MarkerObjData.SOFT_MARKER)
         self.markers.append(marker)
 
-    def __addMarker(self, pos: Point2f, isLeft: bool) -> None:
+    def __addMarker(self, pos: QPointF, isLeft: bool) -> None:
         """
         Private method to add a marker at pos [x, y].
         :param: pos the position where to add the marker
@@ -1918,6 +1943,7 @@ All markers must be valid to proceed.
         self.rSlider.setValue(0)
         self.xSlider.setValue(0)
         self.ySlider.setValue(0)
+        self.sSlider.setValue(0)
 
     def __updateSizes(self, img1: QImage, pxSize1: float, img2: QImage, pxSize2: float) -> None:
         """
@@ -1930,9 +1956,9 @@ All markers must be valid to proceed.
         """
         # Retrieve sizes
         h1, w1 = img1.height() * pxSize1, img1.width() * pxSize1
-        self.sizeL = [w1, h1]
+        self.sizeL = QPointF(w1, h1)
         h2, w2 = img2.height() * pxSize2, img2.width() * pxSize2
-        self.sizeR = [w2, h2]
+        self.sizeR = QPointF(w2, h2)
         # Find box containing both images
         ph, pw = max(h1, h2), max(w1, w2)
         # Update preview size
@@ -1959,15 +1985,15 @@ All markers must be valid to proceed.
         Private method to update the preview.
         """
         # Update R and T values
-        trax = (self.T[0] * 2.0) / max(self.sizeL[0], self.sizeR[0])
-        tray = (self.T[1] * 2.0) / max(self.sizeL[1], self.sizeR[1])
-        rot = self.R / 10.0
-        sca = self.S
+        trax = (self.T[0] * 2.0) / max(self.sizeL.x(), self.sizeR.x())
+        tray = (self.T[1] * 2.0) / max(self.sizeL.y(), self.sizeR.y())
+        rot = self.R / QtAlignmentToolWidget.ROT_PRECISION
+        sca = self.S / QtAlignmentToolWidget.SCALE_PRECISION
         self.leftPreviewViewer.updateRotation(rot)
-        self.leftPreviewViewer.updateTranslation((trax, tray))
+        self.leftPreviewViewer.updateTranslation(QPointF(trax, tray))
         self.leftPreviewViewer.updateScale(sca)
         self.rightPreviewViewer.updateRotation(rot)
-        self.rightPreviewViewer.updateTranslation((trax, tray))
+        self.rightPreviewViewer.updateTranslation(QPointF(trax, tray))
         self.rightPreviewViewer.updateScale(sca)
         # Update threshold
         self.rightPreviewViewer.updateThreshold(self.threshold)
@@ -2002,6 +2028,8 @@ All markers must be valid to proceed.
         self.rSlider.setVisible(isPreviewMode)
         self.rotateLeftButton.setVisible(isPreviewMode)
         self.rotateRightButton.setVisible(isPreviewMode)
+        self.sSliderLabel.setVisible(isPreviewMode)
+        self.sSlider.setVisible(isPreviewMode)
         # (NON-Preview-ONLY) widgets
         self.leftImgViewer.setVisible(not isPreviewMode)
         self.rightImgViewer.setVisible(not isPreviewMode)
@@ -2028,16 +2056,16 @@ All markers must be valid to proceed.
         # Valid !
         return True
 
-    def __normalizedMarkers(self) -> Tuple[List[Point2f], List[Point2f]]:
+    def __normalizedMarkers(self) -> Tuple[List[QPointF], List[QPointF]]:
         """
         Private method to retrieve markers with normalized coord.
         :return: tuple with the two list of markers
         """
         # Normalize markers relative to max side
-        maxw = max(self.sizeL[0], self.sizeR[0])
-        maxh = max(self.sizeL[1], self.sizeR[1])
-        leftPoints = [(marker.lViewPos[0] / maxw, marker.lViewPos[1] / maxh) for marker in self.markers]
-        rightPoints = [(marker.rViewPos[0] / maxw, marker.rViewPos[1] / maxh) for marker in self.markers]
+        maxw = max(self.sizeL.x(), self.sizeR.x())
+        maxh = max(self.sizeL.y(), self.sizeR.y())
+        leftPoints = [QPointF(marker.lViewPos.x() / maxw, marker.lViewPos.y() / maxh) for marker in self.markers]
+        rightPoints = [QPointF(marker.rViewPos.x() / maxw, marker.rViewPos.y() / maxh) for marker in self.markers]
         return leftPoints, rightPoints
 
     def __leastSquaresWithSVD(self) -> None:
@@ -2082,8 +2110,8 @@ All markers must be valid to proceed.
         # ==================================================================================
         # [Extra] Pre-Scale
         # ==================================================================================
-        def dist(a, b):
-            return math.sqrt(((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2))
+        def dist(a: QPointF, b: QPointF):
+            return math.sqrt(((a.x() - b.x()) ** 2 + (a.y() - b.y()) ** 2))
 
         S = 1.0
         if self.canScale:
@@ -2096,7 +2124,7 @@ All markers must be valid to proceed.
             S = float(sum(samples)) / len(samples)
             S = 1.0 / S
 
-        p = [[x * S, y * S] for [x, y] in p]
+        p = [point * S for point in p]
 
         # ==================================================================================
         # [1] Compute the weighted centroids _q (for q) and _p (for p)
@@ -2105,16 +2133,16 @@ All markers must be valid to proceed.
         _q = [0, 0]
         for i in range(0, n):
             f = w[i] / sw
-            _p[0] += (p[i][0] * f)
-            _p[1] += (p[i][1] * f)
-            _q[0] += (q[i][0] * f)
-            _q[1] += (q[i][1] * f)
+            _p[0] += p[i].x() * f
+            _p[1] += p[i].y() * f
+            _q[0] += q[i].x() * f
+            _q[1] += q[i].y() * f
 
         # ==================================================================================
         # [2] Compute the centered vectors y (for q) and x (for p)
         # ==================================================================================
-        y = [[qi[0] - _q[0], qi[1] - _q[1]] for qi in q]
-        x = [[pi[0] - _p[0], pi[1] - _p[1]] for pi in p]
+        y = [[qi.x() - _q[0], qi.y() - _q[1]] for qi in q]
+        x = [[pi.x() - _p[0], pi.y() - _p[1]] for pi in p]
 
         # ==================================================================================
         # [3] Compute the covariance matrix C (dxd)
@@ -2153,31 +2181,39 @@ All markers must be valid to proceed.
         # ==================================================================================
         # [6] Solution
         # ==================================================================================
-        sol = [(R @ pi + T) for pi in p]
-        sol = [[s[0, 0], s[0, 1]] for s in sol]
+        sol = [(R @ [pi.x(), pi.y()] + T) for pi in p]
+        sol = [QPointF(s[0, 0], s[0, 1]) for s in sol]
 
         # Compute errors
-        err = [[a[0] - b[0], a[1] - b[1]] for (a, b) in zip(sol, q)]
-        maxw = max(self.sizeL[0], self.sizeR[0])
-        maxh = max(self.sizeL[1], self.sizeR[1])
+        err = [[a.x() - b.x(), a.y() - b.y()] for (a, b) in zip(sol, q)]
+        maxw = max(self.sizeL.x(), self.sizeR.x())
+        maxh = max(self.sizeL.y(), self.sizeR.y())
         err = [(x * maxw, y * maxh) for (x, y) in err]
         err = [math.sqrt(x ** 2 + y ** 2) for (x, y) in err]
         for (i, (e, marker)) in enumerate(zip(err, self.markers)):
             marker.error = round(e, 2)
 
         # Results
+        R = math.atan2(R[1, 0], R[0, 0])
+        R = np.rad2deg(R)
+        self.R = R * QtAlignmentToolWidget.ROT_PRECISION
+        self.svdRes[0] = self.R
+
         T = [T[0, 0] * maxw, T[0, 1] * maxh]
         self.T = np.array(T)
         self.svdRes[1] = [self.T[0], self.T[1]]
+
+        S = round(S, 2)
+        self.S = S * QtAlignmentToolWidget.SCALE_PRECISION
+        self.svdRes[2] = self.S
+
+        # Update UI
         self.xSlider.setValue(self.T[0])
         self.ySlider.setValue(self.T[1])
-
-        R = math.atan2(R[1, 0], R[0, 0])
-        R = np.rad2deg(R)
-        self.R = R * 10.0
-        self.svdRes[0] = self.R
         self.rSlider.setValue(self.R)
-
-        S = round(S, 4)
-        self.S = S
-        self.svdRes[2] = self.S
+        self.sSlider.blockSignals(True)
+        self.sSlider.setMinimum(round(self.S * (1.0 - QtAlignmentToolWidget.SCALE_RANGE)))
+        self.sSlider.setMaximum(round(self.S * (1.0 + QtAlignmentToolWidget.SCALE_RANGE)))
+        self.sSlider.blockSignals(False)
+        self.sSlider.setValue(self.S)
+        self.sSlider.setEnabled(self.canScale)
