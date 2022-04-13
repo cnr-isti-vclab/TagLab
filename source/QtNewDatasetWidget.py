@@ -61,7 +61,7 @@ class QtNewDatasetWidget(QWidget):
 
         ###########################################################
 
-        self.editDatasetFolder = QLineEdit("temp")
+        self.editDatasetFolder = QLineEdit("")
         self.editDatasetFolder.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editDatasetFolder.setMinimumWidth(LINEWIDTH)
         self.editExportArea = QLineEdit("")

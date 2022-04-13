@@ -3866,6 +3866,13 @@ class TagLab(QMainWindow):
 
         if self.activeviewer is not None and self.newDatasetWidget is not None:
 
+            if self.newDatasetWidget.getDatasetFolder() == "":
+                msgBox = QMessageBox()
+                msgBox.setWindowTitle(self.TAGLAB_VERSION)
+                msgBox.setText("Please, choose a folder to export the dataset.")
+                msgBox.exec()
+                return
+
             QApplication.setOverrideCursor(Qt.WaitCursor)
             self.setupProgressBar()
 
