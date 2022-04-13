@@ -181,8 +181,8 @@ class NewDataset(object):
 		frequencies = {}
 		for key in target_classes.keys():
 
-			if class_name != "Background":
-				area = 0.0
+			area = 0.0
+			if key != "Background":
 				for blob in self.blobs:
 					if blob.class_name == key:
 						area += blob.area
@@ -218,6 +218,7 @@ class NewDataset(object):
 		return coverage_per_class
 
 
+	# FIXME: This function is no more valid and it must be reimplemented
 	def computeRadii(self, target_classes):
 
 		class_sample_info = []
@@ -260,27 +261,26 @@ class NewDataset(object):
 		PSCV = []
 
 		# a coral is counted if and only if it is inside the given area for 3/4
-		for i, class_name in enumerate(target_classes):
+		for key in enumerate(target_classes.keys()):
 
-			areas = []
-			if self.frequencies[i] > 0.0:
-				for blob in self.blobs:
-					if blob.class_name == class_name and self.checkBlobInside(area, blob, 3.0/4.0):
-						areas.append(blob.area)
+			if key != "Background":
 
-			# number of entities
-			number.append(len(areas))
+				areas = []
+				if self.frequencies[key] > 0.0:
+					for blob in self.blobs:
+						if blob.class_name == key and self.checkBlobInside(area, blob, 3.0/4.0):
+							areas.append(blob.area)
 
-			if len(areas) > 0:
+				# number of entities
+				number.append(len(areas))
 
-				# Patch Size Coefficient of Variation (PSCV)
-				mean_areas = np.mean(areas)
-				std_areas = np.std(areas)
-				PSCV.append((100.0 * std_areas) / mean_areas)
-
-			else:
-
-				PSCV.append(0.0)
+				if len(areas) > 0:
+					# Patch Size Coefficient of Variation (PSCV)
+					mean_areas = np.mean(areas)
+					std_areas = np.std(areas)
+					PSCV.append((100.0 * std_areas) / mean_areas)
+				else:
+					PSCV.append(0.0)
 
 		# coverage evaluation
 		coverage = self.computeExactCoverage(area, target_classes)
@@ -778,6 +778,7 @@ class NewDataset(object):
 		return cleaned_tiles
 
 
+	# FIXME: This function is no more valid and it must be reimplemented
 	def computeRadiusMap(self, radius_min, radius_max):
 
 		h = self.labels.shape[0]
