@@ -3212,8 +3212,6 @@ class TagLab(QMainWindow):
 
         flag_pixel_size_changed = False
 
-        
-
         try:
             image = self.image2update
 
@@ -3228,11 +3226,16 @@ class TagLab(QMainWindow):
             rgb_filename = dir.relativeFilePath(self.mapWidget.data['rgb_filename'])
             dem_filename = dir.relativeFilePath(self.mapWidget.data['depth_filename'])
 
-
             rgb_channel = image.getChannel("RGB")
             dem_channel = image.getChannel("DEM")
-            rgb_changed = rgb_channel == None or rgb_channel.filename != rgb_filename
-            dem_changed = dem_channel == None or dem_channel.filename != dem_filename
+
+            rgb_changed = rgb_channel.filename != rgb_filename
+
+            if dem_channel is not None:
+                dem_changed = dem_channel.filename != dem_filename
+            else:
+                if len(dem_filename) > 3:
+                    dem_changed = True
 
             if len(rgb_filename) <= 3:
                 raise ValueError("You need to specify an RGB map")
@@ -3240,7 +3243,10 @@ class TagLab(QMainWindow):
                 image.updateChannel(rgb_filename, "RGB")
 
             if len(dem_filename) > 3 and dem_changed:
-                image.updateChannel(dem_filename, "DEM")
+                if dem_channel is None:
+                    image.addChannel(dem_filename, "DEM")
+                else:
+                    image.updateChannel(dem_filename, "DEM")
 
         except Exception as e:
             msgBox = QMessageBox()
@@ -3747,14 +3753,17 @@ class TagLab(QMainWindow):
                 if not filename.endswith('.png'):
                     filename += '.png'
 
+                QApplication.setOverrideCursor(Qt.WaitCursor)
+
                 size = QSize(self.activeviewer.image.width, self.activeviewer.image.height)
                 self.activeviewer.annotations.export_image_data_for_Scripps(size, filename, self.project)
+
+                QApplication.restoreOverrideCursor()
 
                 msgBox = QMessageBox(self)
                 msgBox.setWindowTitle(self.TAGLAB_VERSION)
                 msgBox.setText("Map exported successfully!")
                 msgBox.exec()
-                return
 
 
     @pyqtSlot()
@@ -3790,12 +3799,10 @@ class TagLab(QMainWindow):
             rasterops.write_shapefile(self.project, self.activeviewer.image, blobs, gf, output_filename)
 
             msgBox = QMessageBox(self)
-           # msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
             msgBox.setText("Shapefile exported successfully!")
             msgBox.exec()
             return
-
-
 
     @pyqtSlot()
     def exportGeoRefLabelMap(self):
@@ -3819,6 +3826,9 @@ class TagLab(QMainWindow):
         output_filename, _ = QFileDialog.getSaveFileName(self, "Output GeoTiff", "", filters)
 
         if output_filename:
+
+            QApplication.setOverrideCursor(Qt.WaitCursor)
+
             size = QSize(self.activeviewer.image.width, self.activeviewer.image.height)
             label_map_img = self.activeviewer.annotations.create_label_map(size, self.project.labels, None)
             label_map_np = utils.qimageToNumpyArray(label_map_img)
@@ -3826,11 +3836,12 @@ class TagLab(QMainWindow):
             outfilename = os.path.splitext(output_filename)[0]
             rasterops.saveGeorefLabelMap(label_map_np, georef_filename, self.project.working_area, outfilename)
 
+            QApplication.restoreOverrideCursor()
+
             msgBox = QMessageBox(self)
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
-            msgBox.setText("Map exported successfully!")
+            msgBox.setText("GeoTiff exported successfully!")
             msgBox.exec()
-            return
 
 
     @pyqtSlot()
@@ -4105,6 +4116,9 @@ class TagLab(QMainWindow):
         output_filename, _ = QFileDialog.getSaveFileName(self, "Save raster as", self.taglab_dir, filters)
 
         if output_filename:
+
+            QApplication.setOverrideCursor(Qt.WaitCursor)
+
             if self.project.working_area is None:
                 blobs = self.activeviewer.annotations.seg_blobs
             else:
@@ -4112,6 +4126,8 @@ class TagLab(QMainWindow):
 
             gf = self.activeviewer.image.georef_filename
             rasterops.saveClippedTiff(input_tiff, blobs, gf, output_filename)
+
+            QApplication.restoreOverrideCursor()
 
     @pyqtSlot()
     def calculateAreaUsingSlope(self):

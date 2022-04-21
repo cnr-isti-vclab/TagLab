@@ -88,7 +88,7 @@ class QtTYNWidget(QWidget):
         self.editDatasetFolder.setMinimumWidth(LINEWIDTH)
         self.editDatasetFolder.setPlaceholderText("Insert here the dataset folder")
         self.groupbox_classes = self.createClassesToRecognizeWidgets()
-        self.editEpochs = QLineEdit("2")
+        self.editEpochs = QLineEdit("10")
         self.editEpochs.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editEpochs.setMinimumWidth(LINEWIDTH)
         self.editEpochs.setReadOnly(False)
