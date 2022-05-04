@@ -477,17 +477,33 @@ class QtDictionaryWidget(QWidget):
     def editLabel(self):
 
         if self.selection_index > 0:
+
             label = self.labels[self.selection_index]
-            oldname= label.name
+            oldname = label.name
             oldcolor = label.fill
 
-            label.id = self.editLabel.text()
-            label.name = self.editLabel.text()
+            newname = self.editLabel.text()
 
             r, g, b = self.getRGB()
+            newcolor = [r, g, b]
+
+            if oldcolor == newcolor and oldname == newname:
+                return
+
+            # note that TWO labels with the same name should exist, because if you update the color and not the name
+            # the label exists..
+            if self.countExistingLabel(newname) > 1:
+                box = QMessageBox()
+                box.setText("A label with the same name just exists (!) Please, change it!")
+                box.exec()
+                return
 
             if 0 <= r <= 255 and 0 <= g <= 255 and 0 <= b <= 255:
+
+                label.id = newname
+                label.name = newname
                 label.fill = [r, g, b]
+
                 self.createAllLabels()
                 lbl_selected = self.label_name[self.selection_index]
                 lbl_selected.setStyleSheet("border: 1 px; font-weight: bold; color: white;")
@@ -586,6 +602,15 @@ class QtDictionaryWidget(QWidget):
 
         return red, green, blue
 
+    def countExistingLabel(self, label_name):
+
+        count = 0
+        for label in self.labels:
+            if label.name == label_name:
+                count += 1
+
+        return count
+
     @pyqtSlot()
     def addLabel(self):
 
@@ -594,12 +619,11 @@ class QtDictionaryWidget(QWidget):
         if 0 <= red <= 255 and 0 <= green <= 255 and 0 <= blue <= 255 and self.editLabel.text() != '':
 
             label_name = self.editLabel.text()
-            for label in self.labels:
-                if label.name == label_name:
-                    box = QMessageBox()
-                    box.setText("A label with the same name just exists (!) Please, change it!")
-                    box.exec()
-                    return
+            if self.countExistingLabel(label_name) > 0:
+                box = QMessageBox()
+                box.setText("A label with the same name just exists (!) Please, change it!")
+                box.exec()
+                return
 
             self.editR.blockSignals(True)
             self.editG.blockSignals(True)
