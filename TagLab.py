@@ -3012,7 +3012,6 @@ class TagLab(QMainWindow):
 
         # NOTES:
         #
-        #  - same keys in use may have different colors -> recoloring of the annotations is needed
         #  - at the moment, two different labels can have the same color
 
         labels_list = self.dictionary_widget.labels
@@ -3048,9 +3047,10 @@ class TagLab(QMainWindow):
             self.labels_widget.updateColor(newname, newcolor)
         else:
             # all the blobs need to be re-assigned
-            for blob in self.activeviewer.image.annotations.seg_blobs:
-                if blob.class_name == oldname:
-                    self.activeviewer.setBlobClass(blob, newname)
+            if self.activeviewer.image is not None:
+                for blob in self.activeviewer.image.annotations.seg_blobs:
+                    if blob.class_name == oldname:
+                        self.activeviewer.setBlobClass(blob, newname)
 
         # update labels widget
         self.updatePanels()
@@ -3068,9 +3068,10 @@ class TagLab(QMainWindow):
 
         labels_list = self.dictionary_widget.labels
 
-        for blob in self.activeviewer.image.annotations.seg_blobs:
-            if blob.class_name == labelname:
-              self.activeviewer.setBlobClass(blob, "Empty")
+        if self.activeviewer.image is not None:
+            for blob in self.activeviewer.image.annotations.seg_blobs:
+                if blob.class_name == labelname:
+                    self.activeviewer.setBlobClass(blob, "Empty")
 
         # set the dictionary in the project
         self.project.setDictionaryFromListOfLabels(labels_list)

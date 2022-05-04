@@ -601,10 +601,12 @@ class QtImageViewerPlus(QtImageViewer):
         self.scene.invalidate()
 
     def applyTransparency(self, value):
+
         self.transparency_value = 1.0 - (value / 100.0)
         # current annotations
         for blob in self.annotations.seg_blobs:
-            blob.qpath_gitem.setOpacity(self.transparency_value)
+            if blob.qpath_gitem is not None:
+                blob.qpath_gitem.setOpacity(self.transparency_value)
 
     def redrawAllBlobs(self):
 
