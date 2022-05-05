@@ -1,5 +1,7 @@
 # TagLab: an image segmentation tool oriented to marine data analysis
 
+| &nbsp; [Software Requirements](#software-requirements) &nbsp; | &nbsp; [Install](#installing-taglab) &nbsp; | &nbsp; [Update](#updating-taglab) &nbsp; | &nbsp; [Citation](#citation) &nbsp; |
+
 TagLab was created to support the activity of annotation and extraction of statistical data from ortho-maps of benthic communities. The tool includes different types of CNN-based segmentation networks specially trained for agnostic (relative only to contours) or semantic (also related to species) recognition of corals. TagLab is an ongoing project of the Visual Computing Lab http://vcg.isti.cnr.it/.
 
 ![ScreenShot](screenshot.jpg)
@@ -30,7 +32,9 @@ TagLab allows to :
 We are working hard to create a web site with detailed instructions about TagLab. Stay tuned(!)
 
 
-## Supported Platforms and Requirements
+## Software Requirements
+
+
 TagLab runs on __Linux__, __Windows__, and __MacOS__. To run TagLab, the main requirement is just __Python 3.6.x or 3.7.x__.
 
 GPU accelerated computations are not supported on MacOS and on any machine that has not an NVIDIA graphics card.
@@ -125,3 +129,27 @@ If you are updating TagLab from 0.2 version, in order to download also the new n
 python3 update.py
 python3 update.py
 ```
+
+
+# Citation
+
+If you use TagLab, please cite it.
+
+```
+@article{TagLab,
+	author = {Pavoni, Gaia and Corsini, Massimiliano and Ponchio, Federico and Muntoni, Alessandro and Edwards, Clinton and Pedersen, Nicole and Sandin, Stuart and Cignoni, Paolo},
+	title = {TagLab: AI-assisted annotation for the fast and accurate semantic segmentation of coral reef orthoimages},
+	year = {2022},
+	journal = {Journal of Field Robotics},
+	volume = {39},
+	number = {3},
+	pages = {246 – 262},
+	doi = {10.1002/rob.22049}
+}
+```
+
+
+
+
+
+
