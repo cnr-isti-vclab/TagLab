@@ -1,8 +1,12 @@
 import math
+import os.path
 import random
+from copy import deepcopy
 from typing import Optional, Tuple, List
 
 import numpy as np
+import cv2
+
 from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot, QLineF, QRectF, QPoint, QPointF
 from PyQt5.QtGui import QImage, QMouseEvent, QPen, QFont, QCloseEvent, QKeyEvent, QOpenGLShaderProgram, QOpenGLShader, \
     QOpenGLVersionProfile, QMatrix4x4, QWheelEvent, QOpenGLTexture, QOpenGLFramebufferObject, QVector4D, QVector2D
@@ -11,6 +15,7 @@ from PyQt5.QtWidgets import QWidget, QSizePolicy, QVBoxLayout, QLabel, QHBoxLayo
 from PyQt5._QOpenGLFunctions_2_0 import QOpenGLFunctions_2_0
 
 from source.QtImageViewer import QtImageViewer
+from source.Image import Image
 
 
 def checkGL(obj, res):
@@ -192,7 +197,8 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.programs[0].enableAttributeArray(0)
         self.programs[0].setAttributeArray(0, QtSimpleOpenGlShaderViewer.QUAD_V.copy())
         self.programs[0].enableAttributeArray(1)
-        self.programs[0].setAttributeArray(1, [(x * wratio, y * hratio) for (x, y) in QtSimpleOpenGlShaderViewer.QUAD_T])
+        self.programs[0].setAttributeArray(1,
+                                           [(x * wratio, y * hratio) for (x, y) in QtSimpleOpenGlShaderViewer.QUAD_T])
         # Draw quad
         self.gl.glClearColor(0.0, 0.0, 0.0, 0.0)
         self.gl.glClear(self.gl.GL_COLOR_BUFFER_BIT)
@@ -274,10 +280,10 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         matrix5 = QMatrix4x4()  # For normalizing points to [-1, 1]
         # Rotation (pivot is the top left corner), Translation and Scale
         matrix2.translate(self.tra.x(), -self.tra.y(), 0)
-        matrix2.translate(-1.0,  1.0, 0.0)
+        matrix2.translate(-1.0, 1.0, 0.0)
         matrix2.rotate(-self.rot, 0.0, 0.0, 1.0)
         matrix2.scale(self.sca, self.sca, 1.0)
-        matrix2.translate( 1.0, -1.0, 0.0)
+        matrix2.translate(1.0, -1.0, 0.0)
         # Aspect Ratio / Pan / Zoom
         matrix3.scale(min(self.w, self.h) / self.w, min(self.w, self.h) / self.h, 1)
         matrix3.translate(self.t.x(), -self.t.y(), 0)
@@ -652,7 +658,7 @@ class MarkerObjData:
     MARKER_HOVER_WIDTH = 3
 
     def __init__(self, identifier: int, lpos: Optional[QPointF], rpos: Optional[QPointF],
-                       pxSizeL: float, pxSizeR: float, typ: SOFT_MARKER | HARD_MARKER):
+                 pxSizeL: float, pxSizeR: float, typ: SOFT_MARKER | HARD_MARKER):
         self.identifier = identifier
         self.pxSizeL = pxSizeL
         self.pxSizeR = pxSizeR
@@ -794,9 +800,9 @@ class QtAlignmentToolWidget(QWidget):
     # Number of samples used when calculating approx scale
     SCALE_SAMPLING_COUNT = 64
 
-    ROT_PRECISION = 10     # 1 / 10
+    ROT_PRECISION = 10  # 1 / 10
     SCALE_PRECISION = 100  # 1 / 100
-    SCALE_RANGE = 0.50     # [-50%, +50%]
+    SCALE_RANGE = 0.50  # [-50%, +50%]
 
     def __init__(self, project, parent=None):
         super(QtAlignmentToolWidget, self).__init__(parent)
@@ -843,7 +849,7 @@ class QtAlignmentToolWidget(QWidget):
 
         # Auto Align
         self.autoAlignButton = QPushButton("Preview Alignment")
-        self.autoAlignButton.setFixedWidth(150)
+        self.autoAlignButton.setFixedWidth(200)
         self.autoAlignButton.setFixedHeight(30)
         self.autoAlignButton.clicked.connect(self.onAutoAlignRequested)
 
@@ -1517,10 +1523,154 @@ All markers must be valid to proceed.
         """
         Callback called when the user request to confirm and save alignment data.
         """
-        # Save data
-        # TODO
+        # Retrieve Images
+        index1 = self.leftCombobox.currentIndex()
+        index2 = self.rightCombobox.currentIndex()
+        image1 = self.project.images[index1]
+        image2 = self.project.images[index2]
+        # Create copy of image 2
+        tag2 = "_coreg"
+        name2 = image2.id + tag2
+        cpy2 = Image(
+            rect=image2.rect,
+            map_px_to_mm_factor=image2.map_px_to_mm_factor,
+            width=image2.width,
+            height=image2.height,
+            # channels=image2.channels,
+            id=name2,
+            name=name2,
+            acquisition_date=image2.acquisition_date,
+            georef_filename=image2.georef_filename,
+            workspace=image2.workspace,
+            metadata=image2.metadata,
+            # annotations=image2.annotations,
+            layers=image2.layers,
+            grid=image2.grid,
+            export_dataset_area=image2.export_dataset_area
+        )
+        # Calculate affine matrix
+        trax = self.T[0]
+        tray = self.T[1]
+        rot = self.R / QtAlignmentToolWidget.ROT_PRECISION
+        sca = self.S / QtAlignmentToolWidget.SCALE_PRECISION
+        RTMat = cv2.getRotationMatrix2D((0, 0), -rot, 1.0)
+        RTMat[0, 2] = trax / image2.pixelSize()
+        RTMat[1, 2] = tray / image2.pixelSize()
+        # Add annotations
+        R = RTMat[::, :2]
+        T = [trax / image2.pixelSize(), tray / image2.pixelSize()]
+        # Min, Max of bboxes
+        minX, minY = 0, 0
+        maxX, maxY = image2.width, image2.height
+        for blob in image2.annotations.seg_blobs:
+            tmpBlob = blob.copy()
+            # Contour
+            tmpBlob.contour = np.array([R @ p + T for p in tmpBlob.contour])
+            # Inner contours
+            for (i, contour) in enumerate(tmpBlob.inner_contours):
+                tmpBlob.inner_contours[i] = np.array([R @ p + T for p in contour])
+            # Centroid
+            tmpBlob.centroid = R @ tmpBlob.centroid + T
+            # BBox
+            tmpBlob.bbox = self.__transformBBox(tmpBlob.bbox, R, T)
+            minX = min(minX, tmpBlob.bbox[0])
+            minY = min(minY, tmpBlob.bbox[1])
+            maxX = max(maxX, tmpBlob.bbox[0] + tmpBlob.bbox[2])
+            maxY = max(maxY, tmpBlob.bbox[1] + tmpBlob.bbox[3])
+            # Update internally
+            tmpBlob.setupForDrawing()
+            # Add blob
+            cpy2.annotations.addBlob(tmpBlob, notify=False)
+        # Compute borders
+        leftB, topB = abs(round(minX)), abs(round(minY))
+        rightB, bottomB = round(maxX - image2.width), round(maxY - image2.height)
+        print(image2.width, image2.height, leftB, rightB, topB, bottomB)
+        cpy2.width += leftB + rightB
+        cpy2.height += topB + bottomB
+        # Add channels to image 2
+        for ch in image2.channels:
+            # Create new filename
+            filename, ext = os.path.splitext(ch.filename)
+            newFilename = filename + tag2 + ext
+            # Read "reference" image
+            imgA = cv2.imread(ch.filename, cv2.IMREAD_COLOR)
+            (h, w, c) = imgA.shape
+            # Transform
+            imgA = cv2.warpAffine(imgA, RTMat, (w, h))
+            imgA = cv2.copyMakeBorder(imgA,
+                                      left=leftB, right=rightB, top=topB, bottom=bottomB,
+                                      value=[0, 0, 0], borderType=cv2.BORDER_CONSTANT, dst=None)
+            # Save with newly created filename
+            cv2.imwrite(newFilename, imgA)
+            # Add transformed channel
+            cpy2.addChannel(newFilename, ch.type)
+        # Add image
+        self.project.addNewImage(cpy2)
+        if leftB > 0 or rightB > 0 or topB > 0 or bottomB > 0:
+            # Create copy of image 1
+            tag1 = "_A"
+            name1 = image1.id + tag1
+            cpy1 = Image(
+                rect=image1.rect,
+                map_px_to_mm_factor=image1.map_px_to_mm_factor,
+                width=image1.width,
+                height=image1.height,
+                # channels=image2.channels,
+                id=name1,
+                name=name1,
+                acquisition_date=image1.acquisition_date,
+                georef_filename=image1.georef_filename,
+                workspace=image1.workspace,
+                metadata=image1.metadata,
+                # annotations=image2.annotations,
+                layers=image1.layers,
+                grid=image1.grid,
+                export_dataset_area=image1.export_dataset_area
+            )
+            cpy1.width += leftB + rightB
+            cpy1.height += topB + bottomB
+            # Copy annotations
+            for blob in image1.annotations.seg_blobs:
+                cpy1.annotations.addBlob(blob.copy(), notify=False)
+            # Add channels to image 1
+            for ch in image1.channels:
+                # Create new filename
+                filename, ext = os.path.splitext(ch.filename)
+                newFilename = filename + tag1 + ext
+                # Read "reference" image
+                imgA = cv2.imread(ch.filename, cv2.IMREAD_COLOR)
+                (h, w, c) = imgA.shape
+                # Transform
+                imgA = cv2.copyMakeBorder(imgA,
+                                          left=leftB, right=rightB, top=topB, bottom=bottomB,
+                                          value=[0, 0, 0], borderType=cv2.BORDER_CONSTANT, dst=None)
+                # Save with newly created filename
+                cv2.imwrite(newFilename, imgA)
+                # Add transformed channel
+                cpy1.addChannel(newFilename, ch.type)
+            # Add image
+            self.project.addNewImage(cpy1)
         # Close widget (?)
         self.close()
+
+    def __transformBBox(self, bbox, rot, tra):
+        """
+        Apply an affine transformation to a bbox [top, left, width, height]
+        :param: bbox the bounding box to transform
+        :param: rot the rotation as matrix (2x2)
+        :param: tra the translation as 2d vector
+        :returns: the transformed bbox as [top, left, width, height]
+        """
+        t, l, w, h = bbox[0], bbox[1], bbox[2], bbox[3]
+        points = [[t, l], [t, l + w], [t + h, l], [t + h, l + w]]
+        points = [rot @ p + tra for p in points]
+        pointsX = [p[0] for p in points]
+        pointsY = [p[1] for p in points]
+        top = min(pointsY)
+        left = min(pointsX)
+        height = max(pointsY) - top
+        width = max(pointsX) - left
+        return np.array([top, left, width, height])
 
     def __onMouseDown(self, event: QMouseEvent, isLeft: bool) -> None:
         """
