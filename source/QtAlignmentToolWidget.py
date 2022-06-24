@@ -1,11 +1,12 @@
 import math
 import os.path
 import random
-from copy import deepcopy
 from typing import Optional, Tuple, List
 
 import numpy as np
 import cv2
+
+from PIL import Image as PilImage
 
 from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot, QLineF, QRectF, QPoint, QPointF
 from PyQt5.QtGui import QImage, QMouseEvent, QPen, QFont, QCloseEvent, QKeyEvent, QOpenGLShaderProgram, QOpenGLShader, \
@@ -1523,11 +1524,15 @@ All markers must be valid to proceed.
         """
         Callback called when the user request to confirm and save alignment data.
         """
+        # TODO: Add popup to inform user of possible delay
         # Retrieve Images
         index1 = self.leftCombobox.currentIndex()
         index2 = self.rightCombobox.currentIndex()
         image1 = self.project.images[index1]
         image2 = self.project.images[index2]
+        PilImage.MAX_IMAGE_PIXELS = 933120000
+        image1W, image1H = PilImage.open(image1.channels[0].filename).size
+        image2W, image2H = PilImage.open(image2.channels[0].filename).size
         # Create copy of image 2
         tag2 = "_coreg"
         name2 = image2.id + tag2
@@ -1559,9 +1564,10 @@ All markers must be valid to proceed.
         # Add annotations
         R = RTMat[::, :2]
         T = [trax / image2.pixelSize(), tray / image2.pixelSize()]
+        print(R, T)
         # Min, Max of bboxes
         minX, minY = 0, 0
-        maxX, maxY = image2.width, image2.height
+        maxX, maxY = image2W, image2H
         for blob in image2.annotations.seg_blobs:
             tmpBlob = blob.copy()
             # Contour
@@ -1573,40 +1579,48 @@ All markers must be valid to proceed.
             tmpBlob.centroid = R @ tmpBlob.centroid + T
             # BBox
             tmpBlob.bbox = self.__transformBBox(tmpBlob.bbox, R, T)
-            minX = min(minX, tmpBlob.bbox[0])
-            minY = min(minY, tmpBlob.bbox[1])
-            maxX = max(maxX, tmpBlob.bbox[0] + tmpBlob.bbox[2])
-            maxY = max(maxY, tmpBlob.bbox[1] + tmpBlob.bbox[3])
+            minY = min(minY, tmpBlob.bbox[0])
+            minX = min(minX, tmpBlob.bbox[1])
+            maxY = max(maxY, tmpBlob.bbox[0] + tmpBlob.bbox[3])
+            maxX = max(maxX, tmpBlob.bbox[1] + tmpBlob.bbox[2])
             # Update internally
             tmpBlob.setupForDrawing()
             # Add blob
             cpy2.annotations.addBlob(tmpBlob, notify=False)
         # Compute borders
-        leftB, topB = abs(round(minX)), abs(round(minY))
-        rightB, bottomB = round(maxX - image2.width), round(maxY - image2.height)
-        print(image2.width, image2.height, leftB, rightB, topB, bottomB)
-        cpy2.width += leftB + rightB
-        cpy2.height += topB + bottomB
+        leftB, topB = abs(int(minX)), abs(int(minY))
+        rightB, bottomB = int(maxX - image2W), int(maxY - image2H)
+        print(image2W, image2H, leftB, rightB, topB, bottomB)
         # Add channels to image 2
         for ch in image2.channels:
             # Create new filename
             filename, ext = os.path.splitext(ch.filename)
             newFilename = filename + tag2 + ext
             # Read "reference" image
-            imgA = cv2.imread(ch.filename, cv2.IMREAD_COLOR)
-            (h, w, c) = imgA.shape
+            img = cv2.imread(ch.filename, cv2.IMREAD_COLOR)
+            (h, w, c) = img.shape
             # Transform
-            imgA = cv2.warpAffine(imgA, RTMat, (w, h))
-            imgA = cv2.copyMakeBorder(imgA,
+            img = cv2.copyMakeBorder(img,
                                       left=leftB, right=rightB, top=topB, bottom=bottomB,
                                       value=[0, 0, 0], borderType=cv2.BORDER_CONSTANT, dst=None)
+            RTMat = cv2.getRotationMatrix2D((leftB, topB), -rot, 1.0)
+            RTMat[0, 2] = trax / image2.pixelSize()
+            RTMat[1, 2] = tray / image2.pixelSize()
+            img = cv2.warpAffine(img, RTMat, (w + leftB + rightB, h + topB + bottomB))
+            (h, w, c) = img.shape
+            cpy2.width = w
+            cpy2.height = h
             # Save with newly created filename
-            cv2.imwrite(newFilename, imgA)
+            cv2.imwrite(newFilename, img)
             # Add transformed channel
             cpy2.addChannel(newFilename, ch.type)
         # Add image
         self.project.addNewImage(cpy2)
-        if leftB > 0 or rightB > 0 or topB > 0 or bottomB > 0:
+        # if leftB > 0 or rightB > 0 or topB > 0 or bottomB > 0:
+        if leftB > 0 or topB > 0:
+            # TODO: Border unit needs to be converted (pixelSize of B => pixelSize of A)
+            leftB = int(leftB * image2.pixelSize() / image1.pixelSize())
+            topB = int(topB * image2.pixelSize() / image1.pixelSize())
             # Create copy of image 1
             tag1 = "_A"
             name1 = image1.id + tag1
@@ -1627,8 +1641,6 @@ All markers must be valid to proceed.
                 grid=image1.grid,
                 export_dataset_area=image1.export_dataset_area
             )
-            cpy1.width += leftB + rightB
-            cpy1.height += topB + bottomB
             # Copy annotations
             for blob in image1.annotations.seg_blobs:
                 cpy1.annotations.addBlob(blob.copy(), notify=False)
@@ -1638,14 +1650,17 @@ All markers must be valid to proceed.
                 filename, ext = os.path.splitext(ch.filename)
                 newFilename = filename + tag1 + ext
                 # Read "reference" image
-                imgA = cv2.imread(ch.filename, cv2.IMREAD_COLOR)
-                (h, w, c) = imgA.shape
+                img = cv2.imread(ch.filename, cv2.IMREAD_COLOR)
+                (h, w, c) = img.shape
                 # Transform
-                imgA = cv2.copyMakeBorder(imgA,
-                                          left=leftB, right=rightB, top=topB, bottom=bottomB,
+                img = cv2.copyMakeBorder(img,
+                                          left=leftB, right=0, top=topB, bottom=0,
                                           value=[0, 0, 0], borderType=cv2.BORDER_CONSTANT, dst=None)
+                (h, w, c) = img.shape
+                cpy1.width = w
+                cpy1.height = h
                 # Save with newly created filename
-                cv2.imwrite(newFilename, imgA)
+                cv2.imwrite(newFilename, img)
                 # Add transformed channel
                 cpy1.addChannel(newFilename, ch.type)
             # Add image
@@ -1662,7 +1677,7 @@ All markers must be valid to proceed.
         :returns: the transformed bbox as [top, left, width, height]
         """
         t, l, w, h = bbox[0], bbox[1], bbox[2], bbox[3]
-        points = [[t, l], [t, l + w], [t + h, l], [t + h, l + w]]
+        points = np.array([[l, t], [l, t + h], [l + w, t + h], [l + w, t]])
         points = [rot @ p + tra for p in points]
         pointsX = [p[0] for p in points]
         pointsY = [p[1] for p in points]
