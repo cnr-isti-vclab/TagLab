@@ -2991,6 +2991,7 @@ class TagLab(QMainWindow):
         self.alignToolWidget = None
         self.updateToolStatus()
         self.updateImageSelectionMenu()
+        self.updateMapProperties()
 
     @pyqtSlot()
     def openAlignmentTool(self):

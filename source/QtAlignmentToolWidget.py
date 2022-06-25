@@ -1524,23 +1524,43 @@ All markers must be valid to proceed.
         """
         Callback called when the user request to confirm and save alignment data.
         """
-        # TODO: Add popup to inform user of possible delay
         # Retrieve Images
         index1 = self.leftCombobox.currentIndex()
         index2 = self.rightCombobox.currentIndex()
         image1 = self.project.images[index1]
         image2 = self.project.images[index2]
-        PilImage.MAX_IMAGE_PIXELS = 933120000
-        image1W, image1H = PilImage.open(image1.channels[0].filename).size
-        image2W, image2H = PilImage.open(image2.channels[0].filename).size
+        image1W, image1H = image1.channels[0].qimage.width(), image1.channels[0].qimage.height()
+        image2W, image2H = image2.channels[0].qimage.width(), image2.channels[0].qimage.height()
+        print(image1W, image1H, image2W, image2H)
+        # Calculate affine matrix
+        trax = self.T[0]
+        tray = self.T[1]
+        rot = self.R / QtAlignmentToolWidget.ROT_PRECISION
+        sca = self.S / QtAlignmentToolWidget.SCALE_PRECISION
+        RTMat = cv2.getRotationMatrix2D((0, 0), -rot, 1.0)
+        RTMat[0, 2] = trax / image2.pixelSize()
+        RTMat[1, 2] = tray / image2.pixelSize()
+        # Extract components
+        R = RTMat[::, :2]
+        T = [trax / image2.pixelSize(), tray / image2.pixelSize()]
+        print(R, T)
+        # Update Blobs
+        blobs2 = self.__updateBlobs(image2.annotations.seg_blobs, R, T)
+        # Min-Max bboxes of blobs
+        minX, minY, maxX, maxY = self.__blobsMinMax(blobs2, image2W, image2H)
+        # Compute borders
+        leftB, topB = abs(int(minX)), abs(int(minY))
+        rightB, bottomB = int(maxX - image2W), int(maxY - image2H)
+        print(image2W, image2H, leftB, rightB, topB, bottomB)
+        # ================================ Image 2 =============================================
         # Create copy of image 2
         tag2 = "_coreg"
         name2 = image2.id + tag2
         cpy2 = Image(
             rect=image2.rect,
             map_px_to_mm_factor=image2.map_px_to_mm_factor,
-            width=image2.width,
-            height=image2.height,
+            width=image2W,
+            height=image2H,
             # channels=image2.channels,
             id=name2,
             name=name2,
@@ -1553,82 +1573,35 @@ All markers must be valid to proceed.
             grid=image2.grid,
             export_dataset_area=image2.export_dataset_area
         )
-        # Calculate affine matrix
-        trax = self.T[0]
-        tray = self.T[1]
-        rot = self.R / QtAlignmentToolWidget.ROT_PRECISION
-        sca = self.S / QtAlignmentToolWidget.SCALE_PRECISION
-        RTMat = cv2.getRotationMatrix2D((0, 0), -rot, 1.0)
-        RTMat[0, 2] = trax / image2.pixelSize()
-        RTMat[1, 2] = tray / image2.pixelSize()
-        # Add annotations
-        R = RTMat[::, :2]
-        T = [trax / image2.pixelSize(), tray / image2.pixelSize()]
-        print(R, T)
-        # Min, Max of bboxes
-        minX, minY = 0, 0
-        maxX, maxY = image2W, image2H
-        for blob in image2.annotations.seg_blobs:
-            tmpBlob = blob.copy()
-            # Contour
-            tmpBlob.contour = np.array([R @ p + T for p in tmpBlob.contour])
-            # Inner contours
-            for (i, contour) in enumerate(tmpBlob.inner_contours):
-                tmpBlob.inner_contours[i] = np.array([R @ p + T for p in contour])
-            # Centroid
-            tmpBlob.centroid = R @ tmpBlob.centroid + T
-            # BBox
-            tmpBlob.bbox = self.__transformBBox(tmpBlob.bbox, R, T)
-            minY = min(minY, tmpBlob.bbox[0])
-            minX = min(minX, tmpBlob.bbox[1])
-            maxY = max(maxY, tmpBlob.bbox[0] + tmpBlob.bbox[3])
-            maxX = max(maxX, tmpBlob.bbox[1] + tmpBlob.bbox[2])
-            # Update internally
-            tmpBlob.setupForDrawing()
+        # Update blobs
+        for blob in blobs2:
+            # TODO: If leftB or topB adjust bboxes
             # Add blob
-            cpy2.annotations.addBlob(tmpBlob, notify=False)
-        # Compute borders
-        leftB, topB = abs(int(minX)), abs(int(minY))
-        rightB, bottomB = int(maxX - image2W), int(maxY - image2H)
-        print(image2W, image2H, leftB, rightB, topB, bottomB)
+            cpy2.annotations.addBlob(blob, notify=False)
         # Add channels to image 2
         for ch in image2.channels:
-            # Create new filename
-            filename, ext = os.path.splitext(ch.filename)
-            newFilename = filename + tag2 + ext
-            # Read "reference" image
-            img = cv2.imread(ch.filename, cv2.IMREAD_COLOR)
-            (h, w, c) = img.shape
-            # Transform
-            img = cv2.copyMakeBorder(img,
-                                      left=leftB, right=rightB, top=topB, bottom=bottomB,
-                                      value=[0, 0, 0], borderType=cv2.BORDER_CONSTANT, dst=None)
-            RTMat = cv2.getRotationMatrix2D((leftB, topB), -rot, 1.0)
-            RTMat[0, 2] = trax / image2.pixelSize()
-            RTMat[1, 2] = tray / image2.pixelSize()
-            img = cv2.warpAffine(img, RTMat, (w + leftB + rightB, h + topB + bottomB))
-            (h, w, c) = img.shape
+            newFilename, w, h = self.__updateChannel(ch, tag2, -rot, T, [leftB, rightB, topB, bottomB])
+            # Update dimensions
             cpy2.width = w
             cpy2.height = h
-            # Save with newly created filename
-            cv2.imwrite(newFilename, img)
             # Add transformed channel
             cpy2.addChannel(newFilename, ch.type)
         # Add image
         self.project.addNewImage(cpy2)
-        # if leftB > 0 or rightB > 0 or topB > 0 or bottomB > 0:
+        # ================================ Image 1 =============================================
+        """
         if leftB > 0 or topB > 0:
             # TODO: Border unit needs to be converted (pixelSize of B => pixelSize of A)
             leftB = int(leftB * image2.pixelSize() / image1.pixelSize())
             topB = int(topB * image2.pixelSize() / image1.pixelSize())
             # Create copy of image 1
-            tag1 = "_A"
+            tag1 = "_ref"
             name1 = image1.id + tag1
             cpy1 = Image(
                 rect=image1.rect,
                 map_px_to_mm_factor=image1.map_px_to_mm_factor,
-                width=image1.width,
-                height=image1.height,
+                width=image1W,
+                height=image1H,
                 # channels=image2.channels,
                 id=name1,
                 name=name1,
@@ -1665,6 +1638,7 @@ All markers must be valid to proceed.
                 cpy1.addChannel(newFilename, ch.type)
             # Add image
             self.project.addNewImage(cpy1)
+        """
         # Close widget (?)
         self.close()
 
@@ -1686,6 +1660,69 @@ All markers must be valid to proceed.
         height = max(pointsY) - top
         width = max(pointsX) - left
         return np.array([top, left, width, height])
+
+    def __updateBlobs(self, blobs, rot, tra):
+        """
+
+        """
+        # Result
+        transformedBlobs = []
+        for blob in blobs:
+            tmpBlob = blob.copy()
+            # Contour
+            tmpBlob.contour = np.array([rot @ p + tra for p in tmpBlob.contour])
+            # Inner contours
+            for (i, contour) in enumerate(tmpBlob.inner_contours):
+                tmpBlob.inner_contours[i] = np.array([rot @ p + tra for p in contour])
+            # Centroid
+            tmpBlob.centroid = rot @ tmpBlob.centroid + tra
+            # BBox
+            tmpBlob.bbox = self.__transformBBox(tmpBlob.bbox, rot, tra)
+            # Update internally
+            tmpBlob.setupForDrawing()
+            # Add blob
+            transformedBlobs.append(tmpBlob)
+        return transformedBlobs
+
+    def __blobsMinMax(self, blobs, width, height):
+        """
+
+        """
+        minX, minY = 0, 0
+        maxX, maxY = width, height
+        for blob in blobs:
+            minY = min(minY, blob.bbox[0])
+            minX = min(minX, blob.bbox[1])
+            maxY = max(maxY, blob.bbox[0] + blob.bbox[3])
+            maxX = max(maxX, blob.bbox[1] + blob.bbox[2])
+        return (minX, minY, maxX, maxY)
+
+    def __updateChannel(self, channel, tag, rot, tra, borders):
+        """
+
+        """
+        # Retrieve borders
+        leftB, rightB, topB, bottomB = borders
+        # Create new filename
+        filename, ext = os.path.splitext(channel.filename)
+        newFilename = filename + tag + ext
+        # Read "reference" image
+        img = cv2.imread(channel.filename, cv2.IMREAD_COLOR)
+        # Add border
+        img = cv2.copyMakeBorder(img, topB, bottomB, leftB, rightB, cv2.BORDER_CONSTANT, None, [0, 0, 0])
+        # Transform: Borders
+        RTMat = cv2.getRotationMatrix2D((leftB, topB), rot, 1.0)
+        RTMat[0, 2] = tra[0]
+        RTMat[1, 2] = tra[1]
+        # Update sizes
+        (h, w, c) = img.shape
+        # Transform: Rot + Tra
+        img = cv2.warpAffine(img, RTMat, (w, h))
+        # Save with newly created filename
+        cv2.imwrite(newFilename, img)
+        # Return (resource path, width, height)
+        return newFilename, w, h
+
 
     def __onMouseDown(self, event: QMouseEvent, isLeft: bool) -> None:
         """
