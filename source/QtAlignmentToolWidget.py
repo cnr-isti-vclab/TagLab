@@ -1538,8 +1538,8 @@ All markers must be valid to proceed.
         rot = self.R / QtAlignmentToolWidget.ROT_PRECISION
         sca = self.S / QtAlignmentToolWidget.SCALE_PRECISION
         RTMat = cv2.getRotationMatrix2D((0, 0), -rot, 1.0)
-        RTMat[0, 2] = trax / image2.pixelSize()
-        RTMat[1, 2] = tray / image2.pixelSize()
+        RTMat[0, 2] += trax / image2.pixelSize()
+        RTMat[1, 2] += tray / image2.pixelSize()
         # Extract components
         R = RTMat[::, :2]
         T = [trax / image2.pixelSize(), tray / image2.pixelSize()]
@@ -1573,9 +1573,12 @@ All markers must be valid to proceed.
             grid=image2.grid,
             export_dataset_area=image2.export_dataset_area
         )
+        # If leftB or topB adjust bboxes
+        if leftB > 0 or topB > 0:
+            # Update Blobs
+            blobs2 = self.__updateBlobs(image2.annotations.seg_blobs, R, np.array([T[0] + leftB, T[1] + topB]))
         # Update blobs
         for blob in blobs2:
-            # TODO: If leftB or topB adjust bboxes
             # Add blob
             cpy2.annotations.addBlob(blob, notify=False)
         # Add channels to image 2
@@ -1663,7 +1666,11 @@ All markers must be valid to proceed.
 
     def __updateBlobs(self, blobs, rot, tra):
         """
-
+        Transform a blobs list
+        :param: blobs the blobs list
+        :param: rot the rotation matrix (2x2)
+        :param: tra the translation vector (2D)
+        :returns: a transformed list of blobs (copied)
         """
         # Result
         transformedBlobs = []
@@ -1686,7 +1693,11 @@ All markers must be valid to proceed.
 
     def __blobsMinMax(self, blobs, width, height):
         """
-
+        Find the bbox of the blobs array
+        :param: blobs the blobs list
+        :param: width the initial bbox width
+        :param: height the initial bbox height
+        :returns: the computed bbox as (minX, minY, maxX, maxY)
         """
         minX, minY = 0, 0
         maxX, maxY = width, height
@@ -1699,7 +1710,13 @@ All markers must be valid to proceed.
 
     def __updateChannel(self, channel, tag, rot, tra, borders):
         """
-
+        Create a new image applying a transformation to a channel
+        :param: channel the channel to transform
+        :param: tag the string to add to filename when creating the new one
+        :param: rot the rotation degrees
+        :param: tra the translation vector
+        :param: borders the borders in order [left, right, top, bottom]
+        :returns: newFilename, width, height of the new image
         """
         # Retrieve borders
         leftB, rightB, topB, bottomB = borders
@@ -1712,8 +1729,8 @@ All markers must be valid to proceed.
         img = cv2.copyMakeBorder(img, topB, bottomB, leftB, rightB, cv2.BORDER_CONSTANT, None, [0, 0, 0])
         # Transform: Borders
         RTMat = cv2.getRotationMatrix2D((leftB, topB), rot, 1.0)
-        RTMat[0, 2] = tra[0]
-        RTMat[1, 2] = tra[1]
+        RTMat[0, 2] += tra[0]
+        RTMat[1, 2] += tra[1]
         # Update sizes
         (h, w, c) = img.shape
         # Transform: Rot + Tra
