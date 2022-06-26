@@ -1524,6 +1524,7 @@ All markers must be valid to proceed.
         """
         Callback called when the user request to confirm and save alignment data.
         """
+        QApplication.setOverrideCursor(Qt.WaitCursor)
         # Retrieve Images
         index1 = self.leftCombobox.currentIndex()
         index2 = self.rightCombobox.currentIndex()
@@ -1531,7 +1532,8 @@ All markers must be valid to proceed.
         image2 = self.project.images[index2]
         image1W, image1H = image1.channels[0].qimage.width(), image1.channels[0].qimage.height()
         image2W, image2H = image2.channels[0].qimage.width(), image2.channels[0].qimage.height()
-        print(image1W, image1H, image2W, image2H)
+        print("Sizes: ", image1W, image1H, image2W, image2H)
+        # ================================ Transformation Data =============================================
         # Calculate affine matrix
         trax = self.T[0]
         tray = self.T[1]
@@ -1543,7 +1545,7 @@ All markers must be valid to proceed.
         # Extract components
         R = RTMat[::, :2]
         T = [trax / image2.pixelSize(), tray / image2.pixelSize()]
-        print(R, T)
+        print("Transformations: ", R, T)
         # Update Blobs
         blobs2 = self.__updateBlobs(image2.annotations.seg_blobs, R, T)
         # Min-Max bboxes of blobs
@@ -1551,7 +1553,7 @@ All markers must be valid to proceed.
         # Compute borders
         leftB, topB = abs(int(minX)), abs(int(minY))
         rightB, bottomB = int(maxX - image2W), int(maxY - image2H)
-        print(image2W, image2H, leftB, rightB, topB, bottomB)
+        print("Borders: ", leftB, rightB, topB, bottomB)
         # ================================ Image 2 =============================================
         # Create copy of image 2
         tag2 = "_coreg"
@@ -1577,9 +1579,8 @@ All markers must be valid to proceed.
         if leftB > 0 or topB > 0:
             # Update Blobs
             blobs2 = self.__updateBlobs(image2.annotations.seg_blobs, R, np.array([T[0] + leftB, T[1] + topB]))
-        # Update blobs
+        # Add blobs
         for blob in blobs2:
-            # Add blob
             cpy2.annotations.addBlob(blob, notify=False)
         # Add channels to image 2
         for ch in image2.channels:
@@ -1592,11 +1593,11 @@ All markers must be valid to proceed.
         # Add image
         self.project.addNewImage(cpy2)
         # ================================ Image 1 =============================================
-        """
+        # Convert pixelSize of Image2 => pixelSize of Image1
+        leftB = int(leftB * image2.pixelSize() / image1.pixelSize())
+        topB = int(topB * image2.pixelSize() / image1.pixelSize())
+        # Create only when needed
         if leftB > 0 or topB > 0:
-            # TODO: Border unit needs to be converted (pixelSize of B => pixelSize of A)
-            leftB = int(leftB * image2.pixelSize() / image1.pixelSize())
-            topB = int(topB * image2.pixelSize() / image1.pixelSize())
             # Create copy of image 1
             tag1 = "_ref"
             name1 = image1.id + tag1
@@ -1605,43 +1606,35 @@ All markers must be valid to proceed.
                 map_px_to_mm_factor=image1.map_px_to_mm_factor,
                 width=image1W,
                 height=image1H,
-                # channels=image2.channels,
+                # channels=image1.channels,
                 id=name1,
                 name=name1,
                 acquisition_date=image1.acquisition_date,
                 georef_filename=image1.georef_filename,
                 workspace=image1.workspace,
                 metadata=image1.metadata,
-                # annotations=image2.annotations,
+                # annotations=image1.annotations,
                 layers=image1.layers,
                 grid=image1.grid,
                 export_dataset_area=image1.export_dataset_area
             )
-            # Copy annotations
-            for blob in image1.annotations.seg_blobs:
-                cpy1.annotations.addBlob(blob.copy(), notify=False)
+            # Update Blobs
+            blobs1 = self.__updateBlobs(image1.annotations.seg_blobs, np.identity(2), np.array([leftB, topB]))
+            # Add blobs
+            for blob in blobs1:
+                cpy1.annotations.addBlob(blob, notify=False)
             # Add channels to image 1
             for ch in image1.channels:
-                # Create new filename
-                filename, ext = os.path.splitext(ch.filename)
-                newFilename = filename + tag1 + ext
-                # Read "reference" image
-                img = cv2.imread(ch.filename, cv2.IMREAD_COLOR)
-                (h, w, c) = img.shape
-                # Transform
-                img = cv2.copyMakeBorder(img,
-                                          left=leftB, right=0, top=topB, bottom=0,
-                                          value=[0, 0, 0], borderType=cv2.BORDER_CONSTANT, dst=None)
-                (h, w, c) = img.shape
+                newFilename, w, h = self.__updateChannel(ch, tag1, 0, [0, 0], [leftB, 0, topB, 0])
+                # Update dimensions
                 cpy1.width = w
                 cpy1.height = h
-                # Save with newly created filename
-                cv2.imwrite(newFilename, img)
                 # Add transformed channel
                 cpy1.addChannel(newFilename, ch.type)
             # Add image
             self.project.addNewImage(cpy1)
-        """
+        # ================================ End =============================================
+        QApplication.restoreOverrideCursor()
         # Close widget (?)
         self.close()
 
@@ -1739,7 +1732,6 @@ All markers must be valid to proceed.
         cv2.imwrite(newFilename, img)
         # Return (resource path, width, height)
         return newFilename, w, h
-
 
     def __onMouseDown(self, event: QMouseEvent, isLeft: bool) -> None:
         """
