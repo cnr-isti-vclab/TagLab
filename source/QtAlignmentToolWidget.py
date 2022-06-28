@@ -1,12 +1,11 @@
 import math
 import os.path
 import random
+import time
 from typing import Optional, Tuple, List
 
 import numpy as np
 import cv2
-
-from PIL import Image as PilImage
 
 from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot, QLineF, QRectF, QPoint, QPointF
 from PyQt5.QtGui import QImage, QMouseEvent, QPen, QFont, QCloseEvent, QKeyEvent, QOpenGLShaderProgram, QOpenGLShader, \
@@ -1524,6 +1523,7 @@ All markers must be valid to proceed.
         """
         Callback called when the user request to confirm and save alignment data.
         """
+        # TODO: Apply the scale to the mm_to_px_factor
         QApplication.setOverrideCursor(Qt.WaitCursor)
         # Retrieve Images
         index1 = self.leftCombobox.currentIndex()
@@ -1539,13 +1539,10 @@ All markers must be valid to proceed.
         tray = self.T[1]
         rot = self.R / QtAlignmentToolWidget.ROT_PRECISION
         sca = self.S / QtAlignmentToolWidget.SCALE_PRECISION
-        RTMat = cv2.getRotationMatrix2D((0, 0), -rot, 1.0)
-        RTMat[0, 2] += trax / image2.pixelSize()
-        RTMat[1, 2] += tray / image2.pixelSize()
         # Extract components
-        R = RTMat[::, :2]
+        R = cv2.getRotationMatrix2D((0, 0), -rot, 1.0)[::, :2]
         T = [trax / image2.pixelSize(), tray / image2.pixelSize()]
-        print("Transformations: ", R, T)
+        print("Transformations: ", R, T, sca)
         # Update Blobs
         blobs2 = self.__updateBlobs(image2.annotations.seg_blobs, R, T)
         # Min-Max bboxes of blobs
@@ -2042,7 +2039,7 @@ All markers must be valid to proceed.
                 textL.adjustSize()
                 pos = bboxL.topLeft()
                 pos.setX(pos.x() + 0.5 + (MarkerObjData.MARKER_SIZE - textL.textWidth() / 2.0 / zoomL) / self.pxSizeL)
-                pos.setY(pos.y() - textL.boundingRect().height() / zoomL / self.pxSizeL)
+                pos.setY(pos.y() - textL.boundingRect().height() / zoomL)
                 textL.setPos(pos)
                 # Left error
                 lErrorLabelVisibility = (self.leftImgViewer.zoom_factor > 3.25)
@@ -2076,7 +2073,7 @@ All markers must be valid to proceed.
                 textR.adjustSize()
                 pos = bboxR.topLeft()
                 pos.setX(pos.x() + 0.5 + (MarkerObjData.MARKER_SIZE - textR.textWidth() / 2.0 / zoomR) / self.pxSizeR)
-                pos.setY(pos.y() - textR.boundingRect().height() / zoomR / self.pxSizeR)
+                pos.setY(pos.y() - textR.boundingRect().height() / zoomR)
                 textR.setPos(pos)
                 # Right error
                 rErrorLabelVisibility = (self.rightImgViewer.zoom_factor > 3.25)
@@ -2302,6 +2299,9 @@ All markers must be valid to proceed.
         if not self.__hasValidMarkers():
             return
 
+        # TIMING
+        # timeStart = time.perf_counter()
+
         # ==================================================================================
         # [0] Retrieve vars
         # ==================================================================================
@@ -2394,6 +2394,10 @@ All markers must be valid to proceed.
         # ==================================================================================
         sol = [(R @ [pi.x(), pi.y()] + T) for pi in p]
         sol = [QPointF(s[0, 0], s[0, 1]) for s in sol]
+
+        # TIMING
+        # timeEnd = time.perf_counter()
+        # print("SVD time:", (timeEnd - timeStart) * 1000, "ms with", len(p), "markers.")
 
         # Compute errors
         err = [[a.x() - b.x(), a.y() - b.y()] for (a, b) in zip(sol, q)]
