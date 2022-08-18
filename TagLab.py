@@ -170,6 +170,7 @@ class TagLab(QMainWindow):
         self.projectEditor = None
         self.editProjectWidget = None
         self.scale_widget = None
+        self.dictionary_widget = None
         self.working_area_widget = None
         self.classifierWidget = None
         self.newDatasetWidget = None
@@ -1194,14 +1195,23 @@ class TagLab(QMainWindow):
         self.mapWidget.show()
 
     def deleteImage(self, img):
+
+        # update project
         self.project.deleteImage(img)
-        self.updateImageSelectionMenu()
         if len(self.project.images) == 0:
             self.resetAll()
             return
+
+        # update views
+        index = max(self.comboboxSourceImage.currentIndex()-1, 0)
+
+        self.disableSplitScreen()
         
         if self.viewerplus.image == img:
-            self.showImage(self.project.images[0])
+            self.showImage(self.project.images[index])
+
+        # update tool buttons according to the current number of images
+        self.updateToolStatus()
 
     def deleteLayer(self, img, layer):
         box = QMessageBox()
@@ -1310,28 +1320,22 @@ class TagLab(QMainWindow):
         img_source_index = self.comboboxSourceImage.currentIndex()
         img_target_index = self.comboboxTargetImage.currentIndex()
 
-        if img_source_index != img_target_index:
+        if img_source_index == img_target_index:
+            return
 
-            key = self.project.images[img_source_index].id + "-" + self.project.images[img_target_index].id
-            corr = self.project.correspondences.get(key)
+        key = self.project.images[img_source_index].id + "-" + self.project.images[img_target_index].id
+        corr = self.project.correspondences.get(key)
 
-            flag_compute = False
-            if corr is not None:
-                if corr.data.empty is False:
-                    reply = QMessageBox.question(self, self.TAGLAB_VERSION,
-                                                 "Would you like to clean up the table and replace all the existing matches?",
-                                                 QMessageBox.Yes | QMessageBox.No)
-                    if reply == QMessageBox.Yes:
-                        flag_compute = True
-                else:
-                    flag_compute = True
-            else:
-                flag_compute = True
+        if corr is not None and corr.data.empty is False:
+            reply = QMessageBox.question(self, self.TAGLAB_VERSION,
+                        "Would you like to clean up the table and replace all the existing matches?",
+                        QMessageBox.Yes | QMessageBox.No)
+            if reply != QMessageBox.Yes:
+                return
 
-            if flag_compute is True:
-                self.project.computeCorrespondences(img_source_index, img_target_index)
-                self.compare_panel.setTable(self.project, img_source_index, img_target_index)
-                self.setTool("MATCH")
+        self.project.computeCorrespondences(img_source_index, img_target_index)
+        self.compare_panel.setTable(self.project, img_source_index, img_target_index)
+        self.setTool("MATCH")
 
 
     @pyqtSlot()
@@ -1380,7 +1384,6 @@ class TagLab(QMainWindow):
 
         if self.gridWidget is None:
             self.gridWidget = QtGridWidget(self.activeviewer, self)
-            self.gridWidget.setWindowModality(Qt.WindowModal)
             self.gridWidget.show()
             self.gridWidget.accepted.connect(self.assignGrid)
             self.gridWidget.btnCancel.clicked.connect(self.cancelGrid)
@@ -1645,6 +1648,29 @@ class TagLab(QMainWindow):
                 self.activeviewer.tools.applyTool()
 
 
+    def setBlobVisualization(self):
+
+        if self.activeviewer.image is not None:
+
+            if self.checkBoxFill.isChecked():
+                self.viewerplus.enableFill()
+                self.viewerplus2.enableFill()
+            else:
+                self.viewerplus.disableFill()
+                self.viewerplus2.disableFill()
+
+            if self.checkBoxBorders.isChecked():
+                self.viewerplus.enableBorders()
+                self.viewerplus2.enableBorders()
+            else:
+                self.viewerplus.disableBorders()
+                self.viewerplus2.disableBorders()
+
+            if self.checkBoxGrid.isChecked():
+                self.viewerplus.showGrid()
+            else:
+                self.viewerplus.hideGrid()
+
     def disableSplitScreen(self):
 
         if self.activeviewer is not None:
@@ -1711,6 +1737,8 @@ class TagLab(QMainWindow):
             self.viewerplus2.clear()
             self.viewerplus2.setProject(self.project)
             self.viewerplus2.setImage(self.project.images[index_to_set + 1])
+            self.setBlobVisualization()
+
             self.doUpdatePanels()
 
             self.comboboxSourceImage.currentIndexChanged.connect(self.sourceImageChanged)
@@ -1740,6 +1768,15 @@ class TagLab(QMainWindow):
             self.data_panel.hide()
             self.datadock.setWindowTitle("Comparison Table")
             self.updatePanels()
+
+            # test
+
+            dict = { "Pocillopora": 2, "Pocil": 3 }
+
+            json_string = json.dumps(dict)
+
+            print(json_string)
+
 
 
     def createMatch(self):
@@ -2003,6 +2040,7 @@ class TagLab(QMainWindow):
 
     def updateImageSelectionMenu(self):
 
+        # disconnect so that only the combobox are updated
         self.comboboxSourceImage.currentIndexChanged.disconnect()
         self.comboboxTargetImage.currentIndexChanged.disconnect()
 
@@ -2012,8 +2050,15 @@ class TagLab(QMainWindow):
         if index1 < 1:
             index1 = 0
 
+        n = len(self.project.images) - 1
+        if index1 > n:
+            index1 = n
+
         if index2 < 1:
             index2 = 0
+
+        if index2 > n:
+            index2 = n
 
         # update the image names
         self.comboboxSourceImage.clear()
@@ -2025,6 +2070,7 @@ class TagLab(QMainWindow):
         self.comboboxSourceImage.setCurrentIndex(index1)
         self.comboboxTargetImage.setCurrentIndex(index2)
 
+        # re-connect
         self.comboboxSourceImage.currentIndexChanged.connect(self.sourceImageChanged)
         self.comboboxTargetImage.currentIndexChanged.connect(self.targetImageChanged)
 
@@ -2410,6 +2456,7 @@ class TagLab(QMainWindow):
         elif self.viewerplus.tools.tool == 'RITM' and self.viewerplus.tools.tools['RITM'].work_area_bbox[2] > 0:
             return False
         else:
+            self.activeviewer.tools.edit_points.reset()
             self.activeviewer.deleteSelectedBlobs()
             logfile.info("[OP-DELETE] Selected blobs has been DELETED")
 
@@ -2934,9 +2981,20 @@ class TagLab(QMainWindow):
     @pyqtSlot()
     def createDictionary(self):
 
-        self.create_dictionary = QtDictionaryWidget(self.taglab_dir, self.project, parent = self)
-        self.create_dictionary.btn_set.clicked.connect(self.setDictionary)
-        self.create_dictionary.show()
+        if self.dictionary_widget is None:
+            self.dictionary_widget = QtDictionaryWidget(self.taglab_dir, self.project, parent = self)
+            self.dictionary_widget.addlabel.connect(self.addLabelDictionary)
+            self.dictionary_widget.updatelabel[str,list,str,list].connect(self.updateLabelDictionary)
+            self.dictionary_widget.deletelabel[str].connect(self.deleteLabelfromDictionary)
+            self.dictionary_widget.closewidget.connect(self.closeDictionaryWidget)
+            self.dictionary_widget.show()
+
+    @pyqtSlot()
+    def closeDictionaryWidget(self):
+
+        if self.dictionary_widget is not None:
+            del self.dictionary_widget
+            self.dictionary_widget = None
 
     @pyqtSlot()
     def editRegionAttributes(self):
@@ -2949,23 +3007,14 @@ class TagLab(QMainWindow):
     def updateRegionAttributes(self):
         self.groupbox_blobpanel.updateRegionAttributes(self.project.region_attributes)
 
-
     @pyqtSlot()
-    def setDictionary(self):
+    def addLabelDictionary(self):
 
         # NOTES:
         #
-        #  - same keys in use may have different colors -> recoloring of the annotations is needed
         #  - at the moment, two different labels can have the same color
 
-        labels_list = self.create_dictionary.labels
-
-        if len(set(labels_list)) < len(labels_list):
-            msgBox = QMessageBox()
-            msgBox.setWindowTitle(self.TAGLAB_VERSION)
-            msgBox.setText("There are duplicated class names !! Please, remove the duplicates.")
-            msgBox.exec()
-            return
+        labels_list = self.dictionary_widget.labels
 
         # set the dictionary in the project
         self.project.setDictionaryFromListOfLabels(labels_list)
@@ -2977,7 +3026,63 @@ class TagLab(QMainWindow):
         if self.viewerplus is not None:
             if self.viewerplus.image is not None:
                 self.viewerplus.redrawAllBlobs()
+        if self.viewerplus2 is not None:
+            if self.viewerplus2.image is not None:
+                self.viewerplus2.redrawAllBlobs()
 
+    @pyqtSlot(str,list,str,list)
+    def updateLabelDictionary(self,oldname,oldcolor,newname,newcolor):
+
+        labels_list = self.dictionary_widget.labels
+
+        for label in labels_list:
+            if label.fill == oldcolor:
+                label.fill = newcolor
+
+        # set the dictionary in the project
+        self.project.setDictionaryFromListOfLabels(labels_list)
+
+        if oldname == newname:
+            # only the color of the label changed
+            self.labels_widget.updateColor(newname, newcolor)
+        else:
+            # all the blobs need to be re-assigned
+            if self.activeviewer.image is not None:
+                for blob in self.activeviewer.image.annotations.seg_blobs:
+                    if blob.class_name == oldname:
+                        self.activeviewer.setBlobClass(blob, newname)
+
+        # update labels widget
+        self.updatePanels()
+
+        # redraw all blobs
+        if self.viewerplus is not None:
+            if self.viewerplus.image is not None:
+                self.viewerplus.redrawAllBlobs()
+        if self.viewerplus2 is not None:
+            if self.viewerplus2.image is not None:
+                self.viewerplus2.redrawAllBlobs()
+
+    @pyqtSlot(str)
+    def deleteLabelfromDictionary(self, labelname):
+
+        labels_list = self.dictionary_widget.labels
+
+        if self.activeviewer.image is not None:
+            for blob in self.activeviewer.image.annotations.seg_blobs:
+                if blob.class_name == labelname:
+                    self.activeviewer.setBlobClass(blob, "Empty")
+
+        # set the dictionary in the project
+        self.project.setDictionaryFromListOfLabels(labels_list)
+
+        # update labels widget
+        self.updatePanels()
+
+        # redraw all blobs
+        if self.viewerplus is not None:
+            if self.viewerplus.image is not None:
+                self.viewerplus.redrawAllBlobs()
         if self.viewerplus2 is not None:
             if self.viewerplus2.image is not None:
                 self.viewerplus2.redrawAllBlobs()
@@ -2998,9 +3103,6 @@ class TagLab(QMainWindow):
         if self.update_panels_flag is False:
             return
 
-        if self.split_screen_flag is True:
-            viewer = self.viewerplus
-
         # update labels
         image = None
         if self.activeviewer is not None:
@@ -3010,8 +3112,12 @@ class TagLab(QMainWindow):
         self.labels_widget.setLabels(self.project, image)
 
         # update layers
-        self.layers_widget.setProject(self.project)
-        self.layers_widget.setImage(image)
+        if self.split_screen_flag is False:
+            self.layers_widget.setProject(self.project)
+            self.layers_widget.setImage(image)
+        else:
+            self.layers_widget.setProject(self.project)
+            self.layers_widget.setImage(self.viewerplus.image, self.viewerplus2.image)
 
         if self.split_screen_flag is True:
             # update compare panel (only if it is visible)
@@ -3029,6 +3135,8 @@ class TagLab(QMainWindow):
 
         # update data panel
         self.updateDataPanel()
+
+        self.updateImageSelectionMenu()
 
         # molto sporco per collegare data panel, dovrebbe andare in data panel
         if image is not None:
@@ -3105,8 +3213,6 @@ class TagLab(QMainWindow):
 
         flag_pixel_size_changed = False
 
-        
-
         try:
             image = self.image2update
 
@@ -3121,11 +3227,16 @@ class TagLab(QMainWindow):
             rgb_filename = dir.relativeFilePath(self.mapWidget.data['rgb_filename'])
             dem_filename = dir.relativeFilePath(self.mapWidget.data['depth_filename'])
 
-
             rgb_channel = image.getChannel("RGB")
             dem_channel = image.getChannel("DEM")
-            rgb_changed = rgb_channel == None or rgb_channel.filename != rgb_filename
-            dem_changed = dem_channel == None or dem_channel.filename != dem_filename
+
+            rgb_changed = rgb_channel.filename != rgb_filename
+
+            if dem_channel is not None:
+                dem_changed = dem_channel.filename != dem_filename
+            else:
+                if len(dem_filename) > 3:
+                    dem_changed = True
 
             if len(rgb_filename) <= 3:
                 raise ValueError("You need to specify an RGB map")
@@ -3133,7 +3244,10 @@ class TagLab(QMainWindow):
                 image.updateChannel(rgb_filename, "RGB")
 
             if len(dem_filename) > 3 and dem_changed:
-                image.updateChannel(dem_filename, "DEM")
+                if dem_channel is None:
+                    image.addChannel(dem_filename, "DEM")
+                else:
+                    image.updateChannel(dem_filename, "DEM")
 
         except Exception as e:
             msgBox = QMessageBox()
@@ -3199,27 +3313,9 @@ class TagLab(QMainWindow):
             index = self.project.images.index(image)
             self.updateComboboxSourceImage(index)
             self.updateComboboxSourceImage(index)
-
-            if self.checkBoxFill.isChecked():
-                self.viewerplus.enableFill()
-                self.viewerplus2.enableFill()
-            else:
-                self.viewerplus.disableFill()
-                self.viewerplus2.disableFill()
-
-            if self.checkBoxBorders.isChecked():
-                self.viewerplus.enableBorders()
-                self.viewerplus2.enableBorders()
-            else:
-                self.viewerplus.disableBorders()
-                self.viewerplus2.disableBorders()
-
-            if self.checkBoxGrid.isChecked():
-                self.viewerplus.showGrid()
-            else:
-                self.viewerplus.hideGrid()
-
             self.disableSplitScreen()
+            self.setBlobVisualization()
+
 
             QApplication.restoreOverrideCursor()
 
@@ -3658,14 +3754,17 @@ class TagLab(QMainWindow):
                 if not filename.endswith('.png'):
                     filename += '.png'
 
+                QApplication.setOverrideCursor(Qt.WaitCursor)
+
                 size = QSize(self.activeviewer.image.width, self.activeviewer.image.height)
                 self.activeviewer.annotations.export_image_data_for_Scripps(size, filename, self.project)
+
+                QApplication.restoreOverrideCursor()
 
                 msgBox = QMessageBox(self)
                 msgBox.setWindowTitle(self.TAGLAB_VERSION)
                 msgBox.setText("Map exported successfully!")
                 msgBox.exec()
-                return
 
 
     @pyqtSlot()
@@ -3701,12 +3800,10 @@ class TagLab(QMainWindow):
             rasterops.write_shapefile(self.project, self.activeviewer.image, blobs, gf, output_filename)
 
             msgBox = QMessageBox(self)
-           # msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
             msgBox.setText("Shapefile exported successfully!")
             msgBox.exec()
             return
-
-
 
     @pyqtSlot()
     def exportGeoRefLabelMap(self):
@@ -3730,6 +3827,9 @@ class TagLab(QMainWindow):
         output_filename, _ = QFileDialog.getSaveFileName(self, "Output GeoTiff", "", filters)
 
         if output_filename:
+
+            QApplication.setOverrideCursor(Qt.WaitCursor)
+
             size = QSize(self.activeviewer.image.width, self.activeviewer.image.height)
             label_map_img = self.activeviewer.annotations.create_label_map(size, self.project.labels, None)
             label_map_np = utils.qimageToNumpyArray(label_map_img)
@@ -3737,11 +3837,12 @@ class TagLab(QMainWindow):
             outfilename = os.path.splitext(output_filename)[0]
             rasterops.saveGeorefLabelMap(label_map_np, georef_filename, self.project.working_area, outfilename)
 
+            QApplication.restoreOverrideCursor()
+
             msgBox = QMessageBox(self)
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
-            msgBox.setText("Map exported successfully!")
+            msgBox.setText("GeoTiff exported successfully!")
             msgBox.exec()
-            return
 
 
     @pyqtSlot()
@@ -3777,6 +3878,13 @@ class TagLab(QMainWindow):
 
         if self.activeviewer is not None and self.newDatasetWidget is not None:
 
+            if self.newDatasetWidget.getDatasetFolder() == "":
+                msgBox = QMessageBox()
+                msgBox.setWindowTitle(self.TAGLAB_VERSION)
+                msgBox.setText("Please, choose a folder to export the dataset.")
+                msgBox.exec()
+                return
+
             QApplication.setOverrideCursor(Qt.WaitCursor)
             self.setupProgressBar()
 
@@ -3789,14 +3897,24 @@ class TagLab(QMainWindow):
             new_dataset = NewDataset(self.activeviewer.img_map, self.activeviewer.annotations.seg_blobs, tile_size=1026, step=513)
 
             target_classes = training.createTargetClasses(self.activeviewer.annotations)
-            target_classes = list(target_classes.keys())
 
             new_dataset.createLabelImage(self.project.labels)
-            new_dataset.convert_colors_to_labels(target_classes, self.project.labels)
+            new_dataset.convertColorsToLabels(target_classes, self.project.labels)
             new_dataset.computeFrequencies(target_classes)
             target_pixel_size = self.newDatasetWidget.getTargetScale()
-            new_dataset.workingAreaCropAndRescale(self.activeviewer.image.pixelSize(), target_pixel_size,
-                                                  self.activeviewer.image.export_dataset_area)
+            check_size = new_dataset.workingAreaCropAndRescale(self.activeviewer.image.pixelSize(), target_pixel_size,
+                                                               self.activeviewer.image.export_dataset_area)
+
+            if check_size is False:
+                msgBox = QMessageBox()
+                msgBox.setWindowTitle(self.TAGLAB_VERSION)
+                msgBox.setText("The image to export is too big. Check the target pixel size.")
+                msgBox.exec()
+                self.deleteProgressBar()
+                self.deleteNewDatasetWidget()
+                self.disableAreaSelection()
+                QApplication.restoreOverrideCursor()
+                return
 
             # create training, validation and test areas
 
@@ -3815,6 +3933,7 @@ class TagLab(QMainWindow):
             QApplication.processEvents()
 
             if flag_oversampling is True:
+                # FIXME: oversampling requires to be rewritten taking into account that target_classes is a dictionary now.
                 class_to_sample, radii = new_dataset.computeRadii(target_classes)
                 new_dataset.cut_tiles(regular=False, oversampling=True, classes_to_sample=class_to_sample, radii=radii)
             else:
@@ -3851,15 +3970,6 @@ class TagLab(QMainWindow):
 
         dataset_folder = self.trainYourNetworkWidget.getDatasetFolder()
 
-        # check dataset
-        check = training.checkDataset(dataset_folder)
-        if check == 1:
-            msgBox = QMessageBox()
-            msgBox.setWindowTitle(self.TAGLAB_VERSION)
-            msgBox.setText("An error occured with your dataset, there is a mismatch between files. Please, export a new dataset.")
-            msgBox.exec()
-            return
-
         self.setupProgressBar()
         self.progress_bar.hidePerc()
         self.progress_bar.setMessage("Dataset setup..")
@@ -3868,7 +3978,8 @@ class TagLab(QMainWindow):
         # CLASSES TO RECOGNIZE (label name - label code)
         labels_folder = os.path.join(dataset_folder, "training")
         labels_folder = os.path.join(labels_folder, "labels")
-        target_classes = CoralsDataset.importClassesFromDataset(labels_folder, self.project.labels)
+
+        target_classes = self.trainYourNetworkWidget.getTargetClasses()
         num_classes = len(target_classes)
 
         # GO TRAINING GO...
@@ -3917,7 +4028,7 @@ class TagLab(QMainWindow):
         QApplication.processEvents()
 
         metrics = training.testNetwork(images_dir_test, labels_dir_test, labels_dictionary=self.project.labels,
-                                       target_classes=target_classes, dataset_train=dataset_train_info,
+                                       target_classes=dataset_train_info.dict_target, dataset_train=dataset_train_info,
                                        network_filename=network_filename, output_folder=output_folder,
                                        progress=self.progress_bar)
 
@@ -3948,10 +4059,10 @@ class TagLab(QMainWindow):
         new_classifier["Classifier Name"] = self.classifier_name
         new_classifier["Weights"] = self.network_name
         new_classifier["Num. Classes"] = self.dataset_train_info.num_classes
-        new_classifier["Classes"] = list(self.dataset_train_info.dict_target)
+        new_classifier["Classes"] = self.dataset_train_info.dict_target
 
         # scale
-        target_pixel_size_file = os.path.join(self.trainResultsWidget.dataset_folder, "target-scale-factor.txt")
+        target_pixel_size_file = os.path.join(self.trainResultsWidget.dataset_folder, "target-pixel-size.txt")
         fl = open(target_pixel_size_file, "r")
         line = fl.readline()
         fl.close()
@@ -3978,9 +4089,9 @@ class TagLab(QMainWindow):
     def trainYourNetwork(self):
 
         if self.trainYourNetworkWidget is None:
-            self.trainYourNetworkWidget = QtTYNWidget(annotations=None, parent=self)
+            self.trainYourNetworkWidget = QtTYNWidget(self.project.labels, self.TAGLAB_VERSION, parent=self)
             self.trainYourNetworkWidget.setWindowModality(Qt.WindowModal)
-            self.trainYourNetworkWidget.btnTrain.clicked.connect(self.trainNewNetwork)
+            self.trainYourNetworkWidget.launchTraining.connect(self.trainNewNetwork)
         self.trainYourNetworkWidget.show()
 
     @pyqtSlot()
@@ -4006,6 +4117,9 @@ class TagLab(QMainWindow):
         output_filename, _ = QFileDialog.getSaveFileName(self, "Save raster as", self.taglab_dir, filters)
 
         if output_filename:
+
+            QApplication.setOverrideCursor(Qt.WaitCursor)
+
             if self.project.working_area is None:
                 blobs = self.activeviewer.annotations.seg_blobs
             else:
@@ -4013,6 +4127,8 @@ class TagLab(QMainWindow):
 
             gf = self.activeviewer.image.georef_filename
             rasterops.saveClippedTiff(input_tiff, blobs, gf, output_filename)
+
+            QApplication.restoreOverrideCursor()
 
     @pyqtSlot()
     def calculateAreaUsingSlope(self):

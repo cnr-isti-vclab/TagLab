@@ -8,7 +8,7 @@ import torch
 from torch.utils.data import Dataset
 from torchvision import transforms
 import glob
-from albumentations import (CLAHE, HueSaturationValue, RGBShift, RandomBrightnessContrast, Compose)
+from albumentations import (CLAHE, Blur, HueSaturationValue, RGBShift, RandomBrightnessContrast, Compose)
 from source.Label import Label
 
 
@@ -18,7 +18,8 @@ def augmentation_color(p=0.5):
     return Compose([
 
         CLAHE(clip_limit=3.0, tile_grid_size=(2, 2), always_apply=False, p=0.2),
-        RandomBrightnessContrast(brightness_limit=(-0.2, 0.2), contrast_limit=0.15, p=0.3),
+        #Blur(blur_limit=(2.0, 4.0), p=0.2),
+        RandomBrightnessContrast(brightness_limit=(-0.3, 0.3), contrast_limit=(-0.2, 0.2), p=0.3),
         RGBShift(r_shift_limit=(-10, 10), g_shift_limit=(0, 10), b_shift_limit=(0, 20), p=0.3),
         HueSaturationValue(hue_shift_limit=(0, 20), sat_shift_limit=0, val_shift_limit=0, p=0.3),
         ], p=p)
@@ -45,7 +46,11 @@ class CoralsDataset(Dataset):
 
         # if background does not exists it is added
         self.labels_dictionary = labels_dictionary.copy()
-        self.labels_dictionary["Background"] = Label(id="Background", name="Background", fill=[0, 0, 0])
+
+        # add background label if necessary
+        lbl = self.labels_dictionary.get("Background")
+        if lbl is None:
+            self.labels_dictionary["Background"] = Label(id="Background", name="Background", fill=[0, 0, 0])
 
         # DATA LOADING SETTINGS
         self.flagDataAugmentation = True
@@ -57,6 +62,8 @@ class CoralsDataset(Dataset):
         self.RANDOM_TRANSLATION_MAXVALUE = 50
         self.RANDOM_ROTATION_MINVALUE = -10
         self.RANDOM_ROTATION_MAXVALUE = 10
+        self.RANDOM_SCALE_MINVALUE = 0.8     # reduce size by 20%
+        self.RANDOM_SCALE_MAXVALUE = 1.2     # increase size by 20%
 
         self.flagDataAugmentationCrop = True
         self.CROP_SIZE = 513
@@ -170,8 +177,6 @@ class CoralsDataset(Dataset):
                 img_np = augmented["image"]
                 img = PILimage.fromarray(img_np)
 
-
-
             # APPLY GEOMETRIC TRANSFORMATION
 
             # random flip
@@ -190,13 +195,15 @@ class CoralsDataset(Dataset):
                     imglbl_flipped = imglbl_flipped.transpose(PILimage.FLIP_TOP_BOTTOM)
 
 
-            # rotation and translation
+            # rotation, translation, and scale
 
             if self.flagDataAugmentationRT:
                 rot = np.random.randint(self.RANDOM_ROTATION_MINVALUE, self.RANDOM_ROTATION_MAXVALUE)
                 tx = np.random.randint(self.RANDOM_TRANSLATION_MINVALUE, self.RANDOM_TRANSLATION_MAXVALUE)
                 ty = np.random.randint(self.RANDOM_TRANSLATION_MINVALUE, self.RANDOM_TRANSLATION_MAXVALUE)
-                img_flipped_RT = transforms.functional.affine(img_flipped, angle=rot, scale=1.0, shear=0.0,
+                # sc = 1.0
+                sc = np.random.uniform(self.RANDOM_SCALE_MINVALUE, self.RANDOM_SCALE_MAXVALUE)
+                img_flipped_RT = transforms.functional.affine(img_flipped, angle=rot, scale=sc, shear=0.0,
                                                               translate=(tx, ty), resample=PILimage.BILINEAR)
                 imglbl_flipped_RT = transforms.functional.affine(imglbl_flipped, angle=rot, scale=1.0, shear=0.0,
                                                                  translate=(tx, ty), resample=PILimage.NEAREST)
@@ -253,10 +260,14 @@ class CoralsDataset(Dataset):
         Check all the dataset and creates the corresponding target classes.
         """
         dict_classes = {}
+        dict_freq = {}
 
         CROP_SIZE = 513
         labels_names = [os.path.basename(x) for x in glob.glob(os.path.join(labels_folder, '*.png'))]
 
+        total_pixels = CROP_SIZE * CROP_SIZE * len(labels_names)
+
+        dict_counters = {}
         existing_color_codes = set([0])
         for i, label_name in enumerate(labels_names):
             label_filename = os.path.join(labels_folder, label_name)
@@ -270,23 +281,38 @@ class CoralsDataset(Dataset):
 
             # a color is transformed into a code
             color_codes = data_crop[:, :, 0] + data_crop[:, :, 1] * 256 + data_crop[:, :, 2] * 65536
-            unique_colors = np.unique(color_codes)
-            existing_color_codes.update(list(unique_colors))
+            unique_colors = list(np.unique(color_codes))
+            for color_code in unique_colors:
+                if dict_counters.get(color_code) is not None:
+                    dict_counters[color_code] += np.count_nonzero(color_codes == color_code)
+                else:
+                    dict_counters[color_code] = np.count_nonzero(color_codes == color_code)
+            existing_color_codes.update(unique_colors)
 
         dict_classes["Background"] = 0
+        dict_freq["Background"] = total_pixels
         class_code = 1
         for color_code in existing_color_codes:
             for key in labels_dictionary.keys():
                 color = labels_dictionary[key].fill
                 code = color[0] + color[1] * 256 + color[2] * 65536
                 if color_code == code:
-                    value = dict_classes.get(key)
-                    if value is None:
+                    dict_freq["Background"] -= dict_counters[color_code]
+
+                    if dict_freq.get(key) is None:
+                        dict_freq[key] = dict_counters[color_code]
+                    else:
+                        dict_freq[key] += dict_counters[color_code]
+
+                    if dict_classes.get(key) is None:
                         dict_classes[key] = class_code
                         class_code += 1
                     break
 
-        return dict_classes
+        for key in dict_freq.keys():
+            dict_freq[key] = float(dict_freq[key]) / float(total_pixels)
+
+        return dict_classes, dict_freq
 
     def computeWeights(self):
         """
@@ -444,14 +470,20 @@ class CoralsDataset(Dataset):
 
         img = np.zeros((pred_indices.shape[0], pred_indices.shape[1], 3), dtype='uint8')
 
-        class_names = list(self.dict_target)
-
         for i in range(pred_indices.shape[0]):
             for j in range(pred_indices.shape[1]):
                 label = pred_indices[i][j]
 
-                color_name = class_names[label]
-                color = self.labels_dictionary[color_name].fill
+                color_name = ""
+                for class_name in self.dict_target.keys():
+                    if self.dict_target[class_name] == label:
+                        color_name = class_name
+                        break
+
+                color = [255,255,255]
+                lbl = self.labels_dictionary.get(color_name)
+                if lbl is not None:
+                    color = lbl.fill
 
                 img[i][j][0] = color[0]
                 img[i][j][1] = color[1]

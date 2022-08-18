@@ -30,14 +30,15 @@ def checkDataset(dataset_folder):
     if os.path.exists(dataset_folder):
         for sub in targetdirs:
             subfolder = os.path.join(dataset_folder, sub)
-            print(subfolder)
             if os.path.exists(subfolder):
                 if os.listdir(subfolder) == ['images', 'labels'] and len(set(os.listdir(os.path.join(subfolder, os.listdir(subfolder)[0]))) - set(os.listdir(os.path.join(subfolder, os.listdir(subfolder)[1]))))==0:
                     flag = 0 # Your training dataset is valid
                 else:
-                    return 1 # A subfolder is missing or a files mismatch in subfolder
+                    return 3  # Files mismatch in subfolder
+            else:
+                return 2  # A subfolder is missing
     else:
-        return 1 # This dataset contains mismatching files
+        return 1  # Dataset folder does not exist
 
     return flag
 
@@ -47,12 +48,13 @@ def createTargetClasses(annotations):
     """
 
     labels_set = set()
-    for blob in annotations.seg_blobs:
-        if blob.qpath_gitem.isVisible():
-            labels_set.add(blob.class_name)
 
     # Background class must be present
     labels_set.add("Background")
+
+    for blob in annotations.seg_blobs:
+        if blob.qpath_gitem.isVisible():
+            labels_set.add(blob.class_name)
 
     target_dict = {}
     for i, label in enumerate(labels_set):
@@ -149,7 +151,7 @@ def evaluateNetwork(dataset, dataloader, loss_to_use, CEloss, w_for_GDL, tversky
             for i in range(batch_size):
                 pred_index = pred_cpu[i].numpy().ravel()
                 true_index = labels_cpu[i].numpy().ravel()
-                confmat = confusion_matrix(true_index, pred_index, class_indices)
+                confmat = confusion_matrix(true_index, pred_index, labels=class_indices)
                 CM += confmat
 
             if flag_test is True:
@@ -270,7 +272,7 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
 
     datasetTrain.enableAugumentation()
 
-    datasetVal = CoralsDataset(images_folder_val, labels_folder_val, labels_dictionary, target_classes)
+    datasetVal = CoralsDataset(images_folder_val, labels_folder_val, labels_dictionary, datasetTrain.dict_target)
     datasetVal.dataset_average = datasetTrain.dataset_average
     datasetVal.weights = datasetTrain.weights
 

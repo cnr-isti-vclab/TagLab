@@ -81,7 +81,7 @@ class QtProjectEditor(QWidget):
             year = date.year()
             self.text.setHtml(
             "<b>Map size in pixels</b>" + " : " + "(" + str(img.width) + "," + str(img.height) + ")")
-            self.text.append("<b>Map pixel size in mm</b>" + " : " + img.map_px_to_mm_factor)
+            self.text.append("<b>Map pixel size in mm</b>" + " : " + str(img.map_px_to_mm_factor))
             self.text.append("<b>Map acquisition date</b>" + " : " + str(day) + " " + date.longMonthName(date.month()) + " " +  str(year))
             self.text.append("<b>Map georeference information</b>" + " : " + str(self.georefAvailable(img.georef_filename)))
             self.text.append("<b>DEM availability</b>" + " : " + str(self.boolToWord(len(img.channels)>1)))

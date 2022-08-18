@@ -601,10 +601,12 @@ class QtImageViewerPlus(QtImageViewer):
         self.scene.invalidate()
 
     def applyTransparency(self, value):
+
         self.transparency_value = 1.0 - (value / 100.0)
         # current annotations
         for blob in self.annotations.seg_blobs:
-            blob.qpath_gitem.setOpacity(self.transparency_value)
+            if blob.qpath_gitem is not None:
+                blob.qpath_gitem.setOpacity(self.transparency_value)
 
     def redrawAllBlobs(self):
 
@@ -660,7 +662,7 @@ class QtImageViewerPlus(QtImageViewer):
             self.showCrossair = False
 
         # WHEN panning is active or not
-        if tool == "MOVE" or tool == "MATCH":
+        if tool == "MOVE" or tool == "MATCH" or tool == "DEEPEXTREME" or tool == "RITM":
             self.enablePan()
         else:
             self.disablePan()  # in this case, it is possible to PAN only moving the mouse and pressing the CTRL key
@@ -685,7 +687,7 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.logfile.info("[SELECTION][DOUBLE-CLICK] Selection starts..")
 
-        if self.tools.tool in ["RULER", "DEEPEXTREME"]:
+        if self.tools.tool in ["RULER"]:
             return
 
         if not (Qt.ShiftModifier & QApplication.queryKeyboardModifiers()):
@@ -738,7 +740,7 @@ class QtImageViewerPlus(QtImageViewer):
             #used from area selection and pen drawing,
             if (self.panEnabled and not (mods & Qt.ShiftModifier)) or (mods & Qt.ControlModifier):
                 self.setDragMode(QGraphicsView.ScrollHandDrag)
-            elif self.tools.tool == "MATCH" or self.tools.tool == "RITM":
+            elif self.tools.tool == "MATCH" or self.tools.tool == "RITM" or self.tools.tool == "DEEPEXTREME":
                 self.tools.leftPressed(x, y, mods)
 
             elif mods & Qt.ShiftModifier:

@@ -116,8 +116,18 @@ def read_regions_geometry(filename, georef_filename):
     dataSource = driver.Open(filename, 0)
     layer = dataSource.GetLayer(0)
 
+
+    #set spatial reference and transformation
+    sourceprj = layer.GetSpatialRef()
+    targetprj = osr.SpatialReference(wkt = img.crs.wkt)
+    #need to check if sourceproj == targetproj
+    reproject = osr.CoordinateTransformation(sourceprj, targetprj) #this is a transform
+
     blobList = []
     for feat in layer:
+        transformed = feat.GetGeometryRef()
+        transformed.Transform(reproject)
+
         shpdict = json.loads(feat.ExportToJson())
         if shpdict['geometry']['type'] == 'Polygon':
             blob = Blob(None, 0, 0, 0)
@@ -130,9 +140,12 @@ def read_regions_geometry(filename, georef_filename):
                 innerpointpixels_i = changeFormatInv([innercontourn_i], transform)
                 innerblob = Blob(None, 0, 0, 0)
                 innerblob.createFromClosedCurve([np.asarray(innerpointpixels_i)], False)
-                (mask, box) = subtract(blob.getMask(), blob.bbox, innerblob.getMask(), innerblob.bbox)
-                if mask.any():
-                    blob.updateUsingMask(box, mask.astype(int))
+                # FIXME: prevents problem if the innerblob size is less than one pixel, but it is not clear
+                #  when it happens
+                if innerblob.bbox[2] > 0.9 and innerblob.bbox[3] > 0.9:
+                    (mask, box) = subtract(blob.getMask(), blob.bbox, innerblob.getMask(), innerblob.bbox)
+                    if mask.any():
+                        blob.updateUsingMask(box, mask.astype(int))
             blobList.append(blob)
 
     return blobList

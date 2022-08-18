@@ -20,7 +20,7 @@
 
 from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal, QEvent
 from PyQt5.QtWidgets import QWidget, QScrollArea,QGroupBox, QColorDialog, QMessageBox, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, \
-    QHBoxLayout, QVBoxLayout, QTextEdit
+    QHBoxLayout, QVBoxLayout, QTextEdit, QFrame
 from source.Label import Label
 import json
 import os
@@ -34,6 +34,10 @@ class DictionaryEncoder(json.JSONEncoder):
 class QtDictionaryWidget(QWidget):
 
     closewidget = pyqtSignal()
+
+    addlabel = pyqtSignal()
+    deletelabel= pyqtSignal(str)
+    updatelabel = pyqtSignal(str,list,str,list)
 
     def __init__(self, dir, project, parent=None):
         super(QtDictionaryWidget, self).__init__(parent)
@@ -68,8 +72,6 @@ class QtDictionaryWidget(QWidget):
 
         self.btn_save = QPushButton("Save")
         self.btn_save.clicked.connect(self.saveDictionary)
-
-
 
         lbl_dname = QLabel("Dictionary name:")
         lbl_dname.setFixedWidth(160)
@@ -119,15 +121,15 @@ class QtDictionaryWidget(QWidget):
         self.btnRemove = QPushButton("Delete")
         self.btnAdd = QPushButton("Add")
         self.btnAdd.setStyleSheet("background-color: rgb(55,55,55);")
-        self.btnOk = QPushButton("Update")
+        self.btnUpdate = QPushButton("Update")
         self.btnRemove.clicked.connect(self.removeLabel)
         self.btnAdd.clicked.connect(self.addLabel)
-        self.btnOk.clicked.connect(self.editLabel)
+        self.btnUpdate.clicked.connect(self.editLabel)
 
         buttons_layout = QVBoxLayout()
         buttons_layout.setAlignment(Qt.AlignRight)
         buttons_layout.addStretch()
-        buttons_layout.addWidget(self.btnOk)
+        buttons_layout.addWidget(self.btnUpdate)
         buttons_layout.addWidget(self.btnRemove)
 
 
@@ -170,11 +172,9 @@ class QtDictionaryWidget(QWidget):
         self.editLabel.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editLabel.setPlaceholderText("Label name")
 
-
-        self.btn_set = QPushButton("Set Dictionary")
-        self.btn_set.setMinimumWidth(360)
-        self.btn_set.setMinimumHeight(40)
-        self.btn_set.setStyleSheet("font-weight: bold;")
+        self.btn_ok = QPushButton("Ok")
+        self.btn_ok.setMinimumWidth(150)
+        self.btn_ok.clicked.connect(self.close)
 
         layout_zerorow = QHBoxLayout()
         layout_zerorow.addWidget(self.button_new)
@@ -211,10 +211,14 @@ class QtDictionaryWidget(QWidget):
         layout_setColor.addWidget(self.editLabel)
         layout_setColor.addWidget(self.btnAdd)
 
-        #6 row
+        # #6 row
         bottom = QHBoxLayout()
-        bottom.setAlignment(Qt.AlignHCenter)
-        bottom.addWidget(self.btn_set)
+        bottom.setAlignment(Qt.AlignCenter)
+        bottom.addWidget(self.btn_ok)
+
+        line = QFrame()
+        line.setFrameShape(QFrame.HLine)
+        line.setFrameShadow(QFrame.Sunken)
 
         layout = QVBoxLayout()
         layout.addLayout(layout_zerorow)
@@ -223,6 +227,8 @@ class QtDictionaryWidget(QWidget):
         layout.addLayout(layout_thirdrow)
         layout.addLayout(layout_addremove)
         layout.addLayout(layout_setColor)
+        #layout.addSpacing(10)
+        layout.addWidget(line)
         layout.addLayout(bottom)
 
         self.setLayout(layout)
@@ -270,7 +276,6 @@ class QtDictionaryWidget(QWidget):
         if fileName:
 
             if self.labels:
-
                 box = QMessageBox()
                 box.setIcon(QMessageBox.Question)
                 box.setWindowTitle('TagLab')
@@ -472,16 +477,54 @@ class QtDictionaryWidget(QWidget):
     def editLabel(self):
 
         if self.selection_index > 0:
+
             label = self.labels[self.selection_index]
-            label.id = self.editLabel.text()
-            label.name = self.editLabel.text()
+            oldname = label.name
+            oldcolor = label.fill
+
+            newname = self.editLabel.text()
+
             r, g, b = self.getRGB()
+            newcolor = [r, g, b]
+
+            if oldcolor == newcolor and oldname == newname:
+                return
+
+            # note that TWO labels with the same name should exist, because if you update the color and not the name
+            # the label exists..
+            if self.countExistingLabel(newname) > 1:
+                box = QMessageBox()
+                box.setText("A label with the same name just exists (!) Please, change it!")
+                box.exec()
+                return
 
             if 0 <= r <= 255 and 0 <= g <= 255 and 0 <= b <= 255:
+
+                label.id = newname
+                label.name = newname
                 label.fill = [r, g, b]
+
                 self.createAllLabels()
                 lbl_selected = self.label_name[self.selection_index]
                 lbl_selected.setStyleSheet("border: 1 px; font-weight: bold; color: white;")
+                self.updatelabel.emit(oldname, oldcolor, label.name, label.fill)
+
+                self.editR.blockSignals(True)
+                self.editG.blockSignals(True)
+                self.editB.blockSignals(True)
+
+                self.editLabel.setText('')
+                self.editR.setText('')
+                self.editG.setText('')
+                self.editB.setText('')
+
+                text = "QPushButton:flat {background-color: rgb(255,255,255); border: none;}"
+                self.btn_selection_color.setStyleSheet(text)
+
+                self.editR.blockSignals(False)
+                self.editG.blockSignals(False)
+                self.editB.blockSignals(False)
+
             else:
                 box = QMessageBox()
                 box.setText("Please, set a valid color")
@@ -496,15 +539,51 @@ class QtDictionaryWidget(QWidget):
 
         if self.selection_index > 0:
             label = self.labels[self.selection_index]
+            oldname = label.name
 
+            delete_ok = True
             if label.name in self.labels_in_use:
+
                 box = QMessageBox()
-                box.setText("This label is currently in use and cannot be removed (!)")
+                box.setIcon(QMessageBox.Question)
+                box.setWindowTitle('TagLab')
+                box.setText('Pay attention, this label is in use. If you delete it, '
+                            'the Empty class will be assigned to the existing objects.')
+                box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+                buttonY = box.button(QMessageBox.Yes)
+                buttonY.setText('Yes')
+                buttonC = box.button(QMessageBox.No)
+                buttonC.setText('Cancel')
                 box.exec()
-            else:
+
+                if box.clickedButton() == buttonY:
+                    delete_ok = True
+                else:
+                    delete_ok = False
+
+            if delete_ok is True:
                 self.labels.remove(label)
                 self.createAllLabels()
                 self.selection_index = -1
+
+                self.editR.blockSignals(True)
+                self.editG.blockSignals(True)
+                self.editB.blockSignals(True)
+
+                self.editLabel.setText('')
+                self.editR.setText('')
+                self.editG.setText('')
+                self.editB.setText('')
+
+                text = "QPushButton:flat {background-color: rgb(255,255,255); border: none;}"
+                self.btn_selection_color.setStyleSheet(text)
+
+                self.editR.blockSignals(False)
+                self.editG.blockSignals(False)
+                self.editB.blockSignals(False)
+
+                self.deletelabel.emit(oldname)
+
         else:
             box = QMessageBox()
             box.setText("Please, select a label to delete")
@@ -523,6 +602,15 @@ class QtDictionaryWidget(QWidget):
 
         return red, green, blue
 
+    def countExistingLabel(self, label_name):
+
+        count = 0
+        for label in self.labels:
+            if label.name == label_name:
+                count += 1
+
+        return count
+
     @pyqtSlot()
     def addLabel(self):
 
@@ -531,12 +619,11 @@ class QtDictionaryWidget(QWidget):
         if 0 <= red <= 255 and 0 <= green <= 255 and 0 <= blue <= 255 and self.editLabel.text() != '':
 
             label_name = self.editLabel.text()
-            for label in self.labels:
-                if label.name == label_name:
-                    box = QMessageBox()
-                    box.setText("A label with the same name just exists (!) Please, change it!")
-                    box.exec()
-                    return
+            if self.countExistingLabel(label_name) > 0:
+                box = QMessageBox()
+                box.setText("A label with the same name just exists (!) Please, change it!")
+                box.exec()
+                return
 
             self.editR.blockSignals(True)
             self.editG.blockSignals(True)
@@ -548,10 +635,16 @@ class QtDictionaryWidget(QWidget):
             self.editG.blockSignals(False)
             self.editB.blockSignals(False)
 
+            self.addlabel.emit()
+
+
+
+
         else:
             box = QMessageBox()
             box.setText("Please chose a valid color and type a label name")
             box.exec()
+
 
 
     def eventFilter(self, object, event):

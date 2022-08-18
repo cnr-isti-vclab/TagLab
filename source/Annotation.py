@@ -35,9 +35,12 @@ from source import utils
 
 import pandas as pd
 from scipy import ndimage as ndi
-from skimage.morphology import watershed, binary_dilation, binary_erosion
+from skimage.morphology import binary_dilation, binary_erosion
+from skimage.segmentation import watershed
 from source.Blob import Blob
 import source.Mask as Mask
+
+#from PIL import Image as Img  #for debug
 
 #refactor: change name to annotationS
 class Annotation(QObject):
@@ -322,7 +325,7 @@ class Annotation(QObject):
             return
 
         #get the bounding box of the points (we need to enlarge the mask box)
-        points_box = Mask.pointsBox(points, 4)
+        points_box = Mask.pointsBox(points, 8)
 
         blob_mask = blob.getMask()
         blob_box = blob.bbox
@@ -330,60 +333,62 @@ class Annotation(QObject):
 
         #2 is foregraound, 1 is background, 3 is the points
         Mask.paintMask(mask, box, blob_mask, blob_box, 1)
+
+
+#        in case we need to debug.
+#        im = Img.fromarray(mask)
+#        im.save("0_start.png")
+
         mask[mask == 1] = 2
         mask[mask == 0] = 1  #paint background, as points will be zero.
 
-        #we need to remember which point was what.
-        original = mask.copy()
+        #label image should at least mantain 1 as backround and 2 as foreground (save for the internal holes)
+        original_label = measure.label(mask, connectivity=1)
 
         #draw the points to separate the areas
         Mask.paintPoints(mask, box, points, 3)
 
+        
         label_image = measure.label(mask, connectivity=1)
+
+
         #reassing the rendered points bottom right area so the partitioning is properly done.
         for point in points:
             x = point[0] - box[1]
             y = point[1] - box[0]
 
             largest = 0
-            if original[y+1][x+1] != 0:
+            if mask[y+1][x+1] != 3:
                 largest = max(label_image[y+1][x+1], largest)
-            elif original[y][x+1] != 0:
+            elif mask[y][x+1] != 3:
                 largest = max(label_image[y][x+1], largest)
-            elif original[y+1][x] != 0:
+            elif mask[y+1][x] != 3:
                 largest = max(label_image[y+1][x], largest)
             label_image[y][x] = largest
 
+
         regions = measure.regionprops(label_image)
-        #find the largest background and foreground regions
-        largest_fore = max(regions, key=lambda region: region.area if mask[region.coords[0][0], region.coords[0][1]] == 2 else 0)
-        largest_back = max(regions, key=lambda region: region.area if mask[region.coords[0][0], region.coords[0][1]] == 1 else 0)
+
+
+        #for each region we find which original label intersects the most
+        for region in regions:
+            (labels, counts) = np.unique(original_label[tuple(region.coords.T)], return_counts = True)
+            n = np.argmax(counts)
+            region.original_area = counts[n]
+            region.original_label = labels[n]
+
 
         final_mask = np.zeros((box[3], box[2])).astype(np.uint8)
-        #render larger background and foreground areas
-        final_mask[label_image == largest_back.label] = 0
-        final_mask[label_image == largest_fore.label] = 1
 
+        #if 2 is the label for the original foreground
+        #if a region is the largest area with the its original label, keep it foreground (2, so paint 1) or background (not 2, paint 0)
+        #otherwise it's a small region which we need to flip.
         for region in regions:
-            if region == largest_fore:
-                continue
-            if region == largest_back:
-                continue
-
-            #this is a small aread, either carved in the original blob or from the background
-            was_not_blob = 0
-            was_blob = 0
-            for i in region.coords:
-                x = i[0]
-                y = i[1]
-                if mask[x][y] == 2:
-                    was_blob += 1
-                if mask[x][y] == 1:
-                    was_not_blob += 1
-                was_blob = 1 if was_blob > was_not_blob else 0
-
-            #if it was background (was_blob == 0) then make it foreground and viceversa
-            final_mask[label_image == region.label] = 1 - was_blob
+            largest = max(regions, key=lambda aregion, label=region.original_label: aregion.original_area if aregion.original_label == label else 0)
+            if region.original_label == 2 and largest == region or region.original_label != 2 and largest != region:
+                final_mask[tuple(region.coords.T)] = 1
+            else:
+                final_mask[tuple(region.coords.T)] = 0
 
         blob.updateUsingMask(box, final_mask) 
 

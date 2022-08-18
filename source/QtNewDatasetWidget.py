@@ -61,7 +61,7 @@ class QtNewDatasetWidget(QWidget):
 
         ###########################################################
 
-        self.editDatasetFolder = QLineEdit("temp")
+        self.editDatasetFolder = QLineEdit("")
         self.editDatasetFolder.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editDatasetFolder.setMinimumWidth(LINEWIDTH)
         self.editExportArea = QLineEdit("")
@@ -72,7 +72,7 @@ class QtNewDatasetWidget(QWidget):
         self.comboSplitMode.setFixedWidth(LINEWIDTH)
         self.comboSplitMode.addItem("Uniform (vertical)")
         self.comboSplitMode.addItem("Uniform (horizontal)")
-        self.comboSplitMode.addItem("Random")
+        # self.comboSplitMode.addItem("Random")
         self.comboSplitMode.addItem("Biologically-inspired")
         self.editTargetScale = QLineEdit("1.0")
         self.editTargetScale .setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")

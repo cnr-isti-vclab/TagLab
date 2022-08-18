@@ -97,7 +97,9 @@ class QtRegionAttributesWidget(QWidget):
         self.table.cellActivated.connect(self.selectRow)
         self.table.cellClicked.connect(self.selectRow)
         self.table.currentCellChanged.connect(self.selectRow)
-        self.table.setStyleSheet("QHeaderView::section { background-color: rgb(40,40,40); }")
+
+        self.table.setStyleSheet("QTableCornerButton::section { background-color: rgb(40,40,40); }"
+                                 "QHeaderView::section { background-color: rgb(40,40,40); }")
 
         left_layout.addWidget(self.table)
 
@@ -266,21 +268,21 @@ class QtRegionAttributesWidget(QWidget):
         self.table.setItem(row, 0, QTableWidgetItem(field['name']))
         self.table.setItem(row, 1, QTableWidgetItem(field['type']))
         min = ''
-        if 'min' in field.keys() and field['min'] != None:
+        if 'min' in field.keys() and field['min'] is not None:
             value = field['min']
             if field['type'] == 'integer number':
                 value = int(value)
             min = str(value)
         self.table.setItem(row, 2, QTableWidgetItem(min))
         max = ''
-        if 'max' in field.keys() and field['max'] != None:
+        if 'max' in field.keys() and field['max'] is not None:
             value = field['max']
             if field['type'] == 'integer number':
                 value = int(value)
             max = str(value)
         self.table.setItem(row, 3, QTableWidgetItem(max))
 
-        if not 'keywords' in field or field['keywords'] == None:
+        if not 'keywords' in field or field['keywords'] is None:
             field['keywords'] = []
         self.table.setItem(row, 4, QTableWidgetItem(', '.join(field['keywords'])))
 
@@ -303,11 +305,11 @@ class QtRegionAttributesWidget(QWidget):
         self.updateFieldType()
 
         min = ''
-        if 'min' in field.keys() and field['min'] != None:
+        if 'min' in field.keys() and field['min'] is not None:
             min = str(field['min'])
         self.editMin.setText(min)
         max = ''
-        if 'max' in field.keys() and field['max'] != None:
+        if 'max' in field.keys() and field['max'] is not None:
             max = str(field['max'])
         self.editMax.setText(max)
         self.editValues.setText(' '.join(field['keywords']))
@@ -347,9 +349,10 @@ class QtRegionAttributesWidget(QWidget):
                 return False
         field['max'] = max
 
-        if field['max'] <= field['min']:
-            self.message("Max value must be greater than Min value.")
-            return False
+        if field['max'] is not None and field['min'] is not None:
+            if field['max'] <= field['min']:
+                self.message("Max value must be greater than Min value.")
+                return False
 
         keywords =  self.editValues.text();
         if keywords != '':

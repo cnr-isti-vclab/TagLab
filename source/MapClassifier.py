@@ -52,23 +52,21 @@ class MapClassifier(QObject):
     def __init__(self, classifier_info, labels_dictionary, parent=None):
         super(QObject, self).__init__(parent)
 
-        self.label_colors = []
-
         self.classifier_name = classifier_info['Classifier Name']
         self.nclasses = classifier_info['Num. Classes']
-        self.label_names = classifier_info['Classes']
+        self.labels_code_dict = classifier_info['Classes']
 
         self.background_index = -1
 
-        for index, label_name in enumerate(self.label_names):
-
-            if label_name == "Background":
-                color = [0, 0, 0]
-                self.background_index = index
+        self.label_colors = [[0,0,0]] * len(self.labels_code_dict)
+        for key in self.labels_code_dict.keys():
+            if key == "Background":
+                self.background_index = self.labels_code_dict[key]
+                self.label_colors[self.background_index] = [0,0,0]
             else:
-                color = labels_dictionary[label_name].fill
-
-            self.label_colors.append(color)
+                color = labels_dictionary[key].fill
+                index = self.labels_code_dict[key]
+                self.label_colors[index] = color
 
         self.average_norm = classifier_info['Average Norm.']
         self.net = self._load_classifier(classifier_info['Weights'])

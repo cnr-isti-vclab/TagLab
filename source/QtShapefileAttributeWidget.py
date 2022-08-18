@@ -80,7 +80,7 @@ class QtAttributeWidget(QWidget):
         self.fieldslist = []
         self.my_class = None
 
-        FIELDS_FOR_ROW = 6
+        FIELDS_FOR_ROW = 5
 
         lbltype = QLabel("Shapefile type:")
 
@@ -106,20 +106,21 @@ class QtAttributeWidget(QWidget):
         for i in range(0, len(self.data.columns)):
             field = self.data.columns[i]
             type = self.data.dtypes[i]
-            chkBox = QCheckBox(field)
-            chkBox.setChecked(False)
-            if type == 'int64':
-                chkBox.setProperty('type', 'integer number')
-            elif type == 'float64':
-                chkBox.setProperty('type', 'decimal number')
-            else:
-                 chkBox.setProperty('type', 'string')
 
-            self.fields_layout.addWidget(chkBox, i / FIELDS_FOR_ROW, i % FIELDS_FOR_ROW)
+            # TagLab PROPERTIES CANNOT IMPORTED TO AVOID POTENTIAL CONFLICTS (!)
+            if field[0:3] != "TL_":
 
-            self.checkBoxes.append(chkBox)
-            self.fields_layout.addWidget(chkBox)
+                chkBox = QCheckBox(field)
+                chkBox.setChecked(False)
+                if type == 'int64':
+                    chkBox.setProperty('type', 'integer number')
+                elif type == 'float64':
+                    chkBox.setProperty('type', 'decimal number')
+                else:
+                     chkBox.setProperty('type', 'string')
 
+                self.fields_layout.addWidget(chkBox, i / FIELDS_FOR_ROW, i % FIELDS_FOR_ROW)
+                self.checkBoxes.append(chkBox)
 
         label_layout = QHBoxLayout()
         my_lbl = QLabel("Select class name:")
@@ -153,10 +154,16 @@ class QtAttributeWidget(QWidget):
         layout.addSpacing(20)
         layout.addWidget(lbl)
         layout.addLayout(self.fields_layout)
+        layout.addSpacing(20)
         layout.addLayout(label_layout)
+        layout.addSpacing(20)
+        #layout.addWidget(QLabel("<em>Note that it is not possible to import TagLab properties.</em>"))
         layout.addLayout(buttons_layout)
 
         self.setLayout(layout)
+
+        self.adjustSize()
+
         self.setWindowTitle("Shapefile Attribute Editor")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
@@ -185,6 +192,7 @@ class QtAttributeWidget(QWidget):
            self.shape = 'Other'
 
         self.fieldlist =[]
+        self.fieldlist =[]
         flagExist = False
 
         for checkbox in self.checkBoxes:
@@ -194,7 +202,7 @@ class QtAttributeWidget(QWidget):
             if checkbox.isChecked():
                 fieldname = checkbox.text()
 
-                # TagLab properties ARE NOT IMPORTED TO AVOID POTENTIAL CONFLICTS (!)
+                # TagLab PROPERTIES CANNOT IMPORTED TO AVOID POTENTIAL CONFLICTS (!)
                 if fieldname[0:3] != "TL_":
                     self.fieldlist.append({'name': checkbox.text(), 'type': checkbox.property('type')})
 

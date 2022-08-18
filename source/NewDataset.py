@@ -85,9 +85,14 @@ class NewDataset(object):
 		w = int(crop_ortho_image.width() * scale)
 		h = int(crop_ortho_image.height() * scale)
 
-		self.ortho_image = crop_ortho_image.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
-		self.label_image = crop_label_image.scaled(w, h, Qt.IgnoreAspectRatio, Qt.FastTransformation)
-
+		if w >= 32767 or h >= 32767:
+			self.ortho_image = None
+			self.label_image = None
+			return False
+		else:
+			self.ortho_image = crop_ortho_image.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+			self.label_image = crop_label_image.scaled(w, h, Qt.IgnoreAspectRatio, Qt.FastTransformation)
+			return True
 
 	def isFullyInsideBBox(self, bbox1, bbox2):
 		"""
@@ -173,15 +178,17 @@ class NewDataset(object):
 		map_h = self.ortho_image.height()
 		area_map = map_w * map_h
 
-		frequencies = []
-		for class_name in target_classes:
+		frequencies = {}
+		for key in target_classes.keys():
+
 			area = 0.0
-			for blob in self.blobs:
-				if blob.class_name == class_name:
-					area += blob.area
+			if key != "Background":
+				for blob in self.blobs:
+					if blob.class_name == key:
+						area += blob.area
 
 			freq = area / area_map
-			frequencies.append(freq)
+			frequencies[key] = freq
 
 		self.frequencies = frequencies
 
@@ -200,15 +207,18 @@ class NewDataset(object):
 
 		A = float(area[2] * area[3])
 
-		coverage_per_class = []
-		for i in range(len(target_classes)):
-			i = i + 1  # background is skipped
-			coverage = float(np.count_nonzero(labelsint == i)) / A
-			coverage_per_class.append(coverage)
+		# background is skipped
+		coverage_per_class = {}
+		for key in target_classes.keys():
+			if key != "Background":
+				label_code = target_classes[key]
+				coverage = float(np.count_nonzero(labelsint == label_code)) / A
+				coverage_per_class[key] = coverage
 
 		return coverage_per_class
 
 
+	# FIXME: This function is no more valid and it must be reimplemented
 	def computeRadii(self, target_classes):
 
 		class_sample_info = []
@@ -251,27 +261,26 @@ class NewDataset(object):
 		PSCV = []
 
 		# a coral is counted if and only if it is inside the given area for 3/4
-		for i, class_name in enumerate(target_classes):
+		for key in enumerate(target_classes.keys()):
 
-			areas = []
-			if self.frequencies[i] > 0.0:
-				for blob in self.blobs:
-					if blob.class_name == class_name and self.checkBlobInside(area, blob, 3.0/4.0):
-						areas.append(blob.area)
+			if key != "Background":
 
-			# number of entities
-			number.append(len(areas))
+				areas = []
+				if self.frequencies[key] > 0.0:
+					for blob in self.blobs:
+						if blob.class_name == key and self.checkBlobInside(area, blob, 3.0/4.0):
+							areas.append(blob.area)
 
-			if len(areas) > 0:
+				# number of entities
+				number.append(len(areas))
 
-				# Patch Size Coefficient of Variation (PSCV)
-				mean_areas = np.mean(areas)
-				std_areas = np.std(areas)
-				PSCV.append((100.0 * std_areas) / mean_areas)
-
-			else:
-
-				PSCV.append(0.0)
+				if len(areas) > 0:
+					# Patch Size Coefficient of Variation (PSCV)
+					mean_areas = np.mean(areas)
+					std_areas = np.std(areas)
+					PSCV.append((100.0 * std_areas) / mean_areas)
+				else:
+					PSCV.append(0.0)
 
 		# coverage evaluation
 		coverage = self.computeExactCoverage(area, target_classes)
@@ -517,9 +526,10 @@ class NewDataset(object):
 		self.label_image = labelimg
 
 
-	def convert_colors_to_labels(self, target_classes, labels_colors):
+	def convertColorsToLabels(self, target_classes, labels_colors):
 		"""
 		Convert the label image to a numpy array with the labels' values.
+		NOTE: target_classes is a dictionary. The key is the label name which maps to the label code.
 		"""
 
 		label_w = self.label_image.width()
@@ -527,21 +537,19 @@ class NewDataset(object):
 
 		imglbl = utils.qimageToNumpyArray(self.label_image)
 
-		num_classes = len(target_classes)
-
-		# class 0 --> background
+		# classes with unknown color (color not present in the given dictionary) are assigned to white
 		self.labels = np.zeros((label_h, label_w), dtype='int64')
-		for i, cl in enumerate(target_classes):
-			label = labels_colors.get(cl)
+		for key in target_classes.keys():
+			label = labels_colors.get(key)
+			label_code = target_classes[key]
+
 			if label is None:
-				if cl == "Background":
-					class_colors = [0, 0, 0]
-				else:
-					class_colors = [255, 255, 255]
+				class_colors = [255, 255, 255]
 			else:
 				class_colors = label.fill
+
 			idx = np.where((imglbl[:, :, 0] == class_colors[0]) & (imglbl[:, :, 1] == class_colors[1]) & (imglbl[:, :, 2] == class_colors[2]))
-			self.labels[idx] = i + 1
+			self.labels[idx] = label_code
 
 
 	def setupAreas(self, mode, target_classes=None):
@@ -584,23 +592,43 @@ class NewDataset(object):
 
 		elif mode == "RANDOM":
 
-			area_w = int(math.sqrt(0.15) * map_w)
-			area_h = int(math.sqrt(0.15) * map_h)
+			ncrops_w = int((float)(map_w - self.crop_size*2) / float(self.crop_size))
+			ncrops_h = int((float)(map_h - self.crop_size*2) / float(self.crop_size))
+			ncrops_ref = round(ncrops_w * ncrops_h * 0.12)
 
-			for j in range(1000):
-				px1 = rnd.randint(0, map_w - area_w - 1)
-				py1 = rnd.randint(0, map_h - area_h - 1)
-				px2 = rnd.randint(0, map_w - area_w - 1)
-				py2 = rnd.randint(0, map_h - area_h - 1)
+			valid_comb = []
+			for j in range(1, ncrops_w):
+				for k in range(1, ncrops_h):
+					if j * k == ncrops_ref:
+						valid_comb.append([j,k])
 
-				area1 = [px1, py1, area_w, area_h]
-				area2 = [px2, py2, area_w, area_h]
+			delta = int(self.crop_size/2)
+			min_intersection = map_w * map_h
+			# initialize the random number generator using the system time
+			rnd.seed()
+			for j in range(30000):
+
+				comb = valid_comb[rnd.randint(0, len(valid_comb)-1)]
+				area_w1 = int(comb[0] * self.crop_size)
+				area_h1 = int(comb[1] * self.crop_size)
+				px1 = rnd.randint(delta, map_w - delta - area_w1 - 1)
+				py1 = rnd.randint(delta, map_h - delta - area_h1 - 1)
+
+				comb = valid_comb[rnd.randint(0, len(valid_comb)-1)]
+				area_w2 = int(comb[0] * self.crop_size)
+				area_h2 = int(comb[1] * self.crop_size)
+				px2 = rnd.randint(delta, map_w - delta - area_w2 - 1)
+				py2 = rnd.randint(delta, map_h - delta - area_h2 - 1)
+
+				area1 = [py1, px1, area_w1, area_h1]
+				area2 = [py2, px2, area_w2, area_h2]
 
 				intersection = self.bbox_intersection(area1, area2)
 
-				if intersection < 1.0:
+				if intersection < min_intersection:
 					val_area = area1
 					test_area = area2
+					min_intersection = intersection
 
 		elif mode == "BIOLOGICALLY-INSPIRED":
 
@@ -675,7 +703,8 @@ class NewDataset(object):
 				bbox2[3] = half_size * 2
 
 				area = self.bbox_intersection(bbox1, bbox2)
-				if area > 10.0:
+				area_perc = (100.0*area) / float(bbox1[2] * bbox1[3])
+				if area_perc > 10.0:
 					flag = False
 					break
 
@@ -688,7 +717,8 @@ class NewDataset(object):
 					bbox2[3] = half_size * 2
 
 					area = self.bbox_intersection(bbox1, bbox2)
-					if area > 10.0:
+					area_perc = (100.0 * area) / float(bbox1[2] * bbox1[3])
+					if area_perc > 10.0:
 						flag = False
 						break
 
@@ -725,7 +755,8 @@ class NewDataset(object):
 				bbox2[3] = half_size * 2
 
 				area = self.bbox_intersection(bbox1, bbox2)
-				if area > 10.0:
+				area_perc = (100.0*area) / float(bbox1[2] * bbox1[3])
+				if area_perc > 10.0:
 					flag = False
 
 			if flag is True:
@@ -737,7 +768,8 @@ class NewDataset(object):
 					bbox2[3] = half_size * 2
 
 					area = self.bbox_intersection(bbox1, bbox2)
-					if area > 10.0:
+					area_perc = (100.0 * area) / float(bbox1[2] * bbox1[3])
+					if area_perc > 10.0:
 						flag = False
 
 			if flag is True:
@@ -746,6 +778,7 @@ class NewDataset(object):
 		return cleaned_tiles
 
 
+	# FIXME: This function is no more valid and it must be reimplemented
 	def computeRadiusMap(self, radius_min, radius_max):
 
 		h = self.labels.shape[0]
@@ -1114,61 +1147,6 @@ class NewDataset(object):
 			cropimg.save(filenameRGB)
 			croplabel.save(filenameLabel)
 
-
-	##### SERVICE FUNCTIONS
-
-	def classFrequenciesOnTiles(self, target_classes):
-
-		num_classes = len(target_classes)
-		delta = int(self.crop_size / 2)
-		area = [0, 0, 0, 0]
-		coverage = np.zeros(num_classes, dtype='float')
-		for tile in self.training_tiles:
-			area[0] = int(tile[1] - delta)
-			area[1] = int(tile[0] - delta)
-			area[2] = self.crop_size
-			area[3] = self.crop_size
-
-			cov = self.computeExactCoverage(area, target_classes)
-			coverage += np.array(cov)
-
-		coverage = coverage / len(self.training_tiles)
-		return coverage
-
-
-	def classFrequenciesOnDataset(self, labels_dir, target_classes, labels_dictionary):
-		"""
-		Returns the frequencies of the target classes on the given dataset.
-        """
-
-		num_classes = len(target_classes)
-
-		image_label_names = [x for x in glob.glob(os.path.join(labels_dir, '*.png'))]
-
-		total_pixels = 0
-		counters = np.zeros(num_classes, dtype='float')
-		for label_name in image_label_names:
-
-			image_label = QImage(label_name)
-			# image_label = image_label.convertToFormat(QImage.Format_RGB32)
-			label_w = image_label.width()
-			label_h = image_label.height()
-			total_pixels += label_w * label_h
-			imglbl = utils.qimageToNumpyArray(image_label)
-
-			# class 0 --> background
-			labelsint = np.zeros((label_h, label_w), dtype='int64')
-			for i, cl in enumerate(target_classes):
-				class_colors = labels_dictionary[cl].fill
-				idx = np.where((imglbl[:, :, 0] == class_colors[0]) & (imglbl[:, :, 1] == class_colors[1]) & (
-							imglbl[:, :, 2] == class_colors[2]))
-				labelsint[idx] = i + 1
-
-			for i in range(len(target_classes)):
-				counters[i] += float(np.count_nonzero(labelsint == i + 1))
-
-		freq = counters / float(total_pixels)
-		print(freq)
 
 	##### VISUALIZATION FUNCTIONS - FOR DEBUG PURPOSES
 
