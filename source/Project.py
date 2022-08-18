@@ -306,7 +306,7 @@ class Project(object):
 
     def classColor(self, class_name):
         if class_name == "Empty":
-            return [128, 128, 128]
+            return [127, 127, 127]
         if not class_name in self.labels:
             raise ("Missing label for " + class_name)
         return self.labels[class_name].fill

@@ -395,8 +395,9 @@ class QtDictionaryWidget(QWidget):
 
         for key in self.project.labels.keys():
             label = self.project.labels[key]
-            lbl = Label(id=label.id, name=label.name, fill=label.fill)
-            self.labels.append(lbl)
+            if label.name != "Empty":  # empty is a special tag, it is always present in the dictionary, and it cannot be edited
+                lbl = Label(id=label.id, name=label.name, fill=label.fill)
+                self.labels.append(lbl)
 
         self.createAllLabels()
 
@@ -476,7 +477,7 @@ class QtDictionaryWidget(QWidget):
     @pyqtSlot()
     def editLabel(self):
 
-        if self.selection_index > 0:
+        if self.selection_index >= 0:
 
             label = self.labels[self.selection_index]
             oldname = label.name
