@@ -39,6 +39,8 @@ from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QFileDialog, QCo
 
 import pprint
 # PYTORCH
+from source.QtAlignmentToolWidget import QtAlignmentToolWidget
+
 try:
     import torch
     from torch.nn.functional import upsample
@@ -168,6 +170,7 @@ class TagLab(QMainWindow):
 
         self.mapWidget = None
         self.projectEditor = None
+        self.alignToolWidget = None
         self.editProjectWidget = None
         self.scale_widget = None
         self.dictionary_widget = None
@@ -900,6 +903,9 @@ class TagLab(QMainWindow):
         createDicAct = QAction("Labels Dictionary Editor...", self)
         createDicAct.triggered.connect(self.createDictionary)
 
+        alignToolAct = QAction("Alignment Tool", self)
+        alignToolAct.triggered.connect(self.openAlignmentTool)
+
         regionAttributesAct = QAction("Region Attributes...", self)
         regionAttributesAct.triggered.connect(self.editRegionAttributes)
 
@@ -1037,6 +1043,8 @@ class TagLab(QMainWindow):
         self.projectmenu.addAction(projectEditorAct)
         self.projectmenu.addSeparator()
         self.projectmenu.addAction(setWorkingAreaAct)
+        self.projectmenu.addSeparator()
+        self.projectmenu.addAction(alignToolAct)
         self.projectmenu.addSeparator()
         self.projectmenu.addAction(createDicAct)
         self.projectmenu.addSeparator()
@@ -2977,6 +2985,28 @@ class TagLab(QMainWindow):
 
         self.projectEditor.fillMaps()
         self.projectEditor.show()
+
+    @pyqtSlot()
+    def closeAlignmentTool(self):
+        self.alignToolWidget = None
+        self.updateToolStatus()
+        self.updateImageSelectionMenu()
+        self.updatePanels()
+
+    @pyqtSlot()
+    def openAlignmentTool(self):
+        if len(self.project.images) < 2:
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("At least two map are required to open the alignment tool")
+            msgBox.exec()
+            return
+
+        if self.alignToolWidget is None:
+            self.alignToolWidget = QtAlignmentToolWidget(self.project, parent=self)
+            self.alignToolWidget.setWindowModality(Qt.WindowModal)
+            self.alignToolWidget.closed.connect(self.closeAlignmentTool)
+            self.alignToolWidget.showMaximized()
 
     @pyqtSlot()
     def createDictionary(self):
