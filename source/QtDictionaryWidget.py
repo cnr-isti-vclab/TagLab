@@ -64,8 +64,8 @@ class QtDictionaryWidget(QWidget):
         self.button_new = QPushButton("New")
         self.button_new.clicked.connect(self.newDictionary)
 
-        self.button_current = QPushButton("Use current")
-        self.button_current.clicked.connect(self.currentDictionary)
+        #self.button_current = QPushButton("Use current")
+        #self.button_current.clicked.connect(self.currentDictionary)
 
         self.button_load = QPushButton("Load")
         self.button_load.clicked.connect(self.chooseDictionary)
@@ -178,7 +178,7 @@ class QtDictionaryWidget(QWidget):
 
         layout_zerorow = QHBoxLayout()
         layout_zerorow.addWidget(self.button_new)
-        layout_zerorow.addWidget(self.button_current)
+        #layout_zerorow.addWidget(self.button_current)
         layout_zerorow.addWidget(self.button_load)
         layout_zerorow.addWidget(self.btn_save)
 
@@ -254,19 +254,27 @@ class QtDictionaryWidget(QWidget):
         self.edit_description.setText("")
         self.edit_dname.setText("")
 
-        self.labels = []
-
-        labels_currently_in_use = self.project.labelsInUse()
-
-        for label_name in labels_currently_in_use:
-            self.labels.append(self.project.labels[label_name])
-
+        self.removeAllLabels()
         self.displayLabels()
 
-    @pyqtSlot()
-    def currentDictionary(self):
+    def removeAllLabels(self):
+        """
+        It removes all the labels but not the ones in use.
+        """
 
-        self.populateLabelsFromProjectDictionary()
+        current_labels = self.labels.copy()
+
+        self.labels_in_use = self.project.labelsInUse()
+
+        for label in current_labels:
+            if label.name in self.labels_in_use:
+                pass
+            else:
+                oldname = label.name
+                self.labels.remove(label)
+
+        # only one notification is sufficient to update all the removed labels
+        self.deletelabel.emit(oldname)
 
     @pyqtSlot()
     def chooseDictionary(self):
@@ -288,7 +296,9 @@ class QtDictionaryWidget(QWidget):
                 buttonN.setText('Replace')
                 box.exec()
                 if box.clickedButton() == buttonN:
-                    self.labels = []
+                    flag_replace = True
+                else:
+                    flag_replace = False
 
             self.edit_load.setText(fileName)
 
@@ -298,12 +308,45 @@ class QtDictionaryWidget(QWidget):
             self.edit_description.document().setPlainText(dict["Description"])
             ALLlabels = dict["Labels"]
 
+            labels_loaded = []
             for label in ALLlabels:
                name= label['name']
                id = label['name']
                fill = label['fill']
                mylabel = Label(id=id, name=name, fill=fill)
-               self.labels.append(mylabel)
+               labels_loaded.append(mylabel)
+
+            if flag_replace is True:
+                # REPLACE CURRENT DICTIONARY WITH THE LOADED ONE
+                self.removeAllLabels()
+
+            # create a dictionary to speed up the search of the existing labels
+            labels_dict = {}
+            for label in self.labels:
+                labels_dict[label.name] = label
+            labels_names = list(labels_dict.keys())
+
+            # add or update the loaded label
+            for label in labels_loaded:
+                if label.name in labels_names:
+                    # update the label
+                    oldname = labels_dict[label.name].name
+                    oldcolor = labels_dict[label.name].fill
+                    newname = label.name
+                    newcolor = label.fill
+
+                    if oldcolor == newcolor and oldname == newname:
+                        pass
+                    else:
+                        labels_dict[label.name].fill = newcolor
+                        self.updatelabel.emit(oldname, oldcolor, newname, newcolor)
+
+                else:
+                    # add a new label
+                    self.labels.append(label)
+
+            # only one notification is sufficient to update all the modified labels
+            self.addlabel.emit()
 
             self.displayLabels()
 
@@ -639,15 +682,10 @@ class QtDictionaryWidget(QWidget):
 
             self.addlabel.emit()
 
-
-
-
         else:
             box = QMessageBox()
             box.setText("Please chose a valid color and type a label name")
             box.exec()
-
-
 
     def eventFilter(self, object, event):
 
