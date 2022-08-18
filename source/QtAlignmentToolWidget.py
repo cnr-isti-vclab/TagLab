@@ -1630,9 +1630,13 @@ All markers must be valid to proceed.
                 cpy1.addChannel(newFilename, ch.type)
             # Add image
             self.project.addNewImage(cpy1)
+
         # ================================ End =============================================
         QApplication.restoreOverrideCursor()
         # Close widget (?)
+        box = QMessageBox()
+        box.setText("The co-registered image has been added to the project and saved in your folder")
+        box.exec()
         self.close()
 
     def __transformBBox(self, bbox, rot, tra):

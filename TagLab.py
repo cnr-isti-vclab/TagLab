@@ -58,6 +58,7 @@ from source.QtSettingsWidget import QtSettingsWidget
 from source.QtMapSettingsWidget import QtMapSettingsWidget
 from source.QtScaleWidget import QtScaleWidget
 from source.QtWorkingAreaWidget import QtWorkingAreaWidget
+from source.QtCropWidget import QtCropWidget
 from source.QtLayersWidget import QtLayersWidget
 from source.QtHelpWidget import QtHelpWidget
 from source.QtProgressBarCustom import QtProgressBarCustom
@@ -175,6 +176,7 @@ class TagLab(QMainWindow):
         self.scale_widget = None
         self.dictionary_widget = None
         self.working_area_widget = None
+        self.crop_widget = None
         self.classifierWidget = None
         self.newDatasetWidget = None
 
@@ -870,11 +872,6 @@ class TagLab(QMainWindow):
         openAct.setStatusTip("Open An Existing Project")
         openAct.triggered.connect(self.openProject)
 
-        editAct = QAction("Edit Project...", self)
-        editAct.setShortcut('Ctrl+E')
-        editAct.setStatusTip("Edit Current Project")
-        editAct.triggered.connect(self.editProject)
-
         saveAct = QAction("Save Project", self)
         saveAct.setShortcut('Ctrl+S')
         saveAct.setStatusTip("Save Current Project")
@@ -1008,7 +1005,6 @@ class TagLab(QMainWindow):
         self.filemenu.setStyleSheet(styleMenu)
         self.filemenu.addAction(newAct)
         self.filemenu.addAction(openAct)
-        #self.filemenu.addAction(editAct)
         self.filemenu.addAction(saveAct)
         self.filemenu.addAction(saveAsAct)
         self.filemenu.addSeparator()
@@ -1201,6 +1197,87 @@ class TagLab(QMainWindow):
         self.mapWidget.accepted.disconnect()
         self.mapWidget.accepted.connect(self.updateMapProperties)
         self.mapWidget.show()
+
+    def cropMapImage(self, img):
+
+        if self.activeviewer is not None:
+            if self.activeviewer.image is not None:
+                if self.crop_widget is None:
+
+                    self.disableSplitScreen()
+
+                    self.crop_widget = QtCropWidget(self.editProjectWidget)
+                    self.crop_widget.btnChooseArea.clicked.connect(self.enableAreaSelection)
+                    self.crop_widget.closed.connect(self.disableAreaSelection)
+                    self.crop_widget.closed.connect(self.deleteCropWidget)
+                    self.crop_widget.btnApply.clicked.connect(lambda x, img = img:self.cropImage)
+                    selection_tool = self.activeviewer.tools.tools["SELECTAREA"]
+                    selection_tool.setAreaStyle("WORKING")
+                    selection_tool.rectChanged[int, int, int, int].connect(self.crop_widget.updateArea)
+                    self.crop_widget.areaChanged[int, int, int, int].connect(selection_tool.setSelectionRectangle)
+
+        self.crop_widget.show()
+
+
+    def cropImage(self,img):
+
+        x, y, width, height = self.crop_widget.getCropArea()
+        if width != 0 and height != 0:
+
+            # Create copy of image
+            tag = "_cropped"
+            name = img.id + tag
+            img_copy = Image(
+                rect=img.rect,
+                map_px_to_mm_factor=img.map_px_to_mm_factor,
+                width=width,
+                height=height,
+                id=img.id,
+                name=name,
+                acquisition_date=img.acquisition_date,
+                georef_filename=img.georef_filename,
+                metadata=img.metadata,
+                layers=img.layers,
+                grid=img.grid,
+                export_dataset_area=img.export_dataset_area
+            )
+
+            # copy blobs
+            for blob in img.blobs:
+                img_copy.annotations.addBlob(blob, notify=False)
+
+            # copy channels
+            for channel in img.channels:
+                pass
+
+            # update blobs coordinates
+            pass
+
+            # Add image
+            self.project.addNewImage(img_copy)
+
+            # delete original image from the project
+            self.deleteImage(img)
+
+            # save project with the same name
+            self.project.save()
+
+            self.crop_widget.close()
+            self.deleteCropWidget()
+        else:
+            box = QMessageBox(self.crop_widget)
+            box.setText("Please, select a valid cropping area")
+            box.exec()
+            return
+
+
+        pass
+
+    @pyqtSlot()
+    def deleteCropWidget(self):
+
+        del self.crop_widget
+        self.crop_widget = None
 
     def deleteImage(self, img):
 
@@ -2942,7 +3019,7 @@ class TagLab(QMainWindow):
         if self.editProjectWidget is None:
 
             self.editProjectWidget = QtProjectWidget(self.project, parent=self)
-            self.editProjectWidget.setWindowModality(Qt.WindowModal)
+            self.editProjectWidget.setWindowModality(Qt.NonModal)
             self.editProjectWidget.show()
 
         else:
@@ -2980,7 +3057,7 @@ class TagLab(QMainWindow):
     def openProjectEditor(self):
         if self.projectEditor is None:
             self.projectEditor = QtProjectEditor(self.project, parent=self)
-            self.projectEditor.setWindowModality(Qt.WindowModal)
+            # self.projectEditor.setWindowModality(Qt.WindowModal)
             self.projectEditor.closed.connect(self.closeProjectEditor)
 
         self.projectEditor.fillMaps()
@@ -3461,7 +3538,6 @@ class TagLab(QMainWindow):
                     selection_tool = self.activeviewer.tools.tools["SELECTAREA"]
                     selection_tool.setAreaStyle("WORKING")
                     selection_tool.rectChanged[int, int, int, int].connect(self.working_area_widget.updateArea)
-                    self.working_area_widget.areaChanged[int, int, int, int].connect(selection_tool.setSelectionRectangle)
                     self.working_area_widget.areaChanged[int, int, int, int].connect(selection_tool.setSelectionRectangle)
 
                     if self.project.working_area is not None:

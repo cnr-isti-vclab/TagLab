@@ -96,6 +96,11 @@ class QtProjectEditor(QWidget):
             edit.clicked.connect(lambda x, img=img: self.editMap(img))
             map_layout.addWidget(edit)
 
+            crop = QPushButton("crop")
+            crop.setMaximumWidth(80)
+            crop.clicked.connect(lambda x, img=img: self.cropMap(img))
+            map_layout.addWidget(crop)
+
             delete = QPushButton("delete")
             delete.setMaximumWidth(80)
             delete.clicked.connect(lambda x, img=img: self.deleteMap(img))
@@ -119,6 +124,10 @@ class QtProjectEditor(QWidget):
 
         # mapWidget actually disconnects everything before show
         self.parent().mapWidget.accepted.connect(self.fillMaps)
+
+    def cropMap(self, img):
+
+        self.parent().cropMapImage(img)
 
     def deleteMap(self, img):
 
