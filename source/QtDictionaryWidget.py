@@ -257,10 +257,11 @@ class QtDictionaryWidget(QWidget):
         self.labels = []
 
         labels_currently_in_use = self.project.labelsInUse()
+
         for label_name in labels_currently_in_use:
             self.labels.append(self.project.labels[label_name])
 
-        self.createAllLabels()
+        self.displayLabels()
 
     @pyqtSlot()
     def currentDictionary(self):
@@ -304,7 +305,7 @@ class QtDictionaryWidget(QWidget):
                mylabel = Label(id=id, name=name, fill=fill)
                self.labels.append(mylabel)
 
-            self.createAllLabels()
+            self.displayLabels()
 
 
     @pyqtSlot()
@@ -399,9 +400,9 @@ class QtDictionaryWidget(QWidget):
                 lbl = Label(id=label.id, name=label.name, fill=label.fill)
                 self.labels.append(lbl)
 
-        self.createAllLabels()
+        self.displayLabels()
 
-    def createAllLabels(self):
+    def displayLabels(self):
 
         self.labels_layout = QVBoxLayout()
         self.label_color = []
@@ -505,7 +506,7 @@ class QtDictionaryWidget(QWidget):
                 label.name = newname
                 label.fill = [r, g, b]
 
-                self.createAllLabels()
+                self.displayLabels()
                 lbl_selected = self.label_name[self.selection_index]
                 lbl_selected.setStyleSheet("border: 1 px; font-weight: bold; color: white;")
                 self.updatelabel.emit(oldname, oldcolor, label.name, label.fill)
@@ -538,7 +539,7 @@ class QtDictionaryWidget(QWidget):
 
     def removeLabel(self):
 
-        if self.selection_index > 0:
+        if self.selection_index >= 0:
             label = self.labels[self.selection_index]
             oldname = label.name
 
@@ -564,7 +565,7 @@ class QtDictionaryWidget(QWidget):
 
             if delete_ok is True:
                 self.labels.remove(label)
-                self.createAllLabels()
+                self.displayLabels()
                 self.selection_index = -1
 
                 self.editR.blockSignals(True)
