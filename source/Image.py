@@ -158,10 +158,11 @@ class Image(object):
             name_list = []
             visible_blobs = []
             for blob in self.annotations.seg_blobs:
-                if blob.qpath_gitem.isVisible():
-                    index = blob.blob_name
-                    name_list.append(index)
-                    visible_blobs.append(blob)
+                if blob.qpath_gitem is not None:
+                    if blob.qpath_gitem.isVisible():
+                        index = blob.blob_name
+                        name_list.append(index)
+                        visible_blobs.append(blob)
 
             number_of_seg = len(name_list)
             dict = {
