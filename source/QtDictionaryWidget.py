@@ -286,6 +286,7 @@ class QtDictionaryWidget(QWidget):
 
         if fileName:
 
+            flag_replace = False
             if self.labels:
                 box = QMessageBox()
                 box.setIcon(QMessageBox.Question)
