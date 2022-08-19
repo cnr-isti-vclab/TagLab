@@ -252,6 +252,7 @@ class QtDictionaryWidget(QWidget):
     def newDictionary(self):
 
         self.edit_description.setText("")
+        self.edit_load.setText("")
         self.edit_dname.setText("")
 
         self.removeAllLabels()
