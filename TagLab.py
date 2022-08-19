@@ -103,9 +103,11 @@ logging.basicConfig(level=logging.DEBUG, filemode='w', filename=LOG_FILENAME, fo
 logfile = logging.getLogger("tool-logger")
 
 class MainWindow(QMainWindow):
+
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
         pass
+
     def closeEvent(self, event):
         taglab = self.centralWidget()
         if taglab.project.filename is not None:
@@ -121,6 +123,7 @@ class MainWindow(QMainWindow):
                 return
 
         super(MainWindow, self).closeEvent(event)
+
 
 class TagLab(QMainWindow):
 
@@ -3005,14 +3008,24 @@ class TagLab(QMainWindow):
     @pyqtSlot()
     def newProject(self):
 
+        if self.project.filename is not None:
+
+            box = QMessageBox()
+            reply = box.question(self, self.TAGLAB_VERSION, "Do you want to save current project to " + self.project.filename,
+                                 QMessageBox.Cancel | QMessageBox.Yes | QMessageBox.No)
+
+            if reply == QMessageBox.Yes:
+                self.saveProject()
+
+            if reply == QMessageBox.Cancel:
+                return
+
         self.resetAll()
         self.setTool("MOVE")
         self.updateToolStatus()
         self.setProjectTitle("NONE")
         logfile.info("[PROJECT] A new project has been setup.")
         self.groupbox_blobpanel.region_attributes = self.project.region_attributes
-
-
 
     @pyqtSlot()
     def editProject(self):
