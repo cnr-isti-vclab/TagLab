@@ -266,6 +266,7 @@ class QtDictionaryWidget(QWidget):
 
         self.labels_in_use = self.project.labelsInUse()
 
+        oldname = ""
         for label in current_labels:
             if label.name in self.labels_in_use:
                 pass
@@ -274,7 +275,8 @@ class QtDictionaryWidget(QWidget):
                 self.labels.remove(label)
 
         # only one notification is sufficient to update all the removed labels
-        self.deletelabel.emit(oldname)
+        if oldname != "":
+            self.deletelabel.emit(oldname)
 
     @pyqtSlot()
     def chooseDictionary(self):
