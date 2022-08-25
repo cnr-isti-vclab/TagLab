@@ -1055,7 +1055,6 @@ class QtAlignmentToolWidget(QWidget):
 
         self.table =QTableWidget(10, 5)
         self.table.setHorizontalHeaderLabels(["Add/remove","Point Id", "X err", "Y err", "Dist err"])
-        self.table.itemChanged[QTableWidgetItem].connect(self.updateComputation)
         self.table.setSelectionBehavior(QTableView.SelectRows)
         self.table.setSelectionMode(QTableView.SingleSelection)
         self.table.verticalHeader().hide()
@@ -2240,6 +2239,8 @@ All markers must be valid to proceed.
         self.rightPreviewViewer.initializeData(img1, img2, self.sizeL, self.sizeR, q, p)
         self.markers_copy = self.markers.copy()
         self.__fillTable()
+        self.table.itemChanged[QTableWidgetItem].connect(self.updateComputation)
+
 
     def __updatePreview(self) -> None:
         """
@@ -2335,22 +2336,36 @@ All markers must be valid to proceed.
     @pyqtSlot(QTableWidgetItem)
     def updateComputation(self,item):
 
-        self.markers = []
+        self.table.blockSignals(True)
+        num = 0
         for i in range(0,self.table.rowCount()):
             item = self.table.item(i,0)
             if item.checkState() == Qt.Checked:
-                self.markers.append(self.markers_copy[i])
+               num= num+1
 
-        self.__leastSquaresWithSVD()
+        if num > 3:
+            self.markers = []
+            for i in range(0, self.table.rowCount()):
+                item = self.table.item(i, 0)
+                if item.checkState() == Qt.Checked:
+                    self.markers.append(self.markers_copy[i])
+            self.__leastSquaresWithSVD()
+            c = 0
+            for i in range(0,self.table.rowCount()):
+                item = self.table.item(i,0)
+                if item.checkState() == Qt.Checked:
+                    self.table.setItem(i, 1, QTableWidgetItem(str(self.markers[c].identifier)))
+                    self.table.setItem(i, 2, QTableWidgetItem(str(self.markers[c].errorx)))
+                    self.table.setItem(i, 3, QTableWidgetItem(str(self.markers[c].errory)))
+                    self.table.setItem(i, 4, QTableWidgetItem(str(self.markers[c].error)))
+                    c = c+1
+        else:
+            box = QMessageBox()
+            box.setText("This marker cannot be enabled, you always need at least four markers")
+            box.exec()
+            item.setCheckState(Qt.Checked)
 
-        c = 0
-
-        for i in range(0,self.table.rowCount()):
-            item = self.table.item(i,0)
-            if item.checkState() == Qt.Checked:
-                pass
-
-
+        self.table.blockSignals(False)
 
     def __fillTable(self)-> None:
 
