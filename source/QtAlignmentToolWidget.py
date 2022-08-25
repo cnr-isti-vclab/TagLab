@@ -2334,38 +2334,52 @@ All markers must be valid to proceed.
 
 
     @pyqtSlot(QTableWidgetItem)
-    def updateComputation(self,item):
+    def updateComputation(self, item_changed):
 
-        self.table.blockSignals(True)
+        flag_update_table = True
+
         num = 0
         for i in range(0,self.table.rowCount()):
             item = self.table.item(i,0)
-            if item.checkState() == Qt.Checked:
-               num= num+1
-
-        if num > 3:
-            self.markers = []
-            for i in range(0, self.table.rowCount()):
-                item = self.table.item(i, 0)
+            if item is not None:
                 if item.checkState() == Qt.Checked:
-                    self.markers.append(self.markers_copy[i])
-            self.__leastSquaresWithSVD()
-            c = 0
-            for i in range(0,self.table.rowCount()):
-                item = self.table.item(i,0)
-                if item.checkState() == Qt.Checked:
-                    self.table.setItem(i, 1, QTableWidgetItem(str(self.markers[c].identifier)))
-                    self.table.setItem(i, 2, QTableWidgetItem(str(self.markers[c].errorx)))
-                    self.table.setItem(i, 3, QTableWidgetItem(str(self.markers[c].errory)))
-                    self.table.setItem(i, 4, QTableWidgetItem(str(self.markers[c].error)))
-                    c = c+1
-        else:
-            box = QMessageBox()
-            box.setText("This marker cannot be enabled, you always need at least four markers")
-            box.exec()
-            item.setCheckState(Qt.Checked)
+                    num= num+1
+            else:
+                flag_update_table = False
 
-        self.table.blockSignals(False)
+        if flag_update_table:
+
+            self.table.blockSignals(True)
+
+            if num > 3:
+                self.markers = []
+                for i in range(0, self.table.rowCount()):
+                    item = self.table.item(i, 0)
+                    if item.checkState() == Qt.Checked:
+                        self.markers.append(self.markers_copy[i])
+
+                self.__leastSquaresWithSVD()
+                c = 0
+                for i in range(0,self.table.rowCount()):
+                    item = self.table.item(i,0)
+                    if item.checkState() == Qt.Checked:
+                        self.table.setItem(i, 1, QTableWidgetItem(str(self.markers[c].identifier)))
+                        self.table.setItem(i, 2, QTableWidgetItem(str(self.markers[c].errorx)))
+                        self.table.setItem(i, 3, QTableWidgetItem(str(self.markers[c].errory)))
+                        self.table.setItem(i, 4, QTableWidgetItem(str(self.markers[c].error)))
+                        c = c+1
+                    else:
+                        self.table.setItem(i, 2, QTableWidgetItem(""))
+                        self.table.setItem(i, 3, QTableWidgetItem(""))
+                        self.table.setItem(i, 4, QTableWidgetItem(""))
+
+            else:
+                box = QMessageBox()
+                box.setText("This marker cannot be enabled, you always need at least four markers")
+                box.exec()
+                item_changed.setCheckState(Qt.Checked)
+
+            self.table.blockSignals(False)
 
     def __fillTable(self)-> None:
 
