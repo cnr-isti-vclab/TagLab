@@ -10,7 +10,7 @@ import cv2
 from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot, QLineF, QRectF, QPoint, QPointF
 from PyQt5.QtGui import QImage, QMouseEvent, QPen, QFont, QCloseEvent, QKeyEvent, QOpenGLShaderProgram, QOpenGLShader, \
     QOpenGLVersionProfile, QMatrix4x4, QWheelEvent, QOpenGLTexture, QOpenGLFramebufferObject, QVector4D, QVector2D
-from PyQt5.QtWidgets import QWidget, QHeaderView, QSizePolicy, QVBoxLayout, QLabel, QTableWidget, QTableView, QHBoxLayout, QTableWidgetItem,  QComboBox, QSlider, QApplication, \
+from PyQt5.QtWidgets import QWidget, QHeaderView, QSizePolicy, QVBoxLayout, QLabel, QLineEdit, QTableWidget, QTableView, QHBoxLayout, QTableWidgetItem,  QComboBox, QSlider, QApplication, \
     QCheckBox, QPushButton, QMessageBox, QGraphicsTextItem, QGraphicsItem, QOpenGLWidget, QGraphicsRectItem
 from PyQt5._QOpenGLFunctions_2_0 import QOpenGLFunctions_2_0
 
@@ -413,6 +413,8 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.points = ([QVector2D(p) for p in referencePoints.copy()], [QVector2D(p) for p in pointsToAlign.copy()])
         # Redraw
         self.redraw(False)
+
+
 
     def updateRotation(self, rot: float) -> None:
         """
@@ -967,7 +969,7 @@ class QtAlignmentToolWidget(QWidget):
 
         # Rotate Left / Right
         self.rotateLeftButton = QPushButton("Left")
-        self.rotateLeftButton.setFixedWidth(200)
+        self.rotateLeftButton.setFixedWidth(100)
         self.rotateLeftButton.setFixedHeight(20)
         self.rotateLeftButton.clicked.connect(self.onRotValueDecremented)
         self.rotateRightButton = QPushButton("Right")
@@ -1067,10 +1069,42 @@ class QtAlignmentToolWidget(QWidget):
         self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
         self.table.horizontalHeader().setSectionResizeMode(3, QHeaderView.Stretch)
 
+        self.labelmeanx = QLabel("Mean Ex: ")
+        self.labelmeanx .setFixedWidth(120)
+        self.meanex = QLabel(" ")
+
+        self.layoutmeanx = QHBoxLayout()
+        self.layoutmeanx.addWidget(self.labelmeanx)
+        self.layoutmeanx.addWidget(self.meanex)
+
+        self.labelmeany = QLabel("Mean Ey: ")
+        self.labelmeany .setFixedWidth(120)
+        self.meaney = QLabel(" ")
+
+        self.layoutmeany = QHBoxLayout()
+        self.layoutmeany.addWidget(self.labelmeany)
+        self.layoutmeany.addWidget(self.meaney)
+
+        self.labelmeanerr= QLabel("Mean Dist: ")
+        self.labelmeanerr.setFixedWidth(120)
+        self.meanerror = QLabel(" ")
+
+        self.layoutmeanerror = QHBoxLayout()
+        self.layoutmeanerror.addWidget(self.labelmeanerr)
+        self.layoutmeanerror.addWidget(self.meanerror)
+
+        self.layoutmeanerrors = QVBoxLayout()
+        self.layoutmeanerrors.addLayout(self.layoutmeanx)
+        self.layoutmeanerrors.addLayout(self.layoutmeany)
+        self.layoutmeanerrors.addLayout(self.layoutmeanerror)
+        self.layoutmeanerrors.addStretch()
+
+
 
         self.layoutTop = QHBoxLayout()
         self.layoutTop.addLayout(self.layoutSliders)
         self.layoutTop.addWidget(self.table)
+        self.layoutTop.addLayout(self.layoutmeanerrors)
         self.layoutTop.addStretch()
 
 
@@ -2240,6 +2274,8 @@ All markers must be valid to proceed.
         self.markers_copy = self.markers.copy()
         self.__fillTable()
         self.table.itemChanged[QTableWidgetItem].connect(self.updateComputation)
+        self.setMean()
+
 
 
     def __updatePreview(self) -> None:
@@ -2262,12 +2298,19 @@ All markers must be valid to proceed.
         # Update alpha value
         self.leftPreviewViewer.updateAlpha(self.alpha / 100.0)
 
+
     def __togglePreviewMode(self, isPreviewMode: bool) -> None:
         """
         Private method to set widget visibility to toggle the Preview Mode on/off.
         :param: isPreviewMode a boolean value to enable / disable the Preview Mode
         """
         # (Preview-ONLY) widget
+        self.meanex.setVisible(isPreviewMode)
+        self.meaney.setVisible(isPreviewMode)
+        self.meanerror.setVisible(isPreviewMode)
+        self.labelmeanx.setVisible(isPreviewMode)
+        self.labelmeany.setVisible(isPreviewMode)
+        self.labelmeanerr.setVisible(isPreviewMode)
         self.table.setVisible(isPreviewMode)
         self.leftPreviewViewer.setVisible(isPreviewMode)
         self.rightPreviewViewer.setVisible(isPreviewMode)
@@ -2379,6 +2422,7 @@ All markers must be valid to proceed.
                 box.exec()
                 item_changed.setCheckState(Qt.Checked)
 
+            self.setMean()
             self.table.blockSignals(False)
 
     def __fillTable(self)-> None:
@@ -2396,6 +2440,26 @@ All markers must be valid to proceed.
             self.table.setItem(i, 2, QTableWidgetItem(str(self.markers_copy[i].errorx)))
             self.table.setItem(i, 3, QTableWidgetItem(str(self.markers_copy[i].errory)))
             self.table.setItem(i, 4, QTableWidgetItem(str(self.markers_copy[i].error)))
+
+
+
+    def setMean(self):
+
+        sumex=0.0
+        sumey=0.0
+        sumerr=0.0
+
+        for i in range(0,len(self.markers)):
+            sumex = sumex + abs(self.markers[i].errorx)
+            sumey = sumey + abs(self.markers[i].errory)
+            sumerr = sumerr + self.markers[i].error
+
+        meanerrorx= round((sumex/ len(self.markers)),1)
+        meanerrory = round(sumey/len(self.markers),1)
+        meanerror = round(sumerr / len(self.markers), 1)
+        self.meanex.setText(("{:.3f}".format(meanerrorx)))
+        self.meaney.setText(("{:.3f}".format(meanerrory)))
+        self.meanerror.setText(("{:.3f}".format(meanerror)))
 
 
     def __leastSquaresWithSVD(self) -> None:
@@ -2531,6 +2595,7 @@ All markers must be valid to proceed.
             marker.errorx = round(err[i][0],1)
             marker.errory = round(err[i][1],1)
             marker.error = round(e, 1)
+
 
         # Results
         R = math.atan2(R[1, 0], R[0, 0])
