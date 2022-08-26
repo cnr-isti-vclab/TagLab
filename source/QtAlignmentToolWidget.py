@@ -180,6 +180,9 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         :param: mat the matrix for the transformation
         """
 
+        if len(self.textures) <= i:  # textures has not been created yet
+            return
+
         # Bind FB and Program
         checkGL(self.framebuffers[i], self.framebuffers[i].bind())
         checkGL(self.programs[0], self.programs[0].bind())
@@ -1005,31 +1008,23 @@ class QtAlignmentToolWidget(QWidget):
         self.thresholdSlider.valueChanged.connect(self.thresholdValueChanges)
 
         # Layout
-        self.buttons = QVBoxLayout()
-        layout1 = QHBoxLayout()
-        layout1.addWidget(self.syncCheck)
-        layout1.addWidget(self.backToEditButton)
-        layout1.addWidget(self.clearMarkersButton)
-        layout1.addWidget(self.resetTransfButton)
-        layout1.addWidget(self.showMarkersCheck)
-        layout1.addWidget(self.allowScaleButton)
-        layout1.addWidget(self.autoAlignButton)
-        layout1.addWidget(self.confirmAlignmentButton)
-        layout1.setAlignment(self.syncCheck, Qt.AlignLeft)
-        layout1.setAlignment(self.backToEditButton, Qt.AlignLeft)
-        layout1.setAlignment(self.clearMarkersButton, Qt.AlignCenter)
-        layout1.setAlignment(self.resetTransfButton, Qt.AlignCenter)
-        layout1.setAlignment(self.showMarkersCheck, Qt.AlignCenter)
-        layout1.setAlignment(self.allowScaleButton, Qt.AlignCenter)
-        layout1.setAlignment(self.autoAlignButton, Qt.AlignRight)
-        layout1.setAlignment(self.confirmAlignmentButton, Qt.AlignRight)
-        self.buttons.addLayout(layout1)
-        # layout2 = QHBoxLayout()
-        # layout2.addWidget(self.alphaSliderLabel)
-        # layout2.addWidget(self.alphaSlider)
-        # layout2.addWidget(self.thresholdSliderLabel)
-        # layout2.addWidget(self.thresholdSlider)
-        # self.buttons.addLayout(layout2)
+        self.buttons = QHBoxLayout()
+        self.buttons.addWidget(self.syncCheck)
+        self.buttons.addWidget(self.backToEditButton)
+        self.buttons.addWidget(self.clearMarkersButton)
+        self.buttons.addWidget(self.resetTransfButton)
+        self.buttons.addWidget(self.showMarkersCheck)
+        self.buttons.addWidget(self.allowScaleButton)
+        self.buttons.addWidget(self.autoAlignButton)
+        self.buttons.addWidget(self.confirmAlignmentButton)
+        self.buttons.setAlignment(self.syncCheck, Qt.AlignLeft)
+        self.buttons.setAlignment(self.backToEditButton, Qt.AlignLeft)
+        self.buttons.setAlignment(self.clearMarkersButton, Qt.AlignCenter)
+        self.buttons.setAlignment(self.resetTransfButton, Qt.AlignCenter)
+        self.buttons.setAlignment(self.showMarkersCheck, Qt.AlignCenter)
+        self.buttons.setAlignment(self.allowScaleButton, Qt.AlignCenter)
+        self.buttons.setAlignment(self.autoAlignButton, Qt.AlignRight)
+        self.buttons.setAlignment(self.confirmAlignmentButton, Qt.AlignRight)
 
         self.layoutSliders=QVBoxLayout()
         layout3 = QHBoxLayout()
@@ -1097,16 +1092,11 @@ class QtAlignmentToolWidget(QWidget):
         self.layoutmeanerrors.addLayout(self.layoutmeanx)
         self.layoutmeanerrors.addLayout(self.layoutmeany)
         self.layoutmeanerrors.addLayout(self.layoutmeanerror)
-        self.layoutmeanerrors.addStretch()
-
-
 
         self.layoutTop = QHBoxLayout()
         self.layoutTop.addLayout(self.layoutSliders)
         self.layoutTop.addWidget(self.table)
         self.layoutTop.addLayout(self.layoutmeanerrors)
-        self.layoutTop.addStretch()
-
 
         # ==============================================================
         # Middle UI containing map selector and map viewer
@@ -1189,11 +1179,11 @@ class QtAlignmentToolWidget(QWidget):
         layoutDIFF.addWidget(self.thresholdSlider)
 
         self.previewLayoutL = QVBoxLayout()
-       # self.previewLayoutL.addLayout(layoutAS)
+        self.previewLayoutL.addLayout(layoutAS)
         self.previewLayoutL.addWidget(self.leftPreviewViewer)
 
         self.previewLayoutR = QVBoxLayout()
-        #self.previewLayoutR.addLayout(layoutDIFF)
+        self.previewLayoutR.addLayout(layoutDIFF)
         self.previewLayoutR.addWidget(self.rightPreviewViewer)
 
         self.previewLayout = QHBoxLayout()
@@ -2298,7 +2288,6 @@ All markers must be valid to proceed.
         # Update alpha value
         self.leftPreviewViewer.updateAlpha(self.alpha / 100.0)
 
-
     def __togglePreviewMode(self, isPreviewMode: bool) -> None:
         """
         Private method to set widget visibility to toggle the Preview Mode on/off.
@@ -2402,6 +2391,13 @@ All markers must be valid to proceed.
                         self.markers.append(self.markers_copy[i])
 
                 self.__leastSquaresWithSVD()
+
+                # update points
+                #(q, p) = self.__normalizedMarkers()
+                #self.points = ([QVector2D(pt) for pt in q.copy()], [QVector2D(pt) for pt in p.copy()])
+
+
+                # update table
                 c = 0
                 for i in range(0,self.table.rowCount()):
                     item = self.table.item(i,0)
