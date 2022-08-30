@@ -2347,8 +2347,8 @@ All markers must be valid to proceed.
             py = float(marker.rViewPos.y())
 
             # apply rotation and translation
-            px = math.cos(R) * px + self.T[0]
-            py = math.sin(R) * py + self.T[1]
+            px = (math.cos(R) * px - math.sin(R) * py) + self.T[0]
+            py = (math.sin(R) * px + math.cos(R) * py) + self.T[1]
 
             # FIXME: apply scaling
             # TODO
