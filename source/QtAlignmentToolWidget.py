@@ -984,11 +984,11 @@ class QtAlignmentToolWidget(QWidget):
         self.rotateLeftButton = QPushButton("+")
         self.rotateLeftButton.setFixedWidth(20)
         self.rotateLeftButton.setFixedHeight(20)
-        self.rotateLeftButton.clicked.connect(self.onRotValueDecremented)
+        self.rotateLeftButton.clicked.connect(self.onRotValueIncremented)
         self.rotateRightButton = QPushButton("-")
         self.rotateRightButton.setFixedWidth(20)
         self.rotateRightButton.setFixedHeight(20)
-        self.rotateRightButton.clicked.connect(self.onRotValueIncremented)
+        self.rotateRightButton.clicked.connect(self.onRotValueDecremented)
 
         # Slider (Scale)
         self.sSliderLabel = QLabel("S: " + str(self.S / QtAlignmentToolWidget.SCALE_PRECISION))
@@ -1036,7 +1036,7 @@ class QtAlignmentToolWidget(QWidget):
         self.buttons.addWidget(self.clearMarkersButton)
         self.buttons.addWidget(self.resetTransfButton)
         self.buttons.addWidget(self.showMarkersCheck)
-        self.buttons.addWidget(self.allowScaleButton)
+        #self.buttons.addWidget(self.allowScaleButton)
         self.buttons.addWidget(self.autoAlignButton)
         self.buttons.addWidget(self.confirmAlignmentButton)
         self.buttons.setAlignment(self.syncCheck, Qt.AlignLeft)
@@ -1391,7 +1391,7 @@ class QtAlignmentToolWidget(QWidget):
         self.alpha = value
         self.alphaSliderLabel.setText("Alpha: " + str(value))
         # Update preview
-        self.__updatePreview()
+        self.__updatePreview(False)
 
     @pyqtSlot()
     def onXValueIncremented(self) -> None:
@@ -1513,7 +1513,7 @@ class QtAlignmentToolWidget(QWidget):
         self.threshold = value
         self.thresholdSliderLabel.setText("Threshold: " + str(value))
         # Update preview
-        self.__updatePreview()
+        self.__updatePreview(False)
 
     @pyqtSlot(QMouseEvent)
     def onLeftViewMouseDown(self, event: QMouseEvent) -> None:
@@ -1626,7 +1626,7 @@ All markers must be valid to proceed.
         self.__togglePreviewMode(True)
         # Initialize and update the view
         self.__initializePreview()
-        self.__updatePreview()
+        self.__updatePreview(False)
 
     @pyqtSlot()
     def onConfirmAlignment(self) -> None:
@@ -2308,7 +2308,7 @@ All markers must be valid to proceed.
 
 
 
-    def __updatePreview(self) -> None:
+    def __updatePreview(self, error_table_flag=True) -> None:
         """
         Private method to update the preview.
         """
@@ -2331,7 +2331,8 @@ All markers must be valid to proceed.
         self.leftPreviewViewer.updateAlpha(self.alpha / 100.0)
 
         # update error table
-        self.__updateErrorTableAfterManualAdjustment()
+        if error_table_flag:
+            self.__updateErrorTableAfterManualAdjustment()
 
     def __updateErrorTableAfterManualAdjustment(self):
 
