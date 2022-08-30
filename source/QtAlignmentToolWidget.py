@@ -2339,6 +2339,12 @@ All markers must be valid to proceed.
         R = np.deg2rad(self.R / QtAlignmentToolWidget.ROT_PRECISION)
         S = self.S / QtAlignmentToolWidget.SCALE_PRECISION
 
+        maxw = max(self.sizeL.x(), self.sizeR.x())
+        maxh = max(self.sizeL.y(), self.sizeR.y())
+
+        tx = self.T[0] / maxw
+        ty = self.T[1] / maxh
+
         for marker in self.markers:
 
             qx = float(marker.lViewPos.x())
@@ -2347,9 +2353,15 @@ All markers must be valid to proceed.
             px = float(marker.rViewPos.x())
             py = float(marker.rViewPos.y())
 
+            px_n = px / maxw
+            py_n = py / maxh
+
             # apply rotation and translation
-            px = (math.cos(R) * px - math.sin(R) * py) + self.T[0]
-            py = (math.sin(R) * px + math.cos(R) * py) + self.T[1]
+            px_n = (math.cos(R) * px_n - math.sin(R) * py_n) + tx
+            py_n = (math.sin(R) * px_n + math.cos(R) * py_n) + ty
+
+            px = px_n * maxw
+            py = py_n * maxh
 
             # FIXME: apply scaling
             # TODO
