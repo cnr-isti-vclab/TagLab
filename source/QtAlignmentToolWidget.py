@@ -180,7 +180,10 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         :param: mat the matrix for the transformation
         """
 
-        if len(self.textures) <= i:  # textures has not been created yet
+        if self.textures is None:  # textures has not been created yet
+            return
+
+        if len(self.textures) <= i: 
             return
 
         # Bind FB and Program
@@ -216,6 +219,13 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         Private method to draw framebuffer with scripted program.
         :param: mat the transformation matrix
         """
+
+        if self.programs is None:
+            return
+
+        if len(self.programs) <= 1:  # textures has not been created yet
+            return
+
         # Bind Program
         checkGL(self.programs[1], self.programs[1].bind())
         # Bind Textures (from Frame Buffers)
