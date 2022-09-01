@@ -843,7 +843,6 @@ class QtAlignmentToolWidget(QWidget):
         self.sizeR: QPointF = QPointF(0.0, 0.0)
         self.canScale = False
         self.svdRes = [0, [0, 0], 0]
-        self.Rmat = np.array([[1.0,0.0], [0.0,1.0]])
         self.R = np.rad2deg(0) * 10
         self.T = np.array([0, 0])
         self.S = 1 * 10
@@ -2585,24 +2584,25 @@ All markers must be valid to proceed.
         self.meaney.setText(("{:.3f}".format(meanerrory)))
         self.meanerror.setText(("{:.3f}".format(meanerror)))
 
-
-
-
     def __computeErrors(self):
 
+        R = np.deg2rad(self.R / QtAlignmentToolWidget.ROT_PRECISION)
+        S = self.S / QtAlignmentToolWidget.SCALE_PRECISION
 
-        R = self.Rmat
-        # S = self.S / QtAlignmentToolWidget.SCALE_PRECISION
-        T = self.Tvec
+        maxw = max(self.sizeL.x(), self.sizeR.x())
+        maxh = max(self.sizeL.y(), self.sizeR.y())
+        T = [self.T[0] / maxw, self.T[1] / maxh]
+
         (q, p) = self.__normalizedMarkers()
 
-        sol = [(R @ [pi.x(), pi.y()] + T) for pi in p]
-        # sol = [QPointF(s[0, 0], s[0, 1]) for s in sol]
+        Rmat = np.matrix([[math.cos(-R), math.sin(-R)],
+                          [-math.sin(-R), math.cos(-R)]])
+
+        sol = [(Rmat @ [pi.x(), pi.y()] + T) for pi in p]
+        sol = [QPointF(s[0, 0], s[0, 1]) for s in sol]
 
         # Compute errors
         err = [[a.x() - b.x(), a.y() - b.y()] for (a, b) in zip(sol, q)]
-        maxw = max(self.sizeL.x(), self.sizeR.x())
-        maxh = max(self.sizeL.y(), self.sizeR.y())
         err = [(x * maxw, y * maxh) for (x, y) in err]
         disterr = [math.sqrt(x ** 2 + y ** 2) for (x, y) in err]
         for (i, (e, marker)) in enumerate(zip(disterr, self.markers)):
@@ -2741,20 +2741,15 @@ All markers must be valid to proceed.
         err = [(x * maxw, y * maxh) for (x, y) in err]
         disterr = [math.sqrt(x ** 2 + y ** 2) for (x, y) in err]
         for (i, (e, marker)) in enumerate(zip(disterr, self.markers)):
-            marker.errorx = round(err[i][0], 1)
-            marker.errory = round(err[i][1], 1)
-            marker.error = round(e, 1)
+            marker.errorx = round(err[i][0], 2)
+            marker.errory = round(err[i][1], 2)
+            marker.error = round(e, 2)
 
-
-
-        self.Rmat = R
         # Results
         R = math.atan2(R[1, 0], R[0, 0])
         R = np.rad2deg(R)
         self.R = R * QtAlignmentToolWidget.ROT_PRECISION
         self.svdRes[0] = self.R
-
-        self.Tvec = T
 
         T = [T[0, 0] * maxw, T[0, 1] * maxh]
         self.T = np.array(T)
@@ -2763,6 +2758,12 @@ All markers must be valid to proceed.
         S = round(S, 2)
         self.S = S * QtAlignmentToolWidget.SCALE_PRECISION
         self.svdRes[2] = self.S
+
+        self.__computeErrors()
+
+        for i, marker in enumerate(self.markers):
+            print("X difference:", marker.errorx - round(err[i][0], 2))
+            print("Y difference:", marker.errory - round(err[i][1], 2))
 
         # Update UI
         self.xSlider.setValue(self.T[0])
