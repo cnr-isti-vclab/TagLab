@@ -120,6 +120,7 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.tra: QPointF = QPointF(0, 0)
         self.sca = 1
 
+
     def __createProgram(self, vSrc: str, fSrc: str, hasTex: bool) -> Optional[QOpenGLShaderProgram]:
         """
         Private method to create a Shader Program with passed v-shader and f-shader.
@@ -842,6 +843,7 @@ class QtAlignmentToolWidget(QWidget):
         self.sizeR: QPointF = QPointF(0.0, 0.0)
         self.canScale = False
         self.svdRes = [0, [0, 0], 0]
+        self.Rmat = np.array([[1.0,0.0], [0.0,1.0]])
         self.R = np.rad2deg(0) * 10
         self.T = np.array([0, 0])
         self.S = 1 * 10
@@ -856,6 +858,8 @@ class QtAlignmentToolWidget(QWidget):
         self.markers_copy = None
         self.pxSizeL = 1.0
         self.pxSizeR = 1.0
+        self.error_table_flag = False
+
 
         # ==============================================================
         # Top buttons
@@ -1391,7 +1395,7 @@ class QtAlignmentToolWidget(QWidget):
         self.alpha = value
         self.alphaSliderLabel.setText("Alpha: " + str(value))
         # Update preview
-        self.__updatePreview(False)
+        self.__updatePreview()
 
     @pyqtSlot()
     def onXValueIncremented(self) -> None:
@@ -1400,6 +1404,7 @@ class QtAlignmentToolWidget(QWidget):
         """
         # Forward
         self.xSlider.setValue(self.T[0] + 1)
+
 
     @pyqtSlot()
     def onXValueDecremented(self) -> None:
@@ -1418,6 +1423,7 @@ class QtAlignmentToolWidget(QWidget):
         # Update offset value and slider text
         self.T[0] = value
         self.xSliderLabel.setText("Tx: " + str(value))
+        self.error_table_flag = True
         # Update preview
         self.__updatePreview()
 
@@ -1447,6 +1453,7 @@ class QtAlignmentToolWidget(QWidget):
         self.T[1] = value
         self.ySliderLabel.setText("Ty: " + str(value))
         # Update preview
+        self.error_table_flag = True
         self.__updatePreview()
 
     @pyqtSlot()
@@ -1490,6 +1497,7 @@ class QtAlignmentToolWidget(QWidget):
         self.R = value
         self.rSliderLabel.setText("R: " + str(self.R / QtAlignmentToolWidget.ROT_PRECISION))
         # Update preview
+        self.error_table_flag = True
         self.__updatePreview()
 
     @pyqtSlot(int)
@@ -1501,6 +1509,7 @@ class QtAlignmentToolWidget(QWidget):
         self.S = value
         self.sSliderLabel.setText("S: " + str(self.S / QtAlignmentToolWidget.SCALE_PRECISION))
         # Update preview
+        self.error_table_flag = True
         self.__updatePreview()
 
     @pyqtSlot(int)
@@ -1512,8 +1521,9 @@ class QtAlignmentToolWidget(QWidget):
         # Update threshold value and slider text
         self.threshold = value
         self.thresholdSliderLabel.setText("Threshold: " + str(value))
+        self.error_table_flag = True
         # Update preview
-        self.__updatePreview(False)
+        self.__updatePreview()
 
     @pyqtSlot(QMouseEvent)
     def onLeftViewMouseDown(self, event: QMouseEvent) -> None:
@@ -1626,7 +1636,7 @@ All markers must be valid to proceed.
         self.__togglePreviewMode(True)
         # Initialize and update the view
         self.__initializePreview()
-        self.__updatePreview(False)
+        self.__updatePreview()
 
     @pyqtSlot()
     def onConfirmAlignment(self) -> None:
@@ -2308,7 +2318,7 @@ All markers must be valid to proceed.
 
 
 
-    def __updatePreview(self, error_table_flag=True) -> None:
+    def __updatePreview(self) -> None:
         """
         Private method to update the preview.
         """
@@ -2331,10 +2341,23 @@ All markers must be valid to proceed.
         self.leftPreviewViewer.updateAlpha(self.alpha / 100.0)
 
         # update error table
-        if error_table_flag:
-            self.__updateErrorTableAfterManualAdjustment()
+        if self.error_table_flag is True:
+            # self.__updateErrorTableAfterManualAdjustment()
+            self.__computeErrors()
+            self.__updateErrorTable()
+            self.error_table_flag = False
 
     def __updateErrorTableAfterManualAdjustment(self):
+
+
+        # for (i, marker) in enumerate(self.markers):
+        #     marker.error = None
+        #     self.__clearMarker(i, True)
+        #
+        # # Ensure at least 3 marker are placed
+        # if not self.__hasValidMarkers():
+        #     return
+        #
 
         R = np.deg2rad(self.R / QtAlignmentToolWidget.ROT_PRECISION)
         S = self.S / QtAlignmentToolWidget.SCALE_PRECISION
@@ -2473,7 +2496,14 @@ All markers must be valid to proceed.
                     if item.checkState() == Qt.Checked:
                         self.markers.append(self.markers_copy[i])
 
+
                 self.__leastSquaresWithSVD()
+
+                if self.markers:
+                   for marker in self.markers:
+                        print(marker.identifier)
+                        print(marker.errorx)
+                        print(marker.errory)
 
                 # update points
                 (q, p) = self.__normalizedMarkers()
@@ -2554,6 +2584,31 @@ All markers must be valid to proceed.
         self.meanex.setText(("{:.3f}".format(meanerrorx)))
         self.meaney.setText(("{:.3f}".format(meanerrory)))
         self.meanerror.setText(("{:.3f}".format(meanerror)))
+
+
+
+
+    def __computeErrors(self):
+
+
+        R = self.Rmat
+        # S = self.S / QtAlignmentToolWidget.SCALE_PRECISION
+        T = self.Tvec
+        (q, p) = self.__normalizedMarkers()
+
+        sol = [(R @ [pi.x(), pi.y()] + T) for pi in p]
+        # sol = [QPointF(s[0, 0], s[0, 1]) for s in sol]
+
+        # Compute errors
+        err = [[a.x() - b.x(), a.y() - b.y()] for (a, b) in zip(sol, q)]
+        maxw = max(self.sizeL.x(), self.sizeR.x())
+        maxh = max(self.sizeL.y(), self.sizeR.y())
+        err = [(x * maxw, y * maxh) for (x, y) in err]
+        disterr = [math.sqrt(x ** 2 + y ** 2) for (x, y) in err]
+        for (i, (e, marker)) in enumerate(zip(disterr, self.markers)):
+            marker.errorx = round(err[i][0], 1)
+            marker.errory = round(err[i][1], 1)
+            marker.error = round(e, 1)
 
 
     def __leastSquaresWithSVD(self) -> None:
@@ -2691,11 +2746,15 @@ All markers must be valid to proceed.
             marker.error = round(e, 1)
 
 
+
+        self.Rmat = R
         # Results
         R = math.atan2(R[1, 0], R[0, 0])
         R = np.rad2deg(R)
         self.R = R * QtAlignmentToolWidget.ROT_PRECISION
         self.svdRes[0] = self.R
+
+        self.Tvec = T
 
         T = [T[0, 0] * maxw, T[0, 1] * maxh]
         self.T = np.array(T)
