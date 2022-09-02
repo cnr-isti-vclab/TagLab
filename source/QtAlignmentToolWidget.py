@@ -817,7 +817,7 @@ class QtAlignmentToolWidget(QWidget):
     # Number of samples used when calculating approx scale
     SCALE_SAMPLING_COUNT = 64
 
-    ROT_PRECISION = 10  # 1 / 10
+    ROT_PRECISION = 100  # 1 / 100
     SCALE_PRECISION = 100  # 1 / 100
     SCALE_RANGE = 0.50  # [-50%, +50%]
 
@@ -841,9 +841,9 @@ class QtAlignmentToolWidget(QWidget):
         self.sizeR: QPointF = QPointF(0.0, 0.0)
         self.canScale = False
         self.svdRes = [0, [0, 0], 0]
-        self.R = np.rad2deg(0) * 10
+        self.R = np.rad2deg(0) * QtAlignmentToolWidget.ROT_PRECISION
         self.T = np.array([0, 0])
-        self.S = 1 * 10
+        self.S = 1 * QtAlignmentToolWidget.SCALE_PRECISION
         self.lastMousePos = None
         self.isDragging = False
         self.selectedMarker = None
@@ -973,8 +973,8 @@ class QtAlignmentToolWidget(QWidget):
         self.rSliderLabel.setMinimumWidth(200)
         self.rSlider = QSlider(Qt.Horizontal)
         self.rSlider.setFocusPolicy(Qt.StrongFocus)
-        self.rSlider.setMinimum(-1800)
-        self.rSlider.setMaximum(1800)
+        self.rSlider.setMinimum(-180 * QtAlignmentToolWidget.ROT_PRECISION)
+        self.rSlider.setMaximum(180 * QtAlignmentToolWidget.ROT_PRECISION)
         self.rSlider.setTickInterval(1)
         self.rSlider.setValue(self.R)
         self.rSlider.setMinimumWidth(50)
