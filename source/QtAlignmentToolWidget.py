@@ -428,8 +428,6 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         # Redraw
         self.redraw(False)
 
-
-
     def updateRotation(self, rot: float) -> None:
         """
         Public method to update Rotation parameter.
@@ -1370,6 +1368,7 @@ class QtAlignmentToolWidget(QWidget):
         self.canScale = value != 0
         # Recompute svd
         self.__leastSquaresWithSVD()
+
         # Update preview (if needed)
         self.__updatePreview()
 
@@ -1393,7 +1392,9 @@ class QtAlignmentToolWidget(QWidget):
         # Update alpha value and slider text
         self.alpha = value
         self.alphaSliderLabel.setText("Alpha: " + str(value))
+
         # Update preview
+        self.error_table_flag = False
         self.__updatePreview()
 
     @pyqtSlot()
@@ -1422,8 +1423,9 @@ class QtAlignmentToolWidget(QWidget):
         # Update offset value and slider text
         self.T[0] = value
         self.xSliderLabel.setText("Tx: " + str(value))
-        self.error_table_flag = True
+
         # Update preview
+        self.error_table_flag = True
         self.__updatePreview()
 
     @pyqtSlot()
@@ -1451,6 +1453,7 @@ class QtAlignmentToolWidget(QWidget):
         # Update offset value and slider text
         self.T[1] = value
         self.ySliderLabel.setText("Ty: " + str(value))
+
         # Update preview
         self.error_table_flag = True
         self.__updatePreview()
@@ -1495,6 +1498,7 @@ class QtAlignmentToolWidget(QWidget):
         """
         self.R = value
         self.rSliderLabel.setText("R: " + str(self.R / QtAlignmentToolWidget.ROT_PRECISION))
+
         # Update preview
         self.error_table_flag = True
         self.__updatePreview()
@@ -1507,6 +1511,7 @@ class QtAlignmentToolWidget(QWidget):
         """
         self.S = value
         self.sSliderLabel.setText("S: " + str(self.S / QtAlignmentToolWidget.SCALE_PRECISION))
+
         # Update preview
         self.error_table_flag = True
         self.__updatePreview()
@@ -1520,8 +1525,9 @@ class QtAlignmentToolWidget(QWidget):
         # Update threshold value and slider text
         self.threshold = value
         self.thresholdSliderLabel.setText("Threshold: " + str(value))
-        self.error_table_flag = True
+
         # Update preview
+        self.error_table_flag = False
         self.__updatePreview()
 
     @pyqtSlot(QMouseEvent)
@@ -1651,7 +1657,7 @@ All markers must be valid to proceed.
         image2 = self.project.images[index2]
         image1W, image1H = image1.channels[0].qimage.width(), image1.channels[0].qimage.height()
         image2W, image2H = image2.channels[0].qimage.width(), image2.channels[0].qimage.height()
-        print("Sizes: ", image1W, image1H, image2W, image2H)
+
         # ================================ Transformation Data =============================================
         # Calculate affine matrix
         trax = self.T[0]
@@ -1661,7 +1667,7 @@ All markers must be valid to proceed.
         # Extract components
         R = cv2.getRotationMatrix2D((0, 0), -rot, 1.0)[::, :2]
         T = [trax / image2.pixelSize(), tray / image2.pixelSize()]
-        print("Transformations: ", R, T, sca)
+
         # Update Blobs
         blobs2 = self.__updateBlobs(image2.annotations.seg_blobs, R, T)
         # Min-Max bboxes of blobs
@@ -1669,7 +1675,7 @@ All markers must be valid to proceed.
         # Compute borders
         leftB, topB = abs(int(minX)), abs(int(minY))
         rightB, bottomB = int(maxX - image2W), int(maxY - image2H)
-        print("Borders: ", leftB, rightB, topB, bottomB)
+
         # ================================ Image 2 =============================================
         # Create copy of image 2
         tag2 = "_coreg"
@@ -2344,7 +2350,6 @@ All markers must be valid to proceed.
             # self.__updateErrorTableAfterManualAdjustment()
             self.__computeErrors()
             self.__updateErrorTable()
-            self.error_table_flag = False
 
     def __updateErrorTableAfterManualAdjustment(self):
 
@@ -2495,14 +2500,7 @@ All markers must be valid to proceed.
                     if item.checkState() == Qt.Checked:
                         self.markers.append(self.markers_copy[i])
 
-
                 self.__leastSquaresWithSVD()
-
-                if self.markers:
-                   for marker in self.markers:
-                        print(marker.identifier)
-                        print(marker.errorx)
-                        print(marker.errory)
 
                 # update points
                 (q, p) = self.__normalizedMarkers()
@@ -2512,6 +2510,7 @@ All markers must be valid to proceed.
                 self.rightPreviewViewer.redraw()
 
                 # update table
+                self.__computeErrors()
                 self.__updateErrorTable()
 
             else:
@@ -2544,6 +2543,8 @@ All markers must be valid to proceed.
                 self.table.setItem(i, 4, QTableWidgetItem(""))
 
         self.__updateMeanErrors()
+
+        self.error_table_flag = False
 
         self.table.blockSignals(False)
 
@@ -2586,7 +2587,10 @@ All markers must be valid to proceed.
 
     def __computeErrors(self):
 
-        R = np.deg2rad(self.R / QtAlignmentToolWidget.ROT_PRECISION)
+        # FIXME: scale is not considered
+
+        # NOTE: self.R is an angle (in degree) and not a rotation matrix
+        angle = np.deg2rad(self.R / QtAlignmentToolWidget.ROT_PRECISION)
         S = self.S / QtAlignmentToolWidget.SCALE_PRECISION
 
         maxw = max(self.sizeL.x(), self.sizeR.x())
@@ -2595,8 +2599,8 @@ All markers must be valid to proceed.
 
         (q, p) = self.__normalizedMarkers()
 
-        Rmat = np.matrix([[math.cos(-R), math.sin(-R)],
-                          [-math.sin(-R), math.cos(-R)]])
+        Rmat = np.matrix([[math.cos(-angle), math.sin(-angle)],
+                          [-math.sin(-angle), math.cos(-angle)]])
 
         sol = [(Rmat @ [pi.x(), pi.y()] + T) for pi in p]
         sol = [QPointF(s[0, 0], s[0, 1]) for s in sol]
@@ -2633,9 +2637,6 @@ All markers must be valid to proceed.
         # Ensure at least 3 marker are placed
         if not self.__hasValidMarkers():
             return
-
-        # TIMING
-        # timeStart = time.perf_counter()
 
         # ==================================================================================
         # [0] Retrieve vars
@@ -2730,10 +2731,6 @@ All markers must be valid to proceed.
         sol = [(R @ [pi.x(), pi.y()] + T) for pi in p]
         sol = [QPointF(s[0, 0], s[0, 1]) for s in sol]
 
-        # TIMING
-        # timeEnd = time.perf_counter()
-        # print("SVD time:", (timeEnd - timeStart) * 1000, "ms with", len(p), "markers.")
-
         # Compute errors
         err = [[a.x() - b.x(), a.y() - b.y()] for (a, b) in zip(sol, q)]
         maxw = max(self.sizeL.x(), self.sizeR.x())
@@ -2759,21 +2756,21 @@ All markers must be valid to proceed.
         self.S = S * QtAlignmentToolWidget.SCALE_PRECISION
         self.svdRes[2] = self.S
 
-        self.__computeErrors()
-
-        for i, marker in enumerate(self.markers):
-            print("X difference:", marker.errorx - round(err[i][0], 2))
-            print("Y difference:", marker.errory - round(err[i][1], 2))
-
         # Update UI
+        self.sSlider.blockSignals(True)
         self.xSlider.setValue(self.T[0])
         self.ySlider.setValue(self.T[1])
         self.rSlider.setValue(self.R)
-        self.sSlider.blockSignals(True)
         self.sSlider.setMinimum(round(self.S * (1.0 - QtAlignmentToolWidget.SCALE_RANGE)))
         self.sSlider.setMaximum(round(self.S * (1.0 + QtAlignmentToolWidget.SCALE_RANGE)))
-        self.sSlider.blockSignals(False)
         self.sSlider.setValue(self.S)
         self.sSlider.setEnabled(self.canScale)
         self.scaleIncButton.setEnabled(self.canScale)
         self.scaleDecButton.setEnabled(self.canScale)
+        self.sSlider.blockSignals(False)
+
+        # check if __computeErrors is ok
+        #self.__computeErrors()
+        #for i, marker in enumerate(self.markers):
+        #    print("X difference:", marker.errorx - round(err[i][0], 2))
+        #    print("Y difference:", marker.errory - round(err[i][1], 2))
