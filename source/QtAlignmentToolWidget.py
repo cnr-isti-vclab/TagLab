@@ -1786,7 +1786,7 @@ All markers must be valid to proceed.
         left = min(pointsX)
         height = max(pointsY) - top
         width = max(pointsX) - left
-        return np.array([top, left, width, height])
+        return np.array([int(top), int(left), int(width)+1, int(height)+1])
 
     def __updateBlobs(self, blobs, rot, tra):
         """
