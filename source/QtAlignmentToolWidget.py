@@ -926,7 +926,7 @@ class QtAlignmentToolWidget(QWidget):
 
         # Slider (X)
         self.xSliderLabel = QLabel("Tx: " + str(self.T[0]))
-        self.xSliderLabel.setMinimumWidth(200)
+        self.xSliderLabel.setMinimumWidth(100)
         self.xSlider = QSlider(Qt.Horizontal)
         self.xSlider.setFocusPolicy(Qt.StrongFocus)
         self.xSlider.setMinimum(-256)
@@ -939,7 +939,7 @@ class QtAlignmentToolWidget(QWidget):
 
         # Slider (Y)
         self.ySliderLabel = QLabel("Ty: " + str(self.T[1]))
-        self.ySliderLabel.setMinimumWidth(200)
+        self.ySliderLabel.setMinimumWidth(100)
         self.ySlider = QSlider(Qt.Horizontal)
         self.ySlider.setFocusPolicy(Qt.StrongFocus)
         self.ySlider.setMinimum(-256)
@@ -970,7 +970,7 @@ class QtAlignmentToolWidget(QWidget):
 
         # Slider (Rot)
         self.rSliderLabel = QLabel("R: " + str(self.R / QtAlignmentToolWidget.ROT_PRECISION))
-        self.rSliderLabel.setMinimumWidth(200)
+        self.rSliderLabel.setMinimumWidth(100)
         self.rSlider = QSlider(Qt.Horizontal)
         self.rSlider.setFocusPolicy(Qt.StrongFocus)
         self.rSlider.setMinimum(-180 * QtAlignmentToolWidget.ROT_PRECISION)
@@ -1073,7 +1073,7 @@ class QtAlignmentToolWidget(QWidget):
         layout6.addWidget(self.sSlider)
         layout6.addWidget(self.scaleIncButton)
         layout6.addWidget(self.scaleDecButton)
-        self.layoutSliders.addLayout(layout6)
+        # self.layoutSliders.addLayout(layout6)
 
         self.table = QTableWidget(10, 5)
         self.table.setHorizontalHeaderLabels(["Add/remove","Point Id", "X err", "Y err", "Dist err"])
@@ -1118,10 +1118,14 @@ class QtAlignmentToolWidget(QWidget):
         self.layoutmeanerrors.addLayout(self.layoutmeany)
         self.layoutmeanerrors.addLayout(self.layoutmeanerror)
 
+
         self.layoutTop = QHBoxLayout()
         self.layoutTop.addLayout(self.layoutSliders)
+        self.layoutTop.addSpacing(50)
         self.layoutTop.addWidget(self.table)
+        self.layoutTop.addSpacing(50)
         self.layoutTop.addLayout(self.layoutmeanerrors)
+        self.layoutTop.addSpacing(10)
 
         # ==============================================================
         # Middle UI containing map selector and map viewer
@@ -1378,8 +1382,9 @@ class QtAlignmentToolWidget(QWidget):
         Callback called when the Preview Mode is turned on/off.
         :param: value a boolean representing if the mode is checked.
         """
-        # Recompute svd
-        self.__leastSquaresWithSVD()
+        # Recompute svd ---  WHY?
+        # self.__leastSquaresWithSVD()
+        self.markers = self.markers_copy.copy()
         # Hide preview widgets
         self.__togglePreviewMode(False)
 
@@ -2436,8 +2441,8 @@ All markers must be valid to proceed.
         self.rSlider.setVisible(isPreviewMode)
         self.rotateLeftButton.setVisible(isPreviewMode)
         self.rotateRightButton.setVisible(isPreviewMode)
-        self.sSliderLabel.setVisible(isPreviewMode)
-        self.sSlider.setVisible(isPreviewMode)
+        self.sSliderLabel.setVisible(False)
+        self.sSlider.setVisible(False)
         # (NON-Preview-ONLY) widgets
         self.leftImgViewer.setVisible(not isPreviewMode)
         self.rightImgViewer.setVisible(not isPreviewMode)
