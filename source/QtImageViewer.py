@@ -67,6 +67,7 @@ class QtImageViewer(QGraphicsView):
 
         MIN_SIZE = 250
         self.pixmap = QPixmap(MIN_SIZE, MIN_SIZE)
+        self.thumb = None
         self.overlay_image = QImage(1, 1, QImage.Format_ARGB32)
 
         self.viewport().setMinimumWidth(MIN_SIZE)
@@ -86,6 +87,7 @@ class QtImageViewer(QGraphicsView):
         if type(img) is QImage:
             imageARGB32 = img.convertToFormat(QImage.Format_ARGB32)
             self.pixmap = QPixmap.fromImage(imageARGB32)
+            self.thumb = None
             self.imgwidth = img.width()
             self.imgheight = img.height()
             if self.imgheight:

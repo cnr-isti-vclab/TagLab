@@ -1968,15 +1968,17 @@ class TagLab(QMainWindow):
         if self.activeviewer is None or self.inactiveviewer is None:
             return
 
-        indexes = self.compare_panel.data_table.selectionModel().selectedRows()
-        if len(indexes) == 0:
+        selected = self.compare_panel.data_table.selectionModel().selectedRows()
+        if len(selected) == 0:
             return
-        indexes = [a.row() for a in indexes]
+
+        indexes = [self.compare_panel.sortfilter.mapToSource(index).row() for index in selected]
 
         img_source_index = self.comboboxSourceImage.currentIndex()
         img_target_index = self.comboboxTargetImage.currentIndex()
         corr = self.project.getImagePairCorrespondences(img_source_index, img_target_index)
         corr.deleteCluster(indexes)
+        self.project.updateGenets(img_source_index, img_target_index)
 
         self.viewerplus.resetSelection()
         self.viewerplus2.resetSelection()
@@ -1985,6 +1987,7 @@ class TagLab(QMainWindow):
             self.compare_panel.setTable(self.project, img_source_index, img_target_index)
         else:
             self.compare_panel.updateTable(corr)
+
 
 
     @pyqtSlot()
@@ -2124,7 +2127,8 @@ class TagLab(QMainWindow):
             self.inactiveviewer.resetTools()
 
             # update panels accordingly
-            self.updatePanels()
+            #self.updatePanels()
+            self.updateMapViewer()
 
     def updateImageSelectionMenu(self):
 
@@ -3215,6 +3219,14 @@ class TagLab(QMainWindow):
 
         self.update_panels_flag = True
 
+    def updateMapViewer(self):
+        if self.mapviewer.isVisible():
+            w = self.mapviewer.width()
+            if self.activeviewer.thumb is None:
+                self.activeviewer.thumb = self.activeviewer.pixmap.scaled(w, w, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            self.mapviewer.setPixmap(self.activeviewer.thumb)
+            self.mapviewer.setOpacity(0.5)
+
     def updatePanels(self):
         """
         Update panels (labels, layers, data panel, compare panel and map viewer)
@@ -3247,11 +3259,7 @@ class TagLab(QMainWindow):
                 self.compare_panel.setTable(self.project, index1, index2)
 
         # update map viewer
-        if self.mapviewer.isVisible():
-            w = self.mapviewer.width()
-            thumb = self.activeviewer.pixmap.scaled(w, w, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-            self.mapviewer.setPixmap(thumb)
-            self.mapviewer.setOpacity(0.5)
+        self.updateMapViewer()
 
         # update data panel
         self.updateDataPanel()
