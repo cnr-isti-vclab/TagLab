@@ -37,7 +37,6 @@ class Correspondences(object):
             return False
 
     def updateGenets(self):
-
         for index, row in self.data.iterrows():
             id1 = int(row['Blob1'])
             id2 = int(row['Blob2'])
