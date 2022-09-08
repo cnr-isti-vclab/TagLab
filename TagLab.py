@@ -2207,7 +2207,10 @@ class TagLab(QMainWindow):
             self.updateComboboxTargetImage(index2)
 
         self.viewerplus.setProject(self.project)
-        self.viewerplus.setImage(image)
+        self.viewerplus.setImage(image) 
+        if self.compare_panel.isVisible():
+                self.compare_panel.setTable(self.project, index1, index2)
+
 
     @pyqtSlot(int)
     def targetImageChanged(self, index2):
@@ -2234,6 +2237,8 @@ class TagLab(QMainWindow):
 
         self.viewerplus2.setProject(self.project)
         self.viewerplus2.setImage(self.project.images[index2])
+        if self.compare_panel.isVisible():
+                self.compare_panel.setTable(self.project, index1, index2)
 
 
     @pyqtSlot()
