@@ -301,6 +301,10 @@ class QtImageViewerPlus(QtImageViewer):
             self.scene.removeItem(self.working_area_rect)
             self.working_area_rect = None
 
+        if self.image is not None:
+            if self.image.grid is not None:
+                self.image.grid.undrawGrid()
+
         self.hideGrid()
         # undraw and clear current image and channel
         QtImageViewer.clear(self)

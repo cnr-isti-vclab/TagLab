@@ -1490,6 +1490,7 @@ class TagLab(QMainWindow):
         """
         Assign the grid created to the corresponding image.
         """
+
         self.activeviewer.image.grid = self.gridWidget.grid
         self.resetToolbar()
         self.activeviewer.showGrid()
@@ -1756,8 +1757,10 @@ class TagLab(QMainWindow):
 
             if self.checkBoxGrid.isChecked():
                 self.viewerplus.showGrid()
+                self.viewerplus2.showGrid()
             else:
                 self.viewerplus.hideGrid()
+                self.viewerplus2.hideGrid()
 
     def disableSplitScreen(self):
 
@@ -2191,7 +2194,6 @@ class TagLab(QMainWindow):
 
         image = self.project.images[index1]
         self.viewerplus.clear()
-        self.btnGrid.setChecked(False)
 
         # target and source image cannot be the same !!
         index2 = self.comboboxTargetImage.currentIndex()
@@ -2207,7 +2209,8 @@ class TagLab(QMainWindow):
             self.updateComboboxTargetImage(index2)
 
         self.viewerplus.setProject(self.project)
-        self.viewerplus.setImage(image) 
+        self.viewerplus.setImage(image)
+        self.setBlobVisualization()
         if self.compare_panel.isVisible():
                 self.compare_panel.setTable(self.project, index1, index2)
 
@@ -2237,6 +2240,7 @@ class TagLab(QMainWindow):
 
         self.viewerplus2.setProject(self.project)
         self.viewerplus2.setImage(self.project.images[index2])
+        self.setBlobVisualization()
         if self.compare_panel.isVisible():
                 self.compare_panel.setTable(self.project, index1, index2)
 
