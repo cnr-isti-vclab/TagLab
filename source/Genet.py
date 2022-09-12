@@ -29,15 +29,6 @@ class Genet:
         #this array will be used for remapping when enforcing connected components
         genets = []
 
-        #assign remap for blobs with assigned genets
-        # for img in self.project.images:
-        #     for b in img.annotations.seg_blobs:
-        #         if hasattr(b, 'genet') and b.genet is not None:
-        #             while len(genets) <= b.genet:
-        #                 genets.append(len(genets))
-        #             genets[b.genet] = b.genet
-        #             print("Image ", img.name, "Blob ", b.id, " has genet ", b.genet)
-
         #assign genets to blobs with no assigned genet
         count = len(genets)
         for img in self.project.images:
@@ -61,15 +52,16 @@ class Genet:
                     blob1.genet = genets[blob1.genet]
 
                 if blob1.genet != blob2.genet:
-                    #print("Genet: ", blob2.genet, "mapped to", blob1.genet)
+                    lower = min(blob1.genet, blob2.genet)
 
-                    g = blob2.genet
+                    g = max(blob1.genet, blob2.genet)
                     while True: #if g is remapped also those needs to be remapped
                         destination = genets[g]
-                        genets[g] = blob1.genet
+                        genets[g] = lower
                         if destination == g:
                             break
                         g = destination
+                    blob1.genet = blob2.genet = lower
 
         for img in self.project.images:
             for b in img.annotations.seg_blobs:
