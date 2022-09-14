@@ -57,25 +57,35 @@ class Genet:
                 blob1 = corrs.source.annotations.blobById(id1)
                 blob2 = corrs.target.annotations.blobById(id2)
 
-                while blob1.genet != genets[blob1.genet]:
-                    blob1.genet = genets[blob1.genet]
 
                 if blob1.genet != blob2.genet:
-                    #print("Genet: ", blob2.genet, "mapped to", blob1.genet)
 
-                    g = blob2.genet
-                    while True: #if g is remapped also those needs to be remapped
-                        destination = genets[g]
-                        genets[g] = blob1.genet
-                        if destination == g:
-                            break
-                        g = destination
+                    low = min(blob1.genet, blob2.genet)
+                    high = max(blob1.genet, blob2.genet)
+                    
+                    while genets[high] != low:
+                        tmp = genets[high]
+                        genets[high] = low
+                        high = tmp
+
+                    blob1.genet = blob2.genet = low
 
         for img in self.project.images:
             for b in img.annotations.seg_blobs:
                 while b.genet != genets[b.genet]:  #follow the link to the
                     b.genet = genets[b.genet]
-                #print("Image ", img.name, "Blob ", b.id, " has genet ", b.genet)
+
+        #update corrs genets.
+        for corrs in self.project.correspondences.values():            
+            for index, row in corrs.data.iterrows():
+                id1 = int(row['Blob1'])
+                id2 = int(row['Blob2'])
+                if id1 != -1:
+                    blob1 = corrs.source.annotations.blobById(id1)
+                    corrs.data.loc[index, 'Genet'] = blob1.genet
+                else:
+                    blob2 = corrs.target.annotations.blobById(id2)
+                    corrs.data.loc[index, 'Genet'] = blob1.genet
 
 
     #ox and oy are the origin of bbox of the blob, dx and dy is a translation in svg.

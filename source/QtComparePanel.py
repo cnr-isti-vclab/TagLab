@@ -348,6 +348,7 @@ height: 0px;
         self.targetImg = project.images[img2idx]
 
         self.correspondences = project.getImagePairCorrespondences(img1idx, img2idx)
+        #FIXME this is pretty expensive, can we avoid it?
         self.correspondences.updateAreas()
         self.data = self.correspondences.data
 

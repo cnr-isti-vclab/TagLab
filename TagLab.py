@@ -4307,10 +4307,10 @@ class TagLab(QMainWindow):
         #TODO check if loadProject actually works!
         try:
             self.project = loadProject(self.taglab_dir, filename, self.default_dictionary)
-        except:
+        except Exception as e:
             box = QMessageBox()
             box.setWindowTitle('Failed loading the project')
-            box.setText("Could not load the file " + filename)
+            box.setText("Could not load the file " + filename + "\n" + str(e))
             box.exec()
             return
 
