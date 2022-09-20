@@ -77,7 +77,7 @@ def paintPoints(mask, box, points, value):
     points = points[:, (points[1] > 0) & (points[0] > 0) & (points[1] < h - 1) & (points[0] < w - 1)]
     index = points[1,] * w + points[0,]
 
-
+    
     np.put(mask, index, value, 'clip')
 #    for x in range(-1, 2):
 #        for y in range(-1, 2):

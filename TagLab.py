@@ -1862,7 +1862,6 @@ class TagLab(QMainWindow):
 
             # test
 
-            dict = { "Pocillopora": 2, "Pocil": 3 }
 
             json_string = json.dumps(dict)
 
@@ -4029,8 +4028,9 @@ class TagLab(QMainWindow):
             QApplication.processEvents()
 
             self.activeviewer.image.export_dataset_area = self.newDatasetWidget.getAreaToExport()
+            flag_coco = self.newDatasetWidget.checkCoco.isChecked()
 
-            new_dataset = NewDataset(self.activeviewer.img_map, self.activeviewer.annotations.seg_blobs, tile_size=1026, step=513)
+            new_dataset = NewDataset(self.activeviewer.img_map, self.project.labels, self.activeviewer.annotations.seg_blobs, tile_size=1026, step=513, flag_coco=flag_coco)
 
             target_classes = training.createTargetClasses(self.activeviewer.annotations)
 
@@ -4038,6 +4038,7 @@ class TagLab(QMainWindow):
             new_dataset.convertColorsToLabels(target_classes, self.project.labels)
             new_dataset.computeFrequencies(target_classes)
             target_pixel_size = self.newDatasetWidget.getTargetScale()
+
             check_size = new_dataset.workingAreaCropAndRescale(self.activeviewer.image.pixelSize(), target_pixel_size,
                                                                self.activeviewer.image.export_dataset_area)
 
@@ -4067,13 +4068,13 @@ class TagLab(QMainWindow):
 
             self.progress_bar.setProgress(50.0)
             QApplication.processEvents()
-
-            if flag_oversampling is True:
-                # FIXME: oversampling requires to be rewritten taking into account that target_classes is a dictionary now.
-                class_to_sample, radii = new_dataset.computeRadii(target_classes)
-                new_dataset.cut_tiles(regular=False, oversampling=True, classes_to_sample=class_to_sample, radii=radii)
-            else:
-                new_dataset.cut_tiles(regular=True, oversampling=False, classes_to_sample=None, radii=None)
+            #
+            # if flag_oversampling is True:
+            #     # FIXME: oversampling requires to be rewritten taking into account that target_classes is a dictionary now.
+            #     class_to_sample, radii = new_dataset.computeRadii(target_classes)
+            #     new_dataset.cut_tiles(regular=False, oversampling=True, classes_to_sample=class_to_sample, radii=radii)
+            # else:
+            new_dataset.cut_tiles(regular=True, oversampling=False, classes_to_sample=None, radii=None)
 
             flag_save = self.newDatasetWidget.checkTiles.isChecked()
             if flag_save:
@@ -4093,6 +4094,7 @@ class TagLab(QMainWindow):
             fl = open(target_pixel_size_file, "w")
             fl.write(str(target_pixel_size))
             fl.close()
+
 
             self.deleteProgressBar()
             self.deleteNewDatasetWidget()
