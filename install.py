@@ -9,22 +9,28 @@ if osused != 'Linux' and osused != 'Windows' and osused != 'Darwin':
     raise Exception("Operative System not supported")
 
 # check python version
-if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] < 6):
-    raise Exception("Must be using Python >= 3.6\nInstallation aborted.")
+if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] < 7):
+    raise Exception("Must be using Python >= 3.7\nInstallation aborted.")
 
 # manage thorch
 something_wrong_with_nvcc = False
 flag_install_pythorch_cpu = False
 nvcc_version = ''
-torch_package = 'torch==1.10.0'
-torchvision_package = 'torchvision==0.11.1'
+torch_package = 'torch'
+torchvision_package = 'torchvision'
+torch_extra_argument1 = ''
+torch_extra_argument2 = ''
 
 # if the user wants to install cpu torch
 if len(sys.argv)==2 and sys.argv[1]=='cpu':
     flag_install_pythorch_cpu = True
 
 # get nvcc version
-if flag_install_pythorch_cpu == False and osused != 'Darwin':
+
+if osused == 'Darwin':
+    flag_install_pythorch_cpu = True
+    print('NVCC not supported on MacOS. Installing cpu version automatically...')
+elif flag_install_pythorch_cpu == False:
     result = subprocess.getstatusoutput('nvcc --version')
     output = result[1]
     rc = result[0]
@@ -45,20 +51,43 @@ if flag_install_pythorch_cpu == False and osused != 'Darwin':
     # get nvcc version
     if '9.2' in nvcc_version:
         nvcc_version = '9.2'
-        print('Torch for CUDA 9.2')
-        torch_package += '+cu92'
-        torchvision_package += '+cu92'
+        print('Torch 1.7.1 for CUDA 9.2')
+        torch_package += '==1.7.1+cu92'
+        torchvision_package += '==0.8.2+cu92'
+        torch_extra_argument1 = '-f'
+        torch_extra_argument2 = 'https://download.pytorch.org/whl/torch_stable.html'
     elif nvcc_version == '10.1':
-        print('Torch for CUDA 10.1')
-        torch_package += '+cu101'
-        torchvision_package += '+cu101'
+        print('Torch 1.7.1 for CUDA 10.1')
+        torch_package += '==1.7.1+cu101'
+        torchvision_package += '==0.8.2+cu101'
+        torch_extra_argument1 = '-f'
+        torch_extra_argument2 = 'https://download.pytorch.org/whl/torch_stable.html'
     elif nvcc_version == '10.2':
-        # 10.2 is default in torch and torchvision
-        print('Torch for CUDA 10.2')
+        print('Torch 1.11.0 for CUDA 10.2')
+        torch_package += '==1.11.0+cu102'
+        torchvision_package += '==0.12.0+cu102'
+        torch_extra_argument1 = '--extra-index-url'
+        torch_extra_argument2 = 'https://download.pytorch.org/whl/cu102'
+    elif '11.0' in nvcc_version:
+        print('Torch 1.7.1 for CUDA 11.0')
+        torch_package += '==1.7.1+cu110'
+        torchvision_package += '0.8.2+cu110'
+        torch_extra_argument1 = '-f'
+        torch_extra_argument2 = 'https://download.pytorch.org/whl/torch_stable.html'
+    elif '11.1' in nvcc_version:
+        print('Torch 1.8.0 for CUDA 11.1')
+        torch_package += '==1.8.0+cu111'
+        torchvision_package += '==0.9.0+cu111'
+        torch_extra_argument1 = '-f'
+        torch_extra_argument2 = 'https://download.pytorch.org/whl/torch_stable.html'
     elif '11.3' in nvcc_version:
-        print('Torch for CUDA 11.3')
-        torch_package += '+cu113'
-        torchvision_package += '+cu113'
+        print('Torch 1.12.1 for CUDA 11.3')
+        torch_extra_argument1 = '--extra-index-url'
+        torch_extra_argument2 = 'https://download.pytorch.org/whl/cu113'
+    elif '11.6' in nvcc_version:
+        print('Torch 1.12.1 for CUDA 11.6')
+        torch_extra_argument1 = '--extra-index-url'
+        torch_extra_argument2 = 'https://download.pytorch.org/whl/cu116'
     elif something_wrong_with_nvcc==False:
         # nvcc is installed, but some version that is not supported by torch
         print('nvcc version installed not supported by pytorch!!')
@@ -71,17 +100,14 @@ if flag_install_pythorch_cpu == False and osused != 'Darwin':
             flag_install_pythorch_cpu = True
         else:
             raise Exception('Installation aborted. Install a proper NVCC version or set the pythorch CPU version.')
-elif osused == 'Darwin':
-    flag_install_pythorch_cpu = True
-    print('NVCC not supported on MacOS. Installing cpu version automatically...')
 
 
 # somewhere before, this flag has been set to True and the user choose to install the cpu torch version
 if flag_install_pythorch_cpu==True:
     print('Torch will be installed in its CPU version.')
-    if osused != 'Darwin': # for macos, the DEFAULT is cpu, therefore we don't need the '+cpu' flag
-        torch_package += '+cpu'
-        torchvision_package += '+cpu'
+    if osused != 'Darwin': # for macos, the DEFAULT is cpu, therefore we don't need the extra arguments
+        torch_extra_argument1 = '--extra-index-url'
+        torch_extra_argument2 = 'https://download.pytorch.org/whl/cpu'
 
 # manage gdal
 gdal_version = ''
@@ -186,7 +212,7 @@ if osused != 'Windows':
 install_requires = [
     'wheel',
     'pyqt5',
-    'scikit-image==0.18',
+    'scikit-image',
     'scikit-learn',
     'pandas',
     'opencv-python',
@@ -201,11 +227,10 @@ for package in install_requires:
 
 # installing torch, gdal and rasterio
 
-# torch
+# torch and torchvision
 subprocess.check_call([sys.executable, "-m", "pip", "install", torch_package,
-                       '-f', 'https://download.pytorch.org/whl/torch_stable.html'])
-subprocess.check_call([sys.executable, "-m", "pip", "install", torchvision_package,
-                       '-f', 'https://download.pytorch.org/whl/torch_stable.html'])
+                       torchvision_package, torch_extra_argument1,
+                       torch_extra_argument2])
 
 # gdal and rasterio
 
