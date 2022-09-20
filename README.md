@@ -44,7 +44,7 @@ If you don't have a NVida graphics card (or if you use MacOS), CPU will be used.
 ## Installing TagLab
 
 ### Step 0: Dependencies
-Before installing TagLab, be sure to have installed __Python 3.7.x, 3.8.x or 3.9.x__, and __NVIDIA CUDA Toolkit__ on Linux or Windows. You can check if they are properly installed by running the following commands in a shell (bash on Linux, poweshell on Windows; for MacOS just check the Python version):
+Before installing TagLab, be sure to have installed __a 64 bit version of Python 3.7.x, 3.8.x or 3.9.x__, and __NVIDIA CUDA Toolkit__ on Linux or Windows. You can check if they are properly installed by running the following commands in a shell (bash on Linux, poweshell on Windows; for MacOS just check the Python version):
 
 ```
 python3 --version
