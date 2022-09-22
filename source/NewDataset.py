@@ -16,11 +16,13 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License (http://www.gnu.org/licenses/gpl.txt)
 # for more details.
+
+from pycocotools import mask as maskcoco
 import cv2
 import os
 import math
 import numpy as np
-from PyQt5.QtGui import QPainter, QImage, QPen, QBrush, QColor, qRgb
+from PyQt5.QtGui import QPainter, QImage, QPen, QBrush, QColor, qRgb, qRed, qGreen, qBlue
 from PyQt5.QtCore import Qt
 import random as rnd
 from source import utils
@@ -1084,9 +1086,6 @@ class NewDataset(object):
 		Exports the tiles INSIDE the given areas (val_area and test_area are stored as (top, left, width, height))
 		The training tiles are the ones of the entire map minus the ones inside the test validation and test area.
 		"""
-		rgblabelList = []
-		idlabelList  = []
-
 
 		##### VALIDATION AREA
 
@@ -1137,10 +1136,13 @@ class NewDataset(object):
 
 
 	def cropAndSaveTiles(self, tiles, tilename, basenameim, basenamelab):
-
-
+		"""
+		Given a list of tiles save them by cutting the RGB orthoimage and hte label image.
+		COCO annotations is also saved (optionally).
+		"""
 
 		if self.flag_coco:
+
 			# one dictionary for info dataset
 
 			info = dict.fromkeys(['description', 'url', 'version', 'year', 'contributor', 'date_created'])
@@ -1149,18 +1151,28 @@ class NewDataset(object):
             # a list of dictionaries for classes
 			categorieslist = []
 
-            #NOTA, SE SI FONDONO DUE DATASET?
+            # FIXME: fusing two different datasets ???
 
 			list_keys = list(self.labels_dict.keys())
 			list_keys.sort()
 
+			# used later to retrieve the category id
+			color_to_category_id = {}
+
 			for i, key in enumerate(list_keys):
+
+				color = self.labels_dict[key].fill
+				color_key = str(color[0]) + "-" + str(color[1]) + "-" + str(color[2])
+
 				labeldict = {
 						"supercategory": "coral",
-						"color": self.labels_dict[key].fill,
+						"color": color,
 						"id": i,
 						"name": key}
+
 				categorieslist.append(labeldict)
+
+				color_to_category_id[color_key] = i
 
 			jsondata = {'info': info, 'categories': categorieslist}
 
@@ -1189,7 +1201,7 @@ class NewDataset(object):
 
 			if self.flag_coco:
 
-				Imagedict = {"license": 2,
+				image_dict = {"license": 2,
 						 "file_name": tilename + str.format("_{0:04d}", (i)) + ".png",
 						 "coco_url": filenameRGB,
 						 "height": self.tile_size,
@@ -1197,30 +1209,54 @@ class NewDataset(object):
 						 "date_captured": "2013-11-20 16:47:35",
 						 "id": imagecount_id }
 
-				imagecount_id = imagecount_id + 1
 				cropidlabel = utils.cropQImage(self.id_image, [top, left, self.tile_size, self.tile_size])
 				cropidlabel = utils.qimageToNumpyArray(cropidlabel)
 				cropIdBinary = (cropidlabel[:,:,0] > 0).astype(int)
 				regions = measure.regionprops(measure.label(cropIdBinary, connectivity=1))
-				tilemask= np.zeros_like(cropIdBinary).astype(int)
-
 
 				for region in regions:
+
+					tilemask = np.zeros_like(cropIdBinary).astype(np.uint8)
 					tilemask[region.coords[:, 1], region.coords[:, 0]] = 1
-					segmentation = utils.binaryMaskToRle(tilemask)
-					infos = {'area' : region.area,'iscrowd' : 0,'image_id':imagecount_id, 'bbox': region.bbox, 'category_id': 0, "id": segcount_id}
+					#segmentation = utils.binaryMaskToRle(tilemask)
+					segmentation = maskcoco.encode(np.asfortranarray(np.transpose(tilemask)))
+
+					segmentation["counts"] = segmentation["counts"].decode("utf-8")
+
+					category_id = -1
+					for jj in range(10):
+						N = int((jj * region.coords.shape[0]) / 10)
+						rgb = croplabel.pixel(region.coords[N, 1], region.coords[N, 0])
+						color_key = str(qRed(rgb)) + "-" + str(qGreen(rgb)) + "-" + str(qBlue(rgb))
+						if color_key != "0-0-0":
+							category_id = color_to_category_id[color_key]
+
+					# COCO format for BBOX -> [x,y,width,height]
+					bbox = [region.bbox[1], region.bbox[0], region.bbox[3] - region.bbox[1], region.bbox[2] - region.bbox[0]]
+
+					infos = {'segmentation': {}, 'area' : int(region.area), 'iscrowd' : 0,'image_id': imagecount_id, 'bbox': bbox, 'category_id': category_id, "id": segcount_id}
+
+					print(segcount_id)
 					segcount_id = segcount_id + 1
-					infos.update(segmentation)
-					segmentationList.append(infos)
 
-				imageList.append(Imagedict)
-		jsondata["Image"] = imageList
-		jsondata["Annotation"] = segmentationList
+					infos["segmentation"] = segmentation
 
-		folder = os.path.dirname(basenameim)
+					if category_id >= 0:
+						segmentationList.append(infos)
 
-		with open(os.path.join(folder,'data.json'), 'w') as f:
-			json.dump(jsondata, f)
+				imageList.append(image_dict)
+
+				imagecount_id = imagecount_id + 1
+
+
+		if self.flag_coco:
+
+			jsondata["images"] = imageList
+			jsondata["annotations"] = segmentationList
+
+			folder = os.path.dirname(basenameim)
+			with open(os.path.join(folder,'data.json'), 'w') as f:
+				json.dump(jsondata, f)
 
 
 	##### VISUALIZATION FUNCTIONS - FOR DEBUG PURPOSES
