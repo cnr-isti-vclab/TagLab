@@ -42,7 +42,7 @@ class Scribbles(QObject):
 
     def setCustomCursor(self):
 
-        cursor_size = self.current_size * self.scale_factor
+        cursor_size = int(self.current_size * self.scale_factor)
 
         pxmap = QPixmap(cursor_size, cursor_size)
         pxmap.fill(QColor("transparent"))
