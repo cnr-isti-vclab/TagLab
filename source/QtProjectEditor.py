@@ -96,10 +96,10 @@ class QtProjectEditor(QWidget):
             edit.clicked.connect(lambda x, img=img: self.editMap(img))
             map_layout.addWidget(edit)
 
-            crop = QPushButton("crop")
-            crop.setMaximumWidth(80)
-            crop.clicked.connect(lambda x, img=img: self.cropMap(img))
-            map_layout.addWidget(crop)
+            #crop = QPushButton("crop")
+            #crop.setMaximumWidth(80)
+            #crop.clicked.connect(lambda x, img=img: self.cropMap(img))
+            #map_layout.addWidget(crop)
 
             delete = QPushButton("delete")
             delete.setMaximumWidth(80)
