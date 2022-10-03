@@ -25,6 +25,7 @@ import numpy as np
 from PyQt5.QtGui import QPainter, QImage, QPen, QBrush, QColor, qRgb, qRed, qGreen, qBlue
 from PyQt5.QtCore import Qt
 import random as rnd
+from source import Image
 from source import utils
 from skimage.filters import gaussian
 from skimage.segmentation import find_boundaries
@@ -33,6 +34,7 @@ import glob
 import sys
 import json
 from cv2 import fillPoly
+import datetime
 from skimage.measure import label, regionprops
 from source import Mask
 
@@ -42,13 +44,14 @@ class NewDataset(object):
 	This class handles the functionalities to create a new dataset.
 	"""
 
-	def __init__(self, ortho_image, labels, blobs, tile_size, step, flag_coco):
+	def __init__(self, ortho_image, labels, image_info, tile_size, step, flag_coco):
 
 		self.ortho_image = ortho_image  # QImage
-		self.blobs = blobs
+		self.blobs = image_info.annotations.seg_blobs
 		self.tile_size = tile_size
 		self.step = step
 		self.labels_dict = labels
+		self.image_info = image_info
 
 		# stored as (top, left, width, height)
 		self.val_area = [0, 0, 0, 0]
@@ -111,9 +114,6 @@ class NewDataset(object):
 				self.id_image = self.crop_id_image.scaled(w, h, Qt.IgnoreAspectRatio, Qt.FastTransformation)
 
 			return True
-
-
-
 
 
 	def isFullyInsideBBox(self, bbox1, bbox2):
@@ -1141,12 +1141,24 @@ class NewDataset(object):
 		COCO annotations is also saved (optionally).
 		"""
 
+		imagecount_id = 0
+		segcount_id = 0
+
+		imageList = []
+		segmentationList = []
+
 		if self.flag_coco:
 
 			# one dictionary for info dataset
 
 			info = dict.fromkeys(['description', 'url', 'version', 'year', 'contributor', 'date_created'])
-			# decidere se sti campi li vogliamo o no
+
+			info["contributor"] = ""
+			info["description"] = "Dataset created by TagLab"
+			info["url"] = ""
+			info["version"] = "1.0"
+			info["date_created"] = datetime.date.today().isoformat()
+			info["year"] = str(datetime.date.today().year)
 
             # a list of dictionaries for classes
 			categorieslist = []
@@ -1177,11 +1189,6 @@ class NewDataset(object):
 			jsondata = {'info': info, 'categories': categorieslist}
 
 		half_tile_size = self.tile_size / 2
-		imagecount_id = 0
-		segcount_id = 0
-
-		imageList = []
-		segmentationList = []
 
 		for i, sample in enumerate(tiles):
 
@@ -1206,7 +1213,7 @@ class NewDataset(object):
 						 "coco_url": filenameRGB,
 						 "height": self.tile_size,
 						 "width": self.tile_size,
-						 "date_captured": "2013-11-20 16:47:35",
+						 "date_captured": self.image_info.acquisition_date,
 						 "id": imagecount_id }
 
 				cropidlabel = utils.cropQImage(self.id_image, [top, left, self.tile_size, self.tile_size])
@@ -1255,7 +1262,7 @@ class NewDataset(object):
 			jsondata["annotations"] = segmentationList
 
 			folder = os.path.dirname(basenameim)
-			with open(os.path.join(folder,'data.json'), 'w') as f:
+			with open(os.path.join(folder, 'annotations.json'), 'w') as f:
 				json.dump(jsondata, f)
 
 
