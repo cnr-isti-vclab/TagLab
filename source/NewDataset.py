@@ -1149,7 +1149,7 @@ class NewDataset(object):
 
 		if self.flag_coco:
 
-			# one dictionary for info dataset
+			##### info dataset
 
 			info = dict.fromkeys(['description', 'url', 'version', 'year', 'contributor', 'date_created'])
 
@@ -1160,10 +1160,10 @@ class NewDataset(object):
 			info["date_created"] = datetime.date.today().isoformat()
 			info["year"] = str(datetime.date.today().year)
 
+			##### CATEGORIES
+
             # a list of dictionaries for classes
 			categorieslist = []
-
-            # FIXME: fusing two different datasets ???
 
 			list_keys = list(self.labels_dict.keys())
 			list_keys.sort()
@@ -1185,6 +1185,26 @@ class NewDataset(object):
 				categorieslist.append(labeldict)
 
 				color_to_category_id[color_key] = i
+
+			output_folder = os.path.dirname(basenameim)
+			annotations_filename = os.path.join(output_folder, 'annotations.json')
+
+			# if an annotation file just exists the information need to be updated
+			# NOTE THAT THE DICTIONARY MUST BE THE SAME TO MERGE TWO DATASET (!!)
+			if os.path.exists(annotations_filename):
+				f = open(annotations_filename, 'r')
+				ann = json.load(f)
+				max_id = 0
+				for image in ann["images"]:
+					max_id = max(max_id, image["id"])
+					imageList.append(image)
+				imagecount_id = max_id + 1
+
+				max_id = 0
+				for annotation in ann["annotations"]:
+					max_id = max(max_id, annotation["id"])
+					segmentationList.append(annotation)
+				segcount_id = max_id + 1
 
 			jsondata = {'info': info, 'categories': categorieslist}
 
@@ -1243,7 +1263,6 @@ class NewDataset(object):
 
 					infos = {'segmentation': {}, 'area' : int(region.area), 'iscrowd' : 0,'image_id': imagecount_id, 'bbox': bbox, 'category_id': category_id, "id": segcount_id}
 
-					print(segcount_id)
 					segcount_id = segcount_id + 1
 
 					infos["segmentation"] = segmentation
@@ -1261,8 +1280,7 @@ class NewDataset(object):
 			jsondata["images"] = imageList
 			jsondata["annotations"] = segmentationList
 
-			folder = os.path.dirname(basenameim)
-			with open(os.path.join(folder, 'annotations.json'), 'w') as f:
+			with open(annotations_filename, 'w') as f:
 				json.dump(jsondata, f)
 
 
