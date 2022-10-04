@@ -4030,7 +4030,11 @@ class TagLab(QMainWindow):
             self.activeviewer.image.export_dataset_area = self.newDatasetWidget.getAreaToExport()
             flag_coco = self.newDatasetWidget.checkCoco.isChecked()
 
-            new_dataset = NewDataset(self.activeviewer.img_map, self.project.labels, self.activeviewer.annotations.seg_blobs, tile_size=1026, step=513, flag_coco=flag_coco)
+            index = self.comboboxSourceImage.currentIndex()
+            current_image = self.project.images[index]
+
+            new_dataset = NewDataset(self.activeviewer.img_map, self.project.labels, current_image,
+                                     tile_size=1026, step=513, flag_coco=flag_coco)
 
             target_classes = training.createTargetClasses(self.activeviewer.annotations)
 
