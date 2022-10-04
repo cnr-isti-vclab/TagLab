@@ -311,7 +311,7 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
 
     if USE_CUDA:
         device = torch.device("cuda")
-    else
+    else:
         device = torch.device("cpu")
 
     net.to(device)
