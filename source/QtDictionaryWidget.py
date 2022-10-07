@@ -64,8 +64,8 @@ class QtDictionaryWidget(QWidget):
         self.button_new = QPushButton("New")
         self.button_new.clicked.connect(self.newDictionary)
 
-        self.button_current = QPushButton("Use current")
-        self.button_current.clicked.connect(self.currentDictionary)
+        #self.button_current = QPushButton("Use current")
+        #self.button_current.clicked.connect(self.currentDictionary)
 
         self.button_load = QPushButton("Load")
         self.button_load.clicked.connect(self.chooseDictionary)
@@ -178,7 +178,7 @@ class QtDictionaryWidget(QWidget):
 
         layout_zerorow = QHBoxLayout()
         layout_zerorow.addWidget(self.button_new)
-        layout_zerorow.addWidget(self.button_current)
+        #layout_zerorow.addWidget(self.button_current)
         layout_zerorow.addWidget(self.button_load)
         layout_zerorow.addWidget(self.btn_save)
 
@@ -252,20 +252,32 @@ class QtDictionaryWidget(QWidget):
     def newDictionary(self):
 
         self.edit_description.setText("")
+        self.edit_load.setText("")
         self.edit_dname.setText("")
 
-        self.labels = []
+        self.removeAllLabels()
+        self.displayLabels()
 
-        labels_currently_in_use = self.project.labelsInUse()
-        for label_name in labels_currently_in_use:
-            self.labels.append(self.project.labels[label_name])
+    def removeAllLabels(self):
+        """
+        It removes all the labels but not the ones in use.
+        """
 
-        self.createAllLabels()
+        current_labels = self.labels.copy()
 
-    @pyqtSlot()
-    def currentDictionary(self):
+        self.labels_in_use = self.project.labelsInUse()
 
-        self.populateLabelsFromProjectDictionary()
+        oldname = ""
+        for label in current_labels:
+            if label.name in self.labels_in_use:
+                pass
+            else:
+                oldname = label.name
+                self.labels.remove(label)
+
+        # only one notification is sufficient to update all the removed labels
+        if oldname != "":
+            self.deletelabel.emit(oldname)
 
     @pyqtSlot()
     def chooseDictionary(self):
@@ -275,6 +287,7 @@ class QtDictionaryWidget(QWidget):
 
         if fileName:
 
+            flag_replace = False
             if self.labels:
                 box = QMessageBox()
                 box.setIcon(QMessageBox.Question)
@@ -287,7 +300,9 @@ class QtDictionaryWidget(QWidget):
                 buttonN.setText('Replace')
                 box.exec()
                 if box.clickedButton() == buttonN:
-                    self.labels = []
+                    flag_replace = True
+                else:
+                    flag_replace = False
 
             self.edit_load.setText(fileName)
 
@@ -297,14 +312,47 @@ class QtDictionaryWidget(QWidget):
             self.edit_description.document().setPlainText(dict["Description"])
             ALLlabels = dict["Labels"]
 
+            labels_loaded = []
             for label in ALLlabels:
                name= label['name']
                id = label['name']
                fill = label['fill']
                mylabel = Label(id=id, name=name, fill=fill)
-               self.labels.append(mylabel)
+               labels_loaded.append(mylabel)
 
-            self.createAllLabels()
+            if flag_replace is True:
+                # REPLACE CURRENT DICTIONARY WITH THE LOADED ONE
+                self.removeAllLabels()
+
+            # create a dictionary to speed up the search of the existing labels
+            labels_dict = {}
+            for label in self.labels:
+                labels_dict[label.name] = label
+            labels_names = list(labels_dict.keys())
+
+            # add or update the loaded label
+            for label in labels_loaded:
+                if label.name in labels_names:
+                    # update the label
+                    oldname = labels_dict[label.name].name
+                    oldcolor = labels_dict[label.name].fill
+                    newname = label.name
+                    newcolor = label.fill
+
+                    if oldcolor == newcolor and oldname == newname:
+                        pass
+                    else:
+                        labels_dict[label.name].fill = newcolor
+                        self.updatelabel.emit(oldname, oldcolor, newname, newcolor)
+
+                else:
+                    # add a new label
+                    self.labels.append(label)
+
+            # only one notification is sufficient to update all the modified labels
+            self.addlabel.emit()
+
+            self.displayLabels()
 
 
     @pyqtSlot()
@@ -395,12 +443,13 @@ class QtDictionaryWidget(QWidget):
 
         for key in self.project.labels.keys():
             label = self.project.labels[key]
-            lbl = Label(id=label.id, name=label.name, fill=label.fill)
-            self.labels.append(lbl)
+            if label.name != "Empty":  # empty is a special tag, it is always present in the dictionary, and it cannot be edited
+                lbl = Label(id=label.id, name=label.name, fill=label.fill)
+                self.labels.append(lbl)
 
-        self.createAllLabels()
+        self.displayLabels()
 
-    def createAllLabels(self):
+    def displayLabels(self):
 
         self.labels_layout = QVBoxLayout()
         self.label_color = []
@@ -476,7 +525,7 @@ class QtDictionaryWidget(QWidget):
     @pyqtSlot()
     def editLabel(self):
 
-        if self.selection_index > 0:
+        if self.selection_index >= 0:
 
             label = self.labels[self.selection_index]
             oldname = label.name
@@ -504,7 +553,7 @@ class QtDictionaryWidget(QWidget):
                 label.name = newname
                 label.fill = [r, g, b]
 
-                self.createAllLabels()
+                self.displayLabels()
                 lbl_selected = self.label_name[self.selection_index]
                 lbl_selected.setStyleSheet("border: 1 px; font-weight: bold; color: white;")
                 self.updatelabel.emit(oldname, oldcolor, label.name, label.fill)
@@ -537,7 +586,7 @@ class QtDictionaryWidget(QWidget):
 
     def removeLabel(self):
 
-        if self.selection_index > 0:
+        if self.selection_index >= 0:
             label = self.labels[self.selection_index]
             oldname = label.name
 
@@ -563,7 +612,7 @@ class QtDictionaryWidget(QWidget):
 
             if delete_ok is True:
                 self.labels.remove(label)
-                self.createAllLabels()
+                self.displayLabels()
                 self.selection_index = -1
 
                 self.editR.blockSignals(True)
@@ -637,15 +686,10 @@ class QtDictionaryWidget(QWidget):
 
             self.addlabel.emit()
 
-
-
-
         else:
             box = QMessageBox()
             box.setText("Please chose a valid color and type a label name")
             box.exec()
-
-
 
     def eventFilter(self, object, event):
 

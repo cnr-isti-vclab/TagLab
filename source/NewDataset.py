@@ -17,18 +17,26 @@
 # GNU General Public License (http://www.gnu.org/licenses/gpl.txt)
 # for more details.
 
+from pycocotools import mask as maskcoco
+import cv2
 import os
 import math
 import numpy as np
-from PyQt5.QtGui import QPainter, QImage, QPen, QBrush, QColor, qRgb
+from PyQt5.QtGui import QPainter, QImage, QPen, QBrush, QColor, qRgb, qRed, qGreen, qBlue
 from PyQt5.QtCore import Qt
 import random as rnd
+from source import Image
 from source import utils
 from skimage.filters import gaussian
 from skimage.segmentation import find_boundaries
 from skimage import measure
 import glob
 import sys
+import json
+from cv2 import fillPoly
+import datetime
+from skimage.measure import label, regionprops
+from source import Mask
 
 
 class NewDataset(object):
@@ -36,12 +44,14 @@ class NewDataset(object):
 	This class handles the functionalities to create a new dataset.
 	"""
 
-	def __init__(self, ortho_image, blobs, tile_size, step):
+	def __init__(self, ortho_image, labels, image_info, tile_size, step, flag_coco):
 
 		self.ortho_image = ortho_image  # QImage
-		self.blobs = blobs
+		self.blobs = image_info.annotations.seg_blobs
 		self.tile_size = tile_size
 		self.step = step
+		self.labels_dict = labels
+		self.image_info = image_info
 
 		# stored as (top, left, width, height)
 		self.val_area = [0, 0, 0, 0]
@@ -55,8 +65,11 @@ class NewDataset(object):
 
 		self.label_image = None
 		self.labels = None
+		self.flag_coco = flag_coco
 
 		self.crop_size = 513
+		#self.idmap = None
+		self.id_image = None
 
 		self.frequencies = None
 
@@ -80,6 +93,8 @@ class NewDataset(object):
 
 		crop_ortho_image = self.ortho_image.copy(x, y, width, height)
 		crop_label_image = self.label_image.copy(x, y, width, height)
+		#crop_id_image = np.copy(self.idmap)
+		#crop_id_image= crop_id_image[y: y+height, x: x+width]
 
 		scale = float(current_pixel_size / target_pixel_size)
 		w = int(crop_ortho_image.width() * scale)
@@ -88,11 +103,18 @@ class NewDataset(object):
 		if w >= 32767 or h >= 32767:
 			self.ortho_image = None
 			self.label_image = None
+			self.id_image = None
 			return False
 		else:
 			self.ortho_image = crop_ortho_image.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
 			self.label_image = crop_label_image.scaled(w, h, Qt.IgnoreAspectRatio, Qt.FastTransformation)
+			#self.idmap = cv2.resize(crop_id_image, dsize=(h, w), interpolation=cv2.INTER_NEAREST) this is for a numpy
+			if self.flag_coco:
+				self.crop_id_image = self.id_image.copy(x, y, width, height)
+				self.id_image = self.crop_id_image.scaled(w, h, Qt.IgnoreAspectRatio, Qt.FastTransformation)
+
 			return True
+
 
 	def isFullyInsideBBox(self, bbox1, bbox2):
 		"""
@@ -490,10 +512,9 @@ class NewDataset(object):
 		return val_area, test_area
 
 
-
 	def createLabelImage(self, labels_dictionary):
 		"""
-		It converts the blobs in the label image.
+		Creates a large labeled image of the entire annotated area using class-colored blobs
 		"""
 
 		# create a black canvas of the same size of your map
@@ -510,21 +531,32 @@ class NewDataset(object):
 
 			if blob.qpath_gitem.isVisible():
 
-				if blob.qpath_gitem.isVisible():
+				if blob.class_name == "Empty":
+					rgb = qRgb(0, 0, 0)
+				else:
+					class_color = labels_dictionary[blob.class_name].fill
+					rgb = qRgb(class_color[0], class_color[1], class_color[2])
 
-					if blob.class_name == "Empty":
-						rgb = qRgb(0, 0, 0)
-					else:
-						class_color = labels_dictionary[blob.class_name].fill
-						rgb = qRgb(class_color[0], class_color[1], class_color[2])
-
-					painter.setBrush(QBrush(QColor(rgb)))
-					painter.drawPath(blob.qpath_gitem.path())
+				painter.setBrush(QBrush(QColor(rgb)))
+				painter.drawPath(blob.qpath_gitem.path())
 
 		painter.end()
-
 		self.label_image = labelimg
 
+		if self.flag_coco:
+			self.id_image = np.zeros((h, w), dtype=int)
+
+			for i, blob in enumerate(self.blobs):
+
+				if blob.qpath_gitem.isVisible():
+					if blob.class_name != "Empty":
+						points = blob.contour.round().astype(int)
+						fillPoly(self.id_image, pts=[points], color = blob.id)
+						for inner_contour in blob.inner_contours:
+							points = inner_contour.round().astype(int)
+							fillPoly(self.id_image, pts=[points], color=0)
+
+			self.id_image = utils.floatmapToQImage(self.id_image)
 
 	def convertColorsToLabels(self, target_classes, labels_colors):
 		"""
@@ -1069,23 +1101,7 @@ class NewDataset(object):
 		except:
 			pass
 
-		half_tile_size = self.tile_size / 2
-
-		for i, sample in enumerate(self.validation_tiles):
-
-			cx = sample[0]
-			cy = sample[1]
-			top = cy - half_tile_size
-			left = cx - half_tile_size
-			cropimg = utils.cropQImage(self.ortho_image, [top, left, self.tile_size, self.tile_size])
-			croplabel = utils.cropQImage(self.label_image, [top, left, self.tile_size, self.tile_size])
-
-			filenameRGB = os.path.join(basenameVim, tilename + str.format("_{0:04d}", (i)) + ".png")
-			filenameLabel = os.path.join(basenameVlab, tilename + str.format("_{0:04d}", (i)) + ".png")
-
-			cropimg.save(filenameRGB)
-			croplabel.save(filenameLabel)
-
+		self.cropAndSaveTiles(self.validation_tiles, tilename, basenameVim, basenameVlab)
 
 		##### TEST AREA
 
@@ -1101,23 +1117,7 @@ class NewDataset(object):
 		except:
 			pass
 
-		for i, sample in enumerate(self.test_tiles):
-
-			cx = sample[0]
-			cy = sample[1]
-			top = cy - half_tile_size
-			left = cx - half_tile_size
-
-			cropimg = utils.cropQImage(self.ortho_image, [top, left, self.tile_size, self.tile_size])
-			croplabel = utils.cropQImage(self.label_image, [top, left, self.tile_size, self.tile_size])
-
-			filenameRGB = os.path.join(basenameTestIm, tilename + str.format("_{0:04d}", (i)) + ".png")
-			filenameLabel = os.path.join(basenameTestLab, tilename + str.format("_{0:04d}", (i)) + ".png")
-
-			cropimg.save(filenameRGB)
-			croplabel.save(filenameLabel)
-
-		##### TRAINING AREA = ENTIRE MAP / (VALIDATION AREA U TEST_AREA)
+		self.cropAndSaveTiles(self.test_tiles, tilename, basenameTestIm, basenameTestLab)
 
 		basenameTrainIm = os.path.join(basename, os.path.join("training", "images"))
 		try:
@@ -1131,7 +1131,86 @@ class NewDataset(object):
 		except:
 			pass
 
-		for i, sample in enumerate(self.training_tiles):
+		self.cropAndSaveTiles(self.training_tiles, tilename, basenameTrainIm, basenameTrainLab)
+
+
+
+	def cropAndSaveTiles(self, tiles, tilename, basenameim, basenamelab):
+		"""
+		Given a list of tiles save them by cutting the RGB orthoimage and hte label image.
+		COCO annotations is also saved (optionally).
+		"""
+
+		imagecount_id = 0
+		segcount_id = 0
+
+		imageList = []
+		segmentationList = []
+
+		if self.flag_coco:
+
+			##### info dataset
+
+			info = dict.fromkeys(['description', 'url', 'version', 'year', 'contributor', 'date_created'])
+
+			info["contributor"] = ""
+			info["description"] = "Dataset created by TagLab"
+			info["url"] = ""
+			info["version"] = "1.0"
+			info["date_created"] = datetime.date.today().isoformat()
+			info["year"] = str(datetime.date.today().year)
+
+			##### CATEGORIES
+
+            # a list of dictionaries for classes
+			categorieslist = []
+
+			list_keys = list(self.labels_dict.keys())
+			list_keys.sort()
+
+			# used later to retrieve the category id
+			color_to_category_id = {}
+
+			for i, key in enumerate(list_keys):
+
+				color = self.labels_dict[key].fill
+				color_key = str(color[0]) + "-" + str(color[1]) + "-" + str(color[2])
+
+				labeldict = {
+						"supercategory": "coral",
+						"color": color,
+						"id": i,
+						"name": key}
+
+				categorieslist.append(labeldict)
+
+				color_to_category_id[color_key] = i
+
+			output_folder = os.path.dirname(basenameim)
+			annotations_filename = os.path.join(output_folder, 'annotations.json')
+
+			# if an annotation file just exists the information need to be updated
+			# NOTE THAT THE DICTIONARY MUST BE THE SAME TO MERGE TWO DATASET (!!)
+			if os.path.exists(annotations_filename):
+				f = open(annotations_filename, 'r')
+				ann = json.load(f)
+				max_id = 0
+				for image in ann["images"]:
+					max_id = max(max_id, image["id"])
+					imageList.append(image)
+				imagecount_id = max_id + 1
+
+				max_id = 0
+				for annotation in ann["annotations"]:
+					max_id = max(max_id, annotation["id"])
+					segmentationList.append(annotation)
+				segcount_id = max_id + 1
+
+			jsondata = {'info': info, 'categories': categorieslist}
+
+		half_tile_size = self.tile_size / 2
+
+		for i, sample in enumerate(tiles):
 
 			cx = sample[0]
 			cy = sample[1]
@@ -1141,11 +1220,68 @@ class NewDataset(object):
 			cropimg = utils.cropQImage(self.ortho_image, [top, left, self.tile_size, self.tile_size])
 			croplabel = utils.cropQImage(self.label_image, [top, left, self.tile_size, self.tile_size])
 
-			filenameRGB = os.path.join(basenameTrainIm, tilename + str.format("_{0:04d}", (i)) + ".png")
-			filenameLabel = os.path.join(basenameTrainLab, tilename + str.format("_{0:04d}", (i)) + ".png")
+			filenameRGB = os.path.join(basenameim, tilename + str.format("_{0:04d}", (i)) + ".png")
+			filenameLabel = os.path.join(basenamelab, tilename + str.format("_{0:04d}", (i)) + ".png")
 
 			cropimg.save(filenameRGB)
 			croplabel.save(filenameLabel)
+
+			if self.flag_coco:
+
+				image_dict = {"license": 2,
+						 "file_name": tilename + str.format("_{0:04d}", (i)) + ".png",
+						 "coco_url": filenameRGB,
+						 "height": self.tile_size,
+						 "width": self.tile_size,
+						 "date_captured": self.image_info.acquisition_date,
+						 "id": imagecount_id }
+
+				cropidlabel = utils.cropQImage(self.id_image, [top, left, self.tile_size, self.tile_size])
+				cropidlabel = utils.qimageToNumpyArray(cropidlabel)
+				cropIdBinary = (cropidlabel[:,:,0] > 0).astype(int)
+				regions = measure.regionprops(measure.label(cropIdBinary, connectivity=1))
+
+				for region in regions:
+
+					tilemask = np.zeros_like(cropIdBinary).astype(np.uint8)
+					tilemask[region.coords[:, 1], region.coords[:, 0]] = 1
+					#segmentation = utils.binaryMaskToRle(tilemask)
+					segmentation = maskcoco.encode(np.asfortranarray(np.transpose(tilemask)))
+
+					segmentation["counts"] = segmentation["counts"].decode("utf-8")
+
+					category_id = -1
+					for jj in range(10):
+						N = int((jj * region.coords.shape[0]) / 10)
+						rgb = croplabel.pixel(region.coords[N, 1], region.coords[N, 0])
+						color_key = str(qRed(rgb)) + "-" + str(qGreen(rgb)) + "-" + str(qBlue(rgb))
+						if color_key != "0-0-0":
+							category_id = color_to_category_id[color_key]
+
+					# COCO format for BBOX -> [x,y,width,height]
+					bbox = [region.bbox[1], region.bbox[0], region.bbox[3] - region.bbox[1], region.bbox[2] - region.bbox[0]]
+
+					infos = {'segmentation': {}, 'area' : int(region.area), 'iscrowd' : 0,'image_id': imagecount_id, 'bbox': bbox, 'category_id': category_id, "id": segcount_id}
+
+					segcount_id = segcount_id + 1
+
+					infos["segmentation"] = segmentation
+
+					if category_id >= 0:
+						segmentationList.append(infos)
+
+				imageList.append(image_dict)
+
+				imagecount_id = imagecount_id + 1
+
+
+		if self.flag_coco:
+
+			jsondata["images"] = imageList
+			jsondata["annotations"] = segmentationList
+
+			with open(annotations_filename, 'w') as f:
+				json.dump(jsondata, f)
 
 
 	##### VISUALIZATION FUNCTIONS - FOR DEBUG PURPOSES

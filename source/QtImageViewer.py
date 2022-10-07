@@ -1,6 +1,6 @@
 import os.path
 from PyQt5.QtCore import Qt, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
-from PyQt5.QtGui import QImage, QPixmap, QPainter, QPainterPath, QPen, QImageReader
+from PyQt5.QtGui import QImage, QPixmap, QPainter, QPainterPath, QPen, QImageReader, QMouseEvent
 from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QFileDialog, QGraphicsPixmapItem
 
 class QtImageViewer(QGraphicsView):
@@ -11,6 +11,12 @@ class QtImageViewer(QGraphicsView):
 
     viewUpdated = pyqtSignal(QRectF)                  # region visible in percentage
     viewHasChanged = pyqtSignal(float, float, float)  # posx, posy, posz
+
+    mouseDown = pyqtSignal(QMouseEvent)
+    mouseMove = pyqtSignal(QMouseEvent)
+    mouseUp = pyqtSignal(QMouseEvent)
+
+    mouseOut = pyqtSignal()
 
     def __init__(self):
         QGraphicsView.__init__(self)
@@ -129,7 +135,6 @@ class QtImageViewer(QGraphicsView):
         self.updateViewer()
         self.blockSignals(False)
 
-
     def updateViewer(self):
         """ Show current zoom (if showing entire image, apply current aspect ratio mode).
         """
@@ -242,6 +247,10 @@ class QtImageViewer(QGraphicsView):
         self.horizontalScrollBar().setValue(posx * zf)
         self.verticalScrollBar().setValue(posy * zf)
 
+    def mouseMoveEvent(self, event):
+        self.mouseMove.emit(event)
+        QGraphicsView.mouseMoveEvent(self, event)
+
     def mousePressEvent(self, event):
         """
         Begin panning (if enable)
@@ -250,15 +259,20 @@ class QtImageViewer(QGraphicsView):
             if self.panEnabled:
                 self.setDragMode(QGraphicsView.ScrollHandDrag)
 
+        self.mouseDown.emit(event)
         QGraphicsView.mousePressEvent(self, event)
 
     def mouseReleaseEvent(self, event):
         """
         Stop mouse pan.
         """
+        self.mouseUp.emit(event)
         QGraphicsView.mouseReleaseEvent(self, event)
         if event.button() == Qt.LeftButton:
             self.setDragMode(QGraphicsView.NoDrag)
+
+    def leaveEvent(self, event) -> None:
+        self.mouseOut.emit()
 
     def wheelEvent(self, event):
         """
@@ -273,8 +287,8 @@ class QtImageViewer(QGraphicsView):
             pt = event.angleDelta()
 
             self.zoom_factor = self.zoom_factor*pow(pow(2, 1/2), pt.y()/100)
-            if self.zoom_factor < self.ZOOM_FACTOR_MIN:
-                self.zoom_factor = self.ZOOM_FACTOR_MIN
+            if self.zoom_factor < self.ZOOM_FACTOR_MIN * 0.5:
+                self.zoom_factor = self.ZOOM_FACTOR_MIN * 0.5
             if self.zoom_factor > self.ZOOM_FACTOR_MAX:
                 self.zoom_factor = self.ZOOM_FACTOR_MAX
 

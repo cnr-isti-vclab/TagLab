@@ -39,6 +39,8 @@ from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QFileDialog, QCo
 
 import pprint
 # PYTORCH
+from source.QtAlignmentToolWidget import QtAlignmentToolWidget
+
 try:
     import torch
     from torch.nn.functional import upsample
@@ -56,6 +58,7 @@ from source.QtSettingsWidget import QtSettingsWidget
 from source.QtMapSettingsWidget import QtMapSettingsWidget
 from source.QtScaleWidget import QtScaleWidget
 from source.QtWorkingAreaWidget import QtWorkingAreaWidget
+from source.QtCropWidget import QtCropWidget
 from source.QtLayersWidget import QtLayersWidget
 from source.QtHelpWidget import QtHelpWidget
 from source.QtProgressBarCustom import QtProgressBarCustom
@@ -100,9 +103,11 @@ logging.basicConfig(level=logging.DEBUG, filemode='w', filename=LOG_FILENAME, fo
 logfile = logging.getLogger("tool-logger")
 
 class MainWindow(QMainWindow):
+
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
         pass
+
     def closeEvent(self, event):
         taglab = self.centralWidget()
         if taglab.project.filename is not None:
@@ -118,6 +123,7 @@ class MainWindow(QMainWindow):
                 return
 
         super(MainWindow, self).closeEvent(event)
+
 
 class TagLab(QMainWindow):
 
@@ -168,10 +174,12 @@ class TagLab(QMainWindow):
 
         self.mapWidget = None
         self.projectEditor = None
+        self.alignToolWidget = None
         self.editProjectWidget = None
         self.scale_widget = None
         self.dictionary_widget = None
         self.working_area_widget = None
+        self.crop_widget = None
         self.classifierWidget = None
         self.newDatasetWidget = None
 
@@ -867,11 +875,6 @@ class TagLab(QMainWindow):
         openAct.setStatusTip("Open An Existing Project")
         openAct.triggered.connect(self.openProject)
 
-        editAct = QAction("Edit Project...", self)
-        editAct.setShortcut('Ctrl+E')
-        editAct.setStatusTip("Edit Current Project")
-        editAct.triggered.connect(self.editProject)
-
         saveAct = QAction("Save Project", self)
         saveAct.setShortcut('Ctrl+S')
         saveAct.setStatusTip("Save Current Project")
@@ -899,6 +902,9 @@ class TagLab(QMainWindow):
 
         createDicAct = QAction("Labels Dictionary Editor...", self)
         createDicAct.triggered.connect(self.createDictionary)
+
+        alignToolAct = QAction("Alignment Tool", self)
+        alignToolAct.triggered.connect(self.openAlignmentTool)
 
         regionAttributesAct = QAction("Region Attributes...", self)
         regionAttributesAct.triggered.connect(self.editRegionAttributes)
@@ -1002,7 +1008,6 @@ class TagLab(QMainWindow):
         self.filemenu.setStyleSheet(styleMenu)
         self.filemenu.addAction(newAct)
         self.filemenu.addAction(openAct)
-        #self.filemenu.addAction(editAct)
         self.filemenu.addAction(saveAct)
         self.filemenu.addAction(saveAsAct)
         self.filemenu.addSeparator()
@@ -1037,6 +1042,8 @@ class TagLab(QMainWindow):
         self.projectmenu.addAction(projectEditorAct)
         self.projectmenu.addSeparator()
         self.projectmenu.addAction(setWorkingAreaAct)
+        self.projectmenu.addSeparator()
+        self.projectmenu.addAction(alignToolAct)
         self.projectmenu.addSeparator()
         self.projectmenu.addAction(createDicAct)
         self.projectmenu.addSeparator()
@@ -1193,6 +1200,87 @@ class TagLab(QMainWindow):
         self.mapWidget.accepted.disconnect()
         self.mapWidget.accepted.connect(self.updateMapProperties)
         self.mapWidget.show()
+
+    def cropMapImage(self, img):
+
+        if self.activeviewer is not None:
+            if self.activeviewer.image is not None:
+                if self.crop_widget is None:
+
+                    self.disableSplitScreen()
+
+                    self.crop_widget = QtCropWidget(self.editProjectWidget)
+                    self.crop_widget.btnChooseArea.clicked.connect(self.enableAreaSelection)
+                    self.crop_widget.closed.connect(self.disableAreaSelection)
+                    self.crop_widget.closed.connect(self.deleteCropWidget)
+                    self.crop_widget.btnApply.clicked.connect(lambda x, img = img:self.cropImage)
+                    selection_tool = self.activeviewer.tools.tools["SELECTAREA"]
+                    selection_tool.setAreaStyle("WORKING")
+                    selection_tool.rectChanged[int, int, int, int].connect(self.crop_widget.updateArea)
+                    self.crop_widget.areaChanged[int, int, int, int].connect(selection_tool.setSelectionRectangle)
+
+        self.crop_widget.show()
+
+
+    def cropImage(self,img):
+
+        x, y, width, height = self.crop_widget.getCropArea()
+        if width != 0 and height != 0:
+
+            # Create copy of image
+            tag = "_cropped"
+            name = img.id + tag
+            img_copy = Image(
+                rect=img.rect,
+                map_px_to_mm_factor=img.map_px_to_mm_factor,
+                width=width,
+                height=height,
+                id=img.id,
+                name=name,
+                acquisition_date=img.acquisition_date,
+                georef_filename=img.georef_filename,
+                metadata=img.metadata,
+                layers=img.layers,
+                grid=img.grid,
+                export_dataset_area=img.export_dataset_area
+            )
+
+            # copy blobs
+            for blob in img.blobs:
+                img_copy.annotations.addBlob(blob, notify=False)
+
+            # copy channels
+            for channel in img.channels:
+                pass
+
+            # update blobs coordinates
+            pass
+
+            # Add image
+            self.project.addNewImage(img_copy)
+
+            # delete original image from the project
+            self.deleteImage(img)
+
+            # save project with the same name
+            self.project.save()
+
+            self.crop_widget.close()
+            self.deleteCropWidget()
+        else:
+            box = QMessageBox(self.crop_widget)
+            box.setText("Please, select a valid cropping area")
+            box.exec()
+            return
+
+
+        pass
+
+    @pyqtSlot()
+    def deleteCropWidget(self):
+
+        del self.crop_widget
+        self.crop_widget = None
 
     def deleteImage(self, img):
 
@@ -1402,6 +1490,7 @@ class TagLab(QMainWindow):
         """
         Assign the grid created to the corresponding image.
         """
+
         self.activeviewer.image.grid = self.gridWidget.grid
         self.resetToolbar()
         self.activeviewer.showGrid()
@@ -1668,8 +1757,10 @@ class TagLab(QMainWindow):
 
             if self.checkBoxGrid.isChecked():
                 self.viewerplus.showGrid()
+                self.viewerplus2.showGrid()
             else:
                 self.viewerplus.hideGrid()
+                self.viewerplus2.hideGrid()
 
     def disableSplitScreen(self):
 
@@ -1771,7 +1862,6 @@ class TagLab(QMainWindow):
 
             # test
 
-            dict = { "Pocillopora": 2, "Pocil": 3 }
 
             json_string = json.dumps(dict)
 
@@ -2103,7 +2193,6 @@ class TagLab(QMainWindow):
 
         image = self.project.images[index1]
         self.viewerplus.clear()
-        self.btnGrid.setChecked(False)
 
         # target and source image cannot be the same !!
         index2 = self.comboboxTargetImage.currentIndex()
@@ -2120,6 +2209,10 @@ class TagLab(QMainWindow):
 
         self.viewerplus.setProject(self.project)
         self.viewerplus.setImage(image)
+        self.setBlobVisualization()
+        if self.compare_panel.isVisible():
+                self.compare_panel.setTable(self.project, index1, index2)
+
 
     @pyqtSlot(int)
     def targetImageChanged(self, index2):
@@ -2146,6 +2239,9 @@ class TagLab(QMainWindow):
 
         self.viewerplus2.setProject(self.project)
         self.viewerplus2.setImage(self.project.images[index2])
+        self.setBlobVisualization()
+        if self.compare_panel.isVisible():
+                self.compare_panel.setTable(self.project, index1, index2)
 
 
     @pyqtSlot()
@@ -2924,6 +3020,18 @@ class TagLab(QMainWindow):
     @pyqtSlot()
     def newProject(self):
 
+        if self.project.filename is not None:
+
+            box = QMessageBox()
+            reply = box.question(self, self.TAGLAB_VERSION, "Do you want to save current project to " + self.project.filename,
+                                 QMessageBox.Cancel | QMessageBox.Yes | QMessageBox.No)
+
+            if reply == QMessageBox.Yes:
+                self.saveProject()
+
+            if reply == QMessageBox.Cancel:
+                return
+
         self.resetAll()
         self.setTool("MOVE")
         self.updateToolStatus()
@@ -2931,14 +3039,12 @@ class TagLab(QMainWindow):
         logfile.info("[PROJECT] A new project has been setup.")
         self.groupbox_blobpanel.region_attributes = self.project.region_attributes
 
-
-
     @pyqtSlot()
     def editProject(self):
         if self.editProjectWidget is None:
 
             self.editProjectWidget = QtProjectWidget(self.project, parent=self)
-            self.editProjectWidget.setWindowModality(Qt.WindowModal)
+            self.editProjectWidget.setWindowModality(Qt.NonModal)
             self.editProjectWidget.show()
 
         else:
@@ -2976,11 +3082,33 @@ class TagLab(QMainWindow):
     def openProjectEditor(self):
         if self.projectEditor is None:
             self.projectEditor = QtProjectEditor(self.project, parent=self)
-            self.projectEditor.setWindowModality(Qt.WindowModal)
+            # self.projectEditor.setWindowModality(Qt.WindowModal)
             self.projectEditor.closed.connect(self.closeProjectEditor)
 
         self.projectEditor.fillMaps()
         self.projectEditor.show()
+
+    @pyqtSlot()
+    def closeAlignmentTool(self):
+        self.alignToolWidget = None
+        self.updateToolStatus()
+        self.updateImageSelectionMenu()
+        self.updatePanels()
+
+    @pyqtSlot()
+    def openAlignmentTool(self):
+        if len(self.project.images) < 2:
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("At least two map are required to open the alignment tool")
+            msgBox.exec()
+            return
+
+        if self.alignToolWidget is None:
+            self.alignToolWidget = QtAlignmentToolWidget(self.project, parent=self)
+            self.alignToolWidget.setWindowModality(Qt.WindowModal)
+            self.alignToolWidget.closed.connect(self.closeAlignmentTool)
+            self.alignToolWidget.showMaximized()
 
     @pyqtSlot()
     def createDictionary(self):
@@ -3439,7 +3567,6 @@ class TagLab(QMainWindow):
                     selection_tool = self.activeviewer.tools.tools["SELECTAREA"]
                     selection_tool.setAreaStyle("WORKING")
                     selection_tool.rectChanged[int, int, int, int].connect(self.working_area_widget.updateArea)
-                    self.working_area_widget.areaChanged[int, int, int, int].connect(selection_tool.setSelectionRectangle)
                     self.working_area_widget.areaChanged[int, int, int, int].connect(selection_tool.setSelectionRectangle)
 
                     if self.project.working_area is not None:
@@ -3901,8 +4028,13 @@ class TagLab(QMainWindow):
             QApplication.processEvents()
 
             self.activeviewer.image.export_dataset_area = self.newDatasetWidget.getAreaToExport()
+            flag_coco = self.newDatasetWidget.checkCoco.isChecked()
 
-            new_dataset = NewDataset(self.activeviewer.img_map, self.activeviewer.annotations.seg_blobs, tile_size=1026, step=513)
+            index = self.comboboxSourceImage.currentIndex()
+            current_image = self.project.images[index]
+
+            new_dataset = NewDataset(self.activeviewer.img_map, self.project.labels, current_image,
+                                     tile_size=1026, step=513, flag_coco=flag_coco)
 
             target_classes = training.createTargetClasses(self.activeviewer.annotations)
 
@@ -3910,6 +4042,7 @@ class TagLab(QMainWindow):
             new_dataset.convertColorsToLabels(target_classes, self.project.labels)
             new_dataset.computeFrequencies(target_classes)
             target_pixel_size = self.newDatasetWidget.getTargetScale()
+
             check_size = new_dataset.workingAreaCropAndRescale(self.activeviewer.image.pixelSize(), target_pixel_size,
                                                                self.activeviewer.image.export_dataset_area)
 
@@ -3939,13 +4072,13 @@ class TagLab(QMainWindow):
 
             self.progress_bar.setProgress(50.0)
             QApplication.processEvents()
-
-            if flag_oversampling is True:
-                # FIXME: oversampling requires to be rewritten taking into account that target_classes is a dictionary now.
-                class_to_sample, radii = new_dataset.computeRadii(target_classes)
-                new_dataset.cut_tiles(regular=False, oversampling=True, classes_to_sample=class_to_sample, radii=radii)
-            else:
-                new_dataset.cut_tiles(regular=True, oversampling=False, classes_to_sample=None, radii=None)
+            #
+            # if flag_oversampling is True:
+            #     # FIXME: oversampling requires to be rewritten taking into account that target_classes is a dictionary now.
+            #     class_to_sample, radii = new_dataset.computeRadii(target_classes)
+            #     new_dataset.cut_tiles(regular=False, oversampling=True, classes_to_sample=class_to_sample, radii=radii)
+            # else:
+            new_dataset.cut_tiles(regular=True, oversampling=False, classes_to_sample=None, radii=None)
 
             flag_save = self.newDatasetWidget.checkTiles.isChecked()
             if flag_save:
@@ -3965,6 +4098,7 @@ class TagLab(QMainWindow):
             fl = open(target_pixel_size_file, "w")
             fl.write(str(target_pixel_size))
             fl.close()
+
 
             self.deleteProgressBar()
             self.deleteNewDatasetWidget()
@@ -4179,10 +4313,10 @@ class TagLab(QMainWindow):
         #TODO check if loadProject actually works!
         try:
             self.project = loadProject(self.taglab_dir, filename, self.default_dictionary)
-        except:
+        except Exception as e:
             box = QMessageBox()
             box.setWindowTitle('Failed loading the project')
-            box.setText("Could not load the file " + filename)
+            box.setText("Could not load the file " + filename + "\n" + str(e))
             box.exec()
             return
 

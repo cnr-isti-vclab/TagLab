@@ -301,6 +301,10 @@ class QtImageViewerPlus(QtImageViewer):
             self.scene.removeItem(self.working_area_rect)
             self.working_area_rect = None
 
+        if self.image is not None:
+            if self.image.grid is not None:
+                self.image.grid.undrawGrid()
+
         self.hideGrid()
         # undraw and clear current image and channel
         QtImageViewer.clear(self)
@@ -320,8 +324,8 @@ class QtImageViewerPlus(QtImageViewer):
 
         w = self.viewport().width()
         h = self.viewport().height()
-        posx = w * 0.8
-        posy = h * 0.9
+        posx = int(w * 0.8)
+        posy = int(h * 0.9)
 
         self.scene_overlay.setSceneRect(0,0,w,h)
 
@@ -885,7 +889,7 @@ class QtImageViewerPlus(QtImageViewer):
         n = int(math.log10(length))
         cute_length = round(length / math.pow(10,n)) * math.pow(10,n)
 
-        length_in_pixel = (cute_length * zoom_factor) / self.px_to_mm
+        length_in_pixel = int((cute_length * zoom_factor) / self.px_to_mm)
 
         if cute_length < 100.0:
             txt = "{:.1f} mm".format(cute_length)
@@ -895,8 +899,8 @@ class QtImageViewerPlus(QtImageViewer):
             txt = "{:.1f} m".format(cute_length / 1000.0)
 
 
-        posx = w - length_in_pixel - 20
-        posy = h * 0.95
+        posx = int(w - length_in_pixel - 20)
+        posy = int(h * 0.95)
 
         self.scene_overlay.setSceneRect(0,0,w,h)
 

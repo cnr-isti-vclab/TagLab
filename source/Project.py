@@ -306,7 +306,7 @@ class Project(object):
 
     def classColor(self, class_name):
         if class_name == "Empty":
-            return [128, 128, 128]
+            return [127, 127, 127]
         if not class_name in self.labels:
             raise ("Missing label for " + class_name)
         return self.labels[class_name].fill
@@ -366,7 +366,8 @@ class Project(object):
         """
         self.genet.updateGenets()
         corr = self.getImagePairCorrespondences(img_source_idx, img_target_idx)
-        corr.updateGenets()
+        #this is done in genet.py
+        #corr.updateGenets()
         return corr
 
     def addBlob(self, image, blob):
@@ -431,7 +432,7 @@ class Project(object):
         corr = self.getImagePairCorrespondences(img_source_idx, img_target_idx)
         corr.set(blobs1, blobs2)
         self.genet.updateGenets()
-        corr.updateGenets()
+        #corr.updateGenets() moved to genet
 
 
     def updatePixelSizeInCorrespondences(self, image, flag_surface_area):
@@ -477,7 +478,7 @@ class Project(object):
         corr.born =[]
 
         self.genet.updateGenets()
-        corr.updateGenets()
+        #corr.updateGenets() moved to genet
 
 
     def create_labels_table(self, image):

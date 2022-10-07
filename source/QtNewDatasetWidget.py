@@ -109,14 +109,13 @@ class QtNewDatasetWidget(QWidget):
 
         ###########################################################
 
-        self.checkOversampling = QCheckBox("Oversampling")
-        self.checkTiles = QCheckBox("Show exported tiles")
+        # self.checkOversampling = QCheckBox("Oversampling")
+        self.checkTiles = QCheckBox("Show Exported Tiles")
+        self.checkCoco = QCheckBox("Export In Coco Panoptic Format")
 
         layoutH2 = QHBoxLayout()
-        layoutH2.setAlignment(Qt.AlignCenter)
-        layoutH2.addStretch()
-        #layoutH2.addWidget(self.checkOversampling)
         layoutH2.addWidget(self.checkTiles)
+        layoutH2.addWidget(self.checkCoco)
         layoutH2.addStretch()
 
         ###########################################################

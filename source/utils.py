@@ -115,6 +115,28 @@ def labelsToQImage(mask):
 
     return qimg
 
+
+def binaryMaskToRle(mask):
+    rle = {'counts': [], 'size': list(mask.shape)}
+    counts = rle.get('counts')
+
+    last_elem = 0
+    running_length = 0
+
+    for i, elem in enumerate(mask.ravel(order='F')):
+        if elem == last_elem:
+            pass
+        else:
+            counts.append(running_length)
+            running_length = 0
+            last_elem = elem
+        running_length += 1
+
+    counts.append(running_length)
+
+    return rle
+
+
 def floatmapToQImage(floatmap, nodata = float('NaN')):
 
     h = floatmap.shape[0]

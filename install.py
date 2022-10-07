@@ -218,7 +218,8 @@ install_requires = [
     'opencv-python',
     'matplotlib',
     'albumentations',
-    'shapely'
+    'shapely',
+    'pycocotools'
 ]
 
 # installing all the packages
