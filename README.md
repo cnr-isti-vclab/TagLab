@@ -43,68 +43,7 @@ If you don't have a NVida graphics card (or if you use MacOS), CPU will be used.
 
 ## Installing TagLab
 
-### Step 0: Dependencies
-Before installing TagLab, be sure to have installed __a 64 bit version of Python 3.7.x, 3.8.x or 3.9.x__, and __NVIDIA CUDA Toolkit__ on Linux or Windows. You can check if they are properly installed by running the following commands in a shell (bash on Linux, poweshell on Windows; for MacOS just check the Python version):
-
-```
-python3 --version
-nvcc --version
-```
-If python and cuda are properly installed, both commands will print their versions.
-
-#### Linux
-
-Under Linux, if you use a debian-based distribution (e.g. Ubuntu), except for python and nvcc, there are no other real requirements: the installer will take care of get and install all the dependencies. If you don't use the APT package manager (not ubuntu or debian derived distros), you'll need to install manually the gdal library (the command `gdal-config --version` should output the gdal library version), and `cmake`. Check out for your distribution how to install these two packages!
-
-#### MacOS
-
-On MacOS, the only real requirement (besides python) is the HomeBrew package manager: be sure to have it installed before running the installer. You can check [here](https://brew.sh/) the instructions on how to install it. If you don't want to install the HomeBrew package manager, be sure to install the gdal library manually (the command `gdal-config --version` should output the gdal library version), and `cmake`.
-
-### Step 1: Clone the repository
-Just click on the "Clone or Download" button at the top of this page and unzip the whole package in a folder of your choice.
-
-### Step 2: Install all the dependencies
-
-- open a terminal (not python prompt!);
-- change directory to the TagLab main directory: type `cd ` (be sure to type the space after `cd`) and then drag and drop into the terminal the TagLab folder; then click `enter`;
-- type the following command in the terminal:
-
-```
-python3 install.py
-```
-or, on Windows:
-
-```
-python.exe install.py
-```
-
-The script will automatically install the remaining libraries required by TagLab and download the network weights.
-If NVIDIA CUDA Toolkit is not supported by your machine, the script will ask to install the cpu version.
-You can bypass this step and force to install the cpu version directly by running
-```
-python3 install.py cpu
-```
-or, on Windows:
-
-```
-python.exe install.py cpu
-```
-
-### Step 3: Run
-Just start `TagLab.py` from a command shell or your preferred Python IDE.
-
-From a terminal simply write:
-
-```
-python3 TagLab.py
-```
-or, on Windows:
-
-```
-python.exe taglab.py
-```
-
-To test if TagLab works correctly, try to open the sample project available in the `projects` folder.
+See the instructions on the [wiki](https://github.com/cnr-isti-vclab/TagLab/wiki/Install-TagLab).
 
 ## Updating TagLab
 
@@ -147,9 +86,3 @@ If you use TagLab, please cite it.
 	doi = {10.1002/rob.22049}
 }
 ```
-
-
-
-
-
-

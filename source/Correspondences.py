@@ -36,19 +36,20 @@ class Correspondences(object):
         else:
             return False
 
-    def updateGenets(self):
-        for index, row in self.data.iterrows():
-            id1 = int(row['Blob1'])
-            id2 = int(row['Blob2'])
-            blob1 = self.source.annotations.blobById(id1)
-            blob2 = self.target.annotations.blobById(id2)
+# this is done in genet.py, since we need to update ALL the coorespondences.
+ #   def updateGenets(self):
+ #       for index, row in self.data.iterrows():
+ #           id1 = int(row['Blob1'])
+ #           id2 = int(row['Blob2'])
+ #           blob1 = self.source.annotations.blobById(id1)
+ #           blob2 = self.target.annotations.blobById(id2)
 
-            if blob1 is not None:
-                if blob1.genet is not None:
-                    self.data.loc[index, 'Genet'] = blob1.genet
-            else:
-                if blob2.genet is not None:
-                    self.data.loc[index, 'Genet'] = blob2.genet
+#            if blob1 is not None:
+#                if blob1.genet is not None:
+#                    self.data.loc[index, 'Genet'] = blob1.genet
+#            else:
+#                if blob2.genet is not None:
+#                    self.data.loc[index, 'Genet'] = blob2.genet
 
     def updateAreas(self, use_surface_area=False):
 
@@ -146,6 +147,7 @@ class Correspondences(object):
         self.checkTable()
 
         #this is needed to ensure consistency between blob data and correspondences data (WHICH SHOULD NOT BE REPLICATED!!!!)
+        #FIXME! this is also pretty expensive when loading data!
         self.updateAreas()
 
         self.sort_data()
