@@ -1860,15 +1860,6 @@ class TagLab(QMainWindow):
             self.datadock.setWindowTitle("Comparison Table")
             self.updatePanels()
 
-            # test
-
-
-            json_string = json.dumps(dict)
-
-            print(json_string)
-
-
-
     def createMatch(self):
         """
         Create a new match and add it to the correspondences table.
