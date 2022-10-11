@@ -2201,6 +2201,7 @@ class TagLab(QMainWindow):
         self.viewerplus.setProject(self.project)
         self.viewerplus.setImage(image)
         self.setBlobVisualization()
+        self.updatePanels()
         if self.compare_panel.isVisible():
                 self.compare_panel.setTable(self.project, index1, index2)
 
