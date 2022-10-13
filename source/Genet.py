@@ -25,29 +25,28 @@ class Genet:
     #propagate all genets to the second map (ensure consistency.
 
 
+    #union find algorithm to find connected components
     def updateGenets(self):
-        #this array will be used for remapping when enforcing connected components
-        genets = []
+        parents = []
 
-        #assign remap for blobs with assigned genets
-        # for img in self.project.images:
-        #     for b in img.annotations.seg_blobs:
-        #         if hasattr(b, 'genet') and b.genet is not None:
-        #             while len(genets) <= b.genet:
-        #                 genets.append(len(genets))
-        #             genets[b.genet] = b.genet
-        #             print("Image ", img.name, "Blob ", b.id, " has genet ", b.genet)
-
-        #assign genets to blobs with no assigned genet
-        count = len(genets)
+        count = len(parents)
         for img in self.project.images:
             sorted_blobs = sorted(img.annotations.seg_blobs, key=lambda x: x.id)
-            for b in sorted_blobs:
-                b.genet = count
-                genets.append(count)
+            for blob in sorted_blobs:
+                blob.genet = count
+                parents.append(count)
                 count += 1
 
-        #remap all the correspondending blobs using genets[]
+        def root(p): 
+            while p != parents[p]:
+                p = parents[p]
+            return p
+
+        def link(p0, p1):
+            r0 = root(p0)
+            r1 = root(p1)
+            parents[r1] = r0
+
         for corrs in self.project.correspondences.values():
             for index, row in corrs.data.iterrows():
                 id1 = int(row['Blob1'])
@@ -59,33 +58,34 @@ class Genet:
 
 
                 if blob1.genet != blob2.genet:
+                    link(blob1.genet, blob2.genet)
 
-                    low = min(blob1.genet, blob2.genet)
-                    high = max(blob1.genet, blob2.genet)
-                    
-                    while genets[high] != low:
-                        tmp = genets[high]
-                        genets[high] = low
-                        high = tmp
-
-                    blob1.genet = blob2.genet = low
+        remap = [None]*len(parents) #keep tracks of where each root points to.
+        count = 0
+        for i in range(len(parents)):
+            r = root(i)
+            if remap[r] is None:
+                remap[r] = count
+                count += 1
+            remap[i] = remap[r]
 
         for img in self.project.images:
-            for b in img.annotations.seg_blobs:
-                while b.genet != genets[b.genet]:  #follow the link to the
-                    b.genet = genets[b.genet]
+            for blob in img.annotations.seg_blobs:
+                blob.genet = remap[blob.genet]
 
-        #update corrs genets.
+         #update corrs genets.
         for corrs in self.project.correspondences.values():            
             for index, row in corrs.data.iterrows():
                 id1 = int(row['Blob1'])
                 id2 = int(row['Blob2'])
+                
                 if id1 != -1:
                     blob1 = corrs.source.annotations.blobById(id1)
                     corrs.data.loc[index, 'Genet'] = blob1.genet
                 else:
                     blob2 = corrs.target.annotations.blobById(id2)
-                    corrs.data.loc[index, 'Genet'] = blob1.genet
+                    corrs.data.loc[index, 'Genet'] = blob2.genet
+
 
 
     #ox and oy are the origin of bbox of the blob, dx and dy is a translation in svg.
