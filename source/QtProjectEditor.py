@@ -40,7 +40,7 @@ class QtProjectEditor(QWidget):
 
         self.area = QScrollArea()
         self.area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self.area.setMaximumHeight(500)
+        self.area.setMaximumHeight(250)
         widget = QWidget()
         widget.setLayout(QVBoxLayout())
         widget.setMinimumHeight(150)
@@ -83,10 +83,17 @@ class QtProjectEditor(QWidget):
             "<b>Map size in pixels</b>" + " : " + "(" + str(img.width) + "," + str(img.height) + ")")
             self.text.append("<b>Map pixel size in mm</b>" + " : " + str(img.map_px_to_mm_factor))
             self.text.append("<b>Map acquisition date</b>" + " : " + str(day) + " " + date.longMonthName(date.month()) + " " +  str(year))
-            self.text.append("<b>Map georeference information</b>" + " : <br><pre>" + self.georefAvailable(img.georef_filename) + "</pre>")
+
+            if img.georef_filename == "":
+                self.text.append("<b>Map georeference information</b>" + " : None.")
+            else:
+                self.text.append("<b>Map georeference information</b>" + " : <br><pre>" + self.georefAvailable(
+                img.georef_filename) + "</pre>")
+
             self.text.append("<b>DEM availability</b>" + " : " + str(self.boolToWord(len(img.channels)>1)))
             self.text.document().adjustSize()  # calculate size
-            self.text.setMaximumHeight(self.text.document().size().height() + 20)
+
+            self.text.setMinimumHeight(self.text.document().size().height())
 
             map_layout = QHBoxLayout()
             map_layout.addWidget(QLabel("<b>Map name</b>" + " : " + img.name))
@@ -146,7 +153,7 @@ class QtProjectEditor(QWidget):
 
     def georefAvailable(self, path):
 
-        if str == '':
+        if path == "":
             return "None"
         else:
             img = rio.open(path)
