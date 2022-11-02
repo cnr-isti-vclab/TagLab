@@ -60,6 +60,8 @@ python.exe update.py
 
 The script will automatically update TagLab to the newest version available in this repository.
 
+NOTE: If some package is missing, after an update, re-launch install.py .
+
 ### Updating from 0.2
 
 If you are updating TagLab from 0.2 version, in order to download also the new networks, please run the `update.py` script twice:

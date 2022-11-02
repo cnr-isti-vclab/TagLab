@@ -1860,15 +1860,6 @@ class TagLab(QMainWindow):
             self.datadock.setWindowTitle("Comparison Table")
             self.updatePanels()
 
-            # test
-
-
-            json_string = json.dumps(dict)
-
-            print(json_string)
-
-
-
     def createMatch(self):
         """
         Create a new match and add it to the correspondences table.
@@ -2210,6 +2201,7 @@ class TagLab(QMainWindow):
         self.viewerplus.setProject(self.project)
         self.viewerplus.setImage(image)
         self.setBlobVisualization()
+        self.updatePanels()
         if self.compare_panel.isVisible():
                 self.compare_panel.setTable(self.project, index1, index2)
 
