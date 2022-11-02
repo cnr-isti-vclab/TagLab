@@ -1,7 +1,5 @@
 import math
 import os.path
-import random
-import time
 from typing import Optional, Tuple, List
 
 import numpy as np
@@ -118,7 +116,7 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         # Alignment data
         self.rot = 0
         self.tra: QPointF = QPointF(0, 0)
-        self.sca = 1
+        #[SCALE] self.sca = 1
 
 
     def __createProgram(self, vSrc: str, fSrc: str, hasTex: bool) -> Optional[QOpenGLShaderProgram]:
@@ -297,7 +295,7 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         matrix2.translate(self.tra.x(), -self.tra.y(), 0)
         matrix2.translate(-1.0, 1.0, 0.0)
         matrix2.rotate(-self.rot, 0.0, 0.0, 1.0)
-        matrix2.scale(self.sca, self.sca, 1.0)
+        #[SCALE] matrix2.scale(self.sca, self.sca, 1.0)
         matrix2.translate(1.0, -1.0, 0.0)
         # Aspect Ratio / Pan / Zoom
         matrix3.scale(min(self.w, self.h) / self.w, min(self.w, self.h) / self.h, 1)
@@ -391,6 +389,7 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.s = self.s * pow(pow(2, 0.5), event.angleDelta().y() / 100.0)
         self.s = min(max(self.s, self.minZoom), self.maxZoom)
         factor = self.s / lastScale
+        factor = 1
         # Find normalized mouse pos
         [mx, my] = [event.pos().x() / (self.w // 2) - 1, event.pos().y() / (self.h // 2) - 1]
         # Zoom towards mouse pos
@@ -444,15 +443,15 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
         self.tra = QPointF(tra.x(), tra.y())
         self.redraw(False)
 
-    def updateScale(self, sca: float) -> None:
-        """
-        Public method to update Scale parameter.
-        :param: sca the new value for scale
-        """
-        if sca <= 0.0:
-            raise Exception("Invalid scale value")
-        self.sca = sca
-        self.redraw(False)
+    #[SCALE] def updateScale(self, sca: float) -> None:
+    #[SCALE]     """
+    #[SCALE]     Public method to update Scale parameter.
+    #[SCALE]     :param: sca the new value for scale
+    #[SCALE]     """
+    #[SCALE]     if sca <= 0.0:
+    #[SCALE]         raise Exception("Invalid scale value")
+    #[SCALE]     self.sca = sca
+    #[SCALE]     self.redraw(False)
 
     def setPointsVisibility(self, visibility: bool) -> None:
         """
@@ -814,12 +813,12 @@ class QtAlignmentToolWidget(QWidget):
 
     closed = pyqtSignal()
 
-    # Number of samples used when calculating approx scale
-    SCALE_SAMPLING_COUNT = 64
+    #[SCALE] # Number of samples used when calculating approx scale
+    #[SCALE] SCALE_SAMPLING_COUNT = 64
 
     ROT_PRECISION = 100  # 1 / 100
-    SCALE_PRECISION = 100  # 1 / 100
-    SCALE_RANGE = 0.50  # [-50%, +50%]
+    #[SCALE] SCALE_PRECISION = 100  # 1 / 100
+    #[SCALE] SCALE_RANGE = 0.50  # [-50%, +50%]
 
     def __init__(self, project, parent=None):
         super(QtAlignmentToolWidget, self).__init__(parent)
@@ -839,11 +838,12 @@ class QtAlignmentToolWidget(QWidget):
         self.threshold = 32
         self.sizeL: QPointF = QPointF(0.0, 0.0)
         self.sizeR: QPointF = QPointF(0.0, 0.0)
-        self.canScale = False
-        self.svdRes = [0, [0, 0], 0]
+        #[SCALE] self.canScale = False
+        #[SCALE] self.svdRes = [0, [0, 0], 0]
+        self.svdRes = [0, [0, 0]]
         self.R = np.rad2deg(0) * QtAlignmentToolWidget.ROT_PRECISION
         self.T = np.array([0, 0])
-        self.S = 1 * QtAlignmentToolWidget.SCALE_PRECISION
+        #[SCALE] self.S = 1 * QtAlignmentToolWidget.SCALE_PRECISION
         self.lastMousePos = None
         self.isDragging = False
         self.selectedMarker = None
@@ -887,11 +887,11 @@ class QtAlignmentToolWidget(QWidget):
         self.clearMarkersButton.setFixedHeight(20)
         self.clearMarkersButton.clicked.connect(self.onClearMarkersRequested)
 
-        # Allow Scale
-        self.allowScaleButton = QCheckBox("Allow Scale")
-        self.allowScaleButton.setChecked(False)
-        self.allowScaleButton.setFocusPolicy(Qt.NoFocus)
-        self.allowScaleButton.stateChanged[int].connect(self.toggleScaleLock)
+        #[SCALE] # Allow Scale
+        #[SCALE] self.allowScaleButton = QCheckBox("Allow Scale")
+        #[SCALE] self.allowScaleButton.setChecked(False)
+        #[SCALE] self.allowScaleButton.setFocusPolicy(Qt.NoFocus)
+        #[SCALE] self.allowScaleButton.stateChanged[int].connect(self.toggleScaleLock)
 
         # Show Markers
         self.showMarkersCheck = QCheckBox("Show Markers")
@@ -991,31 +991,31 @@ class QtAlignmentToolWidget(QWidget):
         self.rotateRightButton.setFixedHeight(20)
         self.rotateRightButton.clicked.connect(self.onRotValueDecremented)
 
-        # Slider (Scale)
-        self.sSliderLabel = QLabel("S: " + str(self.S / QtAlignmentToolWidget.SCALE_PRECISION))
-        self.sSliderLabel.setMinimumWidth(200)
-        self.sSlider = QSlider(Qt.Horizontal)
-        self.sSlider.setFocusPolicy(Qt.StrongFocus)
-        self.sSlider.setMinimum(1)
-        self.sSlider.setMaximum(200)
-        self.sSlider.setTickInterval(1)
-        self.sSlider.setValue(self.S)
-        self.sSlider.setMinimumWidth(50)
-        self.sSlider.setAutoFillBackground(True)
-        self.sSlider.valueChanged.connect(self.scaleValueChanges)
-        self.sSlider.setEnabled(False)
+        #[SCALE] # Slider (Scale)
+        #[SCALE] self.sSliderLabel = QLabel("S: " + str(self.S / QtAlignmentToolWidget.SCALE_PRECISION))
+        #[SCALE] self.sSliderLabel.setMinimumWidth(200)
+        #[SCALE] self.sSlider = QSlider(Qt.Horizontal)
+        #[SCALE] self.sSlider.setFocusPolicy(Qt.StrongFocus)
+        #[SCALE] self.sSlider.setMinimum(1)
+        #[SCALE] self.sSlider.setMaximum(200)
+        #[SCALE] self.sSlider.setTickInterval(1)
+        #[SCALE] self.sSlider.setValue(self.S)
+        #[SCALE] self.sSlider.setMinimumWidth(50)
+        #[SCALE] self.sSlider.setAutoFillBackground(True)
+        #[SCALE] self.sSlider.valueChanged.connect(self.scaleValueChanges)
+        #[SCALE] self.sSlider.setEnabled(False)
 
-        # Scale increase / decrease
-        self.scaleDecButton = QPushButton("-")
-        self.scaleDecButton.setFixedWidth(20)
-        self.scaleDecButton.setFixedHeight(20)
-        self.scaleDecButton.clicked.connect(self.onScaleValueDecremented)
-        self.scaleDecButton.setEnabled(False)
-        self.scaleIncButton = QPushButton("+")
-        self.scaleIncButton.setFixedWidth(20)
-        self.scaleIncButton.setFixedHeight(20)
-        self.scaleIncButton.setEnabled(False)
-        self.scaleIncButton.clicked.connect(self.onScaleValueIncremented)
+        #[SCALE] # Scale increase / decrease
+        #[SCALE] self.scaleDecButton = QPushButton("-")
+        #[SCALE] self.scaleDecButton.setFixedWidth(20)
+        #[SCALE] self.scaleDecButton.setFixedHeight(20)
+        #[SCALE] self.scaleDecButton.clicked.connect(self.onScaleValueDecremented)
+        #[SCALE] self.scaleDecButton.setEnabled(False)
+        #[SCALE] self.scaleIncButton = QPushButton("+")
+        #[SCALE] self.scaleIncButton.setFixedWidth(20)
+        #[SCALE] self.scaleIncButton.setFixedHeight(20)
+        #[SCALE] self.scaleIncButton.setEnabled(False)
+        #[SCALE] self.scaleIncButton.clicked.connect(self.onScaleValueIncremented)
 
         # Slider (Threshold)
         self.thresholdSliderLabel = QLabel("Threshold: " + str(self.threshold))
@@ -1037,7 +1037,7 @@ class QtAlignmentToolWidget(QWidget):
         self.buttons.addWidget(self.clearMarkersButton)
         self.buttons.addWidget(self.resetTransfButton)
         self.buttons.addWidget(self.showMarkersCheck)
-        #self.buttons.addWidget(self.allowScaleButton)
+        #[SCALE] self.buttons.addWidget(self.allowScaleButton)
         self.buttons.addWidget(self.autoAlignButton)
         self.buttons.addWidget(self.confirmAlignmentButton)
         self.buttons.setAlignment(self.syncCheck, Qt.AlignLeft)
@@ -1045,7 +1045,7 @@ class QtAlignmentToolWidget(QWidget):
         self.buttons.setAlignment(self.clearMarkersButton, Qt.AlignCenter)
         self.buttons.setAlignment(self.resetTransfButton, Qt.AlignCenter)
         self.buttons.setAlignment(self.showMarkersCheck, Qt.AlignCenter)
-        self.buttons.setAlignment(self.allowScaleButton, Qt.AlignCenter)
+        #[SCALE] self.buttons.setAlignment(self.allowScaleButton, Qt.AlignCenter)
         self.buttons.setAlignment(self.autoAlignButton, Qt.AlignRight)
         self.buttons.setAlignment(self.confirmAlignmentButton, Qt.AlignRight)
 
@@ -1068,12 +1068,12 @@ class QtAlignmentToolWidget(QWidget):
         layout5.addWidget(self.rotateLeftButton)
         layout5.addWidget(self.rotateRightButton)
         self.layoutSliders.addLayout(layout5)
-        layout6 = QHBoxLayout()
-        layout6.addWidget(self.sSliderLabel)
-        layout6.addWidget(self.sSlider)
-        layout6.addWidget(self.scaleIncButton)
-        layout6.addWidget(self.scaleDecButton)
-        # self.layoutSliders.addLayout(layout6)
+        #[SCALE] layout6 = QHBoxLayout()
+        #[SCALE] layout6.addWidget(self.sSliderLabel)
+        #[SCALE] layout6.addWidget(self.sSlider)
+        #[SCALE] layout6.addWidget(self.scaleIncButton)
+        #[SCALE] layout6.addWidget(self.scaleDecButton)
+        #[SCALE] self.layoutSliders.addLayout(layout6)
 
         self.table = QTableWidget(10, 5)
         self.table.setHorizontalHeaderLabels(["Add/remove","Point Id", "X err", "Y err", "Dist err"])
@@ -1362,19 +1362,19 @@ class QtAlignmentToolWidget(QWidget):
         self.leftPreviewViewer.setPointsVisibility(value != 0)
         self.rightPreviewViewer.setPointsVisibility(value != 0)
 
-    @pyqtSlot(int)
-    def toggleScaleLock(self, value: int) -> None:
-        """
-        Callback called when the checkbox that allow scale is toggled.
-        :param: value a boolean representing the checkbox status.
-        """
-        # Update canScale
-        self.canScale = value != 0
-        # Recompute svd
-        self.__leastSquaresWithSVD()
-
-        # Update preview (if needed)
-        self.__updatePreview()
+    #[SCALE] @pyqtSlot(int)
+    #[SCALE] def toggleScaleLock(self, value: int) -> None:
+    #[SCALE]     """
+    #[SCALE]     Callback called when the checkbox that allow scale is toggled.
+    #[SCALE]     :param: value a boolean representing the checkbox status.
+    #[SCALE]     """
+    #[SCALE]     # Update canScale
+    #[SCALE]     self.canScale = value != 0
+    #[SCALE]     # Recompute svd
+    #[SCALE]     self.__leastSquaresWithSVD()
+    #[SCALE]
+    #[SCALE]     # Update preview (if needed)
+    #[SCALE]     self.__updatePreview()
 
     @pyqtSlot()
     def onBackToEditRequested(self) -> None:
@@ -1479,21 +1479,21 @@ class QtAlignmentToolWidget(QWidget):
         # Forward
         self.rSlider.setValue(self.R - 1)
 
-    @pyqtSlot()
-    def onScaleValueIncremented(self) -> None:
-        """
-        Callback called when the value of the scale should be increase.
-        """
-        # Forward
-        self.sSlider.setValue(self.S + 1)
+    #[SCALE] @pyqtSlot()
+    #[SCALE] def onScaleValueIncremented(self) -> None:
+    #[SCALE]     """
+    #[SCALE]     Callback called when the value of the scale should be increase.
+    #[SCALE]     """
+    #[SCALE]     # Forward
+    #[SCALE]     self.sSlider.setValue(self.S + 1)
 
-    @pyqtSlot()
-    def onScaleValueDecremented(self) -> None:
-        """
-        Callback called when the value of the scale should be decreased.
-        """
-        # Forward
-        self.sSlider.setValue(self.S - 1)
+    #[SCALE] @pyqtSlot()
+    #[SCALE] def onScaleValueDecremented(self) -> None:
+    #[SCALE]     """
+    #[SCALE]     Callback called when the value of the scale should be decreased.
+    #[SCALE]     """
+    #[SCALE]     # Forward
+    #[SCALE]     self.sSlider.setValue(self.S - 1)
 
     @pyqtSlot(int)
     def rotationAngleChanges(self, value: int) -> None:
@@ -1508,18 +1508,18 @@ class QtAlignmentToolWidget(QWidget):
         self.error_table_flag = True
         self.__updatePreview()
 
-    @pyqtSlot(int)
-    def scaleValueChanges(self, value: int) -> None:
-        """
-        Callback called when the value of the scale changes.
-        :param: value the new sca value
-        """
-        self.S = value
-        self.sSliderLabel.setText("S: " + str(self.S / QtAlignmentToolWidget.SCALE_PRECISION))
-
-        # Update preview
-        self.error_table_flag = True
-        self.__updatePreview()
+    #[SCALE] @pyqtSlot(int)
+    #[SCALE] def scaleValueChanges(self, value: int) -> None:
+    #[SCALE]     """
+    #[SCALE]     Callback called when the value of the scale changes.
+    #[SCALE]     :param: value the new sca value
+    #[SCALE]     """
+    #[SCALE]     self.S = value
+    #[SCALE]     self.sSliderLabel.setText("S: " + str(self.S / QtAlignmentToolWidget.SCALE_PRECISION))
+    #[SCALE]
+    #[SCALE]     # Update preview
+    #[SCALE]     self.error_table_flag = True
+    #[SCALE]     self.__updatePreview()
 
     @pyqtSlot(int)
     def thresholdValueChanges(self, value: int) -> None:
@@ -1614,7 +1614,7 @@ class QtAlignmentToolWidget(QWidget):
         self.rSlider.setValue(self.svdRes[0])
         self.xSlider.setValue(self.svdRes[1][0])
         self.ySlider.setValue(self.svdRes[1][1])
-        self.sSlider.setValue(self.svdRes[2])
+        #[SCALE] self.sSlider.setValue(self.svdRes[2])
         # Redraw preview
         self.__updatePreview()
 
@@ -1668,7 +1668,7 @@ All markers must be valid to proceed.
         trax = self.T[0]
         tray = self.T[1]
         rot = self.R / QtAlignmentToolWidget.ROT_PRECISION
-        sca = self.S / QtAlignmentToolWidget.SCALE_PRECISION
+        #[SCALE] sca = self.S / QtAlignmentToolWidget.SCALE_PRECISION
         # Extract components
         R = cv2.getRotationMatrix2D((0, 0), -rot, 1.0)[::, :2]
         T = [trax / image2.pixelSize(), tray / image2.pixelSize()]
@@ -2285,7 +2285,7 @@ All markers must be valid to proceed.
         self.rSlider.setValue(0)
         self.xSlider.setValue(0)
         self.ySlider.setValue(0)
-        self.sSlider.setValue(0)
+        #[SCALE] self.sSlider.setValue(0)
 
     def __updateSizes(self, img1: QImage, pxSize1: float, img2: QImage, pxSize2: float) -> None:
         """
@@ -2336,13 +2336,13 @@ All markers must be valid to proceed.
         trax = (self.T[0] * 2.0) / max(self.sizeL.x(), self.sizeR.x())
         tray = (self.T[1] * 2.0) / max(self.sizeL.y(), self.sizeR.y())
         rot = self.R / QtAlignmentToolWidget.ROT_PRECISION
-        sca = self.S / QtAlignmentToolWidget.SCALE_PRECISION
+        #[SCALE] sca = self.S / QtAlignmentToolWidget.SCALE_PRECISION
         self.leftPreviewViewer.updateRotation(rot)
         self.leftPreviewViewer.updateTranslation(QPointF(trax, tray))
-        self.leftPreviewViewer.updateScale(sca)
+        #[SCALE] self.leftPreviewViewer.updateScale(sca)
         self.rightPreviewViewer.updateRotation(rot)
         self.rightPreviewViewer.updateTranslation(QPointF(trax, tray))
-        self.rightPreviewViewer.updateScale(sca)
+        #[SCALE] self.rightPreviewViewer.updateScale(sca)
 
         # Update threshold
         self.rightPreviewViewer.updateThreshold(self.threshold)
@@ -2369,7 +2369,7 @@ All markers must be valid to proceed.
         #
 
         R = np.deg2rad(self.R / QtAlignmentToolWidget.ROT_PRECISION)
-        S = self.S / QtAlignmentToolWidget.SCALE_PRECISION
+        #[SCALE] S = self.S / QtAlignmentToolWidget.SCALE_PRECISION
 
         maxw = max(self.sizeL.x(), self.sizeR.x())
         maxh = max(self.sizeL.y(), self.sizeR.y())
@@ -2441,8 +2441,8 @@ All markers must be valid to proceed.
         self.rSlider.setVisible(isPreviewMode)
         self.rotateLeftButton.setVisible(isPreviewMode)
         self.rotateRightButton.setVisible(isPreviewMode)
-        self.sSliderLabel.setVisible(False)
-        self.sSlider.setVisible(False)
+        #[SCALE] self.sSliderLabel.setVisible(False)
+        #[SCALE] self.sSlider.setVisible(False)
         # (NON-Preview-ONLY) widgets
         self.leftImgViewer.setVisible(not isPreviewMode)
         self.rightImgViewer.setVisible(not isPreviewMode)
@@ -2596,7 +2596,7 @@ All markers must be valid to proceed.
 
         # NOTE: self.R is an angle (in degree) and not a rotation matrix
         angle = np.deg2rad(self.R / QtAlignmentToolWidget.ROT_PRECISION)
-        S = self.S / QtAlignmentToolWidget.SCALE_PRECISION
+        #[SCALE] S = self.S / QtAlignmentToolWidget.SCALE_PRECISION
 
         maxw = max(self.sizeL.x(), self.sizeR.x())
         maxh = max(self.sizeL.y(), self.sizeR.y())
@@ -2632,7 +2632,8 @@ All markers must be valid to proceed.
         where R is the rotation matrix and T is the translation vec (to find)
         """
         # Reset results
-        self.svdRes = [0, [0, 0], 0]
+        #[SCALE] self.svdRes = [0, [0, 0], 0]
+        self.svdRes = [0, [0, 0]]
 
         # Reset each marker error
         for (i, marker) in enumerate(self.markers):
@@ -2659,24 +2660,24 @@ All markers must be valid to proceed.
         sw = sum(w)
         (q, p) = self.__normalizedMarkers()
 
-        # ==================================================================================
-        # [Extra] Pre-Scale
-        # ==================================================================================
-        def dist(a: QPointF, b: QPointF):
-            return math.sqrt(((a.x() - b.x()) ** 2 + (a.y() - b.y()) ** 2))
-
-        S = 1.0
-        if self.canScale:
-            samples = []
-            for si in range(QtAlignmentToolWidget.SCALE_SAMPLING_COUNT):
-                i = random.randint(0, n - 1)
-                j = random.randint(0, n - 1)
-                if i != j:
-                    samples.append(dist(p[i], p[j]) / dist(q[i], q[j]))
-            S = float(sum(samples)) / len(samples)
-            S = 1.0 / S
-
-        p = [point * S for point in p]
+        #[SCALE] # ==================================================================================
+        #[SCALE] # [Extra] Pre-Scale
+        #[SCALE] # ==================================================================================
+        #[SCALE] def dist(a: QPointF, b: QPointF):
+        #[SCALE]     return math.sqrt(((a.x() - b.x()) ** 2 + (a.y() - b.y()) ** 2))
+        #[SCALE]
+        #[SCALE] S = 1.0
+        #[SCALE] if self.canScale:
+        #[SCALE]     samples = []
+        #[SCALE]     for si in range(QtAlignmentToolWidget.SCALE_SAMPLING_COUNT):
+        #[SCALE]         i = random.randint(0, n - 1)
+        #[SCALE]         j = random.randint(0, n - 1)
+        #[SCALE]         if i != j:
+        #[SCALE]             samples.append(dist(p[i], p[j]) / dist(q[i], q[j]))
+        #[SCALE]     S = float(sum(samples)) / len(samples)
+        #[SCALE]     S = 1.0 / S
+        #[SCALE]
+        #[SCALE] p = [point * S for point in p]
 
         # ==================================================================================
         # [1] Compute the weighted centroids _q (for q) and _p (for p)
@@ -2757,22 +2758,22 @@ All markers must be valid to proceed.
         self.T = np.array(T)
         self.svdRes[1] = [self.T[0], self.T[1]]
 
-        S = round(S, 2)
-        self.S = S * QtAlignmentToolWidget.SCALE_PRECISION
-        self.svdRes[2] = self.S
+        #[SCALE] S = round(S, 2)
+        #[SCALE] self.S = S * QtAlignmentToolWidget.SCALE_PRECISION
+        #[SCALE] self.svdRes[2] = self.S
 
         # Update UI
-        self.sSlider.blockSignals(True)
+        #[SCALE] self.sSlider.blockSignals(True)
         self.xSlider.setValue(self.T[0])
         self.ySlider.setValue(self.T[1])
         self.rSlider.setValue(self.R)
-        self.sSlider.setMinimum(round(self.S * (1.0 - QtAlignmentToolWidget.SCALE_RANGE)))
-        self.sSlider.setMaximum(round(self.S * (1.0 + QtAlignmentToolWidget.SCALE_RANGE)))
-        self.sSlider.setValue(self.S)
-        self.sSlider.setEnabled(self.canScale)
-        self.scaleIncButton.setEnabled(self.canScale)
-        self.scaleDecButton.setEnabled(self.canScale)
-        self.sSlider.blockSignals(False)
+        #[SCALE] self.sSlider.setMinimum(round(self.S * (1.0 - QtAlignmentToolWidget.SCALE_RANGE)))
+        #[SCALE] self.sSlider.setMaximum(round(self.S * (1.0 + QtAlignmentToolWidget.SCALE_RANGE)))
+        #[SCALE] self.sSlider.setValue(self.S)
+        #[SCALE] self.sSlider.setEnabled(self.canScale)
+        #[SCALE] self.scaleIncButton.setEnabled(self.canScale)
+        #[SCALE] self.scaleDecButton.setEnabled(self.canScale)
+        #[SCALE] self.sSlider.blockSignals(False)
 
         # check if __computeErrors is ok
         #self.__computeErrors()
