@@ -204,9 +204,11 @@ class CoralsDataset(Dataset):
                 # sc = 1.0
                 sc = np.random.uniform(self.RANDOM_SCALE_MINVALUE, self.RANDOM_SCALE_MAXVALUE)
                 img_flipped_RT = transforms.functional.affine(img_flipped, angle=rot, scale=sc, shear=0.0,
-                                                              translate=(tx, ty), resample=PILimage.BILINEAR)
+                                                              translate=(tx, ty),
+                                                              interpolation=transforms.InterpolationMode.BILINEAR)
                 imglbl_flipped_RT = transforms.functional.affine(imglbl_flipped, angle=rot, scale=1.0, shear=0.0,
-                                                                 translate=(tx, ty), resample=PILimage.NEAREST)
+                                                                 translate=(tx, ty),
+                                                                 interpolation=transforms.InterpolationMode.NEAREST)
             else:
                 img_flipped_RT = img_flipped
                 imglbl_flipped_RT = imglbl_flipped
