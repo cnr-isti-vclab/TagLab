@@ -14,7 +14,7 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#GNU General Public License (http://www.gnu.org/licenses/gpl.txt)
+# GNU General Public License (http://www.gnu.org/licenses/gpl.txt)
 # for more details.
 
 import os
@@ -27,7 +27,7 @@ from skimage.io import imsave
 from skimage.filters import sobel
 from scipy import ndimage as ndi
 from PyQt5.QtGui import QPainter, QImage, QPen, QBrush, QColor, qRgb
-from PyQt5.QtCore import Qt, QObject, pyqtSignal
+from PyQt5.QtCore import Qt, QObject, pyqtSignal, QRectF
 from skimage.color import rgb2gray
 from skimage.draw import polygon_perimeter
 
@@ -40,27 +40,28 @@ from skimage.segmentation import watershed
 from source.Blob import Blob
 import source.Mask as Mask
 
-#from PIL import Image as Img  #for debug
 
-#refactor: change name to annotationS
+# from PIL import Image as Img  #for debug
+
+# refactor: change name to annotationS
 class Annotation(QObject):
     """
         Annotation object contains all the annotations as a list of blobs.
     """
     blobAdded = pyqtSignal(Blob)
     blobRemoved = pyqtSignal(Blob)
-    blobUpdated = pyqtSignal(Blob,Blob)
-    blobClassChanged = pyqtSignal(str,Blob)
+    blobUpdated = pyqtSignal(Blob, Blob)
+    blobClassChanged = pyqtSignal(str, Blob)
 
     def __init__(self):
         super(QObject, self).__init__()
 
-        #refactor: rename this to blobs.
+        # refactor: rename this to blobs.
         # list of all blobs
         self.seg_blobs = []
 
-        #relative weight of depth map for refine borders
-        #refactor: this is to be saved and loaded in qsettings
+        # relative weight of depth map for refine borders
+        # refactor: this is to be saved and loaded in qsettings
         self.refine_depth_weight = 0.0
         self.refine_conservative = 0.1
 
@@ -95,7 +96,7 @@ class Annotation(QObject):
         new_blob.id = old_blob.id;
         self.removeBlob(old_blob, notify=False)
         self.addBlob(new_blob, notify=False)
-        self.blobUpdated.emit(old_blob,new_blob)
+        self.blobUpdated.emit(old_blob, new_blob)
 
         self.table_needs_update = True
 
@@ -124,7 +125,7 @@ class Annotation(QObject):
     def save(self):
         return self.seg_blobs
 
-    #move to BLOB!
+    # move to BLOB!
     def blobsFromMask(self, seg_mask, map_pos_x, map_pos_y, area_mask):
         # create the blobs from the segmentation mask
 
@@ -138,7 +139,6 @@ class Annotation(QObject):
         for region in measure.regionprops(label_image):
 
             if region.area > area_th:
-
                 blob = Blob(region, map_pos_x, map_pos_y, self.getFreeId())
 
                 last_blobs_added.append(blob)
@@ -147,7 +147,7 @@ class Annotation(QObject):
 
     def getFreeId(self):
         used = []
-        for blob  in self.seg_blobs:
+        for blob in self.seg_blobs:
             used.append(blob.id)
         for id in range(len(used)):
             if id not in used:
@@ -158,7 +158,7 @@ class Annotation(QObject):
         """
         Create a new blob that is the union of the (two) blobs given
         """
-        #boxs are in image space, masks invert x and y.
+        # boxs are in image space, masks invert x and y.
         boxes = []
         for blob in blobs:
             boxes.append(blob.bbox)
@@ -212,7 +212,7 @@ class Annotation(QObject):
         mask = blob.getMask()
         original = mask.copy()
         box = blob.bbox
-        #box is y, x, w, h
+        # box is y, x, w, h
         Mask.paintPoints(mask, box, points, 0)
 
         label_image = measure.label(mask, connectivity=1)
@@ -220,17 +220,17 @@ class Annotation(QObject):
             x = point[0] - box[1]
             y = point[1] - box[0]
 
-            if x <= 0 or y <= 0 or x >= box[2] -1 or y >= box[3] -1:
+            if x <= 0 or y <= 0 or x >= box[2] - 1 or y >= box[3] - 1:
                 continue
 
             if original[y][x] == 0:
                 continue
-            #the point in points were painted with zeros and we need to assign to some label (we pick the largest of the neighbors
+            # the point in points were painted with zeros and we need to assign to some label (we pick the largest of the neighbors
             largest = 0
-            largest = max(label_image[y+1][x], largest)
-            largest = max(label_image[y-1][x], largest)
-            largest = max(label_image[y][x+1], largest)
-            largest = max(label_image[y][x-1], largest)
+            largest = max(label_image[y + 1][x], largest)
+            largest = max(label_image[y - 1][x], largest)
+            largest = max(label_image[y][x + 1], largest)
+            largest = max(label_image[y][x - 1], largest)
             label_image[y][x] = largest
 
         area_th = 30
@@ -244,8 +244,7 @@ class Annotation(QObject):
 
         return created_blobs
 
-
-    #expect numpy img and mask
+    # expect numpy img and mask
     def refineBorder(self, box, blob, img, depth, mask, grow, lastedit):
         clippoints = None
 
@@ -259,21 +258,22 @@ class Annotation(QObject):
                 clippoints = clippoints - origin
         try:
             from coraline.Coraline import segment, mutual
-            #rgb_weights = [0.2989, 0.5870, 0.1140]
-            #gray = np.dot(img[...,:3], rgb_weights).astype(np.uint8)
-            #mutual(gray)
-            #a = utils.floatmapToQImage(gray.astype(float))
-            #a.save("test.png")
-            segment(img, depth, mask, clippoints, 0.0, conservative=self.refine_conservative, grow=grow, radius=30, depth_weight = self.refine_depth_weight)
+            # rgb_weights = [0.2989, 0.5870, 0.1140]
+            # gray = np.dot(img[...,:3], rgb_weights).astype(np.uint8)
+            # mutual(gray)
+            # a = utils.floatmapToQImage(gray.astype(float))
+            # a.save("test.png")
+            segment(img, depth, mask, clippoints, 0.0, conservative=self.refine_conservative, grow=grow, radius=30,
+                    depth_weight=self.refine_depth_weight)
 
         except Exception as e:
             print(e, flush=True)
-            #msgBox = QMessageBox()
-            #msgBox.setText(str(e))
-            #msgBox.exec()
-#            return
+            # msgBox = QMessageBox()
+            # msgBox.setText(str(e))
+            # msgBox.exec()
+        #            return
 
-        #TODO this should be moved to a function!
+        # TODO this should be moved to a function!
         area_th = 500
         created_blobs = []
         label_image = measure.label(mask, connectivity=1)
@@ -284,7 +284,7 @@ class Annotation(QObject):
                 created_blobs.append(b)
         return created_blobs
 
-    def splitBlob(self,map, blob, seeds):
+    def splitBlob(self, map, blob, seeds):
 
         seeds = np.asarray(seeds)
         seeds = seeds.astype(int)
@@ -301,7 +301,7 @@ class Annotation(QObject):
         size = 40
         #
         for i in range(0, seeds.shape[0]):
-        #y,x
+            # y,x
             seeds_matrix[seeds[i, 1] - box[0] - (size - 1): seeds[i, 1] - box[0] + (size - 1),
             seeds[i, 0] - box[1] - (size - 1): seeds[i, 0] - box[1] + (size - 1)] = 1
 
@@ -310,12 +310,12 @@ class Annotation(QObject):
         seeds_matrix = seeds_matrix > 0.5
         markers = ndi.label(seeds_matrix)[0]
         # labels = watershed(-distance, markers, mask=mask)
-        labels = watershed((-distance+100*edges)/2, markers, mask=mask)
+        labels = watershed((-distance + 100 * edges) / 2, markers, mask=mask)
         created_blobs = []
         for region in measure.regionprops(labels):
-                b = Blob(region, box[1], box[0], self.getFreeId())
-                b.class_name = blob.class_name
-                created_blobs.append(b)
+            b = Blob(region, box[1], box[0], self.getFreeId())
+            b.class_name = blob.class_name
+            created_blobs.append(b)
 
         return created_blobs
 
@@ -324,74 +324,68 @@ class Annotation(QObject):
         if points is None or len(points) == 0 or all(len(p) == 0 for p in points):
             return
 
-        #get the bounding box of the points (we need to enlarge the mask box)
+        # get the bounding box of the points (we need to enlarge the mask box)
         points_box = Mask.pointsBox(points, 8)
 
         blob_mask = blob.getMask()
         blob_box = blob.bbox
         (mask, box) = Mask.jointMask(blob_box, points_box)
 
-        #2 is foregraound, 1 is background, 3 is the points
+        # 2 is foregraound, 1 is background, 3 is the points
         Mask.paintMask(mask, box, blob_mask, blob_box, 1)
 
-
-#        in case we need to debug.
-#        im = Img.fromarray(mask)
-#        im.save("0_start.png")
+        #        in case we need to debug.
+        #        im = Img.fromarray(mask)
+        #        im.save("0_start.png")
 
         mask[mask == 1] = 2
-        mask[mask == 0] = 1  #paint background, as points will be zero.
+        mask[mask == 0] = 1  # paint background, as points will be zero.
 
-        #label image should at least mantain 1 as backround and 2 as foreground (save for the internal holes)
+        # label image should at least mantain 1 as backround and 2 as foreground (save for the internal holes)
         original_label = measure.label(mask, connectivity=1)
 
-        #draw the points to separate the areas
+        # draw the points to separate the areas
         Mask.paintPoints(mask, box, points, 3)
 
-        
         label_image = measure.label(mask, connectivity=1)
 
-
-        #reassing the rendered points bottom right area so the partitioning is properly done.
+        # reassing the rendered points bottom right area so the partitioning is properly done.
         for point in points:
             x = point[0] - box[1]
             y = point[1] - box[0]
 
             largest = 0
-            if mask[y+1][x+1] != 3:
-                largest = max(label_image[y+1][x+1], largest)
-            elif mask[y][x+1] != 3:
-                largest = max(label_image[y][x+1], largest)
-            elif mask[y+1][x] != 3:
-                largest = max(label_image[y+1][x], largest)
+            if mask[y + 1][x + 1] != 3:
+                largest = max(label_image[y + 1][x + 1], largest)
+            elif mask[y][x + 1] != 3:
+                largest = max(label_image[y][x + 1], largest)
+            elif mask[y + 1][x] != 3:
+                largest = max(label_image[y + 1][x], largest)
             label_image[y][x] = largest
-
 
         regions = measure.regionprops(label_image)
 
-
-        #for each region we find which original label intersects the most
+        # for each region we find which original label intersects the most
         for region in regions:
-            (labels, counts) = np.unique(original_label[tuple(region.coords.T)], return_counts = True)
+            (labels, counts) = np.unique(original_label[tuple(region.coords.T)], return_counts=True)
             n = np.argmax(counts)
             region.original_area = counts[n]
             region.original_label = labels[n]
 
-
         final_mask = np.zeros((box[3], box[2])).astype(np.uint8)
 
-        #if 2 is the label for the original foreground
-        #if a region is the largest area with the its original label, keep it foreground (2, so paint 1) or background (not 2, paint 0)
-        #otherwise it's a small region which we need to flip.
+        # if 2 is the label for the original foreground
+        # if a region is the largest area with the its original label, keep it foreground (2, so paint 1) or background (not 2, paint 0)
+        # otherwise it's a small region which we need to flip.
         for region in regions:
-            largest = max(regions, key=lambda aregion, label=region.original_label: aregion.original_area if aregion.original_label == label else 0)
+            largest = max(regions, key=lambda aregion,
+                                              label=region.original_label: aregion.original_area if aregion.original_label == label else 0)
             if region.original_label == 2 and largest == region or region.original_label != 2 and largest != region:
                 final_mask[tuple(region.coords.T)] = 1
             else:
                 final_mask[tuple(region.coords.T)] = 0
 
-        blob.updateUsingMask(box, final_mask) 
-
+        blob.updateUsingMask(box, final_mask)
 
     def editBorder1(self, blob, lines):
         points = [blob.drawLine(line) for line in lines]
@@ -410,10 +404,10 @@ class Annotation(QObject):
             Mask.paintMask(mask, box, inner_mask, inner_box, 0)
 
         if not pointIntersectsContours:
-            #probably a hole, draw the points fill the hole and subtract from mask
+            # probably a hole, draw the points fill the hole and subtract from mask
             allpoints = np.empty(shape=(0, 2), dtype=int)
             for arc in points:
-                allpoints = np.append(allpoints, arc, axis =0)
+                allpoints = np.append(allpoints, arc, axis=0)
             points_box = Mask.pointsBox(allpoints, 4)
             (points_mask, points_box) = Mask.jointMask(points_box, points_box)
             Mask.paintPoints(points_mask, points_box, allpoints, 1)
@@ -424,20 +418,18 @@ class Annotation(QObject):
             points_mask = binary_erosion(points_mask, selem)
             Mask.paintMask(mask, box, points_mask, points_box, 0)
 
-
         blob.updateUsingMask(box, mask)
-
 
     def editBorderContour(self, blob, contour, points):
         snapped_points = np.empty(shape=(0, 2), dtype=int)
         for arc in points:
             snapped = blob.snapToContour(arc, contour)
             if snapped is not None:
-                snapped_points = np.append(snapped_points, snapped, axis = 0)
+                snapped_points = np.append(snapped_points, snapped, axis=0)
 
         contour_box = Mask.pointsBox(contour, 4)
 
-        #if the countour did not intersect with the outer contour, get the mask of the outer contour
+        # if the countour did not intersect with the outer contour, get the mask of the outer contour
         if snapped_points is None or len(snapped_points) == 0:
             # not very elegant repeated code...
             (mask, box) = Mask.jointMask(contour_box, contour_box)
@@ -460,7 +452,7 @@ class Annotation(QObject):
         mask1 = ndi.binary_fill_holes(mask)
         selem = np.array([[0, 0, 0], [0, 0, 1], [0, 1, 0]])
         mask = binary_erosion(mask1, selem) | mask
-        
+
         # now draw in black the part of the points inside the contour
         Mask.paintPoints(mask, box, snapped_points, 0)
 
@@ -482,7 +474,6 @@ class Annotation(QObject):
         number_of_seg = len(self.seg_blobs)
         dimensions = np.zeros(number_of_seg)
         for i, blob in enumerate(self.seg_blobs):
-
             dimensions[i] = blob.size()
 
         print("-------------------------")
@@ -544,18 +535,20 @@ class Annotation(QObject):
             box = blob.bbox.copy()  # blob.bbox is top, left, width, height
             (box[2], box[3]) = (box[3] + box[0], box[2] + box[1])  # box is now startx, starty, endx, endy
 
-            #range is the interection of box and imagebox
-            range = [max(box[0], imagebox[0]), max(box[1], imagebox[1]), min(box[2], imagebox[2]), min(box[3], imagebox[3])]
-            subimage = image[range[0] - imagebox[0]:range[2] - imagebox[0], range[1] - imagebox[1]:range[3] - imagebox[1]]
+            # range is the interection of box and imagebox
+            range = [max(box[0], imagebox[0]), max(box[1], imagebox[1]), min(box[2], imagebox[2]),
+                     min(box[3], imagebox[3])]
+            subimage = image[range[0] - imagebox[0]:range[2] - imagebox[0],
+                       range[1] - imagebox[1]:range[3] - imagebox[1]]
             submask = mask[range[0] - box[0]:range[2] - box[0], range[1] - box[1]:range[3] - box[1]]
 
-            #use the binary mask to assign a color
+            # use the binary mask to assign a color
             subimage[submask] = rgb
 
-            #create 1px border: dilate then subtract the mask.
+            # create 1px border: dilate then subtract the mask.
             border = binary_dilation(submask) & ~submask
 
-            #select only the border over blobs of the same color and draw the border
+            # select only the border over blobs of the same color and draw the border
             samecolor = np.all(subimage == rgb, axis=-1)
             subimage[border & samecolor] = [0, 0, 0]
 
@@ -567,7 +560,6 @@ class Annotation(QObject):
             return labelimg_cropped
         else:
             return labelimg
-
 
     def calculate_inner_blobs(self, working_area):
         """
@@ -581,7 +573,6 @@ class Annotation(QObject):
                 inner_blobs.append(blob)
 
         return inner_blobs
-
 
     def calculate_perclass_blobs_value(self, label, pixel_size):
         """
@@ -597,7 +588,6 @@ class Annotation(QObject):
         tot_area = round((tot_area * pixel_size * pixel_size) / 100.0, 2)
 
         return count, tot_area
-
 
     def import_label_map(self, filename, labels_dictionary, offset, scale, create_holes=False):
         """
@@ -648,13 +638,12 @@ class Annotation(QObject):
 
         return created_blobs
 
-
     def export_data_table(self, project, image, filename):
 
         working_area = project.working_area
         scale_factor = image.pixelSize()
         date = image.acquisition_date
-        
+
         # create a list of instances
         name_list = []
 
@@ -672,20 +661,18 @@ class Annotation(QObject):
                 name_list.append(index)
                 visible_blobs.append(blob)
 
-
         number_of_seg = len(name_list)
         dict = {
-            'TagLab Region id': np.zeros(number_of_seg, dtype = np.int64),
+            'TagLab Region id': np.zeros(number_of_seg, dtype=np.int64),
             'TagLab Date': [],
             'TagLab Class name': [],
-            'TagLab Genet id': np.zeros(number_of_seg, dtype = np.int64),
+            'TagLab Genet id': np.zeros(number_of_seg, dtype=np.int64),
             'TagLab Centroid x': np.zeros(number_of_seg),
             'TagLab Centroid y': np.zeros(number_of_seg),
             'TagLab Area': np.zeros(number_of_seg),
             'TagLab Surf. area': np.zeros(number_of_seg),
             'TagLab Perimeter': np.zeros(number_of_seg),
-            'TagLab Note': [] }
-
+            'TagLab Note': []}
 
         for attribute in project.region_attributes.data:
             key = attribute["name"]
@@ -706,13 +693,13 @@ class Annotation(QObject):
             dict['TagLab Class name'].append(blob.class_name)
             dict['TagLab Centroid x'][i] = round(blob.centroid[0], 1)
             dict['TagLab Centroid y'][i] = round(blob.centroid[1], 1)
-            dict['TagLab Area'][i] = round(blob.area * (scale_factor) * (scale_factor)/ 100,2)
+            dict['TagLab Area'][i] = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
             if blob.surface_area > 0.0:
-               dict['TagLab Surf. area'][i] = round(blob.surface_area * (scale_factor) * (scale_factor) / 100, 2)
-            dict['TagLab Perimeter'][i] = round(blob.perimeter*scale_factor / 10,1)
+                dict['TagLab Surf. area'][i] = round(blob.surface_area * (scale_factor) * (scale_factor) / 100, 2)
+            dict['TagLab Perimeter'][i] = round(blob.perimeter * scale_factor / 10, 1)
 
             if blob.genet is not None:
-               dict['TagLab Genet id'][i] = blob.genet
+                dict['TagLab Genet id'][i] = blob.genet
 
             dict['TagLab Note'].append(blob.note)
 
@@ -749,7 +736,78 @@ class Annotation(QObject):
         df = pd.DataFrame(dict, columns=list(dict.keys()))
         df.to_csv(filename, sep=',', index=False)
 
-
     def export_image_data_for_Scripps(self, size, filename, project):
         label_map = self.create_label_map(size, labels_dictionary=project.labels, working_area=project.working_area)
         label_map.save(filename, 'png')
+
+    def computeBBoxWithAffineTransform(self, rot, tra) -> QRectF:
+        """
+        Compute the bbox that contains the blob list, after applying an affine
+        transformation to each blob
+        :param: rot the rotation component (2x2 matrix)
+        :param: tra the transaltion component (2d vector)
+        :returns: a QRectF that identifies the bbox
+        """
+        # Get transformed internal blobs
+        blobs = self.computeBlobsAffineTransform(rot, tra)
+        # Min-Max bboxes of blobs
+        minX, minY = 1_000_000_000, 1_000_000_000
+        maxX, maxY = 0, 0
+        for blob in blobs:
+            minY = min(minY, blob.bbox[0])
+            minX = min(minX, blob.bbox[1])
+            maxY = max(maxY, blob.bbox[0] + blob.bbox[3])
+            maxX = max(maxX, blob.bbox[1] + blob.bbox[2])
+        # Return BBox as rect
+        return QRectF(minX, minY, (maxX - minX), (maxY - minY))
+
+    def computeBlobsAffineTransform(self, rot, tra):
+        """
+        Transform the seg_blobs list
+        :param: rot the rotation matrix (2x2)
+        :param: tra the translation vector (2D)
+        :returns: a transformed list of blobs (copied)
+        """
+        # Update Blobs
+        transformedBlobs = []
+        for blob in self.seg_blobs:
+            tmpBlob = blob.copy()
+            # Contour
+            tmpBlob.contour = np.array([rot @ p + tra for p in tmpBlob.contour])
+            # Inner contours
+            for (i, contour) in enumerate(tmpBlob.inner_contours):
+                tmpBlob.inner_contours[i] = np.array([rot @ p + tra for p in contour])
+            # Centroid
+            tmpBlob.centroid = rot @ tmpBlob.centroid + tra
+            # BBox
+            tmpBlob.bbox = self.__transformBBox(tmpBlob.bbox, rot, tra)
+            # Update internally
+            tmpBlob.setupForDrawing()
+            # Add blob
+            transformedBlobs.append(tmpBlob)
+        # Result
+        return transformedBlobs
+
+    def __transformBBox(self, bbox, rot, tra):
+        """
+        Apply an affine transformation to a bbox [top, left, width, height]
+        :param: bbox the bounding box to transform
+        :param: rot the rotation as matrix (2x2)
+        :param: tra the translation as 2d vector
+        :returns: the transformed bbox as [top, left, width, height]
+        """
+        # Construct points
+        t, l, w, h = bbox[0], bbox[1], bbox[2], bbox[3]
+        points = np.array([[l, t], [l, t + h], [l + w, t + h], [l + w, t]])
+        # Transform points
+        points = [rot @ p + tra for p in points]
+        # Extract components
+        pointsX = [p[0] for p in points]
+        pointsY = [p[1] for p in points]
+        # Compute bbox
+        top = min(pointsY)
+        left = min(pointsX)
+        height = max(pointsY) - top
+        width = max(pointsX) - left
+        # Result
+        return np.array([int(top), int(left), int(width) + 1, int(height) + 1])
