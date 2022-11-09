@@ -496,18 +496,7 @@ class QtDictionaryWidget(QWidget):
         if 0 <= r <= 255 and 0 <= g <= 255 and 0 <= b <= 255:
             text = "QPushButton:flat {background-color: rgb(" + str(r) + "," + str(g) + "," + str(b) + "); border: none ;}"
             self.btn_selection_color.setStyleSheet(text)
-        else:
-            self.editR.blockSignals(True)
-            self.editG.blockSignals(True)
-            self.editB.blockSignals(True)
-            text = "QPushButton:flat {background-color: rgb(255,255,255); border: none;}"
-            self.btn_selection_color.setStyleSheet(text)
-            box = QMessageBox()
-            box.setText("Please enter a number between 0 and 255")
-            box.exec()
-            self.editR.blockSignals(False)
-            self.editG.blockSignals(False)
-            self.editB.blockSignals(False)
+
 
     @pyqtSlot()
     def setlabelColor(self, color):
@@ -640,14 +629,38 @@ class QtDictionaryWidget(QWidget):
 
     def getRGB(self):
 
-        try:
-            red = int(self.editR.text())
-            green = int(self.editG.text())
-            blue = int(self.editB.text())
-        except:
-            red = -1
-            green = - 1
-            blue = - 1
+        red = -1
+        green = - 1
+        blue = - 1
+
+        redtext = self.editR.text()
+        greentext = self.editG.text()
+        bluetext = self.editB.text()
+
+        flag_conversion_ok = True
+
+        if redtext != "":
+            try:
+                red = int(self.editR.text())
+            except:
+                flag_conversion_ok = False
+
+        if greentext != "":
+            try:
+                green = int(self.editG.text())
+            except:
+                flag_conversion_ok = False
+
+        if bluetext != "":
+            try:
+                blue = int(self.editB.text())
+            except:
+                flag_conversion_ok = False
+
+        if flag_conversion_ok is False or red > 255 or green > 255 or blue > 255:
+            box = QMessageBox()
+            box.setText("Please enter a number between 0 and 255")
+            box.exec()
 
         return red, green, blue
 
