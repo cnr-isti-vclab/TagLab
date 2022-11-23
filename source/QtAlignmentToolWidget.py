@@ -1,4 +1,5 @@
 import math
+import inspect
 from typing import Optional, Tuple, List
 
 import numpy as np
@@ -20,7 +21,12 @@ def checkGL(obj, res):
     Syntactic sugar for error check + log
     """
     if not res:
-        print(obj.log())
+        msg = obj.log()
+        print(msg.strip("\n\t "))
+        callee1 = inspect.stack()[1]
+        callee2 = inspect.stack()[2]
+        print("\t\t^^^^^ at function '", callee1.function, "':", callee1.lineno)
+        print("\t\t^^^^^ at function '", callee2.function, "':", callee2.lineno)
 
 
 class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
@@ -32,7 +38,8 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
     """
 
     V_SHADER_SOURCE = """
-    precision highp float;
+    #version 120
+    // precision highp float;
     attribute vec2 aPos;
     attribute vec2 aTex;
     varying vec2 vTex;
@@ -44,7 +51,8 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
     """
 
     F_SHADER_SOURCE = """
-    precision highp float;
+    #version 120
+    // precision highp float;
     varying vec2 vTex;
     uniform sampler2D uTex;
     void main(void) {
@@ -58,7 +66,8 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
     """
 
     V_SHADER_SOURCE_POINTS = """
-    precision highp float;
+    #version 120
+    // precision highp float;
     attribute vec2 aPos;
     uniform float uSize;
     uniform mat4 uMatrix;
@@ -69,15 +78,16 @@ class QtSimpleOpenGlShaderViewer(QOpenGLWidget):
     """
 
     F_SHADER_SOURCE_POINTS = """
-    precision highp float;
+    #version 120
+    // precision highp float;
     uniform vec4 uCol;
     void main(void) {
         vec2 coord = (gl_PointCoord - 0.5) * 2.0;
         float distFromCenter = length(coord);
         if (distFromCenter >= 1.0) {
-            gl_FragColor = vec4(0, 0, 0, 0);
+            gl_FragColor = vec4(0);
         } else {
-            gl_FragColor = uCol;
+            gl_FragColor = vec4(uCol);
         }
     }
     """
@@ -480,7 +490,8 @@ class AlphaPreviewViewer(QtSimpleOpenGlShaderViewer):
     """
 
     V_SHADER_SOURCE = """
-    precision highp float;
+    #version 120
+    // precision highp float;
     attribute vec2 aPos;
     attribute vec2 aTex;
     varying vec2 vTex;
@@ -492,7 +503,8 @@ class AlphaPreviewViewer(QtSimpleOpenGlShaderViewer):
     """
 
     F_SHADER_SOURCE = """
-    precision highp float;
+    #version 120
+    // precision highp float;
     varying vec2 vTex;
     uniform sampler2D uTexL;
     uniform sampler2D uTexR;
@@ -557,7 +569,8 @@ class GrayPreviewViewer(QtSimpleOpenGlShaderViewer):
     """
 
     V_SHADER_SOURCE = """
-    precision highp float;
+    #version 120
+    // precision highp float;
     attribute vec2 aPos;
     attribute vec2 aTex;
     varying vec2 vTex;
@@ -569,7 +582,8 @@ class GrayPreviewViewer(QtSimpleOpenGlShaderViewer):
     """
 
     F_SHADER_SOURCE = """
-    precision highp float;
+    #version 120
+    // precision highp float;
 
     varying vec2 vTex;
 
@@ -609,7 +623,7 @@ class GrayPreviewViewer(QtSimpleOpenGlShaderViewer):
             col = vec4(abs(lColGray.rgb - rColGray.rgb).rgb, 1.0);
             
             // Threshold
-            if (col.r <= uThr) col.rgb = 0.0;
+            if (col.r <= uThr) col.rgb = vec3(0.0);
             
         } else {
             if (hasLeftPixel)  col = lColGray;
@@ -1676,17 +1690,26 @@ All markers must be valid to proceed.
         rightB = int(max(bbox.right() - image2W, 0))
         bottomB = int(max(bbox.bottom() - image2H, 0))
 
+        # Extract geo-ref from the reference image
+        geoRef = None
+
         # ================================ Image 2 =============================================
-        cpy2 = image2.copyTransform("_coreg", rot, T, [leftB, rightB, topB, bottomB])
+        # Apply borders to georef
+        geoRef1 = None
+        # Create a roto-translated copy
+        cpy2 = image2.copyTransform("_coreg", rot, T, [leftB, rightB, topB, bottomB], geoRef1)
+        # Add it to the project
         self.project.addNewImage(cpy2)
 
         # ================================ Image 1 =============================================
         # Convert pixelSize of Image2 => pixelSize of Image1
         leftB = int(leftB * image2.pixelSize() / image1.pixelSize())
         topB = int(topB * image2.pixelSize() / image1.pixelSize())
+        # Apply borders to georef
+        geoRef2 = None
         # Create only when needed
         if leftB > 0 or topB > 0:
-            cpy1 = image1.copyTransform("_ref", 0, np.array([0, 0]), [leftB, 0, topB, 0])
+            cpy1 = image1.copyTransform("_ref", 0, np.array([0, 0]), [leftB, 0, topB, 0], geoRef2)
             self.project.addNewImage(cpy1)
 
         # ================================ End =============================================

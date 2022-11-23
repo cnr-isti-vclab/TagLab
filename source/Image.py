@@ -1,8 +1,11 @@
+import math
+
 from source.Channel import Channel
 from source.Blob import Blob
 from source.Shape import Layer, Shape
 from source.Annotation import Annotation
 from source.Grid import Grid
+from skimage.transform import warp, AffineTransform
 import rasterio as rio
 import pandas as pd
 import numpy as np
@@ -251,13 +254,14 @@ class Image(object):
 
         return data
 
-    def copyTransform(self, tag, rot, tra, borders):
+    def copyTransform(self, tag, rot, tra, borders, geoRef=None):
         """
         Create a new Image applying an affine transformation and adding borders
         :param: name the new name for the image (functioning also as id)
         :param: rot the rotation component in degrees
         :param: tra the translation component
         :param: borders of the new image (positive offset) [left, right, top, bottom]
+        :param: geoRef the geo-reference of the new image (already transformed)
         :returns: the newly created image
         """
         [leftB, rightB, topB, bottomB] = borders
@@ -279,6 +283,7 @@ class Image(object):
             grid=self.grid,
             export_dataset_area=self.export_dataset_area
         )
+        # TODO: Remove
         R = cv2.getRotationMatrix2D((0, 0), -rot, 1.0)[::, :2]
         T = np.array([tra[0] + leftB, tra[1] + topB])
         # Add blobs
@@ -287,7 +292,7 @@ class Image(object):
             cpy.annotations.addBlob(blob, notify=False)
         # Add channels
         for ch in self.channels:
-            newFilename, w, h = self.__updateChannel(ch, tag, -rot, tra, borders)
+            newFilename, w, h = self.__updateChannel(ch, tag, -rot, tra, borders, geoRef)
             # Update dimensions
             cpy.width = w
             cpy.height = h
@@ -296,7 +301,7 @@ class Image(object):
         # Result
         return cpy
 
-    def __updateChannel(self, channel, tag, rot, tra, borders):
+    def __updateChannel(self, channel, tag, rot, tra, borders, geoRef=None):
         """
         Create a new image applying a transformation to a channel
         :param: channel the channel to transform
@@ -304,30 +309,36 @@ class Image(object):
         :param: rot the rotation degrees
         :param: tra the translation vector
         :param: borders the borders in order [left, right, top, bottom]
+        :param: geoRef the geo-reference of the new image (already transformed)
         :returns: newFilename, width, height of the new image
         """
         # Retrieve borders
         leftB, rightB, topB, bottomB = borders
         # Create new filename
         filename, ext = os.path.splitext(channel.filename)
-        newFilename = filename + tag + ext
+        # [CV2] newFilename = filename + tag + ext
+        newFilename = filename + tag + ".tiff"  # TODO: '.png' for color channel with no geo-ref
         # Read "reference" image
-        # TODO: Rasterio
-        img = cv2.imread(channel.filename, cv2.IMREAD_COLOR)
+        # [CV2] img = cv2.imread(channel.filename, cv2.IMREAD_COLOR)
+        img = rio.open(channel.filename).read()
+        img = np.moveaxis(img, 0, -1)  # Since rasterio is channel-first
         # Add border
-        # TODO: Rasterio
-        img = cv2.copyMakeBorder(img, topB, bottomB, leftB, rightB, cv2.BORDER_CONSTANT, None, [0, 0, 0])
-        # Transform: Borders
-        RTMat = cv2.getRotationMatrix2D((leftB, topB), rot, 1.0)
-        RTMat[0, 2] += tra[0]
-        RTMat[1, 2] += tra[1]
+        # [CV2] img = cv2.copyMakeBorder(img, topB, bottomB, leftB, rightB, cv2.BORDER_CONSTANT, None, [0, 0, 0])
+        img = np.pad(img, ((topB, bottomB), (leftB, rightB), (0, 0)))
+        # [CV2] # Transform: Borders
+        # [CV2] RTMat = cv2.getRotationMatrix2D((leftB, topB), rot, 1.0)
+        # [CV2] RTMat[0, 2] += tra[0]
+        # [CV2] RTMat[1, 2] += tra[1]
         # Update sizes
         (h, w, c) = img.shape
         # Transform: Rot + Tra
-        # TODO: Rasterio warp
-        img = cv2.warpAffine(img, RTMat, (w, h))
+        # [CV2] img = cv2.warpAffine(img, RTMat, (w, h))
+        transformation = AffineTransform(scale=1.0, rotation=math.radians(rot), translation=tra)
+        img = warp(img, transformation)
         # Save with newly created filename
-        # TODO: Rasterio
-        cv2.imwrite(newFilename, img)
+        # [CV2] cv2.imwrite(newFilename, img)
+        img = np.moveaxis(img, -1, 0)  # Since rasterio is channel-first
+        with rio.open(newFilename, "w", driver='GTiff', width=w, height=h, dtype=img.dtype, count=str(c)) as dest:
+            dest.write(img)  # TODO: Add georef
         # Return (resource path, width, height)
         return newFilename, w, h
