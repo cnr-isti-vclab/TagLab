@@ -1352,7 +1352,7 @@ class QtImageViewerPlus(QtImageViewer):
         if annpoint.class_name == class_name:
             return
         # self.undo_data.setBlobClass(annpoint, class_name)  #data va fatto
-        self.annotations.setAnnPoinrClass(annpoint, class_name)
+        self.annotations.setAnnPointClass(annpoint, class_name)
 
         if annpoint.cross1_gitem:
             brush = self.project.classBrushFromName(annpoint)

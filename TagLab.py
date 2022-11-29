@@ -2582,6 +2582,9 @@ class TagLab(QMainWindow):
             return
         for blob in view.selected_blobs:
             view.setBlobClass(blob, self.labels_widget.getActiveLabelName())
+        for annpoint in view.selected_annpoints:
+            view.setAnnPointClass(annpoint, self.labels_widget.getActiveLabelName())
+
         view.saveUndo()
         view.resetSelection()
 
