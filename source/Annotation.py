@@ -19,6 +19,8 @@
 
 import os
 import numpy as np
+import csv
+import sys
 from cv2 import fillPoly
 
 from skimage import measure
@@ -38,6 +40,7 @@ from scipy import ndimage as ndi
 from skimage.morphology import binary_dilation, binary_erosion
 from skimage.segmentation import watershed
 from source.Blob import Blob
+from source.Point import Point
 import source.Mask as Mask
 
 #from PIL import Image as Img  #for debug
@@ -45,12 +48,14 @@ import source.Mask as Mask
 #refactor: change name to annotationS
 class Annotation(QObject):
     """
-        Annotation object contains all the annotations as a list of blobs.
+        Annotation object contains all the annotations, a list of blobs and a list of annotation points
+        Annotation point can't be manually edited or removed, only classified
     """
     blobAdded = pyqtSignal(Blob)
     blobRemoved = pyqtSignal(Blob)
-    blobUpdated = pyqtSignal(Blob,Blob)
-    blobClassChanged = pyqtSignal(str,Blob)
+    blobUpdated = pyqtSignal(Blob, Blob)
+    blobClassChanged = pyqtSignal(str, Blob)
+    annPointClassChanged= pyqtSignal(str, Point)
 
     def __init__(self):
         super(QObject, self).__init__()
@@ -58,6 +63,7 @@ class Annotation(QObject):
         #refactor: rename this to blobs.
         # list of all blobs
         self.seg_blobs = []
+        self.annpoints = []
 
         #relative weight of depth map for refine borders
         #refactor: this is to be saved and loaded in qsettings
@@ -111,6 +117,20 @@ class Annotation(QObject):
             self.blobClassChanged.emit(old_class_name, blob)
 
         self.table_needs_update = True
+
+
+    def setAnnPointClass(self, annpoint, class_name):
+
+        if annpoint.class_name == class_name:
+            return
+        else:
+            old_class_name = annpoint.class_name
+            annpoint.class_name = class_name
+
+            # notify that the class name of 'point' has changed
+            self.annPointClassChanged.emit(old_class_name, annpoint)
+
+       # self.table_needs_update = True da fare
 
     def blobById(self, id):
         for blob in self.seg_blobs:
@@ -516,6 +536,27 @@ class Annotation(QObject):
 
         return selected_blob
 
+
+
+    def clickedPoint(self, x, y):
+
+        # annpoints_clicked = []
+        point = np.array([[x, y]])
+
+        selected_annpoint = None
+        for annpoint in self.annpoints:
+            cx = annpoint.coordx
+            cy = annpoint.coordy
+            c = np.array([[cx, cy]])
+            dist = np.linalg.norm(point - c)
+
+            # for i in range(len(annpoints_clicked)):
+            #     point = annpoints_clicked[i]
+            if dist < 11:
+                selected_annpoint = annpoint
+
+        return selected_annpoint
+
     ###########################################################################
     ### IMPORT / EXPORT
 
@@ -753,3 +794,42 @@ class Annotation(QObject):
     def export_image_data_for_Scripps(self, size, filename, project):
         label_map = self.create_label_map(size, labels_dictionary=project.labels, working_area=project.working_area)
         label_map.save(filename, 'png')
+
+
+    # from here, everything is about annotation point not Blob (a.k.a annotation regions) anymore
+
+    def openCSVAnn(self, filename, imagename):
+
+        with open(filename, newline='') as f:
+            reader = csv.reader(f)
+            try:
+                self.annpoints = []
+                id = 0
+                for row in reader:
+                    if row[0] == imagename:
+                        # coralnet exports all the annotation of a image set in a single csv else, file names doesn't match
+                        # here, if plot name == image.name then extract coords
+                        coordx= int(row[1])
+                        coordy = int(row[2])
+                        classname = row[3]
+                        point = Point(coordx, coordy, classname, id)
+                        id = id + 1
+                        self.annpoints.append(point)
+
+                print('puppa')
+            except csv.Error as e:
+                sys.exit('file {}, line {}: {}'.format(filename, reader.line_num, e))
+
+
+    def setPointClass(self, annpoint, class_name):
+
+        if annpoint.class_name == class_name:
+            return
+        else:
+            old_class_name = annpoint.class_name
+            annpoint.class_name = class_name
+            # notify that the class name of 'point' has changed
+            self.pointClassChanged.emit(old_class_name, annpoint)
+
+        #we don't have an ann point table at this time
+        #self.table_needs_update = True

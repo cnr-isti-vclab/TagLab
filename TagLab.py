@@ -50,6 +50,7 @@ except Exception as e:
    # exit()
 
 # CUSTOM
+import csv
 import source.Mask as Mask
 import source.RasterOps as rasterops
 from source.QtImageViewerPlus import QtImageViewerPlus
@@ -73,6 +74,7 @@ from source.QtTableLabel import QtTableLabel
 from source.QtProjectWidget import QtProjectWidget
 from source.QtProjectEditor import QtProjectEditor
 from source.Project import Project, loadProject
+from source.Point import Point
 from source.Image import Image
 from source.MapClassifier import MapClassifier
 from source.NewDataset import NewDataset
@@ -1048,6 +1050,26 @@ class TagLab(QMainWindow):
         self.projectmenu.addAction(createDicAct)
         self.projectmenu.addSeparator()
         self.projectmenu.addAction(regionAttributesAct)
+
+        ###### POINT ANN MENU
+
+        importPointsAct = QAction("Import Point Annotations", self)
+        importPointsAct.setStatusTip("Import Point Annotations From .CSV")
+        importPointsAct.triggered.connect(self.importPointAnn)
+
+        exportPointsAct  = QAction("Export Point Annotations", self)
+        exportPointsAct .setStatusTip("Export Point Annotations As .CSV")
+        exportPointsAct .triggered.connect(self.exportPointAnn)
+
+        samplePointsAct = QAction("Sample Points On This Map", self)
+        samplePointsAct.setStatusTip("Sample Points This Map")
+        samplePointsAct.triggered.connect(self.samplePointAnn)
+
+        self.pointmenu = menubar.addMenu("&Points")
+        self.pointmenu.setStyleSheet(styleMenu)
+        self.pointmenu.addAction(importPointsAct)
+        self.pointmenu.addAction(samplePointsAct)
+        self.pointmenu.addAction(exportPointsAct)
 
 
         ###### DEM MENU
@@ -4263,6 +4285,32 @@ class TagLab(QMainWindow):
             rasterops.saveClippedTiff(input_tiff, blobs, gf, output_filename)
 
             QApplication.restoreOverrideCursor()
+
+    @pyqtSlot()
+    def importPointAnn(self):
+
+        " import csv from coralnet format for each single map. Plot name, x, y, class "
+        # please note, loading of
+
+        filters = "CSV (*.csv)"
+        filename, _ = QFileDialog.getOpenFileName(self, "Open A .CSV File", self.taglab_dir, filters)
+        if filename:
+            QApplication.setOverrideCursor(Qt.WaitCursor)
+            self.disableSplitScreen()
+            channel = self.activeviewer.image.getRGBChannel()
+            head, tail = os.path.split(channel.filename)
+            self.activeviewer.annotations.openCSVAnn(filename, tail)
+            self.activeviewer.drawAllPointsAnn()
+
+            QApplication.restoreOverrideCursor()
+
+    @pyqtSlot()
+    def exportPointAnn(self):
+        pass
+
+    @pyqtSlot()
+    def samplePointAnn(self):
+        pass
 
     @pyqtSlot()
     def calculateAreaUsingSlope(self):
