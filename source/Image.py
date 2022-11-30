@@ -324,7 +324,8 @@ class Image(object):
         img = np.moveaxis(imgData, 0, -1)  # Since rasterio is channel-first
         # Add border
         # [CV2] img = cv2.copyMakeBorder(img, topB, bottomB, leftB, rightB, cv2.BORDER_CONSTANT, None, [0, 0, 0])
-        img = np.pad(img, ((topB, bottomB), (leftB, rightB), (0, 0)))
+        padding = channel.nodata if channel.nodata is not None else 0
+        img = np.pad(img, ((topB, bottomB), (leftB, rightB), (0, 0)), constant_values=[padding])
         # [CV2] # Transform: Borders
         # [CV2] RTMat = cv2.getRotationMatrix2D((leftB, topB), rot, 1.0)
         # [CV2] RTMat[0, 2] += tra[0]
