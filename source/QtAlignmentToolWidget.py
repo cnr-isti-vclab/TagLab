@@ -4,6 +4,7 @@ from typing import Optional, Tuple, List
 
 import numpy as np
 import cv2
+import rasterio as rio
 
 from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot, QLineF, QRectF, QPoint, QPointF
 from PyQt5.QtGui import QImage, QMouseEvent, QPen, QFont, QCloseEvent, QKeyEvent, QOpenGLShaderProgram, QOpenGLShader, \
@@ -1691,13 +1692,13 @@ All markers must be valid to proceed.
         bottomB = int(max(bbox.bottom() - image2H, 0))
 
         # Extract geo-ref from the reference image
-        geoRef = None
+        with rio.open(image1.georef_filename, "r") as geoFile:
+            geoRef = geoFile.crs
+            geoTra = geoFile.transform
 
         # ================================ Image 2 =============================================
-        # Apply borders to georef
-        geoRef1 = None
         # Create a roto-translated copy
-        cpy2 = image2.copyTransform("_coreg", rot, T, [leftB, rightB, topB, bottomB], geoRef1)
+        cpy2 = image2.copyTransform("_coreg", rot, T, [leftB, rightB, topB, bottomB], geoTra, geoRef)
         # Add it to the project
         self.project.addNewImage(cpy2)
 
@@ -1705,11 +1706,9 @@ All markers must be valid to proceed.
         # Convert pixelSize of Image2 => pixelSize of Image1
         leftB = int(leftB * image2.pixelSize() / image1.pixelSize())
         topB = int(topB * image2.pixelSize() / image1.pixelSize())
-        # Apply borders to georef
-        geoRef2 = None
         # Create only when needed
         if leftB > 0 or topB > 0:
-            cpy1 = image1.copyTransform("_ref", 0, np.array([0, 0]), [leftB, 0, topB, 0], geoRef2)
+            cpy1 = image1.copyTransform("_ref", 0, np.array([0, 0]), [leftB, 0, topB, 0], geoTra, geoRef)
             self.project.addNewImage(cpy1)
 
         # ================================ End =============================================

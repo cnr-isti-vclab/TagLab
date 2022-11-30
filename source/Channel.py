@@ -38,12 +38,14 @@ class Channel(object):
         """
 
         if self.type == "RGB":
-            reader = QImageReader(self.filename)
-            self.qimage = reader.read()
-            if self.qimage.isNull():
-                print(reader.errorString())
-
-            self.qimage = self.qimage.convertToFormat(QImage.Format_RGB32)
+            # reader = QImageReader(self.filename)
+            # self.qimage = reader.read()
+            # if self.qimage.isNull():
+            #     print(reader.errorString())
+            # self.qimage = self.qimage.convertToFormat(QImage.Format_RGB32)
+            img = rio.open(self.filename).read()
+            img = np.moveaxis(img, 0, -1)  # Since Rasterio is channel first shape=(c, h, w)
+            self.qimage = utils.rgbToQImage(img)
 
         # typically the depth map is stored in a 32-bit Tiff
         if self.type == "DEM":

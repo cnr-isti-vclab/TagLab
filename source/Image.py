@@ -12,24 +12,25 @@ import numpy as np
 import os
 import cv2
 
+
 class Image(object):
-    def __init__(self, rect = [0.0, 0.0, 0.0, 0.0],
-        map_px_to_mm_factor = 1.0, width = None, height = None, channels = [], id = None, name = None,
-        acquisition_date = "",
-        georef_filename = "", workspace = [], metadata = {}, annotations = {}, layers = [],
-                 grid = {}, export_dataset_area = []):
+    def __init__(self, rect=[0.0, 0.0, 0.0, 0.0],
+                 map_px_to_mm_factor=1.0, width=None, height=None, channels=[], id=None, name=None,
+                 acquisition_date="",
+                 georef_filename="", workspace=[], metadata={}, annotations={}, layers=[],
+                 grid={}, export_dataset_area=[]):
 
-        #we have to select a standanrd enforced!
-        #in image standard (x, y, width height)
-        #in numpy standard (y, x, height, width) #no the mixed format we use now I REFUSE to use it.
-        #in range np format: (top, left, bottom, right)
-        #in GIS standard (bottom, left, top, right)
+        # we have to select a standanrd enforced!
+        # in image standard (x, y, width height)
+        # in numpy standard (y, x, height, width) #no the mixed format we use now I REFUSE to use it.
+        # in range np format: (top, left, bottom, right)
+        # in GIS standard (bottom, left, top, right)
 
-        self.rect = rect                                         #coordinates of the image. (in the spatial reference system)
-        self.map_px_to_mm_factor = map_px_to_mm_factor           #if we have a references system we should be able to recover this numner
-                                                                # otherwise we need to specify it.
+        self.rect = rect  # coordinates of the image. (in the spatial reference system)
+        self.map_px_to_mm_factor = map_px_to_mm_factor  # if we have a references system we should be able to recover this numner
+        # otherwise we need to specify it.
         self.width = width
-        self.height = height                                     #in pixels!
+        self.height = height  # in pixels!
 
         self.annotations = Annotation()
         for data in annotations:
@@ -47,16 +48,15 @@ class Image(object):
                 layer.shapes.append(shape)
             self.layers.append(layer)
 
-
         self.channels = list(map(lambda c: Channel(**c), channels))
 
-        self.id = id                                    # internal id used in correspondences it will never changes
-        self.name = name                                # a label for an annotated image
-        self.workspace = workspace                      # a polygon in spatial reference system (reserved for future uses)
+        self.id = id  # internal id used in correspondences it will never changes
+        self.name = name  # a label for an annotated image
+        self.workspace = workspace  # a polygon in spatial reference system (reserved for future uses)
         self.export_dataset_area = export_dataset_area  # this is the region exported for training
-        self.acquisition_date = acquisition_date        # acquisition date is mandatory (format YYYY-MM-DD)
-        self.georef_filename = georef_filename          # image file (GeoTiff) contained the georeferencing information
-        self.metadata = metadata                        # this follows image_metadata_template, do we want to allow freedom to add custome values?
+        self.acquisition_date = acquisition_date  # acquisition date is mandatory (format YYYY-MM-DD)
+        self.georef_filename = georef_filename  # image file (GeoTiff) contained the georeferencing information
+        self.metadata = metadata  # this follows image_metadata_template, do we want to allow freedom to add custome values?
 
         if grid:
             self.grid = Grid()
@@ -86,7 +86,6 @@ class Image(object):
             # this image contains georeference information
             self.georef_filename = filename
 
-
     def addChannel(self, filename, type):
         """
         This image add a channel to this image. The functions update the size (in pixels) and
@@ -105,7 +104,8 @@ class Image(object):
 
         # check image size limits
         if img.width > 32767 or img.height > 32767:
-            raise Exception("This map exceeds the image dimension handled by TagLab (the maximum size is 32767 x 32767).")
+            raise Exception(
+                "This map exceeds the image dimension handled by TagLab (the maximum size is 32767 x 32767).")
             return
 
         if img.crs is not None:
@@ -116,7 +116,6 @@ class Image(object):
         self.height = img.height
 
         self.channels.append(Channel(filename, type))
-
 
     def create_labels_table(self, labels):
         '''
@@ -131,7 +130,7 @@ class Image(object):
                 'Color': [],
                 'Class': [],
                 '#': np.zeros(len(labels), dtype=np.int),
-                'Coverage': np.zeros(len(labels),dtype=np.float)
+                'Coverage': np.zeros(len(labels), dtype=np.float)
             }
 
             for i, label in enumerate(labels):
@@ -147,7 +146,6 @@ class Image(object):
             self.cache_labels_table = df
             self.annotations.table_needs_update = False
             return df
-
 
     def create_data_table(self):
         '''
@@ -174,23 +172,22 @@ class Image(object):
                 'Id': np.zeros(number_of_seg, dtype=np.int),
                 'Class': [],
                 'Area': np.zeros(number_of_seg),
-                #'Surf. area': np.zeros(number_of_seg)
+                # 'Surf. area': np.zeros(number_of_seg)
             }
 
             for i, blob in enumerate(visible_blobs):
                 dict['Id'][i] = blob.id
                 dict['Class'].append(blob.class_name)
                 dict['Area'][i] = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
-    #            if blob.surface_area > 0.0:
-    #                dict['Surf. area'][i] = round(blob.surface_area * (scale_factor) * (scale_factor) / 100, 2)
+            #            if blob.surface_area > 0.0:
+            #                dict['Surf. area'][i] = round(blob.surface_area * (scale_factor) * (scale_factor) / 100, 2)
 
             # create dataframe
-            #df = pd.DataFrame(dict, columns=['Id', 'Class', 'Area', 'Surf. area'])
+            # df = pd.DataFrame(dict, columns=['Id', 'Class', 'Area', 'Surf. area'])
             df = pd.DataFrame(dict, columns=['Id', 'Class', 'Area'])
             self.cache_data_table = df
             self.annotations.table_needs_update = False
             return df
-
 
     def updateChannel(self, filename, type):
         img = rio.open(filename)
@@ -206,9 +203,9 @@ class Image(object):
             # this image contains georeference information
             self.georef_filename = filename
 
-        for index,channel in enumerate(self.channels):
+        for index, channel in enumerate(self.channels):
             if channel.type == type:
-               self.channels[index] = Channel(filename, type)
+                self.channels[index] = Channel(filename, type)
 
     def hasDEM(self):
         """
@@ -254,14 +251,15 @@ class Image(object):
 
         return data
 
-    def copyTransform(self, tag, rot, tra, borders, geoRef=None):
+    def copyTransform(self, tag, rot, tra, borders, geoTransform=None, geoRef=None):
         """
         Create a new Image applying an affine transformation and adding borders
         :param: name the new name for the image (functioning also as id)
         :param: rot the rotation component in degrees
         :param: tra the translation component
         :param: borders of the new image (positive offset) [left, right, top, bottom]
-        :param: geoRef the geo-reference of the new image (already transformed)
+        :param: geoTransform the transformation of the geo-reference
+        :param: geoRef the geo-reference of the new image
         :returns: the newly created image
         """
         [leftB, rightB, topB, bottomB] = borders
@@ -292,7 +290,7 @@ class Image(object):
             cpy.annotations.addBlob(blob, notify=False)
         # Add channels
         for ch in self.channels:
-            newFilename, w, h = self.__updateChannel(ch, tag, -rot, tra, borders, geoRef)
+            newFilename, w, h = self.__updateChannel(ch, tag, -rot, tra, borders, geoTransform, geoRef)
             # Update dimensions
             cpy.width = w
             cpy.height = h
@@ -301,7 +299,7 @@ class Image(object):
         # Result
         return cpy
 
-    def __updateChannel(self, channel, tag, rot, tra, borders, geoRef=None):
+    def __updateChannel(self, channel, tag, rot, tra, borders, geoTransform=None, geoRef=None):
         """
         Create a new image applying a transformation to a channel
         :param: channel the channel to transform
@@ -309,19 +307,21 @@ class Image(object):
         :param: rot the rotation degrees
         :param: tra the translation vector
         :param: borders the borders in order [left, right, top, bottom]
-        :param: geoRef the geo-reference of the new image (already transformed)
+        :param: geoTransform the transformation of the geo-reference
+        :param: geoRef the geo-reference of the new image
         :returns: newFilename, width, height of the new image
         """
         # Retrieve borders
         leftB, rightB, topB, bottomB = borders
         # Create new filename
-        filename, ext = os.path.splitext(channel.filename)
+        filename, _ = os.path.splitext(channel.filename)
+        ext = ".png" if channel.type == "RGB" and geoRef is None else ".tiff"
         # [CV2] newFilename = filename + tag + ext
-        newFilename = filename + tag + ".tiff"  # TODO: '.png' for color channel with no geo-ref
+        newFilename = filename + tag + ext  # TODO: always '.tiff' / '.png' (for color channel with no geo-ref)
         # Read "reference" image
         # [CV2] img = cv2.imread(channel.filename, cv2.IMREAD_COLOR)
-        img = rio.open(channel.filename).read()
-        img = np.moveaxis(img, 0, -1)  # Since rasterio is channel-first
+        imgData = rio.open(channel.filename).read()
+        img = np.moveaxis(imgData, 0, -1)  # Since rasterio is channel-first
         # Add border
         # [CV2] img = cv2.copyMakeBorder(img, topB, bottomB, leftB, rightB, cv2.BORDER_CONSTANT, None, [0, 0, 0])
         img = np.pad(img, ((topB, bottomB), (leftB, rightB), (0, 0)))
@@ -329,16 +329,29 @@ class Image(object):
         # [CV2] RTMat = cv2.getRotationMatrix2D((leftB, topB), rot, 1.0)
         # [CV2] RTMat[0, 2] += tra[0]
         # [CV2] RTMat[1, 2] += tra[1]
-        # Update sizes
-        (h, w, c) = img.shape
         # Transform: Rot + Tra
         # [CV2] img = cv2.warpAffine(img, RTMat, (w, h))
-        transformation = AffineTransform(scale=1.0, rotation=math.radians(rot), translation=tra)
-        img = warp(img, transformation)
+        transformation = AffineTransform(scale=1.0, rotation=math.radians(-rot), translation=tra)
+        img = warp(img, transformation.inverse, preserve_range=True)
         # Save with newly created filename
         # [CV2] cv2.imwrite(newFilename, img)
         img = np.moveaxis(img, -1, 0)  # Since rasterio is channel-first
-        with rio.open(newFilename, "w", driver='GTiff', width=w, height=h, dtype=img.dtype, count=str(c)) as dest:
-            dest.write(img)  # TODO: Add georef
+        # Update sizes
+        (c, h, w) = img.shape
+        # For geo-references
+        # mat1 = rio.transform.Affine.rotation(rot)
+        # mat2 = rio.transform.Affine.translation(tra[0], tra[1])
+        # geoMat = mat2 * mat1
+        geoMat = rio.transform.Affine.translation(-leftB + rightB, -topB + bottomB)
+        img = img.astype(imgData.dtype)
+        if ext == ".png":
+            with rio.open(newFilename, "w", driver='PNG', width=w, height=h, dtype=img.dtype, count=c) as dest:
+                dest.write(img)
+        else:
+            with rio.open(newFilename, "w", driver='GTiff', width=w, height=h, dtype=img.dtype, count=c) as dest:
+                dest.write(img)
+                if geoRef is not None:
+                    dest.crs = geoRef
+                    dest.transform = geoTransform * geoMat
         # Return (resource path, width, height)
         return newFilename, w, h
