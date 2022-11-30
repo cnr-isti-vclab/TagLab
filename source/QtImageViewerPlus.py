@@ -299,6 +299,7 @@ class QtImageViewerPlus(QtImageViewer):
 
         # clear selection and undo
         self.selected_blobs = []
+        self.selected_annpoints = []
         self.selectionChanged.emit()
         self.undo_data = Undo()
         self.undrawAllLayers()
@@ -307,6 +308,10 @@ class QtImageViewerPlus(QtImageViewer):
         for blob in self.annotations.seg_blobs:
             self.undrawBlob(blob)
             del blob
+
+        for annpoint in self.annotations.annpoints:
+            self.undrawAnnPoint(annpoint)
+            del annpoint
 
         # clear working area
         if self.working_area_rect is not None:
@@ -561,11 +566,12 @@ class QtImageViewerPlus(QtImageViewer):
 
         #choose a pen
         pen = self.annpoints_pen_selected if annpoint in self.selected_annpoints else self.annpoints_pen
-
-        annpoint.ellipse_gitem = self.scene.addEllipse(annpoint.coordx - 10, annpoint.coordy - 10, 20, 20, pen)
+        brush = self.project.classBrushFromName(annpoint)
+        annpoint.ellipse_gitem = self.scene.addEllipse(annpoint.coordx - 10, annpoint.coordy - 10, 20, 20, pen,brush)
         annpoint.cross1_gitem = self.scene.addLine(annpoint.coordx - 1, annpoint.coordy, annpoint.coordx +1, annpoint.coordy, pen )
         annpoint.cross2_gitem = self.scene.addLine(annpoint.coordx, annpoint.coordy-1, annpoint.coordx,
                                                   annpoint.coordy+1, pen)
+
 
         annpoint.cross1_gitem.setZValue(1)
         annpoint.cross2_gitem.setZValue(1)
@@ -683,6 +689,18 @@ class QtImageViewerPlus(QtImageViewer):
         blob.qpath = None
         blob.qpath_gitem = None
         blob.id_item = None
+        self.scene.invalidate()
+
+    def undrawAnnPoint(self, annpoint):
+
+        self.scene.removeItem(annpoint.cross1_gitem)
+        self.scene.removeItem(annpoint.cross2_gitem)
+        self.scene.removeItem(annpoint.ellipse_gitem)
+        self.scene.removeItem(annpoint.id_item)
+        annpoint.cross1_gitem = None
+        annpoint.cross2_gitem = None
+        annpoint.ellipse_gitem = None
+        annpoint.id_item = None
         self.scene.invalidate()
 
     def applyTransparency(self, value):
@@ -1034,6 +1052,16 @@ class QtImageViewerPlus(QtImageViewer):
                 continue
             self.addToSelectedList(blob)
 
+        for annpoint in self.annotations.annpoints:
+            visible = self.project.isLabelVisible(annpoint.class_name)
+            if not visible:
+                continue
+
+            if sx > annpoint.coordx-20 or sy > annpoint.coordy - 20 or x < annpoint.coordx+20 or y < annpoint.coordy +20:
+                continue
+            self.addToSelectedPointList(annpoint)
+
+
     @pyqtSlot(str)
     def setActiveLabel(self, label):
 
@@ -1095,10 +1123,22 @@ class QtImageViewerPlus(QtImageViewer):
                 self.working_area_rect.setPen(self.working_area_pen)
 
     def setBlobVisible(self, blob, visibility):
-        if blob.qpath_gitem is not None:
-            blob.qpath_gitem.setVisible(visibility)
-        if blob.id_item is not None:
-            blob.id_item.setVisible(visibility)
+
+        if type(blob) == Blob:
+
+            if blob.qpath_gitem is not None:
+                blob.qpath_gitem.setVisible(visibility)
+            if blob.id_item is not None:
+                blob.id_item.setVisible(visibility)
+
+        #do the same for annotated points
+        if type(blob) == Point:
+            if blob.cross1_gitem is not None:
+                blob.cross1_gitem.setVisible(visibility)
+                blob.cross2_gitem.setVisible(visibility)
+                blob.ellipse_gitem.setVisible(visibility)
+            if blob.id_item is not None:
+                blob.id_item.setVisible(visibility)
 
     def updateVisibility(self):
 
@@ -1106,7 +1146,9 @@ class QtImageViewerPlus(QtImageViewer):
             visibility = self.project.isLabelVisible(blob.class_name)
             self.setBlobVisible(blob, visibility)
 
-
+        for blob in self.annotations.annpoints:
+            visibility = self.project.isLabelVisible(blob.class_name)
+            self.setBlobVisible(blob, visibility)
 
 #SELECTED BLOBS MANAGEMENT
 

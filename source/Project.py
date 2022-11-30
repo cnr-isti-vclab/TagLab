@@ -336,10 +336,6 @@ class Project(object):
     #     color = self.labels[annpoint.class_name].fill
     #     brush = QBrush(QColor(color[0], color[1], color[2], 200))
     #     return brush
-    #
-
-
-
 
     def isLabelVisible(self, id):
         if not id in self.labels:
