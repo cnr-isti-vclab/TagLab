@@ -46,5 +46,21 @@ class Point(object):
 
 
 
+    def toDict(self):
+        """
+        Get the point information as a dictionary.
+        """
+        dict = {}
+        dict["Id"] = self.id
+        dict["X"] = self.coordx
+        dict["Y"] = self.coordy
+        dict["Class"] = self.class_name
+        dict["Note"] = self.note
+
+        return dict
+
+
+    def save(self):
+        return self.toDict()
 
 

@@ -1132,6 +1132,7 @@ class QtImageViewerPlus(QtImageViewer):
                 blob.id_item.setVisible(visibility)
 
         #do the same for annotated points
+
         if type(blob) == Point:
             if blob.cross1_gitem is not None:
                 blob.cross1_gitem.setVisible(visibility)
@@ -1266,6 +1267,7 @@ class QtImageViewerPlus(QtImageViewer):
         event.accept()
 
     def resetSelection(self):
+
         for blob in self.selected_blobs:
             if blob.qpath_gitem is None:
                 print("Selected item with no path!")

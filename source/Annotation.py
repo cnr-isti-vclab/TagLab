@@ -64,6 +64,7 @@ class Annotation(QObject):
         # list of all blobs
         self.seg_blobs = []
         self.annpoints = []
+        self.annotationsDict = {}
 
         #relative weight of depth map for refine borders
         #refactor: this is to be saved and loaded in qsettings
@@ -142,7 +143,11 @@ class Annotation(QObject):
         return [blob for blob in self.seg_blobs if blob.genet == genet]
 
     def save(self):
-        return self.seg_blobs
+
+        self.annotationsDict = { "regions": self.seg_blobs, "points": self.annpoints }
+
+
+        return self.annotationsDict
 
     #move to BLOB!
     def blobsFromMask(self, seg_mask, map_pos_x, map_pos_y, area_mask):

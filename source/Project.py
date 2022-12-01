@@ -13,6 +13,7 @@ from source.Channel import Channel
 from source.Annotation import Annotation
 from source.Shape import Layer, Shape
 from source.Blob import Blob
+from source.Point import Point
 from source.Label import Label
 from source.Correspondences import Correspondences
 from source.Genet import Genet
@@ -125,6 +126,8 @@ class ProjectEncoder(json.JSONEncoder):
         elif isinstance(obj, Label):
             return obj.save()
         elif isinstance(obj, Annotation):
+            return obj.save()
+        elif isinstance(obj, Point):
             return obj.save()
         elif isinstance(obj, Blob):
             return obj.save()
@@ -263,8 +266,7 @@ class Project(object):
         f = open(filename, "w")
         f.write(str)
         f.close()
-        #except Exception as a:
-        #    print(str(a))
+
 
     def loadDictionary(self, filename):
 
