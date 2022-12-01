@@ -74,6 +74,11 @@ class Annotation(QObject):
         # cache
         self.table_needs_update = True
 
+    def addPoint(self, point):
+
+        # super-basic; notification is not need for the moment
+        self.annpoints.append(point)
+
     def addBlob(self, blob, notify=True):
         used = [blob.id for blob in self.seg_blobs]
         if blob.id in used:
@@ -145,7 +150,6 @@ class Annotation(QObject):
     def save(self):
 
         self.annotationsDict = { "regions": self.seg_blobs, "points": self.annpoints }
-
 
         return self.annotationsDict
 
@@ -819,7 +823,7 @@ class Annotation(QObject):
                         classname = row[3]
                         point = Point(coordx, coordy, classname, id)
                         id = id + 1
-                        self.annpoints.append(point)
+                        self.addPoint(point)
 
                 print('puppa')
             except csv.Error as e:

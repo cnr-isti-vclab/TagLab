@@ -1,5 +1,6 @@
 from source.Channel import Channel
 from source.Blob import Blob
+from source.Point import Point
 from source.Shape import Layer, Shape
 from source.Annotation import Annotation
 from source.Grid import Grid
@@ -27,10 +28,20 @@ class Image(object):
         self.height = height                                     #in pixels!
 
         self.annotations = Annotation()
-        for data in annotations:
-            blob = Blob(None, 0, 0, 0)
-            blob.fromDict(data)
-            self.annotations.addBlob(blob)
+
+        regions = annotations.get("regions")
+        if regions is not None:
+            for data in regions:
+                blob = Blob(None, 0, 0, 0)
+                blob.fromDict(data)
+                self.annotations.addBlob(blob)
+
+        points = annotations.get("points")
+        if points is not None:
+            for data in points:
+                point = Point(0, 0, "Empty", 0)
+                point.fromDict(data)
+                self.annotations.addPoint(point)
 
         self.layers = []
         for layer_data in layers:

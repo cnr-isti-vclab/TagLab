@@ -216,10 +216,12 @@ class QtImageViewerPlus(QtImageViewer):
         self.selectionChanged.emit()
         #clear existing layers
 
-
         # draw all the annotations
         for blob in self.annotations.seg_blobs:
             self.drawBlob(blob)
+
+        for point in self.annotations.annpoints:
+            self.drawPointAnn(point)
 
         # draw the layers
         self.drawAllLayers()
