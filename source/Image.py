@@ -30,19 +30,28 @@ class Image(object):
         self.annotations = Annotation()
 
         if annotations is not None:
-            regions = annotations.get("regions")
-            if regions is not None:
-                for data in regions:
+
+            if type(annotations) == list:
+                for data in annotations:
                     blob = Blob(None, 0, 0, 0)
                     blob.fromDict(data)
                     self.annotations.addBlob(blob)
+            else:
+                regions = annotations.get("regions")
+                if regions is not None:
+                    for data in regions:
+                        blob = Blob(None, 0, 0, 0)
+                        blob.fromDict(data)
+                        self.annotations.addBlob(blob)
 
-            points = annotations.get("points")
-            if points is not None:
-                for data in points:
-                    point = Point(0, 0, "Empty", 0)
-                    point.fromDict(data)
-                    self.annotations.addPoint(point)
+                points = annotations.get("points")
+                if points is not None:
+                    for data in points:
+                        point = Point(0, 0, "Empty", 0)
+                        point.fromDict(data)
+                        self.annotations.addPoint(point)
+
+
 
         self.layers = []
         for layer_data in layers:
