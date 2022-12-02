@@ -2,7 +2,7 @@
 import numpy as np
 import json
 import ast
-from shapely.geometry import Polygon
+
 from osgeo import gdal, osr
 import osgeo.ogr as ogr
 import rasterio as rio
@@ -14,7 +14,8 @@ from source.Blob import Blob
 from source.Shape import Shape
 from source.Mask import subtract
 from numpy.linalg import inv
-
+import shapely
+from shapely.geometry import Polygon
 
 def changeFormat(contour, transform):
     """
@@ -193,6 +194,7 @@ def write_shapefile( project, image, blobs, georef_filename, out_shp):
     """
     https://gis.stackexchange.com/a/52708/8104
     """
+    shapely.speedups.disable()
     scale_factor = image.pixelSize()
     date = image.acquisition_date
     # load georeference information to use
