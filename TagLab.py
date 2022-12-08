@@ -66,6 +66,7 @@ from source.QtProgressBarCustom import QtProgressBarCustom
 from source.QtHistogramWidget import QtHistogramWidget
 from source.QtClassifierWidget import QtClassifierWidget
 from source.QtNewDatasetWidget import QtNewDatasetWidget
+from source.QtSampleWidget import QtSampleWidget
 from source.QtTrainingResultsWidget import QtTrainingResultsWidget
 from source.QtTYNWidget import QtTYNWidget
 from source.QtComparePanel import QtComparePanel
@@ -83,6 +84,7 @@ from source.QtDictionaryWidget import QtDictionaryWidget
 from source.QtRegionAttributesWidget import QtRegionAttributesWidget
 from source.QtShapefileAttributeWidget import QtAttributeWidget
 from source.QtPanelInfo import QtPanelInfo
+from source.Sampler import Sampler
 
 
 from source import utils
@@ -178,6 +180,7 @@ class TagLab(QMainWindow):
         self.projectEditor = None
         self.alignToolWidget = None
         self.editProjectWidget = None
+        self.samplePointWidget = None
         self.scale_widget = None
         self.dictionary_widget = None
         self.working_area_widget = None
@@ -1063,7 +1066,7 @@ class TagLab(QMainWindow):
 
         samplePointsAct = QAction("Sample Points On This Map", self)
         samplePointsAct.setStatusTip("Sample Points This Map")
-        samplePointsAct.triggered.connect(self.samplePointAnn)
+        samplePointsAct.triggered.connect(self.chooseSampling)
 
         self.pointmenu = menubar.addMenu("&Points")
         self.pointmenu.setStyleSheet(styleMenu)
@@ -3057,6 +3060,45 @@ class TagLab(QMainWindow):
         self.groupbox_blobpanel.region_attributes = self.project.region_attributes
 
     @pyqtSlot()
+    def chooseSampling(self):
+        # annotations = self.activeviewer.annotations
+        if self.activeviewer is not None:
+            if self.activeviewer.image is not None:
+                if self.samplePointWidget is None:
+                    self.disableSplitScreen()
+                    self.samplePointWidget = QtSampleWidget()
+                    # self.self.samplePointWidget.setWindowModality(Qt.NonModal)
+                    self.samplePointWidget.btnOK.clicked.connect(self.samplePointAnn())
+                self.samplePointWidget.show()
+
+    @pyqtSlot()
+    def samplePointAnn(self):
+
+        choosedmethod = self.samplePointWidget.comboMethod.currentText()
+        #here add check if .text is a number
+        choosedpointnumber = int(self.samplePointWidget.editNumber.text())
+        # print(choosedpointnumber)
+        # print(choosedmethod)
+
+        if self.project.working_area is not None:
+           area = self.project.working_area
+        else:
+           area = [0, 0, self.activeviewer.image.width, self.activeviewer.image.height]
+
+        image = self.activeviewer.image
+
+        sampler = Sampler(image,area, choosedmethod, choosedpointnumber)
+        # samples = sampler.generate()
+
+
+
+
+
+    @pyqtSlot()
+    def exportPointAnn(self):
+        pass
+
+    @pyqtSlot()
     def editProject(self):
         if self.editProjectWidget is None:
 
@@ -4306,14 +4348,6 @@ class TagLab(QMainWindow):
             self.activeviewer.drawAllPointsAnn()
 
             QApplication.restoreOverrideCursor()
-
-    @pyqtSlot()
-    def exportPointAnn(self):
-        pass
-
-    @pyqtSlot()
-    def samplePointAnn(self):
-        pass
 
     @pyqtSlot()
     def calculateAreaUsingSlope(self):
