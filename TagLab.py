@@ -3088,10 +3088,10 @@ class TagLab(QMainWindow):
         image = self.activeviewer.image
 
         sampler = Sampler(image,area, choosedmethod, choosedpointnumber)
-        # samples = sampler.generate()
+        x_1,y_1 = sampler.generate()
+        newpoint = Point(x_1, y_1, 'pocillopora', '1')
 
-
-
+        self.activeviewer.image.annotations.addPoint(newpoint)
 
 
     @pyqtSlot()

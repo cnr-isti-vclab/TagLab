@@ -17,24 +17,34 @@ import source.Mask as Mask
 from source import utils
 
 import time
+from source.Point import Point
 
 class Sampler(object):
     """
     """
-    def __init__(self, method, number):
+    def __init__(self, image, area, method, number):
 
+        self.image = image
+        self.area = area
         self.method = method
         self.number = number
 
-    def generate(self, area):
+    def generate(self):
 
-        top = area[0]
-        left = area[1]
-        w = area[2]
-        h = area[3]
+        top = self.area[0]
+        left = self.area[1]
+        w = self.area[2]
+        h = self.area[3]
 
 
         if self.method =='Grid Sampling':
+
+            # this area must be squared?
+
+            k = np.sqrt(self.number)
+            x = np.linspace(0, w, k)
+            y = np.linspace(0, h, k)
+            x_1, y_1 = np.meshgrid(x, y)
 
 
         elif self.method =='Uniform Sampling':
@@ -43,6 +53,8 @@ class Sampler(object):
 
         else:
             pass
+
+        return x_1,y_1
 
     def sampleSubAreaWImportanceSampling(self, area, current_samples):
         """

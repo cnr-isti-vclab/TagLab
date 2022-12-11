@@ -1,6 +1,6 @@
 from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QPainter, QImage, QPixmap, QIcon, qRgb, qRed, qGreen, qBlue
-from PyQt5.QtWidgets import QSlider,QGroupBox, QCheckBox,  QWidget, QDialog, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
+from PyQt5.QtWidgets import QSlider,QGroupBox, QMessageBox, QCheckBox,  QWidget, QDialog, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
 from source.Annotation import Annotation
 import numpy as np
 
@@ -9,6 +9,7 @@ from source import utils
 class QtSampleWidget(QWidget):
 
     closed = pyqtSignal()
+    apply = pyqtSignal()
 
     def __init__(self, parent=None):
         super(QtSampleWidget, self).__init__(parent)
@@ -58,6 +59,7 @@ class QtSampleWidget(QWidget):
         self.btnCancel = QPushButton("Cancel")
         self.btnCancel.clicked.connect(self.close)
         self.btnOK = QPushButton("Apply")
+        self.btnOK.clicked.connect(self.apply)
         layoutHB.setAlignment(Qt.AlignRight)
         layoutHB.addStretch()
         layoutHB.addWidget(self.btnCancel)
@@ -71,6 +73,18 @@ class QtSampleWidget(QWidget):
         self.setWindowTitle("Sampling Settings")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
+    @pyqtSlot()
+    def apply(self):
+
+        if isinstance(int(self.editNumber.text()), int):
+            self.apply.emit()
+            self.close()
+
+        else:
+            msgBox = QMessageBox()
+            msgBox.setText("Please, enter an integer number .")
+            msgBox.exec()
+            return
 
 
 

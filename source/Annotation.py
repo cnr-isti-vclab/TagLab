@@ -75,17 +75,6 @@ class Annotation(QObject):
         self.table_needs_update = True
 
 
-
-    def samplePoints(self, number):
-        pass
-
-
-
-
-
-
-
-
     def addPoint(self, point):
 
         # super-basic; notification is not need for the moment
