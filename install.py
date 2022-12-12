@@ -229,9 +229,11 @@ for package in install_requires:
 # installing torch, gdal and rasterio
 
 # torch and torchvision
-subprocess.check_call([sys.executable, "-m", "pip", "install", torch_package,
-                       torchvision_package, torch_extra_argument1,
-                       torch_extra_argument2])
+list_args = [sys.executable, "-m", "pip", "install", torch_package, torchvision_package]
+if torch_extra_argument1 != "":
+    list_args.append(torch_extra_argument1, torch_extra_argument2)
+
+subprocess.check_call(list_args)
 
 # gdal and rasterio
 
