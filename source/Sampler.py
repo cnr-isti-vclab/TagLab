@@ -22,12 +22,13 @@ from source.Point import Point
 class Sampler(object):
     """
     """
-    def __init__(self, image, area, method, number):
+    def __init__(self, image, area, method, number, offset):
 
         self.image = image
         self.area = area
         self.method = method
         self.number = number
+        self.offset = int(offset)
 
     def generate(self):
 
@@ -39,28 +40,27 @@ class Sampler(object):
 
         if self.method =='Grid Sampling':
 
-            # this area must be squared?
+        #     # this area must be squared?
 
             k = np.sqrt(self.number)
-            x = np.linspace(0, w, k)
-            y = np.linspace(0, h, k)
-            x_1, y_1 = np.meshgrid(x, y)
-
+            x = np.linspace(top + self.offset, w - self.offset, int(k))
+            y = np.linspace(left + self.offset, h - self.offset, int(k))
 
         elif self.method =='Uniform Sampling':
-            pass
-
-
-        else:
-            pass
-
-        return x_1,y_1
+          pass
+        #
+        #
+        # else:
+        #     pass
+        #
+        return x,y
 
     def sampleSubAreaWImportanceSampling(self, area, current_samples):
         """
         Sample the given area using the Poisson Disk sampling according to the given radius map.
         The area is stored as (top, left, width, height).
         """
+        offset = 200
 
         top = area[0]
         left = area[1]

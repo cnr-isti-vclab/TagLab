@@ -8,11 +8,15 @@ from source import utils
 
 class QtSampleWidget(QWidget):
 
-    closed = pyqtSignal()
-    apply = pyqtSignal()
+
+    # choosedSample = pyqtSignal(int)
+    # closewidget = pyqtSignal()
 
     def __init__(self, parent=None):
         super(QtSampleWidget, self).__init__(parent)
+
+        self.choosednumber = None
+        self.myoffset = None
 
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
 
@@ -39,10 +43,19 @@ class QtSampleWidget(QWidget):
         self.editNumber = QLineEdit()
         self.editNumber.setPlaceholderText("Type Number Of Point")
 
-        # layoutHN.setAlignment(Qt.AlignLeft)
-        # layoutHN.addStretch()
         layoutHN.addWidget(self.lblNumber)
         layoutHN.addWidget(self.editNumber)
+
+        layoutHOFF = QHBoxLayout()
+        self.lblOFF = QLabel("Offset (px): ")
+        self.editOFF = QLineEdit()
+        self.editOFF.setPlaceholderText("Type pixels of offset")
+
+        layoutHOFF.addWidget(self.lblOFF)
+        layoutHOFF.addWidget(self.editOFF)
+
+        # layoutHN.setAlignment(Qt.AlignLeft)
+        # layoutHN.addStretch()
         # layoutHM.addStretch()
 
         #self.checkWA = QCheckBox("Use Current Working Area")
@@ -51,8 +64,9 @@ class QtSampleWidget(QWidget):
         layoutInfo.setAlignment(Qt.AlignLeft)
         layoutInfo.addLayout(layoutHM)
         layoutInfo.addLayout(layoutHN)
-        #layoutInfo.addWidget(self.checkWA)
+        layoutInfo.addLayout(layoutHOFF)
 
+        #layoutInfo.addWidget(self.checkWA)
 
         layoutHB = QHBoxLayout()
 
@@ -76,18 +90,34 @@ class QtSampleWidget(QWidget):
     @pyqtSlot()
     def apply(self):
 
-        if isinstance(int(self.editNumber.text()), int):
-            self.apply.emit()
-            self.close()
+        self.choosednumber = None
+
+        if self.editNumber.text().isnumeric() == True:
+            self.choosednumber = int(self.editNumber.text())
+            # self.choosedSample.emit(int(self.editNumber.text()))
 
         else:
             msgBox = QMessageBox()
-            msgBox.setText("Please, enter an integer number .")
+            msgBox.setText("Please, enter an integer number.")
             msgBox.exec()
             return
 
+        self.myoffset = None
+
+        if self.editOFF.text().isnumeric() == True:
+            self.myoffset = int(self.editOFF.text())
+            # self.choosedSample.emit(int(self.editNumber.text()))
+
+        else:
+            msgBox = QMessageBox()
+            msgBox.setText("Please, enter an integer number.")
+            msgBox.exec()
+            return
+
+        self.close()
 
 
-    def closeEvent(self, event):
-        self.closed.emit()
+    # def closeEvent(self):
+    #     self.closewidget.emit()
+    #     # super(QtSampleWidgetWidget, self).closeEvent(event)
 

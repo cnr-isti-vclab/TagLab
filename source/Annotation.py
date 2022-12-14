@@ -184,6 +184,15 @@ class Annotation(QObject):
                 return id
         return len(used)
 
+    def getFreePointId(self):
+        used = []
+        for annpoint in self.annpoints:
+            used.append(annpoint.id)
+        for id in range(len(used)):
+            if id not in used:
+                return id
+        return len(used)
+
     def union(self, blobs):
         """
         Create a new blob that is the union of the (two) blobs given

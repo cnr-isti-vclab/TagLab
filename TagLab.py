@@ -3066,19 +3066,34 @@ class TagLab(QMainWindow):
             if self.activeviewer.image is not None:
                 if self.samplePointWidget is None:
                     self.disableSplitScreen()
-                    self.samplePointWidget = QtSampleWidget()
-                    # self.self.samplePointWidget.setWindowModality(Qt.NonModal)
-                    self.samplePointWidget.btnOK.clicked.connect(self.samplePointAnn())
-                self.samplePointWidget.show()
+                    self.samplePointWidget = QtSampleWidget(parent=self)
+                    self.samplePointWidget.setWindowModality(Qt.NonModal)
+                    self.samplePointWidget.show()
+                    self.samplePointWidget.btnOK.clicked.connect(self.samplePointAnn)
+                    # self.samplePointWidget.btnOK.clicked.connect(self.closeSamplingWidget)
+                    # self.samplePointWidget.closewidget.connect(self.closeSamplingWidget)
+
+    @pyqtSlot()
+    def closeSamplingWidget(self):
+        self.samplePointWidget.close()
+        self.samplePointWidget = None
+        self.setTool("MOVE")
+
 
     @pyqtSlot()
     def samplePointAnn(self):
 
         choosedmethod = self.samplePointWidget.comboMethod.currentText()
-        #here add check if .text is a number
-        choosedpointnumber = int(self.samplePointWidget.editNumber.text())
+
+
+        # choosedpointnumber = int(self.samplePointWidget.editNumber.text())
         # print(choosedpointnumber)
         # print(choosedmethod)
+        # choosedpointnumber = self.samplePointWidget.choosedSample[int]
+
+        choosedpointnumber = self.samplePointWidget.choosednumber
+        myoffset = self.samplePointWidget.myoffset
+
 
         if self.project.working_area is not None:
            area = self.project.working_area
@@ -3086,13 +3101,16 @@ class TagLab(QMainWindow):
            area = [0, 0, self.activeviewer.image.width, self.activeviewer.image.height]
 
         image = self.activeviewer.image
+        sampler = Sampler(image,area, choosedmethod, choosedpointnumber, myoffset)
+        x,y = sampler.generate()
 
-        sampler = Sampler(image,area, choosedmethod, choosedpointnumber)
-        x_1,y_1 = sampler.generate()
-        newpoint = Point(x_1, y_1, 'pocillopora', '1')
+        for x1 in x:
+            for y1 in y:
+               id = self.activeviewer.annotations.getFreePointId()
+               newpoint = Point(int(x1), int(y1), 'Empty', id)
+               self.activeviewer.image.annotations.addPoint(newpoint)
 
-        self.activeviewer.image.annotations.addPoint(newpoint)
-
+        self.activeviewer.drawAllPointsAnn()
 
     @pyqtSlot()
     def exportPointAnn(self):
