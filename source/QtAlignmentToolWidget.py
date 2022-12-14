@@ -1692,9 +1692,13 @@ All markers must be valid to proceed.
         bottomB = int(max(bbox.bottom() - image2H, 0))
 
         # Extract geo-ref from the reference image
-        with rio.open(image1.georef_filename, "r") as geoFile:
-            geoRef = geoFile.crs
-            geoTra = geoFile.transform
+        if image1.georef_filename is not None and image1.georef_filename != "":
+            with rio.open(image1.georef_filename, "r") as geoFile:
+                geoRef = geoFile.crs
+                geoTra = geoFile.transform
+        else:
+            geoRef = None
+            geoTra = None
 
         # ================================ Image 2 =============================================
         # Create a roto-translated copy

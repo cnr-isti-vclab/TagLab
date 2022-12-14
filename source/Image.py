@@ -352,6 +352,7 @@ class Image(object):
             with rio.open(newFilename, "w", driver='GTiff', width=w, height=h, dtype=img.dtype, count=c) as dest:
                 dest.write(img)
                 if geoRef is not None:
+                    dest.nodata = channel.nodata
                     dest.crs = geoRef
                     dest.transform = geoTransform * geoMat
         # Return (resource path, width, height)
