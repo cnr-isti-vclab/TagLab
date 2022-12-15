@@ -45,8 +45,6 @@ class Sampler(object):
 
         if self.method =='Grid Sampling':
 
-        # this area must be squared? What about rectangles?
-
             k = np.sqrt(self.number)
             x = np.linspace(xstart, xend, int(k))
             y = np.linspace(ystart, yend, int(k))

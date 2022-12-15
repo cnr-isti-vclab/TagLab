@@ -10,7 +10,7 @@ class QtSampleWidget(QWidget):
 
 
     # choosedSample = pyqtSignal(int)
-    # closewidget = pyqtSignal()
+    closewidget = pyqtSignal()
 
     def __init__(self, parent=None):
         super(QtSampleWidget, self).__init__(parent)
@@ -18,7 +18,7 @@ class QtSampleWidget(QWidget):
         self.choosednumber = None
         self.myoffset = None
 
-        self.setStyleSheet("background-color: rgb(40,40,40); color: white")
+        self.setStyleSheet("background-color: rgb(48,48,48); color: gray")
 
         layoutHM = QHBoxLayout()
 
@@ -28,7 +28,7 @@ class QtSampleWidget(QWidget):
         self.comboMethod.setMinimumWidth(300)
         self.comboMethod.addItem('Grid Sampling')
         self.comboMethod.addItem('Uniform Sampling')
-        self.comboMethod.addItem('Stratified Sampling')
+        # self.comboMethod.addItem('Stratified Sampling')
 
         # self.comboMethod.currentIndexChanged.connect(self.)
 
@@ -91,22 +91,11 @@ class QtSampleWidget(QWidget):
     def apply(self):
 
         self.choosednumber = None
+        self.myoffset = 0
 
-        if self.editNumber.text().isnumeric() == True:
+        if self.editNumber.text().isnumeric() == True and self.editOFF.text().isnumeric() == True:
             self.choosednumber = int(self.editNumber.text())
-            # self.choosedSample.emit(int(self.editNumber.text()))
-
-        else:
-            msgBox = QMessageBox()
-            msgBox.setText("Please, enter an integer number.")
-            msgBox.exec()
-            return
-
-        self.myoffset = None
-
-        if self.editOFF.text().isnumeric() == True:
             self.myoffset = int(self.editOFF.text())
-            # self.choosedSample.emit(int(self.editNumber.text()))
 
         else:
             msgBox = QMessageBox()
@@ -117,7 +106,7 @@ class QtSampleWidget(QWidget):
         self.close()
 
 
-    # def closeEvent(self):
-    #     self.closewidget.emit()
-    #     # super(QtSampleWidgetWidget, self).closeEvent(event)
+    def closeEvent(self,event):
+        self.closewidget.emit()
+        super(QtSampleWidget, self).closeEvent(event)
 

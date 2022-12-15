@@ -3061,7 +3061,6 @@ class TagLab(QMainWindow):
 
     @pyqtSlot()
     def chooseSampling(self):
-        # annotations = self.activeviewer.annotations
         if self.activeviewer is not None:
             if self.activeviewer.image is not None:
                 if self.samplePointWidget is None:
@@ -3070,8 +3069,11 @@ class TagLab(QMainWindow):
                     self.samplePointWidget.setWindowModality(Qt.NonModal)
                     self.samplePointWidget.show()
                     self.samplePointWidget.btnOK.clicked.connect(self.samplePointAnn)
-                    self.samplePointWidget.btnOK.clicked.connect(self.closeSamplingWidget)
+
+
+
                     self.samplePointWidget.btnCancel.clicked.connect(self.closeSamplingWidget)
+                    self.samplePointWidget.closewidget.connect(self.closeSamplingWidget)
 
     @pyqtSlot()
     def closeSamplingWidget(self):
@@ -3084,13 +3086,6 @@ class TagLab(QMainWindow):
     def samplePointAnn(self):
 
         choosedmethod = self.samplePointWidget.comboMethod.currentText()
-
-
-        # choosedpointnumber = int(self.samplePointWidget.editNumber.text())
-        # print(choosedpointnumber)
-        # print(choosedmethod)
-        # choosedpointnumber = self.samplePointWidget.choosedSample[int]
-
         choosedpointnumber = self.samplePointWidget.choosednumber
         myoffset = self.samplePointWidget.myoffset
 
@@ -3101,7 +3096,7 @@ class TagLab(QMainWindow):
            area = [0, 0, self.activeviewer.image.width, self.activeviewer.image.height]
 
         image = self.activeviewer.image
-        sampler = Sampler(image,area, choosedmethod, choosedpointnumber, myoffset)
+        sampler = Sampler(image, area, choosedmethod, choosedpointnumber, myoffset)
         points = sampler.generate()
 
         for point in points:
@@ -3110,6 +3105,7 @@ class TagLab(QMainWindow):
            self.activeviewer.image.annotations.addPoint(newpoint)
 
         self.activeviewer.drawAllPointsAnn()
+        self.closeSamplingWidget()
 
     @pyqtSlot()
     def exportPointAnn(self):
