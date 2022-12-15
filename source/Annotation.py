@@ -94,14 +94,22 @@ class Annotation(QObject):
 
     def removeBlob(self, blob, notify=True):
 
-        # notification that a blob is going to be removed
-        if notify:
-            self.blobRemoved.emit(blob)
+        """ removes both regions and points (they are both called blob)"""
 
-        index = self.seg_blobs.index(blob)
-        del self.seg_blobs[index]
+        if type(blob) == Point:
+           index= self.annpoints.index(blob)
+           del self.annpoints[index]
+           # update table is missing
 
-        self.table_needs_update = True
+        else:
+            # notification that a blob is going to be removed
+            if notify:
+                self.blobRemoved.emit(blob)
+
+            index = self.seg_blobs.index(blob)
+            del self.seg_blobs[index]
+
+            self.table_needs_update = True
 
     def updateBlob(self, old_blob, new_blob):
 

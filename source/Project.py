@@ -396,12 +396,14 @@ class Project(object):
 
     def removeBlob(self, image, blob):
 
-        # updata image annotations
+        # updata image annotations (this are both blob and annpoints)
         image.annotations.removeBlob(blob)
 
         # update correspondences
         for corr in self.findCorrespondences(image):
             corr.removeBlob(image, blob)
+
+
 
     def updateBlob(self, image, old_blob, new_blob):
 

@@ -1328,11 +1328,20 @@ class QtImageViewerPlus(QtImageViewer):
         """
         The only function to remove annotations.
         """
-        self.removeFromSelectedList(blob)
-        self.undrawBlob(blob)
-        self.undo_data.removeBlob(blob)
-        #self.annotations.removeBlob(blob)
-        self.project.removeBlob(self.image, blob)
+        if type(blob) == Point:
+
+            self.removeFromSelectedPointList(blob)
+            self.undrawAnnPoint(blob)
+            #undo is missing
+            self.image.annotations.removeBlob(blob)
+
+        else:
+
+            self.removeFromSelectedList(blob)
+            self.undrawBlob(blob)
+            self.undo_data.removeBlob(blob)
+            #self.annotations.removeBlob(blob)
+            self.project.removeBlob(self.image, blob)
 
     def updateBlob(self, old_blob, new_blob, selected = False):
 
@@ -1357,6 +1366,10 @@ class QtImageViewerPlus(QtImageViewer):
 
         for blob in self.selected_blobs:
             self.removeBlob(blob)
+
+        for annpoint in self.selected_annpoints:
+            self.removeBlob(annpoint)
+
         self.saveUndo()
 
     @pyqtSlot(str)
