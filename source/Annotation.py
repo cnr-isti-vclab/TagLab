@@ -823,7 +823,6 @@ class Annotation(QObject):
             reader = csv.reader(f)
             try:
                 self.annpoints = []
-                id = 0
                 for row in reader:
                     if row[0] == imagename:
                         # coralnet exports all the annotation of a image set in a single csv else, file names doesn't match
@@ -831,8 +830,7 @@ class Annotation(QObject):
                         coordx = int(row[2])
                         coordy= int(row[1])
                         classname = row[3]
-                        point = Point(coordx, coordy, classname, id)
-                        id = id + 1
+                        point = Point(coordx, coordy, classname, self.getFreePointId())
                         self.addPoint(point)
 
             except csv.Error as e:
