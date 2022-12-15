@@ -3070,8 +3070,8 @@ class TagLab(QMainWindow):
                     self.samplePointWidget.setWindowModality(Qt.NonModal)
                     self.samplePointWidget.show()
                     self.samplePointWidget.btnOK.clicked.connect(self.samplePointAnn)
-                    # self.samplePointWidget.btnOK.clicked.connect(self.closeSamplingWidget)
-                    # self.samplePointWidget.closewidget.connect(self.closeSamplingWidget)
+                    self.samplePointWidget.btnOK.clicked.connect(self.closeSamplingWidget)
+                    self.samplePointWidget.btnCancel.clicked.connect(self.closeSamplingWidget)
 
     @pyqtSlot()
     def closeSamplingWidget(self):
@@ -3102,13 +3102,12 @@ class TagLab(QMainWindow):
 
         image = self.activeviewer.image
         sampler = Sampler(image,area, choosedmethod, choosedpointnumber, myoffset)
-        x,y = sampler.generate()
+        points = sampler.generate()
 
-        for x1 in x:
-            for y1 in y:
-               id = self.activeviewer.annotations.getFreePointId()
-               newpoint = Point(int(x1), int(y1), 'Empty', id)
-               self.activeviewer.image.annotations.addPoint(newpoint)
+        for point in points:
+           id = self.activeviewer.annotations.getFreePointId()
+           newpoint = Point(int(point[0]), int(point[1]), 'Empty', id)
+           self.activeviewer.image.annotations.addPoint(newpoint)
 
         self.activeviewer.drawAllPointsAnn()
 

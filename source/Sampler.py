@@ -1,7 +1,7 @@
 
 import math
 import copy
-import numpy as np
+import numpy as np, random
 
 from skimage import measure
 from scipy import ndimage as ndi
@@ -36,52 +36,78 @@ class Sampler(object):
         left = self.area[1]
         w = self.area[2]
         h = self.area[3]
+        xstart = left + self.offset
+        xend = left + w - self.offset
+        ystart = top + self.offset
+        yend = top + h - self.offset
 
+        points = []
 
         if self.method =='Grid Sampling':
 
-        #     # this area must be squared?
+        # this area must be squared? What about rectangles?
 
             k = np.sqrt(self.number)
-            x = np.linspace(top + self.offset, w - self.offset, int(k))
-            y = np.linspace(left + self.offset, h - self.offset, int(k))
+            x = np.linspace(xstart, xend, int(k))
+            y = np.linspace(ystart, yend, int(k))
+
+            for x1 in x:
+                for y1 in y:
+                    point = (x1,y1)
+                    points.append(point)
 
         elif self.method =='Uniform Sampling':
-          pass
-        #
-        #
-        # else:
-        #     pass
-        #
-        return x,y
 
-    def sampleSubAreaWImportanceSampling(self, area, current_samples):
-        """
-        Sample the given area using the Poisson Disk sampling according to the given radius map.
-        The area is stored as (top, left, width, height).
-        """
-        offset = 200
+            radius = 1
+            rangeX = (xstart, xend)
+            rangeY = (ystart, yend)
+            qty = self.number
 
-        top = area[0]
-        left = area[1]
-        w = area[2]
-        h = area[3]
+            deltas = set()
+            for x in range(-radius, radius + 1):
+                for y in range(-radius, radius + 1):
+                    if x * x + y * y <= radius * radius:
+                        deltas.add((x, y))
+            points = []
+            excluded = set()
+            i = 0
+            while i < qty:
+                x = random.randrange(*rangeX)
+                y = random.randrange(*rangeY)
+                if (x, y) in excluded: continue
+                points.append((x, y))
+                i += 1
+                excluded.update((x + dx, y + dy) for (dx, dy) in deltas)
 
-        for i in range(30):
-            px = rnd.randint(left, left + w - 1)
-            py = rnd.randint(top, top + h - 1)
+        return points
 
-            r1 = self.radius_map[py, px]
-
-            flag = True
-            for sample in current_samples:
-                r2 = self.radius_map[sample[1], sample[0]]
-                d = math.sqrt((sample[0] - px) * (sample[0] - px) + (sample[1] - py) * (sample[1] - py))
-                if d < (r1 + r2) / 2.0:
-                    flag = False
-                    break
-
-            if flag is True:
-                current_samples.append((px, py))
-
-        return current_samples
+    # def sampleSubAreaWImportanceSampling(self, area, current_samples):
+    #     """
+    #     Sample the given area using the Poisson Disk sampling according to the given radius map.
+    #     The area is stored as (top, left, width, height).
+    #     """
+    #     offset = 200
+    #
+    #     top = area[0]
+    #     left = area[1]
+    #     w = area[2]
+    #     h = area[3]
+    #
+    #     for i in range(30):
+    #         px = rnd.randint(left, left + w - 1)
+    #         py = rnd.randint(top, top + h - 1)
+    #
+    #         r1 = self.radius_map[py, px]
+    #
+    #         flag = True
+    #         for sample in current_samples:
+    #             r2 = self.radius_map[sample[1], sample[0]]
+    #             d = math.sqrt((sample[0] - px) * (sample[0] - px) + (sample[1] - py) * (sample[1] - py))
+    #             if d < (r1 + r2) / 2.0:
+    #                 flag = False
+    #                 break
+    #
+    #         if flag is True:
+    #             current_samples.append((px, py))
+    #
+    #     return current_samples
