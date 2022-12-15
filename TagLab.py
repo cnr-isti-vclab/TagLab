@@ -3069,18 +3069,13 @@ class TagLab(QMainWindow):
                     self.samplePointWidget.setWindowModality(Qt.NonModal)
                     self.samplePointWidget.show()
                     self.samplePointWidget.btnOK.clicked.connect(self.samplePointAnn)
-
-
-
-                    self.samplePointWidget.btnCancel.clicked.connect(self.closeSamplingWidget)
                     self.samplePointWidget.closewidget.connect(self.closeSamplingWidget)
 
     @pyqtSlot()
     def closeSamplingWidget(self):
-        self.samplePointWidget.close()
+
         self.samplePointWidget = None
         self.setTool("MOVE")
-
 
     @pyqtSlot()
     def samplePointAnn(self):

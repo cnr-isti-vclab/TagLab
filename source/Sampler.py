@@ -1,23 +1,7 @@
 
 import math
-import copy
 import numpy as np, random
 
-from skimage import measure
-from scipy import ndimage as ndi
-from PyQt5.QtGui import QPainterPath, QPolygonF
-from PyQt5.QtCore import QPointF
-
-from skimage.morphology import square, binary_dilation, binary_erosion
-from skimage.measure import points_in_poly
-
-from cv2 import fillPoly
-
-import source.Mask as Mask
-from source import utils
-
-import time
-from source.Point import Point
 
 class Sampler(object):
     """
@@ -45,9 +29,10 @@ class Sampler(object):
 
         if self.method =='Grid Sampling':
 
-            k = np.sqrt(self.number)
-            x = np.linspace(xstart, xend, int(k))
-            y = np.linspace(ystart, yend, int(k))
+            area_cell = (w * h) / self.number
+            step = math.sqrt(area_cell)
+            x = np.linspace(xstart, xend, int(w / step))
+            y = np.linspace(ystart, yend, int(h / step))
 
             for x1 in x:
                 for y1 in y:
@@ -69,9 +54,11 @@ class Sampler(object):
             points = []
             excluded = set()
             i = 0
-            while i < qty:
+            counter = 0
+            while i < qty and counter < qty*50:
                 x = random.randrange(*rangeX)
                 y = random.randrange(*rangeY)
+                counter += 1
                 if (x, y) in excluded: continue
                 points.append((x, y))
                 i += 1

@@ -18,7 +18,7 @@ class QtSampleWidget(QWidget):
         self.choosednumber = None
         self.myoffset = None
 
-        self.setStyleSheet("background-color: rgb(48,48,48); color: gray")
+        self.setStyleSheet("background-color: rgb(40,40,40); color: white")
 
         layoutHM = QHBoxLayout()
 
@@ -102,8 +102,6 @@ class QtSampleWidget(QWidget):
             msgBox.setText("Please, enter an integer number.")
             msgBox.exec()
             return
-
-        self.close()
 
 
     def closeEvent(self,event):
