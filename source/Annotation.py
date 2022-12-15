@@ -828,14 +828,13 @@ class Annotation(QObject):
                     if row[0] == imagename:
                         # coralnet exports all the annotation of a image set in a single csv else, file names doesn't match
                         # here, if plot name == image.name then extract coords
-                        coordx= int(row[1])
-                        coordy = int(row[2])
+                        coordx = int(row[2])
+                        coordy= int(row[1])
                         classname = row[3]
                         point = Point(coordx, coordy, classname, id)
                         id = id + 1
                         self.addPoint(point)
 
-                print('puppa')
             except csv.Error as e:
                 sys.exit('file {}, line {}: {}'.format(filename, reader.line_num, e))
 
