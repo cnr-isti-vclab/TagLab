@@ -238,13 +238,20 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.activated.emit()
 
-    def toggleAnnotations(self, enable):
-        for blob in self.annotations.seg_blobs:
-            if enable:
-                self.drawBlob(blob)
-            else:
-                self.undrawBlob(blob)
+    def toggleAnnotations(self, type, enable):
 
+        if type == "regions":
+            for blob in self.annotations.seg_blobs:
+                if enable:
+                    self.drawBlob(blob)
+                else:
+                    self.undrawBlob(blob)
+        else:
+            for point in self.annotations.annpoints:
+                if enable:
+                    self.drawPointAnn(point)
+                else:
+                    self.undrawAnnPoint(point)
 
     def updateImageProperties(self):
         """

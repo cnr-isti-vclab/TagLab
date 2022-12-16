@@ -3554,13 +3554,14 @@ class TagLab(QMainWindow):
             layer.disable()
             self.viewerplus.undrawLayer(layer)
 
-    @pyqtSlot(Image, bool)
-    def toggleAnnotations(self, image, enable):
+    @pyqtSlot(str, Image, bool)
+    def toggleAnnotations(self, annotation_type, image, enable):
+
         if self.viewerplus.image == image:
-            self.viewerplus.toggleAnnotations(enable)
+            self.viewerplus.toggleAnnotations(annotation_type, enable)
 
         if self.viewerplus2.image == image:
-            self.viewerplus2.toggleAnnotations(enable)
+            self.viewerplus2.toggleAnnotations(annotation_type, enable)
 
 
     @pyqtSlot()
