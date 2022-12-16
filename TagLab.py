@@ -303,7 +303,7 @@ class TagLab(QMainWindow):
         self.viewerplus.logfile = logfile
         self.viewerplus.viewUpdated.connect(self.updateViewInfo)
         self.viewerplus.activated.connect(self.setActiveViewer)
-        self.viewerplus.updateInfoPanel[Blob].connect(self.updatePanelInfo)
+        self.viewerplus.updateInfoPanel.connect(self.updatePanelInfo)
         self.viewerplus.mouseMoved[float, float].connect(self.updateMousePos)
         self.viewerplus.selectionChanged.connect(self.updateEditActions)
         self.viewerplus.selectionReset.connect(self.resetPanelInfo)
@@ -313,7 +313,7 @@ class TagLab(QMainWindow):
         self.viewerplus2.logfile = logfile
         self.viewerplus2.viewUpdated.connect(self.updateViewInfo)
         self.viewerplus2.activated.connect(self.setActiveViewer)
-        self.viewerplus2.updateInfoPanel[Blob].connect(self.updatePanelInfo)
+        self.viewerplus2.updateInfoPanel.connect(self.updatePanelInfo)
         self.viewerplus2.mouseMoved[float, float].connect(self.updateMousePos)
         self.viewerplus2.selectionChanged.connect(self.updateEditActions)
         self.viewerplus2.selectionReset.connect(self.resetPanelInfo)
@@ -524,7 +524,7 @@ class TagLab(QMainWindow):
         self.datadock.setWidget(self.groupbox_comparison)
         self.groupbox_comparison.setStyleSheet("padding: 0px")
 
-        self.blobdock = QDockWidget("Region Info", self)
+        self.blobdock = QDockWidget("Info and Attributes", self)
         self.blobdock.setWidget(self.groupbox_blobpanel)
 
 
@@ -2567,10 +2567,10 @@ class TagLab(QMainWindow):
         blob = self.viewerplus.annotations.blobById(blob_id)
         self.updatePanelInfo(blob)
 
-    @pyqtSlot(Blob)
-    def updatePanelInfo(self, blob):
+    @pyqtSlot(object)
+    def updatePanelInfo(self, blob_or_point):
         scale_factor = self.activeviewer.image.pixelSize()
-        self.groupbox_blobpanel.update(blob, scale_factor)
+        self.groupbox_blobpanel.update(blob_or_point, scale_factor)
 
     @pyqtSlot()
     def resetPanelInfo(self):

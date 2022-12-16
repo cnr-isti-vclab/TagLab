@@ -110,7 +110,7 @@ class QtImageViewerPlus(QtImageViewer):
     selectionReset = pyqtSignal()
 
     # custom signal
-    updateInfoPanel = pyqtSignal(Blob)
+    updateInfoPanel = pyqtSignal(object)
 
     activated = pyqtSignal()
     newSelection = pyqtSignal()
@@ -830,7 +830,7 @@ class QtImageViewerPlus(QtImageViewer):
                 self.removeFromSelectedPointList(selected_annpoint)
             else:
                 self.addToSelectedPointList(selected_annpoint)
-               # self.updateInfoPanel.emit(selected_annpoint)
+                self.updateInfoPanel.emit(selected_annpoint)
 
         self.newSelectionPoint.emit()
         self.logfile.info("[SELECTION][DOUBLE-CLICK] Selection ends.")

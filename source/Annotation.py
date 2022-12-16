@@ -52,11 +52,12 @@ class Annotation(QObject):
         Annotation point can't be manually edited or removed, only classified
     """
     blobAdded = pyqtSignal(Blob)
+    # pointAdded = pyqtSignal(Point)
     blobRemoved = pyqtSignal(Blob)
+    pointRemoved = pyqtSignal(Point)
     blobUpdated = pyqtSignal(Blob, Blob)
     blobClassChanged = pyqtSignal(str, Blob)
     annPointClassChanged = pyqtSignal(str, Point)
-    # pointAdded = pyqtSignal(Point)
 
     def __init__(self):
         super(QObject, self).__init__()
@@ -102,7 +103,9 @@ class Annotation(QObject):
         if type(blob) == Point:
            index= self.annpoints.index(blob)
            del self.annpoints[index]
-           # update table is missing
+
+           if notify:
+               self.pointRemoved.emit(point)
 
         else:
             # notification that a blob is going to be removed

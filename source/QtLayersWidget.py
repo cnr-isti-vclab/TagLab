@@ -164,8 +164,6 @@ class QtLayersWidget(QTreeWidget):
 
     def itemChecked(self, item):
 
-        print(item)
-
         checked = item.checkState(0) == Qt.Checked
         if item.type == 'image':
             self.setImage(item.image)
