@@ -55,7 +55,8 @@ class Annotation(QObject):
     blobRemoved = pyqtSignal(Blob)
     blobUpdated = pyqtSignal(Blob, Blob)
     blobClassChanged = pyqtSignal(str, Blob)
-    annPointClassChanged= pyqtSignal(str, Point)
+    annPointClassChanged = pyqtSignal(str, Point)
+    # pointAdded = pyqtSignal(Point)
 
     def __init__(self):
         super(QObject, self).__init__()
@@ -77,8 +78,10 @@ class Annotation(QObject):
 
     def addPoint(self, point):
 
-        # super-basic; notification is not need for the moment
         self.annpoints.append(point)
+
+        # if notify:
+        #     self.pointAdded.emit(point)
 
     def addBlob(self, blob, notify=True):
         used = [blob.id for blob in self.seg_blobs]

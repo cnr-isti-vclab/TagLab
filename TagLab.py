@@ -213,6 +213,7 @@ class TagLab(QMainWindow):
 
 
         self.btnMove               = self.newButton("move.png",     "Move",                   flatbuttonstyle1, self.move)
+        self.btnPoint              = self.newButton("point.png",    "Place annotation point", flatbuttonstyle1, self.placeAnnPoint)
         self.btnAssign             = self.newButton("bucket.png",   "Assign class",           flatbuttonstyle1, self.assign)
         self.btnEditBorder         = self.newButton("edit.png",     "Edit border",            flatbuttonstyle1, self.editBorder)
         self.btnCut                = self.newButton("scissors.png", "Cut segmentation",       flatbuttonstyle1, self.cut)
@@ -249,6 +250,7 @@ class TagLab(QMainWindow):
         layout_tools = QVBoxLayout()
         layout_tools.setSpacing(0)
         layout_tools.addWidget(self.btnMove)
+        layout_tools.addWidget(self.btnPoint)
         layout_tools.addWidget(self.btnDeepExtreme)
         layout_tools.addWidget(self.btnRitm)
         layout_tools.addWidget(self.btnFreehand)
@@ -2347,6 +2349,7 @@ class TagLab(QMainWindow):
     def resetToolbar(self):
 
         self.btnMove.setChecked(False)
+        self.btnPoint.setChecked(False)
         self.btnAssign.setChecked(False)
         self.btnEditBorder.setChecked(False)
         self.btnCut.setChecked(False)
@@ -2368,6 +2371,7 @@ class TagLab(QMainWindow):
     def setTool(self, tool):
         tools = {
             "MOVE"         : ["Pan"          , self.btnMove],
+            "PLACEANNPOINT": ["Place Annotation Point", self.btnPoint],
             "CREATECRACK"  : ["Crack"        , self.btnCreateCrack],
             "ASSIGN"       : ["Assign"       , self.btnAssign],
             "EDITBORDER"   : ["Edit Border"  , self.btnEditBorder],
@@ -2495,6 +2499,13 @@ class TagLab(QMainWindow):
         extreme of the corals and confirm the points by pressing SPACE.
         """
         self.setTool("DEEPEXTREME")
+
+    @pyqtSlot()
+    def placeAnnPoint(self):
+        """
+        Activate the "Deep Extreme" tool.
+        """
+        self.setTool("PLACEANNPOINT")
 
     @pyqtSlot()
     def ritm(self):
@@ -3389,7 +3400,7 @@ class TagLab(QMainWindow):
     @pyqtSlot()
     def updateToolStatus(self):
 
-        for button in [self.btnMove, self.btnAssign, self.btnEditBorder, self.btnCut, self.btnFreehand,
+        for button in [self.btnMove, self.btnPoint, self.btnAssign, self.btnEditBorder, self.btnCut, self.btnFreehand,
                        self.btnCreateCrack, self.btnWatershed, self.btnBricksSegmentation, self.btnRuler, self.btnDeepExtreme,
                        self.btnRitm, self.btnAutoClassification, self.btnCreateGrid, self.btnGrid]:
             button.setEnabled(len(self.project.images) > 0)

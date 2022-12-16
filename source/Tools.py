@@ -19,6 +19,7 @@ from source.tools.DeepExtreme import DeepExtreme
 from source.tools.Match import Match
 from source.tools.SelectArea import SelectArea
 from source.tools.Ritm import Ritm
+from source.tools.PlaceAnnPoint import PlaceAnnPoint
 
 
 
@@ -53,6 +54,7 @@ class Tools(object):
             "BRICKS": BricksSegmentation(self.viewerplus),
             "RULER": Ruler(self.viewerplus, self.pick_points),
             "DEEPEXTREME": DeepExtreme(self.viewerplus, self.pick_points),
+            "PLACEANNPOINT": PlaceAnnPoint(self.viewerplus),
             "MATCH": Match(self.viewerplus),
             "SELECTAREA": SelectArea(self.viewerplus, self.pick_points),
             "RITM": Ritm(self.viewerplus, self.corrective_points)

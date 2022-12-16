@@ -747,7 +747,7 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.tools.setTool(tool)
 
-        if tool in ["FREEHAND", "RULER", "DEEPEXTREME"] or (tool in ["CUT", "EDITBORDER", "RITM"] and len(self.selected_blobs) > 1):
+        if tool in ["FREEHAND", "RULER", "DEEPEXTREME", "PLACEANNPOINT"] or (tool in ["CUT", "EDITBORDER", "RITM"] and len(self.selected_blobs) > 1):
             self.resetSelection()
 
         if tool == "RITM":
@@ -768,13 +768,13 @@ class QtImageViewerPlus(QtImageViewer):
                 lbl = Label("", "", fill=[0, 0, 0])
                 self.tools.tools["WATERSHED"].setActiveLabel(lbl)
 
-        if tool == "DEEPEXTREME":
+        if tool == "DEEPEXTREME" or tool == "PLACEANNPOINT":
             self.showCrossair = True
         else:
             self.showCrossair = False
 
         # WHEN panning is active or not
-        if tool == "MOVE" or tool == "MATCH" or tool == "DEEPEXTREME" or tool == "RITM":
+        if tool == "MOVE" or tool == "MATCH" or tool == "DEEPEXTREME" or tool == "RITM" or tool == "PLACEANNPOINT":
             self.enablePan()
         else:
             self.disablePan()  # in this case, it is possible to PAN only moving the mouse and pressing the CTRL key
@@ -783,7 +783,7 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.tools.resetTools()
 
-        if self.tools.tool == "DEEPEXTREME":
+        if self.tools.tool == "DEEPEXTREME" or self.tools.tool == "PLACEANNPOINT":
             self.showCrossair = True
         else:
             self.showCrossair = False
@@ -862,7 +862,7 @@ class QtImageViewerPlus(QtImageViewer):
             #used from area selection and pen drawing,
             if (self.panEnabled and not (mods & Qt.ShiftModifier)) or (mods & Qt.ControlModifier):
                 self.setDragMode(QGraphicsView.ScrollHandDrag)
-            elif self.tools.tool == "MATCH" or self.tools.tool == "RITM" or self.tools.tool == "DEEPEXTREME":
+            elif self.tools.tool == "MATCH" or self.tools.tool == "RITM" or self.tools.tool == "DEEPEXTREME" or self.tools.tool == "PLACEANNPOINT":
                 self.tools.leftPressed(x, y, mods)
 
             elif mods & Qt.ShiftModifier:
@@ -1311,18 +1311,27 @@ class QtImageViewerPlus(QtImageViewer):
         """
         The only function to add annotations. will take care of undo and QGraphicItems.
         """
-        self.undo_data.addBlob(blob)
-        self.project.addBlob(self.image, blob)
-        self.drawBlob(blob)
 
-        if selected:
-            self.addToSelectedList(blob)
+        if type(blob) == Point:
+            self.drawPointAnn(blob)
+            if selected:
+                self.addToSelectedPointList(blob)
 
-        if self.fill_enabled is False:
-            blob.qpath_gitem.setBrush(QBrush(Qt.NoBrush))
+        else:
+            self.undo_data.addBlob(blob)
+            self.project.addBlob(self.image, blob)
+            self.drawBlob(blob)
 
-        if self.border_enabled is False:
-            blob.qpath_gitem.setPen(QPen(Qt.NoPen))
+            if selected:
+                self.addToSelectedList(blob)
+
+            if self.fill_enabled is False:
+                blob.qpath_gitem.setBrush(QBrush(Qt.NoBrush))
+
+            if self.border_enabled is False:
+                blob.qpath_gitem.setPen(QPen(Qt.NoPen))
+
+
 
     def removeBlob(self, blob):
         """
