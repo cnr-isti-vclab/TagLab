@@ -200,7 +200,7 @@ height: 0px;
             except:
                 pass
 
-                self.data = self.activeImg.create_data_table()
+            self.data = self.activeImg.create_data_table()
 
         if self.model is None:
             self.model = TableModel(self.data)

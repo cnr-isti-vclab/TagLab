@@ -186,22 +186,7 @@ class Image(object):
                         name_list.append(index)
                         visible_blobs.append(blob)
 
-            number_of_seg = len(name_list)
-            dict = {
-                'Id': np.zeros(number_of_seg, dtype=np.int),
-                'Type': [],
-                'Class': [],
-                'Area': np.zeros(number_of_seg),
-                #'Surf. area': np.zeros(number_of_seg)
-            }
-
-            for i, blob in enumerate(visible_blobs):
-                dict['Id'][i] = blob.id
-                dict['Type'][i] = 'Region'
-                dict['Class'].append(blob.class_name)
-                dict['Area'][i] = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
-    #            if blob.surface_area > 0.0:
-    #                dict['Surf. area'][i] = round(blob.surface_area * (scale_factor) * (scale_factor) / 100, 2)
+            number_of_seg = len(visible_blobs)
 
             annpoint_list = []
             visible_annpoints = []
@@ -212,18 +197,29 @@ class Image(object):
                         annpoint_list.append(index)
                         visible_annpoints.append(annpoint)
 
-            number_of_points = len(annpoint_list)
+            number_of_points = len(visible_annpoints)
+
             dict = {
-                'Id': np.zeros(number_of_points, dtype=np.int),
+                'Id': np.zeros(number_of_seg + number_of_points, dtype=np.int),
                 'Type': [],
                 'Class': [],
-                'Area': np.zeros(number_of_points),
+                'Area': np.zeros(number_of_seg + number_of_points),
+                #'Surf. area': np.zeros(number_of_seg)
             }
+
+            for i, blob in enumerate(visible_blobs):
+                dict['Id'][i] = blob.id
+                dict['Type'].append('Region')
+                dict['Class'].append(blob.class_name)
+                dict['Area'][i] = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
+    #            if blob.surface_area > 0.0:
+    #                dict['Surf. area'][i] = round(blob.surface_area * (scale_factor) * (scale_factor) / 100, 2)
+
             for i, annpoint in enumerate(visible_annpoints):
-                dict['Id'][i] = annpoint.id
-                dict['Type'][i] = 'Point'
+                dict['Id'][i + number_of_seg] = annpoint.id
+                dict['Type'].append('Point')
                 dict['Class'].append(annpoint.class_name)
-                dict['Area'][i] = 0
+                dict['Area'][i + number_of_seg] = 0.0
 
 
             df = pd.DataFrame(dict, columns=['Id','Type', 'Class', 'Area'])
