@@ -52,7 +52,7 @@ class Annotation(QObject):
         Annotation point can't be manually edited or removed, only classified
     """
     blobAdded = pyqtSignal(Blob)
-    # pointAdded = pyqtSignal(Point)
+    pointAdded = pyqtSignal(Point)
     blobRemoved = pyqtSignal(Blob)
     pointRemoved = pyqtSignal(Point)
     blobUpdated = pyqtSignal(Blob, Blob)
@@ -77,12 +77,11 @@ class Annotation(QObject):
         self.table_needs_update = True
 
 
-    def addPoint(self, point):
+    def addPoint(self, point, notify=True):
 
         self.annpoints.append(point)
-
-        # if notify:
-        #     self.pointAdded.emit(point)
+        if notify:
+            self.pointAdded.emit(point)
 
     def addBlob(self, blob, notify=True):
         used = [blob.id for blob in self.seg_blobs]

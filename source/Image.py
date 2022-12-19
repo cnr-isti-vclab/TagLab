@@ -178,6 +178,7 @@ class Image(object):
             # create a list of instances
             name_list = []
             visible_blobs = []
+            # select ONLY visible blobs
             for blob in self.annotations.seg_blobs:
                 if blob.qpath_gitem is not None:
                     if blob.qpath_gitem.isVisible():
@@ -188,6 +189,7 @@ class Image(object):
             number_of_seg = len(name_list)
             dict = {
                 'Id': np.zeros(number_of_seg, dtype=np.int),
+                'Type': [],
                 'Class': [],
                 'Area': np.zeros(number_of_seg),
                 #'Surf. area': np.zeros(number_of_seg)
@@ -195,16 +197,39 @@ class Image(object):
 
             for i, blob in enumerate(visible_blobs):
                 dict['Id'][i] = blob.id
+                dict['Type'][i] = 'Region'
                 dict['Class'].append(blob.class_name)
                 dict['Area'][i] = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
     #            if blob.surface_area > 0.0:
     #                dict['Surf. area'][i] = round(blob.surface_area * (scale_factor) * (scale_factor) / 100, 2)
 
-            # create dataframe
-            #df = pd.DataFrame(dict, columns=['Id', 'Class', 'Area', 'Surf. area'])
-            df = pd.DataFrame(dict, columns=['Id', 'Class', 'Area'])
+            annpoint_list = []
+            visible_annpoints = []
+            for annpoint in self.annotations.annpoints:
+                if annpoint.cross1_gitem is not None:
+                    if annpoint.cross1_gitem.isVisible():
+                        index = annpoint.id
+                        annpoint_list.append(index)
+                        visible_annpoints.append(annpoint)
+
+            number_of_points = len(annpoint_list)
+            dict = {
+                'Id': np.zeros(number_of_points, dtype=np.int),
+                'Type': [],
+                'Class': [],
+                'Area': np.zeros(number_of_points),
+            }
+            for i, annpoint in enumerate(visible_annpoints):
+                dict['Id'][i] = annpoint.id
+                dict['Type'][i] = 'Point'
+                dict['Class'].append(annpoint.class_name)
+                dict['Area'][i] = 0
+
+
+            df = pd.DataFrame(dict, columns=['Id','Type', 'Class', 'Area'])
             self.cache_data_table = df
             self.annotations.table_needs_update = False
+
             return df
 
 

@@ -22,6 +22,7 @@ from PyQt5.QtWidgets import QWidget, QSizePolicy, QComboBox, QLabel, QTableView,
 from PyQt5.QtGui import QColor
 import pandas as pd
 from source.Blob import Blob
+from source.Point import Point
 
 class TableModel(QAbstractTableModel):
     def __init__(self, data):
@@ -46,7 +47,7 @@ class TableModel(QAbstractTableModel):
                     return ""
 
             # format floating point values
-            if index.column() == 2 or index.column() == 3:
+            if index.column() == 3 or index.column() == 4:
                 txt = "{:.1f}".format(value) if value > 0 else ""
             else:
                 txt = str(value)
@@ -54,7 +55,7 @@ class TableModel(QAbstractTableModel):
             return txt
         
         if role == Qt.UserRole:
-            if index.column() == 1:
+            if index.column() == 2 or index.column() == 1:
                 return str(value)
 
             return float(value)
@@ -182,7 +183,24 @@ height: 0px;
             except:
                 pass
 
-            self.data = self.activeImg.create_data_table()
+            # do the same for point annotation
+
+            try:
+                self.activeImg.annotations.pointAdded[Point].connect(self.addBlob, type=Qt.UniqueConnection)
+            except:
+                pass
+
+            try:
+                self.activeImg.annotations.pointRemoved[Point].connect(self.removeBlob, type=Qt.UniqueConnection)
+            except:
+                pass
+
+            try:
+                self.activeImg.annotations.annPointClassChanged[str,Blob].connect(self.updateBlobClass, type=Qt.UniqueConnection)
+            except:
+                pass
+
+                self.data = self.activeImg.create_data_table()
 
         if self.model is None:
             self.model = TableModel(self.data)
@@ -199,6 +217,7 @@ height: 0px;
             self.data_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
             self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
             self.data_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
+            self.data_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.Stretch)
             self.data_table.horizontalHeader().showSection(0)
             self.data_table.update()
 
@@ -210,9 +229,14 @@ height: 0px;
     @pyqtSlot(Blob)
     def addBlob(self, blob):
 
-        scale_factor = self.activeImg.pixelSize()
-        area = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
-        new_row = {'Id': blob.id, 'Class': blob.class_name, 'Area':  area }
+        if type(blob) == Point:
+           new_row = {'Id': blob.id, 'Type': 'Point', 'Class': blob.class_name, 'Area': 0}
+
+        else:
+            scale_factor = self.activeImg.pixelSize()
+            area = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
+            new_row = {'Id': blob.id, 'Type': 'Region', 'Class': blob.class_name, 'Area': area}
+
         self.data = self.data.append(new_row, ignore_index=True)
 
         # index is recalculated so that index i corresponds to row i
