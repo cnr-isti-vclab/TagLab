@@ -833,6 +833,7 @@ class QtImageViewerPlus(QtImageViewer):
                 self.updateInfoPanel.emit(selected_annpoint)
 
         self.newSelectionPoint.emit()
+
         self.logfile.info("[SELECTION][DOUBLE-CLICK] Selection ends.")
 
     def updateCellState(self, x, y, state):

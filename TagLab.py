@@ -323,6 +323,8 @@ class TagLab(QMainWindow):
 
         self.viewerplus.newSelection.connect(self.showBlobOnTable)
 
+        self.viewerplus.newSelectionPoint.connect(self.showPointOnTable)
+
 
         #last activated viewerplus: redirect here context menu commands and keyboard commands
         self.activeviewer = None
@@ -478,7 +480,7 @@ class TagLab(QMainWindow):
 
         # SINGLE-VIEW DATA PANEL
         self.data_panel = QtTablePanel()
-        self.data_panel.selectionChanged.connect(self.showBlobOnViewer)
+        self.data_panel.selectionChanged.connect(self.showOnViewer)
         self.data_panel.selectionChanged.connect(self.updatePanelInfoSelected)
 
 
@@ -1921,7 +1923,7 @@ class TagLab(QMainWindow):
 
 
     @pyqtSlot()
-    def showBlobOnViewer(self):
+    def showOnViewer(self):
 
         self.viewerplus.resetSelection()
 
@@ -1931,19 +1933,30 @@ class TagLab(QMainWindow):
 
         for index in indexes:
             row = self.data_panel.data.iloc[index.row()]
-            blob_id = row['Id']
-            if blob_id < 0:
+            id = row['Id']
+            type = row['Type']
+            if id < 0:
                 print("OOOPS!")
                 continue
 
-            blob = self.viewerplus.annotations.blobById(blob_id)
-            self.viewerplus.addToSelectedList(blob)
+            if type == "R":
 
-            #scale = self.viewerplus.px_to_mm
-            box = blob.bbox
-            x = box[1] + box[2] / 2
-            y = box[0] + box[3] / 2
-            self.viewerplus.centerOn(x, y)
+                blob = self.viewerplus.annotations.blobById(id)
+                self.viewerplus.addToSelectedList(blob)
+
+                box = blob.bbox
+                x = box[1] + box[2] / 2
+                y = box[0] + box[3] / 2
+                self.viewerplus.centerOn(x, y)
+
+            else:
+
+                point = self.viewerplus.annotations.pointById(id)
+                self.viewerplus.addToSelectedPointList(point)
+
+                x = point.coordx
+                y = point.coordy
+                self.viewerplus.centerOn(x, y)
 
     @pyqtSlot()
     def showBlobOnTable(self):
@@ -1958,6 +1971,24 @@ class TagLab(QMainWindow):
             row = self.data_panel.data.index[self.data_panel.data["Id"] == blob.id].to_list()
             if row is not None:
                 rows += row
+        self.data_panel.blockSignals(True)
+        self.data_panel.selectRows(rows)
+        self.data_panel.blockSignals(False)
+
+    @pyqtSlot()
+    def showPointOnTable(self):
+
+        if self.activeviewer is None:
+            return
+
+        selected = self.activeviewer.selected_annpoints
+
+        rows = []
+        for point in selected:
+            row = self.data_panel.data.index[self.data_panel.data["Id"] == point.id].to_list()
+            if row is not None:
+                rows += row
+
         self.data_panel.blockSignals(True)
         self.data_panel.selectRows(rows)
         self.data_panel.blockSignals(False)
@@ -2552,20 +2583,27 @@ class TagLab(QMainWindow):
     #
     @pyqtSlot()
     def updatePanelInfoSelected(self):
+
         selected = self.data_panel.data_table.selectionModel().selectedRows()
         indexes = [self.data_panel.sortfilter.mapToSource(self.data_panel.sortfilter.index(index.row(), 0)) for index in selected]
         if len(indexes) == 0:
             self.resetPanelInfo()
             return
+
         index = indexes[0]
         row = self.data_panel.data.iloc[index.row()]
-        blob_id = row['Id']
-        if blob_id < 0:
+        id = row['Id']
+        type = row['Type']
+        if id < 0:
             print("OOOPS!")
             return
 
-        blob = self.viewerplus.annotations.blobById(blob_id)
-        self.updatePanelInfo(blob)
+        if type == 'R':
+            blob = self.viewerplus.annotations.blobById(id)
+            self.updatePanelInfo(blob)
+        else:
+            point = self.viewerplus.annotations.pointById(id)
+            self.updatePanelInfo(point)
 
     @pyqtSlot(object)
     def updatePanelInfo(self, blob_or_point):

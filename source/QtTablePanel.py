@@ -17,7 +17,7 @@
 # GNU General Public License (http://www.gnu.org/licenses/gpl.txt)
 # for more details.                                               
 from PyQt5.QtCore import Qt, QAbstractTableModel, QItemSelectionModel, QSortFilterProxyModel, QRegExp, QModelIndex, pyqtSlot, pyqtSignal
-from PyQt5.QtWidgets import QWidget, QSizePolicy, QComboBox, QLabel, QTableView, QHeaderView, \
+from PyQt5.QtWidgets import QWidget, QSizePolicy, QCheckBox, QComboBox, QLabel, QTableView, QHeaderView, \
     QHBoxLayout, QVBoxLayout, QAbstractItemView, QStyledItemDelegate, QAction, QMenu, QToolButton, QGridLayout, QLineEdit
 from PyQt5.QtGui import QColor
 import pandas as pd
@@ -143,16 +143,20 @@ class QtTablePanel(QWidget):
         self.checkBoxRegions = QCheckBox("Regions")
         self.checkBoxRegions.setChecked(True)
         self.checkBoxRegions.setMinimumWidth(40)
-        self.checkBoxRegions.stateChanged[int].connect(self.displayDataInTable)
-
+        self.checkBoxRegions.stateChanged[int].connect(self.displayDataByType)
 
         self.checkBoxPoints = QCheckBox("Points")
         self.checkBoxPoints.setChecked(True)
-        self.checkBoxRegions.setMinimumWidth(40)
-        self.checkBoxRegions.stateChanged[int].connect(self.displayDataInTable)
+        self.checkBoxPoints.setMinimumWidth(40)
+        self.checkBoxPoints.stateChanged[int].connect(self.displayDataByType)
+
+        layoutCheckbox = QHBoxLayout()
+        layoutCheckbox.addWidget(self.checkBoxRegions)
+        layoutCheckbox.addWidget(self.checkBoxPoints)
 
         layout = QVBoxLayout()
         layout.addLayout(filter_layout)
+        layout.addLayout(layoutCheckbox)
         layout.addWidget(self.data_table)
 
         self.setLayout(layout)
@@ -160,10 +164,32 @@ class QtTablePanel(QWidget):
         self.project = None
         self.activeImg = None
 
-    def displayDataInTable(self):
+    def displayDataByType(self):
 
-        if self.checkBoxBorders.isChecked():
-            pass
+        if self.data is None:
+            return
+
+        regions = False
+        points = False
+
+        if self.checkBoxRegions.isChecked():
+            regions = True
+
+        if self.checkBoxPoints.isChecked():
+            points = True
+
+        if regions == True and points == True:
+            self.sortfilter.setFilterRegExp(QRegExp())
+        else:
+            self.sortfilter.setFilterKeyColumn(1)
+
+            if regions == True:
+                self.sortfilter.setFilterRegExp('R')
+            else:
+                self.sortfilter.setFilterRegExp('P')
+
+            self.sortfilter.setFilterRole(Qt.DisplayRole)
+
 
     def setTable(self, project, img):
 
@@ -230,7 +256,8 @@ class QtTablePanel(QWidget):
             self.data_table.setEditTriggers(QAbstractItemView.DoubleClicked)
 
             self.data_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
-            self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+            self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Fixed)
+            self.data_table.setColumnWidth(1, 40)
             self.data_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
             self.data_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.Stretch)
             self.data_table.horizontalHeader().showSection(0)
@@ -245,12 +272,12 @@ class QtTablePanel(QWidget):
     def addBlob(self, blob):
 
         if type(blob) == Point:
-           new_row = {'Id': blob.id, 'Type': 'Point', 'Class': blob.class_name, 'Area': 0}
+           new_row = {'Id': blob.id, 'Type': 'P', 'Class': blob.class_name, 'Area': 0}
 
         else:
             scale_factor = self.activeImg.pixelSize()
             area = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
-            new_row = {'Id': blob.id, 'Type': 'Region', 'Class': blob.class_name, 'Area': area}
+            new_row = {'Id': blob.id, 'Type': 'R', 'Class': blob.class_name, 'Area': area}
 
         self.data = self.data.append(new_row, ignore_index=True)
 

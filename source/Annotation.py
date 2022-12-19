@@ -104,7 +104,7 @@ class Annotation(QObject):
            del self.annpoints[index]
 
            if notify:
-               self.pointRemoved.emit(point)
+               self.pointRemoved.emit(blob)
 
         else:
             # notification that a blob is going to be removed
@@ -156,6 +156,12 @@ class Annotation(QObject):
         for blob in self.seg_blobs:
             if blob.id == id:
                 return blob
+        return None
+
+    def pointById(self, id):
+        for point in self.annpoints:
+            if point.id == id:
+                return point
         return None
 
     def blobByGenet(self, genet):

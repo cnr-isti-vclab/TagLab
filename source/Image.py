@@ -209,7 +209,7 @@ class Image(object):
 
             for i, blob in enumerate(visible_blobs):
                 dict['Id'][i] = blob.id
-                dict['Type'].append('Region')
+                dict['Type'].append('R')
                 dict['Class'].append(blob.class_name)
                 dict['Area'][i] = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
     #            if blob.surface_area > 0.0:
@@ -217,7 +217,7 @@ class Image(object):
 
             for i, annpoint in enumerate(visible_annpoints):
                 dict['Id'][i + number_of_seg] = annpoint.id
-                dict['Type'].append('Point')
+                dict['Type'].append('P')
                 dict['Class'].append(annpoint.class_name)
                 dict['Area'][i + number_of_seg] = 0.0
 
