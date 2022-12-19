@@ -96,6 +96,7 @@ class TableModel(QAbstractTableModel):
 class QtTablePanel(QWidget):
     selectionChanged = pyqtSignal()
     filterChanged = pyqtSignal(str)
+    stateChanged = pyqtSignal(int)
 
     def __init__(self, parent=None):
         super(QtTablePanel, self).__init__(parent)
@@ -116,21 +117,19 @@ class QtTablePanel(QWidget):
         self.data_table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.data_table.setSortingEnabled(True)
         self.setStyleSheet("""
-QScrollBar::add-line:vertical {
-height: 0px;
-}
-
-QScrollBar::sub-line:vertical {
-height: 0px;
-}
-
-QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
-height: 0px;
-}
-
-""");
-
-
+        QScrollBar::add-line:vertical {
+        height: 0px;
+        }
+        
+        QScrollBar::sub-line:vertical {
+        height: 0px;
+        }
+        
+        QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+        height: 0px;
+        }
+        
+        """);
         self.model = None
         self.data = None
 
@@ -141,6 +140,17 @@ height: 0px;
         filter_layout.addWidget(QLabel("Search Id: "))
         filter_layout.addWidget(self.searchId)
 
+        self.checkBoxRegions = QCheckBox("Regions")
+        self.checkBoxRegions.setChecked(True)
+        self.checkBoxRegions.setMinimumWidth(40)
+        self.checkBoxRegions.stateChanged[int].connect(self.displayDataInTable)
+
+
+        self.checkBoxPoints = QCheckBox("Points")
+        self.checkBoxPoints.setChecked(True)
+        self.checkBoxRegions.setMinimumWidth(40)
+        self.checkBoxRegions.stateChanged[int].connect(self.displayDataInTable)
+
         layout = QVBoxLayout()
         layout.addLayout(filter_layout)
         layout.addWidget(self.data_table)
@@ -149,6 +159,11 @@ height: 0px;
 
         self.project = None
         self.activeImg = None
+
+    def displayDataInTable(self):
+
+        if self.checkBoxBorders.isChecked():
+            pass
 
     def setTable(self, project, img):
 
@@ -169,34 +184,34 @@ height: 0px;
                 pass
 
             try:
-                self.activeImg.annotations.blobAdded[Blob].connect(self.addBlob, type=Qt.UniqueConnection)
+                self.activeImg.annotations.blobAdded[object].connect(self.addBlob, type=Qt.UniqueConnection)
             except:
                 pass
 
             try:
-                self.activeImg.annotations.blobRemoved[Blob].connect(self.removeBlob, type=Qt.UniqueConnection)
+                self.activeImg.annotations.blobRemoved[object].connect(self.removeBlob, type=Qt.UniqueConnection)
             except:
                 pass
 
             try:
-                self.activeImg.annotations.blobClassChanged[str,Blob].connect(self.updateBlobClass, type=Qt.UniqueConnection)
+                self.activeImg.annotations.blobClassChanged[str,object].connect(self.updateBlobClass, type=Qt.UniqueConnection)
             except:
                 pass
 
             # do the same for point annotation
 
             try:
-                self.activeImg.annotations.pointAdded[Point].connect(self.addBlob, type=Qt.UniqueConnection)
+                self.activeImg.annotations.pointAdded[object].connect(self.addBlob, type=Qt.UniqueConnection)
             except:
                 pass
 
             try:
-                self.activeImg.annotations.pointRemoved[Point].connect(self.removeBlob, type=Qt.UniqueConnection)
+                self.activeImg.annotations.pointRemoved[object].connect(self.removeBlob, type=Qt.UniqueConnection)
             except:
                 pass
 
             try:
-                self.activeImg.annotations.annPointClassChanged[str,Blob].connect(self.updateBlobClass, type=Qt.UniqueConnection)
+                self.activeImg.annotations.annPointClassChanged[str,object].connect(self.updateBlobClass, type=Qt.UniqueConnection)
             except:
                 pass
 
@@ -226,7 +241,7 @@ height: 0px;
         else:
             self.updateTable(self.data)
 
-    @pyqtSlot(Blob)
+    @pyqtSlot(object)
     def addBlob(self, blob):
 
         if type(blob) == Point:
@@ -244,7 +259,7 @@ height: 0px;
 
         self.updateTable(self.data)
 
-    @pyqtSlot(Blob)
+    @pyqtSlot(object)
     def removeBlob(self, blob):
 
         index = self.data.index[self.data["Id"] == blob.id]
@@ -266,7 +281,7 @@ height: 0px;
 
         self.data_table.update()
 
-    @pyqtSlot(str,Blob)
+    @pyqtSlot(str,object)
     def updateBlobClass(self, old_class_name, newblob):
 
         for i, row in self.data.iterrows():
