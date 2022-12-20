@@ -18,6 +18,7 @@
 # for more details.                                               
 
 import os
+import glob
 import numpy as np
 import pickle as pkl
 import cv2
@@ -152,6 +153,11 @@ class MapClassifier(QObject):
         # create a temporary folder to store the processing
         if not os.path.exists(self.temp_dir):
             os.mkdir(self.temp_dir)
+        else:
+            # if the folder exists, remove all files
+            files = glob.glob(os.path.join(self.temp_dir, "*"))
+            for f in files:
+                os.remove(f)
 
         # prepare for running..
         DELTA_CROP = int((TILE_SIZE - AGGREGATION_WINDOW_SIZE) / 2)
