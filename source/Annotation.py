@@ -523,8 +523,10 @@ class Annotation(QObject):
         image = np.zeros([h, w, 3], np.uint8)
 
         for i, blob in enumerate(self.seg_blobs):
-            if not blob.qpath_gitem.isVisible():
-                continue
+
+            if blob.qpath_gitem is not None:
+                if not blob.qpath_gitem.isVisible():
+                    continue
 
             if blob.class_name == "Empty":
                 rgb = [255, 255, 255]
