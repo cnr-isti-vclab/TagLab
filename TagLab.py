@@ -928,11 +928,11 @@ class TagLab(QMainWindow):
         appendAct.triggered.connect(self.importAnnotations)
 
         importAct = QAction("Import Label Image", self)
-        importAct.setStatusTip("Import a Label Image")
+        importAct.setStatusTip("Import a label image")
         importAct.triggered.connect(self.importLabelMap)
 
         importShap = QAction("Import Shapefile", self)
-        importShap.setStatusTip("Import a Georeferenced Shapefile")
+        importShap.setStatusTip("Import a georeferenced shapefile")
         importShap.triggered.connect(self.importShapefile)
 
         ### EXPORT
@@ -942,9 +942,9 @@ class TagLab(QMainWindow):
         exportDataTableAct.setStatusTip("Export current annotations as CSV table")
         exportDataTableAct.triggered.connect(self.exportAnnAsDataTable)
 
-        exportMapAct = QAction("Export Annotations As Labeled Image", self)
+        exportMapAct = QAction("Export Regions As Labeled Image", self)
         #exportMapAct.setShortcut('Ctrl+??')
-        exportMapAct.setStatusTip("Export Current Annotations As Labeled Image")
+        exportMapAct.setStatusTip("Export visibile regions as labeled image")
         exportMapAct.triggered.connect(self.exportAnnAsMap)
 
         exportHistogramAct = QAction("Export Histogram", self)
@@ -952,19 +952,19 @@ class TagLab(QMainWindow):
         exportHistogramAct.setStatusTip("Export Histogram")
         exportHistogramAct.triggered.connect(self.exportHistogramFromAnn)
 
-        exportShapefilesAct = QAction("Export As Shapefile", self)
+        exportShapefilesAct = QAction("Export Regions As Shapefile", self)
         # exportShapefilesAct.setShortcut('Ctrl+??')
-        exportShapefilesAct.setStatusTip("Export Current Annotations As Shapefile")
+        exportShapefilesAct.setStatusTip("Export visible regions as shapefile")
         exportShapefilesAct.triggered.connect(self.exportAnnAsShapefiles)
 
-        exportGeoRefLabelMapAct = QAction("Export Annotations As A GeoTiff", self)
+        exportGeoRefLabelMapAct = QAction("Export Regions As A GeoTiff", self)
         # exportShapefilesAct.setShortcut('Ctrl+??')
-        exportGeoRefLabelMapAct.setStatusTip("Create A Label Image And Export It As A GeoTiff")
+        exportGeoRefLabelMapAct.setStatusTip("Create a label image and export it as a GeoTiff")
         exportGeoRefLabelMapAct.triggered.connect(self.exportGeoRefLabelMap)
 
         exportTrainingDatasetAct = QAction("Export New Training Dataset", self)
         #exportTrainingDatasetAct.setShortcut('Ctrl+??')
-        exportTrainingDatasetAct.setStatusTip("Export A New Training Dataset Based On The Current Annotations")
+        exportTrainingDatasetAct.setStatusTip("Export A new training dataset based on the current annotations")
         exportTrainingDatasetAct.triggered.connect(self.exportAnnAsTrainingDataset)
 
         trainYourNetworkAct = QAction("Train Your Network", self)
