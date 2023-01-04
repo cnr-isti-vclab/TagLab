@@ -939,7 +939,7 @@ class TagLab(QMainWindow):
 
         exportDataTableAct = QAction("Export Annotations As Data Table", self)
         #exportDataTableAct.setShortcut('Ctrl+??')
-        exportDataTableAct.setStatusTip("Export current annotations as CSV table")
+        exportDataTableAct.setStatusTip("Export annotations as CSV table")
         exportDataTableAct.triggered.connect(self.exportAnnAsDataTable)
 
         exportMapAct = QAction("Export Regions As Labeled Image", self)
@@ -947,9 +947,9 @@ class TagLab(QMainWindow):
         exportMapAct.setStatusTip("Export visibile regions as labeled image")
         exportMapAct.triggered.connect(self.exportAnnAsMap)
 
-        exportHistogramAct = QAction("Export Histogram", self)
+        exportHistogramAct = QAction("Export Histogram From Regions", self)
         # exportHistogramAct.setShortcut('Ctrl+??')
-        exportHistogramAct.setStatusTip("Export Histogram")
+        exportHistogramAct.setStatusTip("Export histogram from regions")
         exportHistogramAct.triggered.connect(self.exportHistogramFromAnn)
 
         exportShapefilesAct = QAction("Export Regions As Shapefile", self)
