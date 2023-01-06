@@ -1715,6 +1715,20 @@ All markers must be valid to proceed.
             cpy1 = image1.copyTransform("_ref", 0, np.array([0, 0]), [leftB, 0, topB, 0], geoTra, geoRef)
             self.project.addNewImage(cpy1)
 
+        # ================================ Markers =============================================
+        refMarkers = [[m.lViewPos.x(), m.lViewPos.y()] for m in self.markers]
+        refImageIndex = self.leftCombobox.currentIndex()
+        coregMarkers = [[m.rViewPos.x(), m.rViewPos.y()] for m in self.markers]
+        coregImageIndex = self.rightCombobox.currentIndex()
+        markersWeights = [m.typ for m in self.markers]
+        self.project.addOrUpdateMarkers(
+            refImgId=refImageIndex,
+            refMarkers=refMarkers,
+            coregImgId=coregImageIndex,
+            coregMarkers=coregMarkers,
+            markersTypes=markersWeights,
+        )
+
         # ================================ End =============================================
         QApplication.restoreOverrideCursor()
         # Close widget (?)
@@ -2135,9 +2149,8 @@ All markers must be valid to proceed.
         self.leftImgViewer.px_to_mm = self.pxSizeL
         self.rightImgViewer.setImg(channel2.qimage)
         self.rightImgViewer.px_to_mm = self.pxSizeR
-        # Update overlay images
+        # Delete old markers
         self.__deleteAllMarkers()
-        self.__updateMarkers(keepAlgResults=False)
         # Clear data of last comparison
         self.alphaSlider.setValue(50)
         self.thresholdSlider.setValue(32)
@@ -2145,6 +2158,22 @@ All markers must be valid to proceed.
         self.xSlider.setValue(0)
         self.ySlider.setValue(0)
         # [SCALE] self.sSlider.setValue(0)
+        # Restore previously saved markers
+        projectMarkers = self.project.retrieveMarkersOrEmpty(
+            refImgId=self.project.images[index1].id,
+            coregImgId=self.project.images[index2].id,
+        )
+        for (i, savedMarker) in enumerate(projectMarkers):
+            refPos = savedMarker['refPos']
+            coregPos = savedMarker['coregPos']
+            lPos = QPointF(refPos[0], refPos[1])
+            rPos = QPointF(coregPos[0], coregPos[1])
+            typ = savedMarker['type']
+            self.__addMarker(pos=lPos, isLeft=True)
+            self.__addMarker(pos=rPos, isLeft=False)
+            if typ == MarkerObjData.HARD_MARKER:
+                self.__toggleMarker(i)
+        self.__updateMarkers(keepAlgResults=False)
 
     def __updateSizes(self, img1: QImage, pxSize1: float, img2: QImage, pxSize2: float) -> None:
         """
@@ -2364,7 +2393,7 @@ All markers must be valid to proceed.
                 self.leftPreviewViewer.points = ([QVector2D(pt) for pt in q.copy()], [QVector2D(pt) for pt in p.copy()])
                 self.leftPreviewViewer.redraw()
                 self.rightPreviewViewer.points = (
-                [QVector2D(pt) for pt in q.copy()], [QVector2D(pt) for pt in p.copy()])
+                    [QVector2D(pt) for pt in q.copy()], [QVector2D(pt) for pt in p.copy()])
                 self.rightPreviewViewer.redraw()
 
                 # update table
