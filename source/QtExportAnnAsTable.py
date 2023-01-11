@@ -26,56 +26,79 @@ from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QComboBox, QSizePol
 
 
 class QtExportAnnAsTable(QWidget):
-    closed = pyqtSignal()
 
-    def __init__(self, export_area, parent=None):
+    closewidget = pyqtSignal()
+    mode = pyqtSignal(str)
+
+    def __init__(self, parent=None):
         super(QtExportAnnAsTable, self).__init__(parent)
 
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
         TEXT_SPACE = 150
         LINEWIDTH = 300
 
+        self.mode = None
+
         ###########################################################
 
+
+
         layout = QVBoxLayout()
-        self.setLayout(layout)
-
-        label = QLabel('Which annotations do you need to export?', self)
-
-        self.rb_regions = QRadioButton('Regions')
-        self.rb_regions.toggled.connect(self.update)
-
-        self.rb_points = QRadioButton('Points')
-        self.rb_points.toggled.connect(self.update)
-
-        self.rb_both = QRadioButton('Both', self)
-        self.rb_both.toggled.connect(self.update)
-
-        self.btnCancel = QPushButton("Cancel")
-        self.btnCancel.clicked.connect(self.close)
-        self.btnExport = QPushButton("Export")
-
-        layoutbtn = QHBoxLayout()
-        layoutbtn.setAlignment(Qt.AlignRight)
-        layoutbtn.addStretch()
-        layoutbtn.addWidget(self.btnCancel)
-        layoutbtn.addWidget(self.btnExport)
-
-
+        label = QLabel('Which annotations do you need to export?')
         layout.addWidget(label)
-        layout.addWidget(rb_regions)
-        layout.addWidget(rb_points)
-        layout.addWidget(rb_wind)
-        layout.addLayout(layoutbtn)
+
+        radiobtn = QRadioButton('Regions')
+        radiobtn.setChecked(True)
+        radiobtn.mode = "Regions"
+        radiobtn.toggled.connect(self.onClicked)
+        layout.addWidget(radiobtn)
+
+        radiobtn = QRadioButton('Points')
+        radiobtn.mode = "Points"
+        radiobtn.toggled.connect(self.onClicked)
+        layout.addWidget(radiobtn)
+
+        radiobtn = QRadioButton('Both')
+        radiobtn.mode = "Both"
+        radiobtn.toggled.connect(self.onClicked)
+        layout.addWidget(radiobtn)
 
 
-        # show the window
-        self.show()
+        buttons_layout = QHBoxLayout()
+        btnOk = QPushButton("OK")
+        btnOk.clicked.connect(self.setMode)
+        btnCancel = QPushButton("Cancel")
 
-    def update(self):
-        # get the radio button the send the signal
-        rb = self.sender()
+        buttons_layout.setAlignment(Qt.AlignRight)
+        buttons_layout.addStretch()
+        buttons_layout.addWidget(btnOk)
+        buttons_layout.addWidget(btnCancel)
 
-        # check if the radio button is checked
-        if rb.isChecked():
-            self.result_label.setText(f'You selected {rb.text()}')
+        layout.addLayout(buttons_layout)
+
+        self.setLayout(layout)
+        self.setWindowTitle(".CSV Export Options")
+        self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint | Qt.WindowStaysOnTopHint)
+
+    def onClicked(self):
+        radiobtn = self.sender()
+        if radiobtn.isChecked():
+           mode = radiobtn.mode
+           self.mode.emit(mode)
+
+
+    def setMode(self):
+
+        self.mode = None
+
+        radiobtn = self.sender()
+        if radiobtn.isChecked():
+           self.mode = radiobtn.mode
+        #    self.mode.emit(mode)
+        self.closeEvent(event)
+
+
+    def closeEvent(self, event):
+        self.closewidget.emit()
+        super(QtExportAnnAsTable, self).closeEvent(event)
+

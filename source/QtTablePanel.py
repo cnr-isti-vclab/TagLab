@@ -108,7 +108,6 @@ class QtTablePanel(QWidget):
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.setMinimumWidth(400)
         self.setMinimumHeight(150)
-
         self.data_table = QTableView()
         self.data_table.setMinimumWidth(400)
         self.data_table.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)

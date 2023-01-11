@@ -71,6 +71,7 @@ from source.QtTrainingResultsWidget import QtTrainingResultsWidget
 from source.QtTYNWidget import QtTYNWidget
 from source.QtComparePanel import QtComparePanel
 from source.QtTablePanel import QtTablePanel
+from source.QtExportAnnAsTable import QtExportAnnAsTable
 from source.QtTableLabel import QtTableLabel
 from source.QtProjectWidget import QtProjectWidget
 from source.QtProjectEditor import QtProjectEditor
@@ -3976,6 +3977,21 @@ class TagLab(QMainWindow):
             box.exec()
             return
 
+        self.export_widget = QtExportAnnAsTable()
+        self.export_widget.setWindowModality(Qt.NonModal)
+        mode = self.export_widget.mode[str]
+        self.export_widget.show()
+        # self.export_widget.btnOK.clicked.connect(self.chooseSampling)
+        self.export_widget.closewidget.connect(self.export_widget)
+
+        if mode == 'Points':
+            print('puppa')
+
+
+
+    @pyqtSlot()
+    def chooseSampling(self):
+
         filters = "CSV (*.csv) ;; All Files (*)"
         filename, _ = QFileDialog.getSaveFileName(self, "Output file", self.activeviewer.image.name + ".csv", filters)
 
@@ -3988,6 +4004,14 @@ class TagLab(QMainWindow):
             msgBox.setText("Data table exported successfully!")
             msgBox.exec()
             return
+
+
+    @pyqtSlot()
+    def closeExportWidget(self):
+
+        self.export_widget = None
+        self.setTool("MOVE")
+
 
     @pyqtSlot()
     def exportAnnAsMap(self):
