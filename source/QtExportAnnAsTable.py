@@ -37,42 +37,39 @@ class QtExportAnnAsTable(QWidget):
         TEXT_SPACE = 150
         LINEWIDTH = 300
 
-        self.mode = None
-
         ###########################################################
-
-
 
         layout = QVBoxLayout()
         label = QLabel('Which annotations do you need to export?')
         layout.addWidget(label)
 
-        radiobtn = QRadioButton('Regions')
-        radiobtn.setChecked(True)
-        radiobtn.mode = "Regions"
-        radiobtn.toggled.connect(self.onClicked)
-        layout.addWidget(radiobtn)
+        self.radiobtnR = QRadioButton('Regions')
+        self.radiobtnR.setChecked(True)
+        self.radiobtnR.mode = "Regions"
+        # self.radiobtn.toggled.connect(self.onClicked)
+        layout.addWidget(self.radiobtnR)
 
-        radiobtn = QRadioButton('Points')
-        radiobtn.mode = "Points"
-        radiobtn.toggled.connect(self.onClicked)
-        layout.addWidget(radiobtn)
+        self.radiobtnP = QRadioButton('Points')
+        self.radiobtnP.mode = "Points"
+        # self.radiobtn.toggled.connect(self.onClicked)
+        layout.addWidget(self.radiobtnP)
 
-        radiobtn = QRadioButton('Both')
-        radiobtn.mode = "Both"
-        radiobtn.toggled.connect(self.onClicked)
-        layout.addWidget(radiobtn)
+        self.radiobtnB = QRadioButton('Both')
+        self.radiobtnB.mode = "Both"
+        # self.radiobtn.toggled.connect(self.onClicked)
+        layout.addWidget(self.radiobtnB)
 
 
         buttons_layout = QHBoxLayout()
-        btnOk = QPushButton("OK")
-        btnOk.clicked.connect(self.setMode)
-        btnCancel = QPushButton("Cancel")
+        self.btnOk = QPushButton("OK")
+        self.btnOk.clicked.connect(self.setMode)
+        self.btnCancel = QPushButton("Cancel")
+        self.btnCancel.clicked.connect(self.close)
 
         buttons_layout.setAlignment(Qt.AlignRight)
         buttons_layout.addStretch()
-        buttons_layout.addWidget(btnOk)
-        buttons_layout.addWidget(btnCancel)
+        buttons_layout.addWidget(self.btnOk)
+        buttons_layout.addWidget(self.btnCancel)
 
         layout.addLayout(buttons_layout)
 
@@ -80,23 +77,22 @@ class QtExportAnnAsTable(QWidget):
         self.setWindowTitle(".CSV Export Options")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint | Qt.WindowStaysOnTopHint)
 
-    def onClicked(self):
-        radiobtn = self.sender()
-        if radiobtn.isChecked():
-           mode = radiobtn.mode
-           self.mode.emit(mode)
-
 
     def setMode(self):
 
-        self.mode = None
+        if self.radiobtnR.isChecked():
+           mode = self.radiobtnR.mode
+           self.mode.emit(mode)
 
-        radiobtn = self.sender()
-        if radiobtn.isChecked():
-           self.mode = radiobtn.mode
-        #    self.mode.emit(mode)
-        self.closeEvent(event)
+        elif self.radiobtnP.isChecked():
+           mode = self.radiobtnP.mode
+           self.mode.emit(mode)
 
+        else:
+            mode = self.radiobtnB.mode
+            self.mode.emit(mode)
+
+        self.close()
 
     def closeEvent(self, event):
         self.closewidget.emit()

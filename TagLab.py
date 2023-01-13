@@ -3979,25 +3979,21 @@ class TagLab(QMainWindow):
 
         self.export_widget = QtExportAnnAsTable()
         self.export_widget.setWindowModality(Qt.NonModal)
-        mode = self.export_widget.mode[str]
+
         self.export_widget.show()
-        # self.export_widget.btnOK.clicked.connect(self.chooseSampling)
-        self.export_widget.closewidget.connect(self.export_widget)
-
-        if mode == 'Points':
-            print('puppa')
+        self.export_widget.mode[str].connect(self.exportTableMode)
+        self.export_widget.btnOk.clicked.connect(self.closeExportWidget)
+        self.export_widget.closewidget.connect(self.closeExportWidget)
 
 
-
-    @pyqtSlot()
-    def chooseSampling(self):
+    @pyqtSlot(str)
+    def exportTableMode(self, choice):
 
         filters = "CSV (*.csv) ;; All Files (*)"
         filename, _ = QFileDialog.getSaveFileName(self, "Output file", self.activeviewer.image.name + ".csv", filters)
 
         if filename:
-
-            self.activeviewer.annotations.export_data_table(self.project, self.activeviewer.image, filename)
+            self.activeviewer.annotations.export_data_table(self.project, self.activeviewer.image, filename, choice)
 
             msgBox = QMessageBox(self)
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
