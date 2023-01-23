@@ -122,15 +122,15 @@ class Image(object):
             return self.cache_labels_table
         else:
             dict = {
-                'Visibility': np.zeros(len(labels), dtype=np.int),
+                'Visibility': np.zeros(len(labels), dtype=np.int32),
                 'Color': [],
                 'Class': [],
-                '#': np.zeros(len(labels), dtype=np.int),
+                '#': np.zeros(len(labels), dtype=np.int32),
                 'Coverage': np.zeros(len(labels),dtype=np.float)
             }
 
             for i, label in enumerate(labels):
-                dict['Visibility'][i] = int(label.visible)
+                dict['Visibility'][i] = np.int32(label.visible)
                 dict['Color'].append(str(label.fill))
                 dict['Class'].append(label.name)
                 count, new_area = self.annotations.calculate_perclass_blobs_value(label, self.map_px_to_mm_factor)
@@ -166,7 +166,7 @@ class Image(object):
 
             number_of_seg = len(name_list)
             dict = {
-                'Id': np.zeros(number_of_seg, dtype=np.int),
+                'Id': np.zeros(number_of_seg, dtype=np.int32),
                 'Class': [],
                 'Area': np.zeros(number_of_seg),
                 #'Surf. area': np.zeros(number_of_seg)

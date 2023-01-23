@@ -489,11 +489,11 @@ class Project(object):
         '''
 
         dict = {
-            'Visibility': np.zeros(len(self.labels), dtype=np.int),
+            'Visibility': np.zeros(len(self.labels), dtype=np.int32),
             'Color': [],
             'Class': [],
-            '#': np.zeros(len(self.labels), dtype=np.int),
-            'Coverage': np.zeros(len(self.labels),dtype=np.float)
+            '#': np.zeros(len(self.labels), dtype=np.int32),
+            'Coverage': np.zeros(len(self.labels),dtype=np.float32)
         }
 
         for i, key in enumerate(list(self.labels.keys())):
