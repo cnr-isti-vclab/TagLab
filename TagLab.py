@@ -3993,7 +3993,7 @@ class TagLab(QMainWindow):
         filename, _ = QFileDialog.getSaveFileName(self, "Output file", self.activeviewer.image.name + ".csv", filters)
 
         if filename:
-            self.activeviewer.annotations.export_data_table(self.project, self.activeviewer.image, filename, choice)
+            self.activeviewer.annotations.export_data_table2(self.project, self.activeviewer.image, filename, choice)
 
             msgBox = QMessageBox(self)
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
