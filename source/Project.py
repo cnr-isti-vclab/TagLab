@@ -509,7 +509,8 @@ class Project(object):
             'Visibility': np.zeros(len(self.labels), dtype=np.int),
             'Color': [],
             'Class': [],
-            '#': np.zeros(len(self.labels), dtype=np.int),
+            '#R': np.zeros(len(self.labels), dtype=np.int),
+            '#P': np.zeros(len(self.labels), dtype=np.int),
             'Coverage': np.zeros(len(self.labels),dtype=np.float)
         }
 
@@ -521,15 +522,20 @@ class Project(object):
 
             if image is None:
                 count = 0
+                countP= 0
                 new_area = 0.0
             else:
                 count, new_area = image.annotations.calculate_perclass_blobs_value(label, image.pixelSize())
+                countP = image.annotations.countPoints(label)
 
-            dict['#'][i] = count
+            dict['#R'][i] = count
+            dict['#P'][i] = countP
             dict['Coverage'][i] = new_area
 
+
+
         # create dataframe
-        df = pd.DataFrame(dict, columns=['Visibility', 'Color', 'Class', '#', 'Coverage'])
+        df = pd.DataFrame(dict, columns=['Visibility', 'Color', 'Class', '#R', '#P', 'Coverage'])
         return df
 
 

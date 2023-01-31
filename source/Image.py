@@ -146,7 +146,8 @@ class Image(object):
                 'Visibility': np.zeros(len(labels), dtype=np.int),
                 'Color': [],
                 'Class': [],
-                '#': np.zeros(len(labels), dtype=np.int),
+                '#R': np.zeros(len(labels), dtype=np.int),
+                '#P': np.zeros(len(labels), dtype=np.int),
                 'Coverage': np.zeros(len(labels),dtype=np.float)
             }
 
@@ -155,11 +156,14 @@ class Image(object):
                 dict['Color'].append(str(label.fill))
                 dict['Class'].append(label.name)
                 count, new_area = self.annotations.calculate_perclass_blobs_value(label, self.map_px_to_mm_factor)
-                dict['#'][i] = count
+                countP = self.annotations.countPoints(label)
+                dict['#R'][i] = count
+                dict['#P'][i] = countP
                 dict['Coverage'][i] = new_area
 
+
             # create dataframe
-            df = pd.DataFrame(dict, columns=['Visibility', 'Color', 'Class', '#', 'Coverage'])
+            df = pd.DataFrame(dict, columns=['Visibility', 'Color', 'Class', '#R', '#P','Coverage'])
             self.cache_labels_table = df
             self.annotations.table_needs_update = False
             return df
