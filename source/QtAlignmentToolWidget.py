@@ -1704,7 +1704,7 @@ All markers must be valid to proceed.
         # Create a roto-translated copy
         cpy2 = image2.copyTransform("_coreg", rot, T, [leftB, rightB, topB, bottomB], geoTra, geoRef)
         # Add it to the project
-        self.project.addNewImage(cpy2)
+        self.project.addNewImage(cpy2, sort=False)
 
         # ================================ Image 1 =============================================
         # Convert pixelSize of Image2 => pixelSize of Image1
@@ -1713,13 +1713,13 @@ All markers must be valid to proceed.
         # Create only when needed
         if leftB > 0 or topB > 0:
             cpy1 = image1.copyTransform("_ref", 0, np.array([0, 0]), [leftB, 0, topB, 0], geoTra, geoRef)
-            self.project.addNewImage(cpy1)
+            self.project.addNewImage(cpy1, sort=False)
 
         # ================================ Markers =============================================
         refMarkers = [[m.lViewPos.x(), m.lViewPos.y()] for m in self.markers]
-        refImageIndex = self.leftCombobox.currentIndex()
+        refImageIndex = index1
         coregMarkers = [[m.rViewPos.x(), m.rViewPos.y()] for m in self.markers]
-        coregImageIndex = self.rightCombobox.currentIndex()
+        coregImageIndex = index2
         markersWeights = [m.typ for m in self.markers]
         self.project.addOrUpdateMarkers(
             refImgId=refImageIndex,

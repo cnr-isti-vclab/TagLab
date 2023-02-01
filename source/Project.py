@@ -350,12 +350,13 @@ class Project(object):
 
                 self.images = image_list
 
-    def addNewImage(self, image):
+    def addNewImage(self, image, sort=True):
         """
         Annotated images in the image list are sorted by date.
         """
         self.images.append(image)
-        self.orderImagesByAcquisitionDate()
+        if sort:
+            self.orderImagesByAcquisitionDate()
 
     def deleteImage(self, image):
         self.images = [i for i in self.images if i != image]
