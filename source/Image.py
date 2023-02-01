@@ -332,7 +332,9 @@ class Image(object):
         # [CV2] RTMat[1, 2] += tra[1]
         # Transform: Rot + Tra
         # [CV2] img = cv2.warpAffine(img, RTMat, (w, h))
-        transformation = AffineTransform(scale=1.0, rotation=math.radians(-rot), translation=tra)
+        transformation = AffineTransform(scale=1.0, rotation=0, translation=(-leftB, -topB))
+        img = warp(img, transformation.inverse, preserve_range=True)
+        transformation = AffineTransform(scale=1.0, rotation=math.radians(-rot), translation=(tra[0] + leftB, tra[1] + topB))
         img = warp(img, transformation.inverse, preserve_range=True)
         # Save with newly created filename
         # [CV2] cv2.imwrite(newFilename, img)
