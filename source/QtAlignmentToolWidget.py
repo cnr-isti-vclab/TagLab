@@ -1729,6 +1729,9 @@ All markers must be valid to proceed.
             markersTypes=markersWeights,
         )
 
+        # ATTENTION: Last step since it causes shifting of indexes
+        self.project.orderImagesByAcquisitionDate()
+
         # ================================ End =============================================
         QApplication.restoreOverrideCursor()
         # Close widget (?)
