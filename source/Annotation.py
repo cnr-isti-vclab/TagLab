@@ -757,300 +757,6 @@ class Annotation(QObject):
         return created_blobs
 
 
-    # def export_data_table(self, project, image, filename, choice):
-    #
-    #     working_area = project.working_area
-    #     scale_factor = image.pixelSize()
-    #     date = image.acquisition_date
-    #
-    #     # create a list of instances
-    #
-    #     blobindexlist=[]
-    #     pointindexlist=[]
-    #
-    #     # check visibility and working area of both
-    #
-    #     if working_area is None:
-    #         # all the blobs are considered
-    #         self.blobs = self.seg_blobs
-    #
-    #     else:
-    #         # only blobs and points inside the working area are considered
-    #         self.blobs = self.calculate_inner_blobs(working_area)
-    #         self.annpoints = self.calculate_inner_points(working_area)
-    #
-    #
-    #     if choice == 'Regions':
-    #         visible_blobs = []
-    #         visible_points = []
-    #         for blob in self.blobs:
-    #             if blob.qpath_gitem.isVisible():
-    #                 index = blob.blob_name
-    #                 blobindexlist.append(index)
-    #                 visible_blobs.append(blob)
-    #
-    #     elif choice == 'Points':
-    #         visible_blobs = []
-    #         visible_points = []
-    #         for annpoint in self.annpoints:
-    #             if annpoint.cross1_gitem.isVisible():
-    #                 point_id = annpoint.id
-    #                 pointindexlist.append(point_id)
-    #                 visible_points.append(annpoint)
-    #     else:
-    #         visible_blobs = []
-    #         for blob in self.blobs:
-    #             if blob.qpath_gitem.isVisible():
-    #                 index = blob.blob_name
-    #                 blobindexlist.append(index)
-    #                 visible_blobs.append(blob)
-    #         visible_points = []
-    #         for annpoint in self.annpoints:
-    #             if annpoint.cross1_gitem.isVisible():
-    #                 point_id = annpoint.id
-    #                 pointindexlist.append(point_id)
-    #                 visible_points.append(annpoint)
-    #
-    #
-    #     number_of_rows = len(visible_blobs) + len(visible_points)
-    #
-    #     # create a common dictionary
-    #
-    #     dict = {
-    #         'TagLab Id': np.zeros(number_of_rows, dtype = np.int64),
-    #         'TagLab Type': [],
-    #         'TagLab Date': [],
-    #         'TagLab Class name': [],
-    #         'TagLab Genet Id': np.zeros(number_of_rows, dtype = np.int64),
-    #         'TagLab Centroid x': np.zeros(number_of_rows),
-    #         'TagLab Centroid y': np.zeros(number_of_rows),
-    #         'TagLab Area': np.zeros(number_of_rows),
-    #         'TagLab Surf. area': np.zeros(number_of_rows),
-    #         'TagLab Perimeter': np.zeros(number_of_rows),
-    #         'TagLab Note': [] }
-    #
-    #     # Are attributes named the same? Check
-    #
-    #     for attribute in project.region_attributes.data:
-    #         key = attribute["name"]
-    #         if attribute['type'] in ['string', 'keyword']:
-    #             dict[key] = []
-    #         elif attribute['type'] in ['integer number']:
-    #             dict[key] = np.zeros(number_of_rows, dtype=np.int64)
-    #         elif attribute['type'] in ['decimal number']:
-    #             dict[key] = np.zeros(number_of_rows, dtype=np.float64)
-    #         else:
-    #             # unknown attribute type, not saved
-    #             pass
-    #
-    #     # #fill it
-    #
-    #     if choice == 'Regions':
-    #
-    #         for i, blob in enumerate(visible_blobs):
-    #             dict['TagLab Id'][i] = blob.id
-    #             dict['TagLab Type'].append('Region')
-    #             dict['TagLab Date'].append(date)
-    #             dict['TagLab Class name'].append(blob.class_name)
-    #             dict['TagLab Centroid x'][i] = round(blob.centroid[0], 1)
-    #             dict['TagLab Centroid y'][i] = round(blob.centroid[1], 1)
-    #             dict['TagLab Area'][i] = round(blob.area * (scale_factor) * (scale_factor)/ 100,2)
-    #             if blob.surface_area > 0.0:
-    #                dict['TagLab Surf. area'][i] = round(blob.surface_area * (scale_factor) * (scale_factor) / 100, 2)
-    #             dict['TagLab Perimeter'][i] = round(blob.perimeter*scale_factor / 10,1)
-    #
-    #             if blob.genet is not None:
-    #                dict['TagLab Genet Id'][i] = blob.genet
-    #
-    #             dict['TagLab Note'].append(blob.note)
-    #
-    #             for attribute in project.region_attributes.data:
-    #
-    #                 key = attribute["name"]
-    #
-    #                 try:
-    #                     value = blob.data[key]
-    #                 except:
-    #                     value = None
-    #
-    #                 if attribute['type'] == 'integer number':
-    #
-    #                     if value is not None:
-    #                         dict[key][i] = value
-    #                     else:
-    #                         dict[key][i] = 0
-    #
-    #                 elif attribute['type'] == 'decimal number':
-    #
-    #                     if value is not None:
-    #                         dict[key][i] = value
-    #                     else:
-    #                         dict[key][i] = np.NaN
-    #
-    #                 else:
-    #                     if value is not None:
-    #                         dict[key].append(value)
-    #                     else:
-    #                         dict[key].append('')
-    #
-    #         # create dataframe
-    #         df = pd.DataFrame(dict, columns=list(dict.keys()))
-    #         df.to_csv(filename, sep=',', index=False)
-    #
-    #     elif choice == 'Points':
-    #
-    #         for i, annpoint in enumerate(visible_points):
-    #             dict['TagLab Id'][i] = annpoint.id
-    #             dict['TagLab Type'].append('Points')
-    #             dict['TagLab Date'].append(date)
-    #             dict['TagLab Class name'].append(annpoint.class_name)
-    #             dict['TagLab Centroid x'][i]= round(annpoint.coordx, 1)
-    #             dict['TagLab Centroid y'][i] = round(annpoint.coordy, 1)
-    #             dict['TagLab Area'][i] = int(0)
-    #             dict['TagLab Surf. area'][i] = int(0)
-    #             dict['TagLab Perimeter'][i] = int(0)
-    #             dict['TagLab Genet Id'][i] = int(0)
-    #             dict['TagLab Note'].append(annpoint.note)
-    #
-    #
-    #             # WHAT ABOUT POINT ATTRIBUTES?
-    #
-    #             for attribute in project.region_attributes.data:
-    #
-    #                 key = attribute["name"]
-    #
-    #                 try:
-    #                     value = blob.data[key]
-    #                 except:
-    #                     value = None
-    #
-    #                 if attribute['type'] == 'integer number':
-    #
-    #                     if value is not None:
-    #                         dict[key][i] = value
-    #                     else:
-    #                         dict[key][i] = 0
-    #
-    #                 elif attribute['type'] == 'decimal number':
-    #
-    #                     if value is not None:
-    #                         dict[key][i] = value
-    #                     else:
-    #                         dict[key][i] = np.NaN
-    #
-    #                 else:
-    #                     if value is not None:
-    #                         dict[key].append(value)
-    #                     else:
-    #                         dict[key].append('')
-    #
-    #         # create dataframe
-    #         df = pd.DataFrame(dict, columns=list(dict.keys()))
-    #         df.to_csv(filename, sep=',', index=False)
-    #
-    #     else:
-    #
-    #         for i, blob in enumerate(visible_blobs):
-    #             dict['TagLab Id'][i] = blob.id
-    #             dict['TagLab Type'].append('Region')
-    #             dict['TagLab Date'].append(date)
-    #             dict['TagLab Class name'].append(blob.class_name)
-    #             dict['TagLab Centroid x'][i] = round(blob.centroid[0], 1)
-    #             dict['TagLab Centroid y'][i] = round(blob.centroid[1], 1)
-    #             dict['TagLab Area'][i] = round(blob.area * (scale_factor) * (scale_factor)/ 100,2)
-    #             if blob.surface_area > 0.0:
-    #                dict['TagLab Surf. area'][i] = round(blob.surface_area * (scale_factor) * (scale_factor) / 100, 2)
-    #             dict['TagLab Perimeter'][i] = round(blob.perimeter*scale_factor / 10,1)
-    #
-    #             if blob.genet is not None:
-    #                dict['TagLab Genet Id'][i] = blob.genet
-    #
-    #             dict['TagLab Note'].append(blob.note)
-    #
-    #             for attribute in project.region_attributes.data:
-    #
-    #                 key = attribute["name"]
-    #
-    #                 try:
-    #                     value = blob.data[key]
-    #                 except:
-    #                     value = None
-    #
-    #                 if attribute['type'] == 'integer number':
-    #
-    #                     if value is not None:
-    #                         dict[key][i] = value
-    #                     else:
-    #                         dict[key][i] = 0
-    #
-    #                 elif attribute['type'] == 'decimal number':
-    #
-    #                     if value is not None:
-    #                         dict[key][i] = value
-    #                     else:
-    #                         dict[key][i] = np.NaN
-    #
-    #                 else:
-    #                     if value is not None:
-    #                         dict[key].append(value)
-    #                     else:
-    #                         dict[key].append('')
-    #
-    #             #
-    #             # # create dataframe
-    #             # df = pd.DataFrame(dict, columns=list(dict.keys()))
-    #
-    #         j = len(visible_blobs)
-    #         for annpoint in visible_points:
-    #             print(j)
-    #             dict['TagLab Id'][j] = annpoint.id
-    #             dict['TagLab Type'].append('Points')
-    #             dict['TagLab Date'].append(date)
-    #             dict['TagLab Class name'].append(annpoint.class_name)
-    #             dict['TagLab Centroid x'][j]= round(annpoint.coordx, 1)
-    #             dict['TagLab Centroid y'][j] = round(annpoint.coordy, 1)
-    #             dict['TagLab Area'][j] = int(0)
-    #             dict['TagLab Surf. area'][j] = int(0)
-    #             dict['TagLab Perimeter'][j] = int(0)
-    #             dict['TagLab Genet Id'][j] = int(0)
-    #             dict['TagLab Note'].append(annpoint.note)
-    #
-    #             # WHAT ABOUT POINT ATTRIBUTES?
-    #
-    #             for attribute in project.region_attributes.data:
-    #
-    #                 key = attribute["name"]
-    #
-    #                 try:
-    #                     value = blob.data[key]
-    #                 except:
-    #                     value = None
-    #
-    #                 if attribute['type'] == 'integer number':
-    #
-    #                     if value is not None:
-    #                         dict[key][i] = value
-    #                     else:
-    #                         dict[key][i] = 0
-    #
-    #                 elif attribute['type'] == 'decimal number':
-    #
-    #                     if value is not None:
-    #                         dict[key][i] = value
-    #                     else:
-    #                         dict[key][i] = np.NaN
-    #
-    #                 else:
-    #                     if value is not None:
-    #                         dict[key].append(value)
-    #                     else:
-    #                         dict[key].append('')
-    #
-    #             j = j + 1
-    #
-    #         # create dataframe
-    #         df = pd.DataFrame(dict, columns=list(dict.keys()))
-    #         df.to_csv(filename, sep=',', index=False)
 
     def export_data_table(self, project, image, filename, choice):
 
@@ -1192,31 +898,35 @@ class Annotation(QObject):
             dict['TagLab Genet Id'][j] = int(0)
             dict['TagLab Note'].append(annpoint.note)
 
-            # WHAT ABOUT POINT ATTRIBUTES?
 
             for attribute in project.region_attributes.data:
 
                 key = attribute["name"]
 
                 try:
-                    value = blob.data[key]
+                    value = annpoint.data[key]
                 except:
                     value = None
 
                 if attribute['type'] == 'integer number':
 
                     if value is not None:
-                        dict[key][i] = value
+                        dict[key][j] = value
                     else:
-                        dict[key][i] = 0
+                        dict[key][j] = 0
 
                 elif attribute['type'] == 'decimal number':
 
                     if value is not None:
-                        dict[key][i] = value
+                        dict[key][j] = value
                     else:
-                        dict[key][i] = np.NaN
+                        dict[key][j] = np.NaN
 
+                else:
+                    if value is not None:
+                        dict[key].append(value)
+                    else:
+                        dict[key].append('')
 
             j= j+1
 
