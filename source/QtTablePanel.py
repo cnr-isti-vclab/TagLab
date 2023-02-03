@@ -189,6 +189,8 @@ class QtTablePanel(QWidget):
 
             self.sortfilter.setFilterRole(Qt.DisplayRole)
 
+        self.selectById(self.searchId.text())
+
 
     def setTable(self, project, img):
 

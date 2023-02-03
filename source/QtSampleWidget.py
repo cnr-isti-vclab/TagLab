@@ -11,12 +11,13 @@ class QtSampleWidget(QWidget):
 
     # choosedSample = pyqtSignal(int)
     closewidget = pyqtSignal()
+    validchoices= pyqtSignal()
 
     def __init__(self, parent=None):
         super(QtSampleWidget, self).__init__(parent)
 
         self.choosednumber = None
-        self.myoffset = None
+        self.offset = None
 
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
 
@@ -28,15 +29,11 @@ class QtSampleWidget(QWidget):
         self.comboMethod.setMinimumWidth(300)
         self.comboMethod.addItem('Grid Sampling')
         self.comboMethod.addItem('Uniform Sampling')
-        # self.comboMethod.addItem('Stratified Sampling')
 
-        # self.comboMethod.currentIndexChanged.connect(self.)
 
-        # layoutHM.setAlignment(Qt.AlignLeft)
-        # layoutHM.addStretch()
         layoutHM.addWidget(self.lblMethod)
         layoutHM.addWidget(self.comboMethod)
-        # layoutHM.addStretch()
+
 
         layoutHN = QHBoxLayout()
         self.lblNumber = QLabel("Number Of Points: ")
@@ -54,11 +51,6 @@ class QtSampleWidget(QWidget):
         layoutHOFF.addWidget(self.lblOFF)
         layoutHOFF.addWidget(self.editOFF)
 
-        # layoutHN.setAlignment(Qt.AlignLeft)
-        # layoutHN.addStretch()
-        # layoutHM.addStretch()
-
-        #self.checkWA = QCheckBox("Use Current Working Area")
 
         layoutInfo = QVBoxLayout()
         layoutInfo.setAlignment(Qt.AlignLeft)
@@ -66,7 +58,6 @@ class QtSampleWidget(QWidget):
         layoutInfo.addLayout(layoutHN)
         layoutInfo.addLayout(layoutHOFF)
 
-        #layoutInfo.addWidget(self.checkWA)
 
         layoutHB = QHBoxLayout()
 
@@ -90,18 +81,20 @@ class QtSampleWidget(QWidget):
     @pyqtSlot()
     def apply(self):
 
-        self.choosednumber = None
-        self.myoffset = 0
-
-        if self.editNumber.text().isnumeric() == True and self.editOFF.text().isnumeric() == True:
-            self.choosednumber = int(self.editNumber.text())
-            self.myoffset = int(self.editOFF.text())
-
-        else:
+        if self.editNumber.text() == "" or self.editNumber.text() == 0 or self.editNumber.text().isnumeric() == False:
             msgBox = QMessageBox()
-            msgBox.setText("Please, enter an integer number.")
+            msgBox.setText("Please, indicate the number of sampled points.")
             msgBox.exec()
             return
+        else:
+            self.choosednumber = int(self.editNumber.text())
+
+        if self.editOFF.text() == "" or self.editOFF.text().isnumeric() == False:
+            self.offset = 0
+        else:
+            self.offset = int(self.editOFF.text())
+
+        self.validchoices.emit()
 
 
     def closeEvent(self,event):

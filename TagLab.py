@@ -1065,9 +1065,9 @@ class TagLab(QMainWindow):
         importPointsAct.setStatusTip("Import Point Annotations From .CSV")
         importPointsAct.triggered.connect(self.importPointAnn)
 
-        exportPointsAct  = QAction("Export Point Annotations", self)
-        exportPointsAct .setStatusTip("Export Point Annotations As .CSV")
-        exportPointsAct .triggered.connect(self.exportPointAnn)
+        # exportPointsAct  = QAction("Export Point Annotations", self)
+        # exportPointsAct .setStatusTip("Export Point Annotations As .CSV")
+        # exportPointsAct .triggered.connect(self.exportPointAnn)
 
         samplePointsAct = QAction("Sample Points On This Map", self)
         samplePointsAct.setStatusTip("Sample Points This Map")
@@ -1077,7 +1077,7 @@ class TagLab(QMainWindow):
         self.pointmenu.setStyleSheet(styleMenu)
         self.pointmenu.addAction(importPointsAct)
         self.pointmenu.addAction(samplePointsAct)
-        self.pointmenu.addAction(exportPointsAct)
+        # self.pointmenu.addAction(exportPointsAct)
 
 
         ###### DEM MENU
@@ -3118,21 +3118,22 @@ class TagLab(QMainWindow):
                     self.samplePointWidget = QtSampleWidget(parent=self)
                     self.samplePointWidget.setWindowModality(Qt.NonModal)
                     self.samplePointWidget.show()
-                    self.samplePointWidget.btnOK.clicked.connect(self.samplePointAnn)
-                    self.samplePointWidget.closewidget.connect(self.closeSamplingWidget)
+                    self.samplePointWidget.validchoices.connect(self.samplePointAnn)
 
     @pyqtSlot()
     def closeSamplingWidget(self):
 
+        self.samplePointWidget.close()
         self.samplePointWidget = None
         self.setTool("MOVE")
+
 
     @pyqtSlot()
     def samplePointAnn(self):
 
         choosedmethod = self.samplePointWidget.comboMethod.currentText()
         choosedpointnumber = self.samplePointWidget.choosednumber
-        myoffset = self.samplePointWidget.myoffset
+        offset = self.samplePointWidget.offset
 
 
         if self.project.working_area is not None:
@@ -3141,7 +3142,7 @@ class TagLab(QMainWindow):
            area = [0, 0, self.activeviewer.image.width, self.activeviewer.image.height]
 
         image = self.activeviewer.image
-        sampler = Sampler(image, area, choosedmethod, choosedpointnumber, myoffset)
+        sampler = Sampler(image, area, choosedmethod, choosedpointnumber, offset)
         points = sampler.generate()
 
         for point in points:
@@ -3151,10 +3152,6 @@ class TagLab(QMainWindow):
 
         self.activeviewer.drawAllPointsAnn()
         self.closeSamplingWidget()
-
-    @pyqtSlot()
-    def exportPointAnn(self):
-        pass
 
     @pyqtSlot()
     def editProject(self):
