@@ -821,7 +821,7 @@ class QtImageViewerPlus(QtImageViewer):
                 self.addToSelectedList(selected_blob)
                 self.updateInfoPanel.emit(selected_blob)
 
-        self.newSelection.emit()
+            self.newSelection.emit()
 
         selected_annpoint = self.annotations.clickedPoint(x,y)
 
@@ -832,7 +832,7 @@ class QtImageViewerPlus(QtImageViewer):
                 self.addToSelectedPointList(selected_annpoint)
                 self.updateInfoPanel.emit(selected_annpoint)
 
-        self.newSelectionPoint.emit()
+            self.newSelectionPoint.emit()
 
         self.logfile.info("[SELECTION][DOUBLE-CLICK] Selection ends.")
 

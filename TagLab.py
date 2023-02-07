@@ -1969,9 +1969,10 @@ class TagLab(QMainWindow):
 
         rows = []
         for blob in selected:
-            row = self.data_panel.data.index[self.data_panel.data["Id"] == blob.id].to_list()
-            if row is not None:
-                rows += row
+            selected_row = self.data_panel.data.index[(self.data_panel.data["Id"] == blob.id)].to_list()
+            if selected_row is not None:
+                rows += selected_row
+
         self.data_panel.blockSignals(True)
         self.data_panel.selectRows(rows)
         self.data_panel.blockSignals(False)
@@ -1986,9 +1987,9 @@ class TagLab(QMainWindow):
 
         rows = []
         for point in selected:
-            row = self.data_panel.data.index[self.data_panel.data["Id"] == point.id].to_list()
-            if row is not None:
-                rows += row
+            selected_row = self.data_panel.data.index[(self.data_panel.data["Id"] == point.id) & (self.data_panel.data["Type"] == 'P')].to_list()
+            if selected_row is not None:
+                rows += selected_row
 
         self.data_panel.blockSignals(True)
         self.data_panel.selectRows(rows)
