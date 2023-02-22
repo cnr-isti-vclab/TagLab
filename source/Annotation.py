@@ -758,7 +758,7 @@ class Annotation(QObject):
 
 
 
-    def export_data_table(self, project, image, filename, choice):
+    def export_data_table(self, project, image, imagename, filename, choice):
 
         working_area = project.working_area
         scale_factor = image.pixelSize()
@@ -806,6 +806,7 @@ class Annotation(QObject):
         # create a common dictionary
 
         dict = {
+            'Image name': [],
             'TagLab Id': np.zeros(number_of_rows, dtype=np.int64),
             'TagLab Type': [],
             'TagLab Date': [],
@@ -836,6 +837,7 @@ class Annotation(QObject):
 
         i = 0
         for blob in visible_blobs:
+            dict['Image name'][i].append(imagename)
             dict['TagLab Id'][i] = blob.id
             dict['TagLab Type'].append('Region')
             dict['TagLab Date'].append(date)
@@ -885,7 +887,7 @@ class Annotation(QObject):
 
         j = len(visible_blobs)
         for annpoint in visible_points:
-
+            dict['Image name'].append(imagename)
             dict['TagLab Id'][j] = annpoint.id
             dict['TagLab Type'].append('Points')
             dict['TagLab Date'].append(date)
