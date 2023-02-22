@@ -591,7 +591,7 @@ class QtImageViewerPlus(QtImageViewer):
         annpoint.ellipse_gitem.setOpacity(self.transparency_value)
 
 
-        font_size = 12
+        font_size = min(12, round(6.0 / self.image.pixelSize()))
         annpoint.id_item = TextItem(str(annpoint.id), QFont("Roboto", font_size, QFont.Bold))
         annpoint.id_item.setPos(annpoint.coordx+ 20, annpoint.coordy+ 20)
         annpoint.id_item.setZValue(2)
@@ -678,7 +678,7 @@ class QtImageViewerPlus(QtImageViewer):
         blob.qpath_gitem.setZValue(1)
         blob.qpath_gitem.setOpacity(self.transparency_value)
 
-        font_size = 12
+        font_size = min(12, round(8.0 / self.image.pixelSize()))
         blob.id_item = TextItem(str(blob.id),  QFont("Roboto", font_size, QFont.Bold))
         blob.id_item.setPos(blob.centroid[0], blob.centroid[1])
         blob.id_item.setTransformOriginPoint(QPointF(blob.centroid[0] + 14.0, blob.centroid[1] + 14.0))
