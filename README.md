@@ -2,13 +2,13 @@
 
 | &nbsp; [Software Requirements](#software-requirements) &nbsp; | &nbsp; [Install](#installing-taglab) &nbsp; | &nbsp; [Update](#updating-taglab) &nbsp; | &nbsp; [Citation](#citation) &nbsp; |
 
-## PhD position!
+## PostDoc position!
 
-Dear TagLab community, we are looking for a motivated PhD student! The grant duration is three years; starting from **March 1, 2023**, candidates will be formally enrolled f at the University of Pisa, Italy. We require knowledge of Python, Machine learning and a sincere enthusiasm for the environmental theme! If you are interested in learning more, contact us quickly, the application deadline is **February 1, 2023**.
+Dear TagLab community, we are looking for a Post-doc researcher The grant duration is two years; starting from **September, 2023**, candidates will work at the [Visual Computing Lab](https://vcg.isti.cnr.it) at [ISTI-CNR](https://www.isti.cnr.it) in Pisa, Italy, please contact us for more info.
 
 ## Introduction
 
-TagLab was created to support the activity of annotation and extraction of statistical data from ortho-maps of benthic communities. The tool includes different types of CNN-based segmentation networks specially trained for agnostic (relative only to contours) or semantic (also related to species) recognition of corals. TagLab is an ongoing project of the Visual Computing Lab http://vcg.isti.cnr.it/.
+TagLab was created to support the activity of annotation and extraction of statistical data from ortho-maps of benthic communities. The tool includes different types of CNN-based segmentation networks specially trained for agnostic (relative only to contours) or semantic (also related to species) recognition of corals. TagLab is an ongoing project of the  [Visual Computing Lab](https://vcg.isti.cnr.it).
 
 ![ScreenShot](screenshot.jpg)
 
