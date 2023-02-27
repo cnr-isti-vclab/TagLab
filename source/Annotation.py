@@ -957,6 +957,16 @@ class Annotation(QObject):
                         coordy= int(row[1])
                         classname = row[3]
                         point = Point(coordx, coordy, classname, self.getFreePointId())
+                        #check if the csv file has machine suggestion, take the first 3 and store them in point attributes
+                        if len(row[4])>0:
+                           point.data = {
+                           'Suggestion 1': row[4],
+                           'Confidence 1': row[5],
+                           'Suggestion 2': row[6],
+                           'Confidence 2': row[7],
+                           'Suggestion 3': row[8],
+                           'Confidence 3': row[9]}
+
                         self.addPoint(point)
 
             except csv.Error as e:
