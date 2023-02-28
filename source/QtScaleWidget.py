@@ -107,7 +107,7 @@ class QtScaleWidget(QWidget):
         buttons_layout.setAlignment(Qt.AlignRight)
         buttons_layout.addStretch()
         buttons_layout.addWidget(self.btnApply)
-        buttons_layout.addWidget(self.btnOK)
+        buttons_layout.addWidget(self.btnOk)
 
         ###########################################################
         layout = QVBoxLayout()
