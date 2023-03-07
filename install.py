@@ -9,8 +9,8 @@ if osused != 'Linux' and osused != 'Windows' and osused != 'Darwin':
     raise Exception("Operative System not supported")
 
 # check python version
-if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] < 7):
-    raise Exception("Must be using Python >= 3.7\nInstallation aborted.")
+if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and (sys.version_info[1] < 8 or sys.version_info[1] > 10)):
+    raise Exception("Python " + sys.version_info[0] + "." + sys.version_info[1] + " not supported. Please see https://github.com/cnr-isti-vclab/TagLab/wiki/Install-TagLab")
 
 # manage thorch
 something_wrong_with_nvcc = False
@@ -85,9 +85,13 @@ elif flag_install_pythorch_cpu == False:
         torch_extra_argument1 = '--extra-index-url'
         torch_extra_argument2 = 'https://download.pytorch.org/whl/cu113'
     elif '11.6' in nvcc_version:
-        print('Torch 1.12.1 for CUDA 11.6')
+        print('Torch 1.13.1 for CUDA 11.6')
         torch_extra_argument1 = '--extra-index-url'
         torch_extra_argument2 = 'https://download.pytorch.org/whl/cu116'
+    elif '11.7' in nvcc_version:
+        print('Torch 1.13.1 for CUDA 11.7')
+        torch_extra_argument1 = '--extra-index-url'
+        torch_extra_argument2 = 'https://download.pytorch.org/whl/cu117'
     elif something_wrong_with_nvcc==False:
         # nvcc is installed, but some version that is not supported by torch
         print('nvcc version installed not supported by pytorch!!')
@@ -244,11 +248,10 @@ else:
     base_url = 'http://taglab.isti.cnr.it/wheels/'
     pythonversion = str(sys.version_info[0]) + str(sys.version_info[1])
     # compute rasterio and gdal urls download
-    filename_gdal = 'GDAL-3.1.2-cp' + pythonversion + '-cp' + pythonversion
-    filename_rasterio = 'rasterio-1.1.5-cp' + pythonversion + '-cp' + pythonversion
-    if sys.version_info[1] < 8:
-        filename_gdal += 'm'
-        filename_rasterio += 'm'
+    rasterio_win_version = '1.2.10'
+    gdal_win_version = '3.4.3'
+    filename_gdal = 'GDAL-' + gdal_win_version + '-cp' + pythonversion + '-cp' + pythonversion
+    filename_rasterio = 'rasterio-' + rasterio_win_version +'-cp' + pythonversion + '-cp' + pythonversion
     filename_gdal += '-win_amd64.whl'
     filename_rasterio += '-win_amd64.whl'
     base_url_gdal = base_url + filename_gdal
