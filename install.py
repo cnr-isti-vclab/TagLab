@@ -250,12 +250,12 @@ else:
     # compute rasterio and gdal urls download
     rasterio_win_version = '1.2.10'
     gdal_win_version = '3.4.3'
-    filename_gdal = 'GDAL-' + gdal_win_version + '-cp' + pythonversion + '-cp' + pythonversion
+    filename_gdal = 'gdal-' + gdal_win_version + '-cp' + pythonversion + '-cp' + pythonversion
     filename_rasterio = 'rasterio-' + rasterio_win_version +'-cp' + pythonversion + '-cp' + pythonversion
     filename_gdal += '-win_amd64.whl'
     filename_rasterio += '-win_amd64.whl'
-    base_url_gdal = base_url + filename_gdal
-    base_url_rastetio = base_url + filename_rasterio
+    base_url_gdal = base_url + 'gdal/' + filename_gdal
+    base_url_rastetio = base_url + 'rasterio/' + filename_rasterio
 
     print('URL GDAL: ' + base_url_gdal)
 
