@@ -514,12 +514,12 @@ class Project(object):
         '''
 
         dict = {
-            'Visibility': np.zeros(len(self.labels), dtype=np.int),
+            'Visibility': np.zeros(len(self.labels), dtype=int),
             'Color': [],
             'Class': [],
-            '#R': np.zeros(len(self.labels), dtype=np.int),
-            '#P': np.zeros(len(self.labels), dtype=np.int),
-            'Coverage': np.zeros(len(self.labels),dtype=np.float)
+            '#R': np.zeros(len(self.labels), dtype=int),
+            '#P': np.zeros(len(self.labels), dtype=int),
+            'Coverage': np.zeros(len(self.labels),dtype=float)
         }
 
         for i, key in enumerate(list(self.labels.keys())):
