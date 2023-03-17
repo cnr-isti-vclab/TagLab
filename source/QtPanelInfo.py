@@ -4,6 +4,9 @@ from PyQt5.QtWidgets import QGridLayout, QWidget, QTabWidget, QSpinBox, QLineEdi
 
 import numpy as np
 
+from source.Blob import Blob
+from source.Point import Point
+
 class QtPanelInfo(QTabWidget):
 
     def __init__(self, region_attributes, parent=None):
@@ -31,6 +34,7 @@ class QtPanelInfo(QTabWidget):
 
         
     def updateRegionAttributes(self, region_attributes):
+
         self.clear()
         self.region_attributes = region_attributes
         self.removeTab(1)
@@ -126,18 +130,24 @@ class QtPanelInfo(QTabWidget):
         
 
     def assign(self, text, name):
-        if self.blob == None:
+
+        if self.ann == None:
             return
-        self.blob.data[name] = text
+
+        self.ann.data[name] = text
 
     def updateNotes(self):
-        if self.blob is None:
+
+        if self.ann is None:
             return
-        self.blob.note = self.fields['note'].document().toPlainText()
+
+        self.ann.note = self.fields['note'].document().toPlainText()
 
 
     def clear(self):
-        self.blob = None
+
+        self.ann = None
+
         for field in self.fields:
             self.fields[field].setText("")
         for input, attribute in zip(self.attributes, self.region_attributes.data):
@@ -152,30 +162,44 @@ class QtPanelInfo(QTabWidget):
             elif attribute['type'] == 'keyword':
                 input.setCurrentText('')
 
-    def update(self, blob, scale_factor):
-        self.clear()
-        self.blob = blob
+    def update(self, ann, scale_factor):
 
-        for field in self.fields:
-            value = getattr(blob, field)
-            if field == 'area':
-                value = round(value * (scale_factor) * (scale_factor) / 100, 2)
-            if field ==  'surface_area':
-                value = round(value * (scale_factor) * (scale_factor) / 100, 2)
-            if field ==  'perimeter':
-                value = round(value * scale_factor / 10, 1)
-            if type(value) == float or type(value) == np.float64 or type(value) == np.float32:
-                value = "{:6.1f}".format(value)
-            if type(value) == int:
-                value = str(value)
-            
-            self.fields[field].setText(value)
+        self.clear()
+
+        self.ann = ann
+
+        if type(ann) == Blob:
+            for field in self.fields:
+                value = getattr(ann, field)
+                if field == 'area':
+                    value = round(value * (scale_factor) * (scale_factor) / 100, 2)
+                if field ==  'surface_area':
+                    value = round(value * (scale_factor) * (scale_factor) / 100, 2)
+                if field ==  'perimeter':
+                    value = round(value * scale_factor / 10, 1)
+                if type(value) == float or type(value) == np.float64 or type(value) == np.float32:
+                    value = "{:6.1f}".format(value)
+                if type(value) == int:
+                    value = str(value)
+
+                self.fields[field].setText(value)
+        else:
+            for field in self.fields:
+
+                value = ""
+                if field == 'id' or field == 'class_name' or field == "note":
+                    value = getattr(ann, field)
+                    if type(value) == int:
+                        value = str(value)
+
+                self.fields[field].setText(value)
+
 
         for input, attribute in zip(self.attributes, self.region_attributes.data):
             key = attribute['name']
-            if not key in blob.data:
+            if not key in ann.data:
                 continue
-            value = blob.data[key]
+            value = ann.data[key]
             if value is None:
                 continue;
             if attribute['type'] == 'string':

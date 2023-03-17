@@ -2,6 +2,7 @@ import math
 
 from source.Channel import Channel
 from source.Blob import Blob
+from source.Point import Point
 from source.Shape import Layer, Shape
 from source.Annotation import Annotation
 from source.Grid import Grid
@@ -33,10 +34,30 @@ class Image(object):
         self.height = height  # in pixels!
 
         self.annotations = Annotation()
-        for data in annotations:
-            blob = Blob(None, 0, 0, 0)
-            blob.fromDict(data)
-            self.annotations.addBlob(blob)
+
+        if annotations is not None:
+
+            if type(annotations) == list:
+                for data in annotations:
+                    blob = Blob(None, 0, 0, 0)
+                    blob.fromDict(data)
+                    self.annotations.addBlob(blob)
+            else:
+                regions = annotations.get("regions")
+                if regions is not None:
+                    for data in regions:
+                        blob = Blob(None, 0, 0, 0)
+                        blob.fromDict(data)
+                        self.annotations.addBlob(blob)
+
+                points = annotations.get("points")
+                if points is not None:
+                    for data in points:
+                        point = Point(0, 0, "Empty", 0)
+                        point.fromDict(data)
+                        self.annotations.addPoint(point)
+
+
 
         self.layers = []
         for layer_data in layers:
@@ -129,8 +150,9 @@ class Image(object):
                 'Visibility': np.zeros(len(labels), dtype=np.int),
                 'Color': [],
                 'Class': [],
-                '#': np.zeros(len(labels), dtype=np.int),
-                'Coverage': np.zeros(len(labels), dtype=np.float)
+                '#R': np.zeros(len(labels), dtype=np.int),
+                '#P': np.zeros(len(labels), dtype=np.int),
+                'Coverage': np.zeros(len(labels),dtype=np.float)
             }
 
             for i, label in enumerate(labels):
@@ -138,11 +160,14 @@ class Image(object):
                 dict['Color'].append(str(label.fill))
                 dict['Class'].append(label.name)
                 count, new_area = self.annotations.calculate_perclass_blobs_value(label, self.map_px_to_mm_factor)
-                dict['#'][i] = count
+                countP = self.annotations.countPoints(label)
+                dict['#R'][i] = count
+                dict['#P'][i] = countP
                 dict['Coverage'][i] = new_area
 
+
             # create dataframe
-            df = pd.DataFrame(dict, columns=['Visibility', 'Color', 'Class', '#', 'Coverage'])
+            df = pd.DataFrame(dict, columns=['Visibility', 'Color', 'Class', '#R', '#P','Coverage'])
             self.cache_labels_table = df
             self.annotations.table_needs_update = False
             return df
@@ -160,6 +185,7 @@ class Image(object):
             # create a list of instances
             name_list = []
             visible_blobs = []
+            # select ONLY visible blobs
             for blob in self.annotations.seg_blobs:
                 if blob.qpath_gitem is not None:
                     if blob.qpath_gitem.isVisible():
@@ -167,26 +193,46 @@ class Image(object):
                         name_list.append(index)
                         visible_blobs.append(blob)
 
-            number_of_seg = len(name_list)
+            number_of_seg = len(visible_blobs)
+
+            annpoint_list = []
+            visible_annpoints = []
+            for annpoint in self.annotations.annpoints:
+                if annpoint.cross1_gitem is not None:
+                    if annpoint.cross1_gitem.isVisible():
+                        index = annpoint.id
+                        annpoint_list.append(index)
+                        visible_annpoints.append(annpoint)
+
+            number_of_points = len(visible_annpoints)
+
             dict = {
-                'Id': np.zeros(number_of_seg, dtype=np.int),
+                'Id': np.zeros(number_of_seg + number_of_points, dtype=np.int),
+                'Type': [],
                 'Class': [],
-                'Area': np.zeros(number_of_seg),
-                # 'Surf. area': np.zeros(number_of_seg)
+                'Area': np.zeros(number_of_seg + number_of_points),
+                #'Surf. area': np.zeros(number_of_seg)
             }
 
             for i, blob in enumerate(visible_blobs):
                 dict['Id'][i] = blob.id
+                dict['Type'].append('R')
                 dict['Class'].append(blob.class_name)
                 dict['Area'][i] = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
             #            if blob.surface_area > 0.0:
             #                dict['Surf. area'][i] = round(blob.surface_area * (scale_factor) * (scale_factor) / 100, 2)
 
-            # create dataframe
-            # df = pd.DataFrame(dict, columns=['Id', 'Class', 'Area', 'Surf. area'])
-            df = pd.DataFrame(dict, columns=['Id', 'Class', 'Area'])
+            for i, annpoint in enumerate(visible_annpoints):
+                dict['Id'][i + number_of_seg] = annpoint.id
+                dict['Type'].append('P')
+                dict['Class'].append(annpoint.class_name)
+                dict['Area'][i + number_of_seg] = 0.0
+
+
+            df = pd.DataFrame(dict, columns=['Id','Type', 'Class', 'Area'])
             self.cache_data_table = df
             self.annotations.table_needs_update = False
+
             return df
 
     def updateChannel(self, filename, type):

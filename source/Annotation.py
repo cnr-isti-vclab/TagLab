@@ -19,6 +19,8 @@
 
 import os
 import numpy as np
+import csv
+import sys
 from cv2 import fillPoly
 
 from skimage import measure
@@ -38,6 +40,7 @@ from scipy import ndimage as ndi
 from skimage.morphology import binary_dilation, binary_erosion
 from skimage.segmentation import watershed
 from source.Blob import Blob
+from source.Point import Point
 import source.Mask as Mask
 
 
@@ -46,12 +49,16 @@ import source.Mask as Mask
 # refactor: change name to annotationS
 class Annotation(QObject):
     """
-        Annotation object contains all the annotations as a list of blobs.
+        Annotation object contains all the annotations, a list of blobs and a list of annotation points
+        Annotation point can't be manually edited or removed, only classified
     """
     blobAdded = pyqtSignal(Blob)
+    pointAdded = pyqtSignal(Point)
     blobRemoved = pyqtSignal(Blob)
+    pointRemoved = pyqtSignal(Point)
     blobUpdated = pyqtSignal(Blob, Blob)
     blobClassChanged = pyqtSignal(str, Blob)
+    annPointClassChanged = pyqtSignal(str, Point)
 
     def __init__(self):
         super(QObject, self).__init__()
@@ -59,6 +66,8 @@ class Annotation(QObject):
         # refactor: rename this to blobs.
         # list of all blobs
         self.seg_blobs = []
+        self.annpoints = []
+        self.annotationsDict = {}
 
         # relative weight of depth map for refine borders
         # refactor: this is to be saved and loaded in qsettings
@@ -67,6 +76,13 @@ class Annotation(QObject):
 
         # cache
         self.table_needs_update = True
+
+
+    def addPoint(self, point, notify=True):
+
+        self.annpoints.append(point)
+        if notify:
+            self.pointAdded.emit(point)
 
     def addBlob(self, blob, notify=True):
         used = [blob.id for blob in self.seg_blobs]
@@ -82,14 +98,24 @@ class Annotation(QObject):
 
     def removeBlob(self, blob, notify=True):
 
-        # notification that a blob is going to be removed
-        if notify:
-            self.blobRemoved.emit(blob)
+        """ removes both regions and points (they are both called blob)"""
 
-        index = self.seg_blobs.index(blob)
-        del self.seg_blobs[index]
+        if type(blob) == Point:
+           index= self.annpoints.index(blob)
+           del self.annpoints[index]
 
-        self.table_needs_update = True
+           if notify:
+               self.pointRemoved.emit(blob)
+
+        else:
+            # notification that a blob is going to be removed
+            if notify:
+                self.blobRemoved.emit(blob)
+
+            index = self.seg_blobs.index(blob)
+            del self.seg_blobs[index]
+
+            self.table_needs_update = True
 
     def updateBlob(self, old_blob, new_blob):
 
@@ -113,17 +139,40 @@ class Annotation(QObject):
 
         self.table_needs_update = True
 
+
+    def setAnnPointClass(self, annpoint, class_name):
+
+        if annpoint.class_name == class_name:
+            return
+        else:
+            old_class_name = annpoint.class_name
+            annpoint.class_name = class_name
+
+            # notify that the class name of 'point' has changed
+            self.annPointClassChanged.emit(old_class_name, annpoint)
+
+       # self.table_needs_update = True da fare
+
     def blobById(self, id):
         for blob in self.seg_blobs:
             if blob.id == id:
                 return blob
         return None
 
+    def pointById(self, id):
+        for point in self.annpoints:
+            if point.id == id:
+                return point
+        return None
+
     def blobByGenet(self, genet):
         return [blob for blob in self.seg_blobs if blob.genet == genet]
 
     def save(self):
-        return self.seg_blobs
+
+        self.annotationsDict = { "regions": self.seg_blobs, "points": self.annpoints }
+
+        return self.annotationsDict
 
     # move to BLOB!
     def blobsFromMask(self, seg_mask, map_pos_x, map_pos_y, area_mask):
@@ -149,6 +198,15 @@ class Annotation(QObject):
         used = []
         for blob in self.seg_blobs:
             used.append(blob.id)
+        for id in range(len(used)):
+            if id not in used:
+                return id
+        return len(used)
+
+    def getFreePointId(self):
+        used = []
+        for annpoint in self.annpoints:
+            used.append(annpoint.id)
         for id in range(len(used)):
             if id not in used:
                 return id
@@ -507,6 +565,27 @@ class Annotation(QObject):
 
         return selected_blob
 
+
+
+    def clickedPoint(self, x, y):
+
+        # annpoints_clicked = []
+        point = np.array([[x, y]])
+
+        selected_annpoint = None
+        for annpoint in self.annpoints:
+            cx = annpoint.coordx
+            cy = annpoint.coordy
+            c = np.array([[cx, cy]])
+            dist = np.linalg.norm(point - c)
+
+            # for i in range(len(annpoints_clicked)):
+            #     point = annpoints_clicked[i]
+            if dist < 11:
+                selected_annpoint = annpoint
+
+        return selected_annpoint
+
     ###########################################################################
     ### IMPORT / EXPORT
 
@@ -576,6 +655,23 @@ class Annotation(QObject):
 
         return inner_blobs
 
+
+    def calculate_inner_points(self, working_area):
+        """
+        This consider only points having center inside the working area"
+        """
+
+        selected_annpoints = self.annpoints
+        inner_annpoints = []
+        for annpoint in selected_annpoints:
+            if (annpoint.coordy > working_area[0]) and (annpoint.coordy < working_area[0] + working_area[3]):
+                if (annpoint.coordx > working_area[1]) and (annpoint.coordx < working_area[1] + working_area[2]):
+                    inner_annpoints.append(annpoint)
+
+
+        return inner_annpoints
+
+
     def calculate_perclass_blobs_value(self, label, pixel_size):
         """
         This consider all the existing blobs, inside and outside the working area.
@@ -590,6 +686,20 @@ class Annotation(QObject):
         tot_area = round((tot_area * pixel_size * pixel_size) / 100.0, 2)
 
         return count, tot_area
+
+    def countPoints(self, label):
+
+        """
+        This consider all the existing points, inside and outside the working area.
+        It returns number of points per label
+        """
+        count = 0
+        tot_area = 0.0
+        for annpoint in self.annpoints:
+            if annpoint.class_name == label.name:
+                count = count + 1
+        return count
+
 
     def import_label_map(self, filename, labels_dictionary, offset, scale, create_holes=False):
         """
@@ -640,57 +750,88 @@ class Annotation(QObject):
 
         return created_blobs
 
-    def export_data_table(self, project, image, filename):
+    def export_data_table(self, project, image, imagename, filename, choice):
 
         working_area = project.working_area
         scale_factor = image.pixelSize()
         date = image.acquisition_date
 
         # create a list of instances
-        name_list = []
+
+        blobindexlist = []
+        pointindexlist = []
+
+        # check visibility and working area of both
+
 
         if working_area is None:
             # all the blobs are considered
             self.blobs = self.seg_blobs
-        else:
-            # only the blobs inside the working area are considered
-            self.blobs = self.calculate_inner_blobs(working_area)
 
+        else:
+            # only blobs and points inside the working area are considered
+            self.blobs = self.calculate_inner_blobs(working_area)
+            self.annpoints = self.calculate_inner_points(working_area)
+        #
         visible_blobs = []
         for blob in self.blobs:
             if blob.qpath_gitem.isVisible():
                 index = blob.blob_name
-                name_list.append(index)
+                blobindexlist.append(index)
                 visible_blobs.append(blob)
 
-        number_of_seg = len(name_list)
+        visible_points = []
+        for annpoint in self.annpoints:
+            if annpoint.cross1_gitem.isVisible():
+                point_id = annpoint.id
+                pointindexlist.append(point_id)
+                visible_points.append(annpoint)
+
+        if choice == 'Regions':
+            visible_points = []
+
+        if choice == 'Points':
+            visible_blobs = []
+
+        number_of_rows = len(visible_blobs) + len(visible_points)
+
+        # create a common dictionary
+
         dict = {
-            'TagLab Region id': np.zeros(number_of_seg, dtype=np.int64),
+            'Image name': [],
+            'TagLab Id': np.zeros(number_of_rows, dtype=np.int64),
+            'TagLab Type': [],
             'TagLab Date': [],
             'TagLab Class name': [],
-            'TagLab Genet id': np.zeros(number_of_seg, dtype=np.int64),
-            'TagLab Centroid x': np.zeros(number_of_seg),
-            'TagLab Centroid y': np.zeros(number_of_seg),
-            'TagLab Area': np.zeros(number_of_seg),
-            'TagLab Surf. area': np.zeros(number_of_seg),
-            'TagLab Perimeter': np.zeros(number_of_seg),
+            'TagLab Genet Id': np.zeros(number_of_rows, dtype=np.int64),
+            'TagLab Centroid x': np.zeros(number_of_rows),
+            'TagLab Centroid y': np.zeros(number_of_rows),
+            'TagLab Area': np.zeros(number_of_rows),
+            'TagLab Surf. area': np.zeros(number_of_rows),
+            'TagLab Perimeter': np.zeros(number_of_rows),
             'TagLab Note': []}
+
+        # Are attributes named the same? Check
 
         for attribute in project.region_attributes.data:
             key = attribute["name"]
             if attribute['type'] in ['string', 'keyword']:
                 dict[key] = []
-            # elif attribute['type'] in ['number', 'boolean']:
             elif attribute['type'] in ['integer number']:
-                dict[key] = np.zeros(number_of_seg, dtype=np.int64)
+                dict[key] = np.zeros(number_of_rows, dtype=np.int64)
             elif attribute['type'] in ['decimal number']:
-                dict[key] = np.zeros(number_of_seg, dtype=np.float64)
+                dict[key] = np.zeros(number_of_rows, dtype=np.float64)
             else:
                 # unknown attribute type, not saved
                 pass
 
-        for i, blob in enumerate(visible_blobs):
-            dict['TagLab Region id'][i] = blob.id
+        # #fill it
+
+        i = 0
+        for blob in visible_blobs:
+            dict['Image name'][i].append(imagename)
+            dict['TagLab Id'][i] = blob.id
+            dict['TagLab Type'].append('Region')
             dict['TagLab Date'].append(date)
             dict['TagLab Class name'].append(blob.class_name)
             dict['TagLab Centroid x'][i] = round(blob.centroid[0], 1)
@@ -701,7 +842,7 @@ class Annotation(QObject):
             dict['TagLab Perimeter'][i] = round(blob.perimeter * scale_factor / 10, 1)
 
             if blob.genet is not None:
-                dict['TagLab Genet id'][i] = blob.genet
+                dict['TagLab Genet Id'][i] = blob.genet
 
             dict['TagLab Note'].append(blob.note)
 
@@ -733,6 +874,55 @@ class Annotation(QObject):
                         dict[key].append(value)
                     else:
                         dict[key].append('')
+
+            i = i + 1
+
+        j = len(visible_blobs)
+        for annpoint in visible_points:
+            dict['Image name'].append(imagename)
+            dict['TagLab Id'][j] = annpoint.id
+            dict['TagLab Type'].append('Points')
+            dict['TagLab Date'].append(date)
+            dict['TagLab Class name'].append(annpoint.class_name)
+            dict['TagLab Centroid x'][j] = round(annpoint.coordx, 1)
+            dict['TagLab Centroid y'][j] = round(annpoint.coordy, 1)
+            dict['TagLab Area'][j] = int(0)
+            dict['TagLab Surf. area'][j] = int(0)
+            dict['TagLab Perimeter'][j] = int(0)
+            dict['TagLab Genet Id'][j] = int(0)
+            dict['TagLab Note'].append(annpoint.note)
+
+
+            for attribute in project.region_attributes.data:
+
+                key = attribute["name"]
+
+                try:
+                    value = annpoint.data[key]
+                except:
+                    value = None
+
+                if attribute['type'] == 'integer number':
+
+                    if value is not None:
+                        dict[key][j] = value
+                    else:
+                        dict[key][j] = 0
+
+                elif attribute['type'] == 'decimal number':
+
+                    if value is not None:
+                        dict[key][j] = value
+                    else:
+                        dict[key][j] = np.NaN
+
+                else:
+                    if value is not None:
+                        dict[key].append(value)
+                    else:
+                        dict[key].append('')
+
+            j= j+1
 
         # create dataframe
         df = pd.DataFrame(dict, columns=list(dict.keys()))
@@ -813,3 +1003,50 @@ class Annotation(QObject):
         width = max(pointsX) - left
         # Result
         return np.array([int(top), int(left), int(width) + 1, int(height) + 1])
+
+
+    # from here, everything is about annotation point not Blob (a.k.a annotation regions) anymore
+
+    def openCSVAnn(self, filename, imagename):
+
+        with open(filename, newline='') as f:
+            reader = csv.reader(f)
+            try:
+                self.annpoints = []
+                for row in reader:
+                    if row[0] == imagename:
+                        # coralnet exports all the annotation of a image set in a single csv else, file names doesn't match
+                        # here, if plot name == image.name then extract coords
+                        coordx = int(row[2])
+                        coordy= int(row[1])
+                        classname = row[3]
+                        point = Point(coordx, coordy, classname, self.getFreePointId())
+                        #check if the csv file has machine suggestion, take the first 3 and store them in point attributes
+                        if len(row[4])>0:
+                           point.data = {
+                           'Suggestion 1': row[4],
+                           'Confidence 1': row[5],
+                           'Suggestion 2': row[6],
+                           'Confidence 2': row[7],
+                           'Suggestion 3': row[8],
+                           'Confidence 3': row[9]}
+
+                        self.addPoint(point)
+
+            except csv.Error as e:
+                sys.exit('file {}, line {}: {}'.format(filename, reader.line_num, e))
+
+
+    def setPointClass(self, annpoint, class_name):
+
+        if annpoint.class_name == class_name:
+            return
+        else:
+            old_class_name = annpoint.class_name
+            annpoint.class_name = class_name
+            # notify that the class name of 'point' has changed
+            self.pointClassChanged.emit(old_class_name, annpoint)
+
+        #we don't have an ann point table at this time
+        #self.table_needs_update = True
+       

@@ -15,7 +15,7 @@ imdir = imdir.replace('source', '')
 class QtLayersWidget(QTreeWidget):
     showImage = pyqtSignal(Image)
     toggleLayer = pyqtSignal(Layer, bool)
-    toggleAnnotations = pyqtSignal(Image, bool)
+    toggleAnnotations = pyqtSignal(str, Image, bool)
     deleteLayer = pyqtSignal(Image, Layer)
 
     def __init__(self, parent=None):
@@ -61,7 +61,6 @@ class QtLayersWidget(QTreeWidget):
             item.type = 'image'
             item.image = image
 
-
             child = QTreeWidgetItem()
             child.setText(0, "Annotations")
             child.setCheckState(0, Qt.Checked)
@@ -70,6 +69,21 @@ class QtLayersWidget(QTreeWidget):
             child.image = image
             item.addChild(child)
 
+            subchild = QTreeWidgetItem()
+            subchild.setText(0, "Regions")
+            subchild.setCheckState(0, Qt.Checked)
+            subchild.setFlags(Qt.NoItemFlags)
+            subchild.type = 'ann-regions'
+            subchild.image = image
+            child.addChild(subchild)
+
+            subchild = QTreeWidgetItem()
+            subchild.setText(0, "Points")
+            subchild.setCheckState(0, Qt.Checked)
+            subchild.setFlags(Qt.NoItemFlags)
+            subchild.type = 'ann-points'
+            subchild.image = image
+            child.addChild(subchild)
 
             for layer in image.layers:
                 child = QTreeWidgetItem()
@@ -133,7 +147,15 @@ class QtLayersWidget(QTreeWidget):
                     if item.image == image1 or item.image == image2:
                         child.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
                     else:
-                        child.setFlags(Qt.NoItemFlags) #Qt.ItemIsEnabled)
+                        child.setFlags(Qt.NoItemFlags)
+
+                    for j in range(child.childCount()):
+                        subchild = child.child(j)
+
+                        if item.image == image1 or item.image == image2:
+                            subchild.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
+                        else:
+                            subchild.setFlags(Qt.NoItemFlags)
 
             it += 1
         
@@ -141,6 +163,7 @@ class QtLayersWidget(QTreeWidget):
 
 
     def itemChecked(self, item):
+
         checked = item.checkState(0) == Qt.Checked
         if item.type == 'image':
             self.setImage(item.image)
@@ -150,4 +173,12 @@ class QtLayersWidget(QTreeWidget):
             self.toggleLayer.emit(item.layer, checked)
 
         elif item.type == 'annotations':
-            self.toggleAnnotations.emit(item.image, checked)
+            self.toggleAnnotations.emit("regions", item.image, checked)
+            self.toggleAnnotations.emit("points", item.image, checked)
+
+        elif item.type == 'ann-regions':
+            self.toggleAnnotations.emit("regions", item.image, checked)
+
+        elif item.type == 'ann-points':
+            self.toggleAnnotations.emit("points", item.image, checked)
+

@@ -12,6 +12,8 @@ from source import utils
 from source.Annotation import Annotation
 from source.Blob import Blob
 from source.Channel import Channel
+from source.Label import Label
+from source.Point import Point
 from source.Correspondences import Correspondences
 from source.Genet import Genet
 from source.Grid import Grid
@@ -127,6 +129,8 @@ class ProjectEncoder(json.JSONEncoder):
         elif isinstance(obj, Label):
             return obj.save()
         elif isinstance(obj, Annotation):
+            return obj.save()
+        elif isinstance(obj, Point):
             return obj.save()
         elif isinstance(obj, Blob):
             return obj.save()
@@ -270,8 +274,6 @@ class Project(object):
         f = open(filename, "w")
         f.write(str)
         f.close()
-        # except Exception as a:
-        #    print(str(a))
 
     def loadDictionary(self, filename):
 
@@ -330,6 +332,19 @@ class Project(object):
         color = self.labels[blob.class_name].fill
         brush = QBrush(QColor(color[0], color[1], color[2], 200))
         return brush
+
+    # def classBrushFromNamePoint(self, annpoint):
+    #     brush = QBrush()
+    #     if annpoint.class_name == "Empty":
+    #         return brush
+    #
+    #     if not annpoint.class_name in self.labels:
+    #         print("Missing label for " + annpoint.class_name + ". Creating one.")
+    #         self.labels[annpoint.class_name] = Label(annpoint.class_name, annpoint.class_name, fill = [255, 0, 0])
+    #
+    #     color = self.labels[annpoint.class_name].fill
+    #     brush = QBrush(QColor(color[0], color[1], color[2], 200))
+    #     return brush
 
     def isLabelVisible(self, id):
         if not id in self.labels:
@@ -392,12 +407,14 @@ class Project(object):
 
     def removeBlob(self, image, blob):
 
-        # updata image annotations
+        # updata image annotations (this are both blob and annpoints)
         image.annotations.removeBlob(blob)
 
         # update correspondences
         for corr in self.findCorrespondences(image):
             corr.removeBlob(image, blob)
+
+
 
     def updateBlob(self, image, old_blob, new_blob):
 
@@ -500,8 +517,9 @@ class Project(object):
             'Visibility': np.zeros(len(self.labels), dtype=np.int),
             'Color': [],
             'Class': [],
-            '#': np.zeros(len(self.labels), dtype=np.int),
-            'Coverage': np.zeros(len(self.labels), dtype=np.float)
+            '#R': np.zeros(len(self.labels), dtype=np.int),
+            '#P': np.zeros(len(self.labels), dtype=np.int),
+            'Coverage': np.zeros(len(self.labels),dtype=np.float)
         }
 
         for i, key in enumerate(list(self.labels.keys())):
@@ -512,15 +530,20 @@ class Project(object):
 
             if image is None:
                 count = 0
+                countP= 0
                 new_area = 0.0
             else:
                 count, new_area = image.annotations.calculate_perclass_blobs_value(label, image.pixelSize())
+                countP = image.annotations.countPoints(label)
 
-            dict['#'][i] = count
+            dict['#R'][i] = count
+            dict['#P'][i] = countP
             dict['Coverage'][i] = new_area
 
+
+
         # create dataframe
-        df = pd.DataFrame(dict, columns=['Visibility', 'Color', 'Class', '#', 'Coverage'])
+        df = pd.DataFrame(dict, columns=['Visibility', 'Color', 'Class', '#R', '#P', 'Coverage'])
         return df
 
     def addOrUpdateMarkers(self, refImgId, refMarkers, coregImgId, coregMarkers, markersTypes):
