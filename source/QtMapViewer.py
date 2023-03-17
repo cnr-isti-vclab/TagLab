@@ -138,10 +138,10 @@ class QtMapViewer(QGraphicsView):
             W = self.pixmap.width()
             H = self.pixmap.height()
 
-            self.HIGHLIGHT_RECT_WIDTH = rect.width() * W
-            self.HIGHLIGHT_RECT_HEIGHT = rect.height() * H
-            self.HIGHLIGHT_RECT_POSX = rect.left() * W
-            self.HIGHLIGHT_RECT_POSY = rect.top() * H
+            self.HIGHLIGHT_RECT_WIDTH = int(rect.width() * W)
+            self.HIGHLIGHT_RECT_HEIGHT = int(rect.height() * H)
+            self.HIGHLIGHT_RECT_POSX = int(rect.left() * W)
+            self.HIGHLIGHT_RECT_POSY = int(rect.top() * H)
             self.overlay_image = QImage(self.HIGHLIGHT_RECT_WIDTH, self.HIGHLIGHT_RECT_HEIGHT, QImage.Format_ARGB32)
             self.overlay_image.fill(self.HIGHLIGHT_COLOR)
 
