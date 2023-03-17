@@ -147,11 +147,11 @@ class Image(object):
             return self.cache_labels_table
         else:
             dict = {
-                'Visibility': np.zeros(len(labels), dtype=np.int),
+                'Visibility': np.zeros(len(labels), dtype=int),
                 'Color': [],
                 'Class': [],
-                '#R': np.zeros(len(labels), dtype=np.int),
-                '#P': np.zeros(len(labels), dtype=np.int),
+                '#R': np.zeros(len(labels), dtype=int),
+                '#P': np.zeros(len(labels), dtype=int),
                 'Coverage': np.zeros(len(labels),dtype=np.float)
             }
 
@@ -207,7 +207,7 @@ class Image(object):
             number_of_points = len(visible_annpoints)
 
             dict = {
-                'Id': np.zeros(number_of_seg + number_of_points, dtype=np.int),
+                'Id': np.zeros(number_of_seg + number_of_points, dtype=int),
                 'Type': [],
                 'Class': [],
                 'Area': np.zeros(number_of_seg + number_of_points),

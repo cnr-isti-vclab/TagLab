@@ -73,7 +73,7 @@ class DeepExtreme(Tool):
         arr[:, :, 2] = arrtemp[:, :, 0]
 
         # update four point
-        four_points_updated = np.zeros((4, 2), dtype=np.int)
+        four_points_updated = np.zeros((4, 2), dtype=int)
         four_points_updated[:, 0] = four_points[:, 0] - left
         four_points_updated[:, 1] = four_points[:, 1] - top
 
@@ -120,7 +120,7 @@ class DeepExtreme(Tool):
 
             # remap the input points inside the 512 x 512 cropped box
             extreme_points = (512 * extreme_points * [1 / crop_image.shape[1], 1 / crop_image.shape[0]]).astype(
-                np.int)
+                int)
 
             # create the heatmap
             extreme_heatmap = helpers.make_gt(resize_image, extreme_points, sigma=10)

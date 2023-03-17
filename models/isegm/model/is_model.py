@@ -115,7 +115,7 @@ def split_points_by_order(tpoints: torch.Tensor, groups):
     group_points = [np.full((bs, 2 * x, 3), -1, dtype=np.float32)
                     for x in groups]
 
-    last_point_indx_group = np.zeros((bs, num_groups, 2), dtype=np.int)
+    last_point_indx_group = np.zeros((bs, num_groups, 2), dtype=int)
     for group_indx, group_size in enumerate(groups):
         last_point_indx_group[:, group_indx, 1] = group_size
 
