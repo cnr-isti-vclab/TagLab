@@ -12,7 +12,6 @@ from albumentations import (CLAHE, Blur, HueSaturationValue, RGBShift, RandomBri
 from source.Label import Label
 
 
-
 # ALBUMENTATIONS - USED JUST TO PERFORM THE COLOR AUGMENTATION
 def augmentation_color(p=0.5):
     return Compose([
@@ -68,10 +67,6 @@ class CoralsDataset(Dataset):
         self.flagDataAugmentationCrop = True
         self.CROP_SIZE = 513
 
-        self.flagDataAugmentationScale = False
-        self.RANDOM_SCALE_MIN = 0.9
-        self.RANDOM_SCALE_MAX = 1.1
-
         # COLOR TRANSFORM
         self.custom_color_aug = augmentation_color(p=0.4)
         self.flagColorAugmentation = True
@@ -96,14 +91,14 @@ class CoralsDataset(Dataset):
 
         self.flagDataAugmentationFlip = augmentation_flip
 
+        self.flagDataAugmentationRT = False
+
         if (range_T > 0.0) or (range_R > 0.0):
             self.flagDataAugmentationRT = True
             self.RANDOM_TRANSLATION_MINVALUE = -range_T
             self.RANDOM_TRANSLATION_MAXVALUE = range_T
             self.RANDOM_ROTATION_MINVALUE = -range_R
             self.RANDOM_ROTATION_MAXVALUE = range_R
-        else:
-            self.flagDataAugmentationRT = False
 
         if crop_size > 0:
             self.flagDataAugmentationCrop = True
@@ -112,11 +107,9 @@ class CoralsDataset(Dataset):
             self.flagDataAugmentationCrop = False
 
         if range_scale > 0.00001:
-            self.flagDataAugmentationScale = True
-            self.RANDOM_SCALE_MIN = 1.0 - range_scale
-            self.RANDOM_SCALE_MAX = 1.0 + range_scale
-        else:
-            self.flagDataAugmentationScale = False
+            self.flagDataAugmentationRT = True
+            self.RANDOM_SCALE_MINVALUE = 1.0 - range_scale
+            self.RANDOM_SCALE_MAXVALUE = 1.0 + range_scale
 
     def enableNormalizationByRemoveAverage(self):
 
@@ -201,18 +194,18 @@ class CoralsDataset(Dataset):
                 rot = np.random.randint(self.RANDOM_ROTATION_MINVALUE, self.RANDOM_ROTATION_MAXVALUE)
                 tx = np.random.randint(self.RANDOM_TRANSLATION_MINVALUE, self.RANDOM_TRANSLATION_MAXVALUE)
                 ty = np.random.randint(self.RANDOM_TRANSLATION_MINVALUE, self.RANDOM_TRANSLATION_MAXVALUE)
-                # sc = 1.0
+                #sc = 1.0
                 sc = np.random.uniform(self.RANDOM_SCALE_MINVALUE, self.RANDOM_SCALE_MAXVALUE)
                 img_flipped_RT = transforms.functional.affine(img_flipped, angle=rot, scale=sc, shear=0.0,
                                                               translate=(tx, ty),
                                                               interpolation=transforms.InterpolationMode.BILINEAR)
-                imglbl_flipped_RT = transforms.functional.affine(imglbl_flipped, angle=rot, scale=1.0, shear=0.0,
+                imglbl_flipped_RT = transforms.functional.affine(imglbl_flipped, angle=rot, scale=sc, shear=0.0,
                                                                  translate=(tx, ty),
                                                                  interpolation=transforms.InterpolationMode.NEAREST)
             else:
+                sc = 1.0
                 img_flipped_RT = img_flipped
                 imglbl_flipped_RT = imglbl_flipped
-
 
             # center crop
             if self.flagDataAugmentationCrop:

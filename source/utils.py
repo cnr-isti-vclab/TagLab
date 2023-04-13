@@ -170,19 +170,12 @@ def rgbToQImage(image):
 
     imgdata = np.zeros([h, w, 4], dtype=np.uint8)
 
-    if ch == 3:
+    if ch == 3 or ch == 4:
         imgdata[:, :, 2] = image[:, :, 0]
         imgdata[:, :, 1] = image[:, :, 1]
         imgdata[:, :, 0] = image[:, :, 2]
         imgdata[:, :, 3] = 255
         qimg = QImage(imgdata.data, w, h, QImage.Format_RGB32)
-
-    elif ch == 4:
-        imgdata[:, :, 3] = image[:, :, 0]
-        imgdata[:, :, 2] = image[:, :, 1]
-        imgdata[:, :, 1] = image[:, :, 2]
-        imgdata[:, :, 0] = image[:, :, 3]
-        qimg = QImage(imgdata.data, w, h, QImage.Format_ARGB32)
 
     return qimg.copy()
 
@@ -263,7 +256,7 @@ def qimageToNumpyArray(qimg):
     h = qimg.height()
 
     fmt = qimg.format()
-    assert (fmt == QImage.Format_RGB32)
+    #assert (fmt == QImage.Format_RGB32)
 
     arr = np.zeros((h, w, 3), dtype=np.uint8)
 
