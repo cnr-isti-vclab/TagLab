@@ -226,6 +226,10 @@ install_requires = [
     'pycocotools'
 ]
 
+# if on windows, first install the msvc runtime
+if osused == 'Windows':
+    install_requires.insert(0, 'msvc-runtime')
+
 # installing all the packages
 for package in install_requires:
     subprocess.check_call([sys.executable, "-m", "pip", "install", package])
