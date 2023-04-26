@@ -82,14 +82,20 @@ elif flag_install_pythorch_cpu == False:
         torch_extra_argument2 = 'https://download.pytorch.org/whl/torch_stable.html'
     elif '11.3' in nvcc_version:
         print('Torch 1.12.1 for CUDA 11.3')
+        torch_package += '==1.12.1+cu113'
+        torchvision_package += '==0.13.1+cu113'
         torch_extra_argument1 = '--extra-index-url'
         torch_extra_argument2 = 'https://download.pytorch.org/whl/cu113'
     elif '11.6' in nvcc_version:
         print('Torch 1.13.1 for CUDA 11.6')
+        torch_package += '==1.13.1+cu116'
+        torchvision_package += '==0.14.1+cu116'
         torch_extra_argument1 = '--extra-index-url'
         torch_extra_argument2 = 'https://download.pytorch.org/whl/cu116'
     elif '11.7' in nvcc_version:
         print('Torch 1.13.1 for CUDA 11.7')
+        torch_package += '==1.13.1+cu117'
+        torchvision_package += '==0.14.1+cu117'
         torch_extra_argument1 = '--extra-index-url'
         torch_extra_argument2 = 'https://download.pytorch.org/whl/cu117'
     elif something_wrong_with_nvcc==False:
