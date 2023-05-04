@@ -342,6 +342,14 @@ class Annotation(QObject):
                 created_blobs.append(b)
         return created_blobs
 
+    def createBlobFromSingleMask(self, mask, offset_x, offset_y):
+
+        label_image = measure.label(mask, connectivity=1)
+        for region in measure.regionprops(label_image):
+            blob = Blob(region, offset_x, offset_y, self.getFreeId())
+        return blob
+
+
     def splitBlob(self, map, blob, seeds):
 
         seeds = np.asarray(seeds)

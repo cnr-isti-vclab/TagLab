@@ -762,6 +762,11 @@ class QtImageViewerPlus(QtImageViewer):
         else:
             self.setContextMenuPolicy(Qt.CustomContextMenu)
 
+        if tool == "SAM":
+            self.setContextMenuPolicy(Qt.NoContextMenu)
+        else:
+            self.setContextMenuPolicy(Qt.CustomContextMenu)
+
         if tool == "SELECTAREA" or tool == "RITM":
             QApplication.setOverrideCursor(Qt.CrossCursor)
 

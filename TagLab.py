@@ -229,6 +229,7 @@ class TagLab(QMainWindow):
         self.btnRuler         = self.newButton("ruler.png",    "Measure tool",           flatbuttonstyle1, self.ruler)
         self.btnDeepExtreme   = self.newButton("dexter.png",   "4-clicks segmentation",  flatbuttonstyle2, self.deepExtreme)
         self.btnRitm          = self.newButton("ritm.png",     "Positive/negative clicks segmentation", flatbuttonstyle2, self.ritm)
+        self.btnSam = self.newButton("sam.png", "Segment everything", flatbuttonstyle2, self.sam)
         self.btnAutoClassification = self.newButton("auto.png", "Fully auto semantic segmentation", flatbuttonstyle2, self.selectClassifier)
 
         # Split Screen operation removed from the toolbar
@@ -254,6 +255,7 @@ class TagLab(QMainWindow):
         layout_tools.addWidget(self.btnPoint)
         layout_tools.addWidget(self.btnDeepExtreme)
         layout_tools.addWidget(self.btnRitm)
+        layout_tools.addWidget(self.btnSam)
         layout_tools.addWidget(self.btnFreehand)
         layout_tools.addWidget(self.btnAssign)
         #layout_tools.addWidget(self.btnWatershed)
@@ -2393,6 +2395,7 @@ class TagLab(QMainWindow):
         self.btnCreateCrack.setChecked(False)
         self.btnDeepExtreme.setChecked(False)
         self.btnRitm.setChecked(False)
+        self.btnSam.setChecked(False)
         self.btnCreateGrid.setChecked(False)
         self.btnGrid.setChecked(False)
         self.btnMatch.setChecked(False)
@@ -2415,6 +2418,7 @@ class TagLab(QMainWindow):
             "RULER"        : ["Ruler"        , self.btnRuler],
             "DEEPEXTREME"  : ["4-click"      , self.btnDeepExtreme],
             "MATCH"        : ["Match"        , self.btnMatch],
+            "SAM":         ["Sam", self.btnSam],
             "RITM"         : ["Ritm"         , self.btnRitm]
         }
         newtool = tools[tool]
@@ -2435,6 +2439,7 @@ class TagLab(QMainWindow):
             self.datadock.show()
         else:
             self.labelsdock.show()
+
 
 
     @pyqtSlot()
@@ -2539,6 +2544,13 @@ class TagLab(QMainWindow):
         Activate the "Deep Extreme" tool.
         """
         self.setTool("PLACEANNPOINT")
+
+    @pyqtSlot()
+    def sam(self):
+        """
+        Activate the "Segmeent Everything" tool.
+        """
+        self.setTool("SAM")
 
     @pyqtSlot()
     def ritm(self):
@@ -3439,7 +3451,7 @@ class TagLab(QMainWindow):
 
         for button in [self.btnMove, self.btnPoint, self.btnAssign, self.btnEditBorder, self.btnCut, self.btnFreehand,
                        self.btnCreateCrack, self.btnWatershed, self.btnBricksSegmentation, self.btnRuler, self.btnDeepExtreme,
-                       self.btnRitm, self.btnAutoClassification, self.btnCreateGrid, self.btnGrid]:
+                       self.btnRitm,self.btnSam, self.btnAutoClassification, self.btnCreateGrid, self.btnGrid]:
             button.setEnabled(len(self.project.images) > 0)
 
         for button in [self.btnSplitScreen, self.btnAutoMatch, self.btnMatch]:
@@ -4169,7 +4181,7 @@ class TagLab(QMainWindow):
             current_image = self.project.images[index]
 
             new_dataset = NewDataset(self.activeviewer.img_map, self.project.labels, current_image,
-                                     tile_size=1026, step=513, flag_coco=flag_coco)
+                                     tile_size=1026, step=256, flag_coco=flag_coco)
 
             target_classes = training.createTargetClasses(self.activeviewer.annotations)
 
