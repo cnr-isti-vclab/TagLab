@@ -42,6 +42,7 @@ from skimage.segmentation import watershed
 from source.Blob import Blob
 from source.Point import Point
 import source.Mask as Mask
+from coraline.Coraline import segment, mutual
 
 
 # from PIL import Image as Img  #for debug
@@ -315,7 +316,6 @@ class Annotation(QObject):
                 origin = np.array([box[1], box[0]])
                 clippoints = clippoints - origin
         try:
-            from coraline.Coraline import segment, mutual
             # rgb_weights = [0.2989, 0.5870, 0.1140]
             # gray = np.dot(img[...,:3], rgb_weights).astype(np.uint8)
             # mutual(gray)

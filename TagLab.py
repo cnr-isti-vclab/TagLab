@@ -293,6 +293,7 @@ class TagLab(QMainWindow):
         self.divideAction       = self.newAction("Divide Labels",           "D",   self.divide)
         self.subtractAction     = self.newAction("Subtract Labels",         "S",   self.subtract)
         self.refineAction       = self.newAction("Refine Border",           "R",   self.refineBorderOperation)
+        self.refineAllAction    = self.newAction("Refine All Borders",      "",    self.refineBorderAll)
         self.dilateAction       = self.newAction("Dilate Border",           "+",   self.dilate)
         self.erodeAction        = self.newAction("Erode Border",            "-",   self.erode)
         self.attachBoundariesAction = self.newAction("Attach Boundaries",   "B",   self.attachBoundaries)
@@ -702,7 +703,10 @@ class TagLab(QMainWindow):
     #just to make the code less verbose
     def newAction(self, text, shortcut, callback):
         action  = QAction(text, self)
-        action.setShortcut(QKeySequence(shortcut))
+
+        if shortcut != "":
+            action.setShortcut(QKeySequence(shortcut))
+
         #compatibility with Qt < 5.10
         if hasattr(action, 'setShortcutVisibleInContextMenu'):
             action.setShortcutVisibleInContextMenu(True)
@@ -1120,6 +1124,7 @@ class TagLab(QMainWindow):
         self.editmenu.addAction(self.fillAction)
         self.editmenu.addSeparator()
         self.editmenu.addAction(self.refineAction)
+        self.editmenu.addAction(self.refineAllAction)
         self.editmenu.addAction(self.dilateAction)
         self.editmenu.addAction(self.erodeAction)
 
@@ -2947,6 +2952,18 @@ class TagLab(QMainWindow):
 
         logfile.info("[OP-REFINE-BORDER-ERODE] ERODE-BORDER operation ends.")
 
+    def refineBorderAll(self):
+
+        if self.activeviewer is not None:
+            if self.activeviewer.image is not None:
+                self.activeviewer.resetSelection()
+
+                if len(self.activeviewer.image.annotations.seg_blobs) > 0:
+
+                    self.activeviewer.selectAllBlobs()
+                    self.refineBorder()
+
+
     def refineBorderOperation(self):
 
         view = self.activeviewer
@@ -2968,7 +2985,7 @@ class TagLab(QMainWindow):
 
     def refineBorder(self):
         """
-        Refine blob border
+        Refine blob border - all the selected blobs are refined
         """
 
         view = self.activeviewer
@@ -2977,22 +2994,22 @@ class TagLab(QMainWindow):
 
         # padding mask to allow moving boundary
         padding = 35
-        if len(view.selected_blobs) == 1:
 
-            selected = view.selected_blobs[0]
+        blobs = view.selected_blobs.copy()
+
+        counter = 0
+        for blob in blobs:
 
             if view.refine_original_mask is None:
                 view.refine_grow = 0
-            #blob = selected.copy()
-            self.logBlobInfo(selected, "[OP-REFINE-BORDER][BLOB-SELECTED]")
 
             if view.refine_grow == 0:
-                mask = selected.getMask()
+                mask = blob.getMask()
                 mask = np.pad(mask, (padding, padding), mode='constant', constant_values=(0, 0)).astype(np.ubyte)
-                view.refine_original_blob = selected
+                view.refine_original_blob = blob
                 view.refine_original_mask = mask.copy()
-                view.refine_original_bbox = selected.bbox.copy()
-                bbox = selected.bbox.copy()
+                view.refine_original_bbox = blob.bbox.copy()
+                bbox = blob.bbox.copy()
             else:
                 mask = view.refine_original_mask.copy()
                 bbox = view.refine_original_bbox.copy()
@@ -3032,35 +3049,30 @@ class TagLab(QMainWindow):
                 view.tools.edit_points.last_editborder_points = None
 
             try:
-                if view.tools.edit_points.last_blob != selected:
+                if view.tools.edit_points.last_blob != blob:
                     view.tools.edit_points.last_editborder_points = None
-                created_blobs = view.annotations.refineBorder(bbox, selected, img, depth, mask, view.refine_grow, view.tools.edit_points.last_editborder_points)
+
+                created_blobs = view.annotations.refineBorder(bbox, blob, img, depth, mask, view.refine_grow, view.tools.edit_points.last_editborder_points)
 
                 if len(created_blobs) == 0:
                     pass
                 if len(created_blobs) == 1:
-                    view.updateBlob(selected, created_blobs[0], True)
-                    self.logBlobInfo(created_blobs[0], "[OP-REFINE-BORDER][BLOB-CREATED]")
-                    self.logBlobInfo(created_blobs[0], "[OP-REFINE-BORDER][BLOB-REFINED]")
+                    view.updateBlob(blob, created_blobs[0], True, redraw=False)
                 else:
-                    view.removeBlob(selected)
+                    view.removeBlob(blob, redraw=False)
                     for blob in created_blobs:
-                        view.addBlob(blob, selected=True)
-                        #NOTE: they are not CREATED! they are refined! Leaving it here because some logging software might depend on it.
-                        self.logBlobInfo(blob, "[OP-REFINE-BORDER][BLOB-CREATED]")
-                        self.logBlobInfo(blob, "[OP-REFINE-BORDER][BLOB-REFINED]")
+                        view.addBlob(blob, selected=True, redraw=False)
 
                 view.saveUndo()
+
+                counter += 1
+                print(counter, "of", len(blobs), "refined")
 
             except Exception as e:
                 print("FAILED!", e)
                 pass
 
-        else:
-            msgBox = QMessageBox()
-            msgBox.setWindowTitle(self.TAGLAB_VERSION)
-            msgBox.setText("You need to select <em>one</em> region for REFINE operation.")
-            msgBox.exec()
+        view.scene.invalidate()
 
 
     def fillLabel(self):

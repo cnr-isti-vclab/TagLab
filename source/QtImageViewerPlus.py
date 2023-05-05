@@ -702,7 +702,7 @@ class QtImageViewerPlus(QtImageViewer):
         if redraw:
             self.scene.invalidate()
 
-    def undrawAnnPoint(self, annpoint):
+    def undrawAnnPoint(self, annpoint, redraw=True):
 
         self.scene.removeItem(annpoint.cross1_gitem)
         self.scene.removeItem(annpoint.cross2_gitem)
@@ -712,7 +712,9 @@ class QtImageViewerPlus(QtImageViewer):
         annpoint.cross2_gitem = None
         annpoint.ellipse_gitem = None
         annpoint.id_item = None
-        self.scene.invalidate()
+
+        if redraw:
+            self.scene.invalidate()
 
     def applyTransparency(self, value):
 
@@ -1170,7 +1172,15 @@ class QtImageViewerPlus(QtImageViewer):
 
 #SELECTED BLOBS MANAGEMENT
 
-    def addToSelectedList(self, blob):
+    def selectAllBlobs(self):
+
+        self.resetSelection()
+        for blob in self.image.annotations.seg_blobs:
+            self.addToSelectedList(blob, redraw=False)
+
+        self.scene.invalidate()
+
+    def addToSelectedList(self, blob, redraw=True):
         """
         Add the given blob to the list of selected blob.
         """
@@ -1190,11 +1200,13 @@ class QtImageViewerPlus(QtImageViewer):
         else:
             print("blob qpath_qitem is None!")
 
-        self.scene.invalidate()
+        if redraw:
+            self.scene.invalidate()
+
         self.selectionChanged.emit()
 
 
-    def addToSelectedPointList(self, annpoint):
+    def addToSelectedPointList(self, annpoint, redraw=True):
         """
         Add the given blob to the list of selected blob.
         """
@@ -1220,7 +1232,9 @@ class QtImageViewerPlus(QtImageViewer):
         else:
             print("annponint qpath_qitem is None!")
 
-        self.scene.invalidate()
+        if redraw:
+            self.scene.invalidate()
+
         self.selectionChanged.emit()
 
 
@@ -1323,7 +1337,7 @@ class QtImageViewerPlus(QtImageViewer):
 
 
 #CREATION and DESTRUCTION of BLOBS
-    def addBlob(self, blob, selected = False):
+    def addBlob(self, blob, selected = False, redraw=True):
         """
         The only function to add annotations. will take care of undo and QGraphicItems.
         """
@@ -1331,7 +1345,7 @@ class QtImageViewerPlus(QtImageViewer):
         if type(blob) == Point:
             self.drawPointAnn(blob)
             if selected:
-                self.addToSelectedPointList(blob)
+                self.addToSelectedPointList(blob, redraw=False)
 
         else:
             self.undo_data.addBlob(blob)
@@ -1346,6 +1360,9 @@ class QtImageViewerPlus(QtImageViewer):
 
             if self.border_enabled is False:
                 blob.qpath_gitem.setPen(QPen(Qt.NoPen))
+
+        if redraw:
+            self.scene.invalidate()
 
     def removeBlobs(self, blobs):
 
@@ -1367,43 +1384,49 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.scene.invalidate()
 
-    def removeBlob(self, blob):
+    def removeBlob(self, blob, redraw=True):
         """
         The only function to remove annotations.
         """
         if type(blob) == Point:
 
-            self.removeFromSelectedPointList(blob)
-            self.undrawAnnPoint(blob)
+            self.removeFromSelectedPointList(blob, redraw=False)
+            self.undrawAnnPoint(blob, redraw=False)
             #undo is missing
             self.image.annotations.removeBlob(blob)
 
         else:
 
-            self.removeFromSelectedList(blob)
+            self.removeFromSelectedList(blob, redraw=False)
             self.undrawBlob(blob)
             self.undo_data.removeBlob(blob)
             #self.annotations.removeBlob(blob)
             self.project.removeBlob(self.image, blob)
 
-    def updateBlob(self, old_blob, new_blob, selected = False):
+        if redraw:
+            self.scene.invalidate()
+
+    def updateBlob(self, old_blob, new_blob, selected=False, redraw=True):
 
         self.project.updateBlob(self.image, old_blob, new_blob)
 
-        self.removeFromSelectedList(old_blob)
+        self.removeFromSelectedList(old_blob, redraw=False)
         self.undrawBlob(old_blob)
         self.undo_data.removeBlob(old_blob)
 
         self.undo_data.addBlob(new_blob)
         self.drawBlob(new_blob)
         if selected:
-            self.addToSelectedList(new_blob)
+            self.addToSelectedList(new_blob, redraw=False)
 
         if self.fill_enabled is False:
             new_blob.qpath_gitem.setBrush(QBrush(Qt.NoBrush))
 
         if self.border_enabled is False:
             new_blob.qpath_gitem.setPen(QPen(Qt.NoPen))
+
+        if redraw:
+            self.scene.invalidate()
 
     def deleteSelectedBlobs(self):
 

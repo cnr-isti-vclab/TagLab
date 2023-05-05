@@ -41,7 +41,7 @@ def segment(img, depth, mask, clippoints, l = 0, conservative = 0.1, grow = 0, r
 	if lib is None:
 		raise Exception("Coraline library (libcoraline.so, coraline.dll) not found.")
 
-	img = gaussian(img, sigma = 1.5, multichannel=False)
+	img = gaussian(img, sigma = 1.5, channel_axis=None)
 	img = img*255;
 	img = img.astype(np.uint8)
 
