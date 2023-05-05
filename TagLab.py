@@ -328,6 +328,9 @@ class TagLab(QMainWindow):
 
         self.viewerplus.newSelectionPoint.connect(self.showPointOnTable)
 
+        self.viewerplus.tools.tools["SAM"].samEnded.connect(self.resetSam)
+        self.viewerplus2.tools.tools["SAM"].samEnded.connect(self.resetSam)
+
 
         #last activated viewerplus: redirect here context menu commands and keyboard commands
         self.activeviewer = None
@@ -2403,6 +2406,10 @@ class TagLab(QMainWindow):
         if self.scale_widget is not None:
             self.scale_widget.close()
             self.scale_widget = None
+
+    @pyqtSlot()
+    def resetSam(self):
+        self.setTool("MOVE")
 
     def setTool(self, tool):
         tools = {

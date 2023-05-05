@@ -691,14 +691,16 @@ class QtImageViewerPlus(QtImageViewer):
             blob.id_item.setOpacity(0.7)
         self.scene.addItem(blob.id_item)
 
-    def undrawBlob(self, blob):
+    def undrawBlob(self, blob, redraw=True):
 
         self.scene.removeItem(blob.qpath_gitem)
         self.scene.removeItem(blob.id_item)
         blob.qpath = None
         blob.qpath_gitem = None
         blob.id_item = None
-        self.scene.invalidate()
+
+        if redraw:
+            self.scene.invalidate()
 
     def undrawAnnPoint(self, annpoint):
 
@@ -1222,7 +1224,7 @@ class QtImageViewerPlus(QtImageViewer):
         self.selectionChanged.emit()
 
 
-    def removeFromSelectedList(self, blob):
+    def removeFromSelectedList(self, blob, redraw=True):
         try:
             # safer if iterating over selected_blobs and calling this function.
             self.selected_blobs = [x for x in self.selected_blobs if not x == blob]
@@ -1237,7 +1239,8 @@ class QtImageViewerPlus(QtImageViewer):
                 blob.id_item.setZValue(2)
                 blob.id_item.setOpacity(0.7)
 
-            self.scene.invalidate()
+            if redraw:
+                self.scene.invalidate()
 
 
         except Exception as e:
@@ -1344,7 +1347,25 @@ class QtImageViewerPlus(QtImageViewer):
             if self.border_enabled is False:
                 blob.qpath_gitem.setPen(QPen(Qt.NoPen))
 
+    def removeBlobs(self, blobs):
 
+        for blob in blobs:
+            self.removeFromSelectedList(blob, redraw=False)
+            self.undrawBlob(blob, redraw=False)
+            self.undo_data.removeBlob(blob)
+            self.project.removeBlob(self.image, blob)
+
+        self.scene.invalidate()
+
+    def removePoints(self, points):
+
+        for point in points:
+            self.removeFromSelectedPointList(point, redraw=False)
+            self.undrawAnnPoint(point, redraw=False)
+            # undo is missing
+            self.image.annotations.removeBlob(point)
+
+        self.scene.invalidate()
 
     def removeBlob(self, blob):
         """
@@ -1386,11 +1407,11 @@ class QtImageViewerPlus(QtImageViewer):
 
     def deleteSelectedBlobs(self):
 
-        for blob in self.selected_blobs:
-            self.removeBlob(blob)
+        if len(self.selected_blobs) > 0:
+            self.removeBlobs(self.selected_blobs)
 
-        for annpoint in self.selected_annpoints:
-            self.removeBlob(annpoint)
+        if len(self.selected_annpoints) > 0:
+            self.removePoints(self.selected_annpoints)
 
         self.saveUndo()
 

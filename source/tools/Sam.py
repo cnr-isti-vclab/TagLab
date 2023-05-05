@@ -55,13 +55,11 @@ class Sam(Tool):
             # sam_checkpoint = "sam_vit_l_0b3195.pth"
             # model_type = "vit_l"
 
-            # sam_checkpoint = "sam_vit_h_4b8939.pth"
-            # model_type = "vit_h"
+            sam_checkpoint = "sam_vit_h_4b8939.pth"
+            model_type = "vit_h"
 
             models_dir = "models/"
-            model_name = 'sam_vit_b_01ec64.pth'
-            model_type = "vit_b"
-            network_name = os.path.join(models_dir, model_name)
+            network_name = os.path.join(models_dir, sam_checkpoint)
 
             #
             # if not torch.cuda.is_available():
@@ -146,18 +144,30 @@ class Sam(Tool):
         mask_generator = SamAutomaticMaskGenerator(
             model=self.sam_net,
             points_per_side=32,
-            points_per_batch=1,
-            # crop_n_layers = 0,
-            #
-            # pred_iou_thresh = 0.88,
-            # stability_score_thresh=  0.95,
-            # stability_score_offset = 1.0,
-            # box_nms_thresh = 0.7
+            points_per_batch=64,
+            crop_n_layers = 0,
+            pred_iou_thresh = 0.88,
+            stability_score_thresh=  0.95,
+            stability_score_offset = 1.0,
+            box_nms_thresh = 0.7,
+            crop_nms_thresh = 0.7,
+            min_mask_region_area = 1000,
+            crop_overlap_ratio = 0.34333,
+            crop_n_points_downscale_factor = 1,
+            output_mode = "binary_mask"
         )
 
         image = utils.qimageToNumpyArray(self.viewerplus.img_map)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+        import time
+        start = time.time()
+
         masks = mask_generator.generate(image)
+
+        end = time.time()
+
+        print(end-start)
 
         for mask in masks:
             bbox = mask["bbox"]
@@ -168,7 +178,10 @@ class Sam(Tool):
             # OPPURE
             # blobsFromMask(self, seg_mask, 0, 0, area_mask)
             self.created_blobs.append(blob)
-            self.viewerplus.addBlob(blob, selected=False)
+            self.viewerplus.addBlob(blob, selected=True)
+
+        self.viewerplus.assignClass("Pocillopora")
+
         self.samEnded.emit()
 
 
