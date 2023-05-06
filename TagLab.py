@@ -3056,7 +3056,7 @@ class TagLab(QMainWindow):
 
                 if len(created_blobs) == 0:
                     pass
-                if len(created_blobs) == 1:
+                elif len(created_blobs) == 1:
                     view.updateBlob(blob, created_blobs[0], True, redraw=False)
                 else:
                     view.removeBlob(blob, redraw=False)

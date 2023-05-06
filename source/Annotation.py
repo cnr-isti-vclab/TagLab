@@ -332,7 +332,7 @@ class Annotation(QObject):
         #            return
 
         # TODO this should be moved to a function!
-        area_th = 500
+        area_th = 50
         created_blobs = []
         label_image = measure.label(mask, connectivity=1)
         for region in measure.regionprops(label_image):
