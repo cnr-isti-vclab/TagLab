@@ -504,7 +504,7 @@ class TagLab(QMainWindow):
 
         # BLOB INFO
         self.groupbox_blobpanel = QtPanelInfo(self.project.region_attributes)
-
+        self.blob_with_info_displayed = None
 
         # MAP VIEWER
         self.mapviewer = QtMapViewer(350)
@@ -631,7 +631,6 @@ class TagLab(QMainWindow):
 
         self.split_screen_flag = False
         self.update_panels_flag = True
-        self.counter = 0
         self.disableSplitScreen()
 
         self.setGuiPreferences()
@@ -2635,11 +2634,12 @@ class TagLab(QMainWindow):
     def updatePanelInfo(self, blob_or_point):
         scale_factor = self.activeviewer.image.pixelSize()
         self.groupbox_blobpanel.update(blob_or_point, scale_factor)
+        self.blob_with_info_displayed = blob_or_point
 
     @pyqtSlot()
     def resetPanelInfo(self):
         self.groupbox_blobpanel.clear()
-
+        self.blob_with_info_displayed = None
 
     def deleteSelectedBlobs(self):
         if self.viewerplus.tools.tool == 'MATCH':
@@ -3502,7 +3502,6 @@ class TagLab(QMainWindow):
                 image.map_px_to_mm_factor = self.mapWidget.data["px_to_mm"]
                 flag_pixel_size_changed = True
 
-
             image.name = self.mapWidget.data['name']
             image.id = self.mapWidget.data['name']
             image.acquisition_date = self.mapWidget.data['acquisition_date']
@@ -3560,13 +3559,23 @@ class TagLab(QMainWindow):
             self.viewerplus2.viewChanged()
 
         if flag_pixel_size_changed:
+
+            # update area information in the data panel
+            image.annotations.table_needs_update = True
+            self.data_panel.updateTable(image.create_data_table())
+
+            # update area information in the comparison panel
             area_mode = self.compare_panel.getAreaMode()
+
             if area_mode == "surface area":
                 self.project.updatePixelSizeInCorrespondences(image, True)
             else:
                 self.project.updatePixelSizeInCorrespondences(image, False)
 
             self.compare_panel.updateData()
+
+            # update panel info
+            self.updatePanelInfo(self.blob_with_info_displayed)
 
         # update the comboboxes to select the images
         self.updateImageSelectionMenu()
