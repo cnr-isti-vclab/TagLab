@@ -758,7 +758,7 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.tools.setTool(tool)
 
-        if tool in ["FREEHAND", "RULER", "DEEPEXTREME", "PLACEANNPOINT"] or (tool in ["CUT", "EDITBORDER", "RITM"] and len(self.selected_blobs) > 1):
+        if tool in ["FREEHAND", "RULER", "FOURCLICKS", "PLACEANNPOINT"] or (tool in ["CUT", "EDITBORDER", "RITM"] and len(self.selected_blobs) > 1):
             self.resetSelection()
 
         if tool == "RITM":
@@ -784,13 +784,13 @@ class QtImageViewerPlus(QtImageViewer):
                 lbl = Label("", "", fill=[0, 0, 0])
                 self.tools.tools["WATERSHED"].setActiveLabel(lbl)
 
-        if tool == "DEEPEXTREME" or tool == "PLACEANNPOINT":
+        if tool == "FOURCLICKS" or tool == "PLACEANNPOINT":
             self.showCrossair = True
         else:
             self.showCrossair = False
 
         # WHEN panning is active or not
-        if tool == "MOVE" or tool == "MATCH" or tool == "DEEPEXTREME" or tool == "RITM" or tool == "PLACEANNPOINT":
+        if tool == "MOVE" or tool == "MATCH" or tool == "FOURCLICKS" or tool == "RITM" or tool == "PLACEANNPOINT":
             self.enablePan()
         else:
             self.disablePan()  # in this case, it is possible to PAN only moving the mouse and pressing the CTRL key
@@ -799,7 +799,7 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.tools.resetTools()
 
-        if self.tools.tool == "DEEPEXTREME" or self.tools.tool == "PLACEANNPOINT":
+        if self.tools.tool == "FOURCLICKS" or self.tools.tool == "PLACEANNPOINT":
             self.showCrossair = True
         else:
             self.showCrossair = False
@@ -879,7 +879,7 @@ class QtImageViewerPlus(QtImageViewer):
             #used from area selection and pen drawing,
             if (self.panEnabled and not (mods & Qt.ShiftModifier)) or (mods & Qt.ControlModifier):
                 self.setDragMode(QGraphicsView.ScrollHandDrag)
-            elif self.tools.tool == "MATCH" or self.tools.tool == "RITM" or self.tools.tool == "DEEPEXTREME" or self.tools.tool == "PLACEANNPOINT":
+            elif self.tools.tool == "MATCH" or self.tools.tool == "RITM" or self.tools.tool == "FOURCLICKS" or self.tools.tool == "PLACEANNPOINT":
                 self.tools.leftPressed(x, y, mods)
 
             elif mods & Qt.ShiftModifier:

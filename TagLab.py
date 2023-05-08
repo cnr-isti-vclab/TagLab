@@ -227,7 +227,7 @@ class TagLab(QMainWindow):
         # self.btnSplitBlob   = self.newButton("split.png",    "Split Blob",            flatbuttonstyle1, self.splitBlob)
 
         self.btnRuler         = self.newButton("ruler.png",    "Measure tool",           flatbuttonstyle1, self.ruler)
-        self.btnDeepExtreme   = self.newButton("dexter.png",   "4-clicks segmentation",  flatbuttonstyle2, self.deepExtreme)
+        self.btnFourClicks   = self.newButton("dexter.png",   "4-clicks segmentation",  flatbuttonstyle2, self.fourClicks)
         self.btnRitm          = self.newButton("ritm.png",     "Positive/negative clicks segmentation", flatbuttonstyle2, self.ritm)
         self.btnSam = self.newButton("sam.png", "Segment everything", flatbuttonstyle2, self.sam)
         self.btnAutoClassification = self.newButton("auto.png", "Fully auto semantic segmentation", flatbuttonstyle2, self.selectClassifier)
@@ -253,7 +253,7 @@ class TagLab(QMainWindow):
         layout_tools.setSpacing(0)
         layout_tools.addWidget(self.btnMove)
         layout_tools.addWidget(self.btnPoint)
-        layout_tools.addWidget(self.btnDeepExtreme)
+        layout_tools.addWidget(self.btnFourClicks)
         layout_tools.addWidget(self.btnRitm)
         layout_tools.addWidget(self.btnSam)
         layout_tools.addWidget(self.btnFreehand)
@@ -615,7 +615,6 @@ class TagLab(QMainWindow):
         self.dataset_train = None
 
         # NETWORKS
-        self.deepextreme_net = None
         self.classifier = None
 
         # a dirty trick to adjust all the size..
@@ -1668,7 +1667,7 @@ class TagLab(QMainWindow):
 
         elif event.key() == Qt.Key_2:
             # ACTIVATE "4-CLICK" TOOL
-            self.deepExtreme()
+            self.fourClicks()
 
         elif event.key() == Qt.Key_3:
             # ACTIVATE "POSITIVE/NEGATIVE CLICK" TOOL
@@ -2400,7 +2399,7 @@ class TagLab(QMainWindow):
         self.btnBricksSegmentation.setChecked(False)
         self.btnRuler.setChecked(False)
         self.btnCreateCrack.setChecked(False)
-        self.btnDeepExtreme.setChecked(False)
+        self.btnFourClicks.setChecked(False)
         self.btnRitm.setChecked(False)
         self.btnSam.setChecked(False)
         self.btnCreateGrid.setChecked(False)
@@ -2425,11 +2424,11 @@ class TagLab(QMainWindow):
             "CUT"          : ["Cut"          , self.btnCut],
             "FREEHAND"     : ["Freehand"     , self.btnFreehand],
             "WATERSHED"    : ["Watershed"    , self.btnWatershed],
-            "BRICKS":        ["Bricks",        self.btnBricksSegmentation],
+            "BRICKS"       : ["Bricks",        self.btnBricksSegmentation],
             "RULER"        : ["Ruler"        , self.btnRuler],
-            "DEEPEXTREME"  : ["4-click"      , self.btnDeepExtreme],
+            "FOURCLICKS"   : ["4-click"      , self.btnFourClicks],
             "MATCH"        : ["Match"        , self.btnMatch],
-            "SAM":         ["Sam", self.btnSam],
+            "SAM"          : ["Sam", self.btnSam],
             "RITM"         : ["Ritm"         , self.btnRitm]
         }
         newtool = tools[tool]
@@ -2542,12 +2541,12 @@ class TagLab(QMainWindow):
         self.setTool("MOVE")
 
     @pyqtSlot()
-    def deepExtreme(self):
+    def fourClicks(self):
         """
         Activate the "Deep Extreme" tool. The segmentation is performed by selecting four points at the
         extreme of the corals and confirm the points by pressing SPACE.
         """
-        self.setTool("DEEPEXTREME")
+        self.setTool("FOURCLICKS")
 
     @pyqtSlot()
     def placeAnnPoint(self):
@@ -3469,7 +3468,7 @@ class TagLab(QMainWindow):
     def updateToolStatus(self):
 
         for button in [self.btnMove, self.btnPoint, self.btnAssign, self.btnEditBorder, self.btnCut, self.btnFreehand,
-                       self.btnCreateCrack, self.btnWatershed, self.btnBricksSegmentation, self.btnRuler, self.btnDeepExtreme,
+                       self.btnCreateCrack, self.btnWatershed, self.btnBricksSegmentation, self.btnRuler, self.btnFourClicks,
                        self.btnRitm,self.btnSam, self.btnAutoClassification, self.btnCreateGrid, self.btnGrid]:
             button.setEnabled(len(self.project.images) > 0)
 
@@ -4588,10 +4587,6 @@ class TagLab(QMainWindow):
     def resetNetworks(self):
 
         torch.cuda.empty_cache()
-
-        if self.deepextreme_net is not None:
-            del self.deepextreme_net
-            self.deepextreme_net = None
 
         if self.classifier is not None:
             del self.classifier

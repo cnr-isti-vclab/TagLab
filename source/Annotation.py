@@ -345,6 +345,7 @@ class Annotation(QObject):
     def createBlobFromSingleMask(self, mask, offset_x, offset_y):
 
         label_image = measure.label(mask, connectivity=1)
+        blob = None
         for region in measure.regionprops(label_image):
             blob = Blob(region, offset_x, offset_y, self.getFreeId())
         return blob

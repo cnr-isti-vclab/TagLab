@@ -15,7 +15,7 @@ from source.tools.BricksSegmentation import BricksSegmentation
 from source.tools.Cut import Cut
 from source.tools.Freehand import Freehand
 from source.tools.Ruler import Ruler
-from source.tools.DeepExtreme import DeepExtreme
+from source.tools.FourClicks import FourClicks
 from source.tools.Match import Match
 from source.tools.SelectArea import SelectArea
 from source.tools.Ritm import Ritm
@@ -55,7 +55,7 @@ class Tools(object):
             "WATERSHED": Watershed(self.viewerplus, self.scribbles),
             "BRICKS": BricksSegmentation(self.viewerplus),
             "RULER": Ruler(self.viewerplus, self.pick_points),
-            "DEEPEXTREME": DeepExtreme(self.viewerplus, self.pick_points),
+            "FOURCLICKS": FourClicks(self.viewerplus, self.pick_points),
             "PLACEANNPOINT": PlaceAnnPoint(self.viewerplus),
             "MATCH": Match(self.viewerplus),
             "SELECTAREA": SelectArea(self.viewerplus, self.pick_points),
@@ -77,7 +77,7 @@ class Tools(object):
 
         self.scene.invalidate(self.scene.sceneRect())
 
-        self.tools["DEEPEXTREME"].reset()
+        self.tools["FOURCLICKS"].reset()
         self.tools["RITM"].reset()
         self.tools["SAM"].reset()
         self.tools["SELECTAREA"].reset()
