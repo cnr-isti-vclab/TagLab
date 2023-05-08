@@ -34,9 +34,19 @@ class FourClicks(Tool):
         self.pick_style = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.red,  'size': 6}
         self.deepextreme_net = None
         self.sam_net = None
-        self.network_used = "DEEPEXTREME"
+        self.network_used = "SAM"
         self.predictor = None
         self.device = None
+
+        if torch.cuda.is_available():
+            (total_gpu_memory, global_free_gpu_memory) = torch.cuda.mem_get_info()
+            GPU_MEMORY_GIGABYTES = total_gpu_memory/(1024*1024*1024)
+            if GPU_MEMORY_GIGABYTES > 7.0:
+                self.network_used = "SAM"
+            else:
+                self.network_used = "DEEPEXTREME"
+
+        self.network_used = "DEEPEXTREME"
 
     def setNetworks(self, network_name):
 
@@ -74,23 +84,27 @@ class FourClicks(Tool):
             x.append(point[0])
             y.append(point[1])
 
-        pad = 20
+        pad = 160
         x1 = min(x) - pad
         x2 = max(x) + pad
         y1 = min(y) - pad
         y2 = max(y) + pad
 
-        #xc = int((x1 + x2) / 2)
-        #yc = int((y1 + y2) / 2)
-        #crop_image = utils.cropQImage(self.viewerplus.img_map, [yc-512, xc-512, 1024, 1024])
+        if (x2-x1) > 1024 or (y2-y1) > 1024:
+            crop_image = utils.cropQImage(self.viewerplus.img_map, [y1, x1, x2-x1, y2-y1])
+            input_box = np.array([0, 0, x2-x1, y2-y1])
+            offx = x1
+            offy = y1
+        else:
+            xc = int((x1 + x2) / 2)
+            yc = int((y1 + y2) / 2)
+            crop_image = utils.cropQImage(self.viewerplus.img_map, [yc-512, xc-512, 1024, 1024])
+            input_box = np.array([x1 - xc + 512, y1 - yc + 512, x2 - xc + 512, y2 - yc + 512])
+            offx = xc - 512
+            offy = yc - 512
 
-        crop_image = utils.cropQImage(self.viewerplus.img_map, [y1,x1,x2-x1,y2-y1])
-
-        #crop_image.save("crop.png")
+        crop_image.save("crop.png")
         input_image = utils.qimageToNumpyArray(crop_image)
-
-        input_box = np.array([0,0,x2-x1,y2-y1])
-        #input_box = np.array([x1-xc-512,y1-yc-512,x2-xc-512,y2-yc-512])
 
         self.predictor.set_image(input_image, "RGB")
 
@@ -101,7 +115,10 @@ class FourClicks(Tool):
             multimask_output=False
         )
 
+        area_extreme_points = (x2-x1) * (y2-y1)
+
         from PIL import Image
+        self.viewerplus.resetSelection()
         for i in range(masks.shape[0]):
             mask = masks[i,:,:]
             segm_mask = mask.astype('uint8')*255
@@ -110,9 +127,11 @@ class FourClicks(Tool):
             filename = "mask " + str(i) + ".png"
             pil_img.save(filename)
 
-            blob = self.viewerplus.image.annotations.createBlobFromSingleMask(segm_mask, x1, y1)
-            if blob:
+            blobs = self.viewerplus.annotations.blobsFromMask(segm_mask, offx, offy, area_extreme_points)
+
+            for blob in blobs:
                 self.viewerplus.addBlob(blob, selected=True)
+                self.blobInfo.emit(blob, "[TOOL][DEEPEXTREME][BLOB-CREATED]")
 
         self.viewerplus.saveUndo()
 

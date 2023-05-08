@@ -181,10 +181,10 @@ class Annotation(QObject):
 
         last_blobs_added = []
 
-        seg_mask = ndi.binary_fill_holes(seg_mask).astype(int)
+        #seg_mask = ndi.binary_fill_holes(seg_mask).astype(int)
         label_image = measure.label(seg_mask)
 
-        area_th = area_mask * 0.2
+        area_th = area_mask * 0.05
 
         for region in measure.regionprops(label_image):
 
