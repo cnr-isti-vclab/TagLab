@@ -55,8 +55,8 @@ class Sam(Tool):
             # sam_checkpoint = "sam_vit_l_0b3195.pth"
             # model_type = "vit_l"
 
-            sam_checkpoint = "sam_vit_h_4b8939.pth"
-            model_type = "vit_h"
+            sam_checkpoint = "sam_vit_b_01ec64.pth"
+            model_type = "vit_b"
 
             models_dir = "models/"
             network_name = os.path.join(models_dir, sam_checkpoint)

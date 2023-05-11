@@ -34,19 +34,19 @@ class FourClicks(Tool):
         self.pick_style = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.red,  'size': 6}
         self.deepextreme_net = None
         self.sam_net = None
-        self.network_used = "SAM"
+        self.network_used = "DEEFPEXTREME"
         self.predictor = None
         self.device = None
 
-        if torch.cuda.is_available():
-            (total_gpu_memory, global_free_gpu_memory) = torch.cuda.mem_get_info()
-            GPU_MEMORY_GIGABYTES = total_gpu_memory/(1024*1024*1024)
-            if GPU_MEMORY_GIGABYTES > 7.0:
-                self.network_used = "SAM"
-            else:
-                self.network_used = "DEEPEXTREME"
-
-        self.network_used = "DEEPEXTREME"
+        # if torch.cuda.is_available():
+        #     (total_gpu_memory, global_free_gpu_memory) = torch.cuda.mem_get_info()
+        #     GPU_MEMORY_GIGABYTES = total_gpu_memory/(1024*1024*1024)
+        #     if GPU_MEMORY_GIGABYTES > 7.0:
+        #         self.network_used = "SAM"
+        #     else:
+        #         self.network_used = "DEEFPEXTREME"
+        # 
+        # # self.network_used = "SAM"
 
     def setNetworks(self, network_name):
 

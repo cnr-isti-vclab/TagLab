@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsItem, QGraphic
 
 class PickPoints(object):
     def __init__(self, scene):
-        # DATA FOR THE RULER, DEEP EXTREME and SPLIT TOOLS
+        # DATA FOR THE RULER, DEEP EXTREME, RITM, SAM INTERACTIVE, and SPLIT TOOLS
         self.points = []
         self.markers = []
         self.CROSS_LINE_WIDTH = 2
@@ -21,24 +21,25 @@ class PickPoints(object):
     def addPoint(self, x, y, style):
         self.points.append(np.array([x, y]))
 
-        pen = QPen(style['color'])
-        pen.setWidth(style['width'])
-        pen.setCosmetic(True)
+        if self.scene is not None:
 
-        size = style['size']
-        point = self.scene.addEllipse(x, y, 0, 0, pen)
-        point.setZValue(5)
-        # line1 = self.viewerplus.scene.addLine(x - size, y - size, x + size, y + size, pen)
-        line1 = self.scene.addLine(- size, -size, +size, +size, pen)
-        line1.setPos(QPointF(x, y))
-        line1.setParentItem(point)  # self.viewerplus._pxmapitem)
-        line1.setFlag(QGraphicsItem.ItemIgnoresTransformations)
-        line1.setZValue(5)
+            pen = QPen(style['color'])
+            pen.setWidth(style['width'])
+            pen.setCosmetic(True)
 
-        line2 = self.scene.addLine(- size, + size, + size, - size, pen)
-        line2.setPos(QPointF(x, y))
-        line2.setParentItem(point)  # self.viewerplus._pxmapitem)
-        line2.setFlag(QGraphicsItem.ItemIgnoresTransformations)
-        line2.setZValue(5)
-        # no need to add the lines to the markers, the parent will take care of them
-        self.markers.append(point)
+            size = style['size']
+            point = self.scene.addEllipse(x, y, 0, 0, pen)
+            point.setZValue(5)
+            line1 = self.scene.addLine(- size, -size, +size, +size, pen)
+            line1.setPos(QPointF(x, y))
+            line1.setParentItem(point)
+            line1.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+            line1.setZValue(5)
+
+            line2 = self.scene.addLine(- size, + size, + size, - size, pen)
+            line2.setPos(QPointF(x, y))
+            line2.setParentItem(point)
+            line2.setFlag(QGraphicsItem.ItemIgnoresTransformations)
+            line2.setZValue(5)
+            # no need to add the lines to the markers, the parent will take care of them
+            self.markers.append(point)

@@ -20,6 +20,7 @@ from source.tools.Match import Match
 from source.tools.SelectArea import SelectArea
 from source.tools.Ritm import Ritm
 from source.tools.Sam import Sam
+from source.tools.SamInteractive import SamInteractive
 
 from source.tools.PlaceAnnPoint import PlaceAnnPoint
 
@@ -60,6 +61,7 @@ class Tools(object):
             "MATCH": Match(self.viewerplus),
             "SELECTAREA": SelectArea(self.viewerplus, self.pick_points),
             "SAM": Sam(self.viewerplus),
+            "SAMINTERACTIVE": SamInteractive(self.viewerplus, self.pick_points),
             "RITM": Ritm(self.viewerplus, self.corrective_points)
         }
         # connect infomessage, log, blobinfo for   all tools with self.infoWidget.setInfoMessage(
@@ -101,14 +103,23 @@ class Tools(object):
         self.viewerplus.bricksWidget = None
 
     #logfile, annotations, selecttion, activelabelbname, undo
+
     def leftPressed(self, x, y, mods = None):
         if self.tool == "MOVE":
             return
         self.tools[self.tool].leftPressed(x, y, mods)
 
+
     def rightPressed(self, x, y, mods = None):
         if self.tool == "RITM":
             self.tools[self.tool].rightPressed(x, y, mods)
+    #     if self.tool == "SAMINTERACTIVE":
+    #         self.tools[self.tool].rightPressed(x, y, mods)
+    #
+    # def rightReleased(self, x, y):
+    #     if self.tool == "SAMINTERACTIVE":
+    #        self.tools[self.tool].RightReleased(x, y)
+    #
 
     def mouseMove(self, x, y):
         if self.tool == "MOVE":
