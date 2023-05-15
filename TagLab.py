@@ -229,6 +229,7 @@ class TagLab(QMainWindow):
         self.btnRuler         = self.newButton("ruler.png",    "Measure tool",           flatbuttonstyle1, self.ruler)
         self.btnFourClicks   = self.newButton("dexter.png",   "4-clicks segmentation",  flatbuttonstyle2, self.fourClicks)
         self.btnRitm          = self.newButton("ritm.png",     "Positive/negative clicks segmentation", flatbuttonstyle2, self.ritm)
+        self.btnSamInteractive = self.newButton("saminteractive2.png", "Box and clicks segmentation", flatbuttonstyle2, self.saminteractive)
         self.btnSam = self.newButton("sam.png", "Segment everything", flatbuttonstyle2, self.sam)
         self.btnAutoClassification = self.newButton("auto.png", "Fully auto semantic segmentation", flatbuttonstyle2, self.selectClassifier)
 
@@ -253,6 +254,7 @@ class TagLab(QMainWindow):
         layout_tools.setSpacing(0)
         layout_tools.addWidget(self.btnMove)
         layout_tools.addWidget(self.btnPoint)
+        layout_tools.addWidget(self.btnSamInteractive)
         layout_tools.addWidget(self.btnFourClicks)
         layout_tools.addWidget(self.btnRitm)
         layout_tools.addWidget(self.btnSam)
@@ -2402,6 +2404,7 @@ class TagLab(QMainWindow):
         self.btnFourClicks.setChecked(False)
         self.btnRitm.setChecked(False)
         self.btnSam.setChecked(False)
+        self.btnSamInteractive.setChecked(False)
         self.btnCreateGrid.setChecked(False)
         self.btnGrid.setChecked(False)
         self.btnMatch.setChecked(False)
@@ -2429,6 +2432,7 @@ class TagLab(QMainWindow):
             "FOURCLICKS"   : ["4-click"      , self.btnFourClicks],
             "MATCH"        : ["Match"        , self.btnMatch],
             "SAM"          : ["Sam", self.btnSam],
+            "SAMINTERACTIVE": ["Saminteractive", self.btnSamInteractive],
             "RITM"         : ["Ritm"         , self.btnRitm]
         }
         newtool = tools[tool]
@@ -2561,6 +2565,13 @@ class TagLab(QMainWindow):
         Activate the "Segmeent Everything" tool.
         """
         self.setTool("SAM")
+
+    @pyqtSlot()
+    def saminteractive(self):
+        """
+        Activate the "Segmeent Everything" tool.
+        """
+        self.setTool("SAMINTERACTIVE")
 
     @pyqtSlot()
     def ritm(self):
@@ -3469,7 +3480,7 @@ class TagLab(QMainWindow):
 
         for button in [self.btnMove, self.btnPoint, self.btnAssign, self.btnEditBorder, self.btnCut, self.btnFreehand,
                        self.btnCreateCrack, self.btnWatershed, self.btnBricksSegmentation, self.btnRuler, self.btnFourClicks,
-                       self.btnRitm,self.btnSam, self.btnAutoClassification, self.btnCreateGrid, self.btnGrid]:
+                       self.btnRitm,self.btnSam,self.btnSamInteractive, self.btnAutoClassification, self.btnCreateGrid, self.btnGrid]:
             button.setEnabled(len(self.project.images) > 0)
 
         for button in [self.btnSplitScreen, self.btnAutoMatch, self.btnMatch]:
