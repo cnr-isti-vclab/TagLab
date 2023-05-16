@@ -20,7 +20,6 @@ except Exception as e:
 import models.deeplab_resnet as resnet
 from models.dataloaders import helpers as helpers
 from collections import OrderedDict
-from segment_anything import sam_model_registry, SamPredictor
 
 import time
 
@@ -33,25 +32,7 @@ class FourClicks(Tool):
         self.CROSS_LINE_WIDTH = 2
         self.pick_style = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.red,  'size': 6}
         self.deepextreme_net = None
-        self.sam_net = None
-        self.network_used = "DEEPEXTREME"
-        self.predictor = None
         self.device = None
-
-        # if torch.cuda.is_available():
-        #     (total_gpu_memory, global_free_gpu_memory) = torch.cuda.mem_get_info()
-        #     GPU_MEMORY_GIGABYTES = total_gpu_memory/(1024*1024*1024)
-        #     if GPU_MEMORY_GIGABYTES > 7.0:
-        #         self.network_used = "SAM"
-        #     else:
-        #         self.network_used = "DEEFPEXTREME"
-        # 
-        # # self.network_used = "SAM"
-
-    def setNetworks(self, network_name):
-
-        self.network_used = network_name
-        self.loadNetwork()
 
     def leftPressed(self, x, y, mods):
 
@@ -64,79 +45,8 @@ class FourClicks(Tool):
 
         # APPLY DEEP EXTREME
         if len(points) == 4:
-
-            if self.network_used == "SAM":
-                self.segmentWithSAM()
-            else:
-                self.segmentWithDeepExtreme()
-
+            self.segmentWithDeepExtreme()
             self.pick_points.reset()
-
-    def segmentWithSAM(self):
-
-        # load network if necessary
-        self.loadNetwork()
-
-        points = self.pick_points.points
-        x = []
-        y = []
-        for point in points:
-            x.append(point[0])
-            y.append(point[1])
-
-        pad = 160
-        x1 = min(x) - pad
-        x2 = max(x) + pad
-        y1 = min(y) - pad
-        y2 = max(y) + pad
-
-        if (x2-x1) > 1024 or (y2-y1) > 1024:
-            crop_image = utils.cropQImage(self.viewerplus.img_map, [y1, x1, x2-x1, y2-y1])
-            input_box = np.array([0, 0, x2-x1, y2-y1])
-            offx = x1
-            offy = y1
-        else:
-            xc = int((x1 + x2) / 2)
-            yc = int((y1 + y2) / 2)
-            crop_image = utils.cropQImage(self.viewerplus.img_map, [yc-512, xc-512, 1024, 1024])
-            input_box = np.array([x1 - xc + 512, y1 - yc + 512, x2 - xc + 512, y2 - yc + 512])
-            offx = xc - 512
-            offy = yc - 512
-
-        crop_image.save("crop.png")
-        input_image = utils.qimageToNumpyArray(crop_image)
-
-        self.predictor.set_image(input_image, "RGB")
-
-        masks, _, _ = self.predictor.predict(
-            point_coords=None,
-            point_labels=None,
-            box=input_box[None, :],
-            multimask_output=False
-        )
-
-        area_extreme_points = (x2-x1) * (y2-y1)
-
-        from PIL import Image
-        self.viewerplus.resetSelection()
-        for i in range(masks.shape[0]):
-            mask = masks[i,:,:]
-            segm_mask = mask.astype('uint8')*255
-
-            pil_img = Image.fromarray(segm_mask, "L")
-            filename = "mask " + str(i) + ".png"
-            pil_img.save(filename)
-
-            blobs = self.viewerplus.annotations.blobsFromMask(segm_mask, offx, offy, area_extreme_points)
-
-            for blob in blobs:
-                self.viewerplus.addBlob(blob, selected=True)
-                self.blobInfo.emit(blob, "[TOOL][DEEPEXTREME][BLOB-CREATED]")
-
-        self.viewerplus.saveUndo()
-
-
-        self.infoMessage.emit("Segmentation done.")
 
     def prepareForDeepExtreme(self, four_points, pad_max):
         """
@@ -257,90 +167,45 @@ class FourClicks(Tool):
 
         models_dir = "models/"
 
-        if self.network_used == "DEEPEXTREME":
+        if self.deepextreme_net is None:
 
-            if self.sam_net is not None:
-                self.resetNetwork()
+            self.infoMessage.emit("Loading deepextreme network..")
 
-            if self.deepextreme_net is None:
+            # Initialization
+            modelName = 'dextr_corals'
 
-                self.infoMessage.emit("Loading deepextreme network..")
+            #  Create the network and load the weights
+            self.deepextreme_net = resnet.resnet101(1, nInputChannels=4, classifier='psp')
 
-                # Initialization
-                modelName = 'dextr_corals'
+            # dictionary layers' names - weights
+            state_dict_checkpoint = torch.load(os.path.join(models_dir, modelName + '.pth'),
+                                               map_location=lambda storage, loc: storage)
 
-                #  Create the network and load the weights
-                self.deepextreme_net = resnet.resnet101(1, nInputChannels=4, classifier='psp')
+            # Remove the prefix .module from the model when it is trained using DataParallel
+            if 'module.' in list(state_dict_checkpoint.keys())[0]:
+                new_state_dict = OrderedDict()
+                for k, v in state_dict_checkpoint.items():
+                    name = k[7:]  # remove `module.` from multi-gpu training
+                    new_state_dict[name] = v
+            else:
+                new_state_dict = state_dict_checkpoint
 
-                # dictionary layers' names - weights
-                state_dict_checkpoint = torch.load(os.path.join(models_dir, modelName + '.pth'),
-                                                   map_location=lambda storage, loc: storage)
+            self.deepextreme_net.load_state_dict(new_state_dict)
+            self.deepextreme_net.eval()
 
-                # Remove the prefix .module from the model when it is trained using DataParallel
-                if 'module.' in list(state_dict_checkpoint.keys())[0]:
-                    new_state_dict = OrderedDict()
-                    for k, v in state_dict_checkpoint.items():
-                        name = k[7:]  # remove `module.` from multi-gpu training
-                        new_state_dict[name] = v
-                else:
-                    new_state_dict = state_dict_checkpoint
-
-                self.deepextreme_net.load_state_dict(new_state_dict)
-                self.deepextreme_net.eval()
-
-                if not torch.cuda.is_available():
-                    print("CUDA NOT AVAILABLE!")
-                else:
-                    gpu_id = 0
-                    device = torch.device("cuda:" + str(gpu_id) if torch.cuda.is_available() else "cpu")
-                    self.deepextreme_net.to(device)
-                    self.device = device
-        else:
-
-            if self.deepextreme_net is not None:
-                self.resetNetwork()
-
-            if self.sam_net is None:
-                self.infoMessage.emit("Loading SAM network..")
-
-                # add choices related to GPU MEMORY
-
-                # sam_checkpoint = "sam_vit_b_01ec64.pth"
-                # model_type = "vit_b"
-
-                # sam_checkpoint = "sam_vit_l_0b3195.pth"
-                # model_type = "vit_l"
-
-                sam_checkpoint = "sam_vit_h_4b8939.pth"
-                model_type = "vit_h"
-
-                network_name = os.path.join(models_dir, sam_checkpoint)
-
-                #
-                # if not torch.cuda.is_available():
-                #     print("CUDA NOT AVAILABLE!")
-                #     device = torch.device("cpu")
-                # else:
-                #     device = torch.device("cuda:0")
-
-                self.device = "cuda"
-                self.sam_net = sam_model_registry[model_type](checkpoint=network_name)
-                self.sam_net.to(device=self.device)
-
-                self.predictor = SamPredictor(self.sam_net)
+            if not torch.cuda.is_available():
+                print("CUDA NOT AVAILABLE!")
+            else:
+                gpu_id = 0
+                device = torch.device("cuda:" + str(gpu_id) if torch.cuda.is_available() else "cpu")
+                self.deepextreme_net.to(device)
+                self.device = device
 
     def resetNetwork(self):
-
         torch.cuda.empty_cache()
         if self.deepextreme_net is not None:
             del self.deepextreme_net
             self.deepextreme_net = None
-
-        if self.sam_net is not None:
-            del self.sam_net
-            self.sam_net = None
-            del self.predictor
-            self.predictor = None
 
     def reset(self):
         self.resetNetwork()
