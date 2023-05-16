@@ -761,12 +761,7 @@ class QtImageViewerPlus(QtImageViewer):
         if tool in ["FREEHAND", "RULER", "FOURCLICKS", "PLACEANNPOINT"] or (tool in ["CUT", "EDITBORDER", "RITM"] and len(self.selected_blobs) > 1):
             self.resetSelection()
 
-        if tool == "RITM":
-            self.setContextMenuPolicy(Qt.NoContextMenu)
-        else:
-            self.setContextMenuPolicy(Qt.CustomContextMenu)
-
-        if tool == "SAM":
+        if tool == "RITM" or tool == "SAMINTERACTIVE":
             self.setContextMenuPolicy(Qt.NoContextMenu)
         else:
             self.setContextMenuPolicy(Qt.CustomContextMenu)
