@@ -68,9 +68,7 @@ class SamInteractive(Tool):
         # first point
         if len(points.points) != 0:
             self.picked_bbox_points.reset()
-            if self.selected_area_rect is not None:
-                self.scene.removeItem(self.selected_area_rect)
-                self.selected_area_rect = None
+            self.undrawAll()
 
         self.picked_bbox_points.points.append(np.array([x, y]))
         self.picked_bbox_points.points.append(np.array([x, y]))
@@ -95,16 +93,6 @@ class SamInteractive(Tool):
 
         return x, y, w, h
 
-    #
-    # def setWorkingAreaStyle(self, pen):
-    #
-    #     self.working_area_style = pen
-    #
-    # def setAreaStyle(self):
-    #
-    #     self.area_style = QPen(Qt.white, 3, Qt.DashLine)
-    #     self.area_style.setCosmetic(True)
-
     def drawArea(self):
 
         x, y, w, h = self.fromPointsToArea()
@@ -128,12 +116,6 @@ class SamInteractive(Tool):
 
             # draw the selected area
             self.drawArea()
-
-    def reset(self):
-        self.picked_bbox_points.reset()
-        self.selected_area_rect = None
-        self.blobs = None
-
 
     def loadNetwork(self):
 
@@ -177,10 +159,8 @@ class SamInteractive(Tool):
         pen.setWidth(2)
         pen.setCosmetic(True)
 
-        brush = QBrush(Qt.SolidPattern)
+        brush = QBrush(Qt.Dense4Pattern)
         brush.setColor(Qt.white)
-
-        brush.setStyle(Qt.Dense4Pattern)
 
         blob.qpath_gitem = self.scene.addPath(blob.qpath, pen, brush)
         blob.qpath_gitem.setZValue(1)
@@ -227,7 +207,8 @@ class SamInteractive(Tool):
             self.offx = xc - 512
             self.offy = yc - 512
 
-        crop_image.save("crop.png")
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+
         input_image = utils.qimageToNumpyArray(crop_image)
 
         # load network if necessary
@@ -254,6 +235,8 @@ class SamInteractive(Tool):
             for blob in self.blobs:
                 self.drawBlob(blob)
 
+        QApplication.restoreOverrideCursor()
+
     def apply(self):
         """
         Confirm the results of the segmentation.
@@ -272,7 +255,6 @@ class SamInteractive(Tool):
         self.selected_area_rect = None
         self.picked_bbox_points.reset()
 
-
     def resetNetwork(self):
 
         torch.cuda.empty_cache()
@@ -283,7 +265,19 @@ class SamInteractive(Tool):
             del self.predictor
             self.predictor = None
 
+    def undrawAll(self):
+
+        if self.blobs is not None:
+            for blob in self.blobs:
+                self.undrawBlob(blob)
+            self.blobs = None
+
+        self.scene.removeItem(self.selected_area_rect)
+        self.selected_area_rect = None
+
     def reset(self):
+
         self.resetNetwork()
+        self.undrawAll()
         self.picked_bbox_points.reset()
 

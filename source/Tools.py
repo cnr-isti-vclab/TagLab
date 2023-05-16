@@ -79,12 +79,11 @@ class Tools(object):
 
         self.scene.invalidate(self.scene.sceneRect())
 
+        self.tools["SAMINTERACTIVE"].reset()
         self.tools["FOURCLICKS"].reset()
         self.tools["RITM"].reset()
         self.tools["SAM"].reset()
         self.tools["SELECTAREA"].reset()
-
-
 
         if self.tool == "AUTOCLASS":
             self.corals_classifier.stopProcessing()
@@ -109,17 +108,9 @@ class Tools(object):
             return
         self.tools[self.tool].leftPressed(x, y, mods)
 
-
     def rightPressed(self, x, y, mods = None):
         if self.tool == "RITM":
             self.tools[self.tool].rightPressed(x, y, mods)
-    #     if self.tool == "SAMINTERACTIVE":
-    #         self.tools[self.tool].rightPressed(x, y, mods)
-    #
-    # def rightReleased(self, x, y):
-    #     if self.tool == "SAMINTERACTIVE":
-    #        self.tools[self.tool].RightReleased(x, y)
-    #
 
     def mouseMove(self, x, y):
         if self.tool == "MOVE":
