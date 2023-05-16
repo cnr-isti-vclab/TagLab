@@ -225,12 +225,12 @@ class TagLab(QMainWindow):
         self.btnAutoClassification = self.newButton("auto.png", "Fully auto semantic segmentation", flatbuttonstyle2, self.selectClassifier)
 
         # Split Screen operation removed from the toolbar
-        self.pxmapSeparator = QPixmap("icons/separator.png")
+        self.pxmapSeparator = QPixmap(os.path.join(os.path.join(self.taglab_dir, "icons"), "separator.png"))
         self.labelSeparator = QLabel()
         self.labelSeparator.setPixmap(self.pxmapSeparator.scaled(QSize(35, 30)))
         self.btnCreateGrid = self.newButton("grid.png", "Create grid",  flatbuttonstyle1, self.createGrid)
         self.btnGrid = self.newButton("grid-edit.png", "Active/disactive grid operations", flatbuttonstyle1, self.toggleGrid)
-        self.pxmapSeparator2 = QPixmap("icons/separator.png")
+        self.pxmapSeparator2 = QPixmap(os.path.join(os.path.join(self.taglab_dir, "icons"), "separator.png"))
         self.labelSeparator2 = QLabel()
         self.labelSeparator2.setPixmap(self.pxmapSeparator2.scaled(QSize(35, 30)))
 
@@ -3686,7 +3686,7 @@ class TagLab(QMainWindow):
         icon = QLabel()
 
         # BIG taglab icon
-        pxmap = QPixmap(os.path.join("icons", "taglab240px.png"))
+        pxmap = QPixmap(os.path.join(os.path.join(self.taglab_dir, "icons"), "taglab240px.png"))
         pxmap = pxmap.scaledToWidth(160)
         icon.setPixmap(pxmap)
         icon.setStyleSheet("QLabel {padding: 5px; }");
