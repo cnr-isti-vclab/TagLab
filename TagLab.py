@@ -4857,23 +4857,27 @@ if __name__ == '__main__':
     # Create the QApplication.
     app = QApplication(sys.argv)
 
+    TAGLAB_PATH = os.path.dirname(__file__)
+    PATH_ICONS = os.path.join(TAGLAB_PATH, "icons")
+    PATH_FONTS = os.path.join(TAGLAB_PATH, "fonts")
+
     # set application icon
-    app.setWindowIcon(QIcon(os.path.join("icons", "taglab50px.png")))
+    app.setWindowIcon(QIcon(os.path.join(PATH_ICONS, "taglab50px.png")))
 
     slider_style1 = "\
-    QSlider::groove::horizontal\
-    {\
-        border: 1px solid;\
-        height: 8px;\
-        color: rgb(100,100,100);\
-    }"
+     QSlider::groove::horizontal\
+     {\
+         border: 1px solid;\
+         height: 8px;\
+         color: rgb(100,100,100);\
+     }"
 
     slider_style2 = "QSlider::handle::horizontal\
-    {\
-        background: white;\
-        border: 1;\
-        width: 18px;\
-    }"
+     {\
+         background: white;\
+         border: 1;\
+         width: 18px;\
+     }"
 
     app.setStyleSheet("QLabel {color: white}")
     app.setStyleSheet("QPushButton {background-color: rgb(49,51,53); color: white}")
@@ -4882,24 +4886,24 @@ if __name__ == '__main__':
 
     app.setStyleSheet("QToolTip {color: white; background-color: rgb(49,51,53); border: none; }")
 
-    app.setStyleSheet("QMainWindow::separator { width:5px; height:5px; color: red; }" + 
-        "QMainWindow::separator:hover { background: #888; }" + 
-        "QDockWidget::close-button, QDockWidget::float-button { background:#fff; }")
+    app.setStyleSheet("QMainWindow::separator { width:5px; height:5px; color: red; }" +
+                      "QMainWindow::separator:hover { background: #888; }" +
+                      "QDockWidget::close-button, QDockWidget::float-button { background:#fff; }")
 
     # set the application font
     if platform.system() != "Darwin":
         QFD = QFontDatabase()
-        font_id1 = QFD.addApplicationFont("fonts/opensans/OpenSans-Regular.ttf")
+        font_id1 = QFD.addApplicationFont(os.path.join(PATH_FONTS, "opensans/OpenSans-Regular.ttf"))
         if font_id1 == -1:
             print("Failed to load application font..")
             sys.exit(-2)
 
-        font_id2 = QFD.addApplicationFont("fonts/roboto/Roboto-Light.ttf")
+        font_id2 = QFD.addApplicationFont(os.path.join(PATH_FONTS, "roboto/Roboto-Light.ttf"))
         if font_id2 == -1:
             print("Failed to load application font..")
             sys.exit(-2)
 
-        font_id3 = QFD.addApplicationFont("fonts/roboto/Roboto-Regular.ttf")
+        font_id3 = QFD.addApplicationFont(os.path.join(PATH_FONTS, "roboto/Roboto-Regular.ttf"))
         if font_id3 == -1:
             print("Failed to load application font..")
             sys.exit(-2)
