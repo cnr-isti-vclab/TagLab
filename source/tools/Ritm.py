@@ -294,7 +294,7 @@ class Ritm(Tool):
             self.infoMessage.emit("Loading RITM network..")
 
             model_name = 'ritm_corals.pth'
-            model_path = os.path.join("models", model_name)
+            model_path = os.path.join(os.path.join(self.viewerplus.taglab_dir, "models"), model_name)
 
             if not torch.cuda.is_available():
                 print("CUDA NOT AVAILABLE!")

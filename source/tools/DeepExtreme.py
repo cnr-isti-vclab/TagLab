@@ -174,7 +174,7 @@ class DeepExtreme(Tool):
             #  Create the network and load the weights
             self.deepextreme_net = resnet.resnet101(1, nInputChannels=4, classifier='psp')
 
-            models_dir = "models/"
+            models_dir = os.path.join(self.viewerplus.taglab_dir, "models")
 
             # dictionary layers' names - weights
             state_dict_checkpoint = torch.load(os.path.join(models_dir, modelName + '.pth'),
