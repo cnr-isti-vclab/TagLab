@@ -254,7 +254,7 @@ class QtImageViewerPlus(QtImageViewer):
             img = channel.qimage
         else:
             QApplication.setOverrideCursor(Qt.WaitCursor)
-            img = channel.loadData()
+            img = channel.loadData(self.taglab_dir)
             QApplication.restoreOverrideCursor()
 
         if img.isNull():
@@ -265,7 +265,7 @@ class QtImageViewerPlus(QtImageViewer):
             channel.filename = dir.relativeFilePath(filename)
 
             QApplication.setOverrideCursor(Qt.WaitCursor)
-            img = channel.loadData()
+            img = channel.loadData(self.taglab_dir)
             QApplication.restoreOverrideCursor()
 
             if img.isNull():

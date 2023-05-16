@@ -821,13 +821,14 @@ class QtAlignmentToolWidget(QWidget):
     SCALE_PRECISION = 100  # 1 / 100
     SCALE_RANGE = 0.50  # [-50%, +50%]
 
-    def __init__(self, project, parent=None):
+    def __init__(self, taglab_dir, project, parent=None):
         super(QtAlignmentToolWidget, self).__init__(parent)
 
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
 
         # ==============================================================
 
+        self.taglab_dir = taglab_dir
         self.project = project
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.setMinimumWidth(1200)
@@ -1235,8 +1236,8 @@ class QtAlignmentToolWidget(QWidget):
         # Initialize views by simulating clicks on the UI
         # ==============================================================
 
-        self.project.images[0].channels[0].loadData()
-        self.project.images[1].channels[0].loadData()
+        self.project.images[0].channels[0].loadData(self.taglab_dir)
+        self.project.images[1].channels[0].loadData(self.taglab_dir)
 
         self.leftCombobox.currentIndexChanged.emit(0)
         self.rightCombobox.currentIndexChanged.emit(1)
@@ -2263,11 +2264,11 @@ All markers must be valid to proceed.
         # Check if channel is loaded
         if channel1.qimage is None:
             QApplication.setOverrideCursor(Qt.WaitCursor)
-            channel1.loadData()
+            channel1.loadData(self.taglab_dir)
             QApplication.restoreOverrideCursor()
         if channel2.qimage is None:
             QApplication.setOverrideCursor(Qt.WaitCursor)
-            channel2.loadData()
+            channel2.loadData(self.taglab_dir)
             QApplication.restoreOverrideCursor()
         # Update preview size
         self.__updateSizes(channel1.qimage, self.pxSizeL, channel2.qimage, self.pxSizeR)

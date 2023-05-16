@@ -141,7 +141,7 @@ class TagLab(QMainWindow):
 
         ##### DATA INITIALIZATION AND SETUP #####
 
-        self.taglab_dir = os.getcwd()
+        self.taglab_dir = os.path.dirname(__file__)
 
         self.TAGLAB_VERSION = "TagLab " + current_version
 
@@ -152,7 +152,7 @@ class TagLab(QMainWindow):
 
         # LOAD CONFIGURATION FILE
 
-        f = open("config.json", "r")
+        f = open(os.path.join(self.taglab_dir, "config.json"), "r")
         config_dict = json.load(f)
         self.available_classifiers = config_dict["Available Classifiers"]
 
@@ -433,7 +433,7 @@ class TagLab(QMainWindow):
         self.labels_widget = QtTableLabel()
         self.default_dictionary = self.settings_widget.settings.value("default-dictionary",
                                                 defaultValue="dictionaries/scripps.json", type=str)
-        self.project.loadDictionary(self.default_dictionary)
+        self.project.loadDictionary(os.path.join(self.taglab_dir, self.default_dictionary))
         self.labels_widget.setLabels(self.project, None)
 
         groupbox_style = "QGroupBox\
@@ -650,7 +650,8 @@ class TagLab(QMainWindow):
         raw_link = 'https://raw.githubusercontent.com/' + github_repo + 'main/TAGLAB_VERSION'
 
         # read offline version
-        f_off_version = open("TAGLAB_VERSION", "r")
+        taglab_version_file = os.path.join(os.path.dirname(__file__), "TAGLAB_VERSION")
+        f_off_version = open(taglab_version_file, "r")
         taglab_offline_version = f_off_version.read()
 
         #print('Raw link: ' + raw_link)
@@ -707,7 +708,7 @@ class TagLab(QMainWindow):
         button.setStyleSheet(style)
         button.setMinimumWidth(ICON_SIZE)
         button.setMinimumHeight(ICON_SIZE)
-        button.setIcon(QIcon(os.path.join("icons", icon)))
+        button.setIcon(QIcon(os.path.join(os.path.join(self.taglab_dir, "icons"), icon)))
         button.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
         button.setMaximumWidth(BUTTON_SIZE)
         button.setToolTip(tooltip)
@@ -2307,7 +2308,7 @@ class TagLab(QMainWindow):
         self.network_name = None
         self.dataset_train_info = None
         self.project = Project()
-        self.project.loadDictionary(self.default_dictionary)
+        self.project.loadDictionary(os.path.join(self.taglab_dir, self.default_dictionary))
         self.last_image_loaded = None
         self.activeviewer = None
         self.contextMenuPosition = None
@@ -3097,7 +3098,7 @@ class TagLab(QMainWindow):
             return
 
         if self.alignToolWidget is None:
-            self.alignToolWidget = QtAlignmentToolWidget(self.project, parent=self)
+            self.alignToolWidget = QtAlignmentToolWidget(self.taglab_dir, self.project, parent=self)
             self.alignToolWidget.setWindowModality(Qt.WindowModal)
             self.alignToolWidget.closed.connect(self.closeAlignmentTool)
             self.alignToolWidget.showMaximized()
@@ -4650,8 +4651,12 @@ if __name__ == '__main__':
     # Create the QApplication.
     app = QApplication(sys.argv)
 
+    TAGLAB_PATH = os.path.dirname(__file__)
+    PATH_ICONS = os.path.join(TAGLAB_PATH, "icons")
+    PATH_FONTS = os.path.join(TAGLAB_PATH, "fonts")
+
     # set application icon
-    app.setWindowIcon(QIcon(os.path.join("icons", "taglab50px.png")))
+    app.setWindowIcon(QIcon(os.path.join(PATH_ICONS, "taglab50px.png")))
 
     slider_style1 = "\
     QSlider::groove::horizontal\
@@ -4682,17 +4687,17 @@ if __name__ == '__main__':
     # set the application font
     if platform.system() != "Darwin":
         QFD = QFontDatabase()
-        font_id1 = QFD.addApplicationFont("fonts/opensans/OpenSans-Regular.ttf")
+        font_id1 = QFD.addApplicationFont(os.path.join(PATH_FONTS, "opensans/OpenSans-Regular.ttf"))
         if font_id1 == -1:
             print("Failed to load application font..")
             sys.exit(-2)
 
-        font_id2 = QFD.addApplicationFont("fonts/roboto/Roboto-Light.ttf")
+        font_id2 = QFD.addApplicationFont(os.path.join(PATH_FONTS, "roboto/Roboto-Light.ttf"))
         if font_id2 == -1:
             print("Failed to load application font..")
             sys.exit(-2)
 
-        font_id3 = QFD.addApplicationFont("fonts/roboto/Roboto-Regular.ttf")
+        font_id3 = QFD.addApplicationFont(os.path.join(PATH_FONTS, "roboto/Roboto-Regular.ttf"))
         if font_id3 == -1:
             print("Failed to load application font..")
             sys.exit(-2)

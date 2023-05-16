@@ -22,6 +22,7 @@ from PyQt5.QtGui import QImageReader
 import rasterio as rio
 from source import utils
 import numpy as np
+import os
 
 class Channel(object):
     def __init__(self, filename = None, type = None):
@@ -32,13 +33,15 @@ class Channel(object):
         self.float_map = None         # map of 32-bit floating point (e.g. to store high precision depth values)
         self.nodata = None            # invalid value
 
-    def loadData(self):
+    def loadData(self, taglab_dir):
         """
         Load the image data. The QImage is cached to speed up visualization.
         """
 
+        filename = os.path.join(taglab_dir, self.filename)
+
         if self.type == "RGB":
-            reader = QImageReader(self.filename)
+            reader = QImageReader(filename)
             self.qimage = reader.read()
             if self.qimage.isNull():
                 print(reader.errorString())
@@ -47,7 +50,7 @@ class Channel(object):
 
         # typically the depth map is stored in a 32-bit Tiff
         if self.type == "DEM":
-            dem = rio.open(self.filename)
+            dem = rio.open(filename)
             self.float_map = dem.read(1).astype(np.float32)
             self.nodata = dem.nodata
             self.qimage = utils.floatmapToQImage(self.float_map, self.nodata)
