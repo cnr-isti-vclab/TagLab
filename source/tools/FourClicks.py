@@ -34,7 +34,7 @@ class FourClicks(Tool):
         self.pick_style = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.red,  'size': 6}
         self.deepextreme_net = None
         self.sam_net = None
-        self.network_used = "DEEFPEXTREME"
+        self.network_used = "DEEPEXTREME"
         self.predictor = None
         self.device = None
 

@@ -1,7 +1,6 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication
-from PyQt5.QtGui import QImage, QPen
-
+from PyQt5.QtGui import QPen, QBrush
 
 import cv2
 
@@ -52,15 +51,14 @@ class SamInteractive(Tool):
         self.picked_bbox_points = PickPoints(None)
         self.scene = viewerplus.scene
         self.selected_area_rect = None
-        self.image_width = 0
-        self.image_height = 0
-
-
 
         self.sam_net = None
         self.network_used = "SAM"
         self.predictor = None
         self.device = None
+        self.masks = None
+        self.area_bbox = 0
+        self.blobs = None
 
 
     def leftPressed(self, x, y, mods):
@@ -70,7 +68,9 @@ class SamInteractive(Tool):
         # first point
         if len(points.points) != 0:
             self.picked_bbox_points.reset()
-            self.selected_area_rect = None
+            if self.selected_area_rect is not None:
+                self.scene.removeItem(self.selected_area_rect)
+                self.selected_area_rect = None
 
         self.picked_bbox_points.points.append(np.array([x, y]))
         self.picked_bbox_points.points.append(np.array([x, y]))
@@ -93,15 +93,6 @@ class SamInteractive(Tool):
         w = abs(p2[0] - p1[0])
         h = abs(p2[1] - p1[1])
 
-        if x < 0:
-            x = 0
-        if y < 0:
-            y = 0
-        if x + w > self.image_width:
-            w = self.image_width - x
-        if y + h > self.image_height:
-            h = self.image_height - y
-
         return x, y, w, h
 
     #
@@ -118,15 +109,13 @@ class SamInteractive(Tool):
 
         x, y, w, h = self.fromPointsToArea()
 
-        self.area_style = QPen(Qt.white, 3, Qt.DashLine)
-        self.area_style.setCosmetic(True)
+        area_style = QPen(Qt.white, 3, Qt.DashLine)
+        area_style.setCosmetic(True)
 
         if self.selected_area_rect is None:
-            self.selected_area_rect = self.scene.addRect(x, y, w, h, self.area_style)
+            self.selected_area_rect = self.scene.addRect(x, y, w, h, area_style)
             self.selected_area_rect.setZValue(6)
             self.selected_area_rect.setVisible(True)
-
-            self.picked_bbox_points.markers.append(self.selected_area_rect)
         else:
             self.selected_area_rect.setRect(x, y, w, h)
 
@@ -136,66 +125,79 @@ class SamInteractive(Tool):
         if len(self.picked_bbox_points.points) > 0:
             self.picked_bbox_points.points[1][0] = x
             self.picked_bbox_points.points[1][1] = y
+
             # draw the selected area
             self.drawArea()
-
 
     def reset(self):
         self.picked_bbox_points.reset()
         self.selected_area_rect = None
+        self.blobs = None
 
 
     def loadNetwork(self):
 
-        """"""
         # DECIDIAMO DI CARICARE I MODELLI PIù LIGHT? NON VAN BENISSIMO, DA PROVARE
 
-        models_dir = "models/"
-        sam_checkpoint = "sam_vit_h_4b8939.pth"
-        model_type = "vit_h"
-        network_name = os.path.join(models_dir, sam_checkpoint)
+        if self.sam_net is None:
 
-        if torch.cuda.is_available() > 7.0:
-            (total_gpu_memory, global_free_gpu_memory) = torch.cuda.mem_get_info()
-            GPU_MEMORY_GIGABYTES = total_gpu_memory/(1024*1024*1024)
-            if GPU_MEMORY_GIGABYTES > 7.0:
-                self.device = "cuda"
+            models_dir = "models/"
+            sam_checkpoint = "sam_vit_h_4b8939.pth"
+            model_type = "vit_h"
+            network_name = os.path.join(models_dir, sam_checkpoint)
+
+            if torch.cuda.is_available():
+                (total_gpu_memory, global_free_gpu_memory) = torch.cuda.mem_get_info()
+                GPU_MEMORY_GIGABYTES = total_gpu_memory/(1024*1024*1024)
+                print(GPU_MEMORY_GIGABYTES)
+                if GPU_MEMORY_GIGABYTES > 6.0:
+                    self.device = "cuda"
+                else:
+                    print("NOT ENOUGH CUDA MEMORY, SWITCH TO CPU")
+                    self.device = "cpu"
             else:
-                print("NOT ENOUGH CUDA MEMORY, SWITCH TO CPU")
+                print("CUDA NOT AVAILABLE!")
                 self.device = "cpu"
-        else:
-            print("CUDA NOT AVAILABLE!")
-            self.device = "cpu"
 
             self.sam_net = sam_model_registry[model_type](checkpoint=network_name)
             self.sam_net.to(device=self.device)
             self.predictor = SamPredictor(self.sam_net)
 
+    def drawBlob(self, blob):
 
+        # if it has just been created remove the current graphics item in order to set it again
+        if blob.qpath_gitem is not None:
+            self.scene.removeItem(blob.qpath_gitem)
+            del blob.qpath_gitem
+            blob.qpath_gitem = None
 
-    # def leftPressed(self, x, y, mods):
-    #
-    #     points = self.pick_points.points
-    #
-    #     if len(points) < 4 and mods == Qt.ShiftModifier:
-    #         self.pick_points.addPoint(x, y, self.pick_style)
-    #         message = "[TOOL][DEEPEXTREME] New point picked (" + str(len(points)) + ")"
-    #         self.log.emit(message)
-    #
-    #     # APPLY DEEP EXTREME
-    #     if len(points) == 4:
-    #
-    #         if self.network_used == "SAM":
-    #             self.segmentWithSAM()
-    #         else:
-    #             self.segmentWithDeepExtreme()
-    #
-    #         self.pick_points.reset()
-    #
+        blob.setupForDrawing()
+
+        pen = QPen(Qt.white)
+        pen.setWidth(2)
+        pen.setCosmetic(True)
+
+        brush = QBrush(Qt.SolidPattern)
+        brush.setColor(Qt.white)
+
+        brush.setStyle(Qt.Dense4Pattern)
+
+        blob.qpath_gitem = self.scene.addPath(blob.qpath, pen, brush)
+        blob.qpath_gitem.setZValue(1)
+        blob.qpath_gitem.setOpacity(self.viewerplus.transparency_value)
+
+    def undrawBlob(self, blob):
+
+        # undraw
+        self.scene.removeItem(blob.qpath_gitem)
+        blob.qpath = None
+        blob.qpath_gitem = None
+
     def segment(self):
 
-        # load network if necessary
-        self.loadNetwork()
+        if len(self.picked_bbox_points.points) == 0:
+            return
+
         points = self.picked_bbox_points.points
         x = []
         y = []
@@ -208,53 +210,67 @@ class SamInteractive(Tool):
         y1 = min(y)
         y2 = max(y)
 
+        if (x2-x1) < 10 or (y2-y1) < 10:
+            return
+
         if (x2-x1) > 1024 or (y2-y1) > 1024:
             crop_image = utils.cropQImage(self.viewerplus.img_map, [y1, x1, x2-x1, y2-y1])
             input_box = np.array([0, 0, x2-x1, y2-y1])
-            offx = x1
-            offy = y1
+            self.offx = x1
+            self.offy = y1
 
         else:
             xc = int((x1 + x2) / 2)
             yc = int((y1 + y2) / 2)
             crop_image = utils.cropQImage(self.viewerplus.img_map, [yc-512, xc-512, 1024, 1024])
             input_box = np.array([x1 - xc + 512, y1 - yc + 512, x2 - xc + 512, y2 - yc + 512])
-            offx = xc - 512
-            offy = yc - 512
+            self.offx = xc - 512
+            self.offy = yc - 512
 
         crop_image.save("crop.png")
         input_image = utils.qimageToNumpyArray(crop_image)
 
+        # load network if necessary
+        self.loadNetwork()
+
         self.predictor.set_image(input_image, "RGB")
 
-        masks, _, _ = self.predictor.predict(
+        self.masks, _, _ = self.predictor.predict(
             point_coords=None,
             point_labels=None,
             box=input_box[None, :],
             multimask_output=False
         )
 
-        area_extreme_points = (x2-x1) * (y2-y1)
+        self.area_bbox = (x2-x1) * (y2-y1)
 
-        from PIL import Image
         self.viewerplus.resetSelection()
-        for i in range(masks.shape[0]):
-            mask = masks[i,:,:]
+        for i in range(self.masks.shape[0]):
+            mask = self.masks[i,:,:]
             segm_mask = mask.astype('uint8')*255
 
-            pil_img = Image.fromarray(segm_mask, "L")
-            filename = "mask " + str(i) + ".png"
-            pil_img.save(filename)
+            self.blobs = self.viewerplus.annotations.blobsFromMask(segm_mask, self.offx, self.offy, self.area_bbox)
 
-            blobs = self.viewerplus.annotations.blobsFromMask(segm_mask, offx, offy, area_extreme_points)
+            for blob in self.blobs:
+                self.drawBlob(blob)
 
-            for blob in blobs:
-                self.viewerplus.addBlob(blob, selected=True)
-                self.blobInfo.emit(blob, "[TOOL][DEEPEXTREME][BLOB-CREATED]")
+    def apply(self):
+        """
+        Confirm the results of the segmentation.
+        """
+
+        self.viewerplus.resetSelection()
+        for blob in self.blobs:
+            self.undrawBlob(blob)
+            self.viewerplus.addBlob(blob, selected=True)
+            self.blobInfo.emit(blob, "[TOOL][DEEPEXTREME][BLOB-CREATED]")
 
         self.viewerplus.saveUndo()
         self.infoMessage.emit("Segmentation done.")
 
+        self.scene.removeItem(self.selected_area_rect)
+        self.selected_area_rect = None
+        self.picked_bbox_points.reset()
 
 
     def resetNetwork(self):
