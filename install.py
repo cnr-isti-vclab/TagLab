@@ -9,8 +9,8 @@ if osused != 'Linux' and osused != 'Windows' and osused != 'Darwin':
     raise Exception("Operative System not supported")
 
 # check python version
-if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] < 7):
-    raise Exception("Must be using Python >= 3.7\nInstallation aborted.")
+if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and (sys.version_info[1] < 8 or sys.version_info[1] > 10)):
+    raise Exception("Python " + sys.version_info[0] + "." + sys.version_info[1] + " not supported. Please see https://github.com/cnr-isti-vclab/TagLab/wiki/Install-TagLab")
 
 # manage thorch
 something_wrong_with_nvcc = False
@@ -82,12 +82,22 @@ elif flag_install_pythorch_cpu == False:
         torch_extra_argument2 = 'https://download.pytorch.org/whl/torch_stable.html'
     elif '11.3' in nvcc_version:
         print('Torch 1.12.1 for CUDA 11.3')
+        torch_package += '==1.12.1+cu113'
+        torchvision_package += '==0.13.1+cu113'
         torch_extra_argument1 = '--extra-index-url'
         torch_extra_argument2 = 'https://download.pytorch.org/whl/cu113'
     elif '11.6' in nvcc_version:
-        print('Torch 1.12.1 for CUDA 11.6')
+        print('Torch 1.13.1 for CUDA 11.6')
+        torch_package += '==1.13.1+cu116'
+        torchvision_package += '==0.14.1+cu116'
         torch_extra_argument1 = '--extra-index-url'
         torch_extra_argument2 = 'https://download.pytorch.org/whl/cu116'
+    elif '11.7' in nvcc_version:
+        print('Torch 1.13.1 for CUDA 11.7')
+        torch_package += '==1.13.1+cu117'
+        torchvision_package += '==0.14.1+cu117'
+        torch_extra_argument1 = '--extra-index-url'
+        torch_extra_argument2 = 'https://download.pytorch.org/whl/cu117'
     elif something_wrong_with_nvcc==False:
         # nvcc is installed, but some version that is not supported by torch
         print('nvcc version installed not supported by pytorch!!')
@@ -222,6 +232,10 @@ install_requires = [
     'pycocotools'
 ]
 
+# if on windows, first install the msvc runtime
+if osused == 'Windows':
+    install_requires.insert(0, 'msvc-runtime')
+
 # installing all the packages
 for package in install_requires:
     subprocess.check_call([sys.executable, "-m", "pip", "install", package])
@@ -229,9 +243,11 @@ for package in install_requires:
 # installing torch, gdal and rasterio
 
 # torch and torchvision
-subprocess.check_call([sys.executable, "-m", "pip", "install", torch_package,
-                       torchvision_package, torch_extra_argument1,
-                       torch_extra_argument2])
+list_args = [sys.executable, "-m", "pip", "install", torch_package, torchvision_package]
+if torch_extra_argument1 != "":
+    list_args.extend([torch_extra_argument1, torch_extra_argument2])
+
+subprocess.check_call(list_args)
 
 # gdal and rasterio
 
@@ -242,15 +258,14 @@ else:
     base_url = 'http://taglab.isti.cnr.it/wheels/'
     pythonversion = str(sys.version_info[0]) + str(sys.version_info[1])
     # compute rasterio and gdal urls download
-    filename_gdal = 'GDAL-3.1.2-cp' + pythonversion + '-cp' + pythonversion
-    filename_rasterio = 'rasterio-1.1.5-cp' + pythonversion + '-cp' + pythonversion
-    if sys.version_info[1] < 8:
-        filename_gdal += 'm'
-        filename_rasterio += 'm'
+    rasterio_win_version = '1.2.10'
+    gdal_win_version = '3.4.3'
+    filename_gdal = 'gdal-' + gdal_win_version + '-cp' + pythonversion + '-cp' + pythonversion
+    filename_rasterio = 'rasterio-' + rasterio_win_version +'-cp' + pythonversion + '-cp' + pythonversion
     filename_gdal += '-win_amd64.whl'
     filename_rasterio += '-win_amd64.whl'
-    base_url_gdal = base_url + filename_gdal
-    base_url_rastetio = base_url + filename_rasterio
+    base_url_gdal = base_url + 'gdal/' + filename_gdal
+    base_url_rastetio = base_url + 'rasterio/' + filename_rasterio
 
     print('URL GDAL: ' + base_url_gdal)
 
