@@ -228,7 +228,7 @@ class Correspondences(object):
             target = self.target.annotations.blobById(id)
             row = [-1, -1, target.id, 0.0, self.area_in_sq_cm(target.area, False), target.class_name, "born", type]
             df = pd.DataFrame([row], columns=self.data.columns)
-            self.data = pd.DataFrame.concat([self.data, df])
+            self.data = pd.concat([self.data, df])
 
         for id in sourceorphaned:
             if id < 0:
@@ -240,19 +240,19 @@ class Correspondences(object):
             source = self.source.annotations.blobById(id)
             row = [-1, source.id, -1, self.area_in_sq_cm(source.area, True), 0.0, source.class_name, "dead", type]
             df = pd.DataFrame([row], columns=self.data.columns)
-            self.data = pd.DataFrame.concat([self.data, df])
+            self.data = pd.concat([self.data, df])
 
         if len(sourceblobs) == 0:
             target = targetblobs[0]
             row = [-1, -1, target.id, 0.0, self.area_in_sq_cm(target.area, False), target.class_name, action, type]
             df = pd.DataFrame([row], columns=self.data.columns)
-            self.data = pd.DataFrame.concat([self.data, df])
+            self.data = pd.concat([self.data, df])
 
         elif len(targetblobs) == 0:
             source = sourceblobs[0]
             row = [-1, source.id, -1, self.area_in_sq_cm(source.area, True), 0.0, source.class_name, action, type]
             df = pd.DataFrame([row], columns=self.data.columns)
-            self.data = pd.DataFrame.concat([self.data, df])
+            self.data = pd.concat([self.data, df])
 
         else:
 
@@ -269,7 +269,7 @@ class Correspondences(object):
                     class_name = source.class_name if source.id >= 0 else target.class_name
                     row = [-1, source.id, target.id, source_area, target_area, class_name, action, type]
                     df = pd.DataFrame([row], columns=self.data.columns)
-                    self.data = pd.DataFrame.concat([self.data, df])
+                    self.data = pd.concat([self.data, df])
 
         self.sort_data()
 
@@ -335,13 +335,13 @@ class Correspondences(object):
             blob = self.source.annotations.blobById(i)
             row = [-1, blob.id, -1, self.area_in_sq_cm(blob.area, True), 0.0, blob.class_name, "dead", "none"]
             df = pd.DataFrame([row], columns=self.data.columns)
-            self.data = pd.DataFrame.concat([self.data, df])
+            self.data = pd.concat([self.data, df])
 
         for i in set(born):
             blob = self.target.annotations.blobById(i)
             row = [-1, -1, blob.id, 0.0, self.area_in_sq_cm(blob.area, False), blob.class_name, "dead", "none"]
             df = pd.DataFrame([row], columns=self.data.columns)
-            self.data = pd.DataFrame.concat([self.data, df])
+            self.data = pd.concat([self.data, df])
 
         self.sort_data()
 
