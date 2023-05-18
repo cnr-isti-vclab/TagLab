@@ -61,7 +61,7 @@ class Tools(object):
             "MATCH": Match(self.viewerplus),
             "SELECTAREA": SelectArea(self.viewerplus, self.pick_points),
             "SAM": Sam(self.viewerplus),
-            "SAMINTERACTIVE": SamInteractive(self.viewerplus, self.pick_points),
+            "SAMINTERACTIVE": SamInteractive(self.viewerplus, self.corrective_points),
             "RITM": Ritm(self.viewerplus, self.corrective_points)
         }
         # connect infomessage, log, blobinfo for   all tools with self.infoWidget.setInfoMessage(
@@ -109,7 +109,7 @@ class Tools(object):
         self.tools[self.tool].leftPressed(x, y, mods)
 
     def rightPressed(self, x, y, mods = None):
-        if self.tool == "RITM":
+        if self.tool == "RITM" or self.tool == "SAMINTERACTIVE":
             self.tools[self.tool].rightPressed(x, y, mods)
 
     def mouseMove(self, x, y):
