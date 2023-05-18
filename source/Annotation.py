@@ -838,7 +838,7 @@ class Annotation(QObject):
 
         i = 0
         for blob in visible_blobs:
-            dict['Image name'][i].append(imagename)
+            dict['Image name'].append(imagename)
             dict['TagLab Id'][i] = blob.id
             dict['TagLab Type'].append('Region')
             dict['TagLab Date'].append(date)
