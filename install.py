@@ -3,6 +3,9 @@ import sys
 import os
 import subprocess
 from pathlib import Path
+import importlib.util as importutil
+from os import path
+import urllib.request
 
 osused = platform.system()
 if osused != 'Linux' and osused != 'Windows' and osused != 'Darwin':
@@ -255,43 +258,71 @@ if osused != 'Windows':
     subprocess.check_call([sys.executable, "-m", "pip", "install", gdal_package])
     subprocess.check_call([sys.executable, "-m", "pip", "install", 'rasterio'])
 else:
+
     base_url = 'http://taglab.isti.cnr.it/wheels/'
     pythonversion = str(sys.version_info[0]) + str(sys.version_info[1])
     # compute rasterio and gdal urls download
     rasterio_win_version = '1.2.10'
     gdal_win_version = '3.4.3'
     filename_gdal = 'gdal-' + gdal_win_version + '-cp' + pythonversion + '-cp' + pythonversion
-    filename_rasterio = 'rasterio-' + rasterio_win_version +'-cp' + pythonversion + '-cp' + pythonversion
+    filename_rasterio = 'rasterio-' + rasterio_win_version + '-cp' + pythonversion + '-cp' + pythonversion
     filename_gdal += '-win_amd64.whl'
     filename_rasterio += '-win_amd64.whl'
     base_url_gdal = base_url + 'gdal/' + filename_gdal
-    base_url_rastetio = base_url + 'rasterio/' + filename_rasterio
+    base_url_rasterio = base_url + 'rasterio/' + filename_rasterio
 
-    print('URL GDAL: ' + base_url_gdal)
+    rasterio_is_installed = importutil.find_spec("rasterio")
+    gdal_is_installed = importutil.find_spec("osgeo.gdal")
 
-    # download gdal and rasterio
-    from os import path
-    import urllib.request
+    if rasterio_is_installed is not None:
+        import rasterio
+        print("RASTERIO ",rasterio.__version__, " is installed. Version ", rasterio_win_version, " is required.")
+    else:
+        # retrieve rasterio from TagLab web site
+        print('GET RASTERIO FROM URL: ' + base_url_rasterio)
 
-    this_directory = path.abspath(path.dirname(__file__))
-    try:
-        slib = 'GDAL'
-        opener = urllib.request.build_opener()
-        opener.addheaders = [('User-agent', 'Mozilla/5.0')]
-        urllib.request.install_opener(opener)
-        urllib.request.urlretrieve(base_url_gdal, this_directory + '/' + filename_gdal)
-        slib = 'Rasterio'
-        urllib.request.urlretrieve(base_url_rastetio, this_directory + '/' + filename_rasterio)
-    except:
-        raise Exception("Cannot download " + slib + ".")
+        this_directory = path.abspath(path.dirname(__file__))
+        try:
+            slib = 'Rasterio'
+            opener = urllib.request.build_opener()
+            opener.addheaders = [('User-agent', 'Mozilla/5.0')]
+            urllib.request.install_opener(opener)
+            urllib.request.urlretrieve(base_url_rasterio, this_directory + '/' + filename_rasterio)
+        except:
+            raise Exception("Cannot download " + slib + ".")
 
-    # install gdal and rasterio
-    subprocess.check_call([sys.executable, "-m", "pip", "install", filename_gdal])
-    subprocess.check_call([sys.executable, "-m", "pip", "install", filename_rasterio])
+        # install rasterio
+        subprocess.check_call([sys.executable, "-m", "pip", "install", filename_rasterio])
 
-    #delete wheel files
-    os.remove(this_directory + '/' + filename_gdal)
-    os.remove(this_directory + '/' + filename_rasterio)
+        # delete wheel files
+        os.remove(this_directory + '/' + filename_rasterio)
+
+    if gdal_is_installed is not None:
+        import osgeo.gdal
+        print("GDAL ",osgeo.gdal.__version__, " is installed. Version ", gdal_win_version, " is required.")
+    else:
+        # retrieve GDAL from TagLab web site
+        print('GET GDAL FROM URL: ' + base_url_gdal)
+
+        # download gdal and rasterio
+        from os import path
+        import urllib.request
+
+        this_directory = path.abspath(path.dirname(__file__))
+        try:
+            slib = 'GDAL'
+            opener = urllib.request.build_opener()
+            opener.addheaders = [('User-agent', 'Mozilla/5.0')]
+            urllib.request.install_opener(opener)
+            urllib.request.urlretrieve(base_url_gdal, this_directory + '/' + filename_gdal)
+        except:
+            raise Exception("Cannot download " + slib + ".")
+
+        # install gdal
+        subprocess.check_call([sys.executable, "-m", "pip", "install", filename_gdal])
+
+        # delete wheel files
+        os.remove(this_directory + '/' + filename_gdal)
 
 # check for other networks
 print('Downloading networks...')
