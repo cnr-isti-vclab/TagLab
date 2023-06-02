@@ -935,7 +935,7 @@ class Annotation(QObject):
 
         # create dataframe
         df = pd.DataFrame(dict, columns=list(dict.keys()))
-        df.to_csv(filename, sep=',', index=False)
+        df.to_csv(filename, sep=' ', decimal=",", index=False)
 
     def export_image_data_for_Scripps(self, size, filename, project):
         label_map = self.create_label_map(size, labels_dictionary=project.labels, working_area=project.working_area)
