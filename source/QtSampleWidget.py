@@ -4,8 +4,6 @@ from PyQt5.QtWidgets import QSlider,QGroupBox, QMessageBox, QCheckBox,  QWidget,
 from source.Annotation import Annotation
 import numpy as np
 
-from source import utils
-
 class QtSampleWidget(QWidget):
 
 

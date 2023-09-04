@@ -32,7 +32,7 @@ from skimage.measure import points_in_poly
 from cv2 import fillPoly
 
 import source.Mask as Mask
-from source import utils
+from source import genutils
 
 import time
 
@@ -333,7 +333,7 @@ class Blob(object):
         self.updateUsingMask(self.bbox, eroded_mask)
 
     def drawLine(self, line):
-        (x, y) = utils.draw_open_polygon(line[:, 1], line[:, 0])
+        (x, y) = genutils.draw_open_polygon(line[:, 1], line[:, 0])
         points = np.asarray([x, y]).astype(int)
         points = points.transpose()
         points[:, [1, 0]] = points[:, [0, 1]]

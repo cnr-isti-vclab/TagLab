@@ -88,7 +88,7 @@ from source.QtPanelInfo import QtPanelInfo
 from source.Sampler import Sampler
 
 
-from source import utils
+from source import genutils
 from source.Blob import Blob
 from source.Shape import Layer, Shape
 
@@ -3029,17 +3029,17 @@ class TagLab(QMainWindow):
             bbox[2] += 2*padding  # width
             bbox[3] += 2*padding  # height
 
-            img = utils.cropQImage(view.img_map, bbox)
-            img = utils.qimageToNumpyArray(img)
+            img = genutils.cropQImage(view.img_map, bbox)
+            img = genutils.qimageToNumpyArray(img)
 
             # USE DEPTH INFORMATION IF AVAILABLE
             # if view.depth_map is not None:
             #     depth = view.depth_map[bbox[0] : bbox[0]+bbox[3], bbox[1] : bbox[1] + bbox[2]]
-            #     imgg = utils.floatmapToQImage((depth - 4)*255)
+            #     imgg = genutils.floatmapToQImage((depth - 4)*255)
             #     imgg.save("test.png")
             #
-            #     utils.cropQImage(self.depth_map, bbox)
-            #     depth = utils.qimageToNumpyArray(depth)
+            #     genutils.cropQImage(self.depth_map, bbox)
+            #     depth = genutils.qimageToNumpyArray(depth)
             # else:
             #     depth = None
 
@@ -3047,7 +3047,7 @@ class TagLab(QMainWindow):
 
             #try:
             #    from coraline.Coraline import segment
-            #    segment(utils.qimageToNumpyArray(img), mask, 0.0, conservative=0.07, grow=self.refine_grow, radius=30)
+            #    segment(genutils.qimageToNumpyArray(img), mask, 0.0, conservative=0.07, grow=self.refine_grow, radius=30)
 
             #except Exception as e:
             #    msgBox = QMessageBox()
@@ -3971,7 +3971,7 @@ class TagLab(QMainWindow):
 
             blob_list = rasterops.read_regions_geometry(self.shapefile_filename, gf)
             data = rasterops.read_attributes(self.shapefile_filename)
-            utils.setAttributes(self.project, data, blob_list)
+            genutils.setAttributes(self.project, data, blob_list)
 
             self.groupbox_blobpanel.updateRegionAttributes(self.project.region_attributes)
 
@@ -3992,7 +3992,7 @@ class TagLab(QMainWindow):
             layer.shapes = shape_list
             self.activeviewer.image.layers.append(layer)
 
-            #utils.setAttributes(self.project, data, layer.shapes)
+            #genutils.setAttributes(self.project, data, layer.shapes)
 
             self.activeviewer.drawAllLayers()
 
@@ -4007,7 +4007,7 @@ class TagLab(QMainWindow):
             layer.shapes = shape_list
             self.activeviewer.image.layers.append(layer)
 
-            #utils.setAttributes(self.project, data, layer.shapes)
+            #genutils.setAttributes(self.project, data, layer.shapes)
 
             self.activeviewer.drawAllLayers()
 
@@ -4152,7 +4152,7 @@ class TagLab(QMainWindow):
 
             size = QSize(self.activeviewer.image.width, self.activeviewer.image.height)
             label_map_img = self.activeviewer.annotations.create_label_map(size, self.project.labels, None)
-            label_map_np = utils.qimageToNumpyArray(label_map_img)
+            label_map_np = genutils.qimageToNumpyArray(label_map_img)
             georef_filename = self.activeviewer.image.georef_filename
             outfilename = os.path.splitext(output_filename)[0]
             rasterops.saveGeorefLabelMap(label_map_np, georef_filename, self.project.working_area, outfilename)

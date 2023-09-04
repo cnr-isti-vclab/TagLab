@@ -33,7 +33,7 @@ from PyQt5.QtCore import Qt, QObject, pyqtSignal, QRectF
 from skimage.color import rgb2gray
 from skimage.draw import polygon_perimeter
 
-from source import utils
+from source import genutils
 
 import pandas as pd
 from scipy import ndimage as ndi
@@ -319,7 +319,7 @@ class Annotation(QObject):
             # rgb_weights = [0.2989, 0.5870, 0.1140]
             # gray = np.dot(img[...,:3], rgb_weights).astype(np.uint8)
             # mutual(gray)
-            # a = utils.floatmapToQImage(gray.astype(float))
+            # a = genutils.floatmapToQImage(gray.astype(float))
             # a.save("test.png")
             segment(img, depth, mask, clippoints, 0.0, conservative=self.refine_conservative, grow=grow, radius=30,
                     depth_weight=self.refine_depth_weight)
@@ -357,8 +357,8 @@ class Annotation(QObject):
         seeds = seeds.astype(int)
         mask = blob.getMask()
         box = blob.bbox
-        cropimg = utils.cropQImage(map, box)
-        cropimgnp = rgb2gray(utils.qimageToNumpyArray(cropimg))
+        cropimg = genutils.cropQImage(map, box)
+        cropimgnp = rgb2gray(genutils.qimageToNumpyArray(cropimg))
 
         edges = sobel(cropimgnp)
 
@@ -642,11 +642,11 @@ class Annotation(QObject):
             samecolor = np.all(subimage == rgb, axis=-1)
             subimage[border & samecolor] = [0, 0, 0]
 
-        labelimg = utils.rgbToQImage(image)
+        labelimg = genutils.rgbToQImage(image)
 
         if working_area is not None:
             # FIXME: this is inefficient! The working_area should be used during the drawing.
-            labelimg_cropped = utils.cropQImage(labelimg, working_area)
+            labelimg_cropped = genutils.cropQImage(labelimg, working_area)
             return labelimg_cropped
         else:
             return labelimg
@@ -724,7 +724,7 @@ class Annotation(QObject):
         h_rescaled = round(qimg_label_map.height() * scale[1])
         qimg_label_map = qimg_label_map.scaled(w_rescaled, h_rescaled, Qt.IgnoreAspectRatio, Qt.FastTransformation)
 
-        label_map = utils.qimageToNumpyArray(qimg_label_map)
+        label_map = genutils.qimageToNumpyArray(qimg_label_map)
         label_map = label_map.astype(np.int32)
 
         # RGB -> label code association (ok, it is a dirty trick but it saves time..)

@@ -9,7 +9,7 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from source.Mask import paintMask, jointBox, jointMask, replaceMask, checkIntersection, intersectMask
 from PyQt5.QtWidgets import QApplication, QMessageBox
 from PyQt5.QtGui import QPen, QBrush
-from source import utils
+from source import genutils
 from source.tools.Tool import Tool
 from source.Blob import Blob
 sys.path.append("..")
@@ -75,7 +75,7 @@ class Sam(Tool):
             # CAPIRE DIFFERENZE DA DEMO   !!!!!!!!!!!
 
             # # try:
-            # #     self.sam_net = utils.load_is_model(model_path, device, cpu_dist_maps=False)
+            # #     self.sam_net = genutils.load_is_model(model_path, device, cpu_dist_maps=False)
             #     self.sam_net = sam_model_registry[model_type](checkpoint=model_name)
             #     self.sam_net.to(device=self.device)
 
@@ -157,7 +157,7 @@ class Sam(Tool):
             output_mode = "binary_mask"
         )
 
-        image = utils.qimageToNumpyArray(self.viewerplus.img_map)
+        image = genutils.qimageToNumpyArray(self.viewerplus.img_map)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         import time

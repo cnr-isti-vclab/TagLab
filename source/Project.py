@@ -8,7 +8,7 @@ from PyQt5.QtCore import QDir
 from PyQt5.QtGui import QBrush, QColor
 from PyQt5.QtWidgets import QFileDialog, QMessageBox
 
-from source import utils
+from source import genutils
 from source.Annotation import Annotation
 from source.Blob import Blob
 from source.Channel import Channel
@@ -85,7 +85,7 @@ def loadProject(taglab_working_dir, filename, default_dict):
 
     # ensure all maps have an acquisition date
     for im in project.images:
-        if not utils.isValidDate(im.acquisition_date):
+        if not genutils.isValidDate(im.acquisition_date):
             im.acquisition_date = "1955-11-05"
 
     # ensure the maps are ordered by the acquisition date
@@ -495,13 +495,16 @@ class Project(object):
 
         corr = self.getImagePairCorrespondences(img_source_idx, img_target_idx)
         corr.autoMatch(blobs1, blobs2)
+        #corr.autoMatchM(blobs1, blobs2)
 
         lines = corr.correspondences + corr.dead + corr.born
-        corr.data = pd.DataFrame(lines, columns=corr.data.columns)
-        corr.sort_data()
-        corr.correspondence = []
-        corr.dead = []
-        corr.born = []
+
+        if len(lines) > 0:
+            corr.data = pd.DataFrame(lines, columns=corr.data.columns)
+            corr.sort_data()
+            corr.correspondence = []
+            corr.dead = []
+            corr.born = []
 
         self.genet.updateGenets()
         # corr.updateGenets() moved to genet

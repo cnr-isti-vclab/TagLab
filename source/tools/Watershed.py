@@ -1,7 +1,7 @@
 from source.tools.Tool import Tool
 from source.Blob import Blob
 from source import Mask
-from source import utils
+from source import genutils
 import numpy as np
 from skimage import measure, filters
 from skimage.morphology import disk
@@ -57,8 +57,8 @@ class Watershed(Tool):
         if working_area[1] + working_area[2] > self.viewerplus.img_map.width() - 1:
             working_area[2] = self.viewerplus.img_map.width() - 1 - working_area[1]
 
-        crop_img = utils.cropQImage(self.viewerplus.img_map, working_area)
-        crop_imgnp = utils.qimageToNumpyArray(crop_img)
+        crop_img = genutils.cropQImage(self.viewerplus.img_map, working_area)
+        crop_imgnp = genutils.qimageToNumpyArray(crop_img)
 
         # create markers
         mask = np.zeros((working_area[3], working_area[2], 3), dtype=np.int32)

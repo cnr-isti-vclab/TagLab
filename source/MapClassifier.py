@@ -36,7 +36,7 @@ from models.deeplab import DeepLab
 from PyQt5.QtCore import QCoreApplication, Qt, QObject, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QPainter, QImage, QColor, QPixmap, qRgb, qRed, qGreen, qBlue
 
-from source import utils
+from source import genutils
 
 
 class MapClassifier(QObject):
@@ -119,7 +119,7 @@ class MapClassifier(QObject):
 
         # crop the input image
         crop_image = img_map.copy(left, top, width, height)
-        self.input_image = utils.qimageToNumpyArray(crop_image)
+        self.input_image = genutils.qimageToNumpyArray(crop_image)
 
         # IMPORTNAT NOTE 1:
         # The following information, together with the scale_factor, are used to put the results on the orthoimage
@@ -195,23 +195,23 @@ class MapClassifier(QObject):
 
                         top = self.wa_top - DELTA_CROP + row * AGGREGATION_WINDOW_SIZE + i * AGGREGATION_STEP
                         left = self.wa_left - DELTA_CROP + col * AGGREGATION_WINDOW_SIZE + j * AGGREGATION_STEP
-                        img_np = utils.cropImage(self.input_image, [top, left, TILE_SIZE, TILE_SIZE])
+                        img_np = genutils.cropImage(self.input_image, [top, left, TILE_SIZE, TILE_SIZE])
 
                         if autocolor is True and autolevel is False:
-                            img_np = utils.whiteblance(img_np)
+                            img_np = genutils.whiteblance(img_np)
 
                         if autolevel is True and autocolor is False:
-                            img_np = utils.autolevel(img_np, 1.0)
+                            img_np = genutils.autolevel(img_np, 1.0)
 
                         if autolevel is True and autocolor is True:
-                            white = utils.whiteblance(img_np)
+                            white = genutils.whiteblance(img_np)
                             white = white.astype(np.uint8)
-                            img_np = utils.autolevel(white, 1.0)
+                            img_np = genutils.autolevel(white, 1.0)
 
                         # if i == 0 and j == 0:
                         # tilename = "RGB_r=" + str(row) + "_c=" + str(col) + "_i=" + str(i) + "_j=" + str(j) + ".png"
                         # filename = os.path.join(self.temp_dir, tilename)
-                        # tile =utils.rgbToQImage(img_np)
+                        # tile = genutils.rgbToQImage(img_np)
                         # tile.save(filename)
 
                         img_np = img_np.astype(np.float32)
@@ -283,7 +283,7 @@ class MapClassifier(QObject):
 
                 tilename = str(row) + "_" + str(col) + ".png"
                 filename = os.path.join(self.temp_dir, tilename)
-                utils.rgbToQImage(resimg).save(filename)
+                genutils.rgbToQImage(resimg).save(filename)
 
                 if save_scores is True:
                     tilename = str(row) + "_" + str(col) + ".dat"
@@ -379,7 +379,7 @@ class MapClassifier(QObject):
         for label_index in range(self.nclasses):
             resimg[predictions == label_index, :] = self.label_colors[label_index]
 
-        qimg = utils.rgbToQImage(resimg)
+        qimg = genutils.rgbToQImage(resimg)
         w = qimg.width() * self.scale_factor
         h = qimg.height() * self.scale_factor
         outimg = qimg.scaled(w, h, Qt.IgnoreAspectRatio, Qt.FastTransformation)

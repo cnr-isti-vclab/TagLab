@@ -26,7 +26,7 @@ from PyQt5.QtGui import QPainter, QImage, QPen, QBrush, QColor, qRgb, qRed, qGre
 from PyQt5.QtCore import Qt
 import random as rnd
 from source import Image
-from source import utils
+from source import genutils
 from skimage.filters import gaussian
 from skimage.segmentation import find_boundaries
 from skimage import measure
@@ -556,7 +556,7 @@ class NewDataset(object):
 							points = inner_contour.round().astype(int)
 							fillPoly(self.id_image, pts=[points], color=0)
 
-			self.id_image = utils.floatmapToQImage(self.id_image)
+			self.id_image = genutils.floatmapToQImage(self.id_image)
 
 	def convertColorsToLabels(self, target_classes, labels_colors):
 		"""
@@ -567,7 +567,7 @@ class NewDataset(object):
 		label_w = self.label_image.width()
 		label_h = self.label_image.height()
 
-		imglbl = utils.qimageToNumpyArray(self.label_image)
+		imglbl = genutils.qimageToNumpyArray(self.label_image)
 
 		# classes with unknown color (color not present in the given dictionary) are assigned to white
 		self.labels = np.zeros((label_h, label_w), dtype='int64')
@@ -1217,8 +1217,8 @@ class NewDataset(object):
 			top = cy - half_tile_size
 			left = cx - half_tile_size
 
-			cropimg = utils.cropQImage(self.ortho_image, [top, left, self.tile_size, self.tile_size])
-			croplabel = utils.cropQImage(self.label_image, [top, left, self.tile_size, self.tile_size])
+			cropimg = genutils.cropQImage(self.ortho_image, [top, left, self.tile_size, self.tile_size])
+			croplabel = genutils.cropQImage(self.label_image, [top, left, self.tile_size, self.tile_size])
 
 			filenameRGB = os.path.join(basenameim, tilename + str.format("_{0:04d}", (i)) + ".png")
 			filenameLabel = os.path.join(basenamelab, tilename + str.format("_{0:04d}", (i)) + ".png")
@@ -1236,8 +1236,8 @@ class NewDataset(object):
 						 "date_captured": self.image_info.acquisition_date,
 						 "id": imagecount_id }
 
-				cropidlabel = utils.cropQImage(self.id_image, [top, left, self.tile_size, self.tile_size])
-				cropidlabel = utils.qimageToNumpyArray(cropidlabel)
+				cropidlabel = genutils.cropQImage(self.id_image, [top, left, self.tile_size, self.tile_size])
+				cropidlabel = genutils.qimageToNumpyArray(cropidlabel)
 				cropIdBinary = (cropidlabel[:,:,0] > 0).astype(int)
 				regions = measure.regionprops(measure.label(cropIdBinary, connectivity=1))
 
@@ -1245,7 +1245,7 @@ class NewDataset(object):
 
 					tilemask = np.zeros_like(cropIdBinary).astype(np.uint8)
 					tilemask[region.coords[:, 1], region.coords[:, 0]] = 1
-					#segmentation = utils.binaryMaskToRle(tilemask)
+					#segmentation = genutils.binaryMaskToRle(tilemask)
 					segmentation = maskcoco.encode(np.asfortranarray(np.transpose(tilemask)))
 
 					segmentation["counts"] = segmentation["counts"].decode("utf-8")

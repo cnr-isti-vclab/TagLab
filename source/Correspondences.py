@@ -63,7 +63,8 @@ class Correspondences(object):
             if blob1 is None and blob2 is None:
                 print("BOOM")
 
-            self.data.loc[index, 'Class'] = blob1.class_name if blob1 is not None else blob2.class_name
+            # WHAT ??
+            #self.data.loc[index, 'Class'] = blob1.class_name if blob1 is not None else blob2.class_name
 
             area1 = 0
             if blob1 is not None:
@@ -387,6 +388,239 @@ class Correspondences(object):
         # fill self.born and self.dead blob lists
         self.assignDead(blobs1)
         self.assignBorn(blobs2)
+
+
+    def autoMatchM(self, blobs1, blobs2):
+        self.correspondences.clear()
+        for blob1 in blobs1:
+            for blob2 in blobs2:
+                # use bb to quickly calculate intersection
+                x1 = max(blob1.bbox[0], blob2.bbox[0])
+                y1 = max(blob1.bbox[1], blob2.bbox[1])
+                x2 = min(blob1.bbox[0] + blob1.bbox[3], blob2.bbox[0] + blob2.bbox[3])
+                y2 = min(blob1.bbox[1] + blob1.bbox[2], blob2.bbox[1] + blob2.bbox[2])
+                # compute the area of intersection rectangle
+                interArea = abs(max((x2 - x1, 0)) * max((y2 - y1), 0))
+
+                if interArea != 0 and blob1.class_name != 'Empty':
+                    # this is the get mask function for the outer contours, I put it here using two different if conditions so getMask just runs just on intersections
+                    mask1 = Blob.getMask(blob1)
+                    sizeblob1 = np.count_nonzero(mask1)
+                    mask2 = Blob.getMask(blob2)
+                    sizeblob2 = np.count_nonzero(mask2)
+                    minblob = min(sizeblob1, sizeblob2)
+                    mask, bbox = intersectMask(mask1, blob1.bbox, mask2, blob2.bbox)
+                    intersectionArea = np.count_nonzero(mask)
+
+                    class_name = blob1.class_name + "-" + blob2.class_name
+
+                    if (intersectionArea < (0.2 * minblob)):
+                        continue
+
+                    if (sizeblob2 > sizeblob1 * self.threshold):
+                        self.correspondences.append([-1, blob1.id, blob2.id, blob1.area, blob2.area, class_name, 'grow', 'none'])
+
+                    elif (sizeblob2 < sizeblob1 / self.threshold):
+                        self.correspondences.append([-1, blob1.id, blob2.id, blob1.area, blob2.area, class_name, 'shrink', 'none'])
+
+                    else:
+                        self.correspondences.append([-1, blob1.id, blob2.id, blob1.area, blob2.area, class_name, 'same', 'none'])
+
+
+        # operates on the correspondences found and update them
+        self.assignSplit()
+        self.assignFuse()
+
+        # fill self.born and self.dead blob lists
+        self.assignDead(blobs1)
+        self.assignBorn(blobs2)
+
+        ##### ANALYZE CASES ######
+
+        # Classes are "Pocillopora" and "Pocillopora_dead"
+
+        # 1) D → D
+        # 2) D → ∅      (NO MATCH)
+        # 3) D or ∅ → L (newborns)
+        # 4) L → D       (dead and disappeared)
+        # 5) L → ∅      (NO MATCH)
+        # 6) L → PD      (PD=partially dead. I will mark this colony as partially dead and then consider only the amount of new dead surface).
+        # 7) PD → PD
+        # 8) PD → D
+        # 9) ∅ → D (error, or suddenly dead)
+
+        # NOTE: case 7 and case 8 now are not considered (!)
+
+        # ADJUST NAMES
+        for corresp in self.correspondences:
+
+            class_name = corresp[5]
+            class_name1 = corresp[5].split("-")[0]
+            class_name2 = corresp[5].split("-")[1]
+
+            if class_name1 == "Pocillopora_dead" and class_name2 == "Pocillopora":
+                class_name = "TO CHECK"   # RESURRECTION (!)  (D -> L)
+
+            if class_name1 == "Pocillopora_dead" and class_name2 == "Pocillopora_dead":
+                class_name = "DISCARDED"  # case 1 [D → D (discarded)]
+
+            corresp[5] = class_name
+
+        for born in self.born:
+            class_name = born[5]
+            if class_name == "Pocillopora":
+                born[5] = "newborn"    # case 3 [D or ∅ → L (newborns)]
+            if class_name == "Pocillopora_dead":
+                born[5] = "TO CHECK"   # case 9 [∅ → D (error, or suddenly dead)]
+
+        for dead in self.dead:
+            class_name = dead[5]
+            if class_name == "Pocillopora":
+                dead[5] = "NO MATCH"   # case 5   [L → ∅ (NO MATCH)]
+            if class_name == "Pocillopora_dead":
+                dead[5] = "DISCARDED"  # case 2   [D → ∅ (DISCARDED)]
+
+        ##### CREATE TABLE AND SAVE IT
+
+        lines = self.correspondences + self.dead + self.born
+        self.data = pd.DataFrame(lines, columns=self.data.columns)
+        self.sort_data()
+        self.data.to_csv("partially_dead.csv", index=False)
+
+
+        # CHECK IF LIVE POCILLOPORA REMAINS LIVE, BECAME PARTIALLY DEAD, OR TOTALLY DEAD
+
+        id_set = set()
+        for corresp in self.correspondences:
+            class_name = corresp[5]
+            if class_name.find("-") > 0:
+                class_name1 = corresp[5].split("-")[0]
+                class_name2 = corresp[5].split("-")[1]
+                if class_name1 == "Pocillopora":
+                    id = corresp[1]
+                    id_set.add(id)
+
+        ids = list(id_set)  # list of ids to check
+
+        area_pocillopora_live = 0.0
+        area_pocillopora_dead = 0.0
+        area_partially_dead_live = 0.0
+        area_partially_dead_dead = 0.0
+        area_proportion = 0.0
+        live = 0
+        partially_dead = 0
+        totally_dead = 0
+        live_data = []
+        partially_dead_data = []
+        dead_data = []
+        for id in ids:
+            matches = self.data[self.data['Blob1'] == id]
+
+            area_live = 0.0
+            area_dead = 0.0
+            for index, row in matches.iterrows():
+                class_name = row['Class']
+                class_name1 = class_name.split("-")[0]
+                class_name2 = class_name.split("-")[1]
+                if class_name2 == "Pocillopora":
+                    area_live += row['Area2']
+                else:
+                    area_dead += row['Area2']
+
+            if area_live > 0.0 and area_dead > 0.0:
+                # case 6 [L -> PD]
+                partially_dead += 1
+                area_partially_dead_live += area_live
+                area_partially_dead_dead += area_dead
+                area_proportion += ((100.0*area_dead) / (area_dead + area_live))
+
+                for index, row in matches.iterrows():
+                    partially_dead_data.append([row['Blob1'], row['Blob2'], row['Area1'], row['Area2'], row['Split\Fuse']])
+
+            if area_dead < 0.00001:
+                # case L -> L
+                live += 1
+                area_pocillopora_live += area_live
+
+                for index, row in matches.iterrows():
+                    live_data.append([row['Blob1'], row['Blob2'], row['Area1'], row['Area2'], row['Split\Fuse']])
+
+            if area_live < 0.00001:
+                # case L -> D
+                totally_dead += 1
+                area_pocillopora_dead += area_dead
+
+                for index, row in matches.iterrows():
+                    dead_data.append([row['Blob1'], row['Blob2'], row['Area1'], row['Area2'], row['Split\Fuse']])
+
+
+        area_proportion = area_proportion / partially_dead
+
+        data1 = pd.DataFrame(data = live_data, columns=['Blob1', 'Blob2', 'Area1', 'Area2', 'Split\Fuse'])
+        data2 = pd.DataFrame(data = partially_dead_data, columns=['Blob1', 'Blob2', 'Area1', 'Area2', 'Split\Fuse'])
+        data3 = pd.DataFrame(data = dead_data, columns=['Blob1', 'Blob2', 'Area1', 'Area2', 'Split\Fuse'])
+
+        data1.to_csv("2018-2019-plot16-live.csv", index=False)
+        data2.to_csv("2018-2019-plot16-partially_dead.csv", index=False)
+        data3.to_csv("2018-2019-plot16-dead.csv", index=False)
+
+        ##### COMPUTE STATISTICS
+
+        disappear = 0
+        born = 0
+        area_disappear = 0.0
+        area_born = 0.0
+        discarded = 0
+        area_discarded = 0.0
+        tocheck = 0
+        area_tocheck = 0.0
+        total_area1 = 0.0
+        total_area2 = 0.0
+        for index,row in self.data.iterrows():
+
+            if row['Class'] == "newborn":
+                born += 1
+                area_born += row['Area2']
+
+            if row['Class'] == "NO MATCH":
+                disappear += 1
+                area_disappear += row['Area1']
+
+            if row['Class'] == "DISCARDED":
+                discarded += 1
+
+                if row['Area2'] < 0.00001:
+                    area_discarded += row['Area2']
+                else:
+                    area_discarded += row['Area2']
+
+            if row['Class'] == "TO CHECK":
+                tocheck += 1
+                if row['Area2'] < 0.00001:
+                    area_tocheck += row['Area2']
+                else:
+                    area_tocheck += row['Area2']
+
+            if row["Blob2"] < 0:
+                total_area1 += row['Area1']
+            else:
+                total_area1 += row['Area2']
+
+        total_area2 = area_pocillopora_live + area_partially_dead_live + area_partially_dead_dead + area_pocillopora_dead + area_born + area_disappear + area_discarded + area_tocheck
+
+        print("Pocillopora live             (L -> L)        : {:d} ({:.2f} cm^2)".format(live, area_pocillopora_live))
+        print("Pocillopora partially dead   (L -> PD)       : {:d} (live {:.2f} cm^2) ; dead {:.2f} cm^2) ; % dead {:.2f}".format(partially_dead, area_partially_dead_live,
+                                                                               area_partially_dead_dead, area_proportion))
+        print("Pocillopora totally dead     (L -> D)        : {:d} ({:.2f} cm^2)".format(totally_dead, area_pocillopora_dead))
+        print("Pocillopora born             (∅ -> L)        : {:d} ({:.2f} cm^2)".format(born, area_born))
+        print("")
+
+        print("NO MATCH (live or dead)      (D,L → ∅)       : {:d} ({:.2f} cm^2)".format(disappear, area_disappear))
+        print("DISCARDED                    (D -> D, ∅)     : {:d} ({:.2f} cm^2)".format(discarded, area_discarded))
+        print("TO CHECK                     (∅ → D, D -> L) : {:d} ({:.2f} cm^2)".format(tocheck, area_tocheck))
+        print("")
+
+        print("Total area                                    : {:.2f} cm^2".format(total_area2))
 
 
     def assignSplit(self):

@@ -25,7 +25,7 @@ from PyQt5.QtWidgets import QSlider,QGroupBox, QCheckBox,  QWidget, QDialog, QFi
 from source.Annotation import Annotation
 import numpy as np
 
-from source import utils
+from source import genutils
 
 class QtClassifierWidget(QWidget):
 
@@ -226,18 +226,18 @@ class QtClassifierWidget(QWidget):
 
             elif self.chkAutocolor.isChecked() and not self.chkAutolevel.isChecked():
                 color_rgb = self.rgb_image.convertToFormat(QImage.Format_RGB32)
-                color_rgb = utils.qimageToNumpyArray(color_rgb)
-                color_rgb = utils.whiteblance(color_rgb)
-                color_rgb_qimage = utils.rgbToQImage(color_rgb)
+                color_rgb = genutils.qimageToNumpyArray(color_rgb)
+                color_rgb = genutils.whiteblance(color_rgb)
+                color_rgb_qimage = genutils.rgbToQImage(color_rgb)
                 self.QPixmapRGB = QPixmap.fromImage(color_rgb_qimage)
                 size = self.LABEL_SIZE
                 self.QlabelRGB.setPixmap(self.QPixmapRGB.scaled(QSize(size, size), Qt.KeepAspectRatio))
 
             elif not self.chkAutocolor.isChecked() and self.chkAutolevel.isChecked():
                 color_rgb = self.rgb_image.convertToFormat(QImage.Format_RGB32)
-                color_rgb = utils.qimageToNumpyArray(color_rgb)
-                color_rgb = utils.autolevel(color_rgb, 1.0)
-                color_rgb_qimage = utils.rgbToQImage(color_rgb)
+                color_rgb = genutils.qimageToNumpyArray(color_rgb)
+                color_rgb = genutils.autolevel(color_rgb, 1.0)
+                color_rgb_qimage = genutils.rgbToQImage(color_rgb)
                 self.QPixmapRGB = QPixmap.fromImage(color_rgb_qimage)
                 size = self.LABEL_SIZE
                 self.QlabelRGB.setPixmap(self.QPixmapRGB.scaled(QSize(size, size), Qt.KeepAspectRatio))
@@ -246,12 +246,12 @@ class QtClassifierWidget(QWidget):
 
                 #always apply first auto color then autolevel
                 color_rgb = self.rgb_image.convertToFormat(QImage.Format_RGB32)
-                color_rgb = utils.qimageToNumpyArray(color_rgb)
+                color_rgb = genutils.qimageToNumpyArray(color_rgb)
                 #this returns a float64
-                color_rgb = utils.whiteblance(color_rgb)
+                color_rgb = genutils.whiteblance(color_rgb)
                 color_rgb = color_rgb.astype(np.uint8)
-                level_rgb = utils.autolevel(color_rgb, 1.0)
-                color_rgb_qimage = utils.rgbToQImage(level_rgb)
+                level_rgb = genutils.autolevel(color_rgb, 1.0)
+                color_rgb_qimage = genutils.rgbToQImage(level_rgb)
                 self.QPixmapRGB = QPixmap.fromImage(color_rgb_qimage)
                 size = self.LABEL_SIZE
                 self.QlabelRGB.setPixmap(self.QPixmapRGB.scaled(QSize(size, size), Qt.KeepAspectRatio))

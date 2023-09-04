@@ -5,7 +5,7 @@ from PyQt5.QtGui import QImage
 import cv2
 
 from source.tools.Tool import Tool
-from source import utils
+from source import genutils
 
 import os
 import numpy as np
@@ -61,7 +61,7 @@ class FourClicks(Tool):
         h = bottom - top
         w = right - left
 
-        image_cropped = utils.cropQImage(self.viewerplus.img_map, [top, left, w, h])
+        image_cropped = genutils.cropQImage(self.viewerplus.img_map, [top, left, w, h])
 
         fmt = image_cropped.format()
         assert (fmt == QImage.Format_RGB32)

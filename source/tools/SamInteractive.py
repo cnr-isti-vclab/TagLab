@@ -6,7 +6,7 @@ import cv2
 
 from source.tools.Tool import Tool
 from source.tools.PickPoints import PickPoints
-from source import utils
+from source import genutils
 
 from skimage.transform import rescale
 
@@ -49,10 +49,9 @@ class SamInteractive(Tool):
         single mask is desired; The best single mask can be chosen by picking the one with the highest score returned in scores. 
          
          """
-        # variables for bbox
 
-        self.points = corrective_points
-        self.picked_bbox_points = PickPoints(None)
+        self.pos_neg_points = corrective_points
+        self.bbox_points = PickPoints(None)
         self.scene = viewerplus.scene
         self.selected_area_rect = None
 
@@ -68,37 +67,40 @@ class SamInteractive(Tool):
     def leftPressed(self, x, y, mods):
 
         if mods == Qt.ShiftModifier:
-            self.points.addPoint(x, y, positive=True)
+            self.pos_neg_points.addPoint(x, y, positive=True)
             self.segment()
         else:
-            points = self.picked_bbox_points
+            points = self.bbox_points
 
             # first point
             if len(points.points) != 0 and mods != Qt.ShiftModifier:
-                self.picked_bbox_points.reset()
+                self.bbox_points.reset()
                 self.undrawAll()
 
-            self.picked_bbox_points.points.append(np.array([x, y]))
-            self.picked_bbox_points.points.append(np.array([x, y]))
+            self.bbox_points.points.append(np.array([x, y]))
+            self.bbox_points.points.append(np.array([x, y]))
 
     def rightPressed(self, x, y, mods = None):
 
         if mods == Qt.ShiftModifier:
-            self.points.addPoint(x, y, positive=False)
+            self.pos_neg_points.addPoint(x, y, positive=False)
             self.segment()
 
     def leftReleased(self, x, y):
 
-        self.segment()
-
+        # if the bbox is valid the segmentation is launched
+        if len(self.bbox_points.points) == 2:
+            x, y, w, h = self.fromPointsToArea()
+            if w > 20 and h > 20:
+                self.segment()
 
     def fromPointsToArea(self):
         """
-        It transforms the picked points into the selected area.
+        It transforms the bbox points into the selected area.
         """
 
-        p1 = self.picked_bbox_points.points[0]
-        p2 = self.picked_bbox_points.points[1]
+        p1 = self.bbox_points.points[0]
+        p2 = self.bbox_points.points[1]
 
         x = min(p1[0], p2[0])
         y = min(p1[1], p2[1])
@@ -121,12 +123,11 @@ class SamInteractive(Tool):
         else:
             self.selected_area_rect.setRect(x, y, w, h)
 
-
     def mouseMove(self, x, y):
 
-        if len(self.picked_bbox_points.points) > 0:
-            self.picked_bbox_points.points[1][0] = x
-            self.picked_bbox_points.points[1][1] = y
+        if len(self.bbox_points.points) > 0:
+            self.bbox_points.points[1][0] = x
+            self.bbox_points.points[1][1] = y
 
             # draw the selected area
             self.drawArea()
@@ -192,10 +193,10 @@ class SamInteractive(Tool):
 
     def segment(self):
 
-        if len(self.picked_bbox_points.points) == 0:
+        if len(self.bbox_points.points) < 2:
             return
 
-        points = self.picked_bbox_points.points
+        points = self.bbox_points.points
         x = []
         y = []
         for point in points:
@@ -221,28 +222,28 @@ class SamInteractive(Tool):
             scale_factor = 1024.0 / float(x2-x1)
             hprime = int(1024.0 / scale_factor)
 
-            crop_image = utils.cropQImage(self.viewerplus.img_map, [yc-int(hprime/2), x1, x2-x1, hprime])
+            crop_image = genutils.cropQImage(self.viewerplus.img_map, [yc-int(hprime/2), x1, x2-x1, hprime])
             scaled_image = crop_image.scaled(1024, 1024, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
             input_box = np.array([0, y1 - yc+int(hprime/2), 1024, int((y2-y1)*scale_factor)])
             self.offx = x1
             self.offy = yc-int(hprime/2)
 
-            input_image = utils.qimageToNumpyArray(scaled_image)
+            input_image = genutils.qimageToNumpyArray(scaled_image)
 
         elif (x2-x1) <= 1024 and (y2-y1) > 1024:
 
             scale_factor = 1024.0 / float(y2-y1)
             wprime = int(1024.0 / scale_factor)
 
-            crop_image = utils.cropQImage(self.viewerplus.img_map, [y1, xc-int(wprime/2), wprime, y2-y1])
+            crop_image = genutils.cropQImage(self.viewerplus.img_map, [y1, xc-int(wprime/2), wprime, y2-y1])
             scaled_image = crop_image.scaled(1024, 1024, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
             input_box = np.array([x1 - xc+int(wprime/2), 0, int((x2-x1)*scale_factor), 1024])
             self.offx = xc-int(wprime/2)
             self.offy = y1
 
-            input_image = utils.qimageToNumpyArray(scaled_image)
+            input_image = genutils.qimageToNumpyArray(scaled_image)
 
         elif (x2-x1) > 1024 and (y2-y1) > 1024:
 
@@ -250,21 +251,22 @@ class SamInteractive(Tool):
             hprime = int((y2-y1) * scale_factor)
             wprime = int((x2-x1) * scale_factor)
 
-            crop_image = utils.cropQImage(self.viewerplus.img_map, [y1, x1, x2-x1, y2-y1])
+            crop_image = genutils.cropQImage(self.viewerplus.img_map, [y1, x1, x2-x1, y2-y1])
             scaled_image = crop_image.scaled(wprime, hprime, Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
             input_box = np.array([0, 0, wprime, hprime])
             self.offx = x1
             self.offy = y1
 
-            input_image = utils.qimageToNumpyArray(scaled_image)
+            input_image = genutils.qimageToNumpyArray(scaled_image)
 
         else:
-            crop_image = utils.cropQImage(self.viewerplus.img_map, [yc-512, xc-512, 1024, 1024])
+            # bbox is small -> input image is centered on the center of the bbox
+            crop_image = genutils.cropQImage(self.viewerplus.img_map, [yc-512, xc-512, 1024, 1024])
             input_box = np.array([x1 - xc + 512, y1 - yc + 512, x2 - xc + 512, y2 - yc + 512])
             self.offx = xc - 512
             self.offy = yc - 512
-            input_image = utils.qimageToNumpyArray(crop_image)
+            input_image = genutils.qimageToNumpyArray(crop_image)
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
 
@@ -275,21 +277,21 @@ class SamInteractive(Tool):
 
         self.predictor.set_image(input_image, "RGB")
 
-        if len(self.points.positive_points) > 0 or len(self.points.negative_points) > 0:
+        if len(self.pos_neg_points.positive_points) > 0 or len(self.pos_neg_points.negative_points) > 0:
 
-            nclicks = self.points.nclicks()
+            nclicks = self.pos_neg_points.nclicks()
 
             points_coords = np.zeros((nclicks,2))
             points_labels = np.zeros((nclicks))
 
             i = 0
-            for point in self.points.positive_points:
+            for point in self.pos_neg_points.positive_points:
                 points_coords[i][0] = point[0] - self.offx
                 points_coords[i][1] = point[1] - self.offy
                 points_labels[i] = 1
                 i = i + 1
 
-            for point in self.points.negative_points:
+            for point in self.pos_neg_points.negative_points:
                 points_coords[i][0] = point[0] - self.offx
                 points_coords[i][1] = point[1] - self.offy
                 points_labels[i] = 0
@@ -342,8 +344,8 @@ class SamInteractive(Tool):
         if self.selected_area_rect:
             self.scene.removeItem(self.selected_area_rect)
             self.selected_area_rect = None
-        self.picked_bbox_points.reset()
-        self.points.reset()
+        self.bbox_points.reset()
+        self.pos_neg_points.reset()
         self.blobs = None
 
     def resetNetwork(self):
@@ -370,6 +372,6 @@ class SamInteractive(Tool):
 
         self.resetNetwork()
         self.undrawAll()
-        self.picked_bbox_points.reset()
-        self.points.reset()
+        self.bbox_points.reset()
+        self.pos_neg_points.reset()
 

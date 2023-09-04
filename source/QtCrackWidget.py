@@ -22,7 +22,7 @@ from PyQt5.QtGui import QImage, qRgb
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QSlider, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
 from source.QtImageViewer import QtImageViewer
 from source.Blob import Blob
-from source import utils
+from source import genutils
 import numpy as np
 from skimage.color import rgb2gray
 from skimage import measure
@@ -38,8 +38,8 @@ class QtCrackWidget(QWidget):
 
         self.setStyleSheet("background-color: rgb(60,60,65); color: white")
 
-        self.qimg_cropped = utils.cropQImage(map, blob.bbox)
-        arr = utils.qimageToNumpyArray(self.qimg_cropped)
+        self.qimg_cropped = genutils.cropQImage(map, blob.bbox)
+        arr = genutils.qimageToNumpyArray(self.qimg_cropped)
         self.input_arr = rgb2gray(arr) * 255
         self.tolerance = 20
         self.annotations = annotations
@@ -164,7 +164,7 @@ class QtCrackWidget(QWidget):
 
         arr = self.input_arr.copy()
         mask_crack = self.createCrack(self.blob, arr, self.xmap, self.ymap, self.tolerance, preview=True)
-        self.qimg_crack = utils.maskToQImage(mask_crack)
+        self.qimg_crack = genutils.maskToQImage(mask_crack)
         self.viewer.setOpacity(0.5)
         self.viewer.setOverlayImage(self.qimg_crack)
 

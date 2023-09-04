@@ -23,7 +23,6 @@ from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QImage, QImageReader, QPixmap, QIcon, qRgb, qRed, qGreen, qBlue
 from PyQt5.QtWidgets import QWidget, QMessageBox, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, \
     QHBoxLayout, QVBoxLayout
-from source import utils
 from source.Grid import Grid
 
 
