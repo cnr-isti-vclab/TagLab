@@ -495,7 +495,7 @@ class Project(object):
 
         corr = self.getImagePairCorrespondences(img_source_idx, img_target_idx)
         corr.autoMatch(blobs1, blobs2)
-        #corr.autoMatchM(blobs1, blobs2)
+        #corr.autoMatchM(blobs1, blobs2)   # autoMatchM resolves matching taking into account live/dead specimens (class name constraint is removed)
 
         lines = corr.correspondences + corr.dead + corr.born
 
