@@ -1,7 +1,6 @@
 import ctypes as C
 from ctypes import cdll
 import sys
-import source.utils as utils
 from skimage.filters import gaussian
 from skimage.restoration import denoise_bilateral
 import numpy as np
@@ -45,7 +44,7 @@ def segment(img, depth, mask, clippoints, l = 0, conservative = 0.1, grow = 0, r
 	img = img*255;
 	img = img.astype(np.uint8)
 
-	#qimg = utils.rgbToQImage(img)
+	#qimg = genutils.rgbToQImage(img)
 	#qimg.save("Smoothed.jpg")
 
 	w = img.shape[1]
@@ -60,7 +59,7 @@ def segment(img, depth, mask, clippoints, l = 0, conservative = 0.1, grow = 0, r
 	if depth is not None:
 		d = depth.copy()
 		depthPtr = d.ctypes.data
-	#qimg = utils.rgbToQImage(depth)
+	#qimg = genutils.rgbToQImage(depth)
 	#qimg.save("Depth.png")
 
 	clippointsPtr = None

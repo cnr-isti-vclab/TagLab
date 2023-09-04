@@ -4,8 +4,8 @@ from PyQt5.QtGui import QPen, QBrush
 
 from source.tools.Tool import Tool
 from source.Mask import paintMask, jointBox, jointMask, replaceMask, checkIntersection, intersectMask
-from source.utils import qimageToNumpyArray
-from source.utils import cropQImage, maskToQImage, floatmapToQImage
+from source.genutils import qimageToNumpyArray
+from source.genutils import cropQImage, maskToQImage, floatmapToQImage
 
 import os
 import numpy as np
@@ -14,7 +14,7 @@ import torch
 
 from models.isegm.inference import clicker
 from models.isegm.inference.predictors import get_predictor
-from models.isegm.inference import utils
+from models.isegm.inference import ritmutils
 
 class Ritm(Tool):
 
@@ -305,7 +305,7 @@ class Ritm(Tool):
             self.device = device
 
             try:
-                self.ritm_net = utils.load_is_model(model_path, device, cpu_dist_maps=False)
+                self.ritm_net = ritmutils.load_is_model(model_path, device, cpu_dist_maps=False)
                 self.ritm_net.to(device)
                 # initialize predictor
                 self.predictor = get_predictor(self.ritm_net, device=device, **self.predictor_params)
