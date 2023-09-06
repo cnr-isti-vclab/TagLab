@@ -34,7 +34,7 @@ import torch
 from models.isegm.inference import clicker
 from models.isegm.inference.predictors import get_predictor
 from models.isegm.inference import utils
-from source.utils import cropQImage, cropImage, qimageToNumpyArray, maskToQImage, rgbToQImage, floatmapToQImage
+from source.genutils import cropQImage, cropImage, qimageToNumpyArray, maskToQImage, rgbToQImage, floatmapToQImage
 from source.Mask import checkIntersection, intersectMask, paintMask
 import random
 

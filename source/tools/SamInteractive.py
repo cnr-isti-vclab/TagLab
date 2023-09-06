@@ -7,6 +7,7 @@ import cv2
 from source.tools.Tool import Tool
 from source.tools.PickPoints import PickPoints
 from source import genutils
+from source.tools import utils
 
 from skimage.transform import rescale
 
@@ -160,37 +161,6 @@ class SamInteractive(Tool):
             self.sam_net.to(device=self.device)
             self.predictor = SamPredictor(self.sam_net)
 
-    def drawBlob(self, blob):
-
-        # if it has just been created remove the current graphics item in order to set it again
-        if blob.qpath_gitem is not None:
-            self.scene.removeItem(blob.qpath_gitem)
-            del blob.qpath_gitem
-            blob.qpath_gitem = None
-
-        blob.setupForDrawing()
-
-        pen = QPen(Qt.white)
-        pen.setWidth(2)
-        pen.setCosmetic(True)
-
-        brush = QBrush(Qt.Dense4Pattern)
-        brush.setColor(Qt.white)
-
-        blob.qpath_gitem = self.scene.addPath(blob.qpath, pen, brush)
-        blob.qpath_gitem.setZValue(1)
-        blob.qpath_gitem.setOpacity(self.viewerplus.transparency_value)
-
-    def undrawBlob(self, blob):
-
-        # undraw
-        if blob.qpath_gitem is not None:
-            self.scene.removeItem(blob.qpath_gitem)
-            del blob.qpath_gitem
-            blob.qpath_gitem = None
-
-        blob.qpath = None
-
     def segment(self):
 
         if len(self.bbox_points.points) < 2:
@@ -322,8 +292,12 @@ class SamInteractive(Tool):
 
             self.blobs = self.viewerplus.annotations.blobsFromMask(segm_mask, self.offx, self.offy, self.area_bbox)
 
+            scene = self.viewerplus.scene
+            brush = QBrush(Qt.SolidPattern)
+            brush.setColor(Qt.white)
             for blob in self.blobs:
-                self.drawBlob(blob)
+                utils.drawBlob(blob, brush, scene, self.viewerplus.transparency_value, redraw=False)
+            scene.invalidate()
 
         QApplication.restoreOverrideCursor()
 
@@ -334,7 +308,7 @@ class SamInteractive(Tool):
 
         self.viewerplus.resetSelection()
         for blob in self.blobs:
-            self.undrawBlob(blob)
+            utils.undrawBlob(blob, self.viewerplus.scene, redraw=False)
             self.viewerplus.addBlob(blob, selected=True)
             self.blobInfo.emit(blob, "[TOOL][DEEPEXTREME][BLOB-CREATED]")
 
@@ -348,6 +322,8 @@ class SamInteractive(Tool):
         self.pos_neg_points.reset()
         self.blobs = None
 
+        self.viewerplus.scene.invalidate()
+
     def resetNetwork(self):
 
         torch.cuda.empty_cache()
@@ -360,10 +336,7 @@ class SamInteractive(Tool):
 
     def undrawAll(self):
 
-        if self.blobs is not None:
-            for blob in self.blobs:
-                self.undrawBlob(blob)
-            self.blobs = None
+        utils.undrawAllBlobs(self.blobs, self.scene)
 
         self.scene.removeItem(self.selected_area_rect)
         self.selected_area_rect = None

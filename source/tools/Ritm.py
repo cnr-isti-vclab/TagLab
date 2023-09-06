@@ -14,7 +14,9 @@ import torch
 
 from models.isegm.inference import clicker
 from models.isegm.inference.predictors import get_predictor
-from models.isegm.inference import ritmutils
+from models.isegm.inference import utils as ritmutils
+
+from source.tools import utils
 
 class Ritm(Tool):
 
@@ -250,7 +252,8 @@ class Ritm(Tool):
                 segm_mask = segm_mask*255
                 torch.cuda.empty_cache()
 
-                self.undrawAllBlobs()
+                utils.undrawAllBlobs(self.current_blobs, self.viewerplus.scene)
+                self.current_blobs = []
 
                 blobs = self.viewerplus.annotations.blobsFromMask(segm_mask, offsetx, offsety, 1000)
 
@@ -340,8 +343,8 @@ class Ritm(Tool):
                 blob.class_name = self.blob_to_correct.class_name
                 message = "[TOOL][RITM][BLOB-EDITED]"
 
-            #order is important: first add then setblob class!
-            self.undrawBlob(blob)
+            # order is important: first add then setblob class!
+            utils.undrawBlob(blob, self.viewerplus.scene, redraw=False)
             self.viewerplus.addBlob(blob, selected=True)
             #if self.blob_to_correct is not None:
             #    self.viewerplus.setBlobClass(blob, self.blob_to_correct.class_name)
@@ -382,52 +385,23 @@ class Ritm(Tool):
             self.blob_to_correct = None
 
         self.init_mask = None
-        self.undrawAllBlobs()
+        utils.undrawAllBlobs(self.current_blobs, self.viewerplus.scene)
+        self.current_blobs = []
         self.clicker.reset_clicks()
         self.points.reset()
         self.resetWorkArea()
 
     def drawBlob(self, blob):
 
-        # get the scene
         scene = self.viewerplus.scene
 
-        # if it has just been created remove the current graphics item in order to set it again
-        if blob.qpath_gitem is not None:
-            scene.removeItem(blob.qpath_gitem)
-            del blob.qpath_gitem
-            blob.qpath_gitem = None
-
-        blob.setupForDrawing()
-
-        pen = QPen(Qt.white)
-        pen.setWidth(2)
-        pen.setCosmetic(True)
-
+        # create the suitable brush
         if self.blob_to_correct is None:
             brush = QBrush(Qt.SolidPattern)
             brush.setColor(Qt.white)
         else:
             brush = self.viewerplus.project.classBrushFromName(self.blob_to_correct)
 
-        brush.setStyle(Qt.Dense4Pattern)
+        utils.drawBlob(blob, brush, scene, self.viewerplus.transparency_value, redraw=False)
 
-        blob.qpath_gitem = scene.addPath(blob.qpath, pen, brush)
-        blob.qpath_gitem.setZValue(1)
-        blob.qpath_gitem.setOpacity(self.viewerplus.transparency_value)
 
-    def undrawBlob(self, blob):
-        # get the scene
-        scene = self.viewerplus.scene
-        # undraw
-        scene.removeItem(blob.qpath_gitem)
-        blob.qpath = None
-        blob.qpath_gitem = None
-        scene.invalidate()
-
-    def undrawAllBlobs(self):
-
-        if len(self.current_blobs) > 0:
-            for blob in self.current_blobs:
-                self.undrawBlob(blob)
-        self.current_blobs = []
