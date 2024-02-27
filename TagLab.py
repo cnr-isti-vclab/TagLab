@@ -1068,15 +1068,15 @@ class TagLab(QMainWindow):
         self.projectmenu.addSeparator()
         self.projectmenu.addAction(regionAttributesAct)
 
-        ###### POINT ANN MENU
+        ###### POINT ANNOTATIONS MENU
 
         importPointsAct = QAction("Import Point Annotations", self)
         importPointsAct.setStatusTip("Import Point Annotations From .CSV")
         importPointsAct.triggered.connect(self.importPointAnn)
 
-        # exportPointsAct  = QAction("Export Point Annotations", self)
-        # exportPointsAct .setStatusTip("Export Point Annotations As .CSV")
-        # exportPointsAct .triggered.connect(self.exportPointAnn)
+        exportPointsAct  = QAction("Export for CoralNet", self)
+        exportPointsAct .setStatusTip("Export points annotations as tiles+CSV files")
+        exportPointsAct .triggered.connect(self.exportAnnPointsForCoralNet)
 
         samplePointsAct = QAction("Sample Points On This Map", self)
         samplePointsAct.setStatusTip("Sample Points This Map")
@@ -1086,7 +1086,7 @@ class TagLab(QMainWindow):
         self.pointmenu.setStyleSheet(styleMenu)
         self.pointmenu.addAction(importPointsAct)
         self.pointmenu.addAction(samplePointsAct)
-        # self.pointmenu.addAction(exportPointsAct)
+        self.pointmenu.addAction(exportPointsAct)
 
 
         ###### DEM MENU
@@ -4056,6 +4056,55 @@ class TagLab(QMainWindow):
         self.export_widget = None
         self.setTool("MOVE")
 
+    def exportAnnPointsForCoralNet(self):
+        """
+        Export point annotations such that can be uploaded on CoralNet.
+        """
+
+        if self.activeviewer:
+            if not self.activeviewer.image:
+                box = QMessageBox()
+                box.setText("A loaded project is needed to export annotated points.")
+                box.exec()
+                return
+
+            folder_name = QFileDialog.getExistingDirectory(self, "Choose a Folder for the export", "")
+            if folder_name:
+
+                working_area = self.project.working_area
+
+                top = working_area[0]
+                left = working_area[1]
+                w = working_area[2]
+                h = working_area[3]
+
+                bottom = top + h
+                right = left + w
+
+                BASE_SIZE = 1000
+
+                w_step = int(w / BASE_SIZE) + 1
+                h_step = int(h / BASE_SIZE) + 1
+
+                w_size = int(w / w_step)
+                h_size = int(h / h_step)
+
+                orthoimage = self.viewerplus.image.getRGBChannel().qimage
+
+                for j in range(h_step):
+                    for i in range(w_step):
+                        x1 = w_size * i
+                        y1 = h_size * j
+                        bbox = [y1, x1, w_size, h_size]
+
+                        img_tile = genutils.cropQImage(orthoimage, bbox)
+
+                        idx = i + j * w_step
+                        filename = os.path.join(folder_name, self.viewerplus.image.name) + "_tile{:04d}_offx={:05d}_offy={:05d}.png".format(idx, x1, y1)
+                        img_tile.save(filename)
+
+                        filename = filename.replace("png", "csv")
+                        self.viewerplus.image.annotations.export_annotation_points_inside_an_area(idx, filename, bbox)
 
     @pyqtSlot()
     def exportAnnAsMap(self):

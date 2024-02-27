@@ -937,6 +937,43 @@ class Annotation(QObject):
         df = pd.DataFrame(dict, columns=list(dict.keys()))
         df.to_csv(filename, sep=' ', decimal=",", index=False)
 
+    def export_annotation_points_inside_an_area(self, plot_number, filename, bbox):
+
+        top = bbox[0]
+        left = bbox[1]
+        bottom = top + bbox[3]
+        right = left + bbox[2]
+
+        x_coords = []
+        y_coords = []
+        labels = []
+        for point in self.annpoints:
+            x = point.coordx
+            y = point.coordy
+            if x > left and x < right and y > top and y < bottom:
+                x_coords.append(x)
+                y_coords.append(y)
+                labels.append(point.class_name)
+
+        number_of_points = len(labels)
+        dict = {
+            "Plot number": np.zeros(number_of_points, dtype=np.int64),
+            "Row": np.zeros(number_of_points, dtype=np.int64),
+            "Column": np.zeros(number_of_points, dtype=np.int64),
+            "Label": []
+        }
+
+        # fill the table
+        for i in range(number_of_points):
+            dict["Plot number"][i] = plot_number
+            dict["Row"][i] = x_coords[i]
+            dict["Column"][i] = y_coords[i]
+            dict["Label"].append(labels[i])
+
+        # create dataframe
+        df = pd.DataFrame(dict, columns=list(dict.keys()))
+        df.to_csv(filename, sep=' ', decimal=",", index=False)
+
     def export_image_data_for_Scripps(self, size, filename, project):
         label_map = self.create_label_map(size, labels_dictionary=project.labels, working_area=project.working_area)
         label_map.save(filename, 'png')
