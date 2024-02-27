@@ -16,6 +16,18 @@ class Assign(Tool):
         if self.active_label is None:
             return #do nothing, no label is set
 
+        # handle points
+
+        select_point = self.viewerplus.annotations.clickedPoint(x, y)
+        if select_point is not None:
+            self.viewerplus.addToSelectedPointList(select_point)
+            for point in self.viewerplus.selected_annpoints:
+                self.viewerplus.setAnnPointClass(point, self.active_label)
+
+            return
+
+        # handle areas
+
         selected_blob = self.viewerplus.annotations.clickedBlob(x, y)
         if selected_blob is None:
             return

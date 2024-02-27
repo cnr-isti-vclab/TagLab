@@ -46,6 +46,23 @@
         0.4499,
         0.4408
       ]
+    },
+    {
+      "Classifier Name": "provafunzionamento",
+      "Weights": "provafunzionamento.net",
+      "Num. Classes": 4,
+      "Classes": {
+        "Porite_massive": 1,
+        "Stylophora": 2,
+        "Acropora_branching": 3,
+        "Background": 0
+      },
+      "Scale": 0.8,
+      "Average Norm.": [
+        0.420953932726532,
+        0.41058025559094513,
+        0.32021499209329995
+      ]
     }
   ]
 }

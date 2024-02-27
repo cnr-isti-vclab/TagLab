@@ -50,7 +50,7 @@ def loadProject(taglab_working_dir, filename, default_dict):
 
     for image in project.images:
         for channel in image.channels:
-            if not os.path.exists(channel.filename):
+            if not os.path.exists(channel.filename) and len(channel.filename) > 4:
                 (filename, filter) = QFileDialog.getOpenFileName(None,
                                                                  "Couldn't find " + channel.filename + " please select it:",
                                                                  taglab_working_dir,

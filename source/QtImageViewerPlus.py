@@ -805,7 +805,7 @@ class QtImageViewerPlus(QtImageViewer):
     @pyqtSlot(float, float)
     def selectOp(self, x, y):
         """
-        Selection operation.
+        Selection operation. Note that both the areas and the points are selected.
         """
 
         self.logfile.info("[SELECTION][DOUBLE-CLICK] Selection starts..")
