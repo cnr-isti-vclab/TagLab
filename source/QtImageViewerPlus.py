@@ -736,6 +736,11 @@ class QtImageViewerPlus(QtImageViewer):
         for blob in self.annotations.seg_blobs:
             self.drawBlob(blob)
 
+    def redrawAllPoints(self):
+
+        for point in self.annotations.annpoints:
+            self.drawPointAnn(point)
+
     #used for crossair cursor
     def drawForeground(self, painter, rect):
         if self.showCrossair:

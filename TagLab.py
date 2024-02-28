@@ -3335,11 +3335,18 @@ class TagLab(QMainWindow):
             # only the color of the label changed
             self.labels_widget.updateColor(newname, newcolor)
         else:
-            # all the blobs need to be re-assigned
-            if self.activeviewer.image is not None:
-                for blob in self.activeviewer.image.annotations.seg_blobs:
+            # all the blobs need to be re-assigned in all the orthoimages
+            for orthoimage in self.project.images:
+                for blob in orthoimage.annotations.seg_blobs:
                     if blob.class_name == oldname:
-                        self.activeviewer.setBlobClass(blob, newname)
+                        blob.class_name = newname
+
+                for point in orthoimage.annotations.annpoints:
+                    if point.class_name == oldname:
+                        point.class_name = newname
+
+            self.activeviewer.redrawAllBlobs()
+            self.activeviewer.redrawAllPoints()
 
         # update labels widget
         self.updatePanels()
@@ -4074,23 +4081,38 @@ class TagLab(QMainWindow):
 
                 working_area = self.project.working_area
 
-                top = working_area[0]
-                left = working_area[1]
-                w = working_area[2]
-                h = working_area[3]
+                # expand the working area to consider points inside it
+                pad = 10
 
-                bottom = top + h
-                right = left + w
+                top = working_area[0] - pad
+                left = working_area[1] - pad
+                right = left + working_area[2] + pad
+                bottom = top + working_area[3] + pad
+
+                orthoimage = self.viewerplus.image.getRGBChannel().qimage
+
+                if top < 0:
+                    top = 0
+
+                if left < 0:
+                    left = 0
+
+                if right > orthoimage.width():
+                    right = orthoimage.width()
+
+                if bottom > orthoimage.height():
+                    bottom = orthoimage.height()
+
+                w = right - left
+                h = bottom - top
 
                 BASE_SIZE = 1000
 
-                w_step = int(w / BASE_SIZE) + 1
-                h_step = int(h / BASE_SIZE) + 1
+                w_step = int(w / BASE_SIZE)
+                h_step = int(h / BASE_SIZE)
 
-                w_size = int(w / w_step)
-                h_size = int(h / h_step)
-
-                orthoimage = self.viewerplus.image.getRGBChannel().qimage
+                w_size = int(w / w_step) + 1
+                h_size = int(h / h_step) + 1
 
                 # dataframe containing all the annotated points
                 df = None
@@ -4098,8 +4120,8 @@ class TagLab(QMainWindow):
                 # save the tiles
                 for j in range(h_step):
                     for i in range(w_step):
-                        x1 = w_size * i
-                        y1 = h_size * j
+                        x1 = left + w_size * i
+                        y1 = top + h_size * j
                         bbox = [y1, x1, w_size, h_size]
 
                         img_tile = genutils.cropQImage(orthoimage, bbox)

@@ -950,7 +950,7 @@ class Annotation(QObject):
         for point in self.annpoints:
             x = point.coordx
             y = point.coordy
-            if x > left and x < right and y > top and y < bottom:
+            if x >= left and x < right and y >= top and y < bottom:
                 x_coords.append(x)
                 y_coords.append(y)
                 labels.append(point.class_name)
