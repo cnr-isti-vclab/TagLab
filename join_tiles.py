@@ -1,3 +1,8 @@
+# This script re-assemble image tiles in a single orthoimage.
+#
+# The tiles must have the same prefix and a progressive numbering.
+
+
 import numpy as np
 import PIL.Image as Image
 import os

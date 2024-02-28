@@ -30,6 +30,7 @@ import math
 import numpy as np
 import urllib
 import platform
+import pandas as pd
 
 from PyQt5.QtCore import Qt, QSize, QMargins, QDir, QPoint, QPointF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo, QModelIndex
 from PyQt5.QtGui import QFontDatabase, QFont, QPixmap, QIcon, QKeySequence, QPen, QImageReader, QImage
@@ -4091,6 +4092,10 @@ class TagLab(QMainWindow):
 
                 orthoimage = self.viewerplus.image.getRGBChannel().qimage
 
+                # dataframe containing all the annotated points
+                df = None
+
+                # save the tiles
                 for j in range(h_step):
                     for i in range(w_step):
                         x1 = w_size * i
@@ -4103,8 +4108,17 @@ class TagLab(QMainWindow):
                         filename = os.path.join(folder_name, self.viewerplus.image.name) + "_tile{:04d}_offx={:05d}_offy={:05d}.png".format(idx, x1, y1)
                         img_tile.save(filename)
 
-                        filename = filename.replace("png", "csv")
-                        self.viewerplus.image.annotations.export_annotation_points_inside_an_area(idx, filename, bbox)
+                        df2 = self.viewerplus.image.annotations.export_annotation_points_inside_an_area(idx, filename, bbox)
+
+                        if df is None:
+                            df = df2
+                        else:
+                            df = pd.concat([df, df2], ignore_index=True)
+
+                # save the metadata (annotated) points)
+                filename = os.path.join(folder_name, self.viewerplus.image.name) + ".csv"
+                df.to_csv(filename, sep=',', index=False)
+
 
     @pyqtSlot()
     def exportAnnAsMap(self):

@@ -958,21 +958,25 @@ class Annotation(QObject):
         number_of_points = len(labels)
         dict = {
             "Plot number": np.zeros(number_of_points, dtype=np.int64),
+            "Name": [],
             "Row": np.zeros(number_of_points, dtype=np.int64),
             "Column": np.zeros(number_of_points, dtype=np.int64),
             "Label": []
         }
 
         # fill the table
+        image_name = os.path.basename(filename)
         for i in range(number_of_points):
             dict["Plot number"][i] = plot_number
-            dict["Row"][i] = x_coords[i]
-            dict["Column"][i] = y_coords[i]
+            dict["Name"].append(image_name)
+            dict["Row"][i] = y_coords[i] - top
+            dict["Column"][i] = x_coords[i] - left
             dict["Label"].append(labels[i])
 
         # create dataframe
         df = pd.DataFrame(dict, columns=list(dict.keys()))
-        df.to_csv(filename, sep=' ', decimal=",", index=False)
+
+        return df
 
     def export_image_data_for_Scripps(self, size, filename, project):
         label_map = self.create_label_map(size, labels_dictionary=project.labels, working_area=project.working_area)
