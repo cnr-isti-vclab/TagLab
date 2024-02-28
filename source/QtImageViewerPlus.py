@@ -1258,7 +1258,7 @@ class QtImageViewerPlus(QtImageViewer):
         self.selectionChanged.emit()
 
 
-    def removeFromSelectedPointList(self, annpoint):
+    def removeFromSelectedPointList(self, annpoint, redraw=True):
 
         try:
             self.selected_annpoints = [x for x in self.selected_annpoints if not x == annpoint]
