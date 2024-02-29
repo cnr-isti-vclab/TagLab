@@ -4033,9 +4033,8 @@ class TagLab(QMainWindow):
             box.exec()
             return
 
-        self.export_widget = QtExportAnnAsTable()
+        self.export_widget = QtExportAnnAsTable(self)
         self.export_widget.setWindowModality(Qt.NonModal)
-
         self.export_widget.show()
         self.export_widget.mode[str].connect(self.exportTableMode)
         self.export_widget.btnOk.clicked.connect(self.closeExportWidget)
@@ -4051,7 +4050,11 @@ class TagLab(QMainWindow):
         if filename:
             self.activeviewer.annotations.export_data_table(self.project, self.activeviewer.image, imagename, filename, choice)
 
-            msgBox = QMessageBox(self)
+            if self.export_widget is not None:
+                msgBox = QMessageBox(self.export_widget)
+            else:
+                msgBox = QMessageBox(self)
+            
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
             msgBox.setText("Data table exported successfully!")
             msgBox.exec()

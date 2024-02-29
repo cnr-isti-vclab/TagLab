@@ -62,7 +62,7 @@ class QtExportAnnAsTable(QWidget):
 
         buttons_layout = QHBoxLayout()
         self.btnOk = QPushButton("OK")
-        self.btnOk.clicked.connect(self.setMode)
+        self.btnOk.clicked.connect(self.exportUsingMode)
         self.btnCancel = QPushButton("Cancel")
         self.btnCancel.clicked.connect(self.close)
 
@@ -78,7 +78,7 @@ class QtExportAnnAsTable(QWidget):
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint | Qt.WindowStaysOnTopHint)
 
 
-    def setMode(self):
+    def exportUsingMode(self):
 
         if self.radiobtnR.isChecked():
            mode = self.radiobtnR.mode

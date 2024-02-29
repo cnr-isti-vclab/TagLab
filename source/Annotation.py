@@ -935,7 +935,7 @@ class Annotation(QObject):
 
         # create dataframe
         df = pd.DataFrame(dict, columns=list(dict.keys()))
-        df.to_csv(filename, sep=' ', decimal=",", index=False)
+        df.to_csv(filename, sep=',', index=False)
 
     def export_annotation_points_inside_an_area(self, plot_number, filename, bbox):
 
