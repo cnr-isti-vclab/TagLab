@@ -62,7 +62,7 @@ def applyClassifier(input_image, classifier_to_use, taglab_project, prediction_t
         elif output_label_maps == 2:
             filename = input_image.name + ".png"
             fileout = os.path.join(OUTPUT_FOLDER, filename)
-            wa = taglab_project
+            wa = taglab_project.working_area
             taglab_project.working_area = [0, 0, w, h]  # update working area to the entire map
             input_image.annotations.export_image_data_for_Scripps(QSize(w, h), fileout, taglab_project)
             taglab_project.working_area = wa  # restore working area
@@ -182,7 +182,7 @@ if __name__ == '__main__':
 
     end = time.time()
 
-    txt = "Total procesing time {.2f} seconds".format(end-start)
+    txt = "Total processing time {:.2f} seconds".format(end-start)
     print(txt)
 
 
