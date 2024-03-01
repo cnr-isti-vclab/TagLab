@@ -1071,12 +1071,12 @@ class TagLab(QMainWindow):
 
         ###### POINT ANNOTATIONS MENU
 
-        importPointsAct = QAction("Import Point Annotations", self)
-        importPointsAct.setStatusTip("Import Point Annotations From .CSV")
-        importPointsAct.triggered.connect(self.importPointAnn)
+        importPointsAct = QAction("Import points from CoralNet", self)
+        importPointsAct.setStatusTip("Import points classified in CoralNet")
+        importPointsAct.triggered.connect(self.importAnnPointsFromCoralNet)
 
-        exportPointsAct  = QAction("Export for CoralNet", self)
-        exportPointsAct .setStatusTip("Export points annotations as tiles+CSV files")
+        exportPointsAct  = QAction("Export points for CoralNet", self)
+        exportPointsAct .setStatusTip("Export points annotations as a set of tiles+CSV files that can be uploaded in CoralNet")
         exportPointsAct .triggered.connect(self.exportAnnPointsForCoralNet)
 
         samplePointsAct = QAction("Sample Points On This Map", self)
@@ -4067,6 +4067,28 @@ class TagLab(QMainWindow):
         self.export_widget = None
         self.setTool("MOVE")
 
+    def importAnnPointsFromCoralNet(self):
+        """
+        Import points annotations from Coralnet.
+        """
+
+        if self.activeviewer:
+            if not self.activeviewer.image:
+                box = QMessageBox()
+                box.setText("A loaded project is needed to import annotated points.")
+                box.exec()
+                return
+
+        filters = "CSV (*.csv)"
+        filename, _ = QFileDialog.getOpenFileName(self, "Open .CSV file", self.taglab_dir, filters)
+        if filename:
+            QApplication.setOverrideCursor(Qt.WaitCursor)
+            self.disableSplitScreen()
+            self.activeviewer.annotations.openCoralNetCSV(filename, self.activeviewer.image)
+            self.activeviewer.drawAllPointsAnn()
+
+            QApplication.restoreOverrideCursor()
+
     def exportAnnPointsForCoralNet(self):
         """
         Export point annotations such that can be uploaded on CoralNet.
@@ -4542,24 +4564,6 @@ class TagLab(QMainWindow):
 
             gf = self.activeviewer.image.georef_filename
             rasterops.saveClippedTiff(input_tiff, blobs, gf, output_filename)
-
-            QApplication.restoreOverrideCursor()
-
-    @pyqtSlot()
-    def importPointAnn(self):
-
-        " import csv from coralnet format for each single map. Plot name, x, y, class "
-        # please note, loading of
-
-        filters = "CSV (*.csv)"
-        filename, _ = QFileDialog.getOpenFileName(self, "Open A .CSV File", self.taglab_dir, filters)
-        if filename:
-            QApplication.setOverrideCursor(Qt.WaitCursor)
-            self.disableSplitScreen()
-            channel = self.activeviewer.image.getRGBChannel()
-            head, tail = os.path.split(channel.filename)
-            self.activeviewer.annotations.openCSVAnn(filename, tail)
-            self.activeviewer.drawAllPointsAnn()
 
             QApplication.restoreOverrideCursor()
 
