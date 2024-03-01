@@ -4084,7 +4084,7 @@ class TagLab(QMainWindow):
         if filename:
             QApplication.setOverrideCursor(Qt.WaitCursor)
             self.disableSplitScreen()
-            self.activeviewer.annotations.openCoralNetCSV(filename, self.activeviewer.image)
+            self.activeviewer.annotations.openCoralNetCSV(filename, self.activeviewer.image.name)
             self.activeviewer.drawAllPointsAnn()
 
             QApplication.restoreOverrideCursor()

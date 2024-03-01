@@ -1064,42 +1064,41 @@ class Annotation(QObject):
             try:
                 self.annpoints = []
                 for row in reader:
-                    if row[0] == imagename:
-                        # coralnet exports all the annotation of a image set in a single csv else, file names doesn't match
-                        # here, if plot name == image.name then extract coords
+                    # coralnet exports all the annotation of a image set in a single csv else, file names doesn't match
+                    # here, if plot name == image.name then extract coords
 
-                        name = row[0]
-                        tags = name.split("_")
-                        if imagename == tags[0]:
-                            tags[2] = tags[2].removeprefix("offx=")
-                            tags[3] = tags[3].removeprefix("offy=")
-                            tags[3] = tags[3].removesuffix(".png")
+                    name = row[0]
+                    tags = name.split("_")
+                    if imagename == tags[0]:
+                        tags[2] = tags[2].replace("offx=", "")
+                        tags[3] = tags[3].replace("offy=", "")
+                        tags[3] = tags[3].replace(".png", "")
 
-                            coordx = 0
-                            try:
-                                coordx = int(tags[2]) + int(row[2])
-                            except:
-                                print("Invalid coordinates (!)")
+                        coordx = 0
+                        try:
+                            coordx = int(tags[2]) + int(row[2])
+                        except:
+                            print("Invalid coordinates (!)")
 
-                            coordy = 0
-                            try:
-                                coordy = int(tags[3]) + int(row[1])
-                            except:
-                                print("Invalid coordinates (!)")
+                        coordy = 0
+                        try:
+                            coordy = int(tags[3]) + int(row[1])
+                        except:
+                            print("Invalid coordinates (!)")
 
-                            classname = row[3]
-                            point = Point(coordx, coordy, classname, self.getFreePointId())
-                            #check if the csv file has machine suggestion, take the first 3 and store them in point attributes
-                            if len(row[4])>0:
-                                point.data = {
-                                'Suggestion 1': row[4],
-                                'Confidence 1': row[5],
-                                'Suggestion 2': row[6],
-                                'Confidence 2': row[7],
-                                'Suggestion 3': row[8],
-                                'Confidence 3': row[9]}
+                        classname = row[3]
+                        point = Point(coordx, coordy, classname, self.getFreePointId())
+                        #check if the csv file has machine suggestion, take the first 3 and store them in point attributes
+                        if len(row[4])>0:
+                            point.data = {
+                            'Suggestion 1': row[4],
+                            'Confidence 1': row[5],
+                            'Suggestion 2': row[6],
+                            'Confidence 2': row[7],
+                            'Suggestion 3': row[8],
+                            'Confidence 3': row[9]}
 
-                            self.addPoint(point)
+                        self.addPoint(point)
 
             except csv.Error as e:
                 sys.exit('file {}, line {}: {}'.format(filename, reader.line_num, e))
