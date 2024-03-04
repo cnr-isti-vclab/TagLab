@@ -1075,7 +1075,7 @@ class TagLab(QMainWindow):
         importPointsAct.setStatusTip("Import points classified in CoralNet")
         importPointsAct.triggered.connect(self.importAnnPointsFromCoralNet)
 
-        exportPointsAct  = QAction("Export points for CoralNet", self)
+        exportPointsAct  = QAction("Export dataset for CoralNet", self)
         exportPointsAct .setStatusTip("Export points annotations as a set of tiles+CSV files that can be uploaded in CoralNet")
         exportPointsAct .triggered.connect(self.exportAnnPointsForCoralNet)
 
