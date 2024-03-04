@@ -1071,17 +1071,17 @@ class TagLab(QMainWindow):
 
         ###### POINT ANNOTATIONS MENU
 
-        importPointsAct = QAction("Import points from CoralNet", self)
+        samplePointsAct = QAction("Sample Points On This Map", self)
+        samplePointsAct.setStatusTip("Sample Points This Map")
+        samplePointsAct.triggered.connect(self.chooseSampling)
+
+        importPointsAct = QAction("Import points annotations from CoralNet", self)
         importPointsAct.setStatusTip("Import points classified in CoralNet")
         importPointsAct.triggered.connect(self.importAnnPointsFromCoralNet)
 
         exportPointsAct  = QAction("Export dataset for CoralNet", self)
         exportPointsAct .setStatusTip("Export points annotations as a set of tiles+CSV files that can be uploaded in CoralNet")
         exportPointsAct .triggered.connect(self.exportAnnPointsForCoralNet)
-
-        samplePointsAct = QAction("Sample Points On This Map", self)
-        samplePointsAct.setStatusTip("Sample Points This Map")
-        samplePointsAct.triggered.connect(self.chooseSampling)
 
         self.pointmenu = menubar.addMenu("&Points")
         self.pointmenu.setStyleSheet(styleMenu)
