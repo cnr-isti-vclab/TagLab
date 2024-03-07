@@ -102,19 +102,31 @@ class Annotation(QObject):
         """ removes both regions and points (they are both called blob)"""
 
         if type(blob) == Point:
-           index= self.annpoints.index(blob)
-           del self.annpoints[index]
+            try:
+                index = self.annpoints.index(blob)
+            except:
+                index = -1
 
-           if notify:
-               self.pointRemoved.emit(blob)
+            if index < 0:
+                print("WARNING!! point to be removed not found !")
+            else:
+                del self.annpoints[index]
+                if notify:
+                    self.pointRemoved.emit(blob)
 
+                self.table_needs_update = True
         else:
-            # notification that a blob is going to be removed
-            if notify:
-                self.blobRemoved.emit(blob)
+            try:
+                index = self.seg_blobs.index(blob)
+            except:
+                index = -1
 
-            index = self.seg_blobs.index(blob)
-            del self.seg_blobs[index]
+            if index < 0:
+                print("WARNING!! region to be removed not found !")
+            else:
+                del self.seg_blobs[index]
+                if notify:
+                    self.blobRemoved.emit(blob)
 
             self.table_needs_update = True
 
