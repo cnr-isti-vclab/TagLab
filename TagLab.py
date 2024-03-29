@@ -424,7 +424,6 @@ class TagLab(QMainWindow):
         layout_header.addWidget(self.labelMouseTop)
         layout_header.addWidget(self.labelMouseTopInfo)
 
-
         layout_viewers = QHBoxLayout()
         layout_viewers.addWidget(self.viewerplus)
         layout_viewers.addWidget(self.viewerplus2)
@@ -596,6 +595,8 @@ class TagLab(QMainWindow):
         self.settings_widget.drawing_settings.workingAreaPenChanged[str, int].connect(self.viewerplus2.setWorkingAreaPen)
 
         self.connectLabelsPanelWithViewers()
+
+        self.connectProjectWithPanels()
 
         self.viewerplus.viewHasChanged[float, float, float].connect(self.viewerplus2.setViewParameters)
         self.viewerplus2.viewHasChanged[float, float, float].connect(self.viewerplus.setViewParameters)
@@ -2390,6 +2391,9 @@ class TagLab(QMainWindow):
         self.disableSplitScreen()
         self.layers_widget.setProject(self.project)
 
+        # connect project with the panels
+        self.connectProjectWithPanels()
+
     def resetToolbar(self):
 
         self.btnMove.setChecked(False)
@@ -3128,7 +3132,102 @@ class TagLab(QMainWindow):
         logfile.info(message3)
         logfile.info(message4)
 
-    #REFACTOR call create a new project and treplace the old one.
+
+    def connectProjectWithPanels(self):
+
+        # TODO: in the future the Project must be decoupled from the QImageViewerPlus through signals-slots
+
+        ##### connect the project with panels (establishing UNIQUE connections)
+
+        # label panel
+        if self.labels_widget is not None:
+            try:
+                self.project.blobUpdated[Image, object, object].connect(self.labels_widget.updateBlob, type=Qt.UniqueConnection)
+            except:
+                pass
+
+            try:
+                self.project.blobAdded[Image, object].connect(self.labels_widget.addBlob, type=Qt.UniqueConnection)
+            except:
+                pass
+
+            try:
+                self.project.blobRemoved[Image, object].connect(self.labels_widget.removeBlob, type=Qt.UniqueConnection)
+            except:
+                pass
+
+            try:
+                self.project.blobClassChanged[Image, str, object].connect(self.labels_widget.updateAnnClass, type=Qt.UniqueConnection)
+            except:
+                pass
+
+            try:
+                self.project.pointAdded[Image, object].connect(self.labels_widget.addBlob, type=Qt.UniqueConnection)
+            except:
+                pass
+
+            try:
+                self.project.pointRemoved[Image, object].connect(self.labels_widget.removeBlob, type=Qt.UniqueConnection)
+            except:
+                pass
+
+            try:
+                self.project.pointClassChanged[Image, str, object].connect(self.labels_widget.updateAnnClass, type=Qt.UniqueConnection)
+            except:
+                pass
+
+        # data panel
+        if self.data_panel is not None:
+            try:
+                self.project.blobUpdated[Image, Blob, Blob].connect(self.data_panel.updateBlob, type=Qt.UniqueConnection)
+            except:
+                pass
+
+            try:
+                self.project.blobAdded[Image, object].connect(self.data_panel.addBlob, type=Qt.UniqueConnection)
+            except:
+                pass
+
+            try:
+                self.project.blobRemoved[Image, object].connect(self.data_panel.removeBlob, type=Qt.UniqueConnection)
+            except:
+                pass
+
+            try:
+                self.project.blobClassChanged[Image, str, object].connect(self.data_panel.updateBlobClass, type=Qt.UniqueConnection)
+            except:
+                pass
+
+            try:
+                self.project.pointAdded[Image, object].connect(self.data_panel.addBlob, type=Qt.UniqueConnection)
+            except:
+                pass
+
+            try:
+                self.project.pointRemoved[Image, object].connect(self.data_panel.removeBlob, type=Qt.UniqueConnection)
+            except:
+                pass
+
+            try:
+                self.project.pointClassChanged[Image, str, object].connect(self.data_panel.updatePointClass, type=Qt.UniqueConnection)
+            except:
+                pass
+
+        # information panel
+        try:
+            self.project.blobUpdated[Image, Blob, Blob].connect(self.updatePanelInfo, type=Qt.UniqueConnection)
+        except:
+            pass
+
+        try:
+            self.project.blobAdded[Image, Blob].connect(self.updatePanelInfo, type=Qt.UniqueConnection)
+        except:
+            pass
+
+        try:
+            self.project.blobRemoved[Image, Blob].connect(self.resetPanelInfo, type=Qt.UniqueConnection)
+        except:
+            pass
 
     @pyqtSlot()
     def newProject(self):
@@ -3438,12 +3537,6 @@ class TagLab(QMainWindow):
 
         self.updateImageSelectionMenu()
 
-        # molto sporco per collegare data panel, dovrebbe andare in data panel
-        if image is not None:
-            image.annotations.blobUpdated.connect(self.updatePanelInfo)
-            image.annotations.blobAdded.connect(self.updatePanelInfo)
-            image.annotations.blobRemoved.connect(self.resetPanelInfo)
-
     #REFACTOR
     @pyqtSlot()
     def setMapProperties(self):
@@ -3638,7 +3731,7 @@ class TagLab(QMainWindow):
 
         if self.activeviewer is not None:
             if self.activeviewer.image is not None:
-                self.data_panel.setTable(self.project, self.activeviewer.image)
+                self.data_panel.setTable(self.activeviewer.image)
     
     @pyqtSlot(Layer, bool)
     def toggleLayer(self, layer, enable):
@@ -4608,6 +4701,7 @@ class TagLab(QMainWindow):
         #TODO check if loadProject actually works!
         try:
             self.project = loadProject(self.taglab_dir, filename, self.default_dictionary)
+            self.connectProjectWithPanels()
         except Exception as e:
             box = QMessageBox()
             box.setWindowTitle('Failed loading the project')

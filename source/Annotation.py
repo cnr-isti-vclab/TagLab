@@ -24,10 +24,8 @@ import sys
 from cv2 import fillPoly
 
 from skimage import measure
-from skimage.io import imsave
 
 from skimage.filters import sobel
-from scipy import ndimage as ndi
 from PyQt5.QtGui import QPainter, QImage, QPen, QBrush, QColor, qRgb
 from PyQt5.QtCore import Qt, QObject, pyqtSignal, QRectF
 from skimage.color import rgb2gray
@@ -48,21 +46,13 @@ from coraline.Coraline import segment, mutual
 # from PIL import Image as Img  #for debug
 
 # refactor: change name to annotationS
-class Annotation(QObject):
+class Annotation(object):
     """
         Annotation object contains all the annotations, a list of blobs and a list of annotation points
         Annotation point can't be manually edited or removed, only classified
     """
-    blobAdded = pyqtSignal(Blob)
-    pointAdded = pyqtSignal(Point)
-    blobRemoved = pyqtSignal(Blob)
-    pointRemoved = pyqtSignal(Point)
-    blobUpdated = pyqtSignal(Blob, Blob)
-    blobClassChanged = pyqtSignal(str, Blob)
-    annPointClassChanged = pyqtSignal(str, Point)
 
     def __init__(self):
-        super(QObject, self).__init__()
 
         # refactor: rename this to blobs.
         # list of all blobs
@@ -79,31 +69,27 @@ class Annotation(QObject):
         self.table_needs_update = True
 
 
-    def addPoint(self, point, notify=True):
+    def addPoint(self, point):
 
         self.annpoints.append(point)
-        if notify:
-            self.pointAdded.emit(point)
 
-    def addBlob(self, blob, notify=True):
+    def addBlob(self, blob):
+
         used = [blob.id for blob in self.seg_blobs]
         if blob.id in used:
             blob.id = self.getFreeId()
         self.seg_blobs.append(blob)
 
-        # notification that a blob has been added
-        if notify:
-            self.blobAdded.emit(blob)
-
         self.table_needs_update = True
 
-    def removeBlob(self, blob, notify=True):
+    def removeAnn(self, blob_or_point):
 
         """ removes both regions and points (they are both called blob)"""
 
-        if type(blob) == Point:
+        if type(blob_or_point) == Point:
+            point = blob_or_point
             try:
-                index = self.annpoints.index(blob)
+                index = self.annpoints.index(point)
             except:
                 index = -1
 
@@ -111,11 +97,9 @@ class Annotation(QObject):
                 print("WARNING!! point to be removed not found !")
             else:
                 del self.annpoints[index]
-                if notify:
-                    self.pointRemoved.emit(blob)
-
                 self.table_needs_update = True
         else:
+            blob = blob_or_point
             try:
                 index = self.seg_blobs.index(blob)
             except:
@@ -125,46 +109,27 @@ class Annotation(QObject):
                 print("WARNING!! region to be removed not found !")
             else:
                 del self.seg_blobs[index]
-                if notify:
-                    self.blobRemoved.emit(blob)
-
-            self.table_needs_update = True
+                self.table_needs_update = True
 
     def updateBlob(self, old_blob, new_blob):
 
-        new_blob.id = old_blob.id;
-        self.removeBlob(old_blob, notify=False)
-        self.addBlob(new_blob, notify=False)
-        self.blobUpdated.emit(old_blob, new_blob)
-
+        new_blob.id = old_blob.id
+        self.removeBlob(old_blob)
+        self.addBlob(new_blob)
         self.table_needs_update = True
 
     def setBlobClass(self, blob, class_name):
 
-        if blob.class_name == class_name:
-            return
-        else:
-            old_class_name = blob.class_name
-            blob.class_name = class_name
-
-            # notify that the class name of 'blob' has changed
-            self.blobClassChanged.emit(old_class_name, blob)
-
+        blob.class_name = class_name
         self.table_needs_update = True
 
+    def setPointClass(self, point, class_name):
 
-    def setAnnPointClass(self, annpoint, class_name):
-
-        if annpoint.class_name == class_name:
+        if point.class_name == class_name:
             return
         else:
-            old_class_name = annpoint.class_name
-            annpoint.class_name = class_name
-
-            # notify that the class name of 'point' has changed
-            self.annPointClassChanged.emit(old_class_name, annpoint)
-
-       # self.table_needs_update = True da fare
+            old_class_name = point.class_name
+            point.class_name = class_name
 
     def blobById(self, id):
         for blob in self.seg_blobs:
@@ -1114,18 +1079,3 @@ class Annotation(QObject):
 
             except csv.Error as e:
                 sys.exit('file {}, line {}: {}'.format(filename, reader.line_num, e))
-
-
-    def setPointClass(self, annpoint, class_name):
-
-        if annpoint.class_name == class_name:
-            return
-        else:
-            old_class_name = annpoint.class_name
-            annpoint.class_name = class_name
-            # notify that the class name of 'point' has changed
-            self.pointClassChanged.emit(old_class_name, annpoint)
-
-        #we don't have an ann point table at this time
-        #self.table_needs_update = True
-       

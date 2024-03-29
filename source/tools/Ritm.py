@@ -346,8 +346,6 @@ class Ritm(Tool):
             # order is important: first add then setblob class!
             utils.undrawBlob(blob, self.viewerplus.scene, redraw=False)
             self.viewerplus.addBlob(blob, selected=True)
-            #if self.blob_to_correct is not None:
-            #    self.viewerplus.setBlobClass(blob, self.blob_to_correct.class_name)
 
             self.blobInfo.emit(blob, message)
 

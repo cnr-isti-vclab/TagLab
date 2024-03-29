@@ -51,8 +51,6 @@ class Assign(Tool):
 #            if image == self.viewerplus2.image //we need to update also the other viewer!!!!
 #            2) l'undo ha lo stesso problema, posso aggiungere i blob ma devono essere fatti per ogni immagine.
 
-
-
         message ="[TOOL][ASSIGN] Blob(s) assigned ({:d}) (CLASS={:s}).".format(len(self.viewerplus.selected_blobs), self.active_label)
         self.viewerplus.logfile.info(message)
 

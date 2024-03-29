@@ -125,7 +125,6 @@ class QtImageViewerPlus(QtImageViewer):
         self.channel = None
         self.annotations = Annotation()
 
-
         self.layers = []
         self.selected_blobs = []
         self.selected_annpoints = []
@@ -1337,29 +1336,29 @@ class QtImageViewerPlus(QtImageViewer):
 
 
 #CREATION and DESTRUCTION of BLOBS
-    def addBlob(self, blob, selected = False, redraw=True):
+    def addBlob(self, blob_or_point, selected=False, redraw=True):
         """
         The only function to add annotations. will take care of undo and QGraphicItems.
         """
 
-        if type(blob) == Point:
-            self.drawPointAnn(blob)
+        if type(blob_or_point) == Point:
+            self.drawPointAnn(blob_or_point)
             if selected:
-                self.addToSelectedPointList(blob, redraw=False)
+                self.addToSelectedPointList(blob_or_point, redraw=False)
 
         else:
-            self.undo_data.addBlob(blob)
-            self.project.addBlob(self.image, blob)
-            self.drawBlob(blob)
+            self.undo_data.addBlob(blob_or_point)
+            self.project.addBlob(self.image, blob_or_point)
+            self.drawBlob(blob_or_point)
 
             if selected:
-                self.addToSelectedList(blob)
+                self.addToSelectedList(blob_or_point)
 
             if self.fill_enabled is False:
-                blob.qpath_gitem.setBrush(QBrush(Qt.NoBrush))
+                blob_or_point.qpath_gitem.setBrush(QBrush(Qt.NoBrush))
 
             if self.border_enabled is False:
-                blob.qpath_gitem.setPen(QPen(Qt.NoPen))
+                blob_or_point.qpath_gitem.setPen(QPen(Qt.NoPen))
 
         if redraw:
             self.scene.invalidate()
@@ -1379,8 +1378,7 @@ class QtImageViewerPlus(QtImageViewer):
         for point in points:
             self.removeFromSelectedPointList(point, redraw=False)
             self.undrawAnnPoint(point, redraw=False)
-            # undo is missing
-            self.image.annotations.removeBlob(point)
+            self.project.removePoint(self.image, point)
 
         self.scene.invalidate()
 
@@ -1390,17 +1388,18 @@ class QtImageViewerPlus(QtImageViewer):
         """
         if type(blob) == Point:
 
-            self.removeFromSelectedPointList(blob, redraw=False)
-            self.undrawAnnPoint(blob, redraw=False)
+            point = blob
+
+            self.removeFromSelectedPointList(point, redraw=False)
+            self.undrawAnnPoint(point, redraw=False)
             #undo is missing
-            self.image.annotations.removeBlob(blob)
+            self.project.removePoint(point)
 
         else:
 
             self.removeFromSelectedList(blob, redraw=False)
             self.undrawBlob(blob)
             self.undo_data.removeBlob(blob)
-            #self.annotations.removeBlob(blob)
             self.project.removeBlob(self.image, blob)
 
         if redraw:
@@ -1446,14 +1445,13 @@ class QtImageViewerPlus(QtImageViewer):
         for blob in self.selected_blobs:
 
             self.undo_data.setBlobClass(blob, class_name)
-            self.annotations.setBlobClass(blob, class_name)
+            self.project.setBlobClass(self.image, blob, class_name)
             brush = self.project.classBrushFromName(blob)
             blob.qpath_gitem.setBrush(brush)
 
         for annpoint in self.selected_annpoints:
 
-            # self.undo_data.setAnnPointClass(annpoint, class_name)
-            self.annotations.setAnnPointClass(annpoint, class_name)
+            self.project.setPointClass(self.image, annpoint, class_name)
             brush = self.project.classBrushFromName(annpoint)
             annpoint.ellipse_gitem.setBrush(brush)
 
@@ -1464,8 +1462,9 @@ class QtImageViewerPlus(QtImageViewer):
 
         if blob.class_name == class_name:
             return
+
         self.undo_data.setBlobClass(blob, class_name)
-        self.annotations.setBlobClass(blob, class_name)
+        self.project.setBlobClass(self.image, blob, class_name)
 
         if blob.qpath_gitem:
             brush = self.project.classBrushFromName(blob)
@@ -1476,8 +1475,8 @@ class QtImageViewerPlus(QtImageViewer):
 
         if annpoint.class_name == class_name:
             return
-        # self.undo_data.setBlobClass(annpoint, class_name)  #data va fatto
-        self.annotations.setAnnPointClass(annpoint, class_name)
+
+        self.project.setPointClass(self.image, annpoint, class_name)
 
         if annpoint.cross1_gitem:
             brush = self.project.classBrushFromName(annpoint)
@@ -1508,18 +1507,18 @@ class QtImageViewerPlus(QtImageViewer):
             self.logfile.info(message)
             self.removeFromSelectedList(blob)
             self.undrawBlob(blob)
-            self.annotations.removeBlob(blob)
+            self.project.removeBlob(self.image, blob)
 
         for blob in operation['add']:
             message = "[UNDO][ADD] BLOBID={:d} VERSION={:d}".format(blob.id, blob.version)
             self.logfile.info(message)
-            self.annotations.addBlob(blob)
+            self.project.addBlob(self.image, blob)
             self.selected_blobs.append(blob)
             self.selectionChanged.emit()
             self.drawBlob(blob)
 
         for (blob, class_name) in operation['class']:
-            self.annotations.setBlobClass(blob, class_name)
+            self.project.setBlobClass(self.image, blob, class_name)
             brush = self.project.classBrushFromName(blob)
             #this might apply to blobs NOT in this image (or rendered)
             if blob.qpath_gitem:
@@ -1537,18 +1536,18 @@ class QtImageViewerPlus(QtImageViewer):
             self.logfile.info(message)
             self.removeFromSelectedList(blob)
             self.undrawBlob(blob)
-            self.annotations.removeBlob(blob)
+            self.project.removeBlob(self.image, blob)
 
         for blob in operation['remove']:
             message = "[REDO][REMOVE] BLOBID={:d} VERSION={:d}".format(blob.id, blob.version)
             self.logfile.info(message)
-            self.annotations.addBlob(blob)
+            self.project.addBlob(self.image, blob)
             self.selected_blobs.append(blob)
             self.selectionChanged.emit()
             self.drawBlob(blob)
 
         for (blob, class_name) in operation['newclass']:
-            self.annotations.setBlobClass(blob, class_name)
+            self.project.setBlobClass(self.image, blob, class_name)
             brush = self.project.classBrushFromName(blob)
             blob.qpath_gitem.setBrush(brush)
 

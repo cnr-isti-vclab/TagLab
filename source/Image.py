@@ -57,8 +57,6 @@ class Image(object):
                         point.fromDict(data)
                         self.annotations.addPoint(point)
 
-
-
         self.layers = []
         for layer_data in layers:
             layer = Layer(layer_data["type"])

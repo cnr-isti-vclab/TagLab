@@ -23,6 +23,7 @@ from PyQt5.QtGui import QColor
 import pandas as pd
 from source.Blob import Blob
 from source.Point import Point
+from source.Image import Image
 
 class TableModel(QAbstractTableModel):
     def __init__(self, data):
@@ -160,8 +161,7 @@ class QtTablePanel(QWidget):
 
         self.setLayout(layout)
 
-        self.project = None
-        self.activeImg = None
+        self.active_image = None
 
     def displayDataByType(self):
 
@@ -192,57 +192,18 @@ class QtTablePanel(QWidget):
         self.selectById(self.searchId.text())
 
 
-    def setTable(self, project, img):
+    def setTable(self, img):
+        """
+        Set the table with the annotations of the given image.
+        """
 
-        if self.project == project and self.activeImg == img:
+        if self.active_image == img:
             return
 
-        self.project = project
-        self.activeImg = img
+        self.active_image = img
 
-        # establish UNIQUE connections, otherwise the slots will be called MORE THAN ONE TIME
-        # when the signal is emitted
-
-        if self.activeImg is not None:
-
-            try:
-                self.activeImg.annotations.blobUpdated[Blob,Blob].connect(self.updateBlob, type=Qt.UniqueConnection)
-            except:
-                pass
-
-            try:
-                self.activeImg.annotations.blobAdded[object].connect(self.addBlob, type=Qt.UniqueConnection)
-            except:
-                pass
-
-            try:
-                self.activeImg.annotations.blobRemoved[object].connect(self.removeBlob, type=Qt.UniqueConnection)
-            except:
-                pass
-
-            try:
-                self.activeImg.annotations.blobClassChanged[str,object].connect(self.updateBlobClass, type=Qt.UniqueConnection)
-            except:
-                pass
-
-            # do the same for point annotation
-
-            try:
-                self.activeImg.annotations.pointAdded[object].connect(self.addBlob, type=Qt.UniqueConnection)
-            except:
-                pass
-
-            try:
-                self.activeImg.annotations.pointRemoved[object].connect(self.removeBlob, type=Qt.UniqueConnection)
-            except:
-                pass
-
-            try:
-                self.activeImg.annotations.annPointClassChanged[str,object].connect(self.updateBlobClass, type=Qt.UniqueConnection)
-            except:
-                pass
-
-            self.data = self.activeImg.create_data_table()
+        if self.active_image is not None:
+            self.data = self.active_image.create_data_table()
 
         if self.model is None:
             self.model = TableModel(self.data)
@@ -257,8 +218,7 @@ class QtTablePanel(QWidget):
             self.data_table.setEditTriggers(QAbstractItemView.DoubleClicked)
 
             self.data_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
-            self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Fixed)
-            self.data_table.setColumnWidth(1, 40)
+            self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
             self.data_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
             self.data_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.Stretch)
             self.data_table.horizontalHeader().showSection(0)
@@ -269,55 +229,75 @@ class QtTablePanel(QWidget):
         else:
             self.updateTable(self.data)
 
-    @pyqtSlot(object)
-    def addBlob(self, blob):
+    @pyqtSlot(Image, object)
+    def addBlob(self, img, blob_or_point):
 
-        if type(blob) == Point:
-           new_row = {'Id': blob.id, 'Type': 'P', 'Class': blob.class_name, 'Area': 0}
+        if img == self.active_image: # the signal arrives from another image that is not connected to this panel and it is ignored
 
-        else:
-            scale_factor = self.activeImg.pixelSize()
-            area = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
-            new_row = {'Id': blob.id, 'Type': 'R', 'Class': blob.class_name, 'Area': area}
+            if type(blob_or_point) == Point:
+                point = blob_or_point
+                new_row = {'Id': point.id, 'Type': 'P', 'Class': point.class_name, 'Area': 0}
+            else:
+                blob = blob_or_point
+                scale_factor = self.active_image.pixelSize()
+                area = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
+                new_row = {'Id': blob.id, 'Type': 'R', 'Class': blob.class_name, 'Area': area}
 
-        df = pd.DataFrame([new_row])
-        self.data = pd.concat([self.data, df])
+            df = pd.DataFrame([new_row])
+            self.data = pd.concat([self.data, df])
 
-        # index is recalculated so that index i corresponds to row i
-        self.data.reset_index(drop=True, inplace=True)
+            # index is recalculated so that index i corresponds to row i
+            self.data.reset_index(drop=True, inplace=True)
 
-        self.updateTable(self.data)
+            self.updateTable(self.data)
 
-    @pyqtSlot(object)
-    def removeBlob(self, blob):
+    @pyqtSlot(Image, object)
+    def removeBlob(self, img, blob):
 
-        index = self.data.index[self.data["Id"] == blob.id]
-        self.data = self.data.drop(index=index)
+        if img == self.active_image: # if the signal arrives from another image that is not connected to this panel it is ignored
 
-        # index is recalculated so that index i corresponds to row i
-        self.data.reset_index(drop=True, inplace=True)
+            index = self.data.index[self.data["Id"] == blob.id]
+            self.data = self.data.drop(index=index)
 
-        self.updateTable(self.data)
+            # index is recalculated so that index i corresponds to row i
+            self.data.reset_index(drop=True, inplace=True)
 
-    @pyqtSlot(Blob,Blob)
-    def updateBlob(self, oldblob, newblob):
+            self.updateTable(self.data)
 
-        for i, row in self.data.iterrows():
-            if row[0] == newblob.id:
-                scale_factor = self.activeImg.pixelSize()
-                self.data.loc[i, 'Area'] = round(newblob.area * (scale_factor) * (scale_factor) / 100, 2)
-                self.data.loc[i, 'Class'] = newblob.class_name
+    @pyqtSlot(Image, Blob, Blob)
+    def updateBlob(self, img, oldblob, newblob):
 
-        self.data_table.update()
+        if img == self.active_image: # if the signal arrives from another image that is not connected to this panel it is ignored
 
-    @pyqtSlot(str,object)
-    def updateBlobClass(self, old_class_name, newblob):
+            for i, row in self.data.iterrows():
+                if row[0] == newblob.id:
+                    scale_factor = self.active_image.pixelSize()
+                    self.data.loc[i, 'Area'] = round(newblob.area * (scale_factor) * (scale_factor) / 100, 2)
+                    self.data.loc[i, 'Class'] = newblob.class_name
 
-        for i, row in self.data.iterrows():
-            if row[0] == newblob.id:
-                self.data.loc[i, 'Class'] = newblob.class_name
+            self.data_table.update()
 
-        self.data_table.update()
+    @pyqtSlot(Image, str, object)
+    def updateBlobClass(self, img, old_class_name, newblob):
+
+        if img == self.active_image:  # if the signal arrives from another image that is not connected to this panel it is ignored
+
+            for i, row in self.data.iterrows():
+                if row[0] == newblob.id:
+                    self.data.loc[i, 'Class'] = newblob.class_name
+
+            self.data_table.update()
+
+    @pyqtSlot(Image, str, object)
+    def updatePointClass(self, img, old_class_name, newpoint):
+
+        if img == self.active_image:  # if the signal arrives from another image that is not connected to this panel it is ignored
+
+            for i, row in self.data.iterrows():
+                if row[0] == newpoint.id:
+                    self.data.loc[i, 'Class'] = newpoint.class_name
+
+            self.data_table.update()
 
     def clear(self):
 

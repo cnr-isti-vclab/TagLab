@@ -4,7 +4,7 @@ import os
 
 import numpy as np
 import pandas as pd
-from PyQt5.QtCore import QDir
+from PyQt5.QtCore import QObject, QDir, pyqtSignal
 from PyQt5.QtGui import QBrush, QColor
 from PyQt5.QtWidgets import QFileDialog, QMessageBox
 
@@ -149,12 +149,22 @@ class ProjectEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-class Project(object):
+class Project(QObject):
+
+    # custom signals
+    blobAdded = pyqtSignal(Image, Blob)
+    pointAdded = pyqtSignal(Image, Point)
+    blobRemoved = pyqtSignal(Image, Blob)
+    pointRemoved = pyqtSignal(Image, Point)
+    blobUpdated = pyqtSignal(Image, Blob, Blob)
+    blobClassChanged = pyqtSignal(Image, str, Blob)
+    pointClassChanged = pyqtSignal(Image, str, Point)
 
     def __init__(self, filename=None, labels={}, images=[], correspondences=None,
                  spatial_reference_system=None, metadata={}, image_metadata_template={}, genet={},
                  dictionary_name="", dictionary_description="", working_area=None, region_attributes={},
-                 markers={}):
+                 markers={}, parent=None):
+        super(Project, self).__init__(parent)
 
         self.filename = None  # filename with path of the project json
 
@@ -396,34 +406,78 @@ class Project(object):
         # corr.updateGenets()
         return corr
 
-    def addBlob(self, image, blob):
+    def addBlob(self, img, blob, notify=True):
 
         # update image annotations
-        image.annotations.addBlob(blob)
+        img.annotations.addBlob(blob)
 
         # update correspondences
-        for corr in self.findCorrespondences(image):
-            corr.addBlob(image, blob)
+        for corr in self.findCorrespondences(img):
+            corr.addBlob(img, blob)
 
-    def removeBlob(self, image, blob):
+        if notify:
+            self.blobAdded.emit(img, blob)
 
-        # updata image annotations (this are both blob and annpoints)
-        image.annotations.removeBlob(blob)
+    def removeBlob(self, img, blob, notify=True):
+
+        img.annotations.removeAnn(blob)
 
         # update correspondences
-        for corr in self.findCorrespondences(image):
-            corr.removeBlob(image, blob)
+        for corr in self.findCorrespondences(img):
+            corr.removeBlob(img, blob)
 
+        if notify:
+            self.blobRemoved.emit(img, blob)
 
-
-    def updateBlob(self, image, old_blob, new_blob):
+    def updateBlob(self, img, old_blob, new_blob, notify=True):
 
         # update image annotations
-        image.annotations.updateBlob(old_blob, new_blob)
+        img.annotations.updateBlob(old_blob, new_blob)
 
         # update correspondences
-        for corr in self.findCorrespondences(image):
-            corr.updateBlob(image, old_blob, new_blob)
+        for corr in self.findCorrespondences(img):
+            corr.updateBlob(img, old_blob, new_blob)
+
+        if notify:
+            self.blobUpdated.emit(img, old_blob, new_blob)
+
+    def setBlobClass(self, img, blob, class_name, notify=True):
+
+        if blob.class_name == class_name:
+            return
+        else:
+            old_class_name = blob.class_name
+            img.annotations.setBlobClass(blob, class_name)
+
+            if notify:
+                self.blobClassChanged.emit(img, old_class_name, blob)
+
+    def addPoint(self, img, point, notify=True):
+
+        # update image annotations
+        img.annotations.addBlob(point)
+
+        if notify:
+            self.pointAdded.emit(img, point)
+
+    def removePoint(self, img, point, notify=True):
+
+        # update image annotations
+        img.annotations.removeAnn(point)
+
+        if notify:
+            self.pointRemoved.emit(img, point)
+
+    def setPoinClass(self, img, point, class_name, notify=True):
+
+        if point.class_name == class_name:
+            return
+        else:
+            old_class_name = point.class_name
+            img.annotations.setPointClass(point, class_name)
+
+            if notify:
+                self.pointClassChanged.emit(img, old_class_name, point)
 
     def getImageFromId(self, id):
         for img in self.images:
