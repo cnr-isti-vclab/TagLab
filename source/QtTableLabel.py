@@ -307,7 +307,7 @@ height: 0px;
     @pyqtSlot(Image, object, object)
     def updateBlob(self, img, oldblob, newblob):
 
-        if img == self.active_image:  # the signal arrives from another image that is not connected to this panel and it is ignored
+        if img == self.active_image:  # if the signal arrives from another image that is not connected to this panel it is ignored
 
             self.removeBlob(img, oldblob)
             self.addBlob(img, newblob)
@@ -315,7 +315,7 @@ height: 0px;
     @pyqtSlot(Image, str, object)
     def updateAnnClass(self, img, old_class_name, newblob_or_newpoint):
 
-        if img == self.active_image: # the signal arrives from another image that is not connected to this panel and it is ignored
+        if img == self.active_image: # if the signal arrives from another image that is not connected to this panel it is ignored
 
             if type(newblob_or_newpoint) == Point:
                 newpoint = newblob_or_newpoint
@@ -353,7 +353,7 @@ height: 0px;
     @pyqtSlot(Image, object)
     def addBlob(self, img, blob_or_point):
 
-        if img == self.active_image:  # the signal arrives from another image that is not connected to this panel and it is ignored
+        if img == self.active_image:  # if the signal arrives from another image that is not connected to this panel it is ignored
 
             if type(blob_or_point) == Point:
                 point = blob_or_point

@@ -2645,7 +2645,27 @@ class TagLab(QMainWindow):
             point = self.viewerplus.annotations.pointById(id)
             self.updatePanelInfo(point)
 
-    @pyqtSlot(object)
+    @pyqtSlot(Image, object, object)
+    def updatePanelInfoAfterBlobChange(self, img, oldblob, newblob):
+        if img == self.activeviewer.image:
+            self.updatePanelInfo(newblob)
+        else:
+            self.resetPanelInfo()
+
+    @pyqtSlot(Image, str, object)
+    def updatePanelInfoAfterClassChange(self, img, class_name, blob_or_point):
+        if img == self.activeviewer.image:
+            self.updatePanelInfo(blob_or_point)
+        else:
+            self.resetPanelInfo()
+
+    @pyqtSlot(Image, object)
+    def updatePanelInfoAfterAddOperation(self, img, blob_or_point):
+        if img == self.activeviewer.image:
+            self.updatePanelInfo(blob_or_point)
+        else:
+            self.resetPanelInfo()
+
     def updatePanelInfo(self, blob_or_point):
         scale_factor = self.activeviewer.image.pixelSize()
         self.groupbox_blobpanel.update(blob_or_point, scale_factor)
@@ -3142,37 +3162,37 @@ class TagLab(QMainWindow):
         # label panel
         if self.labels_widget is not None:
             try:
-                self.project.blobUpdated[Image, object, object].connect(self.labels_widget.updateBlob, type=Qt.UniqueConnection)
+                self.project.blobUpdated[Image, Blob, Blob].connect(self.labels_widget.updateBlob, type=Qt.UniqueConnection)
             except:
                 pass
 
             try:
-                self.project.blobAdded[Image, object].connect(self.labels_widget.addBlob, type=Qt.UniqueConnection)
+                self.project.blobAdded[Image, Blob].connect(self.labels_widget.addBlob, type=Qt.UniqueConnection)
             except:
                 pass
 
             try:
-                self.project.blobRemoved[Image, object].connect(self.labels_widget.removeBlob, type=Qt.UniqueConnection)
+                self.project.blobRemoved[Image, Blob].connect(self.labels_widget.removeBlob, type=Qt.UniqueConnection)
             except:
                 pass
 
             try:
-                self.project.blobClassChanged[Image, str, object].connect(self.labels_widget.updateAnnClass, type=Qt.UniqueConnection)
+                self.project.blobClassChanged[Image, str, Blob].connect(self.labels_widget.updateAnnClass, type=Qt.UniqueConnection)
             except:
                 pass
 
             try:
-                self.project.pointAdded[Image, object].connect(self.labels_widget.addBlob, type=Qt.UniqueConnection)
+                self.project.pointAdded[Image, Point].connect(self.labels_widget.addBlob, type=Qt.UniqueConnection)
             except:
                 pass
 
             try:
-                self.project.pointRemoved[Image, object].connect(self.labels_widget.removeBlob, type=Qt.UniqueConnection)
+                self.project.pointRemoved[Image, Point].connect(self.labels_widget.removeBlob, type=Qt.UniqueConnection)
             except:
                 pass
 
             try:
-                self.project.pointClassChanged[Image, str, object].connect(self.labels_widget.updateAnnClass, type=Qt.UniqueConnection)
+                self.project.pointClassChanged[Image, str, Point].connect(self.labels_widget.updateAnnClass, type=Qt.UniqueConnection)
             except:
                 pass
 
@@ -3184,48 +3204,68 @@ class TagLab(QMainWindow):
                 pass
 
             try:
-                self.project.blobAdded[Image, object].connect(self.data_panel.addBlob, type=Qt.UniqueConnection)
+                self.project.blobAdded[Image, Blob].connect(self.data_panel.addBlob, type=Qt.UniqueConnection)
             except:
                 pass
 
             try:
-                self.project.blobRemoved[Image, object].connect(self.data_panel.removeBlob, type=Qt.UniqueConnection)
+                self.project.blobRemoved[Image, Blob].connect(self.data_panel.removeBlob, type=Qt.UniqueConnection)
             except:
                 pass
 
             try:
-                self.project.blobClassChanged[Image, str, object].connect(self.data_panel.updateBlobClass, type=Qt.UniqueConnection)
+                self.project.blobClassChanged[Image, str, Blob].connect(self.data_panel.updateBlobClass, type=Qt.UniqueConnection)
             except:
                 pass
 
             try:
-                self.project.pointAdded[Image, object].connect(self.data_panel.addBlob, type=Qt.UniqueConnection)
+                self.project.pointAdded[Image, Point].connect(self.data_panel.addBlob, type=Qt.UniqueConnection)
             except:
                 pass
 
             try:
-                self.project.pointRemoved[Image, object].connect(self.data_panel.removeBlob, type=Qt.UniqueConnection)
+                self.project.pointRemoved[Image, Point].connect(self.data_panel.removeBlob, type=Qt.UniqueConnection)
             except:
                 pass
 
             try:
-                self.project.pointClassChanged[Image, str, object].connect(self.data_panel.updatePointClass, type=Qt.UniqueConnection)
+                self.project.pointClassChanged[Image, str, Point].connect(self.data_panel.updatePointClass, type=Qt.UniqueConnection)
             except:
                 pass
 
         # information panel
         try:
-            self.project.blobUpdated[Image, Blob, Blob].connect(self.updatePanelInfo, type=Qt.UniqueConnection)
+            self.project.blobUpdated[Image, Blob, Blob].connect(self.updatePanelInfoAfterBlobChange, type=Qt.UniqueConnection)
         except:
             pass
 
         try:
-            self.project.blobAdded[Image, Blob].connect(self.updatePanelInfo, type=Qt.UniqueConnection)
+            self.project.blobAdded[Image, Blob].connect(self.updatePanelInfoAfterAddOperation, type=Qt.UniqueConnection)
         except:
             pass
 
         try:
             self.project.blobRemoved[Image, Blob].connect(self.resetPanelInfo, type=Qt.UniqueConnection)
+        except:
+            pass
+
+        try:
+            self.project.blobClassChanged[Image, str, Blob].connect(self.updatePanelInfoAfterClassChange, type=Qt.UniqueConnection)
+        except:
+            pass
+
+        try:
+            self.project.pointAdded[Image, Point].connect(self.updatePanelInfoAfterAddOperation, type=Qt.UniqueConnection)
+        except:
+            pass
+
+        try:
+            self.project.pointRemoved[Image, Point].connect(self.resetPanelInfo, type=Qt.UniqueConnection)
+        except:
+            pass
+
+        try:
+            self.project.pointClassChanged[Image, str, Point].connect(self.updatePanelInfoAfterClassChange, type=Qt.UniqueConnection)
         except:
             pass
 

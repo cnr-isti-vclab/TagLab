@@ -232,7 +232,7 @@ class QtTablePanel(QWidget):
     @pyqtSlot(Image, object)
     def addBlob(self, img, blob_or_point):
 
-        if img == self.active_image: # the signal arrives from another image that is not connected to this panel and it is ignored
+        if img == self.active_image: # if the signal arrives from another image that is not connected to this panel it is ignored
 
             if type(blob_or_point) == Point:
                 point = blob_or_point
