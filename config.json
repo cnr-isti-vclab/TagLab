@@ -48,6 +48,22 @@
       ]
     },
     {
+      "Classifier Name": "KAI_Poc_Dead_unfreeze5-15_25epoch",
+      "Weights": "KAI_Poc_Dead_unfreeze5-15_25epoch.net",
+      "Num. Classes": 3,
+      "Classes": {
+        "Pocillopora": 1,
+        "Dead coral": 2,
+        "Background": 0
+      },
+      "Scale": 0.5,
+      "Average Norm.": [
+        0.4895652597919609,
+        0.4691384756385107,
+        0.4667920716741314
+      ]
+    },
+    {
       "Classifier Name": "provafunzionamento",
       "Weights": "provafunzionamento.net",
       "Num. Classes": 4,
