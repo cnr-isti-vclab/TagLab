@@ -468,7 +468,7 @@ class Project(QObject):
         if notify:
             self.pointRemoved.emit(img, point)
 
-    def setPoinClass(self, img, point, class_name, notify=True):
+    def setPointClass(self, img, point, class_name, notify=True):
 
         if point.class_name == class_name:
             return
