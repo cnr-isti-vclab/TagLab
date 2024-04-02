@@ -114,7 +114,7 @@ class Annotation(object):
     def updateBlob(self, old_blob, new_blob):
 
         new_blob.id = old_blob.id
-        self.removeBlob(old_blob)
+        self.removeAnn(old_blob)
         self.addBlob(new_blob)
         self.table_needs_update = True
 
