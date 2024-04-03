@@ -17,6 +17,7 @@ class SelectArea(Tool):
         self.pick_points = pick_points
         self.scene = viewerplus.scene
         self.selected_area_rect = None
+        self.released_flag = True
 
         self.image_width = 0
         self.image_height = 0
@@ -31,15 +32,17 @@ class SelectArea(Tool):
         points = self.pick_points.points
 
         # first point
-        if len(points) != 0:
+        if self.released_flag:
             self.pick_points.reset()
             self.selected_area_rect = None
+            self.released_flag = False
 
-        self.pick_points.points.append(np.array([x, y]))
-        self.pick_points.points.append(np.array([x, y]))
+            self.pick_points.points.append(np.array([x, y]))
+            self.pick_points.points.append(np.array([x, y]))
 
     def leftReleased(self, x, y):
 
+        self.released_flag = True
         self.released.emit()
 
     def mouseMove(self, x, y):
