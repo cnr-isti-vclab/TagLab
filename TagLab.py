@@ -3269,6 +3269,20 @@ class TagLab(QMainWindow):
         except:
             pass
 
+    def updateAfterImport(self):
+        """
+        Update the viewer and the panels after an import operation.
+        """
+
+        # TODO: IMPORT/EXPORT OPERATION MUST BE MOVED FROM Annotation TO Project class. THEN,
+        #       THIS METHOD WILL BE NOT NEEDED ANYMORE
+
+        self.data_panel.setTable(self.activeviewer.image)
+        self.labels_widget.setLabels(self.project, self.activeviewer.image)
+        self.activeviewer.redrawAllBlobs()
+        self.activeviewer.redrawAllPoints()
+
+
     @pyqtSlot()
     def newProject(self):
 
@@ -4218,7 +4232,8 @@ class TagLab(QMainWindow):
             QApplication.setOverrideCursor(Qt.WaitCursor)
             self.disableSplitScreen()
             self.activeviewer.annotations.openCoralNetCSV(filename, self.activeviewer.image.name)
-            self.activeviewer.drawAllPointsAnn()
+
+            self.updateAfterImport()  # update viewer and panels
 
             QApplication.restoreOverrideCursor()
 
