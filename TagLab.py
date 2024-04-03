@@ -3330,7 +3330,7 @@ class TagLab(QMainWindow):
         for point in points:
            id = self.activeviewer.annotations.getFreePointId()
            newpoint = Point(int(point[0]), int(point[1]), 'Empty', id)
-           self.activeviewer.image.annotations.addPoint(newpoint)
+           self.project.addPoint(self.activeviewer.image, newpoint)
 
         self.activeviewer.drawAllPointsAnn()
         self.closeSamplingWidget()

@@ -139,12 +139,15 @@ class QtGridWidget(QWidget):
     def setGrid(self):
         for key, field in self.fields.items():
             self.data[key] = field["edit"].text()
+        try:
+            w = self.metersToPixels(float(self.data["width"]))
+            h = self.metersToPixels(float(self.data["height"]))
+            self.grid.undrawGrid()
+            self.grid.setGrid(w, h, int(self.data["number_cell_x"]), int(self.data["number_cell_y"]))
+            self.grid.drawGrid()
 
-        w = self.metersToPixels(float(self.data["width"]))
-        h = self.metersToPixels(float(self.data["height"]))
-        self.grid.undrawGrid()
-        self.grid.setGrid(w, h, int(self.data["number_cell_x"]), int(self.data["number_cell_y"]))
-        self.grid.drawGrid()
+        except:
+            self.grid.undrawGrid()
 
     @pyqtSlot(float, float)
     def setGridPosition(self, x, y):

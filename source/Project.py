@@ -455,7 +455,7 @@ class Project(QObject):
     def addPoint(self, img, point, notify=True):
 
         # update image annotations
-        img.annotations.addBlob(point)
+        img.annotations.addPoint(point)
 
         if notify:
             self.pointAdded.emit(img, point)

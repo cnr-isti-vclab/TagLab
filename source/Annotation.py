@@ -71,7 +71,14 @@ class Annotation(object):
 
     def addPoint(self, point):
 
+
+        used = [point.id for point in self.annpoints]
+        if point.id in used:
+            point.id = self.getFreePointId()
         self.annpoints.append(point)
+
+        self.table_needs_update = True
+
 
     def addBlob(self, blob):
 

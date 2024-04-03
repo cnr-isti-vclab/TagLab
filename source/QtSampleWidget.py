@@ -26,7 +26,8 @@ class QtSampleWidget(QWidget):
         self.comboMethod = QComboBox()
         self.comboMethod.setMinimumWidth(300)
         self.comboMethod.addItem('Grid Sampling')
-        self.comboMethod.addItem('Uniform Sampling')
+        self.comboMethod.addItem('Random Sampling')
+        self.comboMethod.addItem('Stratified Sampling')
 
 
         layoutHM.addWidget(self.lblMethod)
