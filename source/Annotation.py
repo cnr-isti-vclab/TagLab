@@ -755,8 +755,6 @@ class Annotation(object):
         pointindexlist = []
 
         # check visibility and working area of both
-
-
         if working_area is None:
             # all the blobs are considered
             self.blobs = self.seg_blobs
@@ -765,8 +763,9 @@ class Annotation(object):
             # only blobs and points inside the working area are considered
             self.blobs = self.calculate_inner_blobs(working_area)
             self.annpoints = self.calculate_inner_points(working_area)
-        #
+
         visible_blobs = []
+
         for blob in self.blobs:
             if blob.qpath_gitem.isVisible():
                 index = blob.blob_name
@@ -774,6 +773,7 @@ class Annotation(object):
                 visible_blobs.append(blob)
 
         visible_points = []
+
         for annpoint in self.annpoints:
             if annpoint.cross1_gitem.isVisible():
                 point_id = annpoint.id
@@ -805,7 +805,6 @@ class Annotation(object):
             'TagLab Note': []}
 
         # Are attributes named the same? Check
-
         for attribute in project.region_attributes.data:
             key = attribute["name"]
             if attribute['type'] in ['string', 'keyword']:
@@ -818,9 +817,9 @@ class Annotation(object):
                 # unknown attribute type, not saved
                 pass
 
-        # #fill it
-
+        # fill it
         i = 0
+
         for blob in visible_blobs:
             dict['Image name'].append(imagename)
             dict['TagLab Id'][i] = blob.id
@@ -829,9 +828,11 @@ class Annotation(object):
             dict['TagLab Class name'].append(blob.class_name)
             dict['TagLab Centroid x'][i] = round(blob.centroid[0], 1)
             dict['TagLab Centroid y'][i] = round(blob.centroid[1], 1)
-            dict['TagLab Area'][i] = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
+            dict['TagLab Area'][i] = round(blob.area * scale_factor * scale_factor / 100, 2)
             if blob.surface_area > 0.0:
-                dict['TagLab Surf. area'][i] = round(blob.surface_area * (scale_factor) * (scale_factor) / 100, 2)
+
+                dict['TagLab Surf. area'][i] = round(blob.surface_area * scale_factor * scale_factor / 100, 2)
+
             dict['TagLab Perimeter'][i] = round(blob.perimeter * scale_factor / 10, 1)
 
             if blob.genet is not None:
@@ -885,7 +886,6 @@ class Annotation(object):
             dict['TagLab Genet Id'][j] = int(0)
             dict['TagLab Note'].append(annpoint.note)
 
-
             for attribute in project.region_attributes.data:
 
                 key = attribute["name"]
@@ -915,7 +915,7 @@ class Annotation(object):
                     else:
                         dict[key].append('')
 
-            j= j+1
+            j = j+1
 
         # create dataframe
         df = pd.DataFrame(dict, columns=list(dict.keys()))

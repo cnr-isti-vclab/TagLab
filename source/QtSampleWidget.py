@@ -1,12 +1,12 @@
 from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QIcon, qRgb, qRed, qGreen, qBlue
-from PyQt5.QtWidgets import (QRadioButton, QButtonGroup, QGroupBox, QMessageBox,  QWidget, QComboBox, QSizePolicy,
-                             QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout)
+from PyQt5.QtWidgets import QSizePolicy, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
+from PyQt5.QtWidgets import QRadioButton, QButtonGroup, QGroupBox, QMessageBox,  QWidget, QComboBox
+
 from source.Annotation import Annotation
 import numpy as np
 
 class QtSampleWidget(QWidget):
-
 
     # choosedSample = pyqtSignal(int)
     closewidget = pyqtSignal()
@@ -16,19 +16,16 @@ class QtSampleWidget(QWidget):
         super(QtSampleWidget, self).__init__(parent)
 
         self.choosednumber = None
-        self.offset = None
+        self.offset = 1
 
         self.setStyleSheet(":enabled {background-color: rgb(40,40,40); color: white} :disabled {color: rgb(110,110,110)}")
-
         self.lineedit_style = ":enabled {background-color: rgb(55,55,55); color: rgb(255,255,255); border: 1px solid rgb(90,90,90)} " \
                               ":disabled {background-color: rgb(35,35,35); color: rgb(110,110,110); border: 1px solid rgb(70,70,70)}"
 
         MAXIMUM_WIDTH_EDIT = 160
 
         # sampling single area (manual)
-
         self.group_SA = QGroupBox()
-
         self.radio_SA = QRadioButton("Add a single sampling area")
 
         area_icon = QIcon("icons\\select_area.png")
@@ -59,9 +56,7 @@ class QtSampleWidget(QWidget):
         self.group_SA.setLayout(self.layoutV1)
 
         # sampling Working Area (randomly)
-
         self.group_WA = QGroupBox()
-
         self.radio_WA = QRadioButton("Sampling the Working Area with multiple random areas")
 
         self.lbl_areas_WA = QLabel("# areas:")
@@ -80,16 +75,13 @@ class QtSampleWidget(QWidget):
         self.group_WA.setLayout(self.layoutV2)
 
         # sampling transect (with equi-spaced or randomly positioned areas)
-
         self.group_T = QGroupBox()
-
         self.radio_T = QRadioButton("Sampling a transect with multiple sampling areas")
 
         self.lbl_areas_T = QLabel("# areas:")
         self.edit_number_areas_T = QLineEdit()
         self.edit_number_areas_T.setStyleSheet(self.lineedit_style)
         self.edit_number_areas_T.setMaximumWidth(MAXIMUM_WIDTH_EDIT)
-
 
         self.lbl_method_T = QLabel("Method:")
         self.combo_method_T = QComboBox()
@@ -138,9 +130,7 @@ class QtSampleWidget(QWidget):
         self.layoutV3.addLayout(self.layoutH4)
         self.group_T.setLayout(self.layoutV3)
 
-
         # sampling settings
-
         self.group_settings = QGroupBox()
         self.group_settings.setTitle("Sampling area")
 
@@ -158,6 +148,7 @@ class QtSampleWidget(QWidget):
 
         self.lbl_offset = QLabel("Offset: ")
         self.edit_offset_px = QLineEdit()
+        self.edit_offset_px.setText(f"{self.offset}")
         self.edit_offset_px.setStyleSheet("{background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)}")
         self.lbl_offset_px = QLabel("px")
         self.edit_offset_cm = QLineEdit()
@@ -271,7 +262,9 @@ class QtSampleWidget(QWidget):
 
     @pyqtSlot()
     def enableSAGroup(self):
+        """
 
+        """
         self.radio_SA.setStyleSheet("color: white")
         self.lbl_top_SA.setEnabled(True)
         self.edit_top_SA.setEnabled(True)
@@ -283,7 +276,9 @@ class QtSampleWidget(QWidget):
 
     @pyqtSlot()
     def enableWAGroup(self):
+        """
 
+        """
         self.radio_WA.setStyleSheet("color: white")
         self.lbl_areas_WA.setEnabled(True)
         self.edit_number_areas_WA.setEnabled(True)
@@ -293,7 +288,9 @@ class QtSampleWidget(QWidget):
 
     @pyqtSlot()
     def enableTransectGroup(self):
+        """
 
+        """
         self.radio_T.setStyleSheet("color: white")
         self.lbl_areas_T.setEnabled(True)
         self.edit_number_areas_T.setEnabled(True)
@@ -311,7 +308,9 @@ class QtSampleWidget(QWidget):
         self.disableWAGroup()
 
     def disableSAGroup(self):
+        """
 
+        """
         self.radio_SA.setStyleSheet("color: rgb(90,90,90)")
         self.lbl_top_SA.setEnabled(False)
         self.edit_top_SA.setEnabled(False)
@@ -319,12 +318,17 @@ class QtSampleWidget(QWidget):
         self.edit_left_SA.setEnabled(False)
 
     def disableWAGroup(self):
+        """
 
+        """
         self.radio_WA.setStyleSheet("color: rgb(90,90,90)")
         self.lbl_areas_WA.setEnabled(False)
         self.edit_number_areas_WA.setEnabled(False)
-    def disableTransectGroup(self):
 
+    def disableTransectGroup(self):
+        """
+
+        """
         self.radio_T.setStyleSheet("color: rgb(90,90,90)")
         self.lbl_areas_T.setEnabled(False)
         self.edit_number_areas_T.setEnabled(False)
@@ -339,7 +343,9 @@ class QtSampleWidget(QWidget):
         self.edit_y2.setEnabled(False)
 
     def apply(self):
+        """
 
+        """
         if self.editNumber.text() == "" or self.editNumber.text() == 0 or self.editNumber.text().isnumeric() == False:
             msgBox = QMessageBox()
             msgBox.setText("Please, indicate the number of sampled points.")
@@ -348,15 +354,17 @@ class QtSampleWidget(QWidget):
         else:
             self.choosednumber = int(self.editNumber.text())
 
-        if self.editOFF.text() == "" or self.editOFF.text().isnumeric() == False:
-            self.offset = 0
+        if self.edit_offset_px.text() == "" or self.edit_offset_px.text().isnumeric() == False:
+            self.offset = 1
         else:
             self.offset = int(self.editOFF.text())
 
         self.validchoices.emit()
 
-
     def closeEvent(self,event):
+        """
+
+        """
         self.closewidget.emit()
         super(QtSampleWidget, self).closeEvent(event)
 
