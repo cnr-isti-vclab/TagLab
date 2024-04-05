@@ -88,6 +88,9 @@ from source.QtShapefileAttributeWidget import QtAttributeWidget
 from source.QtPanelInfo import QtPanelInfo
 from source.Sampler import Sampler
 
+from source.QtImportViscoreWidget import QtImportViscoreWidget
+from source.QtCoralNetToolboxWidget import QtCoralNetToolboxWidget
+from source.QtExportCoralNetDataWidget import QtExportCoralNetDataWidget
 
 from source import genutils
 from source.Blob import Blob
@@ -1076,20 +1079,35 @@ class TagLab(QMainWindow):
         samplePointsAct.setStatusTip("Sample Points This Map")
         samplePointsAct.triggered.connect(self.chooseSampling)
 
-        importPointsAct = QAction("Import points annotations from CoralNet", self)
-        importPointsAct.setStatusTip("Import points classified in CoralNet")
-        importPointsAct.triggered.connect(self.importAnnPointsFromCoralNet)
+        importViscorePointsAct = QAction("Import Viscore Point Annotations", self)
+        importViscorePointsAct.setStatusTip("Import Point Annotations From .CSV")
+        importViscorePointsAct.triggered.connect(self.importViscorePointAnn)
 
-        exportPointsAct  = QAction("Export dataset for CoralNet", self)
-        exportPointsAct .setStatusTip("Export points annotations as a set of tiles+CSV files that can be uploaded in CoralNet")
-        exportPointsAct .triggered.connect(self.exportAnnPointsForCoralNet)
+        importCoralNetPointsAct = QAction("Import CoralNet Point Annotations", self)
+        importCoralNetPointsAct.setStatusTip("Import Point Annotations From .CSV")
+        importCoralNetPointsAct.triggered.connect(self.importCoralNetPointAnn)
+
+        exportCoralNetPointsAct = QAction("Export CoralNet Point Annotations", self)
+        exportCoralNetPointsAct.setStatusTip("Export Point Annotations As .CSV")
+        exportCoralNetPointsAct.triggered.connect(self.exportCoralNetPointAnn)
+
+        exportCoralNetDataAct = QAction("Export Tiled Data for CoralNet", self)
+        exportCoralNetDataAct.setStatusTip("Export Data for CoralNet Model Training")
+        exportCoralNetDataAct.triggered.connect(self.exportCoralNetPointData)
+
+        openCoralNetToolboxAct = QAction("Open CoralNet-Toolbox...", self)
+        openCoralNetToolboxAct.triggered.connect(self.openCoralNetToolbox)
 
         self.pointmenu = menubar.addMenu("&Points")
         self.pointmenu.setStyleSheet(styleMenu)
-        self.pointmenu.addAction(importPointsAct)
         self.pointmenu.addAction(samplePointsAct)
-        self.pointmenu.addAction(exportPointsAct)
-
+        self.pointmenu.addSeparator()
+        self.pointmenu.addAction(importViscorePointsAct)
+        self.pointmenu.addAction(importCoralNetPointsAct)
+        self.pointmenu.addAction(exportCoralNetPointsAct)
+        self.pointmenu.addAction(exportCoralNetDataAct)
+        self.pointmenu.addSeparator()
+        self.pointmenu.addAction(openCoralNetToolboxAct)
 
         ###### DEM MENU
 
@@ -4716,6 +4734,130 @@ class TagLab(QMainWindow):
             QApplication.restoreOverrideCursor()
 
     @pyqtSlot()
+    def importViscorePointAnn(self):
+        """
+        Imports all point annotations to current map from a CSV file in from Viscore format.
+        Asks the user for the scale, which should be the same as the orthomosaic...?
+        """
+        try:
+            self.importViscorePoints = QtImportViscoreWidget(self)
+            self.importViscorePoints.show()
+        except Exception as e:
+            print(f"{e}")
+
+    @pyqtSlot()
+    def importCoralNetPointAnn(self):
+        """
+        Imports all point annotations to current map from a CSV file in CoralNet format.
+        This will automatically check the Name column and import only point annotations for it
+        (either in the original orthomosaic or tile coordinate space). Excess information not
+        important to CoralNet or TagLab are not imported (see Annotations.py)
+        """
+        box = QMessageBox()
+
+        filters = "CSV (*.csv)"
+        file_name, _ = QFileDialog.getOpenFileName(self, "Open A .CSV File", self.taglab_dir, filters)
+
+        if os.path.exists(file_name):
+
+            self.disableSplitScreen()
+
+            # Get the current image
+            channel = self.activeviewer.image.getRGBChannel()
+
+            try:
+                QApplication.setOverrideCursor(Qt.WaitCursor)
+
+                # Open the file, and draw all the points on viewer
+                self.activeviewer.annotations.importCoralNetCSVAnn(file_name, channel)
+                self.activeviewer.drawAllPointsAnn()
+
+                box.setText(f"Point annotations imported successfully!")
+                box.exec()
+
+            except Exception as e:
+                box.setText(f"File provided not in CoralNet format! {e}")
+                box.exec()
+        else:
+            box.setText("File path provided is not valid!")
+            box.exec()
+
+        QApplication.restoreOverrideCursor()
+
+    @pyqtSlot()
+    def exportCoralNetPointAnn(self):
+        """
+        Exports just a CSV in CoralNet format for all the point annotations in the
+        user specified work area (or orthomosaic). The CSV will contain all information
+        within the point's data attribute.
+        """
+        box = QMessageBox()
+
+        # Default output folder
+        output_dir = os.path.dirname(os.path.realpath(__file__))
+        output_dir = f"{output_dir}\\temp"
+        os.makedirs(output_dir, exist_ok=True)
+
+        # User specifies output folder
+        folder_name = QFileDialog.getExistingDirectory(self, "Choose a Folder for the export", output_dir)
+
+        if not folder_name:
+            return
+
+        # Force split screen off
+        self.disableSplitScreen()
+
+        # Get the current image, and the points for it
+        channel = self.activeviewer.image.getRGBChannel()
+        annotations = self.activeviewer.annotations
+        # TODO change how the working / sample area is passed
+        #  to the export function (maybe via loop?) The export
+        #   function expects a bbox, and will tile if larger
+        #   than 8000.
+        # Get the working area (if none, whole ortho is used)
+        working_area = self.project.working_area
+
+        try:
+            QApplication.setOverrideCursor(Qt.WaitCursor)
+
+            # Save all the annotations to a CSV file in the directory chosen
+            csv_file = self.activeviewer.annotations.exportCoralNetCSVAnn(folder_name,
+                                                                          channel,
+                                                                          annotations,
+                                                                          working_area)
+
+            box.setText(f"Exported data to {os.path.basename(csv_file)}")
+            box.exec()
+
+        except Exception as e:
+            box.setText(f"Failed to export data to CoralNet format! {e}")
+            box.exec()
+
+        QApplication.restoreOverrideCursor()
+
+    @pyqtSlot()
+    def exportCoralNetPointData(self):
+        """
+        Opens the ExportCoralNetDataWidget in a new window.
+        """
+        try:
+            self.exportCoralNetData = QtExportCoralNetDataWidget(self)
+            self.exportCoralNetData.show()
+        except Exception as e:
+            print(f"{e}")
+
+    @pyqtSlot()
+    def openCoralNetToolbox(self):
+        """
+        Opens the CoralNetToolbox Widget in a new window.
+        """
+        try:
+            self.coralNetToolbox = QtCoralNetToolboxWidget(self)
+            self.coralNetToolbox.show()
+        except Exception as e:
+            print(f"{e}")
+
+    @pyqtSlot()
     def calculateAreaUsingSlope(self):
 
         if self.activeviewer is None:
@@ -4753,7 +4895,7 @@ class TagLab(QMainWindow):
         self.resetAll()
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
-        #TODO check if loadProject actually works!
+        # TODO check if loadProject actually works!
         try:
             self.project = loadProject(self.taglab_dir, filename, self.default_dictionary)
             self.connectProjectWithPanels()
