@@ -229,7 +229,13 @@ install_requires = [
     'matplotlib',
     'albumentations',
     'shapely',
-    'pycocotools'
+    'pycocotools',
+
+    # CoralNet Toolbox
+    'Requests',
+    'beautifulsoup4',
+    'selenium',
+    'webdriver_manager',
 ]
 
 # if on windows, first install the msvc runtime
