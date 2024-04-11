@@ -56,7 +56,6 @@ class Genet:
                 blob1 = corrs.source.annotations.blobById(id1)
                 blob2 = corrs.target.annotations.blobById(id2)
 
-
                 if blob1.genet != blob2.genet:
                     link(blob1.genet, blob2.genet)
 

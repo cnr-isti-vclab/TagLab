@@ -387,9 +387,8 @@ height: 0px;
             self.data_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.Fixed)
             self.data_table.setColumnWidth(4, 80)
             self.data_table.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeToContents)
-            self.data_table.horizontalHeader().setSectionResizeMode(6, QHeaderView.Stretch)
-            self.data_table.horizontalHeader().setSectionResizeMode(7, QHeaderView.Fixed)
-            self.data_table.setColumnWidth(7, 100)
+            self.data_table.horizontalHeader().setSectionResizeMode(6, QHeaderView.ResizeToContents)
+            self.data_table.horizontalHeader().setSectionResizeMode(7, QHeaderView.ResizeToContents)
 
             self.data_table.horizontalHeader().showSection(0)
             self.data_table.update()
