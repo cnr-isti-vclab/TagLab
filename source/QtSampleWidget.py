@@ -29,9 +29,9 @@ class QtSampleWidget(QWidget):
         self.radio_SA = QRadioButton("Add a single sampling area")
 
         area_icon = QIcon("icons\\select_area.png")
-        self.btn_SA = QPushButton("")
-        self.btn_SA.setIcon(area_icon)
-        self.btn_SA.setMinimumWidth(20)
+        self.btn_select_area_SA = QPushButton("")
+        self.btn_select_area_SA.setIcon(area_icon)
+        self.btn_select_area_SA.setMinimumWidth(30)
 
         self.lbl_top_SA = QLabel("Top: ")
         self.lbl_left_SA = QLabel("Left: ")
@@ -43,7 +43,7 @@ class QtSampleWidget(QWidget):
         self.edit_left_SA.setStyleSheet(self.lineedit_style)
 
         self.layoutH1 = QHBoxLayout()
-        self.layoutH1.addWidget(self.btn_SA)
+        self.layoutH1.addWidget(self.btn_select_area_SA)
         self.layoutH1.addWidget(self.lbl_top_SA)
         self.layoutH1.addWidget(self.edit_top_SA)
         self.layoutH1.addWidget(self.lbl_left_SA)
@@ -89,6 +89,11 @@ class QtSampleWidget(QWidget):
         self.combo_method_T.addItem('Equi-spaced')
         self.combo_method_T.addItem('Random')
 
+        line_icon = QIcon("icons\\select_line.png")
+        self.btn_select_transect_T = QPushButton("")
+        self.btn_select_transect_T.setIcon(line_icon)
+        self.btn_select_transect_T.setMinimumWidth(30)
+
         self.lbl_x1 = QLabel("x1:")
         self.edit_x1 = QLineEdit()
         self.edit_x1.setStyleSheet(self.lineedit_style)
@@ -114,6 +119,7 @@ class QtSampleWidget(QWidget):
         self.layoutH3.addStretch()
 
         self.layoutH4 = QHBoxLayout()
+        self.layoutH4.addWidget(self.btn_select_transect_T)
         self.layoutH4.addWidget(self.lbl_x1)
         self.layoutH4.addWidget(self.edit_x1)
         self.layoutH4.addWidget(self.lbl_y1)
@@ -276,6 +282,10 @@ class QtSampleWidget(QWidget):
 
         self.edit_width_px.setText(str(width))
         self.edit_height_px.setText(str(height))
+
+    @pyqtSlot(float, float, float, float)
+    def setTransect(self, x1, y1, x2, y2):
+        pass
 
     @pyqtSlot()
     def updateSAWidthInCm(self):
