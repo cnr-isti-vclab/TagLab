@@ -12,11 +12,11 @@ class QtSampleWidget(QWidget):
     closewidget = pyqtSignal()
     validchoices= pyqtSignal()
 
-    def __init__(self, parent=None):
+    def __init__(self, active_image, parent=None):
         super(QtSampleWidget, self).__init__(parent)
 
         self.choosednumber = None
-        self.offset = 1
+        self.offset = 0
 
         self.setStyleSheet(":enabled {background-color: rgb(40,40,40); color: white} :disabled {color: rgb(110,110,110)}")
         self.lineedit_style = ":enabled {background-color: rgb(55,55,55); color: rgb(255,255,255); border: 1px solid rgb(90,90,90)} " \
@@ -257,8 +257,86 @@ class QtSampleWidget(QWidget):
         self.radio_WA.clicked.connect(self.enableWAGroup)
         self.radio_T.clicked.connect(self.enableTransectGroup)
 
+        self.edit_width_cm.textChanged.connect(self.updateSAWidthInPixel)
+        self.edit_height_cm.textChanged.connect(self.updateSAHeightInPixel)
+
+        self.edit_width_px.textChanged.connect(self.updateSAWidthInCm)
+        self.edit_height_px.textChanged.connect(self.updateSAHeightInCm)
+
         self.setWindowTitle("Sampling Settings")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
+
+        self.active_image = active_image
+
+    @pyqtSlot(int, int, int, int)
+    def updateSamplingArea(self, top, left, width, height):
+
+        self.edit_top_SA.setText(top)
+        self.edit_left_SA.setText(left)
+
+        self.edit_width_px.setText(str(width))
+        self.edit_height_px.setText(str(height))
+
+    @pyqtSlot()
+    def updateSAWidthInCm(self):
+
+        txt = self.edit_width_px.text()
+        self.edit_width_cm.blockSignals(True)
+
+        try:
+            value = float(txt)
+            value = round(value * self.active_image.pixelSize(), 4)
+            self.edit_width_cm.setText(str(value))
+        except:
+            self.edit_width_cm.setText("")
+
+        self.edit_width_cm.blockSignals(False)
+
+    @pyqtSlot()
+    def updateSAHeightInCm(self):
+
+        txt = self.edit_height_px.text()
+        self.edit_height_cm.blockSignals(True)
+
+        try:
+            value = float(txt)
+            value = round(value * self.active_image.pixelSize(), 4)
+            self.edit_height_cm.setText(str(value))
+        except:
+            self.edit_height_cm.setText("")
+
+        self.edit_height_cm.blockSignals(False)
+
+    @pyqtSlot()
+    def updateSAWidthInPixel(self):
+
+        txt = self.edit_width_cm.text()
+        self.edit_width_px.blockSignals(True)
+
+        try:
+            value = float(txt)
+            value = round(value / self.active_image.pixelSize(), 4)
+            self.edit_width_px.setText(str(value))
+        except:
+            self.edit_width_px.setText("")
+
+        self.edit_width_px.blockSignals(False)
+
+    @pyqtSlot()
+    def updateSAHeightInPixel(self):
+
+        txt = self.edit_height_cm.text()
+        self.edit_height_px.blockSignals(True)
+
+        try:
+            value = float(txt)
+            value = round(value / self.active_image.pixelSize(), 4)
+            self.edit_height_px.setText(str(value))
+        except:
+            self.edit_height_px.setText("")
+
+        self.edit_height_px.blockSignals(False)
+
 
     @pyqtSlot()
     def enableSAGroup(self):
@@ -355,7 +433,7 @@ class QtSampleWidget(QWidget):
             self.choosednumber = int(self.editNumber.text())
 
         if self.edit_offset_px.text() == "" or self.edit_offset_px.text().isnumeric() == False:
-            self.offset = 1
+            self.offset = 0
         else:
             self.offset = int(self.editOFF.text())
 

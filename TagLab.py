@@ -185,7 +185,7 @@ class TagLab(QMainWindow):
         self.projectEditor = None
         self.alignToolWidget = None
         self.editProjectWidget = None
-        self.samplePointWidget = None
+        self.sample_point_widget = None
         self.scale_widget = None
         self.dictionary_widget = None
         self.working_area_widget = None
@@ -1275,7 +1275,7 @@ class TagLab(QMainWindow):
                     self.crop_widget.closed.connect(self.deleteCropWidget)
                     self.crop_widget.btnApply.clicked.connect(lambda x, img = img:self.cropImage)
                     selection_tool = self.activeviewer.tools.tools["SELECTAREA"]
-                    selection_tool.setAreaStyle("WORKING")
+                    selection_tool.setAreaStyle("PREVIEW")
                     selection_tool.rectChanged[int, int, int, int].connect(self.crop_widget.updateArea)
                     self.crop_widget.areaChanged[int, int, int, int].connect(selection_tool.setSelectionRectangle)
 
@@ -1641,7 +1641,18 @@ class TagLab(QMainWindow):
 
         elif event.key() == Qt.Key_X:
 
-            pass
+            corresp = self.project.correspondences.copy()
+            del self.project.correspondences
+            self.project.correspondences = {}
+            N = len(self.project.images)
+            for i in range(N-1):
+                key = self.project.images[i].id + "-" + self.project.images[i+1].id
+                corr = corresp.get(key)
+                if corr is not None:
+                    self.project.correspondences[key] = corr
+
+            dd = 2
+
 
         elif event.key() == Qt.Key_B:
             self.attachBoundaries()
@@ -2556,7 +2567,12 @@ class TagLab(QMainWindow):
             self.scale_widget.setWindowModality(Qt.NonModal)
             self.scale_widget.setScale(self.activeviewer.image.pixelSize())
             self.scale_widget.show()
-            self.activeviewer.tools.tools["RULER"].measuretaken[float].connect(self.scale_widget.setMeasure)
+            ruler_tool = self.activeviewer.tools.tools["RULER"]
+            signal = genutils.getSignal(ruler_tool, "measuretaken")
+            if signal is not None:
+                if ruler_tool.isSignalConnected(signal):
+                    ruler_tool.measuretaken.disconnect()
+            ruler_tool.measuretaken[float].connect(self.scale_widget.setMeasure)
             self.scale_widget.newscale[float].connect(self.updateMapScale)
             self.scale_widget.btnOk.clicked.connect(self.closeScaleWidget)
             self.scale_widget.closewidget.connect(self.closeScaleWidget)
@@ -3327,28 +3343,35 @@ class TagLab(QMainWindow):
     def chooseSampling(self):
         if self.activeviewer is not None:
             if self.activeviewer.image is not None:
-                if self.samplePointWidget is None:
+                if self.sample_point_widget is None:
                     self.disableSplitScreen()
-                    self.samplePointWidget = QtSampleWidget(parent=self)
-                    self.samplePointWidget.setWindowModality(Qt.NonModal)
-                    self.samplePointWidget.show()
-                    self.samplePointWidget.validchoices.connect(self.samplePointAnn)
+                    self.sample_point_widget = QtSampleWidget(active_image=self.activeviewer.image, parent=self)
+                    self.sample_point_widget.setWindowModality(Qt.NonModal)
+                    self.sample_point_widget.show()
+                    self.sample_point_widget.validchoices.connect(self.samplePointAnn)
+
+                    selection_tool = self.activeviewer.tools.tools["SELECTAREA"]
+                    selection_tool.setAreaStyle("SAMPLING_AREA")
+                    genutils.disconnectSignal(selection_tool, "rectChanged", selection_tool.rectChanged)
+                    selection_tool.rectChanged[int, int, int, int].connect(self.sample_point_widget.updateSamplingArea)
+
+                    ruler_tool = self.activeviewer.tools.tools["RULER"]
+                    genutils.disconnectSignal(ruler_tool, "measuretakencoords", ruler_tool.measuretakencoords)
+                    ruler_tool.measuretakencoords[float, float, float, float].connect(self.sample_point_widget.setTransect)
 
     @pyqtSlot()
     def closeSamplingWidget(self):
 
-        self.samplePointWidget.close()
-        self.samplePointWidget = None
+        self.sample_point_widget.close()
+        self.sample_point_widget = None
         self.setTool("MOVE")
-
 
     @pyqtSlot()
     def samplePointAnn(self):
 
-        choosedmethod = self.samplePointWidget.comboMethod.currentText()
-        choosedpointnumber = self.samplePointWidget.choosednumber
-        offset = self.samplePointWidget.offset
-
+        choosedmethod = self.sample_point_widget.comboMethod.currentText()
+        choosedpointnumber = self.sample_point_widget.choosednumber
+        offset = self.sample_point_widget.offset
 
         if self.project.working_area is not None:
            area = self.project.working_area
@@ -3911,7 +3934,10 @@ class TagLab(QMainWindow):
                     self.working_area_widget.btnApply.clicked.connect(self.setWorkingArea)
                     selection_tool = self.activeviewer.tools.tools["SELECTAREA"]
                     selection_tool.setAreaStyle("WORKING")
+
+                    genutils.disconnectSignal(selection_tool, "rectChanged", selection_tool.rectChanged)
                     selection_tool.rectChanged[int, int, int, int].connect(self.working_area_widget.updateArea)
+
                     self.working_area_widget.areaChanged[int, int, int, int].connect(selection_tool.setSelectionRectangle)
 
                     if self.project.working_area is not None:
