@@ -20,7 +20,7 @@
 # THIS FILE CONTAINS UTILITY FUNCTIONS, E.G. CONVERSION BETWEEN DATA TYPES, BASIC OPERATIONS, ETC.
 
 import io
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QObject, QMetaObject, QMetaMethod
 from PyQt5.QtGui import QImage, QPixmap, qRgb, qRgba
 import numpy as np
 import cv2
@@ -384,3 +384,26 @@ def setAttributes(project, data, object_list):
                 else:
                     obj.data[field] = row[field]
 
+def getSignal(oObject : QObject, strSignalName : str):
+    """
+    Given a QObject and a signal name it returns the corresponding metamethod of the metaobject.
+    """
+    oMetaObj = oObject.metaObject()
+    for i in range (oMetaObj.methodCount()):
+        oMetaMethod = oMetaObj.method(i)
+        if not oMetaMethod.isValid():
+            continue
+        if oMetaMethod.methodType () == QMetaMethod.Signal and \
+            oMetaMethod.name() == strSignalName:
+            return oMetaMethod
+
+    return None
+
+def disconnectSignal(qt_object, signal_name, signal_to_disconnect):
+    """
+    It disconnects a signal if it is connected.
+    """
+    signal = getSignal(qt_object, signal_name)
+    if signal is not None:
+        if qt_object.isSignalConnected(signal):
+            signal_to_disconnect.disconnect()
