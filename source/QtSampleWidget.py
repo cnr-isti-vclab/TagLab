@@ -41,13 +41,17 @@ class QtSampleWidget(QWidget):
         self.edit_left_SA = QLineEdit()
         self.edit_left_SA.setMaximumWidth(MAXIMUM_WIDTH_EDIT)
         self.edit_left_SA.setStyleSheet(self.lineedit_style)
+        self.lbl_top_px_SA = QLabel("px")
+        self.lbl_left_px_SA = QLabel("px")
 
         self.layoutH1 = QHBoxLayout()
         self.layoutH1.addWidget(self.btn_select_area_SA)
         self.layoutH1.addWidget(self.lbl_top_SA)
         self.layoutH1.addWidget(self.edit_top_SA)
+        self.layoutH1.addWidget(self.lbl_top_px_SA)
         self.layoutH1.addWidget(self.lbl_left_SA)
         self.layoutH1.addWidget(self.edit_left_SA)
+        self.layoutH1.addWidget(self.lbl_left_px_SA)
         self.layoutH1.addStretch()
 
         self.layoutV1 = QVBoxLayout()
@@ -277,8 +281,8 @@ class QtSampleWidget(QWidget):
     @pyqtSlot(int, int, int, int)
     def updateSamplingArea(self, top, left, width, height):
 
-        self.edit_top_SA.setText(top)
-        self.edit_left_SA.setText(left)
+        self.edit_top_SA.setText(str(top))
+        self.edit_left_SA.setText(str(left))
 
         self.edit_width_px.setText(str(width))
         self.edit_height_px.setText(str(height))
@@ -350,23 +354,21 @@ class QtSampleWidget(QWidget):
 
     @pyqtSlot()
     def enableSAGroup(self):
-        """
 
-        """
         self.radio_SA.setStyleSheet("color: white")
         self.lbl_top_SA.setEnabled(True)
         self.edit_top_SA.setEnabled(True)
         self.lbl_left_SA.setEnabled(True)
         self.edit_left_SA.setEnabled(True)
+        self.lbl_left_px_SA.setEnabled(True)
+        self.lbl_top_px_SA.setEnabled(True)
 
         self.disableWAGroup()
         self.disableTransectGroup()
 
     @pyqtSlot()
     def enableWAGroup(self):
-        """
 
-        """
         self.radio_WA.setStyleSheet("color: white")
         self.lbl_areas_WA.setEnabled(True)
         self.edit_number_areas_WA.setEnabled(True)
@@ -376,13 +378,12 @@ class QtSampleWidget(QWidget):
 
     @pyqtSlot()
     def enableTransectGroup(self):
-        """
 
-        """
         self.radio_T.setStyleSheet("color: white")
         self.lbl_areas_T.setEnabled(True)
         self.edit_number_areas_T.setEnabled(True)
         self.lbl_method_T.setStyleSheet("color: white")
+        self.combo_method_T.setStyleSheet("color: white")
         self.lbl_x1.setEnabled(True)
         self.edit_x1.setEnabled(True)
         self.lbl_y1.setEnabled(True)
@@ -396,31 +397,28 @@ class QtSampleWidget(QWidget):
         self.disableWAGroup()
 
     def disableSAGroup(self):
-        """
 
-        """
         self.radio_SA.setStyleSheet("color: rgb(90,90,90)")
         self.lbl_top_SA.setEnabled(False)
         self.edit_top_SA.setEnabled(False)
         self.lbl_left_SA.setEnabled(False)
         self.edit_left_SA.setEnabled(False)
+        self.lbl_left_px_SA.setEnabled(False)
+        self.lbl_top_px_SA.setEnabled(False)
 
     def disableWAGroup(self):
-        """
 
-        """
         self.radio_WA.setStyleSheet("color: rgb(90,90,90)")
         self.lbl_areas_WA.setEnabled(False)
         self.edit_number_areas_WA.setEnabled(False)
 
     def disableTransectGroup(self):
-        """
 
-        """
         self.radio_T.setStyleSheet("color: rgb(90,90,90)")
         self.lbl_areas_T.setEnabled(False)
         self.edit_number_areas_T.setEnabled(False)
         self.lbl_method_T.setStyleSheet("color: rgb(90,90,90)")
+        self.combo_method_T.setStyleSheet("color: rgb(90,90,90)")
         self.lbl_x1.setEnabled(False)
         self.edit_x1.setEnabled(False)
         self.lbl_y1.setEnabled(False)

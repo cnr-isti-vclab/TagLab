@@ -2567,15 +2567,17 @@ class TagLab(QMainWindow):
             self.scale_widget.setWindowModality(Qt.NonModal)
             self.scale_widget.setScale(self.activeviewer.image.pixelSize())
             self.scale_widget.show()
+
             ruler_tool = self.activeviewer.tools.tools["RULER"]
-            signal = genutils.getSignal(ruler_tool, "measuretaken")
-            if signal is not None:
-                if ruler_tool.isSignalConnected(signal):
-                    ruler_tool.measuretaken.disconnect()
+            genutils.disconnectSignal(ruler_tool, "measuretaken", ruler_tool.measuretaken)
             ruler_tool.measuretaken[float].connect(self.scale_widget.setMeasure)
+
             self.scale_widget.newscale[float].connect(self.updateMapScale)
             self.scale_widget.btnOk.clicked.connect(self.closeScaleWidget)
             self.scale_widget.closewidget.connect(self.closeScaleWidget)
+        else:
+            self.scale_widget.setScale(self.activeviewer.image.pixelSize())
+            self.scale_widget.show()
 
     @pyqtSlot()
     def closeScaleWidget(self):
@@ -3350,14 +3352,21 @@ class TagLab(QMainWindow):
                     self.sample_point_widget.show()
                     self.sample_point_widget.validchoices.connect(self.samplePointAnn)
 
-                    selection_tool = self.activeviewer.tools.tools["SELECTAREA"]
-                    selection_tool.setAreaStyle("SAMPLING_AREA")
-                    genutils.disconnectSignal(selection_tool, "rectChanged", selection_tool.rectChanged)
-                    selection_tool.rectChanged[int, int, int, int].connect(self.sample_point_widget.updateSamplingArea)
+                    self.sample_point_widget.btn_select_area_SA.clicked.connect(self.enableAreaSelection)
+                    self.sample_point_widget.btnCancel.clicked.connect(self.disableAreaSelection)
+                    select_area_tool = self.activeviewer.tools.tools["SELECTAREA"]
+                    select_area_tool.setAreaStyle("SAMPLING_AREA")
+                    genutils.disconnectSignal(select_area_tool, "released", select_area_tool.released)
+                    select_area_tool.released.connect(self.disableAreaSelection)
+
+                    genutils.disconnectSignal(select_area_tool, "rectChanged", select_area_tool.rectChanged)
+                    select_area_tool.rectChanged[int, int, int, int].connect(self.sample_point_widget.updateSamplingArea)
 
                     ruler_tool = self.activeviewer.tools.tools["RULER"]
                     genutils.disconnectSignal(ruler_tool, "measuretakencoords", ruler_tool.measuretakencoords)
                     ruler_tool.measuretakencoords[float, float, float, float].connect(self.sample_point_widget.setTransect)
+                else:
+                    self.sample_point_widget.show()
 
     @pyqtSlot()
     def closeSamplingWidget(self):
@@ -3932,13 +3941,13 @@ class TagLab(QMainWindow):
                     self.working_area_widget.closed.connect(self.deleteWorkingAreaWidget)
                     self.working_area_widget.btnDelete.clicked.connect(self.deleteWorkingArea)
                     self.working_area_widget.btnApply.clicked.connect(self.setWorkingArea)
-                    selection_tool = self.activeviewer.tools.tools["SELECTAREA"]
-                    selection_tool.setAreaStyle("WORKING")
+                    select_area_tool = self.activeviewer.tools.tools["SELECTAREA"]
+                    select_area_tool.setAreaStyle("WORKING")
 
-                    genutils.disconnectSignal(selection_tool, "rectChanged", selection_tool.rectChanged)
-                    selection_tool.rectChanged[int, int, int, int].connect(self.working_area_widget.updateArea)
+                    genutils.disconnectSignal(select_area_tool, "rectChanged", select_area_tool.rectChanged)
+                    select_area_tool.rectChanged[int, int, int, int].connect(self.working_area_widget.updateArea)
 
-                    self.working_area_widget.areaChanged[int, int, int, int].connect(selection_tool.setSelectionRectangle)
+                    self.working_area_widget.areaChanged[int, int, int, int].connect(select_area_tool.setSelectionRectangle)
 
                     if self.project.working_area is not None:
                         if len(self.project.working_area) == 4:
@@ -4488,8 +4497,10 @@ class TagLab(QMainWindow):
                 self.newDatasetWidget.btnExport.clicked.connect(self.exportNewDataset)
                 self.newDatasetWidget.btnCancel.clicked.connect(self.disableAreaSelection)
                 self.newDatasetWidget.closed.connect(self.disableAreaSelection)
-                self.activeviewer.tools.tools["SELECTAREA"].setAreaStyle("EXPORT_DATASET")
-                self.activeviewer.tools.tools["SELECTAREA"].rectChanged[int, int, int, int].connect(self.updateExportDatasetArea)
+                select_area_tool = self.activeviewer.tools.tools["SELECTAREA"]
+                select_area_tool.setAreaStyle("EXPORT_DATASET")
+                genutils.disconnectSignal(select_area_tool, "rectChanged", select_area_tool.rectChanged)
+                select_area_tool.rectChanged[int, int, int, int].connect(self.updateExportDatasetArea)
 
             self.newDatasetWidget.show()
 
@@ -5050,9 +5061,15 @@ class TagLab(QMainWindow):
                 self.classifierWidget.closed.connect(self.deleteClassifierWidget)
                 self.classifierWidget.btnPrev.clicked.connect(self.applyPreview)
                 self.classifierWidget.sliderScores.valueChanged.connect(self.showScores)
-                self.activeviewer.tools.tools["SELECTAREA"].setAreaStyle("PREVIEW")
-                self.activeviewer.tools.tools["SELECTAREA"].released.connect(self.cropPreview)
-                self.activeviewer.tools.tools["SELECTAREA"].rectChanged[int, int, int, int].connect(self.classifierWidget.updatePreviewArea)
+
+                select_area_tool = self.activeviewer.tools.tools["SELECTAREA"]
+                select_area_tool.setAreaStyle("PREVIEW")
+
+                genutils.disconnectSignal(select_area_tool, "released", select_area_tool.released)
+                select_area_tool.released.connect(self.cropPreview)
+
+                genutils.disconnectSignal(select_area_tool, "rectChanged", select_area_tool.rectChanged)
+                select_area_tool.rectChanged[int, int, int, int].connect(self.classifierWidget.updatePreviewArea)
 
             self.classifierWidget.show()
             self.classifierWidget.disableSliders()
