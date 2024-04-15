@@ -102,18 +102,22 @@ class QtSampleWidget(QWidget):
         self.edit_x1 = QLineEdit()
         self.edit_x1.setStyleSheet(self.lineedit_style)
         self.edit_x1.setMaximumWidth(MAXIMUM_WIDTH_EDIT)
+        self.lbl_x1_px = QLabel("px")
         self.lbl_y1 = QLabel("y1:")
         self.edit_y1 = QLineEdit()
         self.edit_y1.setStyleSheet(self.lineedit_style)
         self.edit_y1.setMaximumWidth(MAXIMUM_WIDTH_EDIT)
+        self.lbl_y1_px = QLabel("px")
         self.lbl_x2 = QLabel("x2:")
         self.edit_x2 = QLineEdit()
         self.edit_x2.setStyleSheet(self.lineedit_style)
         self.edit_x2.setMaximumWidth(MAXIMUM_WIDTH_EDIT)
+        self.lbl_x2_px = QLabel("px")
         self.lbl_y2 = QLabel("y2:")
         self.edit_y2 = QLineEdit()
         self.edit_y2.setStyleSheet(self.lineedit_style)
         self.edit_y2.setMaximumWidth(MAXIMUM_WIDTH_EDIT)
+        self.lbl_y2_px = QLabel("px")
 
         self.layoutH3 = QHBoxLayout()
         self.layoutH3.addWidget(self.lbl_areas_T)
@@ -126,12 +130,16 @@ class QtSampleWidget(QWidget):
         self.layoutH4.addWidget(self.btn_select_transect_T)
         self.layoutH4.addWidget(self.lbl_x1)
         self.layoutH4.addWidget(self.edit_x1)
+        self.layoutH4.addWidget(self.lbl_x1_px)
         self.layoutH4.addWidget(self.lbl_y1)
         self.layoutH4.addWidget(self.edit_y1)
+        self.layoutH4.addWidget(self.lbl_y1_px)
         self.layoutH4.addWidget(self.lbl_x2)
         self.layoutH4.addWidget(self.edit_x2)
+        self.layoutH4.addWidget(self.lbl_x2_px)
         self.layoutH4.addWidget(self.lbl_y2)
         self.layoutH4.addWidget(self.edit_y2)
+        self.layoutH4.addWidget(self.lbl_y2_px)
         self.layoutH4.addStretch()
 
         self.layoutV3 = QVBoxLayout()
@@ -158,8 +166,7 @@ class QtSampleWidget(QWidget):
 
         self.lbl_offset = QLabel("Offset: ")
         self.edit_offset_px = QLineEdit()
-        self.edit_offset_px.setText(f"{self.offset}")
-        self.edit_offset_px.setStyleSheet("{background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)}")
+        self.edit_offset_px.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.lbl_offset_px = QLabel("px")
         self.edit_offset_cm = QLineEdit()
         self.edit_offset_cm.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
@@ -180,6 +187,9 @@ class QtSampleWidget(QWidget):
         self.edit_height_cm = QLineEdit()
         self.edit_height_cm.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.lbl_height_cm = QLabel("cm")
+
+        self.edit_offset_px.setText("0")
+        self.edit_offset_cm.setText("0.0")
 
         self.layoutVP1 = QVBoxLayout()
         self.layoutVP1.setAlignment(Qt.AlignRight)
@@ -267,6 +277,9 @@ class QtSampleWidget(QWidget):
         self.radio_WA.clicked.connect(self.enableWAGroup)
         self.radio_T.clicked.connect(self.enableTransectGroup)
 
+        self.edit_offset_px.textChanged.connect(self.updateSAOffsetInCm)
+        self.edit_offset_cm.textChanged.connect(self.updateSAOffsetInPx)
+
         self.edit_width_cm.textChanged.connect(self.updateSAWidthInPixel)
         self.edit_height_cm.textChanged.connect(self.updateSAHeightInPixel)
 
@@ -289,7 +302,41 @@ class QtSampleWidget(QWidget):
 
     @pyqtSlot(float, float, float, float)
     def setTransect(self, x1, y1, x2, y2):
-        pass
+
+        self.edit_x1.setText(str(round(x1, 2)))
+        self.edit_y1.setText(str(round(y1, 2)))
+        self.edit_x2.setText(str(round(x2, 2)))
+        self.edit_y2.setText(str(round(y2, 2)))
+
+    @pyqtSlot()
+    def updateSAOffsetInCm(self):
+
+        txt = self.edit_offset_px.text()
+        self.edit_offset_cm.blockSignals(True)
+
+        try:
+            value = float(txt)
+            value = round(value * self.active_image.pixelSize(), 2)
+            self.edit_offset_cm.setText(str(value))
+        except:
+            self.edit_offset_cm.setText("")
+
+        self.edit_offset_cm.blockSignals(False)
+
+    @pyqtSlot()
+    def updateSAOffsetInPx(self):
+
+        txt = self.edit_offset_cm.text()
+        self.edit_offset_px.blockSignals(True)
+
+        try:
+            value = float(txt)
+            value = round(value * self.active_image.pixelSize(), 2)
+            self.edit_offset_px.setText(str(value))
+        except:
+            self.edit_offset_px.setText("")
+
+        self.edit_offset_px.blockSignals(False)
 
     @pyqtSlot()
     def updateSAWidthInCm(self):
@@ -299,7 +346,7 @@ class QtSampleWidget(QWidget):
 
         try:
             value = float(txt)
-            value = round(value * self.active_image.pixelSize(), 4)
+            value = round(value * self.active_image.pixelSize(), 2)
             self.edit_width_cm.setText(str(value))
         except:
             self.edit_width_cm.setText("")
@@ -314,7 +361,7 @@ class QtSampleWidget(QWidget):
 
         try:
             value = float(txt)
-            value = round(value * self.active_image.pixelSize(), 4)
+            value = round(value * self.active_image.pixelSize(), 2)
             self.edit_height_cm.setText(str(value))
         except:
             self.edit_height_cm.setText("")
@@ -329,7 +376,7 @@ class QtSampleWidget(QWidget):
 
         try:
             value = float(txt)
-            value = round(value / self.active_image.pixelSize(), 4)
+            value = round(value / self.active_image.pixelSize(), 2)
             self.edit_width_px.setText(str(value))
         except:
             self.edit_width_px.setText("")
@@ -344,7 +391,7 @@ class QtSampleWidget(QWidget):
 
         try:
             value = float(txt)
-            value = round(value / self.active_image.pixelSize(), 4)
+            value = round(value / self.active_image.pixelSize(), 2)
             self.edit_height_px.setText(str(value))
         except:
             self.edit_height_px.setText("")
@@ -386,12 +433,16 @@ class QtSampleWidget(QWidget):
         self.combo_method_T.setStyleSheet("color: white")
         self.lbl_x1.setEnabled(True)
         self.edit_x1.setEnabled(True)
+        self.lbl_x1_px.setEnabled(True)
         self.lbl_y1.setEnabled(True)
         self.edit_y1.setEnabled(True)
+        self.lbl_y1_px.setEnabled(True)
         self.lbl_x2.setEnabled(True)
         self.edit_x2.setEnabled(True)
+        self.lbl_x2_px.setEnabled(True)
         self.lbl_y2.setEnabled(True)
         self.edit_y2.setEnabled(True)
+        self.lbl_y2_px.setEnabled(True)
 
         self.disableSAGroup()
         self.disableWAGroup()
@@ -421,29 +472,47 @@ class QtSampleWidget(QWidget):
         self.combo_method_T.setStyleSheet("color: rgb(90,90,90)")
         self.lbl_x1.setEnabled(False)
         self.edit_x1.setEnabled(False)
+        self.lbl_x1_px.setEnabled(False)
         self.lbl_y1.setEnabled(False)
         self.edit_y1.setEnabled(False)
+        self.lbl_y1_px.setEnabled(False)
         self.lbl_x2.setEnabled(False)
         self.edit_x2.setEnabled(False)
+        self.lbl_x2_px.setEnabled(False)
         self.lbl_y2.setEnabled(False)
         self.edit_y2.setEnabled(False)
+        self.lbl_y2_px.setEnabled(False)
 
     def apply(self):
         """
-
+        Check the parameters, and then it generates the samples.
         """
-        if self.editNumber.text() == "" or self.editNumber.text() == 0 or self.editNumber.text().isnumeric() == False:
-            msgBox = QMessageBox()
+        msgBox = QMessageBox()
+        if self.edit_number.text() == "" or self.editNumber.text().isnumeric() == False:
             msgBox.setText("Please, indicate the number of sampled points.")
             msgBox.exec()
             return
-        else:
-            self.choosednumber = int(self.editNumber.text())
 
-        if self.edit_offset_px.text() == "" or self.edit_offset_px.text().isnumeric() == False:
-            self.offset = 0
-        else:
-            self.offset = int(self.editOFF.text())
+        if (self.edit_width_px.text() == "" or self.edit_width_px.isnumeric() == False or
+                self.edit_height_px == "" or self.edit_height_px.isnumeric() == False):
+            msgBox.setText("Please, indicate the size of the sampling area.")
+            msgBox.exec()
+            return
+
+        if float(self.edit_number.text()) <= 0.0:
+            msgBox.setText("Please, indicate a number of samples greater than zero.")
+            msgBox.exec()
+            return
+
+        if float(self.edit_width_px.text()) <= 0.0:
+            msgBox.setText("Please, indicate a sampling area width greater than zero.")
+            msgBox.exec()
+            return
+
+        if float(self.edit_height_px.text()) <= 0.0:
+            msgBox.setText("Please, indicate a sampling area height greater than zero.")
+            msgBox.exec()
+            return
 
         self.validchoices.emit()
 

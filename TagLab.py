@@ -3352,6 +3352,9 @@ class TagLab(QMainWindow):
                     self.sample_point_widget.show()
                     self.sample_point_widget.validchoices.connect(self.samplePointAnn)
 
+                    # NOTE: the disabling of area selection is obtain setting the MOVe tool, so it works also
+                    #       if the ruler tool is active.
+
                     self.sample_point_widget.btn_select_area_SA.clicked.connect(self.enableAreaSelection)
                     self.sample_point_widget.btnCancel.clicked.connect(self.disableAreaSelection)
                     select_area_tool = self.activeviewer.tools.tools["SELECTAREA"]
@@ -3362,6 +3365,7 @@ class TagLab(QMainWindow):
                     genutils.disconnectSignal(select_area_tool, "rectChanged", select_area_tool.rectChanged)
                     select_area_tool.rectChanged[int, int, int, int].connect(self.sample_point_widget.updateSamplingArea)
 
+                    self.sample_point_widget.btn_select_transect_T.clicked.connect(self.enableLineSelection)
                     ruler_tool = self.activeviewer.tools.tools["RULER"]
                     genutils.disconnectSignal(ruler_tool, "measuretakencoords", ruler_tool.measuretakencoords)
                     ruler_tool.measuretakencoords[float, float, float, float].connect(self.sample_point_widget.setTransect)
@@ -3378,17 +3382,17 @@ class TagLab(QMainWindow):
     @pyqtSlot()
     def samplePointAnn(self):
 
-        choosedmethod = self.sample_point_widget.comboMethod.currentText()
+        choosedmethod = self.sample_point_widget.combo_method.currentText()
         choosedpointnumber = self.sample_point_widget.choosednumber
         offset = self.sample_point_widget.offset
 
         if self.project.working_area is not None:
-           area = self.project.working_area
+           working_area = self.project.working_area
         else:
-           area = [0, 0, self.activeviewer.image.width, self.activeviewer.image.height]
+           working_area = [0, 0, self.activeviewer.image.width, self.activeviewer.image.height]
 
         image = self.activeviewer.image
-        sampler = Sampler(image, area, choosedmethod, choosedpointnumber, offset)
+        sampler = Sampler(image, working_area, choosedmethod, choosedpointnumber, offset)
         points = sampler.generate()
 
         for point in points:
@@ -4006,6 +4010,12 @@ class TagLab(QMainWindow):
     @pyqtSlot()
     def disableAreaSelection(self):
         self.setTool("MOVE")
+
+    @pyqtSlot()
+    def enableLineSelection(self):
+
+        # Line selection is not available, the Ruler tool is used.
+        self.setTool("RULER")
 
     def setupProgressBar(self):
 
