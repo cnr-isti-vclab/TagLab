@@ -770,7 +770,7 @@ class QtImageViewerPlus(QtImageViewer):
         else:
             self.setContextMenuPolicy(Qt.CustomContextMenu)
 
-        if tool == "SELECTAREA" or tool == "RITM":
+        if tool == "SELECTAREA" or tool == "RITM" or tool == "RULER":
             QApplication.setOverrideCursor(Qt.CrossCursor)
 
         if tool == "WATERSHED":

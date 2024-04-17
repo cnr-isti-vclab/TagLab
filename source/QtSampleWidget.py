@@ -12,11 +12,11 @@ class QtSampleWidget(QWidget):
     closewidget = pyqtSignal()
     validchoices= pyqtSignal()
 
-    def __init__(self, active_image, parent=None):
+    def __init__(self, active_image, working_area, parent=None):
         super(QtSampleWidget, self).__init__(parent)
 
         self.choosednumber = None
-        self.offset = 0
+        self.working_area = working_area
 
         self.setStyleSheet(":enabled {background-color: rgb(40,40,40); color: white} :disabled {color: rgb(110,110,110)}")
         self.lineedit_style = ":enabled {background-color: rgb(55,55,55); color: rgb(255,255,255); border: 1px solid rgb(90,90,90)} " \
@@ -303,10 +303,10 @@ class QtSampleWidget(QWidget):
     @pyqtSlot(float, float, float, float)
     def setTransect(self, x1, y1, x2, y2):
 
-        self.edit_x1.setText(str(round(x1, 2)))
-        self.edit_y1.setText(str(round(y1, 2)))
-        self.edit_x2.setText(str(round(x2, 2)))
-        self.edit_y2.setText(str(round(y2, 2)))
+        self.edit_x1.setText(str(round(x1, 0)))
+        self.edit_y1.setText(str(round(y1, 0)))
+        self.edit_x2.setText(str(round(x2, 0)))
+        self.edit_y2.setText(str(round(y2, 0)))
 
     @pyqtSlot()
     def updateSAOffsetInCm(self):
@@ -376,7 +376,7 @@ class QtSampleWidget(QWidget):
 
         try:
             value = float(txt)
-            value = round(value / self.active_image.pixelSize(), 2)
+            value = round(value / self.active_image.pixelSize(), 0)
             self.edit_width_px.setText(str(value))
         except:
             self.edit_width_px.setText("")
@@ -391,7 +391,7 @@ class QtSampleWidget(QWidget):
 
         try:
             value = float(txt)
-            value = round(value / self.active_image.pixelSize(), 2)
+            value = round(value / self.active_image.pixelSize(), 0)
             self.edit_height_px.setText(str(value))
         except:
             self.edit_height_px.setText("")
@@ -409,6 +409,7 @@ class QtSampleWidget(QWidget):
         self.edit_left_SA.setEnabled(True)
         self.lbl_left_px_SA.setEnabled(True)
         self.lbl_top_px_SA.setEnabled(True)
+        self.btn_select_area_SA.setEnabled(True)
 
         self.disableWAGroup()
         self.disableTransectGroup()
@@ -416,12 +417,24 @@ class QtSampleWidget(QWidget):
     @pyqtSlot()
     def enableWAGroup(self):
 
-        self.radio_WA.setStyleSheet("color: white")
-        self.lbl_areas_WA.setEnabled(True)
-        self.edit_number_areas_WA.setEnabled(True)
+        if self.working_area:
+            if len(self.working_area) == 4:
 
-        self.disableSAGroup()
-        self.disableTransectGroup()
+                self.radio_WA.setStyleSheet("color: white")
+                self.lbl_areas_WA.setEnabled(True)
+                self.edit_number_areas_WA.setEnabled(True)
+
+                self.disableSAGroup()
+                self.disableTransectGroup()
+        else:
+            self.radio_SA.setChecked(True)
+            self.enableSAGroup()
+
+            msgBox = QMessageBox(parent=self)
+            msgBox.setWindowTitle("Sampling Settings")
+            msgBox.setText("The Working Area is not defined. If you want to sample a Working Area you need to previously define it.")
+            msgBox.exec()
+
 
     @pyqtSlot()
     def enableTransectGroup(self):
@@ -444,6 +457,8 @@ class QtSampleWidget(QWidget):
         self.edit_y2.setEnabled(True)
         self.lbl_y2_px.setEnabled(True)
 
+        self.btn_select_transect_T.setEnabled(True)
+
         self.disableSAGroup()
         self.disableWAGroup()
 
@@ -456,6 +471,7 @@ class QtSampleWidget(QWidget):
         self.edit_left_SA.setEnabled(False)
         self.lbl_left_px_SA.setEnabled(False)
         self.lbl_top_px_SA.setEnabled(False)
+        self.btn_select_area_SA.setEnabled(False)
 
     def disableWAGroup(self):
 
@@ -482,20 +498,36 @@ class QtSampleWidget(QWidget):
         self.lbl_y2.setEnabled(False)
         self.edit_y2.setEnabled(False)
         self.lbl_y2_px.setEnabled(False)
+        self.btn_select_transect_T.setEnabled(False)
+
+    def getTransect(self):
+
+        x1 = int(self.edit_x1.text())
+        y1 = int(self.edit_y1.text())
+        x2 = int(self.edit_x2.text())
+        y2 = int(self.edit_y2.text())
+
+        return [x1, y1, x2, y2]
 
     def apply(self):
         """
         Check the parameters, and then it generates the samples.
         """
-        msgBox = QMessageBox()
-        if self.edit_number.text() == "" or self.editNumber.text().isnumeric() == False:
+        msgBox = QMessageBox(parent=self)
+        msgBox.setWindowTitle("Sampling Settings")
+        if self.edit_number.text() == "" or self.edit_number.text().isnumeric() == False:
             msgBox.setText("Please, indicate the number of sampled points.")
             msgBox.exec()
             return
 
-        if (self.edit_width_px.text() == "" or self.edit_width_px.isnumeric() == False or
-                self.edit_height_px == "" or self.edit_height_px.isnumeric() == False):
+        if (self.edit_width_px.text() == "" or self.edit_width_px.text().isnumeric() == False or
+                self.edit_height_px == "" or self.edit_height_px.text().isnumeric() == False):
             msgBox.setText("Please, indicate the size of the sampling area.")
+            msgBox.exec()
+            return
+
+        if self.edit_offset_px.text() == "" or self.edit_offset_px.text().isnumeric() == False:
+            msgBox.setText("Please, indicate an offset or put for no offset.")
             msgBox.exec()
             return
 
@@ -513,6 +545,33 @@ class QtSampleWidget(QWidget):
             msgBox.setText("Please, indicate a sampling area height greater than zero.")
             msgBox.exec()
             return
+
+        if self.radio_SA.isChecked():
+            if (self.edit_top_SA.text() == "" or self.edit_top_SA.text().isnumeric() == False or
+                    self.edit_left_SA == "" or self.edit_left_SA.text().isnumeric() == False):
+                msgBox.setText("Please, indicate the (top,left) corner of the sampling area.")
+                msgBox.exec()
+                return
+
+        if self.radio_WA.isChecked():
+            if self.edit_number_areas_WA.text() == "" or self.edit_number_areas_WA.text().isnumeric() == False:
+                msgBox.setText("Please, indicate the (top,left) corner of the sampling area.")
+                msgBox.exec()
+                return
+
+        if self.radio_T.isChecked():
+            if self.edit_number_areas_T.text() == "" or self.edit_number_areas_T.text().isnumeric() == False:
+                msgBox.setText("Please, indicate the (top,left) corner of the sampling area.")
+                msgBox.exec()
+                return
+
+            if (self.edit_x1.text() == "" or self.edit_x1.isnumeric() == False or
+                self.edit_y1.text() == "" or self.edit_y1.isnumeric() == False or
+                self.edit_x2.text() == "" or self.edit_x2.isnumeric() == False or
+                self.edit_y2.text() == "" or self.edit_y2.isnumeric() == False):
+                msgBox.setText("Please, indicate the (top,left) corner of the sampling area.")
+                msgBox.exec()
+                return
 
         self.validchoices.emit()
 

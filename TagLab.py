@@ -3347,7 +3347,9 @@ class TagLab(QMainWindow):
             if self.activeviewer.image is not None:
                 if self.sample_point_widget is None:
                     self.disableSplitScreen()
-                    self.sample_point_widget = QtSampleWidget(active_image=self.activeviewer.image, parent=self)
+                    self.sample_point_widget = QtSampleWidget(active_image=self.activeviewer.image,
+                                                              working_area=self.project.working_area,
+                                                              parent=self)
                     self.sample_point_widget.setWindowModality(Qt.NonModal)
                     self.sample_point_widget.show()
                     self.sample_point_widget.validchoices.connect(self.samplePointAnn)
@@ -3382,23 +3384,45 @@ class TagLab(QMainWindow):
     @pyqtSlot()
     def samplePointAnn(self):
 
-        choosedmethod = self.sample_point_widget.combo_method.currentText()
-        choosedpointnumber = self.sample_point_widget.choosednumber
-        offset = self.sample_point_widget.offset
+        choosed_method = self.sample_point_widget.combo_method.currentText()
+        choosed_point_number = int(self.sample_point_widget.edit_number.text())
+        offset = int(self.sample_point_widget.edit_offset_px.text())
+        width = int(self.sample_point_widget.edit_width_px.text())
+        height = int(self.sample_point_widget.edit_height_px.text())
 
         if self.project.working_area is not None:
            working_area = self.project.working_area
         else:
            working_area = [0, 0, self.activeviewer.image.width, self.activeviewer.image.height]
 
-        image = self.activeviewer.image
-        sampler = Sampler(image, working_area, choosedmethod, choosedpointnumber, offset)
-        points = sampler.generate()
+        active_image = self.activeviewer.image
+        sampler = Sampler(choosed_method, choosed_point_number, offset, width, height)
 
-        for point in points:
+        if self.sample_point_widget.radio_SA.isChecked():
+            top = int(self.sample_point_widget.edit_top_SA.text())
+            left = int(self.sample_point_widget.edit_left_SA.text())
+            sampler.reset()
+            sampler.generate(top, left)
+
+        if self.sample_point_widget.radio_WA.isChecked():
+            number_of_areas = int(self.sample_point_widget.edit_number_areas_WA.text())
+            sampler.generateInsideWA(working_area, number_of_areas)
+
+        if self.sample_point_widget.radio_T.isChecked():
+            number_of_areas = int(self.sample_point_widget.edit_number_areas_T.text())
+            transect = self.getTransect()
+            method = self.sample_point_widget.combo_method_T.currentText()
+            if method == "Equi-spaced":
+                equi_spaced = True
+            else:
+                equi_spaced = False
+
+            sampler.generateAlongTransect(transect, number_of_areas, equi_spaced)
+
+        for point in sampler.points:
            id = self.activeviewer.annotations.getFreePointId()
            newpoint = Point(int(point[0]), int(point[1]), 'Empty', id)
-           self.project.addPoint(self.activeviewer.image, newpoint)
+           self.project.addPoint(active_image, newpoint)
 
         self.activeviewer.drawAllPointsAnn()
         self.closeSamplingWidget()

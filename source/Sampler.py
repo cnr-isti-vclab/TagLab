@@ -2,7 +2,7 @@
 import math
 import numpy as np
 import random
-from Mask import checkIntersection
+from source.Mask import checkIntersection
 
 
 class Sampler(object):
@@ -14,7 +14,7 @@ class Sampler(object):
         self.method = method
         self.number = number
         self.offset = int(offset)
-        self.width = int(height)
+        self.width = int(width)
         self.height = int(height)
         self.sampling_areas = []
         self.points = []
@@ -31,9 +31,7 @@ class Sampler(object):
         ystart = top + self.offset
         yend = top + h - self.offset
 
-        self.points = []
-
-        if self.method == 'Grid Sampling':
+        if self.method == 'Grid':
 
             area_cell = ((w - (2 * self.offset)) * (h-(2 * self.offset))) / self.number
             side_cell = int(math.sqrt(area_cell))
@@ -48,7 +46,7 @@ class Sampler(object):
                     point = (xc + (side_cell/2), yc + (side_cell/2))
                     self.points.append(point)
 
-        elif self.method == 'Random Sampling':
+        elif self.method == 'Random':
 
             counter = 0
             while counter < self.number:
@@ -57,7 +55,7 @@ class Sampler(object):
                 counter += 1
                 self.points.append((x, y))
 
-        elif self.method == 'Stratified Sampling':
+        elif self.method == 'Stratified':
 
             area_cell = ((w - (2 * self.offset)) * (h-(2 * self.offset))) / self.number
             side_cell = int(math.sqrt(area_cell))
@@ -87,8 +85,7 @@ class Sampler(object):
         Generate samples inside a working area.
         """
 
-        # generate samples areas
-        self.sampling_areas = []
+        self.reset()
 
         w = self.width
         h = self.height
@@ -97,7 +94,7 @@ class Sampler(object):
             for i in range(number_of_areas):
                 offx = random.randint(0, working_area[2] - w - 1)
                 offy = random.randint(0, working_area[3] - h - 1)
-                sampling_areas.append([offy, offx, w, h])
+                self.sampling_areas.append([offy, offx, w, h])
         else:
             for i in range(1000):
                 offx = random.randint(0, working_area[2] - w - 1)
@@ -111,8 +108,8 @@ class Sampler(object):
 
         # generate samples
         for sampling_area in self.sampling_areas:
-            top = sampling_area[0]
-            left = sampling_area[1]
+            top = sampling_area[0] + working_area[0]
+            left = sampling_area[1] + working_area[1]
             self.generate(top, left)
 
     def generateAlongTransect(self, transect, number_of_areas, equi_spaced=True, overlap=True):
@@ -122,6 +119,7 @@ class Sampler(object):
         The transect is specified in the following format: [x1, y1, x2, y2]
         """
 
+        self.reset()
 
         x1 = transect[0]
         y1 = transect[1]
