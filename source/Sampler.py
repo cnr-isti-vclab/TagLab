@@ -80,7 +80,7 @@ class Sampler(object):
 
         return False
 
-    def generateInsideWA(self, working_area, number_of_areas, overlap=True):
+    def generateInsideWA(self, working_area, number_of_areas, overlap=False):
         """
         Generate samples inside a working area.
         """
@@ -112,7 +112,7 @@ class Sampler(object):
             left = sampling_area[1] + working_area[1]
             self.generate(top, left)
 
-    def generateAlongTransect(self, transect, number_of_areas, equi_spaced=True, overlap=True):
+    def generateAlongTransect(self, transect, number_of_areas, equi_spaced=True, overlap=False):
         """
         Generate samples along a transect (the sampling areas are equally spaced or in a randomly positioned
         along the transect according to the regular flag).
@@ -130,22 +130,30 @@ class Sampler(object):
         dy = y2-y1
 
         if equi_spaced:
-            step = 1.0 / number_of_areas
+            step = 1.0 / (number_of_areas-1)
             for i in range(number_of_areas):
                 pos = step * i
                 posx = x1 + dx * pos - self.width/2
                 posy = y1 + dy * pos - self.height/2
+                sampling_area = [posy, posx, self.width, self.height]
+                self.sampling_areas.append(sampling_area)
                 self.generate(posy, posx)
         else:
+            # generate sampling areas
+            for i in range(1000):
+                alpha = random.random()
+                posx = x1 + dx * alpha - self.width/2
+                posy = y1 + dy * alpha - self.height/2
+                sampling_area = [posy, posx, self.width, self.height]
+                if not self.overlap(sampling_area):
+                    self.sampling_areas.append(sampling_area)
 
-            if overlap == True:
-                for i in range(number_of_areas):
-                    pos = random.random()
-                    posx = x1 + dx * pos - self.width/2
-                    posy = y1 + dy * pos - self.height/2
-                    self.generate(posy, posx)
-            else:
-                pass
+                if len(self.sampling_areas) >= number_of_areas:
+                    break
+
+            # generate samples
+            for sampling_area in self.sampling_areas:
+                self.generate(sampling_area[0], sampling_area[1])
 
     def reset(self):
         """

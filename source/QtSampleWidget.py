@@ -1,10 +1,8 @@
 from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal
-from PyQt5.QtGui import QIcon, qRgb, qRed, qGreen, qBlue
-from PyQt5.QtWidgets import QSizePolicy, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
+from PyQt5.QtGui import QIcon, QPalette, QColor
+from PyQt5.QtWidgets import QSizePolicy, QCheckBox, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
 from PyQt5.QtWidgets import QRadioButton, QButtonGroup, QGroupBox, QMessageBox,  QWidget, QComboBox
-
-from source.Annotation import Annotation
-import numpy as np
+from source import genutils
 
 class QtSampleWidget(QWidget):
 
@@ -63,6 +61,9 @@ class QtSampleWidget(QWidget):
         self.group_WA = QGroupBox()
         self.radio_WA = QRadioButton("Sampling the Working Area with multiple random areas")
 
+        #self.checkbox_overlap_areas_WA = QCheckBox("Overlap")
+        #self.checkbox_overlap_areas_WA.setChecked(False)
+
         self.lbl_areas_WA = QLabel("# areas:")
         self.edit_number_areas_WA = QLineEdit()
         self.edit_number_areas_WA.setStyleSheet(self.lineedit_style)
@@ -71,6 +72,7 @@ class QtSampleWidget(QWidget):
         self.layoutH2 = QHBoxLayout()
         self.layoutH2.addWidget(self.lbl_areas_WA)
         self.layoutH2.addWidget(self.edit_number_areas_WA)
+        #self.layoutH2.addWidget(self.checkbox_overlap_areas_WA)
         self.layoutH2.addStretch()
 
         self.layoutV2 = QVBoxLayout()
@@ -86,6 +88,9 @@ class QtSampleWidget(QWidget):
         self.edit_number_areas_T = QLineEdit()
         self.edit_number_areas_T.setStyleSheet(self.lineedit_style)
         self.edit_number_areas_T.setMaximumWidth(MAXIMUM_WIDTH_EDIT)
+
+        #self.checkbox_overlap_areas_T = QCheckBox("Overlap")
+        #self.checkbox_overlap_areas_T.setChecked(True)
 
         self.lbl_method_T = QLabel("Method:")
         self.combo_method_T = QComboBox()
@@ -124,6 +129,7 @@ class QtSampleWidget(QWidget):
         self.layoutH3.addWidget(self.edit_number_areas_T)
         self.layoutH3.addWidget(self.lbl_method_T)
         self.layoutH3.addWidget(self.combo_method_T)
+        #self.layoutH3.addWidget(self.checkbox_overlap_areas_T)
         self.layoutH3.addStretch()
 
         self.layoutH4 = QHBoxLayout()
@@ -303,10 +309,10 @@ class QtSampleWidget(QWidget):
     @pyqtSlot(float, float, float, float)
     def setTransect(self, x1, y1, x2, y2):
 
-        self.edit_x1.setText(str(round(x1, 0)))
-        self.edit_y1.setText(str(round(y1, 0)))
-        self.edit_x2.setText(str(round(x2, 0)))
-        self.edit_y2.setText(str(round(y2, 0)))
+        self.edit_x1.setText(str(round(x1)))
+        self.edit_y1.setText(str(round(y1)))
+        self.edit_x2.setText(str(round(x2)))
+        self.edit_y2.setText(str(round(y2)))
 
     @pyqtSlot()
     def updateSAOffsetInCm(self):
@@ -423,6 +429,7 @@ class QtSampleWidget(QWidget):
                 self.radio_WA.setStyleSheet("color: white")
                 self.lbl_areas_WA.setEnabled(True)
                 self.edit_number_areas_WA.setEnabled(True)
+                #self.checkbox_overlap_areas_WA.setEnabled(True)
 
                 self.disableSAGroup()
                 self.disableTransectGroup()
@@ -442,6 +449,7 @@ class QtSampleWidget(QWidget):
         self.radio_T.setStyleSheet("color: white")
         self.lbl_areas_T.setEnabled(True)
         self.edit_number_areas_T.setEnabled(True)
+        #self.checkbox_overlap_areas_T.setEnabled(True)
         self.lbl_method_T.setStyleSheet("color: white")
         self.combo_method_T.setStyleSheet("color: white")
         self.lbl_x1.setEnabled(True)
@@ -478,12 +486,14 @@ class QtSampleWidget(QWidget):
         self.radio_WA.setStyleSheet("color: rgb(90,90,90)")
         self.lbl_areas_WA.setEnabled(False)
         self.edit_number_areas_WA.setEnabled(False)
+        #self.checkbox_overlap_areas_WA.setEnabled(False)
 
     def disableTransectGroup(self):
 
         self.radio_T.setStyleSheet("color: rgb(90,90,90)")
         self.lbl_areas_T.setEnabled(False)
         self.edit_number_areas_T.setEnabled(False)
+        #self.checkbox_overlap_areas_T.setEnabled(False)
         self.lbl_method_T.setStyleSheet("color: rgb(90,90,90)")
         self.combo_method_T.setStyleSheet("color: rgb(90,90,90)")
         self.lbl_x1.setEnabled(False)
@@ -520,14 +530,14 @@ class QtSampleWidget(QWidget):
             msgBox.exec()
             return
 
-        if (self.edit_width_px.text() == "" or self.edit_width_px.text().isnumeric() == False or
-                self.edit_height_px == "" or self.edit_height_px.text().isnumeric() == False):
+        if (self.edit_width_px.text() == "" or genutils.isfloat(self.edit_width_px.text()) == False or
+                self.edit_height_px == "" or genutils.isfloat(self.edit_height_px.text()) == False):
             msgBox.setText("Please, indicate the size of the sampling area.")
             msgBox.exec()
             return
 
-        if self.edit_offset_px.text() == "" or self.edit_offset_px.text().isnumeric() == False:
-            msgBox.setText("Please, indicate an offset or put for no offset.")
+        if self.edit_offset_px.text() == "" or genutils.isfloat(self.edit_offset_px.text()) == False:
+            msgBox.setText("Please, indicate an offset or put 0 for no offset.")
             msgBox.exec()
             return
 
@@ -555,21 +565,21 @@ class QtSampleWidget(QWidget):
 
         if self.radio_WA.isChecked():
             if self.edit_number_areas_WA.text() == "" or self.edit_number_areas_WA.text().isnumeric() == False:
-                msgBox.setText("Please, indicate the (top,left) corner of the sampling area.")
+                msgBox.setText("Please, indicate the number of areas inside the Working Area.")
                 msgBox.exec()
                 return
 
         if self.radio_T.isChecked():
             if self.edit_number_areas_T.text() == "" or self.edit_number_areas_T.text().isnumeric() == False:
-                msgBox.setText("Please, indicate the (top,left) corner of the sampling area.")
+                msgBox.setText("Please, indicate the number of areas along the transect.")
                 msgBox.exec()
                 return
 
-            if (self.edit_x1.text() == "" or self.edit_x1.isnumeric() == False or
-                self.edit_y1.text() == "" or self.edit_y1.isnumeric() == False or
-                self.edit_x2.text() == "" or self.edit_x2.isnumeric() == False or
-                self.edit_y2.text() == "" or self.edit_y2.isnumeric() == False):
-                msgBox.setText("Please, indicate the (top,left) corner of the sampling area.")
+            if (self.edit_x1.text() == "" or genutils.isfloat(self.edit_x1.text()) == False or
+                    self.edit_y1.text() == "" or genutils.isfloat(self.edit_y1.text()) == False or
+                    self.edit_x2.text() == "" or genutils.isfloat(self.edit_x2.text()) == False or
+                    self.edit_y2.text() == "" or genutils.isfloat(self.edit_y2.text()) == False):
+                msgBox.setText("The transect is not well defined.")
                 msgBox.exec()
                 return
 

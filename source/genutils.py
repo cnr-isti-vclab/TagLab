@@ -407,3 +407,17 @@ def disconnectSignal(qt_object, signal_name, signal_to_disconnect):
     if signal is not None:
         if qt_object.isSignalConnected(signal):
             signal_to_disconnect.disconnect()
+
+
+def isfloat(txt):
+    """
+    Check if a string is a floating point number (or an integer).
+    """
+
+    txt2 = txt.replace("-", "")   # remove minus sign
+    txt3 = txt2.replace(".", "")  # remove '.' and check if the sequence is an integer
+
+    if txt3.isnumeric():
+        return True
+    else:
+        return False

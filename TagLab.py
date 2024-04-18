@@ -3410,7 +3410,7 @@ class TagLab(QMainWindow):
 
         if self.sample_point_widget.radio_T.isChecked():
             number_of_areas = int(self.sample_point_widget.edit_number_areas_T.text())
-            transect = self.getTransect()
+            transect = self.sample_point_widget.getTransect()
             method = self.sample_point_widget.combo_method_T.currentText()
             if method == "Equi-spaced":
                 equi_spaced = True
