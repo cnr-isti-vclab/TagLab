@@ -174,6 +174,9 @@ class QtImageViewerPlus(QtImageViewer):
         self.working_area_pen = QPen(Qt.white, 3, Qt.DashLine)
         self.working_area_pen.setCosmetic(True)
 
+        self.sampling_area_pen = QPen(Qt.yellow, 2, Qt.DashLine)
+        self.sampling_area_pen.setCosmetic(True)
+
         self.showCrossair = False
         self.mouseCoords = QPointF(0, 0)
         self.crackWidget = None
@@ -197,6 +200,9 @@ class QtImageViewerPlus(QtImageViewer):
 
         # working area
         self.working_area_rect = None
+
+        # sampling areas
+        self.sampling_rect_items = []
 
     def setProject(self, project):
 
@@ -542,6 +548,22 @@ class QtImageViewerPlus(QtImageViewer):
         for annpoint in self.annotations.annpoints:
             self.drawPointAnn(annpoint)
 
+    def drawSamplingAreas(self):
+
+        for sampling_area in self.image.sampling_areas:
+            x = float(sampling_area[1])
+            y = float(sampling_area[0])
+            w = float(sampling_area[2])
+            h = float(sampling_area[3])
+            rect_item = self.scene.addRect(x, y, w, h, self.sampling_area_pen)
+            self.sampling_rect_items.append(rect_item)
+
+    def undrawSamplingAreas(self):
+
+        for rect_item in self.sampling_rect_items:
+            self.scene.removeItem(rect_item)
+
+        self.sampling_rect_items = []
 
     def drawselectedAnnPoints(self):
 

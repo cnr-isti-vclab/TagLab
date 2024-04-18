@@ -19,7 +19,7 @@ class Image(object):
                  map_px_to_mm_factor=1.0, width=None, height=None, channels=[], id=None, name=None,
                  acquisition_date="",
                  georef_filename="", workspace=[], metadata={}, annotations={}, layers=[],
-                 grid={}, export_dataset_area=[]):
+                 grid={}, export_dataset_area=[], sampling_areas=[]):
 
         # we have to select a standanrd enforced!
         # in image standard (x, y, width height)
@@ -76,6 +76,8 @@ class Image(object):
         self.acquisition_date = acquisition_date  # acquisition date is mandatory (format YYYY-MM-DD)
         self.georef_filename = georef_filename  # image file (GeoTiff) contained the georeferencing information
         self.metadata = metadata  # this follows image_metadata_template, do we want to allow freedom to add custome values?
+
+        self.sampling_areas = sampling_areas
 
         if grid:
             self.grid = Grid()

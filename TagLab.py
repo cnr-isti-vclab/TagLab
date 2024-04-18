@@ -1641,18 +1641,8 @@ class TagLab(QMainWindow):
 
         elif event.key() == Qt.Key_X:
 
-            corresp = self.project.correspondences.copy()
-            del self.project.correspondences
-            self.project.correspondences = {}
-            N = len(self.project.images)
-            for i in range(N-1):
-                key = self.project.images[i].id + "-" + self.project.images[i+1].id
-                corr = corresp.get(key)
-                if corr is not None:
-                    self.project.correspondences[key] = corr
-
-            dd = 2
-
+            for img in self.project.images:
+                print(img.sampling_areas)
 
         elif event.key() == Qt.Key_B:
             self.attachBoundaries()
@@ -3419,12 +3409,17 @@ class TagLab(QMainWindow):
 
             sampler.generateAlongTransect(transect, number_of_areas, equi_spaced)
 
+        # add to the project the generated points
         for point in sampler.points:
-           id = self.activeviewer.annotations.getFreePointId()
-           newpoint = Point(int(point[0]), int(point[1]), 'Empty', id)
-           self.project.addPoint(active_image, newpoint)
+            id = self.activeviewer.annotations.getFreePointId()
+            newpoint = Point(int(point[0]), int(point[1]), 'Empty', id)
+            self.project.addPoint(active_image, newpoint)
+
+        # add to the project the sampling areas for visualization purposes
+        self.project.addSamplingAreas(active_image, sampler.sampling_areas)
 
         self.activeviewer.drawAllPointsAnn()
+        self.activeviewer.drawSamplingAreas()
         self.closeSamplingWidget()
 
     @pyqtSlot()

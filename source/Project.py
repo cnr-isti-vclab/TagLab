@@ -479,6 +479,20 @@ class Project(QObject):
             if notify:
                 self.pointClassChanged.emit(img, old_class_name, point)
 
+    def addSamplingAreas(self, img, sampling_areas):
+        """
+        Add the sampling area to the given image.
+        """
+
+        for sampling_area in sampling_areas:
+            img.sampling_areas.append(sampling_area)
+
+    def removeSamplingArea(self, img):
+        """
+        Remove all the sampling areas from the given image.
+        """
+        img.sampling_area = []
+
     def getImageFromId(self, id):
         for img in self.images:
             if img.id == id:

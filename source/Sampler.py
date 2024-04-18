@@ -112,6 +112,9 @@ class Sampler(object):
             left = sampling_area[1] + working_area[1]
             self.generate(top, left)
 
+            sampling_area[0] = top
+            sampling_area[1] = left
+
     def generateAlongTransect(self, transect, number_of_areas, equi_spaced=True, overlap=False):
         """
         Generate samples along a transect (the sampling areas are equally spaced or in a randomly positioned
