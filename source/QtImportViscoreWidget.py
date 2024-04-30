@@ -129,7 +129,7 @@ class QtImportViscoreWidget(QWidget):
             points['Column'] = (x / m_to_px).round().astype(int)
             points['Row'] = np.abs(height - (y / m_to_px).round().astype(int))
 
-            if not all(0 <= points['Column'] <= width) or not all(0 <= points['Row'] <= height):
+            if not (0 <= points['Column'].values.all() <= width) or not (0 <= points['Row'].values.all() <= height):
                 raise Exception("Points fall outside of orthomosaic")
 
             for i, r in points.iterrows():
@@ -139,10 +139,14 @@ class QtImportViscoreWidget(QWidget):
                 class_name = r['Label']
 
                 point_ann = Point(coordx, coordy, class_name, self.parent().activeviewer.annotations.getFreePointId())
-                self.parent().activeviewer.annotations.addPoint(point_ann)
+                active_image = self.parent().activeviewer.image
+                self.parent().project.addPoint(active_image, point_ann)
+
+                print(i)
 
             # Close if successful
             self.close()
+            self.parent().activeviewer.drawAllPointsAnn()
             box.setText(f"Imported Viscore points successfully!")
 
         except Exception as e:

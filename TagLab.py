@@ -3376,9 +3376,9 @@ class TagLab(QMainWindow):
 
         choosed_method = self.sample_point_widget.combo_method.currentText()
         choosed_point_number = int(self.sample_point_widget.edit_number.text())
-        offset = int(self.sample_point_widget.edit_offset_px.text())
-        width = int(self.sample_point_widget.edit_width_px.text())
-        height = int(self.sample_point_widget.edit_height_px.text())
+        offset = int(float(self.sample_point_widget.edit_offset_px.text()))
+        width = int(float(self.sample_point_widget.edit_width_px.text()))
+        height = int(float(self.sample_point_widget.edit_height_px.text()))
 
         if self.project.working_area is not None:
            working_area = self.project.working_area

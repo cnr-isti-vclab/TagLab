@@ -191,6 +191,8 @@ class QtPanelInfo(QTabWidget):
                     value = getattr(ann, field)
                     if type(value) == int:
                         value = str(value)
+                    if type(value) == float:
+                        value = str(value)
 
                 self.fields[field].setText(value)
 
