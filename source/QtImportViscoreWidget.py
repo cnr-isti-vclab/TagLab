@@ -138,6 +138,14 @@ class QtImportViscoreWidget(QWidget):
                 coordy = int(r['Row'])
                 class_name = r['Label']
 
+                if pd.isna(coordx) or pd.isna(coordy):
+                    # The point has invalid coordinates
+                    continue
+
+                if pd.isna(class_name):
+                    # The point was never labeled
+                    class_name = "Empty"
+
                 point_ann = Point(coordx, coordy, class_name, self.parent().activeviewer.annotations.getFreePointId())
                 active_image = self.parent().activeviewer.image
                 self.parent().project.addPoint(active_image, point_ann)
