@@ -115,6 +115,7 @@ class QtImageViewerPlus(QtImageViewer):
     activated = pyqtSignal()
     newSelection = pyqtSignal()
     newSelectionPoint = pyqtSignal()
+    activeImageChanged = pyqtSignal(Image)
 
     def __init__(self, taglab_dir):
         QtImageViewer.__init__(self)
@@ -241,6 +242,7 @@ class QtImageViewerPlus(QtImageViewer):
         self.px_to_mm = image.pixelSize()
         self.setChannel(image.channels[channel_idx])
 
+        self.activeImageChanged.emit(self.image)
         self.activated.emit()
 
     def toggleAnnotations(self, type, enable):
