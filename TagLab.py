@@ -314,6 +314,7 @@ class TagLab(QMainWindow):
         self.viewerplus.viewUpdated.connect(self.updateViewInfo)
         self.viewerplus.activated.connect(self.setActiveViewer)
         self.viewerplus.updateInfoPanel.connect(self.updatePanelInfo)
+        self.viewerplus.activeImageChanged[Image].connect(self.setActiveImage)
         self.viewerplus.mouseMoved[float, float].connect(self.updateMousePos)
         self.viewerplus.selectionChanged.connect(self.updateEditActions)
         self.viewerplus.selectionReset.connect(self.resetPanelInfo)
@@ -508,7 +509,7 @@ class TagLab(QMainWindow):
         self.groupbox_comparison.setLayout(layout_groupbox2)
 
         # BLOB INFO
-        self.groupbox_blobpanel = QtPanelInfo(self.project.region_attributes)
+        self.groupbox_blobpanel = QtPanelInfo(self.project.region_attributes, self.project.labels)
         self.blob_with_info_displayed = None
 
         # MAP VIEWER
@@ -2671,6 +2672,11 @@ class TagLab(QMainWindow):
             point = self.viewerplus.annotations.pointById(id)
             self.updatePanelInfo(point)
 
+    @pyqtSlot(Image)
+    def setActiveImage(self, img):
+        self.groupbox_blobpanel.setActiveImage(img, self.project)
+
+
     @pyqtSlot(Image, object, object)
     def updatePanelInfoAfterBlobChange(self, img, oldblob, newblob):
         if img == self.activeviewer.image:
@@ -2682,6 +2688,8 @@ class TagLab(QMainWindow):
     def updatePanelInfoAfterClassChange(self, img, class_name, blob_or_point):
         if img == self.activeviewer.image:
             self.updatePanelInfo(blob_or_point)
+            if type(blob_or_point) == Point:
+                self.activeviewer.drawPointAnn(blob_or_point)
         else:
             self.resetPanelInfo()
 
@@ -3584,6 +3592,8 @@ class TagLab(QMainWindow):
         if self.viewerplus2 is not None:
             if self.viewerplus2.image is not None:
                 self.viewerplus2.redrawAllBlobs()
+
+        self.groupbox_blobpanel.updateDictionary(self.project.labels)
 
     @pyqtSlot(str)
     def deleteLabelfromDictionary(self, labelname):
@@ -4840,7 +4850,7 @@ class TagLab(QMainWindow):
                 QApplication.setOverrideCursor(Qt.WaitCursor)
 
                 # Open the file, and draw all the points on viewer
-                self.activeviewer.annotations.importCoralNetCSVAnn(file_name, channel)
+                self.activeviewer.annotations.importCoralNetCSVAnn(file_name, self.project, self.activeviewer.image)
                 self.activeviewer.drawAllPointsAnn()
 
                 box.setText(f"Point annotations imported successfully!")
@@ -4998,6 +5008,7 @@ class TagLab(QMainWindow):
         message = "[PROJECT] The project " + self.project.filename + " has been loaded."
         logfile.info(message)
         self.updateToolStatus()
+        self.groupbox_blobpanel.updateDictionary(self.project.labels)
 
 
     def appendProject(self, filename):

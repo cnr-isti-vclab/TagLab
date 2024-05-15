@@ -1059,12 +1059,14 @@ class Annotation(object):
     #
     #     self.table_needs_update = True
 
-    def importCoralNetCSVAnn(self, file_name, channel):
+    def importCoralNetCSVAnn(self, file_name, project, active_image):
         """
         Opens a CoralNet format CSV file, expecting at a minimum: Name, Row, Column, Label.
         Additional fields include the Machine confidence N (float), and Machine Suggestion N (str).
         If the CSV file contains TagLab exported Tiles, it will modify the coordinates accordingly.
         """
+
+        channel = active_image.getRGBChannel()
         # Get the image basename
         _, image_name = os.path.split(channel.filename)
         basename = os.path.basename(image_name).split(".")[0]
@@ -1163,7 +1165,7 @@ class Annotation(object):
                 # Update new point with correct data
                 point_ann.data.update(point_data)
                 point_ann.data.update(coralnet_data)
-                self.addPoint(point_ann)
+                project.addPoint(active_image,point_ann)
 
     def exportCoralNetCSVAnn(self, output_dir, channel, annotations, working_area):
         """

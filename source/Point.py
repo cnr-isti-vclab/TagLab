@@ -15,7 +15,6 @@ class Point(object):
         self.id_item = None
         self.class_name = classname
         self.note = ""
-        #data are commonly called attributes in TagLab interface
         self.data = {}
         self.coordx= coordx
         self.coordy= coordy
@@ -23,6 +22,7 @@ class Point(object):
         self.cross1_gitem = None
         self.cross2_gitem = None
         self.ellipse_gitem = None
+
 
     def toDict(self):
         """
@@ -34,6 +34,7 @@ class Point(object):
         dict["Y"] = self.coordy
         dict["Class"] = self.class_name
         dict["Note"] = self.note
+        dict["Data"] = self.data.copy()
 
         return dict
 
@@ -44,6 +45,10 @@ class Point(object):
         self.coordy = dict["Y"]
         self.class_name = dict["Class"]
         self.note = dict["Note"]
+        if 'Data' in dict:
+            self.data = dict["Data"].copy()
+        else:
+            self.data = {}
 
     def save(self):
         return self.toDict()
