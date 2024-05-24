@@ -96,16 +96,16 @@ def read_attributes(filename):
     driver = ogr.GetDriverByName("ESRI Shapefile")
     dataSource = driver.Open(filename, 0)
     layer = dataSource.GetLayer(0)
-    Data = pd.DataFrame()
+    data = pd.DataFrame()
     for feat in layer:
         shpdict =json.loads(feat.ExportToJson())
         properties = shpdict['properties']
-        if Data.empty:
-            Data = pd.DataFrame.from_dict([properties])
-        else:
+        if data.empty:
             data = pd.DataFrame.from_dict([properties])
-            Data = Data.append(data, ignore_index=True)
-    return Data
+        else:
+            new_row = pd.DataFrame.from_dict([properties])
+            data = pd.concat([data, new_row])
+    return data
 
 
 def read_regions_geometry(filename, georef_filename):
