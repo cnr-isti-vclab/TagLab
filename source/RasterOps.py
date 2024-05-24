@@ -194,7 +194,6 @@ def write_shapefile( project, image, blobs, georef_filename, out_shp):
     """
     https://gis.stackexchange.com/a/52708/8104
     """
-    shapely.speedups.disable()
     scale_factor = image.pixelSize()
     date = image.acquisition_date
     # load georeference information to use
@@ -401,6 +400,7 @@ def saveGeorefLabelMap(label_map, georef_filename, working_area, out_name):
 
     with rio.open(out_name + ".tif", "w", **out_meta) as dest:
         dest.write(out_image)
+
 
 def exportSlope(raster, filename):
 
