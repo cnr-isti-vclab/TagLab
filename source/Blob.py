@@ -443,8 +443,6 @@ class Blob(object):
     def calculateArea(self, mask):
         self.area = mask.sum().astype(float)
 
-
-
     def fromDict(self, dict):
         """
         Set the blob information given it represented as a dictionary.
@@ -521,7 +519,7 @@ class Blob(object):
 
         dict["centroid"] = [math.trunc(10 * v) / 10 for v in self.centroid.tolist()]
         dict["area"] = self.area
-        dict["perimeter"] = math.trunc(10 *self.perimeter)/10;
+        dict["perimeter"] = math.trunc(10 *self.perimeter)/10
 
         #dict["contour"] = self.contour.tolist()
         dict["contour"] = self.toPoints(self.contour)
