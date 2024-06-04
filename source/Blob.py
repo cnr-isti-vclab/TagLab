@@ -443,37 +443,36 @@ class Blob(object):
     def calculateArea(self, mask):
         self.area = mask.sum().astype(float)
 
-    def fromDict(self, dict):
+    def fromDict(self, dictionary):
         """
         Set the blob information given it represented as a dictionary.
         """
 
-        self.bbox = np.asarray(dict["bbox"])
+        dic = dictionary
 
-        self.centroid = np.asarray(dict["centroid"])
-        self.area = dict["area"]
-        self.perimeter = dict["perimeter"]
-
+        self.bbox = np.asarray(dic["bbox"])
+        self.centroid = np.asarray(dic["centroid"])
+        self.area = dic["area"]
+        self.perimeter = dic["perimeter"]
 
         #inner_contours = dict["inner contours"]
-        self.contour = self.toContour(dict["contour"])
-        inner_contours = dict["inner contours"]
+        self.contour = self.toContour(dic["contour"])
+        inner_contours = dic["inner contours"]
         self.inner_contours = []
         for c in inner_contours:
             #self.inner_contours.append(np.asarray(c))
             self.inner_contours.append(self.toContour(c))
 
-
-        #for the moment we just update genets on load.
-#        if "genet" in dict:
-#            self.genet = dict["genet"]
-        self.class_name = dict["class name"]
-        self.instance_name = dict["instance name"]
-        self.blob_name = dict["blob name"]
-        self.id = int(dict["id"])
-        self.note = dict["note"]
-        if 'data' in dict:
-            self.data = dict["data"].copy()
+        # for the moment we just update genets on load.
+        # if "genet" in dic:
+        #   self.genet = dic["genet"]
+        self.class_name = dic["class name"]
+        self.instance_name = dic["instance name"]
+        self.blob_name = dic["blob name"]
+        self.id = int(dic["id"])
+        self.note = dic["note"]
+        if 'data' in dic:
+            self.data = dic["data"].copy()
         else:
             self.data = {}
 
@@ -513,30 +512,30 @@ class Blob(object):
         Get the blob information as a dictionary.
         """
 
-        dict = {}
+        dic = dict()
 
-        dict["bbox"] = self.bbox.tolist()
+        dic["bbox"] = self.bbox.tolist()
 
-        dict["centroid"] = [math.trunc(10 * v) / 10 for v in self.centroid.tolist()]
-        dict["area"] = self.area
-        dict["perimeter"] = math.trunc(10 *self.perimeter)/10
+        dic["centroid"] = [math.trunc(10 * v) / 10 for v in self.centroid.tolist()]
+        dic["area"] = self.area
+        dic["perimeter"] = math.trunc(10 *self.perimeter)/10
 
-        #dict["contour"] = self.contour.tolist()
-        dict["contour"] = self.toPoints(self.contour)
+        #dic["contour"] = self.contour.tolist()
+        dic["contour"] = self.toPoints(self.contour)
 
-        dict["inner contours"] = []
+        dic["inner contours"] = []
         for c in self.inner_contours:
-            #dict["inner contours"].append(c.tolist())
-            dict["inner contours"].append(self.toPoints(c))
+            #dic["inner contours"].append(c.tolist())
+            dic["inner contours"].append(self.toPoints(c))
 
-#        dict["genet"] = self.genet
-        dict["class name"] = self.class_name
+#       dic["genet"] = self.genet
+        dic["class name"] = self.class_name
 
-        dict["instance name"] = self.instance_name
-        dict["blob name"] = self.blob_name
-        dict["id"] = self.id
-        dict["note"] = self.note
-        dict["data"] = self.data.copy()
+        dic["instance name"] = self.instance_name
+        dic["blob name"] = self.blob_name
+        dic["id"] = self.id
+        dic["note"] = self.note
+        dic["data"] = self.data.copy()
 
-        return dict
+        return dic
 
