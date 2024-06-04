@@ -377,6 +377,7 @@ def saveGeorefLabelMap(label_map, georef_filename, working_area, out_name):
     img = rio.open(georef_filename)
     meta = img.meta
     transform = img.transform
+    crs = img.crs
 
     myLabel = reshape_as_raster(label_map)
     myLabel_meta = meta.copy()
@@ -386,20 +387,21 @@ def saveGeorefLabelMap(label_map, georef_filename, working_area, out_name):
     with rio.open(out_name + ".tif", "w", **myLabel_meta) as dest:
         dest.write(myLabel)
 
-    dataset = rio.open(out_name + ".tif")
-    # convert the working area into a polygon
-    working_area_polygon = createPolygonFromWorkingArea(working_area, transform)
-    # crop the raster using the working area polygon
-    out_image, out_transform = rio.mask.mask(dataset, [working_area_polygon], crop=True)
-    out_meta = dataset.meta
-    # area= out_meta['transform'][0] ** 2*out_image
-    out_meta.update({"driver": "GTiff",
-                      "height": out_image.shape[1],
-                      "width": out_image.shape[2],
-                      "transform": out_transform})
+    if working_area is not None:
 
-    with rio.open(out_name + ".tif", "w", **out_meta) as dest:
-        dest.write(out_image)
+        dataset = rio.open(out_name + ".tif")
+        # convert the working area into a polygon
+        working_area_polygon = createPolygonFromWorkingArea(working_area, transform)
+        # crop the raster using the working area polygon
+        out_image, out_transform = rio.mask.mask(dataset, [working_area_polygon], crop=True)
+        out_meta = dataset.meta
+        out_meta.update({"driver": "GTiff",
+                          "height": out_image.shape[1],
+                          "width": out_image.shape[2],
+                          "transform": out_transform})
+
+        with rio.open(out_name + ".tif", "w", **out_meta) as dest:
+            dest.write(out_image)
 
 
 def exportSlope(raster, filename):

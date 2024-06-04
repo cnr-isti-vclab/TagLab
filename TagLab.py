@@ -981,6 +981,10 @@ class TagLab(QMainWindow):
         exportGeoRefLabelMapAct.setStatusTip("Create a label image and export it as a GeoTiff")
         exportGeoRefLabelMapAct.triggered.connect(self.exportGeoRefLabelMap)
 
+        exportGeoRefImgAct = QAction("Export Orthoimage As A GeoTiff", self)
+        exportGeoRefImgAct.setStatusTip("Export visible ortho-image as a GeoTiff")
+        exportGeoRefImgAct.triggered.connect(self.exportGeoRefImage)
+
         exportTrainingDatasetAct = QAction("Export New Training Dataset", self)
         #exportTrainingDatasetAct.setShortcut('Ctrl+??')
         exportTrainingDatasetAct.setStatusTip("Export A new training dataset based on the current annotations")
@@ -1055,6 +1059,7 @@ class TagLab(QMainWindow):
         self.submenuExport.addAction(exportMapAct)
         self.submenuExport.addAction(exportShapefilesAct)
         self.submenuExport.addAction(exportGeoRefLabelMapAct)
+        self.submenuExport.addAction(exportGeoRefImgAct)
         self.submenuExport.addAction(exportHistogramAct)
         self.submenuExport.addAction(exportTrainingDatasetAct)
         self.filemenu.addSeparator()
@@ -4520,6 +4525,42 @@ class TagLab(QMainWindow):
             georef_filename = self.activeviewer.image.georef_filename
             outfilename = os.path.splitext(output_filename)[0]
             rasterops.saveGeorefLabelMap(label_map_np, georef_filename, self.project.working_area, outfilename)
+
+            QApplication.restoreOverrideCursor()
+
+            msgBox = QMessageBox(self)
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("GeoTiff exported successfully!")
+            msgBox.exec()
+
+    pyqtSlot()
+    def exportGeoRefImage(self):
+
+        if self.activeviewer is None:
+            return
+
+        if self.activeviewer.image is None:
+            box = QMessageBox()
+            box.setText("A map is needed to import labels. Load a map or a project.")
+            box.exec()
+            return
+
+        if self.activeviewer.image.georef_filename == "":
+            box = QMessageBox()
+            box.setText("Georeference information are not available.")
+            box.exec()
+            return
+
+        filters = "Tiff (*.tif *.tiff) ;; All Files (*)"
+        output_filename, _ = QFileDialog.getSaveFileName(self, "Output GeoTiff", "", filters)
+
+        if output_filename:
+            QApplication.setOverrideCursor(Qt.WaitCursor)
+
+            myimage_np = genutils.qimageToNumpyArray(self.activeviewer.image.getRGBChannel().qimage)
+            georef_filename = self.activeviewer.image.georef_filename
+            outfilename = os.path.splitext(output_filename)[0]
+            rasterops.saveGeorefLabelMap(myimage_np, georef_filename, self.project.working_area, outfilename)
 
             QApplication.restoreOverrideCursor()
 
