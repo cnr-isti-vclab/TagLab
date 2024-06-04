@@ -183,12 +183,13 @@ class TagLab(QMainWindow):
 
         self.mapWidget = None
         self.projectEditor = None
-        self.alignToolWidget = None
-        self.editProjectWidget = None
+        self.align_tool_widget = None
+        self.edit_project_widget = None
         self.sample_point_widget = None
         self.scale_widget = None
         self.dictionary_widget = None
         self.working_area_widget = None
+        self.region_attributes_widget = None
         self.crop_widget = None
         self.classifierWidget = None
         self.newDatasetWidget = None
@@ -1270,7 +1271,7 @@ class TagLab(QMainWindow):
 
                     self.disableSplitScreen()
 
-                    self.crop_widget = QtCropWidget(self.editProjectWidget)
+                    self.crop_widget = QtCropWidget(self.edit_project_widget)
                     self.crop_widget.btnChooseArea.clicked.connect(self.enableAreaSelection)
                     self.crop_widget.closed.connect(self.disableAreaSelection)
                     self.crop_widget.closed.connect(self.deleteCropWidget)
@@ -2390,6 +2391,7 @@ class TagLab(QMainWindow):
 
         self.mapWidget = None
         self.working_area_widget = None
+        self.region_attributes_widget = None
         self.classifierWidget = None
         self.newDatasetWidget = None
         self.trainYourNetworkWidget = None
@@ -3432,18 +3434,18 @@ class TagLab(QMainWindow):
 
     @pyqtSlot()
     def editProject(self):
-        if self.editProjectWidget is None:
+        if self.edit_project_widget is None:
 
-            self.editProjectWidget = QtProjectWidget(self.project, parent=self)
-            self.editProjectWidget.setWindowModality(Qt.NonModal)
-            self.editProjectWidget.show()
+            self.edit_project_widget = QtProjectWidget(self.project, parent=self)
+            self.edit_project_widget.setWindowModality(Qt.NonModal)
+            self.edit_project_widget.show()
 
         else:
             # show it again
-            self.editProjectWidget.project = self.project
-            self.editProjectWidget.populateMapList()
-            if self.editProjectWidget.isHidden():
-                self.editProjectWidget.show()
+            self.edit_project_widget.project = self.project
+            self.edit_project_widget.populateMapList()
+            if self.edit_project_widget.isHidden():
+                self.edit_project_widget.show()
 
     # REFACTOR load project properties
     @pyqtSlot()
@@ -3473,15 +3475,15 @@ class TagLab(QMainWindow):
     def openProjectEditor(self):
         if self.projectEditor is None:
             self.projectEditor = QtProjectEditor(self.project, parent=self)
-            # self.projectEditor.setWindowModality(Qt.WindowModal)
-            self.projectEditor.closed.connect(self.closeProjectEditor)
 
         self.projectEditor.fillMaps()
+        self.projectEditor.setWindowModality(Qt.WindowModal)
         self.projectEditor.show()
+        self.projectEditor.closed.connect(self.closeProjectEditor)
 
     @pyqtSlot()
     def closeAlignmentTool(self):
-        self.alignToolWidget = None
+        self.align_tool_widget = None
         self.updateToolStatus()
         self.updateImageSelectionMenu()
         self.updatePanels()
@@ -3495,11 +3497,11 @@ class TagLab(QMainWindow):
             msgBox.exec()
             return
 
-        if self.alignToolWidget is None:
-            self.alignToolWidget = QtAlignmentToolWidget(self.project, parent=self)
-            self.alignToolWidget.setWindowModality(Qt.WindowModal)
-            self.alignToolWidget.closed.connect(self.closeAlignmentTool)
-            self.alignToolWidget.showMaximized()
+        if self.align_tool_widget is None:
+            self.align_tool_widget = QtAlignmentToolWidget(self.project, parent=self)
+            self.align_tool_widget.setWindowModality(Qt.WindowModal)
+            self.align_tool_widget.closed.connect(self.closeAlignmentTool)
+            self.align_tool_widget.showMaximized()
 
     @pyqtSlot()
     def createDictionary(self):
@@ -3522,9 +3524,12 @@ class TagLab(QMainWindow):
     @pyqtSlot()
     def editRegionAttributes(self):
 
-        self.regionAttributes_dialog = QtRegionAttributesWidget(self.taglab_dir, self.project, parent = self)
-        self.regionAttributes_dialog.show()
-        self.regionAttributes_dialog.closed.connect(self.updateRegionAttributes)
+        if self.region_attributes_widget is None:
+            self.region_attributes_widget = QtRegionAttributesWidget(self.taglab_dir, self.project, parent = self)
+
+        self.region_attributes_widget.show()
+        self.region_attributes_widget.setWindowModality(Qt.WindowModal)
+        self.region_attributes_widget.closed.connect(self.updateRegionAttributes)
 
     @pyqtSlot()
     def updateRegionAttributes(self):
@@ -3854,7 +3859,6 @@ class TagLab(QMainWindow):
             self.updateComboboxSourceImage(index)
             self.disableSplitScreen()
             self.setBlobVisualization()
-
 
             QApplication.restoreOverrideCursor()
 
