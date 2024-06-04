@@ -235,6 +235,9 @@ class QtImageViewerPlus(QtImageViewer):
         # draw the working area (if defined)
         self.drawWorkingArea()
 
+        # draw the sampling areas (if any)
+        self.drawSamplingAreas()
+
         # draw the grid (if defined)
         self.showGrid()
 
@@ -330,9 +333,10 @@ class QtImageViewerPlus(QtImageViewer):
             del annpoint
 
         # clear working area
-        if self.working_area_rect is not None:
-            self.scene.removeItem(self.working_area_rect)
-            self.working_area_rect = None
+        self.undrawWorkingArea()
+
+        # clear sampling areas
+        self.undrawSamplingAreas()
 
         if self.image is not None:
             if self.image.grid is not None:
@@ -1016,7 +1020,7 @@ class QtImageViewerPlus(QtImageViewer):
             pt = event.angleDelta()
 
             # uniform zoom.
-            self.zoom_factor = self.zoom_factor*pow(pow(2, 1/2), pt.y()/100);
+            self.zoom_factor = self.zoom_factor*pow(pow(2, 1/2), pt.y()/100)
             if self.zoom_factor < self.ZOOM_FACTOR_MIN:
                 self.zoom_factor = self.ZOOM_FACTOR_MIN
             if self.zoom_factor > self.ZOOM_FACTOR_MAX:

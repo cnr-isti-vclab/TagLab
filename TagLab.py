@@ -3139,8 +3139,8 @@ class TagLab(QMainWindow):
                     view.updateBlob(blob, created_blobs[0], True, redraw=False)
                 else:
                     view.removeBlob(blob, redraw=False)
-                    for blob in created_blobs:
-                        view.addBlob(blob, selected=True, redraw=False)
+                    for created_blob in created_blobs:
+                        view.addBlob(created_blob, selected=True, redraw=False)
 
                 view.saveUndo()
 
