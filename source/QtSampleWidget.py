@@ -298,10 +298,10 @@ class QtSampleWidget(QWidget):
         self.active_image = active_image
 
     @pyqtSlot(int, int, int, int)
-    def updateSamplingArea(self, top, left, width, height):
+    def updateSamplingArea(self, x, y, width, height):
 
-        self.edit_top_SA.setText(str(top))
-        self.edit_left_SA.setText(str(left))
+        self.edit_top_SA.setText(str(y))
+        self.edit_left_SA.setText(str(x))
 
         self.edit_width_px.setText(str(width))
         self.edit_height_px.setText(str(height))

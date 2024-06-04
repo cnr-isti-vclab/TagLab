@@ -15,7 +15,7 @@ from source.Annotation import Annotation
 class Genet:
 
     def __init__(self, project):
-        self.project = project;
+        self.project = project
         self.updateGenets()
         pass
 

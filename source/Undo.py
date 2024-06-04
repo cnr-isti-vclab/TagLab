@@ -33,7 +33,7 @@ class Undo(object):
         self.operation = { 'remove':[], 'add':[], 'class':[], 'newclass':[] }
         if len(self.operations) > self.max_undo:
             self.operations.pop(0)
-        self.position = len(self.operations) -1;
+        self.position = len(self.operations) - 1
 
     def undo(self):
         if len(self.operations) == 0:

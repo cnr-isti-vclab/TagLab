@@ -102,7 +102,7 @@ class QtLayersWidget(QTreeWidget):
                 # ui->treeWidget->setItemWidget(items.value(1),0,new QPushButton("Click Me")); // Solution for your problem 
 
             #items.append(item)
-            self.addTopLevelItem(item);
+            self.addTopLevelItem(item)
 
         it = QTreeWidgetItemIterator(self)
         while it.value():

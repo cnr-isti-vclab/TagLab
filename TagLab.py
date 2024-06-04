@@ -189,10 +189,12 @@ class TagLab(QMainWindow):
         self.scale_widget = None
         self.dictionary_widget = None
         self.working_area_widget = None
+        self.dataset_train_info = None
         self.region_attributes_widget = None
         self.crop_widget = None
         self.classifierWidget = None
         self.newDatasetWidget = None
+        self.help_widget = None
 
         self.trainYourNetworkWidget = None
         self.trainResultsWidget = None
@@ -2389,6 +2391,7 @@ class TagLab(QMainWindow):
 
         # RE-INITIALIZATION
 
+        self.help_widget = None
         self.mapWidget = None
         self.working_area_widget = None
         self.region_attributes_widget = None
@@ -3952,10 +3955,12 @@ class TagLab(QMainWindow):
     @pyqtSlot()
     def help(self):
 
-        help_widget = QtHelpWidget(self)
-        help_widget.setWindowOpacity(0.8)
-        help_widget.setWindowModality(Qt.WindowModal)
-        help_widget.show()
+        if self.help_widget is None:
+            self.help_widget = QtHelpWidget()
+
+        self.help_widget.setWindowModality(Qt.WindowModal)
+        self.help_widget.show()
+        self.help_widget.setWindowOpacity(0.7)
 
     @pyqtSlot()
     def selectWorkingArea(self):

@@ -287,8 +287,8 @@ class QtPanelInfo(QTabWidget):
 
         self.attributes = []
         layout = QGridLayout()
-        layout.setColumnStretch(0, 1);
-        layout.setColumnStretch(1, 1);
+        layout.setColumnStretch(0, 1)
+        layout.setColumnStretch(1, 1)
         widget = QWidget()
         widget.setLayout(layout)
 

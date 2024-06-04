@@ -75,7 +75,7 @@ if __name__ == '__main__':
 
     ##### SHUFFLE
     N_tiles = len(images_names)
-    for i in range(10000):
+    for k in range(10000):
         i = random.randint(0, N_tiles-1)
         j = random.randint(0, N_tiles-1)
         temp_name = images_names[j]

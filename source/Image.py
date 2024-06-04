@@ -121,13 +121,11 @@ class Image(object):
             if self.width != img.width or self.height != img.height:
                 raise Exception("Size of the images is not consistent! It is " + str(img.width) + "x" +
                                 str(img.height) + ", should have been: " + str(self.width) + "x" + str(self.height))
-                return
 
         # check image size limits
         if img.width > 32767 or img.height > 32767:
             raise Exception(
                 "This map exceeds the image dimension handled by TagLab (the maximum size is 32767 x 32767).")
-            return
 
         if img.crs is not None:
             # this image contains georeference information
