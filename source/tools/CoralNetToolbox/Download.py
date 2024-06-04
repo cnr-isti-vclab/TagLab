@@ -1,7 +1,6 @@
 import os
 import io
-import time
-import shutil
+import json
 import requests
 import argparse
 import traceback
@@ -373,8 +372,17 @@ def download_metadata(driver, source_id, source_dir=None):
             raise Exception("NOTE: No model metadata found")
 
         # Parse the data when represented as a string, convert to dict
-        data = script[script.find("data:"):].split(",\n")[0]
-        data = eval(data[data.find("[{"):])
+        start_index = script.find("let classifierPlotData = ") + len("let classifierPlotData = ")
+        end_index = script.find("];", start_index) + 1  # Adding 1 to include the closing bracket
+
+        # Extract the substring containing the data
+        classifier_plot_data_str = script[start_index:end_index]
+
+        # Convert single quotes to double quotes for JSON compatibility
+        classifier_plot_data_str = classifier_plot_data_str.replace("'", '"')
+
+        # Parse the string into a Python list of dictionaries
+        data = json.loads(classifier_plot_data_str)
 
         # Loop through and collect meta from each model instance, store
         for idx, point in progress_printer(enumerate(data)):

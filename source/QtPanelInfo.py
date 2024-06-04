@@ -1,7 +1,10 @@
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import Qt, QAbstractTableModel, QItemSelectionModel, QSortFilterProxyModel, QRegExp, QRectF, QRect,QSize, QModelIndex,pyqtSlot, pyqtSignal
-from PyQt5.QtWidgets import QGridLayout, QWidget, QTableView, QTabWidget, QSpinBox, QLineEdit, QDoubleSpinBox, QStyledItemDelegate, QHeaderView,QAbstractItemView,QSizePolicy,QStyleOptionProgressBar,\
-    QCheckBox, QComboBox, QApplication, QTableWidget, QTableWidgetItem, QPushButton, QGroupBox, QLabel, QHBoxLayout, QVBoxLayout, QTextEdit, QStyle
+from PyQt5.QtCore import Qt, QAbstractTableModel, QItemSelectionModel, QSortFilterProxyModel, QRegExp, QRectF, QRect, \
+    QSize, QModelIndex, pyqtSlot, pyqtSignal
+from PyQt5.QtWidgets import QGridLayout, QWidget, QTableView, QTabWidget, QSpinBox, QLineEdit, QDoubleSpinBox, \
+    QStyledItemDelegate, QHeaderView, QAbstractItemView, QSizePolicy, QStyleOptionProgressBar, \
+    QCheckBox, QComboBox, QApplication, QTableWidget, QTableWidgetItem, QPushButton, QGroupBox, QLabel, QHBoxLayout, \
+    QVBoxLayout, QTextEdit, QStyle
 from PyQt5.QtGui import QColor, QPixmap, QPainter, QPainterPath, QBrush, QLinearGradient
 import numpy as np
 from source.Blob import Blob
@@ -55,10 +58,8 @@ class TableModel(QAbstractTableModel):
                 painter.end()
                 return pxmap
 
-
-        if role == Qt.SizeHintRole and index.column()==1:
-
-                return QSize(150,20)
+        if role == Qt.SizeHintRole and index.column() == 1:
+            return QSize(150, 20)
 
         # SECONDO METODO COLORO DIRETTAMENTE BACKGROUND CELLA MA MI SA CHE LO STILESHEET SOVRASCRIVE IL QCOLOR SENZA UN ITEM DELEGATE
 
@@ -83,7 +84,6 @@ class TableModel(QAbstractTableModel):
         #     else:
         #         return QColor(40, 40, 40)
 
-
         if role == Qt.DisplayRole:
 
             if index.column() == 1:
@@ -96,8 +96,6 @@ class TableModel(QAbstractTableModel):
                 txt = str(value)
 
             return txt
-
-
 
     def setData(self, index, value, role):
 
@@ -165,20 +163,15 @@ height: 0px;
         self.setLayout(layout)
         self.active_label_name = "Empty"
 
-
-
     def setPred(self, coralnet_sugg):
-
 
         self.coralnet_sugg = coralnet_sugg
 
         if self.coralnet_sugg is not None:
-
             self.data_table = pd.DataFrame(self.coralnet_sugg)
             # self.data_table = pd.DataFrame.from_dict(self.coralnet_sugg)
 
         if self.model is None:
-
             # Getting the Model
             self.model = TableModel(self.data_table)
             self.sortfilter = QSortFilterProxyModel(self)
@@ -197,7 +190,6 @@ height: 0px;
             self.pred_table.setStyleSheet("QHeaderView::section { background-color: rgb(40,40,40) }")
 
 
-
 class QtPanelInfo(QTabWidget):
 
     def __init__(self, region_attributes, labels, parent=None):
@@ -213,11 +205,9 @@ class QtPanelInfo(QTabWidget):
         self.coralnet_sugg = {}
         self.sorted_coralnet_sugg = {}
 
-
         self.insertTab(0, self.regionInfo(), "Properties")
         self.insertTab(1, self.customInfo(), "Attributes")
         self.insertTab(2, QWidget(), "AI Suggestions")
-
 
         self.setAutoFillBackground(True)
 
@@ -231,7 +221,6 @@ class QtPanelInfo(QTabWidget):
                            "border-top-right-radius: 4px;"
                            "min-width: 8ex; padding: 2px;}")
 
-
     def setActiveImage(self, img, project):
         self.project = project
         self.active_image = img
@@ -241,15 +230,13 @@ class QtPanelInfo(QTabWidget):
         self.labels = {}
         self.labels = newdict
 
-
     @pyqtSlot(QModelIndex)
     def doubleClickedCell(self, index):
 
         if index.column() == 0 or index.column() == 1:
-           oldindex = self.sugg_table.sortfilter.mapToSource(index)
-           self.active_label_name = self.sugg_table.data_table['Class'][oldindex.row()]
-           self.project.setPointClass(self.active_image, self.ann, self.active_label_name)
-
+            oldindex = self.sugg_table.sortfilter.mapToSource(index)
+            self.active_label_name = self.sugg_table.data_table['Class'][oldindex.row()]
+            self.project.setPointClass(self.active_image, self.ann, self.active_label_name)
 
     def updateRegionAttributes(self, region_attributes):
 
@@ -262,8 +249,8 @@ class QtPanelInfo(QTabWidget):
 
         layout = QGridLayout()
 
-        fields = { 'id': 'Id:', 'class_name': 'Class:', 'genet': 'Genet:', 
-            'perimeter': 'Perimeter:', 'area': 'Area:', 'surface_area': 'Surf. area:' }
+        fields = {'id': 'Id:', 'class_name': 'Class:', 'genet': 'Genet:',
+                  'perimeter': 'Perimeter:', 'area': 'Area:', 'surface_area': 'Surf. area:'}
 
         self.fields = {}
         row = 0
@@ -272,7 +259,7 @@ class QtPanelInfo(QTabWidget):
             label = QLabel(fields[field])
             layout.addWidget(label, row, col)
             value = self.fields[field] = QLabel('')
-            layout.addWidget(value, row, col+1)
+            layout.addWidget(value, row, col + 1)
             col += 2
             if col == 4:
                 row += 1
@@ -296,22 +283,21 @@ class QtPanelInfo(QTabWidget):
         for attribute in self.region_attributes.data:
             name = attribute['name']
             layout.addWidget(QLabel(name), row, 0)
-            
 
             if attribute['type'] == 'string':
                 input = QLineEdit()
-                input.textChanged.connect(lambda text, name = name: self.assign(text, name))
+                input.textChanged.connect(lambda text, name=name: self.assign(text, name))
             elif attribute['type'] == 'integer number':
                 input = QSpinBox()
                 max = attribute['max'] if 'max' in attribute.keys() else 2147483647
                 if max is None:
-                     max = 2147483647
+                    max = 2147483647
                 input.setMaximum(int(max))
                 min = attribute['min'] if 'min' in attribute.keys() else -2147483647
                 if min is None:
-                     min = -2147483647
+                    min = -2147483647
                 input.setMinimum(int(min))
-                input.valueChanged.connect(lambda value, name = name: self.assign(value, name))
+                input.valueChanged.connect(lambda value, name=name: self.assign(value, name))
 
             elif attribute['type'] == 'decimal number':
                 input = QDoubleSpinBox()
@@ -329,7 +315,7 @@ class QtPanelInfo(QTabWidget):
                 input = QComboBox()
                 input.addItem('')
                 input.addItems(attribute['keywords'])
-                input.currentTextChanged.connect(lambda text, name = name: self.assign(text, name))
+                input.currentTextChanged.connect(lambda text, name=name: self.assign(text, name))
 
             layout.addWidget(input, row, 1)
             row += 1
@@ -339,20 +325,14 @@ class QtPanelInfo(QTabWidget):
         note = self.fields['note'] = QTextEdit()
         note.setMaximumHeight(50)
         note.textChanged.connect(self.updateNotes)
-        layout.addWidget(note, row+1, 0, 1, 2)
+        layout.addWidget(note, row + 1, 0, 1, 2)
         return widget
 
-
-
-
-
     def updateMachineSuggestionsInfo(self, sugg_table):
-
 
         self.sugg_table = sugg_table
         self.removeTab(2)
         self.insertTab(2, self.sugg_table, "AI Suggestions")
-
 
     def assign(self, text, name):
 
@@ -367,7 +347,6 @@ class QtPanelInfo(QTabWidget):
             return
 
         self.ann.note = self.fields['note'].document().toPlainText()
-
 
     def clear(self):
 
@@ -392,9 +371,10 @@ class QtPanelInfo(QTabWidget):
         self.insertTab(2, QWidget(), "AI Suggestions")
         self.selected_point = None
 
-
     def update(self, ann, scale_factor):
+        """
 
+        """
         self.clear()
 
         self.ann = ann
@@ -404,9 +384,9 @@ class QtPanelInfo(QTabWidget):
                 value = getattr(ann, field)
                 if field == 'area':
                     value = round(value * (scale_factor) * (scale_factor) / 100, 2)
-                if field ==  'surface_area':
+                if field == 'surface_area':
                     value = round(value * (scale_factor) * (scale_factor) / 100, 2)
-                if field ==  'perimeter':
+                if field == 'perimeter':
                     value = round(value * scale_factor / 10, 1)
                 if type(value) == float or type(value) == np.float64 or type(value) == np.float32:
                     value = "{:6.1f}".format(value)
@@ -415,9 +395,8 @@ class QtPanelInfo(QTabWidget):
 
                 self.fields[field].setText(value)
 
-
         else:
-
+            # It's a point, loop through the fields for points
             for field in self.fields:
                 value = ''
                 if field == 'id' or field == 'class_name' or field == "note":
@@ -428,21 +407,34 @@ class QtPanelInfo(QTabWidget):
                 self.fields[field].setText(value)
 
             if 'Machine suggestion 1' in ann.data.keys():
-
-
                 coralnet_sugg = {}
                 coralnet_conf = {}
                 coralnet_colors = []
                 self.sorted_coralnet_sugg = {}
 
                 for key in ann.data.keys():
-                    if "suggestion" in key:
+                    # The mapped value represents what users *want* to map the classifier's
+                    # prediction to, within TagLab. Use this first, otherwise use the other.
+                    if "(Mapped)" in key and "suggestion" in key:
+                        key_ = key.split("(Mapped)")[0].strip()
+                        coralnet_sugg[key_] = ann.data[key]
+                    elif "suggestion" in key and key not in coralnet_sugg:
                         coralnet_sugg[key] = ann.data[key]
-                    elif "confidence" in key:
+
+                    # If confidence exists, get it, otherwise fill with NULL
+                    if "confidence" in key:
                         coralnet_conf[key] = ann.data[key]
 
                 for classname in list(coralnet_sugg.values()):
-                    color = str(self.labels[classname].fill)
+                    # TODO
+                    #  It's possible that the user didn't create the mapped class in TagLab.
+                    #  We need generate a new color here, or we need to create the mapped class
+                    #  in the situation that it doesn't already exist. Not sure which is preferred.
+                    if classname in self.labels:
+                        color = str(self.labels[classname].fill)
+                    else:
+                        color = str([255, 0, 0])
+
                     coralnet_colors.append(color)
 
                 self.sorted_coralnet_sugg = {"Class": list(coralnet_sugg.values()),
@@ -455,25 +447,20 @@ class QtPanelInfo(QTabWidget):
                     sugg_table.pred_table.doubleClicked.connect(self.doubleClickedCell)
                     self.updateMachineSuggestionsInfo(sugg_table)
 
-
-
-
         for input, attribute in zip(self.attributes, self.region_attributes.data):
             key = attribute['name']
             if not key in ann.data:
                 continue
             value = ann.data[key]
             if value is None:
-                continue;
+                continue
             if attribute['type'] == 'string':
                 input.setText(value)
             elif attribute['type'] == 'integer number':
-                 input.setValue(value)
+                input.setValue(value)
             elif attribute['type'] == 'decimal number':
                 input.setValue(value)
             # elif attribute['type'] == 'boolean':
             #      input.setChecked(value)
             elif attribute['type'] == 'keyword':
                 input.setCurrentText(value)
-
-        

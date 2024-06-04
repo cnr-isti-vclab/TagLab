@@ -4893,9 +4893,6 @@ class TagLab(QMainWindow):
 
             self.disableSplitScreen()
 
-            # Get the current image
-            channel = self.activeviewer.image.getRGBChannel()
-
             try:
                 QApplication.setOverrideCursor(Qt.WaitCursor)
 
