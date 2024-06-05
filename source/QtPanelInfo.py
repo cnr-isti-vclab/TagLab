@@ -433,7 +433,7 @@ class QtPanelInfo(QTabWidget):
                     if classname in self.labels:
                         color = str(self.labels[classname].fill)
                     else:
-                        color = str([255, 0, 0])
+                        color = str([255, 255, 255])
 
                     coralnet_colors.append(color)
 

@@ -4902,7 +4902,7 @@ class TagLab(QMainWindow):
                 box.exec()
 
             except Exception as e:
-                box.setText(f"File provided not in CoralNet format! {e}")
+                box.setText(f"Could not import annotations! {e}")
                 box.exec()
         else:
             box.setText("File path provided is not valid!")
