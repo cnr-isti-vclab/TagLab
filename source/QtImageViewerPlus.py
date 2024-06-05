@@ -866,16 +866,6 @@ class QtImageViewerPlus(QtImageViewer):
         if not (Qt.ShiftModifier & QApplication.queryKeyboardModifiers()):
             self.resetSelection()
 
-        selected_blob = self.annotations.clickedBlob(x, y)
-        if selected_blob:
-            if selected_blob in self.selected_blobs:
-                self.removeFromSelectedList(selected_blob)
-            else:
-                self.addToSelectedList(selected_blob)
-                self.updateInfoPanel.emit(selected_blob)
-
-            self.newSelection.emit()
-
         selected_annpoint = self.annotations.clickedPoint(x,y)
         if selected_annpoint:
             if selected_annpoint in self.selected_annpoints:
@@ -885,11 +875,22 @@ class QtImageViewerPlus(QtImageViewer):
                 self.updateInfoPanel.emit(selected_annpoint)
 
             self.newSelectionPoint.emit()
+        else:
 
-        closest_sampling_area = self.closestSamplingArea(x, y)
-        if closest_sampling_area:
-            self.selected_sampling_area = closest_sampling_area
-            self.drawSamplingAreas()
+            closest_sampling_area = self.closestSamplingArea(x, y)
+            if closest_sampling_area:
+                self.selected_sampling_area = closest_sampling_area
+                self.drawSamplingAreas()
+            else:
+                selected_blob = self.annotations.clickedBlob(x, y)
+                if selected_blob:
+                    if selected_blob in self.selected_blobs:
+                        self.removeFromSelectedList(selected_blob)
+                    else:
+                        self.addToSelectedList(selected_blob)
+                        self.updateInfoPanel.emit(selected_blob)
+
+                    self.newSelection.emit()
 
         self.logfile.info("[SELECTION][DOUBLE-CLICK] Selection ends.")
 
@@ -1506,6 +1507,11 @@ class QtImageViewerPlus(QtImageViewer):
 
         if len(self.selected_annpoints) > 0:
             self.removePoints(self.selected_annpoints)
+
+        if self.selected_sampling_area:
+            self.image.sampling_areas.remove(self.selected_sampling_area)
+            self.selected_sampling_area = None
+            self.drawSamplingAreas()
 
         self.saveUndo()
 
