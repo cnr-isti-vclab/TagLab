@@ -15,12 +15,12 @@ class PlaceAnnPoint(Tool):
 
     def leftPressed(self, x, y, mods):
 
-        print('clicked')
 
         if mods == Qt.ShiftModifier:
             point = Point(x, y, "Empty", self.viewerplus.annotations.getFreePointId())
-            self.viewerplus.annotations.addPoint(point)
+            self.viewerplus.drawPointAnn(point)
             self.viewerplus.addBlob(point, True)
+            print('bu')
 
 
 

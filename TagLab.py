@@ -2596,9 +2596,7 @@ class TagLab(QMainWindow):
 
     @pyqtSlot()
     def placeAnnPoint(self):
-        """
-        Activate the "Deep Extreme" tool.
-        """
+
         self.setTool("PLACEANNPOINT")
 
     @pyqtSlot()
