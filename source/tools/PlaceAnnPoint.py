@@ -20,7 +20,6 @@ class PlaceAnnPoint(Tool):
             point = Point(x, y, "Empty", self.viewerplus.annotations.getFreePointId())
             self.viewerplus.drawPointAnn(point)
             self.viewerplus.addBlob(point, True)
-            print('bu')
-
+    
 
 
