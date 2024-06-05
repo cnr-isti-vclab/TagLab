@@ -37,6 +37,8 @@ from source.Label import Label
 
 from source.QtImageViewer import QtImageViewer
 
+from source.genutils import distance_point_AABB
+
 import math
 
 #note on ZValue:
@@ -129,6 +131,7 @@ class QtImageViewerPlus(QtImageViewer):
         self.layers = []
         self.selected_blobs = []
         self.selected_annpoints = []
+        self.selected_sampling_area = None
 
         self.taglab_dir = taglab_dir
         self.tools = Tools(self)
@@ -177,6 +180,8 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.sampling_area_pen = QPen(Qt.yellow, 2, Qt.DashLine)
         self.sampling_area_pen.setCosmetic(True)
+        self.sampling_area_pen_selected = QPen(Qt.white, 2)
+        self.sampling_area_pen_selected.setCosmetic(True)
 
         self.showCrossair = False
         self.mouseCoords = QPointF(0, 0)
@@ -556,12 +561,19 @@ class QtImageViewerPlus(QtImageViewer):
 
     def drawSamplingAreas(self):
 
+        # undraw the existing sampling area before re-draw them
+        self.undrawSamplingAreas()
+
         for sampling_area in self.image.sampling_areas:
             x = float(sampling_area[1])
             y = float(sampling_area[0])
             w = float(sampling_area[2])
             h = float(sampling_area[3])
-            rect_item = self.scene.addRect(x, y, w, h, self.sampling_area_pen)
+            if sampling_area == self.selected_sampling_area:
+                rect_item = self.scene.addRect(x, y, w, h, self.sampling_area_pen_selected)
+            else:
+                rect_item = self.scene.addRect(x, y, w, h, self.sampling_area_pen)
+
             self.sampling_rect_items.append(rect_item)
 
     def undrawSamplingAreas(self):
@@ -838,6 +850,12 @@ class QtImageViewerPlus(QtImageViewer):
     def selectOp(self, x, y):
         """
         Selection operation. Note that both the areas and the points are selected.
+
+        Note that if multiple objects are clicked one single object is selected according to the following priorities:
+
+        - sampling area + region -> sampling area
+        - region + point -> point
+        - region + point + sampling area -> point
         """
 
         self.logfile.info("[SELECTION][DOUBLE-CLICK] Selection starts..")
@@ -849,7 +867,6 @@ class QtImageViewerPlus(QtImageViewer):
             self.resetSelection()
 
         selected_blob = self.annotations.clickedBlob(x, y)
-
         if selected_blob:
             if selected_blob in self.selected_blobs:
                 self.removeFromSelectedList(selected_blob)
@@ -860,7 +877,6 @@ class QtImageViewerPlus(QtImageViewer):
             self.newSelection.emit()
 
         selected_annpoint = self.annotations.clickedPoint(x,y)
-
         if selected_annpoint:
             if selected_annpoint in self.selected_annpoints:
                 self.removeFromSelectedPointList(selected_annpoint)
@@ -870,7 +886,31 @@ class QtImageViewerPlus(QtImageViewer):
 
             self.newSelectionPoint.emit()
 
+        closest_sampling_area = self.closestSamplingArea(x, y)
+        if closest_sampling_area:
+            self.selected_sampling_area = closest_sampling_area
+            self.drawSamplingAreas()
+
         self.logfile.info("[SELECTION][DOUBLE-CLICK] Selection ends.")
+
+
+    def closestSamplingArea(self, x, y):
+        """
+        It returns the sampling area closest to the given point.
+        If the distance of the point is higher than a threshold None is returned.
+        """
+
+        dist_min = 1000000.0
+        for sampling_area in self.image.sampling_areas:
+            dist = distance_point_AABB(x, y, sampling_area)
+            if dist < dist_min:
+                dist_min = dist
+                SA_closest = sampling_area
+
+        if dist_min < 3.0:
+            return SA_closest
+        else:
+            return None
 
     def updateCellState(self, x, y, state):
 
@@ -1342,7 +1382,6 @@ class QtImageViewerPlus(QtImageViewer):
 
 
         for annpoint in self.selected_annpoints:
-
             if annpoint.cross1_gitem is not None:
                 annpoint.cross1_gitem.setPen(self.annpoints_pen)
                 annpoint.cross2_gitem.setPen(self.annpoints_pen)
@@ -1354,6 +1393,10 @@ class QtImageViewerPlus(QtImageViewer):
 
                 annpoint.id_item.setZValue(2)
                 annpoint.id_item.setOpacity(0.7)
+
+        if self.selected_sampling_area:
+            self.selected_sampling_area = None
+            self.drawSamplingAreas()
 
 
         self.selected_blobs.clear()
@@ -1462,6 +1505,10 @@ class QtImageViewerPlus(QtImageViewer):
 
         if len(self.selected_annpoints) > 0:
             self.removePoints(self.selected_annpoints)
+
+        if self.selected_sampling_area:
+            self.image.sampling_areas.
+            self.selected_sampling_area = None
 
         self.saveUndo()
 

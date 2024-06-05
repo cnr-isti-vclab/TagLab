@@ -57,7 +57,7 @@ class Image(object):
                         point.fromDict(data)
                         self.annotations.addPoint(point)
 
-        self.layers = []
+        self.layers = list()
         for layer_data in layers:
             layer = Layer(layer_data["type"])
             layer.name = layer_data["name"]
@@ -77,7 +77,9 @@ class Image(object):
         self.georef_filename = georef_filename  # image file (GeoTiff) contained the georeferencing information
         self.metadata = metadata  # this follows image_metadata_template, do we want to allow freedom to add custome values?
 
-        self.sampling_areas = sampling_areas
+        self.sampling_areas = list()
+        if sampling_areas:
+            self.sampling_areas = sampling_areas
 
         if grid:
             self.grid = Grid()

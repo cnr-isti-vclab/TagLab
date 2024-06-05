@@ -193,13 +193,16 @@ class Project(QObject):
                                          border=[200, 200, 200], visible=True)
 
         # compatibility with previous TagLab versions (working_area does not exist anymore)
+
+        self.images = list()
+
         for img in images:
             if img.get("working_area") is not None:
                 img.__delitem__("working_area")
 
-        self.images = list(map(lambda img: Image(**img), images))  # list of annotated images
+            self.images.append(Image(**img))
 
-        # dict of tables (DataFrame) of correspondences betweeen a source and a target image
+        # dict of tables (DataFrame) of correspondences between a source and a target image
 
         self.correspondences = {}
         if correspondences is not None:

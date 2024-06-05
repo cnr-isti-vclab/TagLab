@@ -421,3 +421,31 @@ def isfloat(txt):
         return True
     else:
         return False
+
+def distance_aux(p, lower, upper):
+
+  if p < lower:
+      return lower - p
+
+  if p > upper:
+      return p - upper
+
+  return min(p - lower, upper - p)
+
+def distance_point_AABB(x, y, bbox):
+    """
+    Distance between a point and an Axis-Aligned Bounding Box.
+    """
+
+    top = bbox[0]
+    left = bbox[1]
+    right = left + bbox[2]
+    bottom = top + bbox[3]
+
+    local_dx = distance_aux(x, left, right)
+    local_dy = distance_aux(y, top, bottom)
+
+    dist = min(local_dx, local_dy)
+
+    return dist
+
