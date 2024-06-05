@@ -1507,6 +1507,11 @@ class QtImageViewerPlus(QtImageViewer):
         if len(self.selected_annpoints) > 0:
             self.removePoints(self.selected_annpoints)
 
+        if self.selected_sampling_area:
+            self.image.sampling_areas.remove(self.selected_sampling_area)
+            self.selected_sampling_area = None
+            self.drawSamplingAreas()
+
         self.saveUndo()
 
     @pyqtSlot(str)
