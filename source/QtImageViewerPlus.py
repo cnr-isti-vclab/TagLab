@@ -1416,6 +1416,7 @@ class QtImageViewerPlus(QtImageViewer):
             self.drawPointAnn(blob_or_point)
             if selected:
                 self.addToSelectedPointList(blob_or_point, redraw=False)
+                self.project.addPoint(self.image,blob_or_point)
 
         else:
             self.undo_data.addBlob(blob_or_point)
@@ -1505,10 +1506,6 @@ class QtImageViewerPlus(QtImageViewer):
 
         if len(self.selected_annpoints) > 0:
             self.removePoints(self.selected_annpoints)
-
-        if self.selected_sampling_area:
-            self.image.sampling_areas.
-            self.selected_sampling_area = None
 
         self.saveUndo()
 
