@@ -457,9 +457,9 @@ class TagLab(QMainWindow):
         # LABELS PANEL
         self.labels_widget = QtTableLabel()
         self.default_dictionary = self.settings_widget.settings.value("default-dictionary",
-                                                defaultValue="dictionaries/scripps.json", type=str)
-        self.project.loadDictionary(self.default_dictionary)
-        self.labels_widget.setLabels(self.project, None)
+                                                                      defaultValue="dictionaries/scripps.json",
+                                                                      type=str)
+
 
         groupbox_style = "QGroupBox\
           {\

@@ -433,10 +433,10 @@ class QtPanelInfo(QTabWidget):
                         coralnet_conf[key] = ann.data[key]
 
                 for classname in list(coralnet_sugg.values()):
-                    # TODO
-                    #  It's possible that the user didn't create the mapped class in TagLab.
-                    #  We need generate a new color here, or we need to create the mapped class
-                    #  in the situation that it doesn't already exist. Not sure which is preferred.
+                    # If the class doesn't exist, it will be given
+                    # a white progres bar by default. If the User
+                    # selects that suggested class in the panel,
+                    # TagLab will auto create a new class.
                     if classname in self.labels:
                         color = str(self.labels[classname].fill)
                     else:
