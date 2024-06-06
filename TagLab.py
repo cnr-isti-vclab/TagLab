@@ -460,6 +460,9 @@ class TagLab(QMainWindow):
                                                                       defaultValue="dictionaries/scripps.json",
                                                                       type=str)
 
+        self.project.loadDictionary(os.path.join(self.taglab_dir, self.default_dictionary))
+        self.labels_widget.setLabels(self.project, None)
+
 
         groupbox_style = "QGroupBox\
           {\
