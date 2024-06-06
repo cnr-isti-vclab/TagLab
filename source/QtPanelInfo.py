@@ -30,14 +30,15 @@ class TableModel(QAbstractTableModel):
 
         if role == Qt.DecorationRole:
 
-            # PROBLEMA, LA PIXMAP ha una dimensione insensata e non resiza con la cella, in teoria viene più bellino perchè ha i bordi arrotondati
+            # PROBLEMA, LA PIXMAP ha una dimensione insensata e non resiza
+            # con la cella, in teoria viene più bellino perchè ha i bordi arrotondati
 
             if index.column() == 1:
                 value = value[1:-1]
                 value = value.split(",")
                 pxmap = QPixmap(150, 20)
                 bar_progress_color = QColor(int(value[0]), int(value[1]), int(value[2]))
-                percent = int(self._data.iloc[index.row(), 2])
+                percent = int(self._data.iloc[index.row(), 2] * 100)
                 border_radius = 1
                 bar_color = Qt.gray
                 painter = QPainter(pxmap)
@@ -61,7 +62,8 @@ class TableModel(QAbstractTableModel):
         if role == Qt.SizeHintRole and index.column() == 1:
             return QSize(150, 20)
 
-        # SECONDO METODO COLORO DIRETTAMENTE BACKGROUND CELLA MA MI SA CHE LO STILESHEET SOVRASCRIVE IL QCOLOR SENZA UN ITEM DELEGATE
+        # SECONDO METODO COLORO DIRETTAMENTE BACKGROUND CELLA MA MI SA
+        # CHE LO STILESHEET SOVRASCRIVE IL QCOLOR SENZA UN ITEM DELEGATE
 
         # if role == Qt.BackgroundRole:
         #
@@ -249,12 +251,17 @@ class QtPanelInfo(QTabWidget):
 
         layout = QGridLayout()
 
-        fields = {'id': 'Id:', 'class_name': 'Class:', 'genet': 'Genet:',
-                  'perimeter': 'Perimeter:', 'area': 'Area:', 'surface_area': 'Surf. area:'}
+        fields = {'id': 'Id:',
+                  'class_name': 'Class:',
+                  'genet': 'Genet:',
+                  'perimeter': 'Perimeter:',
+                  'area': 'Area:',
+                  'surface_area': 'Surf. area:'}
 
         self.fields = {}
         row = 0
         col = 0
+
         for field in fields:
             label = QLabel(fields[field])
             layout.addWidget(label, row, col)
@@ -439,7 +446,7 @@ class QtPanelInfo(QTabWidget):
 
                 self.sorted_coralnet_sugg = {"Class": list(coralnet_sugg.values()),
                                              "Color": coralnet_colors,
-                                             "Confidence": list(coralnet_conf.values())}
+                                             "Conf.": list(coralnet_conf.values())}
 
                 if len(self.sorted_coralnet_sugg) != 0:
                     sugg_table = QtTablePred()
