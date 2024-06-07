@@ -1086,7 +1086,7 @@ class Annotation(object):
 
         # Subset to get just the basename points
         points = points[points['Name'].str.contains(basename)]
-        assert len(points) > 0, f"No point annotations in found for '{image_name}'!"
+        assert len(points) > 0, f"No point annotations found for '{image_name}'!"
 
         # Pattern for finding tiles (if imported from CoralNet Toolbox)
         pattern = r'_tile(\d{4})_offx=(\d{5})_offy=(\d{5})\.(png|jpg)'

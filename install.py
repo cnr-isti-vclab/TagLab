@@ -236,6 +236,9 @@ install_requires = [
     'beautifulsoup4',
     'selenium',
     'webdriver_manager',
+
+    # SAM
+    'segment-anything',
 ]
 
 # if on windows, first install the msvc runtime

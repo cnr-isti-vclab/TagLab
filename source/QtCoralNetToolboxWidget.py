@@ -837,7 +837,7 @@ class QtCoralNetToolboxWidget(QWidget):
             # Use the "Machine suggestion N" as the original value to map from
             for column in df.columns:
                 if 'Machine suggestion' in column:
-                    # The mapped predictionsh
+                    # The mapped predictions
                     new_column_name = f"{column} (Mapped)"
                     df[new_column_name] = df[column].map(short_code_to_label.get)
 
@@ -853,9 +853,10 @@ class QtCoralNetToolboxWidget(QWidget):
 
         """
         try:
-            # Get the channel for the orthomosaic
-            channel = self.parent().activeviewer.image.getRGBChannel()
-            self.parent().activeviewer.annotations.importCoralNetCSVAnn(self.predictions_file, channel)
+            # Import the points
+            self.parent().activeviewer.annotations.importCoralNetCSVAnn(self.predictions_file,
+                                                                        self.parent().project,
+                                                                        self.parent().activeviewer.image)
             print("NOTE: Predictions imported successfully")
         except Exception as e:
             raise Exception("TagLab annotations could not be imported")

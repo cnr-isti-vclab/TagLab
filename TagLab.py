@@ -261,10 +261,10 @@ class TagLab(QMainWindow):
         layout_tools.setSpacing(0)
         layout_tools.addWidget(self.btnMove)
         layout_tools.addWidget(self.btnPoint)
-        layout_tools.addWidget(self.btnSamInteractive)
+        # layout_tools.addWidget(self.btnSamInteractive)
         layout_tools.addWidget(self.btnFourClicks)
         layout_tools.addWidget(self.btnRitm)
-        layout_tools.addWidget(self.btnSam)
+        # layout_tools.addWidget(self.btnSam)
         layout_tools.addWidget(self.btnFreehand)
         layout_tools.addWidget(self.btnAssign)
         #layout_tools.addWidget(self.btnWatershed)
@@ -457,9 +457,12 @@ class TagLab(QMainWindow):
         # LABELS PANEL
         self.labels_widget = QtTableLabel()
         self.default_dictionary = self.settings_widget.settings.value("default-dictionary",
-                                                defaultValue="dictionaries/scripps.json", type=str)
-        self.project.loadDictionary(self.default_dictionary)
+                                                                      defaultValue="dictionaries/scripps.json",
+                                                                      type=str)
+
+        self.project.loadDictionary(os.path.join(self.taglab_dir, self.default_dictionary))
         self.labels_widget.setLabels(self.project, None)
+
 
         groupbox_style = "QGroupBox\
           {\
@@ -4891,9 +4894,6 @@ class TagLab(QMainWindow):
 
             self.disableSplitScreen()
 
-            # Get the current image
-            channel = self.activeviewer.image.getRGBChannel()
-
             try:
                 QApplication.setOverrideCursor(Qt.WaitCursor)
 
@@ -4905,7 +4905,7 @@ class TagLab(QMainWindow):
                 box.exec()
 
             except Exception as e:
-                box.setText(f"File provided not in CoralNet format! {e}")
+                box.setText(f"Could not import annotations! {e}")
                 box.exec()
         else:
             box.setText("File path provided is not valid!")
