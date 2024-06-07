@@ -42,6 +42,7 @@ from skimage.segmentation import watershed
 from source.Blob import Blob
 from source.Point import Point
 import source.Mask as Mask
+from source.Label import Label
 from coraline.Coraline import segment, mutual
 
 
@@ -1059,12 +1060,16 @@ class Annotation(object):
     #
     #     self.table_needs_update = True
 
-    def importCoralNetCSVAnn(self, file_name, project, active_image):
+    def importCoralNetCSVAnn(self, file_name, labels, active_image):
         """
         Opens a CoralNet format CSV file, expecting at a minimum: Name, Row, Column, Label.
         Additional fields include the Machine confidence N (float), and Machine Suggestion N (str).
         If the CSV file contains TagLab exported Tiles, it will modify the coordinates accordingly.
         """
+
+        imported_points = list()
+
+        label_id = len(labels) + 1
 
         channel = active_image.getRGBChannel()
         # Get the image basename
@@ -1076,7 +1081,7 @@ class Annotation(object):
         height = channel.qimage.height()
 
         # Read in the csv file
-        points = pd.read_csv(file_name, sep=",", header=0)
+        points = pd.read_csv(file_name, sep=";", header=0)
         points = points.loc[:, ~points.columns.str.contains('^Unnamed')]
 
         # Check to see if the csv file has the expected columns
@@ -1165,7 +1170,15 @@ class Annotation(object):
                 # Update new point with correct data
                 point_ann.data.update(point_data)
                 point_ann.data.update(coralnet_data)
-                project.addPoint(active_image,point_ann)
+                imported_points.append(point_ann)
+
+                # update dictionary
+                label_info = labels.get(label)
+                if label_info is None:
+                    labels[label] = Label(label_id, name=label)
+                    label_id = label_id + 1
+
+        return imported_points
 
     def exportCoralNetCSVAnn(self, output_dir, channel, annotations, working_area):
         """
