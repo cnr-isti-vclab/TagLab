@@ -436,11 +436,12 @@ class QtSampleWidget(QWidget):
         else:
             self.radio_SA.setChecked(True)
             self.enableSAGroup()
-
             msgBox = QMessageBox(parent=self)
             msgBox.setWindowTitle("Sampling Settings")
-            msgBox.setText("The Working Area is not defined. If you want to sample a Working Area you need to previously define it.")
+            msgBox.setText("This project lacks a Working Area. Please set one and then reopen the Sampling Settings.")
             msgBox.exec()
+            self.close()
+
 
 
     @pyqtSlot()
