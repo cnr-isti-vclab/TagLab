@@ -19,8 +19,8 @@ from source.tools.FourClicks import FourClicks
 from source.tools.Match import Match
 from source.tools.SelectArea import SelectArea
 from source.tools.Ritm import Ritm
-from source.tools.Sam import Sam
-from source.tools.SamInteractive import SamInteractive
+#from source.tools.Sam import Sam
+#from source.tools.SamInteractive import SamInteractive
 
 from source.tools.PlaceAnnPoint import PlaceAnnPoint
 
@@ -60,9 +60,9 @@ class Tools(object):
             "PLACEANNPOINT": PlaceAnnPoint(self.viewerplus),
             "MATCH": Match(self.viewerplus),
             "SELECTAREA": SelectArea(self.viewerplus, self.pick_points),
-            "SAM": Sam(self.viewerplus),
-            "SAMINTERACTIVE": SamInteractive(self.viewerplus, self.corrective_points),
-            "RITM": Ritm(self.viewerplus, self.corrective_points)
+            "RITM": Ritm(self.viewerplus, self.corrective_points),
+            #"SAMINTERACTIVE": SamInteractive(self.viewerplus, self.corrective_points),
+            # "SAM": Sam(self.viewerplus)
         }
         # connect infomessage, log, blobinfo for   all tools with self.infoWidget.setInfoMessage(
 
@@ -79,11 +79,11 @@ class Tools(object):
 
         self.scene.invalidate(self.scene.sceneRect())
 
-        self.tools["SAMINTERACTIVE"].reset()
         self.tools["FOURCLICKS"].reset()
         self.tools["RITM"].reset()
-        self.tools["SAM"].reset()
         self.tools["SELECTAREA"].reset()
+        #self.tools["SAM"].reset()
+        #self.tools["SAMINTERACTIVE"].reset()
 
         if self.tool == "AUTOCLASS":
             self.corals_classifier.stopProcessing()
@@ -100,8 +100,6 @@ class Tools(object):
         if self.viewerplus.bricksWidget is not None:
             self.viewerplus.bricksWidget.close()
         self.viewerplus.bricksWidget = None
-
-    #logfile, annotations, selecttion, activelabelbname, undo
 
     def leftPressed(self, x, y, mods = None):
         if self.tool == "MOVE":

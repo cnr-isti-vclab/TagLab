@@ -261,10 +261,10 @@ class TagLab(QMainWindow):
         layout_tools.setSpacing(0)
         layout_tools.addWidget(self.btnMove)
         layout_tools.addWidget(self.btnPoint)
-        layout_tools.addWidget(self.btnSamInteractive)
+        #layout_tools.addWidget(self.btnSamInteractive)
         layout_tools.addWidget(self.btnFourClicks)
         layout_tools.addWidget(self.btnRitm)
-        layout_tools.addWidget(self.btnSam)
+        #layout_tools.addWidget(self.btnSam)
         layout_tools.addWidget(self.btnFreehand)
         layout_tools.addWidget(self.btnAssign)
         #layout_tools.addWidget(self.btnWatershed)
@@ -339,11 +339,12 @@ class TagLab(QMainWindow):
 
         self.viewerplus.newSelectionPoint.connect(self.showPointOnTable)
 
-        self.viewerplus.tools.tools["SAM"].samEnded.connect(self.resetSam)
-        self.viewerplus2.tools.tools["SAM"].samEnded.connect(self.resetSam)
+        # SAM-related tool connections
+        #self.viewerplus.tools.tools["SAM"].samEnded.connect(self.resetSam)
+        #self.viewerplus2.tools.tools["SAM"].samEnded.connect(self.resetSam)
 
 
-        #last activated viewerplus: redirect here context menu commands and keyboard commands
+        # last activated viewerplus: redirect here context menu commands and keyboard commands
         self.activeviewer = None
         self.inactiveviewer = None
 
@@ -2086,7 +2087,7 @@ class TagLab(QMainWindow):
     @pyqtSlot()
     def showMatch(self):
 
-        if self.activeviewer is None or self.inactiveviewer is None:
+        if self.activeviewer is None:
             return
 
         if self.activeviewer.tools.tool != "MATCH":
@@ -2466,9 +2467,9 @@ class TagLab(QMainWindow):
             "RULER"        : ["Ruler"        , self.btnRuler],
             "FOURCLICKS"   : ["4-click"      , self.btnFourClicks],
             "MATCH"        : ["Match"        , self.btnMatch],
-            "SAM"          : ["Sam", self.btnSam],
-            "SAMINTERACTIVE": ["Saminteractive", self.btnSamInteractive],
             "RITM"         : ["Ritm"         , self.btnRitm]
+            #"SAM"            : ["Sam", self.btnSam],
+            #"SAMINTERACTIVE" : ["Saminteractive", self.btnSamInteractive]
         }
         newtool = tools[tool]
         self.resetToolbar()
@@ -2488,8 +2489,6 @@ class TagLab(QMainWindow):
             self.datadock.show()
         else:
             self.labelsdock.show()
-
-
 
     @pyqtSlot()
     def move(self):
