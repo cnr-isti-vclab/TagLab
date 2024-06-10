@@ -490,9 +490,6 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.border_enabled = True
 
-
-
-
     def disableBorders(self):
 
         for blob in self.annotations.seg_blobs:

@@ -3366,8 +3366,9 @@ class TagLab(QMainWindow):
                     self.sample_point_widget.btnCancel.clicked.connect(self.disableAreaSelection)
                     select_area_tool = self.activeviewer.tools.tools["SELECTAREA"]
                     select_area_tool.setAreaStyle("SAMPLING_AREA")
+
                     genutils.disconnectSignal(select_area_tool, "released", select_area_tool.released)
-                    select_area_tool.released.connect(self.disableAreaSelection)
+                    # when the mouse is released the area selection should not be disabled otherwise the selected area is reset.
 
                     genutils.disconnectSignal(select_area_tool, "rectChanged", select_area_tool.rectChanged)
                     select_area_tool.rectChanged[int, int, int, int].connect(self.sample_point_widget.updateSamplingArea)

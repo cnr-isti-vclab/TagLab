@@ -18,6 +18,7 @@ class SelectArea(Tool):
         self.scene = viewerplus.scene
         self.selected_area_rect = None
         self.released_flag = True
+        self.area_style = None
 
         self.image_width = 0
         self.image_height = 0
@@ -43,6 +44,7 @@ class SelectArea(Tool):
     def leftReleased(self, x, y):
 
         self.released_flag = True
+        self.drawArea()
         self.released.emit()
 
     def mouseMove(self, x, y):
@@ -115,21 +117,23 @@ class SelectArea(Tool):
         self.pick_points.reset()
         self.pick_points.points.append(np.array([x, y]))
         self.pick_points.points.append(np.array([x + w, y + h]))
-        self.selected_area_rect = None
+
         self.drawArea()
 
     def drawArea(self):
 
-        x, y, w, h = self.fromPointsToArea()
+        if self.area_style is not None:
 
-        if self.selected_area_rect is None:
-            self.selected_area_rect = self.scene.addRect(x, y, w, h, self.area_style)
-            self.selected_area_rect.setZValue(6)
-            self.selected_area_rect.setVisible(True)
+            x, y, w, h = self.fromPointsToArea()
 
-            self.pick_points.markers.append(self.selected_area_rect)
-        else:
-            self.selected_area_rect.setRect(x, y, w, h)
+            if self.selected_area_rect is None:
+                self.selected_area_rect = self.scene.addRect(x, y, w, h, self.area_style)
+                self.selected_area_rect.setZValue(6)
+                self.selected_area_rect.setVisible(True)
+
+                self.pick_points.markers.append(self.selected_area_rect)
+            else:
+                self.selected_area_rect.setRect(x, y, w, h)
 
 
 
