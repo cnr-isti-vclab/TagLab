@@ -23,7 +23,6 @@ class Point(object):
         self.cross2_gitem = None
         self.ellipse_gitem = None
 
-
     def toDict(self):
         """
         Get the point information as a dictionary.
@@ -52,5 +51,3 @@ class Point(object):
 
     def save(self):
         return self.toDict()
-
-

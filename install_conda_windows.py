@@ -189,6 +189,9 @@ install_requires = [
     'beautifulsoup4',
     'selenium',
     'webdriver_manager',
+
+    # SAM
+    'segment-anything',
 ]
 
 if python_sub_v < 9:
