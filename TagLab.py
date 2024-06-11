@@ -4885,11 +4885,8 @@ class TagLab(QMainWindow):
         file_name, _ = QFileDialog.getOpenFileName(self, "Open A .CSV File", self.taglab_dir, filters)
 
         if os.path.exists(file_name):
-
+            # Turn off split screen
             self.disableSplitScreen()
-
-            # Get the current image
-            channel = self.activeviewer.image.getRGBChannel()
 
             try:
                 QApplication.setOverrideCursor(Qt.WaitCursor)
@@ -4901,18 +4898,23 @@ class TagLab(QMainWindow):
                 points_imported = self.activeviewer.annotations.importCoralNetCSVAnn(file_name,
                                                                                      self.project.labels,
                                                                                      self.activeviewer.image)
-
+                # Get the active image
                 active_image = self.activeviewer.image
 
+                # Check that there were some imported points, add
                 if len(points_imported) > 0:
                     for point in points_imported:
                         self.project.addPoint(active_image, point, notify=False)
 
+                # Regardless, update the table as some points might have changed.
                 active_image.annotations.table_needs_update = True
                 self.labels_widget.setLabels(self.project, active_image)
                 self.data_panel.setTable(active_image)
+<<<<<<< HEAD
 
 >>>>>>> 894f712 (API confidence as ints; Annotation label update from Empty)
+=======
+>>>>>>> 9060888 (removed storage and use of '(Mapped)' CNet label)
                 self.activeviewer.drawAllPointsAnn()
 
                 box.setText(f"Point annotations imported successfully!")

@@ -1116,7 +1116,7 @@ class Annotation(object):
 
                 # Check if the key contains confidence scores
                 if 'Machine confidence' in key:
-                    r[key] = int(r[key])
+                    point_data[key] = int(r[key])
 
                 # Add the key-value pair to the dictionary
                 point_data[key] = r[key]

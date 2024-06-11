@@ -838,8 +838,7 @@ class QtCoralNetToolboxWidget(QWidget):
             for column in df.columns:
                 if 'Machine suggestion' in column:
                     # The mapped predictions
-                    new_column_name = f"{column} (Mapped)"
-                    df[new_column_name] = df[column].map(short_code_to_label.get)
+                    df[column] = df[column].map(short_code_to_label.get)
 
             # Save the updated file
             df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
