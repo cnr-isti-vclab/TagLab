@@ -175,7 +175,7 @@ class QtImageViewerPlus(QtImageViewer):
         self.markers_brush = QBrush(Qt.cyan)
         self.markers_brush.setStyle(Qt.SolidPattern)
 
-        self.working_area_pen = QPen(Qt.white, 3, Qt.DashLine)
+        self.working_area_pen = QPen(Qt.green, 3, Qt.DashLine)
         self.working_area_pen.setCosmetic(True)
 
         self.sampling_area_pen = QPen(Qt.yellow, 2, Qt.DashLine)
@@ -209,6 +209,9 @@ class QtImageViewerPlus(QtImageViewer):
 
         # sampling areas
         self.sampling_rect_items = []
+
+        # tools - additional initialization
+        self.tools.tools["SELECTAREA"].setWorkingAreaStyle(self.working_area_pen)
 
     def setProject(self, project):
 

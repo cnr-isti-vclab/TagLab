@@ -1081,7 +1081,7 @@ class Annotation(object):
         height = channel.qimage.height()
 
         # Read in the csv file
-        points = pd.read_csv(file_name, sep=";", header=0)
+        points = pd.read_csv(file_name, sep=",", header=0)
         points = points.loc[:, ~points.columns.str.contains('^Unnamed')]
 
         # Check to see if the csv file has the expected columns

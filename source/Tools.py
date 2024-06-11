@@ -64,7 +64,6 @@ class Tools(object):
             #"SAMINTERACTIVE": SamInteractive(self.viewerplus, self.corrective_points),
             # "SAM": Sam(self.viewerplus)
         }
-        # connect infomessage, log, blobinfo for   all tools with self.infoWidget.setInfoMessage(
 
     def setTool(self, tool):
         self.resetTools()

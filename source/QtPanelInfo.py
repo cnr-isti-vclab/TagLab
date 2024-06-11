@@ -223,6 +223,8 @@ class QtPanelInfo(QTabWidget):
                            "border-top-right-radius: 4px;"
                            "min-width: 8ex; padding: 2px;}")
 
+        self.setMinimumWidth(500)
+
     def setActiveImage(self, img, project):
         self.project = project
         self.active_image = img

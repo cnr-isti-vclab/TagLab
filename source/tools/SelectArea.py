@@ -18,6 +18,8 @@ class SelectArea(Tool):
         self.scene = viewerplus.scene
         self.selected_area_rect = None
         self.released_flag = True
+        self.working_area_style = QPen(Qt.green, 3, Qt.DashLine)
+        self.working_area_style.setCosmetic(True)
         self.area_style = None
 
         self.image_width = 0
@@ -99,7 +101,7 @@ class SelectArea(Tool):
     def setAreaStyle(self, style_name):
 
         if style_name == "WORKING":
-            self.area_style = self.working_area_style
+            self.area_style = QPen(Qt.green, 3, Qt.DashLine)
         elif style_name == "EXPORT_DATASET":
             self.area_style = QPen(Qt.magenta, 3, Qt.DashLine)
         elif style_name == "SAMPLING_AREA":
@@ -114,7 +116,9 @@ class SelectArea(Tool):
     @pyqtSlot(int, int, int, int)
     def setSelectionRectangle(self, x, y, w, h):
 
-        self.pick_points.reset()
+        self.pick_points.reset()          # markers are reset
+        self.selected_area_rect = None    # this is one of the marker, it is needed to ssign it None to be re-initialized
+
         self.pick_points.points.append(np.array([x, y]))
         self.pick_points.points.append(np.array([x + w, y + h]))
 

@@ -244,10 +244,12 @@ class QtWorkingAreaWidget(QWidget):
         """
 
         """
+        self.blockSignals(True)
         self.edit_X.setText(str(x))
         self.edit_Y.setText(str(y))
         self.edit_W.setText(str(w))
         self.edit_H.setText(str(h))
+        self.blockSignals(False)
 
     def deleteWorkingAreaValues(self):
         """
