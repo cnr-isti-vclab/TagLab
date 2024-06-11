@@ -1081,7 +1081,11 @@ class Annotation(object):
         height = channel.qimage.height()
 
         # Read in the csv file
+<<<<<<< HEAD
         points = pd.read_csv(file_name, sep=",", header=0)
+=======
+        points = pd.read_csv(file_name, sep=r'[;,]', header=0, engine='python')
+>>>>>>> 894f712 (API confidence as ints; Annotation label update from Empty)
         points = points.loc[:, ~points.columns.str.contains('^Unnamed')]
 
         # Check to see if the csv file has the expected columns
@@ -1102,28 +1106,36 @@ class Annotation(object):
             pidx = None
             note = ""
             point_data = {}
-            coralnet_data = {}
 
-            # Includes these columns, not just the machine predictions.
-            # All information will be available to user, but needs to
-            # be shown to them via UI, it's just stored in the point.
-            # Also, apparently point.data doesn't persist between sessions...
-            # TODO TagLab needs a way to visualize the predictions
+            # Iterate through all keys in the dictionary 'r'
             for key in r.keys():
-                if "Machine" in key:
-                    coralnet_data[key] = r[key]
-                elif key in ['Name', 'Id', 'Class Name', 'Row', 'Column', 'Label', 'Note', 'TagLab_PID']:
-                    point_data[key] = r[key]
+
+                # If there isn't a value associated with the column, skip
+                if pd.isna(r[key]):
+                    continue
+
+                # Check if the key contains confidence scores
+                if 'Machine confidence' in key:
+                    r[key] = int(r[key])
+
+                # Add the key-value pair to the dictionary
+                point_data[key] = r[key]
 
             # Modify values as needed
             name = str(point_data['Name'])
             coordx = int(point_data['Column'])
             coordy = int(point_data['Row'])
 
+            # Get the label from the df
             if 'Label' in point_data:
                 label = point_data['Label']
             else:
                 label = 'Empty'
+
+            # Update the label if there's machine suggestion
+            # and the previous label was already 'Empty'
+            if label == 'Empty' and 'Machine suggestion 1' in point_data.keys():
+                label = point_data['Machine suggestion 1']
 
             if 'Note' in point_data:
                 note = point_data['Note']
@@ -1131,6 +1143,7 @@ class Annotation(object):
 
             # This point was in TagLab previously
             if "TagLab_PID" in point_data:
+
                 # Search for the offset
                 pidx = point_data['TagLab_PID']
                 match = re.search(pattern, name)
@@ -1160,7 +1173,6 @@ class Annotation(object):
                 # If the label name changed, update it
                 point_ann.class_name = label
                 point_ann.data.update(point_data)
-                point_ann.data.update(coralnet_data)
                 self.annpoints[idx] = point_ann
             else:
                 # Create a new point, don't add any additional information
@@ -1169,7 +1181,6 @@ class Annotation(object):
                 point_data['Id'] = point_data['TagLab_ID'] = point_ann.id
                 # Update new point with correct data
                 point_ann.data.update(point_data)
-                point_ann.data.update(coralnet_data)
                 imported_points.append(point_ann)
 
                 # update dictionary

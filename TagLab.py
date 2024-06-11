@@ -4319,7 +4319,6 @@ class TagLab(QMainWindow):
 
     @pyqtSlot()
     def closeExportWidget(self):
-
         self.export_widget = None
         self.setTool("MOVE")
 
@@ -4327,7 +4326,6 @@ class TagLab(QMainWindow):
         """
         Import points annotations from Coralnet.
         """
-
         if self.activeviewer:
             if not self.activeviewer.image:
                 box = QMessageBox()
@@ -4350,7 +4348,6 @@ class TagLab(QMainWindow):
         """
         Export point annotations such that can be uploaded on CoralNet.
         """
-
         if self.activeviewer:
             if not self.activeviewer.image:
                 box = QMessageBox()
@@ -4898,7 +4895,24 @@ class TagLab(QMainWindow):
                 QApplication.setOverrideCursor(Qt.WaitCursor)
 
                 # Open the file, and draw all the points on viewer
+<<<<<<< HEAD
                 self.activeviewer.annotations.importCoralNetCSVAnn(file_name, self.project, self.activeviewer.image)
+=======
+                points_imported = self.activeviewer.annotations.importCoralNetCSVAnn(file_name,
+                                                                                     self.project.labels,
+                                                                                     self.activeviewer.image)
+
+                active_image = self.activeviewer.image
+
+                if len(points_imported) > 0:
+                    for point in points_imported:
+                        self.project.addPoint(active_image, point, notify=False)
+
+                active_image.annotations.table_needs_update = True
+                self.labels_widget.setLabels(self.project, active_image)
+                self.data_panel.setTable(active_image)
+
+>>>>>>> 894f712 (API confidence as ints; Annotation label update from Empty)
                 self.activeviewer.drawAllPointsAnn()
 
                 box.setText(f"Point annotations imported successfully!")
