@@ -38,7 +38,7 @@ class TableModel(QAbstractTableModel):
                 value = value.split(",")
                 pxmap = QPixmap(150, 20)
                 bar_progress_color = QColor(int(value[0]), int(value[1]), int(value[2]))
-                percent = int(self._data.iloc[index.row(), 2] * 100)
+                percent = int(self._data.iloc[index.row(), 2])
                 border_radius = 1
                 bar_color = Qt.gray
                 painter = QPainter(pxmap)

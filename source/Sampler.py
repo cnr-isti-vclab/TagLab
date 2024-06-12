@@ -31,8 +31,6 @@ class Sampler(object):
         ystart = top + self.offset
         yend = top + h - self.offset
 
-        sampling_area = [ystart, xstart, w, h]
-        self.sampling_areas.append(sampling_area)
 
         if self.method == 'Grid':
 
