@@ -1137,7 +1137,7 @@ class Annotation(object):
             # by checking to see if it lands on the same coordinate as an existing.
             current_point = np.array([coordx, coordy])
 
-            if np.any((existing_points == current_point).all(axis=1)):
+            if current_point in existing_points:
                 # Get the index of the exiting point that has matching coordinates
                 p_index = np.where((existing_points == current_point).all(axis=1))[0][0]
                 point_ann = self.annpoints[p_index]
@@ -1339,6 +1339,8 @@ class Annotation(object):
 
             # Get all the information from point
             point_dict = point.toDict()
+
+            # Get the coordinates
             x = point_dict['X']
             y = point_dict['Y']
 
@@ -1350,9 +1352,12 @@ class Annotation(object):
                 # Tile space coordinates
                 point_dict['Row'] = y - yoff
                 point_dict['Column'] = x - xoff
-                # Overwrite old data with new data
+
+                # Overwrite old point data with new data dict, remove 'Data' dict
                 point_data = point.data.copy()
                 point_data.update(point_dict)
+                del point_data['Data']
+                del point_data['Id']
 
                 # Add dict to list
                 ann_points_in_box.append(point_data)

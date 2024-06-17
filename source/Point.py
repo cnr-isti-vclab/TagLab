@@ -16,8 +16,8 @@ class Point(object):
         self.class_name = classname
         self.note = ""
         self.data = {}
-        self.coordx= coordx
-        self.coordy= coordy
+        self.coordx = coordx
+        self.coordy = coordy
 
         self.cross1_gitem = None
         self.cross2_gitem = None
