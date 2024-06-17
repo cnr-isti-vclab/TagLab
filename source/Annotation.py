@@ -1066,15 +1066,7 @@ class Annotation(object):
         height = channel.qimage.height()
 
         # Read in the csv file
-<<<<<<< HEAD
-<<<<<<< HEAD
-        points = pd.read_csv(file_name, sep=",", header=0)
-=======
         points = pd.read_csv(file_name, sep=r'[;,]', header=0, engine='python')
->>>>>>> 894f712 (API confidence as ints; Annotation label update from Empty)
-=======
-        points = pd.read_csv(file_name, sep=",", header=0)
->>>>>>> 3fde90c (syncing with taglab:devel)
         points = points.loc[:, ~points.columns.str.contains('^Unnamed')]
 
         # Check to see if the csv file has the expected columns
@@ -1146,6 +1138,7 @@ class Annotation(object):
             current_point = np.array([coordx, coordy])
 
             if np.any((existing_points == current_point).all(axis=1)):
+                # Get the index of the exiting point that has matching coordinates
                 p_index = np.where((existing_points == current_point).all(axis=1))[0][0]
                 point_ann = self.annpoints[p_index]
                 # If the label name changed, update it

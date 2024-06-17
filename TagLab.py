@@ -4892,9 +4892,6 @@ class TagLab(QMainWindow):
                 QApplication.setOverrideCursor(Qt.WaitCursor)
 
                 # Open the file, and draw all the points on viewer
-<<<<<<< HEAD
-                self.activeviewer.annotations.importCoralNetCSVAnn(file_name, self.project, self.activeviewer.image)
-=======
                 points_imported = self.activeviewer.annotations.importCoralNetCSVAnn(file_name,
                                                                                      self.project.labels,
                                                                                      self.activeviewer.image)
@@ -4910,11 +4907,6 @@ class TagLab(QMainWindow):
                 active_image.annotations.table_needs_update = True
                 self.labels_widget.setLabels(self.project, active_image)
                 self.data_panel.setTable(active_image)
-<<<<<<< HEAD
-
->>>>>>> 894f712 (API confidence as ints; Annotation label update from Empty)
-=======
->>>>>>> 9060888 (removed storage and use of '(Mapped)' CNet label)
                 self.activeviewer.drawAllPointsAnn()
 
                 box.setText(f"Point annotations imported successfully!")

@@ -31,10 +31,6 @@ class Sampler(object):
         ystart = top + self.offset
         yend = top + h - self.offset
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 3fde90c (syncing with taglab:devel)
         if self.method == 'Grid':
 
             area_cell = ((w - (2 * self.offset)) * (h-(2 * self.offset))) / self.number
