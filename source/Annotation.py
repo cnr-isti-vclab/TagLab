@@ -1067,10 +1067,14 @@ class Annotation(object):
 
         # Read in the csv file
 <<<<<<< HEAD
+<<<<<<< HEAD
         points = pd.read_csv(file_name, sep=",", header=0)
 =======
         points = pd.read_csv(file_name, sep=r'[;,]', header=0, engine='python')
 >>>>>>> 894f712 (API confidence as ints; Annotation label update from Empty)
+=======
+        points = pd.read_csv(file_name, sep=",", header=0)
+>>>>>>> 3fde90c (syncing with taglab:devel)
         points = points.loc[:, ~points.columns.str.contains('^Unnamed')]
 
         # Check to see if the csv file has the expected columns

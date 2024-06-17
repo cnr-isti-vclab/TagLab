@@ -138,9 +138,3 @@ class SelectArea(Tool):
                 self.pick_points.markers.append(self.selected_area_rect)
             else:
                 self.selected_area_rect.setRect(x, y, w, h)
-
-
-
-
-
-
