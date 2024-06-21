@@ -534,31 +534,56 @@ class Correspondences(object):
                 area_partially_dead_dead += area_dead
                 area_proportion += ((100.0*area_dead) / (area_dead + area_live))
 
+                txt = ""
                 for index, row in matches.iterrows():
-                    partially_dead_data.append([row['Blob1'], row['Blob2'], row['Area1'], row['Area2'], row['Split\Fuse']])
+                    txt = row['Blob2']
+                    txt += ","
+
+                txt = txt[:-1]
+
+                partially_dead_data.append([row['Blob1'], txt, row['Area1'], area_live, area_dead])
+
 
             if area_dead < 0.00001:
                 # case L -> L
                 live += 1
                 area_pocillopora_live += area_live
 
+                tag = ""
+                if area_live > row['Area1']:
+                    tag = "Growth"
+                else:
+                    tag = "Shrink"
+
+                txt = ""
                 for index, row in matches.iterrows():
-                    live_data.append([row['Blob1'], row['Blob2'], row['Area1'], row['Area2'], row['Split\Fuse']])
+                    txt = row['Blob2']
+                    txt += ","
+
+                txt = txt[:-1]
+
+                live_data.append([row['Blob1'], txt, row['Area1'], area_live, tag])
 
             if area_live < 0.00001:
                 # case L -> D
                 totally_dead += 1
                 area_pocillopora_dead += area_dead
 
+                txt = ""
                 for index, row in matches.iterrows():
-                    dead_data.append([row['Blob1'], row['Blob2'], row['Area1'], row['Area2'], row['Split\Fuse']])
+                    txt = row['Blob2']
+                    txt += ","
+
+                txt = txt[:-1]
+
+                dead_data.append([row['Blob1'], txt, row['Area1'], area_dead])
 
 
         area_proportion = area_proportion / partially_dead
 
-        data1 = pd.DataFrame(data = live_data, columns=['Blob1', 'Blob2', 'Area1', 'Area2', 'Split\Fuse'])
-        data2 = pd.DataFrame(data = partially_dead_data, columns=['Blob1', 'Blob2', 'Area1', 'Area2', 'Split\Fuse'])
-        data3 = pd.DataFrame(data = dead_data, columns=['Blob1', 'Blob2', 'Area1', 'Area2', 'Split\Fuse'])
+        data1 = pd.DataFrame(data = live_data, columns=['Blob1', 'Blob2', 'Area1', 'Area2', 'Growth/Shrink'])
+        data2 = pd.DataFrame(data = partially_dead_data, columns=['Blob1', 'Blob2', 'Area1', 'Area2 (live)', 'Area2 (dead)'])
+        data3 = pd.DataFrame(data = dead_data, columns=['Blob1', 'Blob2', 'Area1', 'Area2'])
 
         data1.to_csv("2018-2019-plot16-live.csv", index=False)
         data2.to_csv("2018-2019-plot16-partially_dead.csv", index=False)
@@ -608,16 +633,21 @@ class Correspondences(object):
 
         total_area2 = area_pocillopora_live + area_partially_dead_live + area_partially_dead_dead + area_pocillopora_dead + area_born + area_disappear + area_discarded + area_tocheck
 
-        print("Pocillopora live             (L -> L)        : {:d} ({:.2f} cm^2)".format(live, area_pocillopora_live))
-        print("Pocillopora partially dead   (L -> PD)       : {:d} (live {:.2f} cm^2) ; dead {:.2f} cm^2) ; % dead {:.2f}".format(partially_dead, area_partially_dead_live,
+        print("Pocillopora live            (L -> L)         : {:d} ({:.2f} cm^2)".format(live, area_pocillopora_live))
+        print("Pocillopora partially dead  (L -> PD)        : {:d} (live {:.2f} cm^2) ; dead {:.2f} cm^2) ; % dead {:.2f}".format(partially_dead, area_partially_dead_live,
                                                                                area_partially_dead_dead, area_proportion))
-        print("Pocillopora totally dead     (L -> D)        : {:d} ({:.2f} cm^2)".format(totally_dead, area_pocillopora_dead))
-        print("Pocillopora born             (∅ -> L)        : {:d} ({:.2f} cm^2)".format(born, area_born))
+        print("Pocillopora totally dead    (L -> D)         : {:d} ({:.2f} cm^2)".format(totally_dead, area_pocillopora_dead))
+        print("Pocillopora born            (∅ -> L)         : {:d} ({:.2f} cm^2)".format(born, area_born))
         print("")
 
-        print("NO MATCH (live or dead)      (D,L → ∅)       : {:d} ({:.2f} cm^2)".format(disappear, area_disappear))
-        print("DISCARDED                    (D -> D, ∅)     : {:d} ({:.2f} cm^2)".format(discarded, area_discarded))
-        print("TO CHECK                     (∅ → D, D -> L) : {:d} ({:.2f} cm^2)".format(tocheck, area_tocheck))
+        print("NO MATCH (live or dead)     (D,L → ∅)        : {:d} ({:.2f} cm^2)".format(disappear, area_disappear))
+
+        # note that a dead coral that disappear is still considered a dead coral, this is reasonable in some situations,
+        # like when algae cover it but are not annotated, or in other situations where the coral disappear
+        # in general we have to pay attention to this to ensure to have reliable results (!)
+        print("DEAD REMAINING DEAD         (D -> D, D -> ∅) : {:d} ({:.2f} cm^2)".format(discarded, area_discarded))
+
+        print("TO CHECK                    (∅ → D, D -> L)  : {:d} ({:.2f} cm^2)".format(tocheck, area_tocheck))
         print("")
 
         print("Total area                                    : {:.2f} cm^2".format(total_area2))
