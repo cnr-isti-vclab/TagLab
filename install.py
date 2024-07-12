@@ -224,6 +224,7 @@ install_requires = [
     'albumentations',
     'shapely',
     'pycocotools',
+    'qhoptim',
 
     # CoralNet Toolbox
     'Requests',
