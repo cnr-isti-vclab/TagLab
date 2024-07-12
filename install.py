@@ -9,15 +9,48 @@ if osused != 'Linux' and osused != 'Windows' and osused != 'Darwin':
     raise Exception("Operative System not supported")
 
 # check python version
-if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and (sys.version_info[1] < 8 or sys.version_info[1] > 10)):
+if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and (sys.version_info[1] < 10)):
     raise Exception("Python " + sys.version_info[0] + "." + sys.version_info[1] + " not supported. Please see https://github.com/cnr-isti-vclab/TagLab/wiki/Install-TagLab")
 
 # manage thorch
-something_wrong_with_nvcc = False
+
+# define a dictionary that, for each nvcc version, contains the corresponding torch and torchvision version
+# the key is the nvcc version, the value is a list of arguments to be passed to pip install
+
+torch_cuda_versions = ['12.1', '11.8', '11.6']
+
+torch_install_dict = None
+
+win_torch_install_dict = {
+    '11.6': ['torch==1.13.1+cu116', 'torchvision==0.14.1+cu116', '--extra-index-url' + 'https://download.pytorch.org/whl/cu116'],
+    '11.8': ['torch==2.3.1', 'torchvision==0.18.1', '--index-url', 'https://download.pytorch.org/whl/cu118'],
+    '12.1': ['torch==2.3.1', 'torchvision==0.18.1', '--index-url', 'https://download.pytorch.org/whl/cu121'],
+    'cpu' : ['torch==2.3.1', 'torchvision==0.18.1'],
+}
+
+lin_torch_install_dict = {
+    '11.6': ['torch==1.13.1+cu116', 'torchvision==0.14.1+cu116', '--extra-index-url' + 'https://download.pytorch.org/whl/cu116'],
+    '11.8': ['torch==2.3.1', 'torchvision==0.18.1', '--index-url', 'https://download.pytorch.org/whl/cu118'],
+    '12.1': ['torch==2.3.1', 'torchvision==0.18.1'],
+    'cpu' : ['torch==2.3.1', 'torchvision==0.18.1', '--index-url', 'https://download.pytorch.org/whl/cpu'],
+}
+
+mac_torch_install_dict = {
+    'cpu' : ['torch==2.3.1', 'torchvision==0.18.1'],
+}
+
+if osused == 'Windows':
+    torch_install_dict = win_torch_install_dict
+elif osused == 'Linux':
+    torch_install_dict = lin_torch_install_dict
+elif osused == 'Darwin':
+    torch_install_dict = mac_torch_install_dict
+
+something_wrong_with_cuda = False
 flag_install_pythorch_cpu = False
 nvcc_version = ''
-torch_package = 'torch'
-torchvision_package = 'torchvision'
+torch_package = ''
+torchvision_package = ''
 torch_extra_argument1 = ''
 torch_extra_argument2 = ''
 
@@ -25,151 +58,112 @@ torch_extra_argument2 = ''
 if len(sys.argv)==2 and sys.argv[1]=='cpu':
     flag_install_pythorch_cpu = True
 
-# get nvcc version
+
+# get cuda version
+cuda_version = ''
 
 if osused == 'Darwin':
     flag_install_pythorch_cpu = True
     print('NVCC not supported on MacOS. Installing cpu version automatically...')
 elif flag_install_pythorch_cpu == False:
-    result = subprocess.getstatusoutput('nvcc --version')
+    result = subprocess.getstatusoutput('nvidia-smi')
     output = result[1]
     rc = result[0]
     if rc == 0:
-        pos = output.find('release')
-        cont = True
+        pos = output.find('CUDA Version:')
         if pos >= 0:
-            pos += 8
-            nvcc_version = output[pos:pos+4]
-            print('Found NVCC version: ' + nvcc_version)
+            pos += 13
+            cuda_version = output[pos:pos+6]
+            print('Found CUDA version: ' + cuda_version)
         else:
-            raise Exception('Could not read NVCC version.\nInstallation aborted.')
+            raise Exception('Could not read CUDA version.\nInstallation aborted.')
     else:
-        print('Impossible to run "nvcc --version" command. CUDA seems to be not installed.')
-        something_wrong_with_nvcc = True # remember that we had issues on finding nvcc
+        print('Impossible to run "nvidia-smi" command. CUDA seems to be not installed.')
+        something_wrong_with_cuda = True # remember that we had issues on finding nvcc
 
+    # get the float number of the cuda version
+    n_cuda_version = float(cuda_version)
 
-    # get nvcc version
-    if '9.2' in nvcc_version:
-        nvcc_version = '9.2'
-        print('Torch 1.7.1 for CUDA 9.2')
-        torch_package += '==1.7.1+cu92'
-        torchvision_package += '==0.8.2+cu92'
-        torch_extra_argument1 = '-f'
-        torch_extra_argument2 = 'https://download.pytorch.org/whl/torch_stable.html'
-    elif nvcc_version == '10.1':
-        print('Torch 1.7.1 for CUDA 10.1')
-        torch_package += '==1.7.1+cu101'
-        torchvision_package += '==0.8.2+cu101'
-        torch_extra_argument1 = '-f'
-        torch_extra_argument2 = 'https://download.pytorch.org/whl/torch_stable.html'
-    elif nvcc_version == '10.2':
-        print('Torch 1.11.0 for CUDA 10.2')
-        torch_package += '==1.11.0+cu102'
-        torchvision_package += '==0.12.0+cu102'
-        torch_extra_argument1 = '--extra-index-url'
-        torch_extra_argument2 = 'https://download.pytorch.org/whl/cu102'
-    elif '11.0' in nvcc_version:
-        print('Torch 1.7.1 for CUDA 11.0')
-        torch_package += '==1.7.1+cu110'
-        torchvision_package += '0.8.2+cu110'
-        torch_extra_argument1 = '-f'
-        torch_extra_argument2 = 'https://download.pytorch.org/whl/torch_stable.html'
-    elif '11.1' in nvcc_version:
-        print('Torch 1.8.0 for CUDA 11.1')
-        torch_package += '==1.8.0+cu111'
-        torchvision_package += '==0.9.0+cu111'
-        torch_extra_argument1 = '-f'
-        torch_extra_argument2 = 'https://download.pytorch.org/whl/torch_stable.html'
-    elif '11.3' in nvcc_version:
-        print('Torch 1.12.1 for CUDA 11.3')
-        torch_package += '==1.12.1+cu113'
-        torchvision_package += '==0.13.1+cu113'
-        torch_extra_argument1 = '--extra-index-url'
-        torch_extra_argument2 = 'https://download.pytorch.org/whl/cu113'
-    elif '11.6' in nvcc_version:
-        print('Torch 1.13.1 for CUDA 11.6')
-        torch_package += '==1.13.1+cu116'
-        torchvision_package += '==0.14.1+cu116'
-        torch_extra_argument1 = '--extra-index-url'
-        torch_extra_argument2 = 'https://download.pytorch.org/whl/cu116'
-    elif '11.7' in nvcc_version:
-        print('Torch 1.13.1 for CUDA 11.7')
-        torch_package += '==1.13.1+cu117'
-        torchvision_package += '==0.14.1+cu117'
-        torch_extra_argument1 = '--extra-index-url'
-        torch_extra_argument2 = 'https://download.pytorch.org/whl/cu117'
-    elif something_wrong_with_nvcc==False:
-        # nvcc is installed, but some version that is not supported by torch
-        print('nvcc version installed not supported by pytorch!!')
-        something_wrong_with_nvcc = True # remember that we had issues on finding nvcc
+    torch_cuda_version = ''
+
+    # for each version of cuda in torch_cuda_versions
+    for version in torch_cuda_versions:
+        if n_cuda_version >= float(version):
+            print ('Using Torch cuda version: ' + version)
+            torch_cuda_version = version
+            break
+
+    if torch_cuda_version == '':
+        print('No supported version of Torch for CUDA ' + cuda_version + '.')
+        something_wrong_with_cuda = True
+
+    # set the torch and torchvision packages
+    if flag_install_pythorch_cpu == False:
+        torch_package = torch_install_dict[torch_cuda_version][0]
+        torchvision_package = torch_install_dict[torch_cuda_version][1]
+        if len(torch_install_dict[torch_cuda_version]) > 2:
+            torch_extra_argument1 = torch_install_dict[torch_cuda_version][2]
+            torch_extra_argument2 = torch_install_dict[torch_cuda_version][3]
 
     # if the user tried to run the installer but there were issues on finding a supported
-    if something_wrong_with_nvcc == True and flag_install_pythorch_cpu == False:
-        ans = input('Something is wrong with NVCC. Do you want to install the CPU version of pythorch? [Y/n]')
+    if something_wrong_with_cuda == True and flag_install_pythorch_cpu == False:
+        ans = input('Something is wrong with Cuda. Do you want to install the CPU version of pythorch? [Y/n]')
         if ans == "Y":
             flag_install_pythorch_cpu = True
         else:
-            raise Exception('Installation aborted. Install a proper NVCC version or set the pythorch CPU version.')
+            raise Exception('Installation aborted. Install a proper Cuda version or set the pythorch CPU version.')
 
 
 # somewhere before, this flag has been set to True and the user choose to install the cpu torch version
 if flag_install_pythorch_cpu==True:
     print('Torch will be installed in its CPU version.')
-    if osused != 'Darwin': # for macos, the DEFAULT is cpu, therefore we don't need the extra arguments
-        torch_extra_argument1 = '--extra-index-url'
-        torch_extra_argument2 = 'https://download.pytorch.org/whl/cpu'
+    torch_package = torch_install_dict['cpu'][0]
+    torchvision_package = torch_install_dict['cpu'][1]
+    if len(torch_install_dict['cpu']) > 2:
+        torch_extra_argument1 = torch_install_dict['cpu'][2]
+        torch_extra_argument2 = torch_install_dict['cpu'][3]
 
 # manage gdal
 gdal_version = ''
 
-if osused == 'Linux':
+if osused == 'Linux' or osused == 'Darwin':
     result = subprocess.getstatusoutput('gdal-config --version')
     output = result[1]
     rc = result[0]
     if rc != 0:
-        print('Trying to install libgdal-dev...')
-        from subprocess import STDOUT, check_call
-        import os
-        try:
-            check_call(['sudo', 'apt-get', 'install', '-y', 'libgdal-dev'],
-                       stdout=open(os.devnull, 'wb'), stderr=STDOUT)
-        except:
-            raise Exception('Impossible to install libgdal-dev. Please install manually libgdal-dev before running '
-                            'this script.\nInstallation aborted.')
-        result = subprocess.getstatusoutput('gdal-config --version')
-        output = result[1]
-        rc = result[0]
-    if rc == 0:
-        gdal_version = output
-        print('GDAL version installed: ' + output)
-    else:
-        raise Exception('Impossible to access to gdal-config binary.\nInstallation aborted.')
-    print('Trying to install libxcb-xinerama0...')
-    from subprocess import STDOUT, check_call
-    import os
-    try:
-        check_call(['sudo', 'apt-get', 'install', '-y', 'libxcb-xinerama0'],
+        if osused == 'Linux':
+            print('Trying to install libxcb-xinerama0...')
+            from subprocess import STDOUT, check_call
+            import os
+            try:
+                check_call(['sudo', 'apt-get', 'install', '-y', 'libxcb-xinerama0'],
                    stdout=open(os.devnull, 'wb'), stderr=STDOUT)
-    except:
-        print('Impossible to install libxcb-xinerama0. If TagLab does not start, please install manually libxcb-xinerama0.')
+            except:
+                print('Impossible to install libxcb-xinerama0. If TagLab does not start, please install manually libxcb-xinerama0.')
 
-elif osused == 'Darwin':
-    result = subprocess.getstatusoutput('gdal-config --version')
-    output = result[1]
-    rc = result[0]
-    if rc != 0:
-        print('Trying to install gdal...')
-        from subprocess import STDOUT, check_call
-        import os
-        try:
-            check_call(['brew', 'install', 'gdal'],
-                       stdout=open(os.devnull, 'wb'), stderr=STDOUT)
-        except:
-            raise Exception('Impossible to install gdal through homebrew. Please install manually gdal before running '
-                            'this script.\nInstallation aborted.')
-        result = subprocess.getstatusoutput('gdal-config --version')
-        output = result[1]
-        rc = result[0]
+            print('Trying to install gdal...')
+            try:
+                check_call(['sudo', 'apt-get', 'install', '-y', 'libgdal-dev'],
+                        stdout=open(os.devnull, 'wb'), stderr=STDOUT)
+            except:
+                raise Exception('Impossible to install libgdal-dev. Please install manually libgdal-dev before running '
+                                'this script.\nInstallation aborted.')
+            result = subprocess.getstatusoutput('gdal-config --version')
+            output = result[1]
+            rc = result[0]
+        elif osused == 'Darwin':
+            print('Trying to install gdal...')
+            from subprocess import STDOUT, check_call
+            import os
+            try:
+                check_call(['brew', 'install', 'gdal'],
+                        stdout=open(os.devnull, 'wb'), stderr=STDOUT)
+            except:
+                raise Exception('Impossible to install gdal through homebrew. Please install manually gdal before running '
+                                'this script.\nInstallation aborted.')
+            result = subprocess.getstatusoutput('gdal-config --version')
+            output = result[1]
+            rc = result[0]
     if rc == 0:
         gdal_version = output
         print('GDAL version installed: ' + output)
@@ -264,17 +258,17 @@ if osused != 'Windows':
     subprocess.check_call([sys.executable, "-m", "pip", "install", gdal_package])
     subprocess.check_call([sys.executable, "-m", "pip", "install", 'rasterio'])
 else:
-    base_url = 'http://taglab.isti.cnr.it/wheels/'
+    base_url = 'https://github.com/cgohlke/geospatial-wheels/releases/download/v2024.2.18/' # GDAL-3.8.4-cp310-cp310-win32.whl
     pythonversion = str(sys.version_info[0]) + str(sys.version_info[1])
     # compute rasterio and gdal urls download
-    rasterio_win_version = '1.2.10'
-    gdal_win_version = '3.4.3'
+    rasterio_win_version = '1.3.9'
+    gdal_win_version = '3.8.4'
     filename_gdal = 'gdal-' + gdal_win_version + '-cp' + pythonversion + '-cp' + pythonversion
     filename_rasterio = 'rasterio-' + rasterio_win_version +'-cp' + pythonversion + '-cp' + pythonversion
     filename_gdal += '-win_amd64.whl'
     filename_rasterio += '-win_amd64.whl'
-    base_url_gdal = base_url + 'gdal/' + filename_gdal
-    base_url_rastetio = base_url + 'rasterio/' + filename_rasterio
+    base_url_gdal = base_url + filename_gdal
+    base_url_rastetio = base_url + filename_rasterio
 
     print('URL GDAL: ' + base_url_gdal)
 
