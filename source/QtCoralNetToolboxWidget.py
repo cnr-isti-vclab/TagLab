@@ -767,7 +767,7 @@ class QtCoralNetToolboxWidget(QWidget):
             assert len(points) > 0, "No points found in file"
 
             # Remove excess, unnecessary information
-            COLUMNS = ["Id", "X", "Y", "Class", "Note", "Name", "Label", "Row", "Column", "TagLab_PID"]
+            COLUMNS = ["Id", "X", "Y", "Class", "Note", "Name", "Label", "Row", "Column"]
             points = points[[col for col in points.columns if col in COLUMNS]]
 
             # Convert list of names to a list
@@ -838,8 +838,7 @@ class QtCoralNetToolboxWidget(QWidget):
             for column in df.columns:
                 if 'Machine suggestion' in column:
                     # The mapped predictions
-                    new_column_name = f"{column} (Mapped)"
-                    df[new_column_name] = df[column].map(short_code_to_label.get)
+                    df[column] = df[column].map(short_code_to_label.get)
 
             # Save the updated file
             df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
@@ -853,10 +852,13 @@ class QtCoralNetToolboxWidget(QWidget):
 
         """
         try:
-            # Import the points
-            self.parent().activeviewer.annotations.importCoralNetCSVAnn(self.predictions_file,
-                                                                        self.parent().project,
-                                                                        self.parent().activeviewer.image)
+            # Import the points, with project labels and active_image
+            labels = self.parent().project.labels
+            activate_image = self.parent().activeviewer
+
+            self.parent().activeviewer.annotations.importCoralNetCSVAnn(file_name=self.predictions_file,
+                                                                        labels=labels,
+                                                                        activate_image=activate_image)
             print("NOTE: Predictions imported successfully")
         except Exception as e:
             raise Exception("TagLab annotations could not be imported")

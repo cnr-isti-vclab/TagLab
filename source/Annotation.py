@@ -1039,26 +1039,9 @@ class Annotation(object):
         # Result
         return np.array([int(top), int(left), int(width) + 1, int(height) + 1])
 
-
-    # from here, everything is about annotation point not Blob (a.k.a annotation regions) anymore
-
     # ------------------
     # Point Annotations
     # ------------------
-
-    # def setPointClass(self, annpoint, class_name):
-    #     """
-    #
-    #     """
-    #     if annpoint.class_name == class_name:
-    #         return
-    #     else:
-    #         old_class_name = annpoint.class_name
-    #         annpoint.class_name = class_name
-    #         # notify that the class name of 'point' has changed
-    #         self.pointClassChanged.emit(old_class_name, annpoint)
-    #
-    #     self.table_needs_update = True
 
     def importCoralNetCSVAnn(self, file_name, labels, active_image):
         """
@@ -1066,22 +1049,24 @@ class Annotation(object):
         Additional fields include the Machine confidence N (float), and Machine Suggestion N (str).
         If the CSV file contains TagLab exported Tiles, it will modify the coordinates accordingly.
         """
-
-        imported_points = list()
-
+        # To store the points being imported
+        imported_points = []
         label_id = len(labels) + 1
 
+        # Get locations of all points currently in image
+        existing_points = np.array([[p.coordx, p.coordy] for p in self.annpoints])
+
+        # Get the channel of the current image
         channel = active_image.getRGBChannel()
         # Get the image basename
         _, image_name = os.path.split(channel.filename)
         basename = os.path.basename(image_name).split(".")[0]
-
         # Get the dimensions
         width = channel.qimage.width()
         height = channel.qimage.height()
 
         # Read in the csv file
-        points = pd.read_csv(file_name, sep=",", header=0)
+        points = pd.read_csv(file_name, sep=r'[;,]', header=0, engine='python')
         points = points.loc[:, ~points.columns.str.contains('^Unnamed')]
 
         # Check to see if the csv file has the expected columns
@@ -1099,80 +1084,77 @@ class Annotation(object):
         # Loop through the dataframe
         for i, r in points.iterrows():
 
-            pidx = None
-            note = ""
             point_data = {}
-            coralnet_data = {}
 
-            # Includes these columns, not just the machine predictions.
-            # All information will be available to user, but needs to
-            # be shown to them via UI, it's just stored in the point.
-            # Also, apparently point.data doesn't persist between sessions...
-            # TODO TagLab needs a way to visualize the predictions
-            for key in r.keys():
-                if "Machine" in key:
-                    coralnet_data[key] = r[key]
-                elif key in ['Name', 'Id', 'Class Name', 'Row', 'Column', 'Label', 'Note', 'TagLab_PID']:
-                    point_data[key] = r[key]
+            # Iterate through all keys in the dictionary
+            for k, v in r.items():
+                # If there isn't a value associated with the field, skip
+                if pd.isna(v) or pd.isnull(v):
+                    continue
+                # Check if the key contains confidence scores,
+                # if so, convert to an integer value for display.
+                if 'Machine confidence' in k:
+                    v = int(v)
+                # Add the key-value pair to the dictionary
+                point_data[k] = v
 
             # Modify values as needed
             name = str(point_data['Name'])
             coordx = int(point_data['Column'])
             coordy = int(point_data['Row'])
+            label = point_data['Label'] if 'Label' in point_data else 'Empty'
 
-            if 'Label' in point_data:
-                label = point_data['Label']
-            else:
-                label = 'Empty'
+            # Update the label if there's machine suggestion
+            # and the previous label was already 'Empty'
+            if label == 'Empty' and 'Machine suggestion 1' in point_data.keys():
+                label = point_data['Machine suggestion 1']
 
-            if 'Note' in point_data:
-                note = point_data['Note']
-                note = note if type(note) == str else ""
+            # Is this orthomosaic tiled?
+            # See if the pattern exists in the image name
+            match = re.search(pattern, name)
 
-            # This point was in TagLab previously
-            if "TagLab_PID" in point_data:
-                # Search for the offset
-                pidx = point_data['TagLab_PID']
-                match = re.search(pattern, name)
-
-                if match:
-                    # Get the tile coordinates
-                    offx = int(match.group(2))
-                    offy = int(match.group(3))
-                    # Adjust to ortho coordinates
-                    coordx += offx
-                    coordy += offy
+            if match:  # then update coordinates
+                coordx += int(match.group(2))
+                coordy += int(match.group(3))
 
             # If the coordinates don't fall within the image, don't add
             if coordx < 0 or coordx > width or coordy < 0 or coordy > height:
                 continue
 
+            # Get the note information, if any
+            if 'Note' in point_data:
+                note = point_data['Note']
+            else:
+                note = ""
+
             point_data['Name'] = image_name
             point_data['Column'] = coordx
             point_data['Row'] = coordy
-            point_data['Note'] = note
-            point_data['Label'] = point_data['Class'] = label
+            point_data['Note'] = note if type(note) == str else ""
+            point_data['Label'] = label
 
-            # Look for an existing point
-            if pidx in [a.id for a in self.annpoints]:
-                idx = [a.id for a in self.annpoints].index(pidx)
-                point_ann = self.annpoints[idx]
+            # Finally, check to see if the current point already exists in TagLab
+            # by checking to see if it lands on the same coordinate as an existing.
+            current_point = np.array([coordx, coordy])
+
+            if current_point in existing_points:
+                # Get the index of the exiting point that has matching coordinates
+                p_index = np.where((existing_points == current_point).all(axis=1))[0][0]
+                point_ann = self.annpoints[p_index]
                 # If the label name changed, update it
                 point_ann.class_name = label
+                # Update data attribute
                 point_ann.data.update(point_data)
-                point_ann.data.update(coralnet_data)
-                self.annpoints[idx] = point_ann
+                self.annpoints[p_index] = point_ann
             else:
-                # Create a new point, don't add any additional information
+                # Create a new point
                 point_ann = Point(coordx, coordy, label, self.getFreePointId())
-                # Make sure not to carry over incorrect data to a new point
-                point_data['Id'] = point_data['TagLab_ID'] = point_ann.id
-                # Update new point with correct data
+                # Store point data in the point data attribute
                 point_ann.data.update(point_data)
-                point_ann.data.update(coralnet_data)
+                # Add to the list of imported points
                 imported_points.append(point_ann)
 
-                # update dictionary
+                # Update dictionary
                 label_info = labels.get(label)
                 if label_info is None:
                     labels[label] = Label(label_id, name=label)
@@ -1216,15 +1198,12 @@ class Annotation(object):
 
             # If inside the box, add to subset
             if left <= x <= right and top <= y <= bottom:
-                # Add the additional attributes
-                point_dict['Label'] = point.class_name
-                point_dict['Row'] = y
-                point_dict['Column'] = x
-                # Overwrite old data with new data
-                point_data = point.data.copy()
-                point_data.update(point_dict)
+                point_data = point.data
+                # Update the attributes
+                point_data['Label'] = point.class_name
+                point_data['Row'] = y
+                point_data['Column'] = x
                 point_data['Name'] = os.path.basename(image_name)
-                point_data['TagLab_PID'] = point_data['Id']
                 # Add to list of points to export
                 points.append(point_data)
 
@@ -1360,6 +1339,8 @@ class Annotation(object):
 
             # Get all the information from point
             point_dict = point.toDict()
+
+            # Get the coordinates
             x = point_dict['X']
             y = point_dict['Y']
 
@@ -1371,10 +1352,12 @@ class Annotation(object):
                 # Tile space coordinates
                 point_dict['Row'] = y - yoff
                 point_dict['Column'] = x - xoff
-                # Overwrite old data with new data
+
+                # Overwrite old point data with new data dict, remove 'Data' dict
                 point_data = point.data.copy()
                 point_data.update(point_dict)
-                point_data['TagLab_PID'] = point_data['Id']
+                del point_data['Data']
+                del point_data['Id']
 
                 # Add dict to list
                 ann_points_in_box.append(point_data)

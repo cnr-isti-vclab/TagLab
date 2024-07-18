@@ -210,7 +210,15 @@ def convert_to_csv(status, image_names):
                 p['Column'] = point['column']
 
                 for index, classification in enumerate(point['classifications']):
-                    p['Machine confidence ' + str(index + 1)] = classification['score']
+                    # CoralNet outputs scores from the browser as ints [0 - 100],
+                    # but outputs the scores from the API as floats [0 - ]; here
+                    # we convert back to [0 - 100] to match the browser.
+                    classification_score = classification['score']
+
+                    if classification_score < 1 and type(classification_score) == float:
+                        classification_score = int(classification_score * 100)
+
+                    p['Machine confidence ' + str(index + 1)] = classification_score
                     p['Machine suggestion ' + str(index + 1)] = classification['label_code']
 
                 model_predictions_list.append(p)

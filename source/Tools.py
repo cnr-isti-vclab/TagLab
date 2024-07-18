@@ -128,8 +128,3 @@ class Tools(object):
         if self.tool == "MOVE":
             return
         self.tools[self.tool].apply()
-
-
-
-
-

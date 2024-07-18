@@ -31,7 +31,6 @@ class Sampler(object):
         ystart = top + self.offset
         yend = top + h - self.offset
 
-
         if self.method == 'Grid':
 
             area_cell = ((w - (2 * self.offset)) * (h-(2 * self.offset))) / self.number
@@ -165,4 +164,3 @@ class Sampler(object):
         """
         self.sampling_areas = []
         self.points = []
-
