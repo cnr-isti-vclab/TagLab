@@ -61,7 +61,7 @@ class QtCrackWidget(QWidget):
         self.sliderTolerance.setMinimumWidth(SLIDER_WIDTH)
         self.sliderTolerance.setMinimum(1)
         self.sliderTolerance.setMaximum(100)
-        self.sliderTolerance.setValue(self.tolerance)
+        self.sliderTolerance.setValue(int(self.tolerance))
         self.sliderTolerance.setTickInterval(5)
         self.sliderTolerance.setAutoFillBackground(True)
         self.sliderTolerance.valueChanged.connect(self.sliderToleranceChanged)

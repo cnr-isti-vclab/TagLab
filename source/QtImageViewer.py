@@ -129,8 +129,8 @@ class QtImageViewer(QGraphicsView):
         if not self.isVisible():
             return
         self.blockSignals(True)
-        self.horizontalScrollBar().setValue(posx)
-        self.verticalScrollBar().setValue(posy)
+        self.horizontalScrollBar().setValue(int(posx))
+        self.verticalScrollBar().setValue(int(posy))
         self.zoom_factor = zoomfactor * self.px_to_mm
         self.updateViewer()
         self.blockSignals(False)

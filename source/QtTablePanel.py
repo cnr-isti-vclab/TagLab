@@ -270,7 +270,7 @@ class QtTablePanel(QWidget):
         if img == self.active_image: # if the signal arrives from another image that is not connected to this panel it is ignored
 
             for i, row in self.data.iterrows():
-                if row[0] == newblob.id:
+                if row["Id"] == newblob.id:
                     scale_factor = self.active_image.pixelSize()
                     self.data.loc[i, 'Area'] = round(newblob.area * (scale_factor) * (scale_factor) / 100, 2)
                     self.data.loc[i, 'Class'] = newblob.class_name
@@ -283,7 +283,7 @@ class QtTablePanel(QWidget):
         if img == self.active_image:  # if the signal arrives from another image that is not connected to this panel it is ignored
 
             for i, row in self.data.iterrows():
-                if row[0] == newblob.id:
+                if row["Id"] == newblob.id:
                     self.data.loc[i, 'Class'] = newblob.class_name
 
             self.data_table.update()
@@ -294,7 +294,7 @@ class QtTablePanel(QWidget):
         if img == self.active_image:  # if the signal arrives from another image that is not connected to this panel it is ignored
 
             for i, row in self.data.iterrows():
-                if row[0] == newpoint.id:
+                if row["Id"] == newpoint.id:
                     self.data.loc[i, 'Class'] = newpoint.class_name
 
             self.data_table.update()

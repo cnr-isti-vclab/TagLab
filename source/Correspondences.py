@@ -61,7 +61,7 @@ class Correspondences(object):
             blob2 = self.target.annotations.blobById(id2)
 
             if blob1 is None and blob2 is None:
-                print("BOOM")
+                print("SOMETHING WRONG HAPPENED!! (blob1=None blob2=None)")
 
             # WHAT ??
             #self.data.loc[index, 'Class'] = blob1.class_name if blob1 is not None else blob2.class_name

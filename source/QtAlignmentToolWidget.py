@@ -945,7 +945,7 @@ class QtAlignmentToolWidget(QWidget):
         self.xSlider.setMinimum(-256)
         self.xSlider.setMaximum(+256)
         self.xSlider.setTickInterval(1)
-        self.xSlider.setValue(self.T[0])
+        self.xSlider.setValue(int(self.T[0]))
         self.xSlider.setMinimumWidth(50)
         self.xSlider.setAutoFillBackground(True)
         self.xSlider.valueChanged.connect(self.xOffsetChanges)
@@ -958,7 +958,7 @@ class QtAlignmentToolWidget(QWidget):
         self.ySlider.setMinimum(-256)
         self.ySlider.setMaximum(+256)
         self.ySlider.setTickInterval(1)
-        self.ySlider.setValue(self.T[1])
+        self.ySlider.setValue(int(self.T[1]))
         self.ySlider.setMinimumWidth(50)
         self.ySlider.setAutoFillBackground(True)
         self.ySlider.valueChanged.connect(self.yOffsetChanges)
@@ -989,7 +989,7 @@ class QtAlignmentToolWidget(QWidget):
         self.rSlider.setMinimum(-180 * QtAlignmentToolWidget.ROT_PRECISION)
         self.rSlider.setMaximum(180 * QtAlignmentToolWidget.ROT_PRECISION)
         self.rSlider.setTickInterval(1)
-        self.rSlider.setValue(self.R)
+        self.rSlider.setValue(int(self.R))
         self.rSlider.setMinimumWidth(50)
         self.rSlider.setAutoFillBackground(True)
         self.rSlider.valueChanged.connect(self.rotationAngleChanges)
@@ -1420,7 +1420,7 @@ class QtAlignmentToolWidget(QWidget):
         Callback called when the x value of the offset changes by +1.
         """
         # Forward
-        self.xSlider.setValue(self.T[0] + 1)
+        self.xSlider.setValue(int(self.T[0] + 1))
 
     @pyqtSlot()
     def onXValueDecremented(self) -> None:
@@ -1428,7 +1428,7 @@ class QtAlignmentToolWidget(QWidget):
         Callback called when the x value of the offset changes by -1.
         """
         # Forward
-        self.xSlider.setValue(self.T[0] - 1)
+        self.xSlider.setValue(int(self.T[0] - 1))
 
     @pyqtSlot(int)
     def xOffsetChanges(self, value: int) -> None:
@@ -1450,7 +1450,7 @@ class QtAlignmentToolWidget(QWidget):
         Callback called when the y value of the offset changes by +1.
         """
         # Forward
-        self.ySlider.setValue(self.T[1] + 1)
+        self.ySlider.setValue(int(self.T[1] + 1))
 
     @pyqtSlot()
     def onYValueDecremented(self) -> None:
@@ -1458,7 +1458,7 @@ class QtAlignmentToolWidget(QWidget):
         Callback called when the y value of the offset changes by -1.
         """
         # Forward
-        self.ySlider.setValue(self.T[1] - 1)
+        self.ySlider.setValue(int(self.T[1] - 1))
 
     @pyqtSlot(int)
     def yOffsetChanges(self, value: int) -> None:
@@ -1480,7 +1480,7 @@ class QtAlignmentToolWidget(QWidget):
         Callback called when the value of the rotation changes by +1.
         """
         # Forward
-        self.rSlider.setValue(self.R + 1)
+        self.rSlider.setValue(int(self.R + 1))
 
     @pyqtSlot()
     def onRotValueDecremented(self) -> None:
@@ -1488,7 +1488,7 @@ class QtAlignmentToolWidget(QWidget):
         Callback called when the value of the rotation changes by -1.
         """
         # Forward
-        self.rSlider.setValue(self.R - 1)
+        self.rSlider.setValue(int(self.R - 1))
 
     # [SCALE] @pyqtSlot()
     # [SCALE] def onScaleValueIncremented(self) -> None:
@@ -1622,9 +1622,9 @@ class QtAlignmentToolWidget(QWidget):
         Callback called when the user reset transformations (to improve quality of life in the manual pipeline)
         """
         # Reset transformation values
-        self.rSlider.setValue(self.svdRes[0])
-        self.xSlider.setValue(self.svdRes[1][0])
-        self.ySlider.setValue(self.svdRes[1][1])
+        self.rSlider.setValue(int(self.svdRes[0]))
+        self.xSlider.setValue(int(self.svdRes[1][0]))
+        self.ySlider.setValue(int(self.svdRes[1][1]))
         # [SCALE] self.sSlider.setValue(self.svdRes[2])
         # Redraw preview
         self.__updatePreview()
@@ -2647,9 +2647,9 @@ All markers must be valid to proceed.
 
         # Update UI
         # [SCALE] self.sSlider.blockSignals(True)
-        self.xSlider.setValue(self.T[0])
-        self.ySlider.setValue(self.T[1])
-        self.rSlider.setValue(self.R)
+        self.xSlider.setValue(int(self.T[0]))
+        self.ySlider.setValue(int(self.T[1]))
+        self.rSlider.setValue(int(self.R))
         # [SCALE] self.sSlider.setMinimum(round(self.S * (1.0 - QtAlignmentToolWidget.SCALE_RANGE)))
         # [SCALE] self.sSlider.setMaximum(round(self.S * (1.0 + QtAlignmentToolWidget.SCALE_RANGE)))
         # [SCALE] self.sSlider.setValue(self.S)
