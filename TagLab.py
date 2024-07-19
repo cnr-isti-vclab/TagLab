@@ -459,7 +459,16 @@ class TagLab(QMainWindow):
         self.labels_widget = QtTableLabel()
         self.default_dictionary = self.settings_widget.settings.value("default-dictionary",
                                                 defaultValue="dictionaries/scripps.json", type=str)
-        self.project.loadDictionary(self.default_dictionary)
+
+
+        if self.project.loadDictionary(self.default_dictionary) is False:
+            # problem with the default dictionary, we will use the scripp's one
+            self.default_dictionary = "dictionaries/scripps.json"
+            if self.project.loadDictionary(self.default_dictionary) is False:
+                print("The current default dictionary cannot be found. If your project defines a custom dictionary "
+                      "inside it go ahead, otherwise download it using install.py.")
+
+
         self.labels_widget.setLabels(self.project, None)
 
         groupbox_style = "QGroupBox\

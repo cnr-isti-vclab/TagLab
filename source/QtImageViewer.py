@@ -244,8 +244,8 @@ class QtImageViewer(QGraphicsView):
         posx = min(posx, self.img_map.width() - w / 2)
         posy = min(posy, self.img_map.height() - h / 2)
 
-        self.horizontalScrollBar().setValue(posx * zf)
-        self.verticalScrollBar().setValue(posy * zf)
+        self.horizontalScrollBar().setValue(int(posx * zf))
+        self.verticalScrollBar().setValue(int(posy * zf))
 
     def mouseMoveEvent(self, event):
         self.mouseMove.emit(event)

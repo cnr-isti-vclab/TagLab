@@ -300,23 +300,32 @@ class Project(QObject):
         f.close()
 
     def loadDictionary(self, filename):
+        """
+        It returns True if the dictionary is opened correctly, otherwise it returns False.
+        """
 
-        f = open(filename)
-        dictionary = json.load(f)
-        f.close()
+        try:
+            f = open(filename)
+            dictionary = json.load(f)
+            f.close()
 
-        self.dictionary_name = dictionary['Name']
-        self.dictionary_description = dictionary['Description']
-        labels = dictionary['Labels']
+            self.dictionary_name = dictionary['Name']
+            self.dictionary_description = dictionary['Description']
+            labels = dictionary['Labels']
 
-        self.labels = {}
-        for label in labels:
-            id = label['id']
-            name = label['name']
-            fill = label['fill']
-            border = label['border']
-            description = label['description']
-            self.labels[name] = Label(id=id, name=name, fill=fill, border=border)
+            self.labels = {}
+            for label in labels:
+                id = label['id']
+                name = label['name']
+                fill = label['fill']
+                border = label['border']
+                description = label['description']
+                self.labels[name] = Label(id=id, name=name, fill=fill, border=border)
+
+        except:
+            return False
+
+        return True
 
     def setDictionaryFromListOfLabels(self, labels):
         """

@@ -22,8 +22,8 @@
 """
 
 import os.path
-from PyQt5.QtCore import Qt, QPoint, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
-from PyQt5.QtGui import QImage, QPixmap, QPainter, QPainterPath, QPen, QColor, QFont, QBrush
+from PyQt5.QtCore import Qt, QPoint, QPointF, QRectF, QLineF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
+from PyQt5.QtGui import QPen, QColor, QFont, QBrush
 from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QFileDialog, QGraphicsItem, QGraphicsSimpleTextItem, QPlainTextEdit,QSizePolicy
 
 from source.Undo import Undo
@@ -184,7 +184,7 @@ class QtImageViewerPlus(QtImageViewer):
         self.sampling_area_pen_selected.setCosmetic(True)
 
         self.showCrossair = False
-        self.mouseCoords = QPointF(0, 0)
+        self.mouseCoords = QPointF(0.0, 0.0)
         self.crackWidget = None
         self.bricksWidget = None
 
@@ -787,8 +787,8 @@ class QtImageViewerPlus(QtImageViewer):
             pen = QPen(Qt.white, 1)
             pen.setCosmetic(True)
             painter.setPen(pen)
-            painter.drawLine(self.mouseCoords.x(), rect.top(), self.mouseCoords.x(), rect.bottom())
-            painter.drawLine(rect.left(), self.mouseCoords.y(), rect.right(), self.mouseCoords.y())
+            painter.drawLine(QLineF(self.mouseCoords.x(), rect.top(), self.mouseCoords.x(), rect.bottom()))
+            painter.drawLine(QLineF(rect.left(), self.mouseCoords.y(), rect.right(), self.mouseCoords.y()))
 
 
 #TOOLS and SELECTIONS
