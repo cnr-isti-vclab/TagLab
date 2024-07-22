@@ -18,9 +18,12 @@
 # for more details.                                               
 from PyQt5.QtCore import Qt, QAbstractTableModel, QItemSelectionModel, QSortFilterProxyModel, QRegExp, QModelIndex, pyqtSlot, pyqtSignal
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QComboBox, QLabel, QTableView, QHeaderView, \
-    QHBoxLayout, QVBoxLayout, QAbstractItemView, QStyledItemDelegate, QAction, QMenu, QToolButton, QGridLayout, QLineEdit
+    QVBoxLayout, QAbstractItemView, QStyledItemDelegate, QAction, QMenu, QToolButton, QGridLayout, QLineEdit
 from PyQt5.QtGui import QColor
 from pathlib import Path
+
+from source.Image import Image
+from source.Blob import Blob
 
 path = Path(__file__).parent.absolute()
 imdir = str(path)
@@ -352,16 +355,6 @@ height: 0px;
         self.correspondences.updateAreas()
         self.data = self.correspondences.data
 
-        try:
-            self.sourceImg.annotations.blobUpdated.connect(self.sourceBlobUpdated, type=Qt.UniqueConnection)
-        except:
-            pass
-
-        try:
-            self.targetImg.annotations.blobUpdated.connect(self.targetBlobUpdated, type=Qt.UniqueConnection)
-        except:
-            pass
-
         if self.model is None:
 
             self.model = TableModel(self.data)
@@ -397,16 +390,6 @@ height: 0px;
         else:
             self.updateTable(self.correspondences)
 
-    def sourceBlobUpdated(self, blob):
-        for i, row in self.data.iterrows():
-            if row[0] == blob.id:
-                self.data.loc[i, 'Area1'] = self.correspondences.area_in_sq_cm(blob.area, True)
-
-    def targetBlobUpdated(self, blob):
-        for i, row in self.data.iterrows():
-            if row[1] == blob.id:
-                self.data.loc[i, 'Area2'] =  self.correspondences.area_in_sq_cm(blob.area, False)
-
     def clear(self):
 
         self.model = None
@@ -432,6 +415,26 @@ height: 0px;
         self.model.endResetModel()
 
         self.data_table.horizontalHeader().showSection(0)
+        self.data_table.update()
+
+    @pyqtSlot(Image, Blob)
+    def blobAdded(self, img, blob):
+        # project updates the correspondences data, so we simply need to update the table directly
+        self.data_table.update()
+
+    @pyqtSlot(Image, Blob)
+    def blobRemoved(self, img, blob):
+        # project updates the correspondences data, so we simply need to update the table directly
+        self.data_table.update()
+
+    @pyqtSlot(Image, Blob, Blob)
+    def blobUpdated(self, img, old_blob, new_blob):
+        # project updates the correspondences data, so we simply need to update the table directly
+        self.data_table.update()
+
+    @pyqtSlot(Image, str, Blob)
+    def blobClassChanged(self, img, class_name, blob):
+        # project updates the correspondences data, so we simply need to update the table directly
         self.data_table.update()
 
     def selectById(self, text, isSource):

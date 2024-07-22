@@ -157,32 +157,43 @@ class Correspondences(object):
 
         if self.source == image:
             self.set([blob], [])
-        else:
+        elif self.target == image:
             self.set([], [blob])
+        else:
+            pass
 
     def removeBlob(self, image, blob):
         if self.source == image:
             self.set([blob], [])
             self.data = self.data[self.data['Blob1'] != blob.id]
-        else:
+        elif self.target == image:
             self.set([], [blob])
             self.data = self.data[self.data['Blob2'] != blob.id]
+        else:
+            pass
 
         self.data.reset_index(drop=True, inplace=True)
 
     def updateBlob(self, image, old_blob, new_blob):
-        if old_blob.class_name != new_blob.class_name:
-            if self.source == image:
-                set(self, [new_blob], [])
-            else:
-                set(self, [], [new_blob])
-            return
+
+        # check if the class name has changed
+        # if old_blob.class_name != new_blob.class_name:
+        #     if self.source == image:
+        #         self.set([new_blob], [])
+        #     elif self.target == image:
+        #         self.set([], [new_blob])
+        #     else:
+        #         pass
+        #     return
+
         if self.source == image:
             self.data.loc[self.data["Blob1"] == old_blob.id, "Blob1"] = new_blob.id
             self.data.loc[self.data["Blob1"] == old_blob.id, "Area1"] = self.area_in_sq_cm(new_blob.area, False)
-        else:
+        elif self.target == image:
             self.data.loc[self.data["Blob2"] == old_blob.id, "Blob2"] = new_blob.id
             self.data.loc[self.data["Blob2"] == old_blob.id, "Area2"] = self.area_in_sq_cm(new_blob.area, False)
+        else:
+            pass
  
     def set(self, sourceblobs, targetblobs):
 

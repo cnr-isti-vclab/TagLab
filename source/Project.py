@@ -469,8 +469,15 @@ class Project(QObject):
         if blob.class_name == class_name:
             return
         else:
+
+            old_blob = blob.copy()
+
             old_class_name = blob.class_name
             img.annotations.setBlobClass(blob, class_name)
+
+            # update correspondences
+            for corr in self.findCorrespondences(img):
+                corr.updateBlob(img, old_blob, blob)
 
             if notify:
                 self.blobClassChanged.emit(img, old_class_name, blob)
