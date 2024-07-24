@@ -5211,7 +5211,7 @@ class TagLab(QMainWindow):
             x, y, w, h = self.classifierWidget.getPreviewArea()
             width = max(513 * scale_factor, w)
             height = max(513 * scale_factor, h)
-            crop_image = self.activeviewer.img_map.copy(x, y, width, height)
+            crop_image = self.activeviewer.img_map.copy(int(x), int(y), int(width), int(height))
 
             self.classifierWidget.setRGBPreview(crop_image)
             self.classifierWidget.chkAutocolor.setChecked(False)
