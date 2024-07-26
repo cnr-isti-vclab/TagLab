@@ -3390,6 +3390,7 @@ class TagLab(QMainWindow):
                     self.sample_point_widget.setWindowModality(Qt.NonModal)
                     self.sample_point_widget.show()
                     self.sample_point_widget.validchoices.connect(self.samplePointAnn)
+                    self.sample_point_widget.closewidget.connect(self.closeSamplingWidget)
 
                     # NOTE: the disabling of area selection is obtain setting the MOVe tool, so it works also
                     #       if the ruler tool is active.
