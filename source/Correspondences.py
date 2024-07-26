@@ -177,14 +177,14 @@ class Correspondences(object):
     def updateBlob(self, image, old_blob, new_blob):
 
         # check if the class name has changed
-        # if old_blob.class_name != new_blob.class_name:
-        #     if self.source == image:
-        #         self.set([new_blob], [])
-        #     elif self.target == image:
-        #         self.set([], [new_blob])
-        #     else:
-        #         pass
-        #     return
+        if old_blob.class_name != new_blob.class_name:
+            if self.source == image:
+                self.set([new_blob], [])
+            elif self.target == image:
+                self.set([], [new_blob])
+            else:
+                pass
+            return
 
         if self.source == image:
             self.data.loc[self.data["Blob1"] == old_blob.id, "Blob1"] = new_blob.id
@@ -194,7 +194,26 @@ class Correspondences(object):
             self.data.loc[self.data["Blob2"] == old_blob.id, "Area2"] = self.area_in_sq_cm(new_blob.area, False)
         else:
             pass
- 
+
+    def blobClassChanged(self, img, blob, class_name):
+
+        blob_ids = []
+
+        if self.source == img:
+            sourceids, targetids, rows = self.findCluster(blob.id, is_source=True)
+            for row in rows:
+                self.data.loc[row, "Class"] = class_name
+                blob_ids.append(self.data.loc[row, "Blob1"])
+                blob_ids.append(self.data.loc[row, "Blob2"])
+        elif self.target == img:
+            sourceids, targetids, rows = self.findCluster(blob.id, is_source=False)
+            for row in rows:
+                self.data.loc[row, "Class"] = class_name
+                blob_ids.append(self.data.loc[row, "Blob1"])
+                blob_ids.append(self.data.loc[row, "Blob2"])
+        else:
+            return
+
     def set(self, sourceblobs, targetblobs):
 
         #assumes one oth the two list has 1 blob only.
