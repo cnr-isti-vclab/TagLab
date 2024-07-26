@@ -5443,21 +5443,19 @@ if __name__ == '__main__':
 
     # set the application font
     if platform.system() != "Darwin":
+
         QFD = QFontDatabase()
         font_id1 = QFD.addApplicationFont(os.path.join(PATH_FONTS, "opensans/OpenSans-Regular.ttf"))
         if font_id1 == -1:
-            print("Failed to load application font..")
-            sys.exit(-2)
+            print("Failed to load OpenSans-Regular font..")
 
         font_id2 = QFD.addApplicationFont(os.path.join(PATH_FONTS, "roboto/Roboto-Light.ttf"))
         if font_id2 == -1:
-            print("Failed to load application font..")
-            sys.exit(-2)
+            print("Failed to load Roboto-Light font..")
 
         font_id3 = QFD.addApplicationFont(os.path.join(PATH_FONTS, "roboto/Roboto-Regular.ttf"))
         if font_id3 == -1:
-            print("Failed to load application font..")
-            sys.exit(-2)
+            print("Failed to load Roboto-Regular font..")
 
         font = QFont('Roboto')
         app.setFont(font)
