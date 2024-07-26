@@ -373,6 +373,8 @@ def saveClippedTiff(input, blobs, georef_filename, name):
 
 def saveGeorefLabelMap(label_map, georef_filename, working_area, out_name):
 
+    ## TO DO: CLEAN UP THIS FUNCTION!
+
     # create a georeferenced label image (as raster)
     img = rio.open(georef_filename)
     meta = img.meta
@@ -394,11 +396,12 @@ def saveGeorefLabelMap(label_map, georef_filename, working_area, out_name):
         working_area_polygon = createPolygonFromWorkingArea(working_area, transform)
         # crop the raster using the working area polygon
         out_image, out_transform = rio.mask.mask(dataset, [working_area_polygon], crop=True)
-        out_meta = dataset.meta
+        out_meta = dataset.meta.copy()
         out_meta.update({"driver": "GTiff",
                           "height": out_image.shape[1],
                           "width": out_image.shape[2],
                           "transform": out_transform})
+        dataset.close()
 
         with rio.open(out_name + ".tif", "w", **out_meta) as dest:
             dest.write(out_image)
