@@ -2704,8 +2704,6 @@ class TagLab(QMainWindow):
     def updatePanelInfoAfterClassChange(self, img, class_name, blob_or_point):
         if img == self.activeviewer.image:
             self.updatePanelInfo(blob_or_point)
-            if type(blob_or_point) == Point:
-                self.activeviewer.drawPointAnn(blob_or_point)
         else:
             self.resetPanelInfo()
 
@@ -4931,7 +4929,17 @@ class TagLab(QMainWindow):
                 QApplication.setOverrideCursor(Qt.WaitCursor)
 
                 # Open the file, and draw all the points on viewer
-                self.activeviewer.annotations.importCoralNetCSVAnn(file_name, self.project, self.activeviewer.image)
+                imported_points = self.activeviewer.annotations.importCoralNetCSVAnn(file_name, self.project.labels, self.activeviewer.image)
+
+                self.labels_widget.setLabels(self.project, self.activeviewer.image)
+
+                self.groupbox_blobpanel.blockSignals(True)
+
+                for point in imported_points:
+                    self.project.addPoint(self.activeviewer.image, point, notify=True)
+
+                self.groupbox_blobpanel.blockSignals(False)
+
                 self.activeviewer.drawAllPointsAnn()
 
                 box.setText(f"Point annotations imported successfully!")

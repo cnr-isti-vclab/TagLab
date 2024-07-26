@@ -1,10 +1,8 @@
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import Qt, QAbstractTableModel, QItemSelectionModel, QSortFilterProxyModel, QRegExp, QRectF, QRect, \
+from PyQt5.QtCore import Qt, QAbstractTableModel, QItemSelectionModel, QSortFilterProxyModel, QRectF, \
     QSize, QModelIndex, pyqtSlot, pyqtSignal
 from PyQt5.QtWidgets import QGridLayout, QWidget, QTableView, QTabWidget, QSpinBox, QLineEdit, QDoubleSpinBox, \
-    QStyledItemDelegate, QHeaderView, QAbstractItemView, QSizePolicy, QStyleOptionProgressBar, \
-    QCheckBox, QComboBox, QApplication, QTableWidget, QTableWidgetItem, QPushButton, QGroupBox, QLabel, QHBoxLayout, \
-    QVBoxLayout, QTextEdit, QStyle
+    QHeaderView, QAbstractItemView, QSizePolicy, QComboBox, QLabel, QVBoxLayout, QTextEdit
 from PyQt5.QtGui import QColor, QPixmap, QPainter, QPainterPath, QBrush, QLinearGradient
 import numpy as np
 from source.Blob import Blob
@@ -53,7 +51,7 @@ class TableModel(QAbstractTableModel):
                 if percent > 0:
                     painter.setBrush(bar_progress_color)
                     percent = percent / 100
-                    percent_rect = QRect(0, 0, pxmap.width() * percent, pxmap.height())
+                    percent_rect = QRectF(0, 0, pxmap.width() * percent, pxmap.height())
                     painter.drawRect(percent_rect)
 
                 painter.end()
