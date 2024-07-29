@@ -134,7 +134,8 @@ class Watershed(Tool):
                     name = t[1]
                     break
 
-            blob.class_name = name
+            # blob.class_name = name
+            blob.class_name = "Empty"
 
             blobs.append(blob)
 
