@@ -357,7 +357,7 @@ class QtBricksWidget(QWidget):
 
         #QUIRINO: peak_local_max no more indices bool
         # local_max = feature.peak_local_max(distance, indices=False, min_distance=size)
-        local_max = feature.peak_local_max(distance, footprint=np.ones((3, 3)), min_distance=size, labels=~clean)
+        local_max = feature.peak_local_max(distance, footprint=np.ones((5, 5)), min_distance=size, labels=~clean)
         markers = measure.label(local_max, connectivity=2)
 
         #QUIRINO: Convert local_max to boolean array, workaround for missing "indices" argument

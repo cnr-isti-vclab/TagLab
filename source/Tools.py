@@ -19,7 +19,7 @@ from source.tools.FourClicks import FourClicks
 from source.tools.Match import Match
 from source.tools.SelectArea import SelectArea
 from source.tools.Ritm import Ritm
-#from source.tools.Sam import Sam
+from source.tools.Sam import Sam
 #from source.tools.SamInteractive import SamInteractive
 
 from source.tools.PlaceAnnPoint import PlaceAnnPoint
@@ -62,7 +62,7 @@ class Tools(object):
             "SELECTAREA": SelectArea(self.viewerplus, self.pick_points),
             "RITM": Ritm(self.viewerplus, self.corrective_points),
             #"SAMINTERACTIVE": SamInteractive(self.viewerplus, self.corrective_points),
-            # "SAM": Sam(self.viewerplus)
+            "SAM": Sam(self.viewerplus)
         }
 
     def setTool(self, tool):
@@ -81,7 +81,7 @@ class Tools(object):
         self.tools["FOURCLICKS"].reset()
         self.tools["RITM"].reset()
         self.tools["SELECTAREA"].reset()
-        #self.tools["SAM"].reset()
+        self.tools["SAM"].reset()
         #self.tools["SAMINTERACTIVE"].reset()
 
         if self.tool == "AUTOCLASS":
