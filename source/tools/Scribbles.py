@@ -42,15 +42,40 @@ class Scribbles(QObject):
 
     def setCustomCursor(self):
 
-        cursor_size = int(self.current_size * self.scale_factor)
+        cursor_size = 10
+        #QUIRINO: for QPen object and pixmap if QPen active
+        pen_size = int(self.current_size * self.scale_factor)
 
-        pxmap = QPixmap(cursor_size, cursor_size)
+        #QUIRINO: if pen_size is > cursor_size(10) create a QPixmap of pen_size dimension
+        if pen_size > cursor_size:
+            pxmap = QPixmap(pen_size, pen_size)
+        else:
+            pxmap = QPixmap(cursor_size, cursor_size)
         pxmap.fill(QColor("transparent"))
         painter = QPainter(pxmap)
         color = self.current_label.fill
-        brush = QBrush(QColor(color[0], color[1], color[2]))
+        
+        print(pen_size)
+        #QUIRINO: add a QPen if the size of the pxmap is > 10 (cursor/brush fixed size)
+        #pen same color of the class, brush always black
+        if pen_size > cursor_size:
+            pen = QPen(QColor(color[0], color[1], color[2]),2, Qt.DotLine)
+            painter.setPen(pen)
+            painter.drawEllipse(0, 0, pen_size, pen_size)
+            # painter.drawRect(0, 0, pen_size, pen_size)
+
+        #QUIRINO: brush always black and 10 px dimension
+        brush = QBrush(QColor(0, 0, 0))
         painter.setBrush(brush)
-        painter.drawEllipse(0, 0, cursor_size, cursor_size)
+        
+        #QUIRINO: if pen_size is too small the brush fills all the pxmap
+        if pen_size < cursor_size:
+            painter.drawEllipse(0, 0, cursor_size, cursor_size)
+        #QUIRINO: if pen_size is > 10 the brush is put in the middle of the pxmap
+        # -5 needed to have the center of the brush circle and not the top-left corner in the middle
+        else:
+            painter.drawEllipse(pen_size/2-5, pen_size/2-5, cursor_size, cursor_size)
+
         painter.end()
         custom_cursor = QCursor(pxmap)
         QApplication.setOverrideCursor(custom_cursor)

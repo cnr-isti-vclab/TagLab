@@ -229,6 +229,8 @@ class TagLab(QMainWindow):
         self.btnCreateCrack        = self.newButton("crack.png",    "Create crack",           flatbuttonstyle1, self.createCrack)
         self.btnWatershed          = self.newButton("brush.png",    "Watershed segmentation", flatbuttonstyle1, self.watershedSegmentation)
         self.btnBricksSegmentation = self.newButton("brick.png",    "Bricks segmentation",    flatbuttonstyle2, self.bricksSegmentation)
+        self.btnSamInteractive = self.newButton("saminteractive2.png", "Box and clicks segmentation", flatbuttonstyle2, self.saminteractive)
+        self.btnSam = self.newButton("sam.png", "Segment everything", flatbuttonstyle2, self.sam)
 
         # Split blob operation removed from the toolbar
         # self.btnSplitBlob   = self.newButton("split.png",    "Split Blob",            flatbuttonstyle1, self.splitBlob)
@@ -236,8 +238,7 @@ class TagLab(QMainWindow):
         self.btnRuler         = self.newButton("ruler.png",    "Measure tool",           flatbuttonstyle1, self.ruler)
         self.btnFourClicks   = self.newButton("dexter.png",   "4-clicks segmentation",  flatbuttonstyle2, self.fourClicks)
         self.btnRitm          = self.newButton("ritm.png",     "Positive/negative clicks segmentation", flatbuttonstyle2, self.ritm)
-        self.btnSamInteractive = self.newButton("saminteractive2.png", "Box and clicks segmentation", flatbuttonstyle2, self.saminteractive)
-        self.btnSam = self.newButton("sam.png", "Segment everything", flatbuttonstyle2, self.sam)
+        
         self.btnAutoClassification = self.newButton("auto.png", "Fully auto semantic segmentation", flatbuttonstyle2, self.selectClassifier)
 
         # Split Screen operation removed from the toolbar
@@ -264,11 +265,11 @@ class TagLab(QMainWindow):
         #layout_tools.addWidget(self.btnSamInteractive)
         # layout_tools.addWidget(self.btnFourClicks)
         layout_tools.addWidget(self.btnRitm)
-        layout_tools.addWidget(self.btnSam)
         layout_tools.addWidget(self.btnFreehand)
         layout_tools.addWidget(self.btnAssign)
         layout_tools.addWidget(self.btnWatershed)
         layout_tools.addWidget(self.btnBricksSegmentation)
+        layout_tools.addWidget(self.btnSam)
         layout_tools.addWidget(self.btnEditBorder)
         layout_tools.addWidget(self.btnCut)
         layout_tools.addWidget(self.btnCreateCrack)
