@@ -1,4 +1,4 @@
-# TagLab                                               
+# TagLab
 # A semi-automatic segmentation tool                                    
 #
 # Copyright(C) 2019                                         
@@ -203,7 +203,7 @@ def cropQImage(qimage_map, bbox):
     h = bbox[3]
     w = bbox[2]
 
-    qimage_cropped = qimage_map.copy(left, top, w, h)
+    qimage_cropped = qimage_map.copy(int(left), int(top), int(w), int(h))
 
     return qimage_cropped
 

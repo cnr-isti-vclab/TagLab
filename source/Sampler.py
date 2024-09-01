@@ -51,8 +51,8 @@ class Sampler(object):
 
             counter = 0
             while counter < self.number:
-                x = random.randint(xstart, xend)
-                y = random.randint(ystart, yend)
+                x = random.randint(int(xstart), int(xend))
+                y = random.randint(int(ystart), int(yend))
                 counter += 1
                 self.points.append((x, y))
 

@@ -1664,6 +1664,20 @@ All markers must be valid to proceed.
         """
         Callback called when the user request to confirm and save alignment data.
         """
+
+        box = QMessageBox()
+        box.setFixedWidth(600)
+        reply = box.question(self, "TagLab",
+                             "WARNING! Confirm apply the current rototranslation. Be aware that doing this operation DELETE the current Working Area and Annotation Grid."
+                             "So, after the transformation you need to set them again. Do you confirm to proceed ?",
+                             QMessageBox.Yes | QMessageBox.No)
+
+        if reply == QMessageBox.Cancel:
+            return
+
+        if reply == QMessageBox.No:
+            return
+
         # TODO: Apply the scale to the mm_to_px_factor
         QApplication.setOverrideCursor(Qt.WaitCursor)
         # Retrieve Images
@@ -2195,10 +2209,10 @@ All markers must be valid to proceed.
         # Find box containing both images
         ph, pw = max(h1, h2), max(w1, w2)
         # Update preview size
-        self.xSlider.setMinimum(-pw)
-        self.xSlider.setMaximum(+pw)
-        self.ySlider.setMinimum(-ph)
-        self.ySlider.setMaximum(+ph)
+        self.xSlider.setMinimum(int(-pw))
+        self.xSlider.setMaximum(int(pw))
+        self.ySlider.setMinimum(int(-ph))
+        self.ySlider.setMaximum(int(ph))
 
     def __initializePreview(self) -> None:
         """

@@ -477,7 +477,7 @@ class Project(QObject):
 
             # update correspondences
             for corr in self.findCorrespondences(img):
-                corr.updateBlob(img, old_blob, blob)
+                corr.blobClassChanged(img, blob, class_name)
 
             if notify:
                 self.blobClassChanged.emit(img, old_class_name, blob)

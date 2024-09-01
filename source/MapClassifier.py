@@ -382,7 +382,7 @@ class MapClassifier(QObject):
         qimg = genutils.rgbToQImage(resimg)
         w = qimg.width() * self.scale_factor
         h = qimg.height() * self.scale_factor
-        outimg = qimg.scaled(w, h, Qt.IgnoreAspectRatio, Qt.FastTransformation)
+        outimg = qimg.scaled(int(w), int(h), Qt.IgnoreAspectRatio, Qt.FastTransformation)
         return outimg
 
     def stopProcessing(self):

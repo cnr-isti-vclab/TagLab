@@ -2725,8 +2725,6 @@ class TagLab(QMainWindow):
     def updatePanelInfoAfterClassChange(self, img, class_name, blob_or_point):
         if img == self.activeviewer.image:
             self.updatePanelInfo(blob_or_point)
-            if type(blob_or_point) == Point:
-                self.activeviewer.drawPointAnn(blob_or_point)
         else:
             self.resetPanelInfo()
 
@@ -3411,6 +3409,7 @@ class TagLab(QMainWindow):
                     self.sample_point_widget.setWindowModality(Qt.NonModal)
                     self.sample_point_widget.show()
                     self.sample_point_widget.validchoices.connect(self.samplePointAnn)
+                    self.sample_point_widget.closewidget.connect(self.closeSamplingWidget)
 
                     # NOTE: the disabling of area selection is obtain setting the MOVe tool, so it works also
                     #       if the ruler tool is active.
@@ -4951,7 +4950,17 @@ class TagLab(QMainWindow):
                 QApplication.setOverrideCursor(Qt.WaitCursor)
 
                 # Open the file, and draw all the points on viewer
-                self.activeviewer.annotations.importCoralNetCSVAnn(file_name, self.project, self.activeviewer.image)
+                imported_points = self.activeviewer.annotations.importCoralNetCSVAnn(file_name, self.project.labels, self.activeviewer.image)
+
+                self.labels_widget.setLabels(self.project, self.activeviewer.image)
+
+                self.groupbox_blobpanel.blockSignals(True)
+
+                for point in imported_points:
+                    self.project.addPoint(self.activeviewer.image, point, notify=True)
+
+                self.groupbox_blobpanel.blockSignals(False)
+
                 self.activeviewer.drawAllPointsAnn()
 
                 box.setText(f"Point annotations imported successfully!")
@@ -5232,7 +5241,7 @@ class TagLab(QMainWindow):
             x, y, w, h = self.classifierWidget.getPreviewArea()
             width = max(513 * scale_factor, w)
             height = max(513 * scale_factor, h)
-            crop_image = self.activeviewer.img_map.copy(x, y, width, height)
+            crop_image = self.activeviewer.img_map.copy(int(x), int(y), int(width), int(height))
 
             self.classifierWidget.setRGBPreview(crop_image)
             self.classifierWidget.chkAutocolor.setChecked(False)
@@ -5464,21 +5473,19 @@ if __name__ == '__main__':
 
     # set the application font
     if platform.system() != "Darwin":
+
         QFD = QFontDatabase()
         font_id1 = QFD.addApplicationFont(os.path.join(PATH_FONTS, "opensans/OpenSans-Regular.ttf"))
         if font_id1 == -1:
-            print("Failed to load application font..")
-            sys.exit(-2)
+            print("Failed to load OpenSans-Regular font..")
 
         font_id2 = QFD.addApplicationFont(os.path.join(PATH_FONTS, "roboto/Roboto-Light.ttf"))
         if font_id2 == -1:
-            print("Failed to load application font..")
-            sys.exit(-2)
+            print("Failed to load Roboto-Light font..")
 
         font_id3 = QFD.addApplicationFont(os.path.join(PATH_FONTS, "roboto/Roboto-Regular.ttf"))
         if font_id3 == -1:
-            print("Failed to load application font..")
-            sys.exit(-2)
+            print("Failed to load Roboto-Regular font..")
 
         font = QFont('Roboto')
         app.setFont(font)

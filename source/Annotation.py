@@ -1108,7 +1108,6 @@ class Annotation(object):
             # All information will be available to user, but needs to
             # be shown to them via UI, it's just stored in the point.
             # Also, apparently point.data doesn't persist between sessions...
-            # TODO TagLab needs a way to visualize the predictions
             for key in r.keys():
                 if "Machine" in key:
                     coralnet_data[key] = r[key]

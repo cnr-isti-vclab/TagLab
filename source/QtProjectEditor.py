@@ -93,7 +93,7 @@ class QtProjectEditor(QWidget):
             self.text.append("<b>DEM availability</b>" + " : " + str(self.boolToWord(len(img.channels)>1)))
             self.text.document().adjustSize()  # calculate size
 
-            self.text.setMinimumHeight(self.text.document().size().height())
+            self.text.setMinimumHeight(int(self.text.document().size().height()))
 
             map_layout = QHBoxLayout()
             map_layout.addWidget(QLabel("<b>Map name</b>" + " : " + img.name))
