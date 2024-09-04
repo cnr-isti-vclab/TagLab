@@ -835,10 +835,13 @@ class QtImageViewerPlus(QtImageViewer):
             self.disablePan()  # in this case, it is possible to PAN only moving the mouse and pressing the CTRL key
 
         if tool == "SAM":
-            #QUIRINI: calls methods to set the window cursor for the SAM tool
-            self.tools.tools["SAM"].setScaleFactor(self.zoom_factor)
-            self.tools.tools["SAM"].setSize()
-            # self.tools.tools["SAM"].setCustomCursor()
+        #     #QUIRINI: calls methods to set the window cursor for the SAM tool
+        #     self.tools.tools["SAM"].setScaleFactor(self.zoom_factor)
+        #     self.tools.tools["SAM"].setSize()
+        #     # self.tools.tools["SAM"].setCustomCursor()
+            self.tools.tools["SAM"].enable(True)
+        else:
+            self.tools.tools["SAM"].enable(False)
 
     def resetTools(self):
 
