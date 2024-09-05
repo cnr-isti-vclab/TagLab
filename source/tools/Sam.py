@@ -12,8 +12,15 @@ from PyQt5.QtGui import QPen, QBrush
 from source import genutils
 from source.tools.Tool import Tool
 from source.Blob import Blob
+
+from PyQt5.QtCore import Qt, QObject, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
+from PyQt5.QtGui import QImage, QPixmap, QPainter, QPainterPath, QPen, QBrush, QCursor, QColor
+from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsItem, QGraphicsScene, QFileDialog, QGraphicsPixmapItem
+
+
 sys.path.append("..")
 from segment_anything import sam_model_registry, SamAutomaticMaskGenerator, SamPredictor
+import time
 
 class Sam(Tool):
 
@@ -21,6 +28,14 @@ class Sam(Tool):
 
     def __init__(self, viewerplus):
         super(Sam, self).__init__(viewerplus)
+
+        #QUIRINO: 1024x1024 windows size for SAM segmentation
+        self.window_size = 1024
+
+        # scale factor of the cursor
+        self.scale_factor = 1.0
+
+        self.setCustomCursor()
 
         """
          Sam parameters: 
@@ -108,13 +123,69 @@ class Sam(Tool):
         #     #self.viewerplus.resetTools()
         #     ##self.resetWorkArea()
 
+    def setCustomCursor(self):
 
+        # window_size = 1024
+        # window_size = 100
+        #QUIRINO: rescaled to scale_factor of windows_size
+        resized_window_size = int(self.window_size * self.scale_factor)
 
+        #QUIRINO: if window_size is > cursor_size(10) create a QPixmap of window_size dimension
+        
+        pxmap = QPixmap(resized_window_size, resized_window_size)
+        # pxmap = QPixmap(self.current_size, self.current_size)
+    
+        pxmap.fill(QColor("transparent"))
+        painter = QPainter(pxmap)
+        # color = self.current_label.fill
+        
+        print(f"self.current_size is {self.window_size}")
+        print(f"window_size is {resized_window_size}")   
+
+        
+        window = QPen(QColor(0,0,0),5, Qt.DotLine)
+        painter.setPen(window)
+        painter.drawRect(0, 0, resized_window_size, resized_window_size)
+
+        #QUIRINO: brush in the middle of the window
+        center_size = 8
+        center = QBrush(QColor(0,0, 200))
+        painter.setBrush(center)
+        painter.drawEllipse(resized_window_size/2-4, resized_window_size/2-4, center_size, center_size)
+    
+        painter.end()
+        custom_cursor = QCursor(pxmap)
+        QApplication.setOverrideCursor(custom_cursor)
+
+    def setScaleFactor(self, scale_factor):
+
+        self.scale_factor = scale_factor
+
+    def setSize(self, delta_size = 0):
+
+        new_size = self.window_size + delta_size
+
+        self.window_size = new_size
+        self.setCustomCursor()
+    
+    
     def leftPressed(self, x, y, mods):
-        self.segment()
+        # QUIRINO: Get the coordinates of the custom cursor area
+        cursor_x = x - self.window_size // 2
+        cursor_y = y - self.window_size // 2
+
+        # QUIRINO: Crop the image inside the custom cursor area, always 1024x1024 px image
+        cursor_image = self.viewerplus.img_map.copy(cursor_x, cursor_y, 1024, 1024)
+
+        # QUIRINO: Save the cropped image as crop.png
+        cursor_image.save("crop_SAM.png")
+
+        self.segment(cursor_image)
+        
+        # self.segment()
         # fa schifo così, pensare a widget?
 
-    def segment(self, save_status=True):
+    def segment(self, cursor_image, save_status=True):
 
         self.infoMessage.emit("Segmentation is ongoing..")
         self.log.emit("[TOOL][SAM] Segmentation begins..")
@@ -124,22 +195,6 @@ class Sam(Tool):
             return
 
         QApplication.restoreOverrideCursor()
-
-        # if save_status:
-        #     self.states.append(self.predictor.get_states())
-        #
-        # oom = False
-        # try:
-        #     pred = self.predictor.get_prediction(self.clicker, prev_mask=self.init_mask)
-        # except RuntimeError:  # Out of memory
-        #     oom = True
-        #
-        # if oom:
-        #     self.reset()
-        #     box = QMessageBox()
-        #     box.setText("CUDA out of memory. Try to reduce the viewing area by zooming in.")
-        #     box.exec()
-        # else:
 
         mask_generator = SamAutomaticMaskGenerator(
             model=self.sam_net,
@@ -157,10 +212,9 @@ class Sam(Tool):
             output_mode = "binary_mask"
         )
 
-        image = genutils.qimageToNumpyArray(self.viewerplus.img_map)
+        image = genutils.qimageToNumpyArray(cursor_image)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        import time
         start = time.time()
 
         masks = mask_generator.generate(image)
@@ -174,9 +228,7 @@ class Sam(Tool):
             bbox = [int(value) for value in bbox]
             segm_mask = mask["segmentation"].astype('uint8')*255
             segm_mask_crop = segm_mask[bbox[1]:bbox[1]+bbox[3], bbox[0]:bbox[0]+bbox[2]]
-            blob = self.viewerplus.image.annotations.createBlobFromSingleMask(segm_mask_crop, bbox[0], bbox[1]) #strano che devi mettere basso
-            # OPPURE
-            # blobsFromMask(self, seg_mask, 0, 0, area_mask)
+            blob = self.viewerplus.image.annotations.createBlobFromSingleMask(segm_mask_crop, bbox[0], bbox[1])
             self.created_blobs.append(blob)
             self.viewerplus.addBlob(blob, selected=True)
 

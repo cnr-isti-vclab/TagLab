@@ -229,6 +229,8 @@ class TagLab(QMainWindow):
         self.btnCreateCrack        = self.newButton("crack.png",    "Create crack",           flatbuttonstyle1, self.createCrack)
         self.btnWatershed          = self.newButton("brush.png",    "Watershed segmentation", flatbuttonstyle1, self.watershedSegmentation)
         self.btnBricksSegmentation = self.newButton("brick.png",    "Bricks segmentation",    flatbuttonstyle2, self.bricksSegmentation)
+        self.btnSamInteractive = self.newButton("saminteractive2.png", "Box and clicks segmentation", flatbuttonstyle2, self.saminteractive)
+        self.btnSam = self.newButton("sam.png", "Segment everything", flatbuttonstyle2, self.sam)
 
         # Split blob operation removed from the toolbar
         # self.btnSplitBlob   = self.newButton("split.png",    "Split Blob",            flatbuttonstyle1, self.splitBlob)
@@ -236,8 +238,7 @@ class TagLab(QMainWindow):
         self.btnRuler         = self.newButton("ruler.png",    "Measure tool",           flatbuttonstyle1, self.ruler)
         self.btnFourClicks   = self.newButton("dexter.png",   "4-clicks segmentation",  flatbuttonstyle2, self.fourClicks)
         self.btnRitm          = self.newButton("ritm.png",     "Positive/negative clicks segmentation", flatbuttonstyle2, self.ritm)
-        self.btnSamInteractive = self.newButton("saminteractive2.png", "Box and clicks segmentation", flatbuttonstyle2, self.saminteractive)
-        self.btnSam = self.newButton("sam.png", "Segment everything", flatbuttonstyle2, self.sam)
+        
         self.btnAutoClassification = self.newButton("auto.png", "Fully auto semantic segmentation", flatbuttonstyle2, self.selectClassifier)
 
         # Split Screen operation removed from the toolbar
@@ -260,15 +261,15 @@ class TagLab(QMainWindow):
         layout_tools = QVBoxLayout()
         layout_tools.setSpacing(0)
         layout_tools.addWidget(self.btnMove)
-        layout_tools.addWidget(self.btnPoint)
+        # layout_tools.addWidget(self.btnPoinset)
         #layout_tools.addWidget(self.btnSamInteractive)
-        layout_tools.addWidget(self.btnFourClicks)
+        # layout_tools.addWidget(self.btnFourClicks)
         layout_tools.addWidget(self.btnRitm)
-        #layout_tools.addWidget(self.btnSam)
         layout_tools.addWidget(self.btnFreehand)
         layout_tools.addWidget(self.btnAssign)
-        #layout_tools.addWidget(self.btnWatershed)
-        #layout_tools.addWidget(self.btnBricksSegmentation)
+        layout_tools.addWidget(self.btnWatershed)
+        layout_tools.addWidget(self.btnBricksSegmentation)
+        layout_tools.addWidget(self.btnSam)
         layout_tools.addWidget(self.btnEditBorder)
         layout_tools.addWidget(self.btnCut)
         layout_tools.addWidget(self.btnCreateCrack)
@@ -602,6 +603,7 @@ class TagLab(QMainWindow):
         # EVENTS-CONNECTIONS
 
         self.settings_widget.general_settings.researchFieldChanged[str].connect(self.researchFieldChanged)
+        # self.settings_widget.general_settings.autosaveInfoChanged[int].connect(self.setAutosave)
         self.settings_widget.general_settings.autosaveInfoChanged[int].connect(self.setAutosave)
 
         self.settings_widget.drawing_settings.borderPenChanged[str, int].connect(self.viewerplus.setBorderPen)
@@ -657,6 +659,17 @@ class TagLab(QMainWindow):
 
         self.move()
 
+    def toggle_segmentation_buttons(self, show=False):
+        """
+        Shows or hides segmentation buttons based on the 'show' parameter.
+        
+        :param show: If True, buttons will be shown; if False, buttons will be hidden.
+        """
+        self.btnWatershed.setVisible(show)
+        self.btnBricksSegmentation.setVisible(show)
+        self.btnSam.setVisible(show)
+
+    
     def setGuiPreferences(self):
 
         settings = QSettings("VCLAB", "TagLab")
@@ -1244,8 +1257,16 @@ class TagLab(QMainWindow):
         self.settings_widget.show()
 
     @pyqtSlot(str)
-    def researchFieldChanged(self, str):
-        pass
+    #QUIRINO, aggiungere Architectural Heritage combobox, show BrickSegmentation, Watershed e SAM
+    def researchFieldChanged(self, index):
+        # pass
+        print(f"index is {index}")
+        if index == "Architectural Heritage":
+        # if index == 1:
+            self.toggle_segmentation_buttons(show=True)
+        elif index == "Marine Ecology/Biology":
+        # elif index == 0:
+            self.toggle_segmentation_buttons(show=False)
 
     @pyqtSlot(QAction)
     def editMapSettings(self, openMapAction):
@@ -2449,7 +2470,7 @@ class TagLab(QMainWindow):
         self.btnFourClicks.setChecked(False)
         self.btnRitm.setChecked(False)
         self.btnSam.setChecked(False)
-        self.btnSamInteractive.setChecked(False)
+        # self.btnSamInteractive.setChecked(False)
         self.btnCreateGrid.setChecked(False)
         self.btnGrid.setChecked(False)
         self.btnMatch.setChecked(False)
@@ -2466,7 +2487,7 @@ class TagLab(QMainWindow):
         tools = {
             "MOVE"         : ["Pan"          , self.btnMove],
             "PLACEANNPOINT": ["Place Annotation Point", self.btnPoint],
-            "CREATECRACK"  : ["Crack"        , self.btnCreateCrack],
+            # "CREATECRACK"  : ["Crack"        , self.btnCreateCrack],
             "ASSIGN"       : ["Assign"       , self.btnAssign],
             "EDITBORDER"   : ["Edit Border"  , self.btnEditBorder],
             "CUT"          : ["Cut"          , self.btnCut],
@@ -2476,8 +2497,8 @@ class TagLab(QMainWindow):
             "RULER"        : ["Ruler"        , self.btnRuler],
             "FOURCLICKS"   : ["4-click"      , self.btnFourClicks],
             "MATCH"        : ["Match"        , self.btnMatch],
-            "RITM"         : ["Ritm"         , self.btnRitm]
-            #"SAM"            : ["Sam", self.btnSam],
+            "RITM"         : ["Ritm"         , self.btnRitm],
+            "SAM"            : ["Sam", self.btnSam]
             #"SAMINTERACTIVE" : ["Saminteractive", self.btnSamInteractive]
         }
         newtool = tools[tool]
