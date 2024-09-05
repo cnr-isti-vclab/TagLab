@@ -31,10 +31,16 @@ class Sam(Tool):
 
         self.viewerplus.mouseMoved.connect(self.handlemouseMove)
 
-        self.rect_item = viewerplus.scene.addRect(0, 0, 2048, 2048, QPen(Qt.black, 5, Qt.DotLine)) 
+        #QUIRINO: connect zoom to wheel event
+        self.viewerplus.wheel.connect(self.zoom_wheel)
+        
+        #QUIRINO: 1024x1024 rect_item size
+        self.width = 1024
+        self.height = 1024
+        
+        self.rect_item = None
+        # self.rect_item = viewerplus.scene.addRect(0, 0, 2048, 2048, QPen(Qt.black, 5, Qt.DotLine)) 
         self.center_item = viewerplus.scene.addEllipse(0, 0, 10,10, QPen(Qt.black), QBrush(Qt.red))
-
-        self.bounding = None
        
 
         """
@@ -112,8 +118,6 @@ class Sam(Tool):
     #     #self.viewerplus.resetTools()
     #     ##self.resetWorkArea()
 
-
-
     def reset(self):
 
         torch.cuda.empty_cache()
@@ -123,11 +127,35 @@ class Sam(Tool):
         #     #self.viewerplus.resetTools()
         #     ##self.resetWorkArea()
 
-    
+    def zoom_wheel(self, zoom):
+
+        #QUIRINO: rescale rect_item on zoom factor from wheel event
+        # added *2 to mantain rectangle inside the map
+        new_width = 1024 // (zoom*2)
+        new_height = 1024 // (zoom*2)
+        
+        # if new_width < 512 or new_height < 512:
+        #     new_width = 512
+        #     new_height = 512
+
+        #QUIRINO: limit the rectangle to 2048x2048 for SAM segmentation
+        if new_width > 2048 or new_height > 2048:
+            new_width = 2048
+            new_height = 2048
+  
+        # print(f'zoom factor: {zoom}')
+        # print(new_width, new_height)
+        if self.rect_item is not None:
+            self.rect_item.setRect(0, 0, new_width, new_height)
+
+        self.width = new_width
+        self.height = new_height
+        
     def handlemouseMove(self, x, y):
         # print(f"Mouse moved to ({x}, {y})")
-        self.center_item.setPos(x, y)
-        self.rect_item.setPos(x-1024, y-1024)
+        if self.rect_item is not None:
+            self.center_item.setPos(x, y)
+            self.rect_item.setPos(x- self.width//2, y - self.height//2)
             
     def leftPressed(self, x, y, mods):
         
@@ -201,10 +229,14 @@ class Sam(Tool):
     #QUIRINO: method to display the rectangle on the map
     def enable(self, enable = False):
         if enable == True:
-            self.rect_item.setVisible(True)
+            # self.rect_item.setVisible(True)
+            self.rect_item = self.viewerplus.scene.addRect(0, 0, 2048, 2048, QPen(Qt.black, 20, Qt.DotLine)) 
             self.center_item.setVisible(True)
         else:
-            self.rect_item.setVisible(False)
+            # self.rect_item.setVisible(False)
+            if self.rect_item is not None:
+                self.viewerplus.scene.removeItem(self.rect_item)
+            self.rect_item = None
             self.center_item.setVisible(False)
 
     #

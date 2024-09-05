@@ -111,6 +111,9 @@ class QtImageViewerPlus(QtImageViewer):
     selectionChanged = pyqtSignal()
     selectionReset = pyqtSignal()
 
+    #QUIRINO: zoom wheel signal
+    wheel = pyqtSignal(float)
+
     # custom signal
     updateInfoPanel = pyqtSignal(object)
 
@@ -1075,6 +1078,9 @@ class QtImageViewerPlus(QtImageViewer):
                 self.zoom_factor = self.ZOOM_FACTOR_MIN
             if self.zoom_factor > self.ZOOM_FACTOR_MAX:
                 self.zoom_factor = self.ZOOM_FACTOR_MAX
+            
+            #QUIRINO: emit signal to update the zoom factor in the main window
+            self.wheel.emit(self.zoom_factor)
 
             self.resetTransform()
             self.scale(self.zoom_factor, self.zoom_factor)
