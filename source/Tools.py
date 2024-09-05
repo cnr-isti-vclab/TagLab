@@ -19,7 +19,7 @@ from source.tools.FourClicks import FourClicks
 from source.tools.Match import Match
 from source.tools.SelectArea import SelectArea
 from source.tools.Ritm import Ritm
-from source.tools.Sam_QGraphicScene import Sam
+from source.tools.Sam import Sam
 #from source.tools.SamInteractive import SamInteractive
 
 from source.tools.PlaceAnnPoint import PlaceAnnPoint
