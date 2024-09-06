@@ -111,9 +111,6 @@ class QtImageViewerPlus(QtImageViewer):
     selectionChanged = pyqtSignal()
     selectionReset = pyqtSignal()
 
-    #QUIRINO: zoom wheel signal
-    wheel = pyqtSignal(float)
-
     # custom signal
     updateInfoPanel = pyqtSignal(object)
 
@@ -842,6 +839,7 @@ class QtImageViewerPlus(QtImageViewer):
         #     self.tools.tools["SAM"].setScaleFactor(self.zoom_factor)
         #     self.tools.tools["SAM"].setSize()
         #     # self.tools.tools["SAM"].setCustomCursor()
+            # self.disableZoom()
             self.tools.tools["SAM"].enable(True)
         else:
             self.tools.tools["SAM"].enable(False)
@@ -1061,8 +1059,14 @@ class QtImageViewerPlus(QtImageViewer):
         mods = event.modifiers()
 
         if self.tools.tool == "WATERSHED" and mods & Qt.ShiftModifier:
+            
             self.tools.tools["WATERSHED"].scribbles.setScaleFactor(self.zoom_factor)
             self.tools.wheel(event.angleDelta())
+            return
+
+        #QUIRINO: added zooming rectangle with shift key
+        if self.tools.tool == "SAM" and mods & Qt.ShiftModifier:    
+            self.tools.tools["SAM"].setSize(event.angleDelta())
             return
 
         if self.zoomEnabled:
@@ -1079,8 +1083,6 @@ class QtImageViewerPlus(QtImageViewer):
             if self.zoom_factor > self.ZOOM_FACTOR_MAX:
                 self.zoom_factor = self.ZOOM_FACTOR_MAX
             
-            #QUIRINO: emit signal to update the zoom factor in the main window
-            self.wheel.emit(self.zoom_factor)
 
             self.resetTransform()
             self.scale(self.zoom_factor, self.zoom_factor)
