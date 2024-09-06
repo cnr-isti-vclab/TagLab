@@ -111,6 +111,9 @@ class QtImageViewerPlus(QtImageViewer):
     selectionChanged = pyqtSignal()
     selectionReset = pyqtSignal()
 
+    #QUIRINO: zoom wheel signal
+    wheel = pyqtSignal(float)
+
     # custom signal
     updateInfoPanel = pyqtSignal(object)
 
@@ -835,10 +838,13 @@ class QtImageViewerPlus(QtImageViewer):
             self.disablePan()  # in this case, it is possible to PAN only moving the mouse and pressing the CTRL key
 
         if tool == "SAM":
-            #QUIRINI: calls methods to set the window cursor for the SAM tool
-            self.tools.tools["SAM"].setScaleFactor(self.zoom_factor)
-            self.tools.tools["SAM"].setSize()
-            # self.tools.tools["SAM"].setCustomCursor()
+        #     #QUIRINI: calls methods to set the window cursor for the SAM tool
+        #     self.tools.tools["SAM"].setScaleFactor(self.zoom_factor)
+        #     self.tools.tools["SAM"].setSize()
+        #     # self.tools.tools["SAM"].setCustomCursor()
+            self.tools.tools["SAM"].enable(True)
+        else:
+            self.tools.tools["SAM"].enable(False)
 
     def resetTools(self):
 
@@ -1072,6 +1078,9 @@ class QtImageViewerPlus(QtImageViewer):
                 self.zoom_factor = self.ZOOM_FACTOR_MIN
             if self.zoom_factor > self.ZOOM_FACTOR_MAX:
                 self.zoom_factor = self.ZOOM_FACTOR_MAX
+            
+            #QUIRINO: emit signal to update the zoom factor in the main window
+            self.wheel.emit(self.zoom_factor)
 
             self.resetTransform()
             self.scale(self.zoom_factor, self.zoom_factor)

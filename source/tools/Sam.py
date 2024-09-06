@@ -29,13 +29,19 @@ class Sam(Tool):
     def __init__(self, viewerplus):
         super(Sam, self).__init__(viewerplus)
 
-        #QUIRINO: 1024x1024 windows size for SAM segmentation
-        self.window_size = 1024
+        self.viewerplus.mouseMoved.connect(self.handlemouseMove)
 
-        # scale factor of the cursor
-        self.scale_factor = 1.0
-
-        self.setCustomCursor()
+        #QUIRINO: connect zoom to wheel event
+        self.viewerplus.wheel.connect(self.zoom_wheel)
+        
+        #QUIRINO: 1024x1024 rect_item size
+        self.width = 1024
+        self.height = 1024
+        
+        self.rect_item = None
+        # self.rect_item = viewerplus.scene.addRect(0, 0, 2048, 2048, QPen(Qt.black, 5, Qt.DotLine)) 
+        self.center_item = viewerplus.scene.addEllipse(0, 0, 10,10, QPen(Qt.black), QBrush(Qt.red))
+       
 
         """
          Sam parameters: 
@@ -112,8 +118,6 @@ class Sam(Tool):
     #     #self.viewerplus.resetTools()
     #     ##self.resetWorkArea()
 
-
-
     def reset(self):
 
         torch.cuda.empty_cache()
@@ -123,69 +127,54 @@ class Sam(Tool):
         #     #self.viewerplus.resetTools()
         #     ##self.resetWorkArea()
 
-    def setCustomCursor(self):
+    def zoom_wheel(self, zoom):
 
-        # window_size = 1024
-        # window_size = 100
-        #QUIRINO: rescaled to scale_factor of windows_size
-        resized_window_size = int(self.window_size * self.scale_factor)
-
-        #QUIRINO: if window_size is > cursor_size(10) create a QPixmap of window_size dimension
+        #QUIRINO: rescale rect_item on zoom factor from wheel event
+        # added *2 to mantain rectangle inside the map
+        new_width = 1024 // (zoom*2)
+        new_height = 1024 // (zoom*2)
         
-        pxmap = QPixmap(resized_window_size, resized_window_size)
-        # pxmap = QPixmap(self.current_size, self.current_size)
-    
-        pxmap.fill(QColor("transparent"))
-        painter = QPainter(pxmap)
-        # color = self.current_label.fill
+        # if new_width < 512 or new_height < 512:
+        #     new_width = 512
+        #     new_height = 512
+
+        #QUIRINO: limit the rectangle to 2048x2048 for SAM segmentation
+        if new_width > 2048 or new_height > 2048:
+            new_width = 2048
+            new_height = 2048
+  
+        # print(f'zoom factor: {zoom}')
+        # print(new_width, new_height)
+        if self.rect_item is not None:
+            self.rect_item.setRect(0, 0, new_width, new_height)
+
+        self.width = new_width
+        self.height = new_height
         
-        print(f"self.current_size is {self.window_size}")
-        print(f"window_size is {resized_window_size}")   
-
-        
-        window = QPen(QColor(0,0,0),5, Qt.DotLine)
-        painter.setPen(window)
-        painter.drawRect(0, 0, resized_window_size, resized_window_size)
-
-        #QUIRINO: brush in the middle of the window
-        center_size = 8
-        center = QBrush(QColor(0,0, 200))
-        painter.setBrush(center)
-        painter.drawEllipse(resized_window_size/2-4, resized_window_size/2-4, center_size, center_size)
-    
-        painter.end()
-        custom_cursor = QCursor(pxmap)
-        QApplication.setOverrideCursor(custom_cursor)
-
-    def setScaleFactor(self, scale_factor):
-
-        self.scale_factor = scale_factor
-
-    def setSize(self, delta_size = 0):
-
-        new_size = self.window_size + delta_size
-
-        self.window_size = new_size
-        self.setCustomCursor()
-    
-    
+    def handlemouseMove(self, x, y):
+        # print(f"Mouse moved to ({x}, {y})")
+        if self.rect_item is not None:
+            self.center_item.setPos(x, y)
+            self.rect_item.setPos(x- self.width//2, y - self.height//2)
+            
     def leftPressed(self, x, y, mods):
-        # QUIRINO: Get the coordinates of the custom cursor area
-        cursor_x = x - self.window_size // 2
-        cursor_y = y - self.window_size // 2
+        
+        # QUIRINO: Crop the part of the map inside the self.rect_item area
+        rect = self.rect_item.boundingRect()
+        rect.moveTopLeft(self.rect_item.pos())
+        rect = rect.normalized()
+        rect = rect.intersected(self.viewerplus.sceneRect())
+        cropped_image = self.viewerplus.img_map.copy(rect.toRect())
 
-        # QUIRINO: Crop the image inside the custom cursor area, always 1024x1024 px image
-        cursor_image = self.viewerplus.img_map.copy(cursor_x, cursor_y, 1024, 1024)
-
-        # QUIRINO: Save the cropped image as crop.png
-        cursor_image.save("crop_SAM.png")
-
-        self.segment(cursor_image)
+        cropped_image.save("crop_rect.png")
+        # Perform segmentation on the cropped image
+        self.segment(cropped_image)
+        # pass
         
         # self.segment()
         # fa schifo così, pensare a widget?
 
-    def segment(self, cursor_image, save_status=True):
+    def segment(self, image, save_status=True):
 
         self.infoMessage.emit("Segmentation is ongoing..")
         self.log.emit("[TOOL][SAM] Segmentation begins..")
@@ -212,7 +201,7 @@ class Sam(Tool):
             output_mode = "binary_mask"
         )
 
-        image = genutils.qimageToNumpyArray(cursor_image)
+        image = genutils.qimageToNumpyArray(image)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         start = time.time()
@@ -236,6 +225,19 @@ class Sam(Tool):
 
         self.samEnded.emit()
 
+    
+    #QUIRINO: method to display the rectangle on the map
+    def enable(self, enable = False):
+        if enable == True:
+            # self.rect_item.setVisible(True)
+            self.rect_item = self.viewerplus.scene.addRect(0, 0, 2048, 2048, QPen(Qt.black, 20, Qt.DotLine)) 
+            self.center_item.setVisible(True)
+        else:
+            # self.rect_item.setVisible(False)
+            if self.rect_item is not None:
+                self.viewerplus.scene.removeItem(self.rect_item)
+            self.rect_item = None
+            self.center_item.setVisible(False)
 
     #
     #
