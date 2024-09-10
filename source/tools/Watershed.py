@@ -9,6 +9,9 @@ from skimage.color import rgb2gray
 from skimage.filters import sobel
 import cv2
 
+import matplotlib.pyplot as plt
+
+
 
 
 class Watershed(Tool):
@@ -43,7 +46,10 @@ class Watershed(Tool):
         for i, curve in enumerate(self.scribbles.points):
             bbox = Mask.pointsBox(curve, int(self.scribbles.size[i] / 2))
             bboxes.append(bbox)
+        
+        # print(f"bboxes number is {len(bboxes)}")
         working_area = Mask.jointBox(bboxes)
+        # print(f"working_area is {working_area}")
 
         if working_area[0] < 0:
             working_area[0] = 0
@@ -60,6 +66,8 @@ class Watershed(Tool):
         crop_img = genutils.cropQImage(self.viewerplus.img_map, working_area)
         crop_imgnp = genutils.qimageToNumpyArray(crop_img)
 
+        cv2.imwrite('crop_img.png', crop_imgnp)
+
         # create markers
         mask = np.zeros((working_area[3], working_area[2], 3), dtype=np.int32)
 
@@ -74,7 +82,9 @@ class Watershed(Tool):
             color = (b, g, r)
 
             color_code = b + 256 * g + 65536 * r
+            # print(f"color_code in dict is {color_code}")
             color_key = str(color_code)
+            # print(f"color_key in dict is {color_key}")
             if color_codes.get(color_key) is None:
                 name = self.scribbles.label[i].name
                 color_codes[color_key] = (counter, name)
@@ -89,30 +99,57 @@ class Watershed(Tool):
             mask = cv2.polylines(mask, pts=[curve], isClosed=False, color=color,
                                  thickness=self.scribbles.size[i], lineType=cv2.LINE_8)
 
+        # print(f"color codes is {color_codes}")
         mask = np.uint8(mask)
+       
+        # print(f"mask.shape is {mask.shape}")
+        cv2.imwrite('mask.png', mask)
 
         markers = np.zeros((working_area[3], working_area[2]), dtype='int32')
+        print(f"markers.shape pre is {markers.shape}")
         for label in self.scribbles.label:
+            # print(f'label type is {type(label)}')
+            # print(f'label is {label}')
+            
             col = label.fill
+            # print(f"col is {col}")
+            
             b = col[2]
+            # print(f"b is {b}")
             g = col[1]
+            # print(f"g is {g}")
             r = col[0]
-            color_code = b + 256 * g + 65536 * r
-            color_key = str(color_code)
+            # print(f"r is {r}")
 
             idx = np.where((mask[:, :, 0] == b) & (mask[:, :, 1] == g) & (mask[:, :, 2] == r))
+        
+            color_code = b + 256 * g + 65536 * r
+            # print(f"color_code is {color_code}")
+            
+            color_key = str(color_code)
+            # print(f"color_key is {color_key}")
+
             (value, name) = color_codes[color_key]
+            # print(f"value, name is {value, name}")
             markers[idx] = value
 
         # markers = np.int32(255*rgb2gray(mask))
         # markersprint = 255*rgb2gray(mask)
-        markersprint = markers
-        cv2.imwrite('mask.png', markersprint)
+        # markersprint = markers
+
+        #QUIRINO: OpenCV doesn't work, using matplotlib instead
+        plt.imshow(markers)
+        plt.savefig('markers.png')
+        # cv2.imwrite('markers.png', markersprint)
 
         # watershed segmentation
         segmentation = cv2.watershed(crop_imgnp, markers)
         segmentation = filters.median(segmentation, disk(5), mode="mirror")
-        cv2.imwrite('segmentation.png', segmentation)
+        
+        #QUIRINO: OpenCV doesn't work, using matplotlib instead
+        plt.imshow(segmentation)
+        plt.savefig('segmentation.png')
+        # cv2.imwrite('segmentation_cv.png', segmentation)
 
         # the result of the segmentation must be converted into labels again
         lbls = measure.label(segmentation)
@@ -134,8 +171,8 @@ class Watershed(Tool):
                     name = t[1]
                     break
 
-            # blob.class_name = name
-            blob.class_name = "Empty"
+            blob.class_name = name
+            # blob.class_name = "Empty"
 
             blobs.append(blob)
 
