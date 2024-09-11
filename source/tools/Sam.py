@@ -163,7 +163,9 @@ class Sam(Tool):
             # self.center_item.setPos(x, y)
             self.rect_item.setPos(x- self.width//2, y - self.height//2)
             
-    def leftPressed(self, x, y, mods):
+    #QUIRINO: SAM segmentation on space key pressed instead of left mouse button pressed
+    # def leftPressed(self, x, y, mods):
+    def apply(self):
         
         # QUIRINO: Crop the part of the map inside the self.rect_item area
         rect = self.rect_item.boundingRect()

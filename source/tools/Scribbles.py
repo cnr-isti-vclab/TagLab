@@ -55,17 +55,17 @@ class Scribbles(QObject):
         painter = QPainter(pxmap)
         color = self.current_label.fill
         
-        print(pen_size)
         #QUIRINO: add a QPen if the size of the pxmap is > 10 (cursor/brush fixed size)
         #pen same color of the class, brush always black
         if pen_size > cursor_size:
-            pen = QPen(QColor(color[0], color[1], color[2]),2, Qt.DotLine)
+            pen = QPen(QColor(color[0], color[1], color[2]), 3, Qt.DotLine)
             painter.setPen(pen)
             painter.drawEllipse(0, 0, pen_size, pen_size)
             # painter.drawRect(0, 0, pen_size, pen_size)
 
         #QUIRINO: brush always black and 10 px dimension
-        brush = QBrush(QColor(0, 0, 0))
+        # brush = QBrush(QColor(0, 0, 0))
+        brush = QBrush(QColor(color[0], color[1], color[2]))
         painter.setBrush(brush)
         
         #QUIRINO: if pen_size is too small the brush fills all the pxmap
