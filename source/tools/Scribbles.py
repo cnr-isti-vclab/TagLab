@@ -74,7 +74,7 @@ class Scribbles(QObject):
         #QUIRINO: if pen_size is > 10 the brush is put in the middle of the pxmap
         # -5 needed to have the center of the brush circle and not the top-left corner in the middle
         else:
-            painter.drawEllipse(pen_size/2-5, pen_size/2-5, cursor_size, cursor_size)
+            painter.drawEllipse( int(pen_size/2-5), int(pen_size/2-5), cursor_size, cursor_size)
 
         painter.end()
         custom_cursor = QCursor(pxmap)

@@ -31,11 +31,12 @@ class Sam(Tool):
 
         self.viewerplus.mouseMoved.connect(self.handlemouseMove)
 
-        
         #QUIRINO: 1024x1024 rect_item size
         self.width = 1024
         self.height = 1024
-        
+
+        self.offset = [0, 0]
+
         self.rect_item = None
         # self.rect_item = viewerplus.scene.addRect(0, 0, 2048, 2048, QPen(Qt.black, 5, Qt.DotLine)) 
         # self.center_item = viewerplus.scene.addEllipse(0, 0, 10,10, QPen(Qt.black), QBrush(Qt.red))
@@ -74,8 +75,8 @@ class Sam(Tool):
             # sam_checkpoint = "sam_vit_l_0b3195.pth"
             # model_type = "vit_l"
 
-            sam_checkpoint = "sam_vit_b_01ec64.pth"
-            model_type = "vit_b"
+            sam_checkpoint = "sam_vit_h_4b8939.pth"
+            model_type = "vit_h"
 
             models_dir = "models/"
             network_name = os.path.join(models_dir, sam_checkpoint)
@@ -174,13 +175,11 @@ class Sam(Tool):
         rect = rect.intersected(self.viewerplus.sceneRect())
         cropped_image = self.viewerplus.img_map.copy(rect.toRect())
 
-        cropped_image.save("crop_rect.png")
+        offset = self.rect_item.pos()
+        self.offset = [offset.x(), offset.y()]
+
         # Perform segmentation on the cropped image
         self.segment(cropped_image)
-        # pass
-        
-        # self.segment()
-        # fa schifo così, pensare a widget?
 
     def segment(self, image, save_status=True):
 
@@ -220,16 +219,16 @@ class Sam(Tool):
 
         print(end-start)
 
+        offx = self.offset[0]
+        offy = self.offset[1]
         for mask in masks:
             bbox = mask["bbox"]
             bbox = [int(value) for value in bbox]
             segm_mask = mask["segmentation"].astype('uint8')*255
             segm_mask_crop = segm_mask[bbox[1]:bbox[1]+bbox[3], bbox[0]:bbox[0]+bbox[2]]
-            blob = self.viewerplus.image.annotations.createBlobFromSingleMask(segm_mask_crop, bbox[0], bbox[1])
+            blob = self.viewerplus.image.annotations.createBlobFromSingleMask(segm_mask_crop, bbox[0] + offx, bbox[1] + offy)
             self.created_blobs.append(blob)
             self.viewerplus.addBlob(blob, selected=True)
-
-        self.viewerplus.assignClass("Pocillopora")
 
         self.samEnded.emit()
 
