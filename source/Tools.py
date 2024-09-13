@@ -19,11 +19,13 @@ from source.tools.FourClicks import FourClicks
 from source.tools.Match import Match
 from source.tools.SelectArea import SelectArea
 from source.tools.Ritm import Ritm
-from source.tools.Sam import Sam
-#from source.tools.SamInteractive import SamInteractive
-
 from source.tools.PlaceAnnPoint import PlaceAnnPoint
 
+import importlib
+if importlib.util.find_spec("segment_anything"):
+    from source.tools.Sam import Sam
+
+#from source.tools.SamInteractive import SamInteractive
 
 
 class Tools(object):
@@ -40,6 +42,10 @@ class Tools(object):
 
         self.CROSS_LINE_WIDTH = 2
         self.extreme_pick_style = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.red,  'size': 6}
+
+        self.SAM_is_available = False
+        if importlib.util.find_spec("segment_anything"):
+            self.SAM_is_available = True
 
         # DATA FOR THE CREATECRACK TOOL
         self.crackWidget = None
@@ -62,8 +68,10 @@ class Tools(object):
             "SELECTAREA": SelectArea(self.viewerplus, self.pick_points),
             "RITM": Ritm(self.viewerplus, self.corrective_points),
             #"SAMINTERACTIVE": SamInteractive(self.viewerplus, self.corrective_points),
-            "SAM": Sam(self.viewerplus)
         }
+
+        if self.SAM_is_available:
+            self.tools["SAM"] = Sam(self.viewerplus)
 
     def setTool(self, tool):
         self.resetTools()
@@ -81,8 +89,10 @@ class Tools(object):
         self.tools["FOURCLICKS"].reset()
         self.tools["RITM"].reset()
         self.tools["SELECTAREA"].reset()
-        self.tools["SAM"].reset()
-        #self.tools["SAMINTERACTIVE"].reset()
+
+        if self.SAM_is_available:
+            self.tools["SAM"].reset()
+            #self.tools["SAMINTERACTIVE"].reset()
 
         if self.tool == "AUTOCLASS":
             self.corals_classifier.stopProcessing()
@@ -99,6 +109,14 @@ class Tools(object):
         if self.viewerplus.bricksWidget is not None:
             self.viewerplus.bricksWidget.close()
         self.viewerplus.bricksWidget = None
+
+    def enableSAM(self):
+        if self.SAM_is_available:
+            self.tools.tools["SAM"].enable()
+
+    def disableSAM(self):
+        if self.SAM_is_available:
+            self.tools.tools["SAM"].enable()
 
     def leftPressed(self, x, y, mods = None):
         if self.tool == "MOVE":

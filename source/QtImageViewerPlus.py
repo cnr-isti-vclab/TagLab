@@ -840,9 +840,9 @@ class QtImageViewerPlus(QtImageViewer):
         #     self.tools.tools["SAM"].setSize()
         #     # self.tools.tools["SAM"].setCustomCursor()
             # self.disableZoom()
-            self.tools.tools["SAM"].enable(True)
+            self.tools.enableSAM()
         else:
-            self.tools.tools["SAM"].enable(False)
+            self.tools.disableSAM()
 
     def resetTools(self):
 

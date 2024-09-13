@@ -20,17 +20,14 @@
 
 import sys
 import os
-import json
-import time
-import timeit
 import datetime
 import shutil
 import json
-import math
 import numpy as np
 import urllib
 import platform
 import pandas as pd
+import importlib
 
 from PyQt5.QtCore import Qt, QSize, QMargins, QDir, QPoint, QPointF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo, QModelIndex
 from PyQt5.QtGui import QFontDatabase, QFont, QPixmap, QIcon, QKeySequence, QPen, QImageReader, QImage
@@ -201,7 +198,6 @@ class TagLab(QMainWindow):
         self.progress_bar = None
         self.gridWidget = None
         self.contextMenuPosition = None
-
 
         ##### TOP LAYOUT
 
@@ -596,6 +592,14 @@ class TagLab(QMainWindow):
         ##### FURTHER INITIALIZAION #####
         #################################
 
+        # CHECK SEGMENT_ANYTHING AVAILABILITY
+
+        self.SAM_is_available = True
+        if importlib.util.find_spec("segment_anything") is None:
+            print("Segment Anything (SAM) is not installed -> Sam generator tool will be not available.")
+            self.SAM_is_available = False
+            self.btnSam.setVisible(False)
+
         # set default opacity
         self.sliderTransparency.setValue(50)
         self.transparency_value = 0.5
@@ -667,7 +671,11 @@ class TagLab(QMainWindow):
         """
         self.btnWatershed.setVisible(show)
         self.btnBricksSegmentation.setVisible(show)
-        self.btnSam.setVisible(show)
+
+        if self.SAM_is_available is not True:
+            self.btnSam.setVisible(False)
+        else:
+            self.btnSam.setVisible(show)
 
     
     def setGuiPreferences(self):
