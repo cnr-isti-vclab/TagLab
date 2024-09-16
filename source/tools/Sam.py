@@ -39,7 +39,7 @@ class Sam(Tool):
 
         self.rect_item = None
         # self.rect_item = viewerplus.scene.addRect(0, 0, 2048, 2048, QPen(Qt.black, 5, Qt.DotLine)) 
-        # self.center_item = viewerplus.scene.addEllipse(0, 0, 10,10, QPen(Qt.black), QBrush(Qt.red))
+        # self.center_item = viewerplus.scene.addEllipse(0, 0, 10,10, QPen(Qt.black), QBrush(Qt.red))       
        
 
         """
@@ -116,6 +116,247 @@ class Sam(Tool):
     #     self.resetNetwork()
     #     #self.viewerplus.resetTools()
     #     ##self.resetWorkArea()
+
+    #QUIRINO: remove blobs on the edge of the rectangle cursor
+    def removeEdgeBlobs(self):
+        if self.rect_item is None:
+            return
+
+        rect = self.rect_item.boundingRect()
+        rect.moveTopLeft(self.rect_item.pos())
+        rect = rect.normalized()
+
+        filtered_blobs = []
+        for blob in self.created_blobs:
+            bbox = QRectF(blob.bbox[0], blob.bbox[1], blob.bbox[2], blob.bbox[3])
+            if rect.contains(bbox):
+                filtered_blobs.append(blob)
+
+        self.created_blobs = filtered_blobs
+
+    
+    # #QUIRINO: removeOverlappingBlobs from QtBricksWidget.py
+    # def removeOverlappingBlobs(self):#, sam_blobs):
+
+    #     #QUIRINO, some time some problems with np.min/np.max, to check
+
+    #     # created = self.created_blobs.copy()
+    #     blobs = self.created_blobs.copy()
+    #     # blobs = self.created_blobs.copy()
+    #     # blobs = self.created_blobs
+
+    #     widths = []
+    #     heights = []
+    #     for blob in blobs:
+    #         widths.append(blob.bbox[2])
+    #         heights.append(blob.bbox[3])
+
+    #     widths = np.asarray(widths)
+    #     heights = np.asarray(heights)
+
+    #     print("MINW: ", np.min(widths))
+    #     print("MAXW: ", np.max(widths))
+    #     print("MINH: ", np.min(heights))
+    #     print("MAXH: ", np.max(heights))
+    #     print("MEANW: ", np.mean(widths))
+    #     print("MEANH: ", np.mean(heights))
+    #     print("MEDIANW: ", np.median(widths))
+    #     print("MEDIANH: ", np.median(heights))
+
+    #     medianw = np.median(widths)
+    #     medianh = np.median(heights)
+
+    #     for blob in blobs:
+
+    #         if not (blob in self.created_blobs):
+    #             # print("in if")
+    #             continue
+
+    #         bbox = blob.bbox
+    #         # print(bbox)
+    #         mask = blob.getMask()
+    #         npixel = np.count_nonzero(mask)
+
+    #         intersected_blobs = []
+    #         for blob2 in self.created_blobs:
+    #             if blob != blob2 and checkIntersection(bbox, blob2.bbox) is True:
+    #                 mask2 = blob2.getMask()
+    #                 npixel2 = np.count_nonzero(mask2)
+    #                 # print(npixel2)
+    #                 (imask, ibbox) = intersectMask(mask, bbox, mask2, blob2.bbox)
+    #                 npixeli = np.count_nonzero(imask)
+
+    #                 overlap12 = npixeli / npixel
+    #                 overlap21 = npixeli / npixel2
+    #                 overlap = max(overlap12, overlap21)
+
+    #                 if overlap > 0.10:
+    #                     intersected_blobs.append(blob2)
+
+    #         num_intersections = len(intersected_blobs)
+
+    #         if num_intersections > 0:
+    #             intersected_blobs.append(blob)
+
+    #             diff_min = 10000000
+    #             blob_to_keep = None
+    #             for blobO in intersected_blobs:
+    #                 diff = abs(blobO.bbox[2] - medianw) + abs(blobO.bbox[3] - medianh)
+    #                 if diff < diff_min:
+    #                     diff_min = diff
+    #                     blob_to_keep = blobO
+
+    #             for blobO in intersected_blobs:
+    #                 if blobO != blob_to_keep:
+    #                     self.created_blobs.remove(blobO)
+    
+
+    ##QUIRINO: remove from self.created_blobs blobs already annotated in self.viewerplus.image.annotations.seg.blobs
+    # def removeAnnotatedBlobs(self):
+
+    #     blobs = self.created_blobs.copy()  # Current blobs
+
+    #     widths = []
+    #     heights = []
+    #     for blob in blobs:
+    #         widths.append(blob.bbox[2])
+    #         heights.append(blob.bbox[3])
+
+    #     widths = np.asarray(widths)
+    #     heights = np.asarray(heights)
+
+    #     print("MINW: ", np.min(widths))
+    #     print("MAXW: ", np.max(widths))
+    #     print("MINH: ", np.min(heights))
+    #     print("MAXH: ", np.max(heights))
+    #     print("MEANW: ", np.mean(widths))
+    #     print("MEANH: ", np.mean(heights))
+    #     print("MEDIANW: ", np.median(widths))
+    #     print("MEDIANH: ", np.median(heights))
+
+    #     medianw = np.median(widths)
+    #     medianh = np.median(heights)
+
+    #     for blob in blobs:
+
+    #         # Skip if blob is not in self.seg_bricks
+    #         if blob not in self.created_blobs:
+    #             continue
+
+    #         bbox = blob.bbox
+    #         mask = blob.getMask()
+    #         npixel = np.count_nonzero(mask)
+
+    #         intersected_blobs = []
+            
+    #         # Compare the current blob with blobs in self.yet_created
+    #         for annotated in self.viewerplus.image.annotations.seg_blobs:
+    #             if checkIntersection(bbox, annotated.bbox) is True:
+    #                 mask2 = annotated.getMask()
+    #                 npixel2 = np.count_nonzero(mask2)
+    #                 (imask, ibbox) = intersectMask(mask, bbox, mask2, annotated.bbox)
+    #                 npixeli = np.count_nonzero(imask)
+
+    #                 overlap12 = npixeli / npixel
+    #                 overlap21 = npixeli / npixel2
+    #                 overlap = max(overlap12, overlap21)
+
+    #                 # If overlap is more than 15%, add to intersected_blobs
+    #                 if overlap > 0.10:
+    #                     intersected_blobs.append(annotated)
+
+    #         num_intersections = len(intersected_blobs)
+
+    #         # If there are intersecting blobs, select the one closest to the median size
+    #         if num_intersections > 0:
+    #             intersected_blobs.append(blob)
+
+    #             diff_min = float('inf')  # Large initial value for minimum difference
+    #             # diff_min = 10000000
+    #             blob_to_keep = None
+    #             for blobO in intersected_blobs:
+    #                 diff = abs(blobO.bbox[2] - medianw) + abs(blobO.bbox[3] - medianh)
+    #                 if diff < diff_min:
+    #                     diff_min = diff
+    #                     blob_to_keep = blobO
+
+    #             # Remove blobs that are not the selected blob_to_keep
+    #             for blobO in intersected_blobs:
+    #                 if blobO != blob_to_keep:
+    #                     if blobO in self.created_blobs:
+    #                         self.created_blobs.remove(blobO)
+                        
+
+    #QUIRINO: method that removes overlapping blobs (both from self and from external)
+    def removeOverlapping(self, sam_blobs):
+        
+        blobs = self.created_blobs.copy()
+
+        widths = []
+        heights = []
+        for blob in blobs:
+            widths.append(blob.bbox[2])
+            heights.append(blob.bbox[3])
+
+        widths = np.asarray(widths)
+        heights = np.asarray(heights)
+
+        print("MINW: ", np.min(widths))
+        print("MAXW: ", np.max(widths))
+        print("MINH: ", np.min(heights))
+        print("MAXH: ", np.max(heights))
+        print("MEANW: ", np.mean(widths))
+        print("MEANH: ", np.mean(heights))
+        print("MEDIANW: ", np.median(widths))
+        print("MEDIANH: ", np.median(heights))
+
+        medianw = np.median(widths)
+        medianh = np.median(heights)
+
+        for blob in blobs:
+
+            if blob not in self.created_blobs:
+                continue
+
+            bbox = blob.bbox
+            mask = blob.getMask()
+            npixel = np.count_nonzero(mask)
+
+            intersected_blobs = []
+
+            for blob2 in sam_blobs:
+                if blob != blob2 and checkIntersection(bbox, blob2.bbox) is True:
+                    mask2 = blob2.getMask()
+                    npixel2 = np.count_nonzero(mask2)
+                    (imask, ibbox) = intersectMask(mask, bbox, mask2, blob2.bbox)
+                    npixeli = np.count_nonzero(imask)
+
+                    overlap12 = npixeli / npixel
+                    overlap21 = npixeli / npixel2
+                    overlap = max(overlap12, overlap21)
+
+                    if overlap > 0.10:
+                        intersected_blobs.append(blob2)
+
+            num_intersections = len(intersected_blobs)
+
+            if num_intersections > 0:
+                intersected_blobs.append(blob)
+
+                #QUIRINO: using inf instead of hard coded value works better
+                # diff_min = 10000000
+                diff_min = float('inf') 
+                blob_to_keep = None
+                for blobO in intersected_blobs:
+                    diff = abs(blobO.bbox[2] - medianw) + abs(blobO.bbox[3] - medianh)
+                    if diff < diff_min:
+                        diff_min = diff
+                        blob_to_keep = blobO
+
+                for blobO in intersected_blobs:
+                    if blobO != blob_to_keep:
+                        if blobO in self.created_blobs:
+                            self.created_blobs.remove(blobO)
 
     def reset(self):
 
@@ -228,8 +469,29 @@ class Sam(Tool):
             segm_mask_crop = segm_mask[bbox[1]:bbox[1]+bbox[3], bbox[0]:bbox[0]+bbox[2]]
             blob = self.viewerplus.image.annotations.createBlobFromSingleMask(segm_mask_crop, bbox[0] + offx, bbox[1] + offy)
             self.created_blobs.append(blob)
+
+        print(f"self.created_blob len pre is {len(self.created_blobs)}")
+        
+        # self.removeOverlappingBlobs(self.created_blobs)
+        self.removeOverlapping(self.created_blobs)
+        
+        print(f"self.created_blob len post is {len(self.created_blobs)}")
+        
+        # self.removeEdgeBlobs()
+        
+
+        print(f"Number of yet annotated blobs is {len(self.viewerplus.image.annotations.seg_blobs)}")
+
+        # self.removeAnnotatedBlobs()
+        self.removeOverlapping(self.viewerplus.image.annotations.seg_blobs)
+
+
+        print(f"self.created_blob len post annotated is {len(self.created_blobs)}")
+            
+        for blob in self.created_blobs:
             self.viewerplus.addBlob(blob, selected=True)
 
+              
         self.samEnded.emit()
 
     

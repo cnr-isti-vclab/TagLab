@@ -112,11 +112,11 @@ class Tools(object):
 
     def enableSAM(self):
         if self.SAM_is_available:
-            self.tools.tools["SAM"].enable()
+            self.tools["SAM"].enable(True)
 
     def disableSAM(self):
         if self.SAM_is_available:
-            self.tools.tools["SAM"].enable()
+            self.tools["SAM"].enable(False)
 
     def leftPressed(self, x, y, mods = None):
         if self.tool == "MOVE":
