@@ -119,20 +119,42 @@ class Sam(Tool):
 
     #QUIRINO: remove blobs on the edge of the rectangle cursor
     def removeEdgeBlobs(self):
+
         if self.rect_item is None:
             return
 
+        # QUIRINO: Get the bounding rect of the rectangle and its position
         rect = self.rect_item.boundingRect()
         rect.moveTopLeft(self.rect_item.pos())
         rect = rect.normalized()
 
-        filtered_blobs = []
-        for blob in self.created_blobs:
-            bbox = QRectF(blob.bbox[0], blob.bbox[1], blob.bbox[2], blob.bbox[3])
-            if rect.contains(bbox):
-                filtered_blobs.append(blob)
+        # print(f"rect coordinates are {rect.left(), rect.right(), rect.top(), rect.bottom()}")
 
-        self.created_blobs = filtered_blobs
+
+        #QUIRINO :  margin to consider the edge TO FINETUNE!!!!
+        margin = 10  
+
+        # filtered_blobs = []
+        for blob in self.created_blobs:
+            # Create a QRectF for each blob's bounding box
+            bbox = QRectF(blob.bbox[0], blob.bbox[1], blob.bbox[2], blob.bbox[3])
+            # print(f"bbox coordinates are {bbox.top(), bbox.bottom(), bbox.left(), bbox.right()}")
+            
+            #BOUNDING BOX ORDER: WHY?
+            #rect left  right   top bottom
+            #bbox top   bottom  left  right
+           
+            # print(f"{abs(bbox.left() - rect.left()), abs(bbox.right() - rect.right()), abs(bbox.top() - rect.top()), abs(bbox.bottom() - rect.bottom())}")
+            # print(f"{abs(bbox.top() - rect.left()), abs(bbox.bottom() - rect.right()), abs(bbox.left() - rect.top()), abs(bbox.right() - rect.bottom())}")
+
+            #QUIRINO: remove blobs if they are on the edges
+            if (
+                abs(bbox.top() - rect.left()) < margin or
+                abs(bbox.bottom() - rect.right()) < margin or
+                abs(bbox.left() - rect.top()) < margin or
+                abs(bbox.right() - rect.bottom()) < margin
+            ):
+                self.created_blobs.remove(blob)
 
     
     # #QUIRINO: removeOverlappingBlobs from QtBricksWidget.py
@@ -477,7 +499,9 @@ class Sam(Tool):
         
         print(f"self.created_blob len post is {len(self.created_blobs)}")
         
-        # self.removeEdgeBlobs()
+        self.removeEdgeBlobs()
+
+        print(f"self.created_blob len post removeEdge is {len(self.created_blobs)}")
         
 
         print(f"Number of yet annotated blobs is {len(self.viewerplus.image.annotations.seg_blobs)}")
