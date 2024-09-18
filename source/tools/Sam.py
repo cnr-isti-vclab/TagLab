@@ -128,7 +128,7 @@ class Sam(Tool):
         rect.moveTopLeft(self.rect_item.pos())
         rect = rect.normalized()
 
-        # print(f"rect coordinates are {rect.left(), rect.right(), rect.top(), rect.bottom()}")
+        print(f"rect coordinates are {rect.left(), rect.right(), rect.top(), rect.bottom()}")
 
 
         #QUIRINO :  margin to consider the edge TO FINETUNE!!!!
@@ -137,7 +137,7 @@ class Sam(Tool):
         # filtered_blobs = []
         for blob in self.created_blobs:
             # Create a QRectF for each blob's bounding box
-            bbox = QRectF(blob.bbox[0], blob.bbox[1], blob.bbox[2], blob.bbox[3])
+            #bbox = QRectF(blob.bbox[0], blob.bbox[1], blob.bbox[2], blob.bbox[3])
             # print(f"bbox coordinates are {bbox.top(), bbox.bottom(), bbox.left(), bbox.right()}")
             
             #BOUNDING BOX ORDER: WHY?
@@ -147,14 +147,34 @@ class Sam(Tool):
             # print(f"{abs(bbox.left() - rect.left()), abs(bbox.right() - rect.right()), abs(bbox.top() - rect.top()), abs(bbox.bottom() - rect.bottom())}")
             # print(f"{abs(bbox.top() - rect.left()), abs(bbox.bottom() - rect.right()), abs(bbox.left() - rect.top()), abs(bbox.right() - rect.bottom())}")
 
+            bbox = blob.bbox
+            top = bbox[0]
+            left = bbox[1]
+            right = bbox[1] + bbox[2]
+            bottom = bbox[0] + bbox[3]
+
+            
+            
             #QUIRINO: remove blobs if they are on the edges
             if (
-                abs(bbox.top() - rect.left()) < margin or
-                abs(bbox.bottom() - rect.right()) < margin or
-                abs(bbox.left() - rect.top()) < margin or
-                abs(bbox.right() - rect.bottom()) < margin
+                # abs(bbox.top() - rect.left()) < margin or
+                # abs(bbox.bottom() - rect.right()) < margin or
+                # abs(bbox.left() - rect.top()) < margin or
+                # abs(bbox.right() - rect.bottom()) < margin
+
+                abs(left - rect.left()) < margin or
+                abs(right - rect.right()) < margin or
+                abs(top - rect.top()) < margin or
+                abs(bottom - rect.bottom()) < margin
             ):
                 self.created_blobs.remove(blob)
+
+            else:
+                print(f"top: {top}, left: {left}, right: {right}, bottom: {bottom}")
+            
+                print(f"left - rect.left(): {left - rect.left()}, right - rect.right(): {right - rect.right()}, top - rect.top(): {top - rect.top()}, bottom - rect.bottom(): {bottom - rect.bottom()}")
+
+                print(f"with abs: left - rect.left(): {abs(left - rect.left())}, right - rect.right(): {abs(right - rect.right())}, top - rect.top(): {abs(top - rect.top())}, bottom - rect.bottom(): {abs(bottom - rect.bottom())}")
 
     
     # #QUIRINO: removeOverlappingBlobs from QtBricksWidget.py
@@ -522,7 +542,7 @@ class Sam(Tool):
     #QUIRINO: method to display the rectangle on the map
     def enable(self, enable = False):
         if enable == True:
-            self.rect_item = self.viewerplus.scene.addRect(0, 0, self.width, self.height, QPen(Qt.black, 20, Qt.DotLine)) 
+            self.rect_item = self.viewerplus.scene.addRect(0, 0, self.width, self.height, QPen(Qt.black, 5, Qt.DotLine)) 
             # self.center_item.setVisible(True)
         else:
             if self.rect_item is not None:
