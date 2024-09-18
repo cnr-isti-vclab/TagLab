@@ -39,7 +39,10 @@ class Sam(Tool):
 
         self.rect_item = None
         # self.rect_item = viewerplus.scene.addRect(0, 0, 2048, 2048, QPen(Qt.black, 5, Qt.DotLine)) 
-        # self.center_item = viewerplus.scene.addEllipse(0, 0, 10,10, QPen(Qt.black), QBrush(Qt.red))       
+        # self.center_item = viewerplus.scene.addEllipse(0, 0, 10,10, QPen(Qt.black), QBrush(Qt.red))
+        
+        self.seed_nr = 0
+        self.not_overlapping = []
        
 
         """
@@ -134,48 +137,33 @@ class Sam(Tool):
         #QUIRINO :  margin to consider the edge TO FINETUNE!!!!
         margin = 10  
 
+        
         # filtered_blobs = []
-        for blob in self.created_blobs:
+        blobs = self.created_blobs.copy()
+        for blob in blobs:
+            
             # Create a QRectF for each blob's bounding box
             #bbox = QRectF(blob.bbox[0], blob.bbox[1], blob.bbox[2], blob.bbox[3])
             # print(f"bbox coordinates are {bbox.top(), bbox.bottom(), bbox.left(), bbox.right()}")
-            
-            #BOUNDING BOX ORDER: WHY?
+            #QUIRINO: BOUNDING BOX ORDER: WHY?
             #rect left  right   top bottom
             #bbox top   bottom  left  right
            
-            # print(f"{abs(bbox.left() - rect.left()), abs(bbox.right() - rect.right()), abs(bbox.top() - rect.top()), abs(bbox.bottom() - rect.bottom())}")
-            # print(f"{abs(bbox.top() - rect.left()), abs(bbox.bottom() - rect.right()), abs(bbox.left() - rect.top()), abs(bbox.right() - rect.bottom())}")
-
+            #QUIRINO: use directly the blob bounding box instead of QRectF
             bbox = blob.bbox
             top = bbox[0]
             left = bbox[1]
             right = bbox[1] + bbox[2]
             bottom = bbox[0] + bbox[3]
-
-            
             
             #QUIRINO: remove blobs if they are on the edges
-            if (
-                # abs(bbox.top() - rect.left()) < margin or
-                # abs(bbox.bottom() - rect.right()) < margin or
-                # abs(bbox.left() - rect.top()) < margin or
-                # abs(bbox.right() - rect.bottom()) < margin
-
-                abs(left - rect.left()) < margin or
-                abs(right - rect.right()) < margin or
-                abs(top - rect.top()) < margin or
-                abs(bottom - rect.bottom()) < margin
+            if  (
+                left - rect.left() < margin or
+                rect.right() - right < margin or
+                top - rect.top() < margin or
+                rect.bottom() - bottom < margin
             ):
-                self.created_blobs.remove(blob)
-
-            else:
-                print(f"top: {top}, left: {left}, right: {right}, bottom: {bottom}")
-            
-                print(f"left - rect.left(): {left - rect.left()}, right - rect.right(): {right - rect.right()}, top - rect.top(): {top - rect.top()}, bottom - rect.bottom(): {bottom - rect.bottom()}")
-
-                print(f"with abs: left - rect.left(): {abs(left - rect.left())}, right - rect.right(): {abs(right - rect.right())}, top - rect.top(): {abs(top - rect.top())}, bottom - rect.bottom(): {abs(bottom - rect.bottom())}")
-
+                self.created_blobs.remove(blob)    
     
     # #QUIRINO: removeOverlappingBlobs from QtBricksWidget.py
     # def removeOverlappingBlobs(self):#, sam_blobs):
@@ -330,7 +318,7 @@ class Sam(Tool):
                         
 
     #QUIRINO: method that removes overlapping blobs (both from self and from external)
-    def removeOverlapping(self, sam_blobs):
+    def removeOverlapping(self, sam_blobs, annotated = False):
         
         blobs = self.created_blobs.copy()
 
@@ -355,6 +343,7 @@ class Sam(Tool):
         medianw = np.median(widths)
         medianh = np.median(heights)
 
+        self.not_overlapping = []
         for blob in blobs:
 
             if blob not in self.created_blobs:
@@ -375,30 +364,50 @@ class Sam(Tool):
 
                     overlap12 = npixeli / npixel
                     overlap21 = npixeli / npixel2
-                    overlap = max(overlap12, overlap21)
 
-                    if overlap > 0.10:
-                        intersected_blobs.append(blob2)
+                    #QUIRINO: remove created_blob if in overlapping with seg_blobs
+                    if annotated == True:
+                        # overlap = overlap12
 
-            num_intersections = len(intersected_blobs)
+                        if overlap12 > 0.0:
+                            intersected_blobs.append(blob2)
 
-            if num_intersections > 0:
-                intersected_blobs.append(blob)
+                        num_intersections = len(intersected_blobs)
 
-                #QUIRINO: using inf instead of hard coded value works better
-                # diff_min = 10000000
-                diff_min = float('inf') 
-                blob_to_keep = None
-                for blobO in intersected_blobs:
-                    diff = abs(blobO.bbox[2] - medianw) + abs(blobO.bbox[3] - medianh)
-                    if diff < diff_min:
-                        diff_min = diff
-                        blob_to_keep = blobO
+                        if num_intersections > 0:
+                            intersected_blobs.append(blob)
 
-                for blobO in intersected_blobs:
-                    if blobO != blob_to_keep:
-                        if blobO in self.created_blobs:
-                            self.created_blobs.remove(blobO)
+                            for blobO in intersected_blobs:     
+                                if blobO in self.created_blobs:
+                                    self.created_blobs.remove(blobO)                    
+                    
+                    #QUIRINO: remove created_blobs in overlapping with themselves (bigger is better)
+                    else:
+                        overlap = max(overlap12, overlap21)
+
+                        if overlap > 0.10:
+                            intersected_blobs.append(blob2)
+
+                        num_intersections = len(intersected_blobs)
+
+                        if num_intersections > 0:
+                            intersected_blobs.append(blob)
+
+                            #QUIRINO: using inf instead of hard coded value works better
+                            # diff_min = 10000000
+                            diff_min = float('inf') 
+                            blob_to_keep = None
+                            for blobO in intersected_blobs:
+                                diff = abs(blobO.bbox[2] - medianw) + abs(blobO.bbox[3] - medianh)
+                                if diff < diff_min:
+                                    diff_min = diff
+                                    blob_to_keep = blobO
+
+                            
+                            for blobO in intersected_blobs:
+                                if blobO != blob_to_keep:
+                                        if blobO in self.created_blobs:
+                                            self.created_blobs.remove(blobO)
 
     def reset(self):
 
@@ -451,6 +460,9 @@ class Sam(Tool):
     # def leftPressed(self, x, y, mods):
     def apply(self):
         
+        sam_seed = self.width//30
+        print(f"number of sam_seed is {sam_seed}")
+
         # QUIRINO: Crop the part of the map inside the self.rect_item area
         rect = self.rect_item.boundingRect()
         rect.moveTopLeft(self.rect_item.pos())
@@ -462,9 +474,9 @@ class Sam(Tool):
         self.offset = [offset.x(), offset.y()]
 
         # Perform segmentation on the cropped image
-        self.segment(cropped_image)
+        self.segment(cropped_image, sam_seed)
 
-    def segment(self, image, save_status=True):
+    def segment(self, image, seed = 32, save_status=True):
 
         self.infoMessage.emit("Segmentation is ongoing..")
         self.log.emit("[TOOL][SAM] Segmentation begins..")
@@ -477,7 +489,10 @@ class Sam(Tool):
 
         mask_generator = SamAutomaticMaskGenerator(
             model=self.sam_net,
-            points_per_side=32,
+
+            # points_per_side = seed,
+            points_per_side= 32,
+            
             points_per_batch=64,
             crop_n_layers = 0,
             pred_iou_thresh = 0.88,
@@ -527,13 +542,15 @@ class Sam(Tool):
         print(f"Number of yet annotated blobs is {len(self.viewerplus.image.annotations.seg_blobs)}")
 
         # self.removeAnnotatedBlobs()
-        self.removeOverlapping(self.viewerplus.image.annotations.seg_blobs)
+        self.removeOverlapping(self.viewerplus.image.annotations.seg_blobs, annotated = True)
 
 
         print(f"self.created_blob len post annotated is {len(self.created_blobs)}")
             
         for blob in self.created_blobs:
             self.viewerplus.addBlob(blob, selected=True)
+        
+        self.created_blobs = []
 
               
         self.samEnded.emit()
