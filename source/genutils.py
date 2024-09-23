@@ -27,6 +27,8 @@ import cv2
 from skimage.draw import line
 import datetime
 
+from source.Mask import checkIntersection, intersectMask
+
 def clampCoords(x, y, W, H):
 
     if x < 0:
@@ -449,3 +451,94 @@ def distance_point_AABB(x, y, bbox):
 
     return dist
 
+#QUIRINO: removeOverlapping for SAM and other tools
+def removeOverlapping(created, sam_blobs, annotated = False):
+        
+    blobs = created.copy()
+
+    widths = []
+    heights = []
+    for blob in blobs:
+        widths.append(blob.bbox[2])
+        heights.append(blob.bbox[3])
+
+    widths = np.asarray(widths)
+    heights = np.asarray(heights)
+
+    print("MINW: ", np.min(widths))
+    print("MAXW: ", np.max(widths))
+    print("MINH: ", np.min(heights))
+    print("MAXH: ", np.max(heights))
+    print("MEANW: ", np.mean(widths))
+    print("MEANH: ", np.mean(heights))
+    print("MEDIANW: ", np.median(widths))
+    print("MEDIANH: ", np.median(heights))
+
+    medianw = np.median(widths)
+    medianh = np.median(heights)
+
+    # not_overlapping = []
+    for blob in blobs:
+
+        if blob not in created:
+            continue
+
+        bbox = blob.bbox
+        mask = blob.getMask()
+        npixel = np.count_nonzero(mask)
+
+        intersected_blobs = []
+
+        for blob2 in sam_blobs:
+            if blob != blob2 and checkIntersection(bbox, blob2.bbox) is True:
+                mask2 = blob2.getMask()
+                npixel2 = np.count_nonzero(mask2)
+                (imask, ibbox) = intersectMask(mask, bbox, mask2, blob2.bbox)
+                npixeli = np.count_nonzero(imask)
+
+                overlap12 = npixeli / npixel
+                overlap21 = npixeli / npixel2
+
+                #QUIRINO: remove created_blob if in overlapping with seg_blobs
+                if annotated == True:
+                    # overlap = overlap12
+
+                    if overlap12 > 0.0:
+                        intersected_blobs.append(blob2)
+
+                    num_intersections = len(intersected_blobs)
+
+                    if num_intersections > 0:
+                        intersected_blobs.append(blob)
+
+                        for blobO in intersected_blobs:     
+                            if blobO in created:
+                                created.remove(blobO)                    
+                
+                #QUIRINO: remove created_blobs in overlapping with themselves (bigger is better)
+                else:
+                    overlap = max(overlap12, overlap21)
+
+                    if overlap > 0.10:
+                        intersected_blobs.append(blob2)
+
+                    num_intersections = len(intersected_blobs)
+
+                    if num_intersections > 0:
+                        intersected_blobs.append(blob)
+
+                        #QUIRINO: using inf instead of hard coded value works better
+                        # diff_min = 10000000
+                        diff_min = float('inf') 
+                        blob_to_keep = None
+                        for blobO in intersected_blobs:
+                            diff = abs(blobO.bbox[2] - medianw) + abs(blobO.bbox[3] - medianh)
+                            if diff < diff_min:
+                                diff_min = diff
+                                blob_to_keep = blobO
+
+                        
+                        for blobO in intersected_blobs:
+                            if blobO != blob_to_keep:
+                                    if blobO in created:
+                                        created.remove(blobO)
