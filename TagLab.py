@@ -59,7 +59,10 @@ from source.QtScaleWidget import QtScaleWidget
 from source.QtWorkingAreaWidget import QtWorkingAreaWidget
 from source.QtCropWidget import QtCropWidget
 from source.QtLayersWidget import QtLayersWidget
+
 from source.QtHelpWidget import QtHelpWidget
+from source.QtMessages import QtMessageWidget
+
 from source.QtProgressBarCustom import QtProgressBarCustom
 from source.QtHistogramWidget import QtHistogramWidget
 from source.QtClassifierWidget import QtClassifierWidget
@@ -132,6 +135,7 @@ class MainWindow(QMainWindow):
 
 
 class TagLab(QMainWindow):
+    
 
     def __init__(self, parent=None):
         super(TagLab, self).__init__(parent)
@@ -192,7 +196,9 @@ class TagLab(QMainWindow):
         self.classifierWidget = None
         self.newDatasetWidget = None
         self.help_widget = None
-
+        
+        self.message_widget = None
+    
         self.trainYourNetworkWidget = None
         self.trainResultsWidget = None
         self.progress_bar = None
@@ -285,6 +291,7 @@ class TagLab(QMainWindow):
         layout_tools.addWidget(self.btnMatch)
 
         layout_tools.addStretch()
+        
 
         # CONTEXT MENU ACTIONS
 
@@ -339,7 +346,10 @@ class TagLab(QMainWindow):
         # SAM-related tool connections
         #self.viewerplus.tools.tools["SAM"].samEnded.connect(self.resetSam)
         #self.viewerplus2.tools.tools["SAM"].samEnded.connect(self.resetSam)
-
+        
+        #QUIRINO: info messages
+        self.viewerplus.tools.tools["SAM"].tool_message.connect(self.message)
+        self.viewerplus.tools.tools["WATERSHED"].tool_message.connect(self.message)    
 
         # last activated viewerplus: redirect here context menu commands and keyboard commands
         self.activeviewer = None
@@ -571,7 +581,11 @@ class TagLab(QMainWindow):
         central_widget_layout.addLayout(layout_tools)
         central_widget_layout.addLayout(layout_main_view)
 
-        #main_view_splitter = QSplitter()
+        # Add message widget to the central layout
+        if self.message_widget is not None:
+            # central_widget_layout.addWidget(self.message_widget)
+            central_widget_layout.addLayout(self.message_widget.layout)
+
         central_widget = QWidget()
         central_widget.setLayout(central_widget_layout)
         self.setCentralWidget(central_widget)
@@ -4024,6 +4038,23 @@ class TagLab(QMainWindow):
         self.help_widget.setWindowModality(Qt.WindowModal)
         self.help_widget.show()
         self.help_widget.setWindowOpacity(0.7)
+        
+    #QUIRINO: slot for the message_widget
+    @pyqtSlot(str)
+    def message(self, new_message):
+
+        if self.message_widget is None:
+            self.message_widget = QtMessageWidget()
+
+        #QUIRINO: NonModal to let click on map
+        self.message_widget.setWindowModality(Qt.NonModal)
+        self.message_widget.setParent(self)
+        self.message_widget.setWindowFlags(Qt.ToolTip | Qt.CustomizeWindowHint)
+        self.message_widget.show()
+        self.message_widget.setWindowOpacity(0.5)
+        
+        self.message_widget.message_box.setText(new_message)
+        
 
     @pyqtSlot()
     def selectWorkingArea(self):

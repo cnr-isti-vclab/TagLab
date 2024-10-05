@@ -74,7 +74,7 @@ class Tools(object):
             self.tools["SAM"] = Sam(self.viewerplus)
 
     def setTool(self, tool):
-        self.resetTools()
+        self.resetTools()      
         self.tool = tool
 
     def resetTools(self):
@@ -117,6 +117,11 @@ class Tools(object):
     def disableSAM(self):
         if self.SAM_is_available:
             self.tools["SAM"].enable(False)
+      
+    #QUIRINO: method to select tools for tool message window      
+    def toolMessage(self):
+        if self.tool == "WATERSHED" or self.tool == "SAM":
+            self.tools[self.tool].toolMessage()
 
     def leftPressed(self, x, y, mods = None):
         if self.tool == "MOVE":

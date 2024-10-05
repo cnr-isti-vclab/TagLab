@@ -118,6 +118,8 @@ class QtImageViewerPlus(QtImageViewer):
     newSelection = pyqtSignal()
     newSelectionPoint = pyqtSignal()
     activeImageChanged = pyqtSignal(Image)
+    
+    messageSignal = pyqtSignal(str)
 
     def __init__(self, taglab_dir):
         QtImageViewer.__init__(self)
@@ -801,6 +803,9 @@ class QtImageViewerPlus(QtImageViewer):
         QApplication.setOverrideCursor(Qt.ArrowCursor)
 
         self.tools.setTool(tool)
+
+        #QUIRINO: calls the toolMessage method to show the tool message window        
+        self.tools.toolMessage()
 
         if tool in ["FREEHAND", "RULER", "FOURCLICKS", "PLACEANNPOINT"] or (tool in ["CUT", "EDITBORDER", "RITM"] and len(self.selected_blobs) > 1):
             self.resetSelection()
