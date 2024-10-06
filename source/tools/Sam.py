@@ -27,7 +27,7 @@ class Sam(Tool):
     samEnded = pyqtSignal()
     
     #QUIRINO: signal for the tool message window
-    tool_message = pyqtSignal(str)
+    # tool_message = pyqtSignal(str)
 
     def __init__(self, viewerplus):
         super(Sam, self).__init__(viewerplus)
@@ -47,7 +47,11 @@ class Sam(Tool):
         self.seed_nr = 0
         self.not_overlapping = []
         
-        
+        self.tool_message = "To resize windows cursor: \
+        Shift + Mouse Wheel  \
+        \
+        To apply SAM segmentation: \
+        Spacebar"
        
 
         """
@@ -330,12 +334,12 @@ class Sam(Tool):
        
        
     #QUIRINO: method to emit the message for the tool     
-    def toolMessage(self):
-        self.tool_message.emit("To resize windows cursor: \
-        Shift + Mouse Wheel  \
-        \
-        To apply SAM segmentation: \
-        Spacebar")
+    # def toolMessage(self):
+    #     self.tool_message.emit("To resize windows cursor: \
+    #     Shift + Mouse Wheel  \
+    #     \
+    #     To apply SAM segmentation: \
+    #     Spacebar")
 
     #
     #

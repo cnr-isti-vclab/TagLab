@@ -96,6 +96,8 @@ from source import genutils
 from source.Blob import Blob
 from source.Shape import Layer, Shape
 
+from source.Tools import Tools
+
 # training modules
 from models.coral_dataset import CoralsDataset
 import models.training as training
@@ -178,7 +180,7 @@ class TagLab(QMainWindow):
         self.recentFileActs = []  #refactor to self.maxRecentProjects
         self.maxRecentFiles = 4   #refactor to maxRecentProjects
         self.separatorRecentFilesAct = None    #refactor to separatorRecentFiles
-
+        
         ##### INTERFACE #####
         #####################
 
@@ -197,6 +199,7 @@ class TagLab(QMainWindow):
         self.newDatasetWidget = None
         self.help_widget = None
         
+        #QUIRINO: message widget for help
         self.message_widget = None
     
         self.trainYourNetworkWidget = None
@@ -348,8 +351,9 @@ class TagLab(QMainWindow):
         #self.viewerplus2.tools.tools["SAM"].samEnded.connect(self.resetSam)
         
         #QUIRINO: info messages
-        self.viewerplus.tools.tools["SAM"].tool_message.connect(self.message)
-        self.viewerplus.tools.tools["WATERSHED"].tool_message.connect(self.message)    
+        # self.viewerplus.tools.tools["SAM"].tool_message.connect(self.message)
+        # self.viewerplus.tools.tools["WATERSHED"].tool_message.connect(self.message)
+        self.viewerplus.tools.tol_mess.connect(self.message)    
 
         # last activated viewerplus: redirect here context menu commands and keyboard commands
         self.activeviewer = None
@@ -583,8 +587,8 @@ class TagLab(QMainWindow):
 
         # Add message widget to the central layout
         if self.message_widget is not None:
-            # central_widget_layout.addWidget(self.message_widget)
-            central_widget_layout.addLayout(self.message_widget.layout)
+            central_widget_layout.addWidget(self.message_widget)
+            # central_widget_layout.addLayout(self.message_widget.layout)
 
         central_widget = QWidget()
         central_widget.setLayout(central_widget_layout)
@@ -4042,19 +4046,27 @@ class TagLab(QMainWindow):
     #QUIRINO: slot for the message_widget
     @pyqtSlot(str)
     def message(self, new_message):
-
-        if self.message_widget is None:
-            self.message_widget = QtMessageWidget()
-
-        #QUIRINO: NonModal to let click on map
-        self.message_widget.setWindowModality(Qt.NonModal)
-        self.message_widget.setParent(self)
-        self.message_widget.setWindowFlags(Qt.ToolTip | Qt.CustomizeWindowHint)
-        self.message_widget.show()
-        self.message_widget.setWindowOpacity(0.5)
         
-        self.message_widget.message_box.setText(new_message)
+        print(f"new message is {new_message}")
         
+        if new_message == "":
+            if self.message_widget is not None:
+                self.message_widget.close()
+                self.message_widget = None
+                
+        else:
+            print("sono nell'if di def message")
+            if self.message_widget is None:
+                self.message_widget = QtMessageWidget()
+                        
+            #QUIRINO: NonModal to let click on map
+            self.message_widget.setWindowModality(Qt.NonModal)
+            self.message_widget.setParent(self)
+            self.message_widget.setWindowFlags(Qt.ToolTip | Qt.CustomizeWindowHint)
+            self.message_widget.show()
+            self.message_widget.setWindowOpacity(0.5)
+            
+            self.message_widget.setMessage(new_message)
 
     @pyqtSlot()
     def selectWorkingArea(self):

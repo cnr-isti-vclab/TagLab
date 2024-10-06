@@ -17,17 +17,19 @@ from PyQt5.QtCore import Qt, QObject, QPointF, QRectF, QFileInfo, QDir, pyqtSlot
 class Watershed(Tool):
     
     #QUIRINO: signal for the tool message window
-    tool_message = pyqtSignal(str)
+    # tool_message = pyqtSignal(str)
     
     def __init__(self, viewerplus, scribbles):
         super(Watershed, self).__init__(viewerplus)
         self.viewerplus = viewerplus
         self.scribbles = scribbles
         self.current_blobs = []
+        
+        self.tool_message = "WATERSHED PROVA TOOL"
 
     #QUIRINO: method to emit the message for the tool
-    def toolMessage(self):
-        self.tool_message.emit("Watershed funziona così")
+    # def toolMessage(self):
+    #     self.tool_message.emit("Watershed funziona così")
     
     def setActiveLabel(self, label):
         self.scribbles.setLabel(label)

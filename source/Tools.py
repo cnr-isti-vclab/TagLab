@@ -21,6 +21,9 @@ from source.tools.SelectArea import SelectArea
 from source.tools.Ritm import Ritm
 from source.tools.PlaceAnnPoint import PlaceAnnPoint
 
+from PyQt5.QtCore import Qt, QObject, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
+
+
 import importlib
 if importlib.util.find_spec("segment_anything"):
     from source.tools.Sam import Sam
@@ -28,8 +31,13 @@ if importlib.util.find_spec("segment_anything"):
 #from source.tools.SamInteractive import SamInteractive
 
 
-class Tools(object):
+# class Tools(object):
+class Tools(QObject):    
+    tol_mess = pyqtSignal(str)
+    
     def __init__(self, viewerplus):
+        
+        super(Tools, self).__init__()  # Call the QObject constructor
 
         self.tool = "MOVE"
         self.scene = viewerplus.scene
@@ -49,6 +57,7 @@ class Tools(object):
 
         # DATA FOR THE CREATECRACK TOOL
         self.crackWidget = None
+        
 
     def createTools(self):
         # TOOLS - create all the tools
@@ -121,7 +130,12 @@ class Tools(object):
     #QUIRINO: method to select tools for tool message window      
     def toolMessage(self):
         if self.tool == "WATERSHED" or self.tool == "SAM":
-            self.tools[self.tool].toolMessage()
+            # self.tools[self.tool].toolMessage()
+            # mess = self.tools[self.tool].tool_message
+            self.tol_mess.emit(self.tools[self.tool].tool_message)
+        else:
+            self.tol_mess.emit(None)
+            
 
     def leftPressed(self, x, y, mods = None):
         if self.tool == "MOVE":

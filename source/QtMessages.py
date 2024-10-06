@@ -7,9 +7,6 @@ from PyQt5.QtGui import QImage, QPixmap, QIcon, qRgb, qRed, qGreen, qBlue
 from PyQt5.QtWidgets import QWidget, QGroupBox, QGridLayout, QSizePolicy, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
 
 from source.Annotation import Annotation
-
-class MessageSignal(QObject):
-    messageChanged = pyqtSignal(str)
     
 
 class QtMessageWidget(QWidget):
@@ -26,7 +23,7 @@ class QtMessageWidget(QWidget):
         self.setMaximumHeight(600)
         self.setAutoFillBackground(False)
         
-        self.message = ""
+        self.message = None
         
         self.message_box = QLabel()
         self.message_box.setAlignment(Qt.AlignTop | Qt.AlignLeft)
@@ -34,14 +31,15 @@ class QtMessageWidget(QWidget):
         
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
         
-        self.message_box.setText(self.message)
-        
-        self.message_box.setStyleSheet("background-color: rgba(0, 0, 0, 0.5); color: white; padding: 5px;")
+        self.message_box.setStyleSheet("background-color: rgba(0, 0, 0, 0.5); color: white;")
         
         self.layout = QVBoxLayout()
         self.layout.addWidget(self.message_box)
         self.setLayout(self.layout)
         
-        # Align the window to the top left corner
+        # Align the window to the top left corner of viewerplus
         self.move(50, 110)
         
+        
+    def setMessage(self, message):
+        self.message_box.setText(message)
