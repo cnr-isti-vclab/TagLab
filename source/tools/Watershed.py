@@ -25,13 +25,13 @@ class Watershed(Tool):
         self.scribbles = scribbles
         self.current_blobs = []
         
-        message = "Select the class you want to assign to the area<br>\
-        <br>\
-        Draw the area in the map<br>\
-        <br>\
-        select another class and draw another area (at least)<br>\
-        <br>\
-        Click spacebar to apply and start segmentation"
+        message = "<p><i>Draw scribbles inside and around an area of interest</i></p>"
+        message += "<p>Select a class for the area of interest<br/>and draw scribbles INSIDE the area</p>"
+        message += "<p>SHIFT + wheel to set brush size</p>"
+        message += "<p>Left click + drag to draw a scribble</p>"
+        message += "<p>Select another class for the OUTSIDE of the area of interest<br/>and draw scribbles AROUND the area</p>"
+        message += "<p>CTRL + Left click + drag to pan the view</p>"
+        message += "<p>Spacebar to apply segmentation</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
     
     def setActiveLabel(self, label):

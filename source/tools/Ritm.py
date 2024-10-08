@@ -42,8 +42,8 @@ class Ritm(Tool):
         #QUIRINO: message for message_widget window
         message = "<p><i>Segment using positive/negative points</i></p>"
         message += "<p>Zoom in and frame the object of interest to reduce memory use</p>"
-        message += "<p>SHIFT + Left click to add a point inside the object (positive)</p>"
-        message += "<p>SHIFT + Right click to add a point outside the object (negative)</p>"
+        message += "<p>SHIFT + Left click to add a point inside the object (positive)<br/>\
+                    SHIFT + Right click to add a point outside the object (negative)</p>"
         message += "<p>Press spacebar to confirm segmentation</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
