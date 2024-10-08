@@ -268,7 +268,7 @@ class TagLab(QMainWindow):
         layout_tools.addWidget(self.btnMove)
         # layout_tools.addWidget(self.btnPoinset)
         #layout_tools.addWidget(self.btnSamInteractive)
-        # layout_tools.addWidget(self.btnFourClicks)
+        layout_tools.addWidget(self.btnFourClicks)
         layout_tools.addWidget(self.btnRitm)
         layout_tools.addWidget(self.btnFreehand)
         layout_tools.addWidget(self.btnAssign)

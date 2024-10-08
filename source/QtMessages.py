@@ -23,7 +23,7 @@ class QtMessageWidget(QWidget):
 
         #QUIRINO: NonModal to let click on map
         self.setWindowModality(Qt.NonModal)
-        self.setWindowOpacity(0.5) 
+        self.setWindowOpacity(0.6) 
         
         self.message = None
         
@@ -43,7 +43,7 @@ class QtMessageWidget(QWidget):
         
         self.layout = QVBoxLayout()
         self.layout.addWidget(self.message_box)
-        self.layout.setContentsMargins(0, 0, 0, 0)  # Remove padding
+        self.layout.setContentsMargins(5, 5, 5, 5)  # Remove padding
         self.setLayout(self.layout)      
  
     def setMessage(self, message):
