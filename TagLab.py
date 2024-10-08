@@ -201,7 +201,7 @@ class TagLab(QMainWindow):
         
         #QUIRINO: message widget for help
         self.message_widget = None
-    
+
         self.trainYourNetworkWidget = None
         self.trainResultsWidget = None
         self.progress_bar = None
@@ -590,9 +590,9 @@ class TagLab(QMainWindow):
             central_widget_layout.addWidget(self.message_widget)
             # central_widget_layout.addLayout(self.message_widget.layout)
 
-        central_widget = QWidget()
-        central_widget.setLayout(central_widget_layout)
-        self.setCentralWidget(central_widget)
+        self.central_widget = QWidget()
+        self.central_widget.setLayout(central_widget_layout)
+        self.setCentralWidget(self.central_widget)
 
         self.filemenu = None
         self.submenuWorkingArea = None
@@ -3763,7 +3763,12 @@ class TagLab(QMainWindow):
 
         self.updateImageSelectionMenu()
 
-    #REFACTOR
+    # def moveMessageWindowEvent(self, event):
+    #     super(TagLab, self).moveMessageWindowEvent(event)
+    #     # Update the position of the message widget
+    #     self.message_widget.move(self.x() + 200, self.y() + 200)
+
+        #REFACTOR
     @pyqtSlot()
     def setMapProperties(self):
 
@@ -4046,27 +4051,26 @@ class TagLab(QMainWindow):
     #QUIRINO: slot for the message_widget
     @pyqtSlot(str)
     def message(self, new_message):
-        
-        print(f"new message is {new_message}")
-        
+                
         if new_message == "":
             if self.message_widget is not None:
                 self.message_widget.close()
                 self.message_widget = None
                 
         else:
-            print("sono nell'if di def message")
             if self.message_widget is None:
-                self.message_widget = QtMessageWidget()
+                
+                self.message_widget = QtMessageWidget(self)
                         
-            #QUIRINO: NonModal to let click on map
-            self.message_widget.setWindowModality(Qt.NonModal)
-            self.message_widget.setParent(self)
-            self.message_widget.setWindowFlags(Qt.ToolTip | Qt.CustomizeWindowHint)
+            # self.setParent(self)
             self.message_widget.show()
-            self.message_widget.setWindowOpacity(0.5)
             
             self.message_widget.setMessage(new_message)
+
+            #QUIRINO: anchor message_widget window to the top left corner of the viewerplus
+            viewerplus_position = self.viewerplus.mapToGlobal(QPoint(0, 0))
+            self.message_widget.move(viewerplus_position.x(), viewerplus_position.y())
+
 
     @pyqtSlot()
     def selectWorkingArea(self):

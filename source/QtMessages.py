@@ -22,6 +22,11 @@ class QtMessageWidget(QWidget):
         self.setMaximumWidth(800)
         self.setMaximumHeight(600)
         self.setAutoFillBackground(False)
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.Tool)
+
+        #QUIRINO: NonModal to let click on map
+        self.setWindowModality(Qt.NonModal)
+        self.setWindowOpacity(0.5) 
         
         self.message = None
         
@@ -29,17 +34,14 @@ class QtMessageWidget(QWidget):
         self.message_box.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         self.message_box.setWordWrap(True)
         
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
-        
         self.message_box.setStyleSheet("background-color: rgba(0, 0, 0, 0.5); color: white;")
         
         self.layout = QVBoxLayout()
         self.layout.addWidget(self.message_box)
-        self.setLayout(self.layout)
-        
-        # Align the window to the top left corner of viewerplus
-        self.move(50, 110)
-        
-        
+        self.setLayout(self.layout)      
+ 
     def setMessage(self, message):
         self.message_box.setText(message)
+
+    def move(self, x, y):
+        super(QtMessageWidget, self).move(x, y)
