@@ -43,6 +43,7 @@ class QtMessageWidget(QWidget):
         
         self.layout = QVBoxLayout()
         self.layout.addWidget(self.message_box)
+        self.layout.setContentsMargins(0, 0, 0, 0)  # Remove padding
         self.setLayout(self.layout)      
  
     def setMessage(self, message):
