@@ -4,7 +4,7 @@
 
 TagLab was created to support the activity of annotation and extraction of statistical data from ortho-maps of benthic communities. The tool includes different types of CNN-based segmentation networks specially trained for agnostic (relative only to contours) or semantic (also related to species) recognition of corals. TagLab is an ongoing project of the Visual Computing Lab http://vcg.isti.cnr.it/.
 
-![ScreenShot](screenshot.jpg)
+![ScreenShot](screenshot_masonry.jpg)
 
 
 ## Interaction
@@ -43,7 +43,95 @@ If you don't have a NVida graphics card (or if you use MacOS), CPU will be used.
 
 ## Installing TagLab
 
-See the instructions on the [wiki](https://github.com/cnr-isti-vclab/TagLab/wiki/Install-TagLab).
+### Passo 1: Prerequisiti 
+
+Prima di installare TagLab, accertarsi di avere installato sul PC la versione a **64 bit di Python 3.11 e NVIDIA CUDA Toolkit**. CUDA non è disponibile su sistemi Mac, quindi si sconsiglia l’uso di TagLab sotto Mac (andrebbe in CPU, ossia con performance nettamente inferiori).  
+
+NVIDIA CUDA Toolkits links: 
+
+* [CUDA Toolkit 11.3](https://developer.nvidia.com/cuda-11.3.0-download-archive)<br>
+* [CUDA Toolkit 11.6](https://developer.nvidia.com/cuda-11-6-0-download-archive) (Recommended)<br>
+* [CUDA Toolkit 11.7](https://developer.nvidia.com/cuda-11-7-0-download-archive)<br>
+
+
+**IMPORTANTE: Quando viene installato Python sotto Windows bisogna accertarsi che il PATH sia aggiunto al Sistema e che I limiti di lunghezza dei PATH siano disabilitati cliccando su Disable PATH Limit Length** (vedere screenshot successivi, tralasciare che si tratta di Python 3.8). 
+
+<p align="center"">
+<img src="https://github.com/cnr-isti-vclab/TagLab/blob/main/docs/python-installation-add-to-PATH.png" width=600px>
+<img src="https://github.com/cnr-isti-vclab/TagLab/blob/main/docs/python-disable-path-length-limit.png" width=600px>
+</p>
+
+E’ possible controllare le versioni sul proprio Sistema di Python o CUDA scrivendo nella shell comandi:  
+
+```
+python3 --version 
+
+nvcc --version 
+```
+rispettivamente.  
+
+**Windows**
+
+Sotto Windows, bisogna installare anche il Visual Studio Redistributable (link). 
+
+**Linux**
+
+Sotto Linux, non ci sono ulteriori requisiti addizionali.  
+
+**MacOS**
+
+Gli utenti MacOS, oltre a Python, devono installare HomeBrew (link) e successivamente la libreria GDAL. 
+
+
+### Passo 2: Clonare il repositorio di TagLab 
+
+A questo punto è sufficiente clonare il repositorio di TagLab cliccando su "Clone or Download" e decomprimendo lo zip scaricato nella cartella in cui si vuole installare TagLab.  
+
+### Passo 3: Finalizzare installazione   
+
+    Aprire un terminale, una shell 
+
+    Andare nella cartella dove e’ stato copiato TagLab 
+
+    Digitare il comando: 
+
+```
+python3 install.py 
+```
+
+oppure, sotto Windows: 
+
+```
+python.exe install.py 
+```
+
+Lo script install.py installera’ le librerie di python necessarie per il funzionamento di TagLab, e scarichera’ le reti nella cartella models. Se NVIDIA CUDA Toolkit non e’ supportato dalla propria macchina e’ possible effettuare l’installazione della versione cpu digitando: 
+
+```
+python3 install.py cpu 
+```
+
+oppure, sotto Windows: 
+
+```
+python.exe install.py cpu 
+```
+
+### Passo 4: Eseguire TagLab 
+
+Nella shell, scrivere il commando: 
+
+```
+python3 TagLab.py 
+```
+
+oppure, sotto Windows: 
+
+```
+python.exe taglab.py 
+```
+
+Per testare se tutto funziona correttamente, provare ad aprire i progetti di esempio dentro la cartella “projects”. 
 
 ## Updating TagLab
 
