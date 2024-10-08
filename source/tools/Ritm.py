@@ -25,7 +25,7 @@ class Ritm(Tool):
 
         self.points = corrective_points
         self.ritm_net = None
-        self.MAX_POINTS = 10
+        self.MAX_POINTS = 30
 
         self.clicker = clicker.Clicker() #handles clicked point (original code of ritm)
         self.predictor = None
