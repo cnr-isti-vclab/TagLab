@@ -1,0 +1,326 @@
+{
+  "Name": "masonry",
+  "Description": "Labels for masonry",
+  "Labels": [
+    {
+      "id": "Modern_A",
+      "name": "Modern_A",
+      "description": null,
+      "fill": [
+        252,
+        175,
+        62
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Modern_B",
+      "name": "Modern_B",
+      "description": null,
+      "fill": [
+        143,
+        89,
+        2
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Flora_A",
+      "name": "Flora_A",
+      "description": null,
+      "fill": [
+        138,
+        226,
+        52
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Flora_B",
+      "name": "Flora_B",
+      "description": null,
+      "fill": [
+        78,
+        154,
+        6
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Unknown_A",
+      "name": "Unknown_A",
+      "description": null,
+      "fill": [
+        136,
+        138,
+        133
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Unknown_B",
+      "name": "Unknown_B",
+      "description": null,
+      "fill": [
+        46,
+        52,
+        54
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Buca pontatia_A",
+      "name": "Buca pontatia_A",
+      "description": null,
+      "fill": [
+        239,
+        41,
+        41
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Buca Pontaia_B",
+      "name": "Buca Pontaia_B",
+      "description": null,
+      "fill": [
+        164,
+        0,
+        0
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Pietra_A",
+      "name": "Pietra_A",
+      "description": null,
+      "fill": [
+        32,
+        74,
+        135
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Pietra_B",
+      "name": "Pietra_B",
+      "description": null,
+      "fill": [
+        52,
+        101,
+        164
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Pietra_C",
+      "name": "Pietra_C",
+      "description": null,
+      "fill": [
+        114,
+        159,
+        207
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Mattoni_A",
+      "name": "Mattoni_A",
+      "description": null,
+      "fill": [
+        252,
+        233,
+        79
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Mattoni_B",
+      "name": "Mattoni_B",
+      "description": null,
+      "fill": [
+        237,
+        212,
+        0
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Mattoni_C",
+      "name": "Mattoni_C",
+      "description": null,
+      "fill": [
+        196,
+        160,
+        0
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Mixed_A",
+      "name": "Mixed_A",
+      "description": null,
+      "fill": [
+        92,
+        53,
+        102
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Mixed_B",
+      "name": "Mixed_B",
+      "description": null,
+      "fill": [
+        117,
+        80,
+        123
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Mixed_C",
+      "name": "Mixed_C",
+      "description": null,
+      "fill": [
+        173,
+        127,
+        168
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Struttura_A",
+      "name": "Struttura_A",
+      "description": null,
+      "fill": [
+        62,
+        45,
+        178
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Struttura_B",
+      "name": "Struttura_B",
+      "description": null,
+      "fill": [
+        64,
+        114,
+        221
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Struttura_C",
+      "name": "Struttura_C",
+      "description": null,
+      "fill": [
+        21,
+        79,
+        138
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    }
+  ]
+}

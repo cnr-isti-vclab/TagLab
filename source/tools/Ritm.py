@@ -41,6 +41,7 @@ class Ritm(Tool):
 
         #QUIRINO: message for message_widget window
         message = "Press and hold shift<br><br>\
+            Zoom in and frame the object entirely<br><br>\
             Left click to add points that belong to the object (positive points)<br><br>\
             Right click to add points that do not belong to the object (negative points)<br><br>\
             Press spacebar to apply<br>\
