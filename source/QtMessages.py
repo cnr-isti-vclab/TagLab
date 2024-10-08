@@ -16,11 +16,8 @@ class QtMessageWidget(QWidget):
 
         self.setStyleSheet("background-color: rgba(40,40,40); color: white")
 
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.setMinimumWidth(250)
-        self.setMinimumHeight(150)
-        self.setMaximumWidth(800)
-        self.setMaximumHeight(600)
+        
+
         self.setAutoFillBackground(False)
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.Tool)
 
@@ -31,8 +28,16 @@ class QtMessageWidget(QWidget):
         self.message = None
         
         self.message_box = QLabel()
+        
+        # self.message_box.setMaximumWidth(550)
+        # self.message_box.setMaximumHeight(350)
+        
+        # self.message_box.setMinimumWidth(250)
+        # self.message_box.setMinimumHeight(150)
+
+        self.message_box.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         self.message_box.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-        self.message_box.setWordWrap(True)
+        self.message_box.setWordWrap(False)
         
         self.message_box.setStyleSheet("background-color: rgba(0, 0, 0, 0.5); color: white;")
         

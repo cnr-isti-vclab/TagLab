@@ -129,9 +129,7 @@ class Tools(QObject):
       
     #QUIRINO: method to select tools for tool message window      
     def toolMessage(self):
-        if self.tool == "WATERSHED" or self.tool == "SAM":
-            # self.tools[self.tool].toolMessage()
-            # mess = self.tools[self.tool].tool_message
+        if self.tool == "WATERSHED" or self.tool == "SAM" or self.tool == "RITM" or self.tool == "FREEHAND" or self.tool == "BRICKS": #or self.tool ==:
             self.tol_mess.emit(self.tools[self.tool].tool_message)
         else:
             self.tol_mess.emit(None)

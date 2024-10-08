@@ -39,6 +39,13 @@ class Ritm(Tool):
         self.work_area_item = None
         self.states = []
 
+        #QUIRINO: message for message_widget window
+        message = "Press and hold shift<br><br>\
+            Left click to add points that belong to the object (positive points)<br><br>\
+            Right click to add points that do not belong to the object (negative points)<br><br>\
+            Press spacebar to apply<br>\
+            "
+        self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
     def checkPointPosition(self, x, y):
 

@@ -20,6 +20,12 @@ class BricksSegmentation(Tool):
             blob = selected_blob.copy()
             self.setupWidget(blob)
 
+        message = "Click on an existing blob<br><br>\
+            Set a minimum and a maximum widht/height for bricks/stones<br><br>\
+            Choose if bricks or stones<br><br>\
+            Push Apply button"
+        self.tool_message = f'<div style="text-align: left;">{message}</div>'
+
     def setupWidget(self, blob):
 
         bricksWidget = self.viewerplus.bricksWidget

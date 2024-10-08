@@ -7,6 +7,10 @@ class Freehand(Tool):
         self.viewerplus = viewerplus
         self.edit_points = edit_points
 
+        message = "Draw a CLOSED curve on the map <br><br>\
+            Spacebar to apply"
+        self.tool_message = f'<div style="text-align: left;">{message}</div>'
+
     def leftPressed(self, x, y, mods):
         if self.edit_points.startDrawing(x, y):
             self.log.emit("[TOOL][FREEHAND] DRAWING starts..")

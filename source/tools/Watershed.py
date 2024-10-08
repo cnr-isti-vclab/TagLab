@@ -25,11 +25,14 @@ class Watershed(Tool):
         self.scribbles = scribbles
         self.current_blobs = []
         
-        self.tool_message = "WATERSHED PROVA TOOL"
-
-    #QUIRINO: method to emit the message for the tool
-    # def toolMessage(self):
-    #     self.tool_message.emit("Watershed funziona così")
+        message = "Select the class you want to assign to the area<br>\
+        <br>\
+        Draw the area in the map<br>\
+        <br>\
+        select another class and draw another area (at least)<br>\
+        <br>\
+        Click spacebar to apply and start segmentation"
+        self.tool_message = f'<div style="text-align: left;">{message}</div>'
     
     def setActiveLabel(self, label):
         self.scribbles.setLabel(label)
