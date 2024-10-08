@@ -7,8 +7,10 @@ class Freehand(Tool):
         self.viewerplus = viewerplus
         self.edit_points = edit_points
 
-        message = "Draw a CLOSED curve on the map <br><br>\
-            Spacebar to apply"
+        message = "<p><i>Draw a CLOSED curve on the map</i></p>"
+        message += "<p>Left Click + drag to draw</p>"
+        message += "<p>CTRL + left Click + drag to pan view</p>"
+        message += "<p>Spacebar to apply segmentation</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
     def leftPressed(self, x, y, mods):

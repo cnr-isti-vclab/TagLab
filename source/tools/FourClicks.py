@@ -34,7 +34,9 @@ class FourClicks(Tool):
         self.deepextreme_net = None
         self.device = None
 
-        message = "Add 4 points around the object (top - bottom - left - right"
+        message = "<p><i>Mark 4 points on the boundary of the object:</br>top - bottom - left - right</i></p>"
+        message += "<p>SHIFT + Left Click to add a point</p>"
+        message += "<p>When 4th point is chosen, the segmentation will be applied</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
     def leftPressed(self, x, y, mods):

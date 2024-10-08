@@ -40,12 +40,11 @@ class Ritm(Tool):
         self.states = []
 
         #QUIRINO: message for message_widget window
-        message = "Press and hold shift<br><br>\
-            Zoom in and frame the object entirely<br><br>\
-            Left click to add points that belong to the object (positive points)<br><br>\
-            Right click to add points that do not belong to the object (negative points)<br><br>\
-            Press spacebar to apply<br>\
-            "
+        message = "<p><i>Segment using positive/negative points</i></p>"
+        message += "<p>Zoom in and frame the object of interest to reduce memory use</p>"
+        message += "<p>SHIFT + Left click to add a point inside the object (positive)</p>"
+        message += "<p>SHIFT + Right click to add a point outside the object (negative)</p>"
+        message += "<p>Press spacebar to confirm segmentation</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
     def checkPointPosition(self, x, y):
