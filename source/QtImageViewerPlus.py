@@ -974,7 +974,8 @@ class QtImageViewerPlus(QtImageViewer):
                 self.logfile.info("[SELECTION][DRAG] Selection starts..")
 
             else:
-                self.tools.leftPressed(x, y)
+                # self.tools.leftPressed(x, y)
+                self.setDragMode(QGraphicsView.ScrollHandDrag)
 
         # PANNING IS ALWAYS POSSIBLE WITH WHEEL BUTTON PRESSED (!)
         # if event.button() == Qt.MiddleButton:
