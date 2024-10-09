@@ -234,6 +234,9 @@ install_requires = [
 
     # SAM
     'segment-anything',
+
+    #forcing numpy 1.24.2 version
+    'numpy==1.24.4',
 ]
 
 # if on windows, first install the msvc runtime
