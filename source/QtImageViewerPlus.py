@@ -1016,6 +1016,11 @@ class QtImageViewerPlus(QtImageViewer):
             else:
                 self.tools.leftReleased(x, y)
 
+        if event.button() == Qt.RightButton:
+            (x, y) = self.clipScenePos(scenePos)
+            if self.tools.tool == "WATERSHED":
+                self.tools.rightReleased(x,y)
+
     def mouseMoveEvent(self, event):
 
         QGraphicsView.mouseMoveEvent(self, event)

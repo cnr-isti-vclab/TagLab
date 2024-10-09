@@ -25,6 +25,7 @@ class Watershed(Tool):
         self.viewerplus = viewerplus
         self.scribbles = scribbles
         self.current_blobs = []
+        self.currentLabel = None
         
         message = "<p><i>Draw scribbles inside and around an area of interest</i></p>"
         message += "<p>Select a class for the area of interest<br/>and draw scribbles INSIDE the area</p>"
@@ -37,21 +38,22 @@ class Watershed(Tool):
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
     
     def setActiveLabel(self, label):
-        print(f"ActiveLabel id is {label.id}\n\
-              ActiveLabel name is {label.name}\n")
-
-        self.scribbles.setLabel(label)
+        # print(f"ActiveLabel id is {label.id}\n\
+        #       ActiveLabel name is {label.name}\n")
+        self.currentLabel = label
+        self.scribbles.setLabel(self.currentLabel)
 
     def leftPressed(self, x, y, mods):
         if mods == Qt.ShiftModifier:
-            self.setActiveLabel(self.scribbles.previous_label)
+            # self.setActiveLabel(self.scribbles.previous_label)
+            self.scribbles.setLabel(self.currentLabel)
             if self.scribbles.startDrawing(x, y):
                 self.log.emit("[TOOL][FREEHAND] DRAWING starts..")
 
     def rightPressed(self, x, y, mods):
         if mods == Qt.ShiftModifier:
-            lbl = Label("pippo", "pippo", fill=[255, 255, 255], border=[0, 0, 0]) 
-            self.setActiveLabel(lbl)
+            fakeLabel = Label("Dummy", "Dummy", fill=[255, 255, 255], border=[0, 0, 0]) 
+            self.scribbles.setLabel(fakeLabel)
             if self.scribbles.startDrawing(x, y):
                 self.log.emit("[TOOL][FREEHAND] DRAWING starts..")
 
@@ -207,8 +209,9 @@ class Watershed(Tool):
 
         return blobs
 
-    def leftReleased(self, x, y):
-        pass
+    def rightReleased(self, x, y):
+        self.scribbles.setLabel(self.currentLabel)
+        # pass
 
         # for blob in self.current_blobs:
         #     self.viewerplus.removeBlob(blob)
@@ -227,7 +230,7 @@ class Watershed(Tool):
         blobs = self.segmentation()
 
         for blob in blobs:
-            if blob.class_name != "pippo":
+            if blob.class_name != "Dummy":
                 self.viewerplus.addBlob(blob)
             
         self.viewerplus.resetTools()

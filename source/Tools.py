@@ -158,6 +158,12 @@ class Tools(QObject):
             return
         self.tools[self.tool].leftReleased(x, y)
 
+    def rightReleased(self, x, y):
+        if self.tool == "MOVE":
+            return
+        if self.tool == "WATERSHED":
+            self.tools[self.tool].rightReleased(x, y)
+
     def wheel(self, delta):
         if self.tool == "MOVE":
             return
@@ -167,6 +173,7 @@ class Tools(QObject):
         if self.tool == "MOVE":
             return
         self.tools[self.tool].apply()
+
 
 
 

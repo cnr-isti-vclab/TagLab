@@ -83,8 +83,8 @@ class Scribbles(QObject):
 
     def setLabel(self, label):
 
-        if self.current_label.id is not ("pippo" or "Background" or ""):
-            self.previous_label = self.current_label
+        # if self.current_label.id != "pippo":
+        #     self.previous_label = self.current_label
         
         self.current_label = label
 
