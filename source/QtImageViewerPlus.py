@@ -959,7 +959,7 @@ class QtImageViewerPlus(QtImageViewer):
             (x, y) = self.clipScenePos(scenePos)
             self.leftMouseButtonPressed.emit(x, y)
             
-            if self.tools.tool == "WATERSHED" and (mods & Qt.ControlModifier or mods & Qt.ShiftModifier):
+            if (self.tools.tool == "WATERSHED" or self.tools.tool == "FREEHAND" or self.tools.tool == "EDITBORDER") and mods & Qt.ShiftModifier:
                     self.tools.leftPressed(x, y, mods)
             
             #used from area selection and pen drawing,
@@ -1043,7 +1043,7 @@ class QtImageViewerPlus(QtImageViewer):
             if Qt.ControlModifier & QApplication.queryKeyboardModifiers():
                 return
             
-            if self.tools.tool == "WATERSHED":
+            if self.tools.tool == "WATERSHED" or self.tools.tool == "FREEHAND" or self.tools.tool == "EDITBORDER":
                 self.tools.mouseMove(x, y, mods)
             else:
                 self.tools.mouseMove(x, y)

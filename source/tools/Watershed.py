@@ -29,8 +29,9 @@ class Watershed(Tool):
         message = "<p><i>Draw scribbles inside and around an area of interest</i></p>"
         message += "<p>Select a class for the area of interest<br/>and draw scribbles INSIDE the area</p>"
         message += "<p>SHIFT + wheel to set brush size</p>"
-        message += "<p>Left click + drag to draw a scribble</p>"
-        message += "<p>Select another class for the OUTSIDE of the area of interest<br/>and draw scribbles AROUND the area</p>"
+        message += "<p>Shift + Left click + drag to draw a scribble of the selected</p>"
+        message += "<p>Shift + Right click + drag to draw a scribble around all the scribbles of the area of interest</p>"
+        # message += "<p>Select another class for the OUTSIDE of the area of interest<br/>and draw scribbles AROUND the area</p>"
         message += "<p>CTRL + Left click + drag to pan the view</p>"
         message += "<p>Spacebar to apply segmentation</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
