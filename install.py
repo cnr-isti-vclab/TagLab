@@ -259,11 +259,11 @@ if osused != 'Windows':
     subprocess.check_call([sys.executable, "-m", "pip", "install", gdal_package])
     subprocess.check_call([sys.executable, "-m", "pip", "install", 'rasterio'])
 else:
-    base_url = 'https://github.com/cgohlke/geospatial-wheels/releases/download/v2024.2.18/' # GDAL-3.8.4-cp310-cp310-win32.whl
+    base_url = 'https://github.com/cgohlke/geospatial-wheels/releases/download/v2024.9.22/' # GDAL-3.9.2-cp310-cp310-win32.whl
     pythonversion = str(sys.version_info[0]) + str(sys.version_info[1])
     # compute rasterio and gdal urls download
-    rasterio_win_version = '1.3.9'
-    gdal_win_version = '3.8.4'
+    rasterio_win_version = '1.3.11'
+    gdal_win_version = '3.9.2'
     filename_gdal = 'gdal-' + gdal_win_version + '-cp' + pythonversion + '-cp' + pythonversion
     filename_rasterio = 'rasterio-' + rasterio_win_version +'-cp' + pythonversion + '-cp' + pythonversion
     filename_gdal += '-win_amd64.whl'
