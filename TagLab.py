@@ -273,7 +273,7 @@ class TagLab(QMainWindow):
         layout_tools.addWidget(self.btnFreehand)
         layout_tools.addWidget(self.btnAssign)
         layout_tools.addWidget(self.btnWatershed)
-        layout_tools.addWidget(self.btnBricksSegmentation)
+        # layout_tools.addWidget(self.btnBricksSegmentation)
         layout_tools.addWidget(self.btnSam)
         layout_tools.addWidget(self.btnEditBorder)
         layout_tools.addWidget(self.btnCut)
@@ -688,7 +688,7 @@ class TagLab(QMainWindow):
         :param show: If True, buttons will be shown; if False, buttons will be hidden.
         """
         self.btnWatershed.setVisible(show)
-        self.btnBricksSegmentation.setVisible(show)
+        # self.btnBricksSegmentation.setVisible(show)
 
         if self.SAM_is_available is not True:
             self.btnSam.setVisible(False)
@@ -2519,7 +2519,7 @@ class TagLab(QMainWindow):
             "CUT"          : ["Cut"          , self.btnCut],
             "FREEHAND"     : ["Freehand"     , self.btnFreehand],
             "WATERSHED"    : ["Watershed"    , self.btnWatershed],
-            "BRICKS"       : ["Bricks",        self.btnBricksSegmentation],
+            # "BRICKS"       : ["Bricks",        self.btnBricksSegmentation],
             "RULER"        : ["Ruler"        , self.btnRuler],
             "FOURCLICKS"   : ["4-click"      , self.btnFourClicks],
             "MATCH"        : ["Match"        , self.btnMatch],

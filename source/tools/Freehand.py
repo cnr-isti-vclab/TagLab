@@ -1,6 +1,8 @@
 from source.tools.Tool import Tool
 from source.Blob import Blob
 
+from PyQt5.QtCore import Qt
+
 class Freehand(Tool):
     def __init__(self, viewerplus, edit_points):
         super(Freehand, self).__init__(viewerplus)
@@ -8,17 +10,19 @@ class Freehand(Tool):
         self.edit_points = edit_points
 
         message = "<p><i>Draw a CLOSED curve on the map</i></p>"
-        message += "<p>Left Click + drag to draw</p>"
+        message += "<p>Shift + Left Click + drag to draw</p>"
         message += "<p>CTRL + left Click + drag to pan view</p>"
         message += "<p>Spacebar to apply segmentation</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
     def leftPressed(self, x, y, mods):
-        if self.edit_points.startDrawing(x, y):
-            self.log.emit("[TOOL][FREEHAND] DRAWING starts..")
+        if mods == Qt.ShiftModifier:
+            if self.edit_points.startDrawing(x, y):
+                self.log.emit("[TOOL][FREEHAND] DRAWING starts..")
 
-    def mouseMove(self, x, y):
-        self.edit_points.move(x, y)
+    def mouseMove(self, x, y, mods):
+        if mods == Qt.ShiftModifier:
+            self.edit_points.move(x, y)
 
     def apply(self):
         if len(self.edit_points.points) == 0:
