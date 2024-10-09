@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 
 from PyQt5.QtCore import Qt, QObject, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
 
+from source.Label import Label
 
 class Watershed(Tool):
     
@@ -35,14 +36,28 @@ class Watershed(Tool):
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
     
     def setActiveLabel(self, label):
+        print(f"ActiveLabel id is {label.id}\n\
+              ActiveLabel name is {label.name}\n")
+
         self.scribbles.setLabel(label)
 
     def leftPressed(self, x, y, mods):
-        if self.scribbles.startDrawing(x, y):
-            self.log.emit("[TOOL][FREEHAND] DRAWING starts..")
+        if mods == Qt.ShiftModifier:
+            self.setActiveLabel(self.scribbles.previous_label)
+            if self.scribbles.startDrawing(x, y):
+                self.log.emit("[TOOL][FREEHAND] DRAWING starts..")
 
-    def mouseMove(self, x, y):
-        self.scribbles.move(x, y)
+    def rightPressed(self, x, y, mods):
+        if mods == Qt.ShiftModifier:
+            lbl = Label("pippo", "pippo", fill=[255, 255, 255], border=[0, 0, 0]) 
+            self.setActiveLabel(lbl)
+            if self.scribbles.startDrawing(x, y):
+                self.log.emit("[TOOL][FREEHAND] DRAWING starts..")
+
+
+    def mouseMove(self, x, y, mods):
+        if mods &  Qt.ShiftModifier:
+            self.scribbles.move(x, y)
 
     def wheel(self, delta):
         increase = float(delta.y()) / 10.0
@@ -211,6 +226,7 @@ class Watershed(Tool):
         blobs = self.segmentation()
 
         for blob in blobs:
-            self.viewerplus.addBlob(blob)
+            if blob.class_name != "pippo":
+                self.viewerplus.addBlob(blob)
             
         self.viewerplus.resetTools()

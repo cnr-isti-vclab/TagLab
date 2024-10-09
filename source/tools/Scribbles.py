@@ -22,6 +22,7 @@ class Scribbles(QObject):
         self.border_pen.setCosmetic(False)
 
         self.current_label = Label("Background", "Background", description=None, fill=[0, 0, 0])
+        self.previous_label = Label("Background", "Background", description=None, fill=[0, 0, 0])
 
         self.qpath_gitem = None
         self.qpath_list = []
@@ -82,6 +83,9 @@ class Scribbles(QObject):
 
     def setLabel(self, label):
 
+        if self.current_label.id is not ("pippo" or "Background" or ""):
+            self.previous_label = self.current_label
+        
         self.current_label = label
 
         # new cursor color
@@ -111,7 +115,6 @@ class Scribbles(QObject):
 
     # return true if the first points for a tool
     def startDrawing(self, x, y):
-
         first_start = False
         if len(self.points) == 0:  # first point, initialize
             first_start = True
@@ -135,7 +138,7 @@ class Scribbles(QObject):
         return first_start
 
     def move(self, x, y):
-
+ 
         if len(self.points) == 0:
             return
 

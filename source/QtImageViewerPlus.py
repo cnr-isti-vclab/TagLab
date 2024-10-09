@@ -810,7 +810,7 @@ class QtImageViewerPlus(QtImageViewer):
         if tool in ["FREEHAND", "RULER", "FOURCLICKS", "PLACEANNPOINT"] or (tool in ["CUT", "EDITBORDER", "RITM"] and len(self.selected_blobs) > 1):
             self.resetSelection()
 
-        if tool == "RITM" or tool == "SAMINTERACTIVE":
+        if tool == "RITM" or tool == "SAMINTERACTIVE" or tool == "WATERSHED":
             self.setContextMenuPolicy(Qt.NoContextMenu)
         else:
             self.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -958,10 +958,14 @@ class QtImageViewerPlus(QtImageViewer):
         if event.button() == Qt.LeftButton:
             (x, y) = self.clipScenePos(scenePos)
             self.leftMouseButtonPressed.emit(x, y)
-
+            
+            if self.tools.tool == "WATERSHED" and (mods & Qt.ControlModifier or mods & Qt.ShiftModifier):
+                    self.tools.leftPressed(x, y, mods)
+            
             #used from area selection and pen drawing,
-            if (self.panEnabled and not (mods & Qt.ShiftModifier)) or (mods & Qt.ControlModifier):
+            elif (self.panEnabled and not (mods & Qt.ShiftModifier)) or (mods & Qt.ControlModifier):
                 self.setDragMode(QGraphicsView.ScrollHandDrag)
+            
             elif self.tools.tool == "MATCH" or self.tools.tool == "RITM" or self.tools.tool == "SAMINTERACTIVE" or self.tools.tool == "FOURCLICKS" or self.tools.tool == "PLACEANNPOINT":
                 self.tools.leftPressed(x, y, mods)
 
@@ -978,8 +982,9 @@ class QtImageViewerPlus(QtImageViewer):
 
         if event.button() == Qt.RightButton:
             (x, y) = self.clipScenePos(scenePos)
-            if self.tools.tool == "RITM" or self.tools.tool == "SAMINTERACTIVE":
+            if self.tools.tool == "RITM" or self.tools.tool == "SAMINTERACTIVE" or self.tools.tool == "WATERSHED":
                 self.tools.rightPressed(x, y, mods)
+
             else:
                 self.rightMouseButtonPressed.emit(x, y)
 
@@ -1018,6 +1023,8 @@ class QtImageViewerPlus(QtImageViewer):
         scenePos = self.mapToScene(event.pos())
         self.mouseMoved.emit(scenePos.x(), scenePos.y())
 
+        mods = event.modifiers()
+
         if self.showCrossair == True:
             self.mouseCoords = scenePos
             self.scene.invalidate(self.sceneRect(), QGraphicsScene.ForegroundLayer)
@@ -1035,8 +1042,17 @@ class QtImageViewerPlus(QtImageViewer):
 
             if Qt.ControlModifier & QApplication.queryKeyboardModifiers():
                 return
+            
+            if self.tools.tool == "WATERSHED":
+                self.tools.mouseMove(x, y, mods)
+            else:
+                self.tools.mouseMove(x, y)
 
-            self.tools.mouseMove(x, y)
+        elif event.buttons() == Qt.RightButton:
+            (x, y) = self.clipScenePos(scenePos)
+            if self.tools.tool == "WATERSHED":
+                self.tools.mouseMove(x, y, mods)
+
 
 
     def mouseDoubleClickEvent(self, event):
