@@ -1,4 +1,5 @@
 from source.tools.Tool import Tool
+from PyQt5.QtCore import Qt
 
 class Cut(Tool):
     def __init__(self, viewerplus, edit_points):
@@ -7,11 +8,14 @@ class Cut(Tool):
         self.edit_points = edit_points
 
     def leftPressed(self, x, y, mods):
-        if self.edit_points.startDrawing(x, y):
-            self.log.emit("[TOOL][EDITBORDER] DRAWING starts..")
+        if mods == Qt.ShiftModifier:
 
-    def mouseMove(self, x, y):
-        self.edit_points.move(x, y)
+            if self.edit_points.startDrawing(x, y):
+                self.log.emit("[TOOL][EDITBORDER] DRAWING starts..")
+
+    def mouseMove(self, x, y, mods):
+        if mods == Qt.ShiftModifier:
+            self.edit_points.move(x, y)
 
     def apply(self):
         points = self.edit_points.points

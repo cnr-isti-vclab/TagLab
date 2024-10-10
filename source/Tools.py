@@ -148,10 +148,10 @@ class Tools(QObject):
     def mouseMove(self, x, y, mods = None):
         if self.tool == "MOVE":
             return
-        if self.tool == "WATERSHED" or self.tool == "FREEHAND" or self.tool == "EDITBORDER":
-            self.tools[self.tool].mouseMove(x, y, mods)
-        else:
-            self.tools[self.tool].mouseMove(x, y)
+        # if self.tool == "WATERSHED" or self.tool == "FREEHAND" or self.tool == "EDITBORDER":
+        self.tools[self.tool].mouseMove(x, y, mods)
+        # else:
+            # self.tools[self.tool].mouseMove(x, y)
 
     def leftReleased(self, x, y):
         if self.tool == "MOVE":

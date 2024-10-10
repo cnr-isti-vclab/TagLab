@@ -23,7 +23,7 @@ class Tool(QObject):
     def rightPressed(self, x, y, mods = None):
         pass
 
-    def mouseMove(self, x, y):
+    def mouseMove(self, x, y, mods = None):
         pass
 
     def leftReleased(self, x, y):

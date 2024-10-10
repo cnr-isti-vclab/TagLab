@@ -834,10 +834,10 @@ class QtImageViewerPlus(QtImageViewer):
             self.showCrossair = False
 
         # WHEN panning is active or not
-        if tool == "MOVE" or tool == "MATCH" or tool == "FOURCLICKS" or tool == "RITM" or tool == "PLACEANNPOINT":
-            self.enablePan()
-        else:
-            self.disablePan()  # in this case, it is possible to PAN only moving the mouse and pressing the CTRL key
+        # if tool == "MOVE" or tool == "MATCH" or tool == "FOURCLICKS" or tool == "RITM" or tool == "PLACEANNPOINT":
+        #     self.enablePan()
+        # else:
+        #     self.disablePan()  # in this case, it is possible to PAN only moving the mouse and pressing the CTRL key
 
         if tool == "SAM":
         #     #QUIRINI: calls methods to set the window cursor for the SAM tool
@@ -959,17 +959,18 @@ class QtImageViewerPlus(QtImageViewer):
             (x, y) = self.clipScenePos(scenePos)
             self.leftMouseButtonPressed.emit(x, y)
             
-            if (self.tools.tool == "WATERSHED" or self.tools.tool == "FREEHAND" or self.tools.tool == "EDITBORDER") and mods & Qt.ShiftModifier:
+            # if (self.tools.tool == "WATERSHED" or self.tools.tool == "FREEHAND" or self.tools.tool == "EDITBORDER" or self.tools.tool == "RULER") and mods & Qt.ShiftModifier:
+            if mods & Qt.ShiftModifier:
                     self.tools.leftPressed(x, y, mods)
             
-            #used from area selection and pen drawing,
-            elif (self.panEnabled and not (mods & Qt.ShiftModifier)) or (mods & Qt.ControlModifier):
-                self.setDragMode(QGraphicsView.ScrollHandDrag)
+            # #used from area selection and pen drawing,
+            # elif (self.panEnabled and not (mods & Qt.ShiftModifier)) or (mods & Qt.ControlModifier):
+            #     self.setDragMode(QGraphicsView.ScrollHandDrag)
             
-            elif self.tools.tool == "MATCH" or self.tools.tool == "RITM" or self.tools.tool == "SAMINTERACTIVE" or self.tools.tool == "FOURCLICKS" or self.tools.tool == "PLACEANNPOINT":
-                self.tools.leftPressed(x, y, mods)
+            # elif self.tools.tool == "MATCH" or self.tools.tool == "RITM" or self.tools.tool == "SAMINTERACTIVE" or self.tools.tool == "FOURCLICKS" or self.tools.tool == "PLACEANNPOINT":
+            #     self.tools.leftPressed(x, y, mods)
 
-            elif mods & Qt.ShiftModifier:
+            elif self.tools.tool == "MOVE" and mods & Qt.ShiftModifier:
                 self.dragSelectionStart = [x, y]
                 self.logfile.info("[SELECTION][DRAG] Selection starts..")
 
@@ -1049,10 +1050,10 @@ class QtImageViewerPlus(QtImageViewer):
             if Qt.ControlModifier & QApplication.queryKeyboardModifiers():
                 return
             
-            if self.tools.tool == "WATERSHED" or self.tools.tool == "FREEHAND" or self.tools.tool == "EDITBORDER":
-                self.tools.mouseMove(x, y, mods)
-            else:
-                self.tools.mouseMove(x, y)
+            # if self.tools.tool == "WATERSHED" or self.tools.tool == "FREEHAND" or self.tools.tool == "EDITBORDER":
+            self.tools.mouseMove(x, y, mods)
+            # else:
+            #     self.tools.mouseMove(x, y)
 
         elif event.buttons() == Qt.RightButton:
             (x, y) = self.clipScenePos(scenePos)
