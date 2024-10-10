@@ -10,7 +10,7 @@ if osused != 'Linux' and osused != 'Windows' and osused != 'Darwin':
 
 # check python version
 if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and (sys.version_info[1] < 10)):
-    raise Exception("Python " + str(sys.version_info[0]) + "." + str(sys.version_info[1] + " not supported. Please see https://github.com/cnr-isti-vclab/TagLab/wiki/Install-TagLab")
+    raise Exception("Python " + str(sys.version_info[0]) + "." + str(sys.version_info[1]) + " not supported. Please see https://github.com/cnr-isti-vclab/TagLab/wiki/Install-TagLab")
 
 # manage thorch
 
