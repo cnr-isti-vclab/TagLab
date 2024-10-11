@@ -45,9 +45,12 @@ class Sam(Tool):
         self.seed_nr = 0
         self.not_overlapping = []
         
-        message = "To resize windows cursor: Hold Shift and Mouse Wheel<br><br>\
-            To apply SAM segmentation on the area inside the window cursor:<br>\
-            mouse left button + Spacebar"
+        message = "<p><i>Automatic segmentation with SegmentAnything neural network</i></p>"
+        message += "Choose a working area by resizing the window cursor:<br>\ Hold Shift and Use Mouse Wheel<br><br>"
+        message += "Apply SAM segmentation on the area inside the window cursor:<br>"
+        # To resize windows cursor: Hold Shift and Mouse Wheel<br><br>\
+        #     To apply SAM segmentation on the area inside the window cursor:<br>\
+            # mouse left button + Spacebar"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
        
 

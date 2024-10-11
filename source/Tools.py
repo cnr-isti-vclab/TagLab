@@ -130,7 +130,8 @@ class Tools(QObject):
     #method to select tools for tool message window      
     def toolMessage(self):
         if self.tool == "WATERSHED" or self.tool == "SAM" or self.tool == "RITM"\
-              or self.tool == "FREEHAND" or self.tool == "BRICKS" or self.tool == "FOURCLICKS":
+              or self.tool == "FREEHAND" or self.tool == "BRICKS" or self.tool == "FOURCLICKS" or\
+              self.tool == "EDITBORDER" or self.tool == "CUT" or self.tool == "ASSIGN":
             self.tol_mess.emit(self.tools[self.tool].tool_message)
         else:
             self.tol_mess.emit(None)

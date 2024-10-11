@@ -5,6 +5,11 @@ class Assign(Tool):
         super(Assign, self).__init__(viewerplus)
         self.active_label = None
 
+        message = "<p><i>Assign a class to a blob</i></p>"
+        message += "<p>Choose the class in the table</p>"
+        message += "<p>Left Click on a blob to assign the class</p>"
+        self.tool_message = f'<div style="text-align: left;">{message}</div>'
+
 
     def setActiveLabel(self, label):
 
