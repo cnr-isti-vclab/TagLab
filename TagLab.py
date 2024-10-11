@@ -266,19 +266,17 @@ class TagLab(QMainWindow):
         layout_tools = QVBoxLayout()
         layout_tools.setSpacing(0)
         layout_tools.addWidget(self.btnMove)
-        # layout_tools.addWidget(self.btnPoinset)
-        #layout_tools.addWidget(self.btnSamInteractive)
-        # layout_tools.addWidget(self.btnFourClicks)
+        layout_tools.addWidget(self.btnPoint)
+        layout_tools.addWidget(self.btnFourClicks)
         layout_tools.addWidget(self.btnRitm)
         layout_tools.addWidget(self.btnFreehand)
         layout_tools.addWidget(self.btnAssign)
         layout_tools.addWidget(self.btnWatershed)
-        layout_tools.addWidget(self.btnBricksSegmentation)
+        #layout_tools.addWidget(self.btnBricksSegmentation)
         layout_tools.addWidget(self.btnSam)
         layout_tools.addWidget(self.btnEditBorder)
         layout_tools.addWidget(self.btnCut)
-        layout_tools.addWidget(self.btnCreateCrack)
-        #layout_tools.addWidget(self.btnSplitBlob)
+        #layout_tools.addWidget(self.btnCreateCrack)
         layout_tools.addWidget(self.btnRuler)
         layout_tools.addWidget(self.btnAutoClassification)
         layout_tools.addSpacing(3)
@@ -598,7 +596,7 @@ class TagLab(QMainWindow):
         self.submenuWorkingArea = None
         self.submenuExport = None
         self.submenuImport = None
-        self.editmenu = None
+        self.regionmenu = None
         self.comparemenu = None
         self.demmenu = None
         self.helpmenu = None
@@ -1131,6 +1129,28 @@ class TagLab(QMainWindow):
         self.projectmenu.addSeparator()
         self.projectmenu.addAction(regionAttributesAct)
 
+        ###### REGIONS MENU
+
+        self.regionmenu = menubar.addMenu("&Regions")
+        self.regionmenu.setStyleSheet(styleMenu)
+        self.regionmenu.addAction(undoAct)
+        self.regionmenu.addAction(redoAct)
+        self.regionmenu.addSeparator()
+        self.regionmenu.addAction(self.assignAction)
+        self.regionmenu.addAction(self.deleteAction)
+        self.regionmenu.addSeparator()
+        self.regionmenu.addAction(self.mergeAction)
+        self.regionmenu.addAction(self.divideAction)
+        self.regionmenu.addAction(self.subtractAction)
+        self.regionmenu.addAction(self.attachBoundariesAction)
+        self.regionmenu.addAction(self.fillAction)
+        self.regionmenu.addSeparator()
+        self.regionmenu.addAction(self.refineAction)
+        self.regionmenu.addAction(self.refineAllAction)
+        self.regionmenu.addAction(self.dilateAction)
+        self.regionmenu.addAction(self.erodeAction)
+
+
         ###### POINT ANNOTATIONS MENU
 
         samplePointsAct = QAction("Sample Points On This Map", self)
@@ -1187,24 +1207,6 @@ class TagLab(QMainWindow):
         self.demmenu.addAction(calculateSurfaceAreaAct)
         self.demmenu.addAction(exportClippedRasterAct)
 
-        self.editmenu = menubar.addMenu("&Edit")
-        self.editmenu.setStyleSheet(styleMenu)
-        self.editmenu.addAction(undoAct)
-        self.editmenu.addAction(redoAct)
-        self.editmenu.addSeparator()
-        self.editmenu.addAction(self.assignAction)
-        self.editmenu.addAction(self.deleteAction)
-        self.editmenu.addSeparator()
-        self.editmenu.addAction(self.mergeAction)
-        self.editmenu.addAction(self.divideAction)
-        self.editmenu.addAction(self.subtractAction)
-        self.editmenu.addAction(self.attachBoundariesAction)
-        self.editmenu.addAction(self.fillAction)
-        self.editmenu.addSeparator()
-        self.editmenu.addAction(self.refineAction)
-        self.editmenu.addAction(self.refineAllAction)
-        self.editmenu.addAction(self.dilateAction)
-        self.editmenu.addAction(self.erodeAction)
 
         splitScreenAction = QAction("Enable Split Screen", self)
         splitScreenAction.setShortcut('Alt+S')
@@ -2513,13 +2515,13 @@ class TagLab(QMainWindow):
         tools = {
             "MOVE"         : ["Pan"          , self.btnMove],
             "PLACEANNPOINT": ["Place Annotation Point", self.btnPoint],
-            # "CREATECRACK"  : ["Crack"        , self.btnCreateCrack],
+            "CREATECRACK"  : ["Crack"        , self.btnCreateCrack],
             "ASSIGN"       : ["Assign"       , self.btnAssign],
             "EDITBORDER"   : ["Edit Border"  , self.btnEditBorder],
             "CUT"          : ["Cut"          , self.btnCut],
             "FREEHAND"     : ["Freehand"     , self.btnFreehand],
             "WATERSHED"    : ["Watershed"    , self.btnWatershed],
-            "BRICKS"       : ["Bricks",        self.btnBricksSegmentation],
+           # "BRICKS"       : ["Bricks",        self.btnBricksSegmentation],
             "RULER"        : ["Ruler"        , self.btnRuler],
             "FOURCLICKS"   : ["4-click"      , self.btnFourClicks],
             "MATCH"        : ["Match"        , self.btnMatch],
@@ -2561,13 +2563,6 @@ class TagLab(QMainWindow):
         """
         self.setTool("CREATECRACK")
 
-
-    # @pyqtSlot()
-    # def splitBlob(self):
-    #     """
-    #     Activate the tool "Split Blob".
-    #     """
-    #     self.setTool("SPLITBLOB")
 
     @pyqtSlot()
     def assign(self):

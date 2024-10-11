@@ -79,7 +79,7 @@ class Watershed(Tool):
         crop_img = genutils.cropQImage(self.viewerplus.img_map, working_area)
         crop_imgnp = genutils.qimageToNumpyArray(crop_img)
 
-        cv2.imwrite('crop_img.png', crop_imgnp)
+        #cv2.imwrite('crop_img.png', crop_imgnp)
 
         # create markers
         mask = np.zeros((working_area[3], working_area[2], 3), dtype=np.int32)
@@ -116,7 +116,7 @@ class Watershed(Tool):
         mask = np.uint8(mask)
        
         # print(f"mask.shape is {mask.shape}")
-        cv2.imwrite('mask.png', mask)
+       # cv2.imwrite('mask.png', mask)
 
         markers = np.zeros((working_area[3], working_area[2]), dtype='int32')
         print(f"markers.shape pre is {markers.shape}")
@@ -146,23 +146,17 @@ class Watershed(Tool):
             # print(f"value, name is {value, name}")
             markers[idx] = value
 
-        # markers = np.int32(255*rgb2gray(mask))
-        # markersprint = 255*rgb2gray(mask)
-        # markersprint = markers
 
-        #QUIRINO: OpenCV doesn't work, using matplotlib instead
-        plt.imshow(markers)
-        plt.savefig('markers.png')
+        #plt.imshow(markers)
+        # plt.savefig('markers.png')
         # cv2.imwrite('markers.png', markersprint)
 
         # watershed segmentation
         segmentation = cv2.watershed(crop_imgnp, markers)
         segmentation = filters.median(segmentation, disk(5), mode="mirror")
-        
-        #QUIRINO: OpenCV doesn't work, using matplotlib instead
-        plt.imshow(segmentation)
-        plt.savefig('segmentation.png')
-        # cv2.imwrite('segmentation_cv.png', segmentation)
+
+        #plt.imshow(segmentation)
+        #plt.savefig('segmentation.png')
 
         # the result of the segmentation must be converted into labels again
         lbls = measure.label(segmentation)
