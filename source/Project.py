@@ -21,7 +21,7 @@ from source.Image import Image
 from source.Label import Label
 from source.RegionAttributes import RegionAttributes
 from source.Shape import Layer, Shape
-
+from source.tools import Cut
 
 def loadProject(taglab_working_dir, filename, default_dict):
     dir = QDir(taglab_working_dir)
@@ -419,6 +419,18 @@ class Project(QObject):
                                self.correspondences.values()))
         return corresps
 
+    def findCorrespTables(self, img):
+        """
+        Given an image it can return zero, one, or two tables of correspondences.
+        """
+
+        corresp_tables = []
+        for corresp in self.correspondences:
+            if corresp.target == img or corresp.source == img:
+                corresp_tables.append(corresp)
+
+        return corresp_tables
+
     def updateGenets(self, img_source_idx, img_target_idx):
         """
         Update the genets information in (1) the regions and (2) in the correspondences' table
@@ -429,14 +441,16 @@ class Project(QObject):
         # corr.updateGenets()
         return corr
 
+    def assignClassByGenet(self, class_name, genet_id):
+        """
+        The given class is assigned to all the regions with the same genet id.
+        """
+        pass
+
     def addBlob(self, img, blob, notify=True):
 
         # update image annotations
         img.annotations.addBlob(blob)
-
-        # update correspondences
-        for corr in self.findCorrespondences(img):
-            corr.addBlob(img, blob)
 
         if notify:
             self.blobAdded.emit(img, blob)
@@ -444,10 +458,6 @@ class Project(QObject):
     def removeBlob(self, img, blob, notify=True):
 
         img.annotations.removeAnn(blob)
-
-        # update correspondences
-        for corr in self.findCorrespondences(img):
-            corr.removeBlob(img, blob)
 
         if notify:
             self.blobRemoved.emit(img, blob)
@@ -457,9 +467,7 @@ class Project(QObject):
         # update image annotations
         img.annotations.updateBlob(old_blob, new_blob)
 
-        # update correspondences
-        for corr in self.findCorrespondences(img):
-            corr.updateBlob(img, old_blob, new_blob)
+        self.updateCorrespondences("UPDATE", [new_blob], [old_blob])
 
         if notify:
             self.blobUpdated.emit(img, old_blob, new_blob)
@@ -469,18 +477,42 @@ class Project(QObject):
         if blob.class_name == class_name:
             return
         else:
-
             old_blob = blob.copy()
 
             old_class_name = blob.class_name
             img.annotations.setBlobClass(blob, class_name)
 
-            # update correspondences
-            for corr in self.findCorrespondences(img):
-                corr.blobClassChanged(img, blob, class_name)
+            self.updateCorrespondences("CLASS_CHANGED", img, [blob], None, class_name)
 
             if notify:
                 self.blobClassChanged.emit(img, old_class_name, blob)
+
+    def updateCorrespondences(self, operation, img, blobs_added, blob_removed, class_name=""):
+
+        if operation == "ADD":
+            # WARNING: correspondences are not updated automatically!
+            # The assignment of the new correspondences is left to the user.
+            pass
+        elif operation == "REMOVE":
+            # All the involved rows, starting from the temporal point of the blob removed are deleted.
+            # The genet is recomputed for consistency.
+            # TODO
+            pass
+        elif operation == "UPDATE":
+            # The content of the correspondences tables involved is updated with the blobs_added info.
+            corresp_tables = self.findCorrespTables(img)
+            # TODO
+        elif operation == "CUT":
+            # The new blobs are automatically connected with the ones of the blob removed.
+            corresp_tables = self.findCorrespTables(img)
+            # TODO
+        elif operation == "CLASS_CHANGED":
+            # The class is updated along the entire temporal sequence.
+            blob = blobs_added[0]
+            self.assignClassByGenet(class_name, blob.genet)
+        else:
+            print("Update correspondences WARNING! -> unknown operation")
+
 
     def addPoint(self, img, point, notify=True):
 
@@ -605,7 +637,6 @@ class Project(QObject):
             corr.born = []
 
         self.genet.updateGenets()
-        # corr.updateGenets() moved to genet
 
     def create_labels_table(self, image):
 

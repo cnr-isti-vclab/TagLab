@@ -52,6 +52,8 @@ class CreateCrack(Tool):
                 self.viewerplus.addBlob(blob, selected=True)
                 self.blobInfo.emit(blob, "[TOOL][CREATECRACK][BLOB-EDITED]")
 
+            self.viewerplus.project.updateCorrespondences("CRACK", new_blobs, self.viewerplus.selected_blobs[0], "")
+
         self.viewerplus.saveUndo()
         self.crackCancel()
 

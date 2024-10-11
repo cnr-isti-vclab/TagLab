@@ -34,6 +34,8 @@ class Cut(Tool):
             self.viewerplus.addBlob(blob, selected=True)
             self.blobInfo.emit(blob, "[TOOL][CUT][BLOB-CREATED]")
 
+        self.viewerplus.project.updateCorrespondences("CUT", created_blobs, selected_blob, "")
+
         self.log.emit("[TOOL][CUT] Operation ends.")
 
         self.viewerplus.saveUndo()
