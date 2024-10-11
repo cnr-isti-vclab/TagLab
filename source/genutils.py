@@ -451,7 +451,7 @@ def distance_point_AABB(x, y, bbox):
 
     return dist
 
-#QUIRINO: removeOverlapping for SAM and other tools
+#removeOverlapping for SAM and other tools
 def removeOverlapping(created, sam_blobs, annotated = False):
         
     blobs = created.copy()
@@ -499,7 +499,7 @@ def removeOverlapping(created, sam_blobs, annotated = False):
                 overlap12 = npixeli / npixel
                 overlap21 = npixeli / npixel2
 
-                #QUIRINO: remove created_blob if in overlapping with seg_blobs
+                #remove created_blob if in overlapping with seg_blobs
                 if annotated == True:
                     # overlap = overlap12
 
@@ -515,7 +515,7 @@ def removeOverlapping(created, sam_blobs, annotated = False):
                             if blobO in created:
                                 created.remove(blobO)                    
                 
-                #QUIRINO: remove created_blobs in overlapping with themselves (bigger is better)
+                #remove created_blobs in overlapping with themselves (bigger is better)
                 else:
                     overlap = max(overlap12, overlap21)
 
@@ -527,7 +527,7 @@ def removeOverlapping(created, sam_blobs, annotated = False):
                     if num_intersections > 0:
                         intersected_blobs.append(blob)
 
-                        #QUIRINO: using inf instead of hard coded value works better
+                        #using inf instead of hard coded value works better
                         # diff_min = 10000000
                         diff_min = float('inf') 
                         blob_to_keep = None

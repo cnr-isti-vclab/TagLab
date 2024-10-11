@@ -127,7 +127,7 @@ class Tools(QObject):
         if self.SAM_is_available:
             self.tools["SAM"].enable(False)
       
-    #QUIRINO: method to select tools for tool message window      
+    #method to select tools for tool message window      
     def toolMessage(self):
         if self.tool == "WATERSHED" or self.tool == "SAM" or self.tool == "RITM"\
               or self.tool == "FREEHAND" or self.tool == "BRICKS" or self.tool == "FOURCLICKS":

@@ -39,7 +39,7 @@ class Ritm(Tool):
         self.work_area_item = None
         self.states = []
 
-        #QUIRINO: message for message_widget window
+        #message for message_widget window
         message = "<p><i>Segment using positive/negative points</i></p>"
         message += "<p>Zoom in and frame the object of interest to reduce memory use</p>"
         message += "<p>SHIFT + Left click to add a point inside the object (positive)<br/>\

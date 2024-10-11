@@ -215,7 +215,7 @@ height: 0px;
             self.toggleVisibility(oldindex.row())
             self.data_table.update()
 
-        if index.column() == 1 or index.column() == 2:
+        if index.column() >= 1:# or index.column() == 2:
            oldindex = self.sortfilter.mapToSource(index)
            self.active_label_name = self.data['Class'][oldindex.row()]
            self.activeLabelChanged.emit(self.active_label_name)

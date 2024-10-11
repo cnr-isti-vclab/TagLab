@@ -16,10 +16,7 @@ from PyQt5.QtCore import Qt, QObject, QPointF, QRectF, QFileInfo, QDir, pyqtSlot
 from source.Label import Label
 
 class Watershed(Tool):
-    
-    #QUIRINO: signal for the tool message window
-    # tool_message = pyqtSignal(str)
-    
+        
     def __init__(self, viewerplus, scribbles):
         super(Watershed, self).__init__(viewerplus)
         self.viewerplus = viewerplus
@@ -168,7 +165,7 @@ class Watershed(Tool):
         # markersprint = 255*rgb2gray(mask)
         # markersprint = markers
 
-        #QUIRINO: OpenCV doesn't work, using matplotlib instead
+        #OpenCV doesn't work, using matplotlib instead
         plt.imshow(markers)
         plt.savefig('markers.png')
         # cv2.imwrite('markers.png', markersprint)
@@ -177,7 +174,7 @@ class Watershed(Tool):
         segmentation = cv2.watershed(crop_imgnp, markers)
         segmentation = filters.median(segmentation, disk(5), mode="mirror")
         
-        #QUIRINO: OpenCV doesn't work, using matplotlib instead
+        #OpenCV doesn't work, using matplotlib instead
         plt.imshow(segmentation)
         plt.savefig('segmentation.png')
         # cv2.imwrite('segmentation_cv.png', segmentation)

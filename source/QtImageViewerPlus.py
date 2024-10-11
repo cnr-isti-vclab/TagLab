@@ -804,7 +804,7 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.tools.setTool(tool)
 
-        #QUIRINO: calls the toolMessage method to show the tool message window        
+        #calls the toolMessage method to show the tool message window        
         self.tools.toolMessage()
 
         if tool in ["FREEHAND", "RULER", "FOURCLICKS", "PLACEANNPOINT"] or (tool in ["CUT", "EDITBORDER", "RITM"] and len(self.selected_blobs) > 1):
@@ -1092,7 +1092,7 @@ class QtImageViewerPlus(QtImageViewer):
             self.tools.wheel(event.angleDelta())
             return
 
-        #QUIRINO: added zooming rectangle with shift key
+        #added zooming rectangle with shift key
         if self.tools.tool == "SAM" and mods & Qt.ShiftModifier:    
             self.tools.tools["SAM"].setSize(event.angleDelta())
             return

@@ -44,10 +44,10 @@ class Scribbles(QObject):
     def setCustomCursor(self):
 
         cursor_size = 10
-        #QUIRINO: for QPen object and pixmap if QPen active
+        #for QPen object and pixmap if QPen active
         pen_size = int(self.current_size * self.scale_factor)
 
-        #QUIRINO: if pen_size is > cursor_size(10) create a QPixmap of pen_size dimension
+        #if pen_size is > cursor_size(10) create a QPixmap of pen_size dimension
         if pen_size > cursor_size:
             pxmap = QPixmap(pen_size, pen_size)
         else:
@@ -56,7 +56,7 @@ class Scribbles(QObject):
         painter = QPainter(pxmap)
         color = self.current_label.fill
         
-        #QUIRINO: add a QPen if the size of the pxmap is > 10 (cursor/brush fixed size)
+        #add a QPen if the size of the pxmap is > 10 (cursor/brush fixed size)
         #pen same color of the class, brush always black
         if pen_size > cursor_size:
             pen = QPen(QColor(color[0], color[1], color[2]), 3, Qt.DotLine)
@@ -64,15 +64,15 @@ class Scribbles(QObject):
             painter.drawEllipse(0, 0, pen_size, pen_size)
             # painter.drawRect(0, 0, pen_size, pen_size)
 
-        #QUIRINO: brush always black and 10 px dimension
+        #brush always black and 10 px dimension
         # brush = QBrush(QColor(0, 0, 0))
         brush = QBrush(QColor(color[0], color[1], color[2]))
         painter.setBrush(brush)
         
-        #QUIRINO: if pen_size is too small the brush fills all the pxmap
+        #if pen_size is too small the brush fills all the pxmap
         if pen_size < cursor_size:
             painter.drawEllipse(0, 0, cursor_size, cursor_size)
-        #QUIRINO: if pen_size is > 10 the brush is put in the middle of the pxmap
+        #if pen_size is > 10 the brush is put in the middle of the pxmap
         # -5 needed to have the center of the brush circle and not the top-left corner in the middle
         else:
             painter.drawEllipse( int(pen_size/2-5), int(pen_size/2-5), cursor_size, cursor_size)

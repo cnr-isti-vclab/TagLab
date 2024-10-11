@@ -26,15 +26,13 @@ class Sam(Tool):
 
     samEnded = pyqtSignal()
     
-    #QUIRINO: signal for the tool message window
-    # tool_message = pyqtSignal(str)
 
     def __init__(self, viewerplus):
         super(Sam, self).__init__(viewerplus)
 
         self.viewerplus.mouseMoved.connect(self.handlemouseMove)
 
-        #QUIRINO: 1024x1024 rect_item size
+        #1024x1024 rect_item size
         self.width = 1024
         self.height = 1024
 
@@ -128,13 +126,13 @@ class Sam(Tool):
     #     #self.viewerplus.resetTools()
     #     ##self.resetWorkArea()
 
-    #QUIRINO: remove blobs on the edge of the rectangle cursor
+    #remove blobs on the edge of the rectangle cursor
     def removeEdgeBlobs(self):
 
         if self.rect_item is None:
             return
 
-        # QUIRINO: Get the bounding rect of the rectangle and its position
+        # Get the bounding rect of the rectangle and its position
         rect = self.rect_item.boundingRect()
         rect.moveTopLeft(self.rect_item.pos())
         rect = rect.normalized()
@@ -153,18 +151,18 @@ class Sam(Tool):
             # Create a QRectF for each blob's bounding box
             #bbox = QRectF(blob.bbox[0], blob.bbox[1], blob.bbox[2], blob.bbox[3])
             # print(f"bbox coordinates are {bbox.top(), bbox.bottom(), bbox.left(), bbox.right()}")
-            #QUIRINO: BOUNDING BOX ORDER: WHY?
+            #BOUNDING BOX ORDER: WHY?
             #rect left  right   top bottom
             #bbox top   bottom  left  right
            
-            #QUIRINO: use directly the blob bounding box instead of QRectF
+            #use directly the blob bounding box instead of QRectF
             bbox = blob.bbox
             top = bbox[0]
             left = bbox[1]
             right = bbox[1] + bbox[2]
             bottom = bbox[0] + bbox[3]
             
-            #QUIRINO: remove blobs if they are on the edges
+            #remove blobs if they are on the edges
             if  (
                 left - rect.left() < margin or
                 rect.right() - right < margin or
@@ -183,26 +181,26 @@ class Sam(Tool):
         #     ##self.resetWorkArea()
 
     def setSize(self, delta):
-        #QUIRINO: increase value got from delta angle of mouse wheel
+        #increase value got from delta angle of mouse wheel
         increase = float(delta.y()) / 10.0
         
-        #QUIRINO: set increase or decrease value on  wheel rotation direction
+        #set increase or decrease value on  wheel rotation direction
         if 0.0 < increase < 1.0:
             increase = 100
         elif -1.0 < increase < 0.0:
             increase = -100
 
-        #QUIRINO: rescale rect_item on zoom factor from wheel event
+        #rescale rect_item on zoom factor from wheel event
         # added *2 to mantain rectangle inside the map
         new_width = self.width + (increase)
         new_height = self.height + (increase)
         
-        #QUIRINO: limit the rectangle to 512x512 for SAM segmentation
+        #limit the rectangle to 512x512 for SAM segmentation
         if new_width < 512 or new_height < 512:
             new_width = 512
             new_height = 512
 
-        # QUIRINO: limit the rectangle to 2048x2048 for SAM segmentation
+        # limit the rectangle to 2048x2048 for SAM segmentation
         if new_width > 2048 or new_height > 2048:
             new_width = 2048
             new_height = 2048
@@ -220,14 +218,14 @@ class Sam(Tool):
             # self.center_item.setPos(x, y)
             self.rect_item.setPos(x- self.width//2, y - self.height//2)
             
-    #QUIRINO: SAM segmentation on space key pressed instead of left mouse button pressed
+    #SAM segmentation on space key pressed instead of left mouse button pressed
     # def leftPressed(self, x, y, mods):
     def apply(self):
         
         sam_seed = self.width//30
         print(f"number of sam_seed is {sam_seed}")
 
-        # QUIRINO: Crop the part of the map inside the self.rect_item area
+        # Crop the part of the map inside the self.rect_item area
         rect = self.rect_item.boundingRect()
         rect.moveTopLeft(self.rect_item.pos())
         rect = rect.normalized()
@@ -321,7 +319,7 @@ class Sam(Tool):
         self.samEnded.emit()
 
     
-    #QUIRINO: method to display the rectangle on the map
+    #method to display the rectangle on the map
     def enable(self, enable = False):
         if enable == True:
             self.rect_item = self.viewerplus.scene.addRect(0, 0, self.width, self.height, QPen(Qt.black, 5, Qt.DotLine)) 
@@ -332,7 +330,7 @@ class Sam(Tool):
             # self.center_item.setVisible(False)
        
        
-    #QUIRINO: method to emit the message for the tool     
+    #method to emit the message for the tool     
     # def toolMessage(self):
     #     self.tool_message.emit("To resize windows cursor: \
     #     Shift + Mouse Wheel  \
