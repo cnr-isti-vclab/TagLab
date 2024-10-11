@@ -355,12 +355,12 @@ class QtBricksWidget(QWidget):
         clean = morphology.remove_small_objects(self.edges, 50, connectivity=4)
         distance = ndi.distance_transform_edt(~clean)
 
-        #QUIRINO: peak_local_max no more indices bool
+        #peak_local_max no more indices bool
         # local_max = feature.peak_local_max(distance, indices=False, min_distance=size)
         local_max = feature.peak_local_max(distance, footprint=np.ones((5, 5)), min_distance=size, labels=~clean)
         markers = measure.label(local_max, connectivity=2)
 
-        #QUIRINO: Convert local_max to boolean array, workaround for missing "indices" argument
+        #Convert local_max to boolean array, workaround for missing "indices" argument
         local_max_bool = np.zeros_like(distance, dtype=bool)
         local_max_bool[tuple(local_max.T)] = True
 

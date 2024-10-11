@@ -1,4 +1,4 @@
-#QUIRINO: This is the code for the message widget                                               
+#This is the code for the message widget                                               
 
 import os
 
@@ -21,7 +21,7 @@ class QtMessageWidget(QWidget):
         self.setAutoFillBackground(False)
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.Tool)
 
-        #QUIRINO: NonModal to let click on map
+        #NonModal to let click on map
         self.setWindowModality(Qt.NonModal)
         self.setWindowOpacity(0.6) 
         
