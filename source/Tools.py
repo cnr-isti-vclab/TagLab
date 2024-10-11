@@ -69,7 +69,7 @@ class Tools(QObject):
             "CUT": Cut(self.viewerplus, self.edit_points),
             "FREEHAND": Freehand(self.viewerplus, self.edit_points),
             "WATERSHED": Watershed(self.viewerplus, self.scribbles),
-            "BRICKS": BricksSegmentation(self.viewerplus),
+            # "BRICKS": BricksSegmentation(self.viewerplus),
             "RULER": Ruler(self.viewerplus, self.pick_points),
             "FOURCLICKS": FourClicks(self.viewerplus, self.pick_points),
             "PLACEANNPOINT": PlaceAnnPoint(self.viewerplus),
