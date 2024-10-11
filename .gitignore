@@ -165,3 +165,7 @@ prove/
 corallo/
 
 temp/
+crop_img.png
+markers.png
+mask.png
+segmentation.png
