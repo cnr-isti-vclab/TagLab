@@ -27,13 +27,11 @@ class Watershed(Tool):
         self.current_blobs = []
         self.currentLabel = None
         
-        message = "<p><i>Draw scribbles inside and around an area of interest</i></p>"
-        message += "<p>Select a class for the area of interest<br/>and draw scribbles INSIDE the area</p>"
-        message += "<p>SHIFT + wheel to set brush size</p>"
-        message += "<p>Shift + Left click + drag to draw a scribble of the selected</p>"
-        message += "<p>Shift + Right click + drag to draw a scribble around all the scribbles of the area of interest</p>"
-        # message += "<p>Select another class for the OUTSIDE of the area of interest<br/>and draw scribbles AROUND the area</p>"
-        message += "<p>CTRL + Left click + drag to pan the view</p>"
+        message = "<p><i>Draw positive/negative scribbles inside and around an area of interest</i></p>"
+        message += "<p>Select a class for the area of interest</p>"
+        message += "<p>SHIFT + Left click + drag to draw a positive scribble INSIDE the area</p>"
+        message += "<p>SHIFT + Right click + drag to draw a negative scribble AROUND the area</p>"
+        message += "<p>SHIFT + wheel to set brush size</p>"        
         message += "<p>Spacebar to apply segmentation</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
     
@@ -45,17 +43,16 @@ class Watershed(Tool):
 
     def leftPressed(self, x, y, mods):
         if mods == Qt.ShiftModifier:
-            # self.setActiveLabel(self.scribbles.previous_label)
             self.scribbles.setLabel(self.currentLabel)
             if self.scribbles.startDrawing(x, y):
-                self.log.emit("[TOOL][FREEHAND] DRAWING starts..")
+                self.log.emit("[TOOL][WATERSHED] DRAWING POSITIVE starts..")
 
     def rightPressed(self, x, y, mods):
         if mods == Qt.ShiftModifier:
             fakeLabel = Label("Dummy", "Dummy", fill=[255, 255, 255], border=[0, 0, 0]) 
             self.scribbles.setLabel(fakeLabel)
             if self.scribbles.startDrawing(x, y):
-                self.log.emit("[TOOL][FREEHAND] DRAWING starts..")
+                self.log.emit("[TOOL][WATERSHED] DRAWING NEGATIVE starts..")
 
 
     def mouseMove(self, x, y, mods):
