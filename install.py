@@ -10,7 +10,7 @@ if osused != 'Linux' and osused != 'Windows' and osused != 'Darwin':
 
 # check python version
 if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and (sys.version_info[1] < 10)):
-    raise Exception("Python " + sys.version_info[0] + "." + sys.version_info[1] + " not supported. Please see https://github.com/cnr-isti-vclab/TagLab/wiki/Install-TagLab")
+    raise Exception("Python " + str(sys.version_info[0]) + "." + str(sys.version_info[1]) + " not supported. Please see https://github.com/cnr-isti-vclab/TagLab/wiki/Install-TagLab")
 
 # manage thorch
 
@@ -234,6 +234,9 @@ install_requires = [
 
     # SAM
     'segment-anything',
+
+    #forcing numpy 1.24.2 version
+    'numpy==1.24.4',
 ]
 
 # if on windows, first install the msvc runtime
@@ -304,7 +307,8 @@ from os import path
 import urllib.request
 this_directory = path.abspath(path.dirname(__file__))
 net_file_names = ['dextr_corals.pth', 'deeplab-resnet.pth.tar', 'ritm_corals.pth',
-                  'pocillopora.net', 'porites.net', 'pocillopora_porite_montipora.net']
+                  'pocillopora.net', 'porites.net', 'pocillopora_porite_montipora.net',
+                  'sam_vit_h_4b8939.pth']
 
 for net_name in net_file_names:
     filename_dextr_corals = 'dextr_corals.pth'

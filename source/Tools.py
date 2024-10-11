@@ -127,9 +127,10 @@ class Tools(QObject):
         if self.SAM_is_available:
             self.tools["SAM"].enable(False)
       
-    #QUIRINO: method to select tools for tool message window      
+    #method to select tools for tool message window      
     def toolMessage(self):
-        if self.tool == "WATERSHED" or self.tool == "SAM" or self.tool == "RITM" or self.tool == "FREEHAND" or self.tool == "BRICKS": #or self.tool ==:
+        if self.tool == "WATERSHED" or self.tool == "SAM" or self.tool == "RITM"\
+              or self.tool == "FREEHAND" or self.tool == "BRICKS" or self.tool == "FOURCLICKS":
             self.tol_mess.emit(self.tools[self.tool].tool_message)
         else:
             self.tol_mess.emit(None)
@@ -141,18 +142,27 @@ class Tools(QObject):
         self.tools[self.tool].leftPressed(x, y, mods)
 
     def rightPressed(self, x, y, mods = None):
-        if self.tool == "RITM" or self.tool == "SAMINTERACTIVE":
+        if self.tool == "RITM" or self.tool == "SAMINTERACTIVE" or self.tool == "WATERSHED":
             self.tools[self.tool].rightPressed(x, y, mods)
 
-    def mouseMove(self, x, y):
+    def mouseMove(self, x, y, mods = None):
         if self.tool == "MOVE":
             return
-        self.tools[self.tool].mouseMove(x, y)
+        if self.tool == "WATERSHED":# or self.tool == "FREEHAND" or self.tool == "EDITBORDER":
+            self.tools[self.tool].mouseMove(x, y, mods)
+        else:
+            self.tools[self.tool].mouseMove(x, y)
 
     def leftReleased(self, x, y):
         if self.tool == "MOVE":
             return
         self.tools[self.tool].leftReleased(x, y)
+
+    def rightReleased(self, x, y):
+        if self.tool == "MOVE":
+            return
+        if self.tool == "WATERSHED":
+            self.tools[self.tool].rightReleased(x, y)
 
     def wheel(self, delta):
         if self.tool == "MOVE":

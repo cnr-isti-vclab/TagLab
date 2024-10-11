@@ -13,36 +13,51 @@ import matplotlib.pyplot as plt
 
 from PyQt5.QtCore import Qt, QObject, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
 
+from source.Label import Label
 
 class Watershed(Tool):
-    
-    #QUIRINO: signal for the tool message window
-    # tool_message = pyqtSignal(str)
-    
+        
     def __init__(self, viewerplus, scribbles):
         super(Watershed, self).__init__(viewerplus)
         self.viewerplus = viewerplus
         self.scribbles = scribbles
         self.current_blobs = []
+        self.currentLabel = None
         
-        message = "Select the class you want to assign to the area<br>\
-        <br>\
-        Draw the area in the map<br>\
-        <br>\
-        select another class and draw another area (at least)<br>\
-        <br>\
-        Click spacebar to apply and start segmentation"
+        message = "<p><i>Draw scribbles inside and around an area of interest</i></p>"
+        message += "<p>Select a class for the area of interest<br/>and draw scribbles INSIDE the area</p>"
+        message += "<p>SHIFT + wheel to set brush size</p>"
+        message += "<p>Shift + Left click + drag to draw a scribble of the selected</p>"
+        message += "<p>Shift + Right click + drag to draw a scribble around all the scribbles of the area of interest</p>"
+        # message += "<p>Select another class for the OUTSIDE of the area of interest<br/>and draw scribbles AROUND the area</p>"
+        message += "<p>CTRL + Left click + drag to pan the view</p>"
+        message += "<p>Spacebar to apply segmentation</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
     
     def setActiveLabel(self, label):
-        self.scribbles.setLabel(label)
+        # print(f"ActiveLabel id is {label.id}\n\
+        #       ActiveLabel name is {label.name}\n")
+        self.currentLabel = label
+        self.scribbles.setLabel(self.currentLabel)
 
     def leftPressed(self, x, y, mods):
-        if self.scribbles.startDrawing(x, y):
-            self.log.emit("[TOOL][FREEHAND] DRAWING starts..")
+        if mods == Qt.ShiftModifier:
+            # self.setActiveLabel(self.scribbles.previous_label)
+            self.scribbles.setLabel(self.currentLabel)
+            if self.scribbles.startDrawing(x, y):
+                self.log.emit("[TOOL][FREEHAND] DRAWING starts..")
 
-    def mouseMove(self, x, y):
-        self.scribbles.move(x, y)
+    def rightPressed(self, x, y, mods):
+        if mods == Qt.ShiftModifier:
+            fakeLabel = Label("Dummy", "Dummy", fill=[255, 255, 255], border=[0, 0, 0]) 
+            self.scribbles.setLabel(fakeLabel)
+            if self.scribbles.startDrawing(x, y):
+                self.log.emit("[TOOL][FREEHAND] DRAWING starts..")
+
+
+    def mouseMove(self, x, y, mods):
+        if mods &  Qt.ShiftModifier:
+            self.scribbles.move(x, y)
 
     def wheel(self, delta):
         increase = float(delta.y()) / 10.0
@@ -185,8 +200,9 @@ class Watershed(Tool):
 
         return blobs
 
-    def leftReleased(self, x, y):
-        pass
+    def rightReleased(self, x, y):
+        self.scribbles.setLabel(self.currentLabel)
+        # pass
 
         # for blob in self.current_blobs:
         #     self.viewerplus.removeBlob(blob)
@@ -205,6 +221,7 @@ class Watershed(Tool):
         blobs = self.segmentation()
 
         for blob in blobs:
-            self.viewerplus.addBlob(blob)
+            if blob.class_name != "Dummy":
+                self.viewerplus.addBlob(blob)
             
         self.viewerplus.resetTools()

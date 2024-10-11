@@ -25,7 +25,7 @@ class Ritm(Tool):
 
         self.points = corrective_points
         self.ritm_net = None
-        self.MAX_POINTS = 10
+        self.MAX_POINTS = 30
 
         self.clicker = clicker.Clicker() #handles clicked point (original code of ritm)
         self.predictor = None
@@ -39,13 +39,12 @@ class Ritm(Tool):
         self.work_area_item = None
         self.states = []
 
-        #QUIRINO: message for message_widget window
-        message = ("Zoom in until the object of interest is completely framed<br><br>\
-            Press and hold shift<br><br>\
-            Left click to add points that belong to the object (positive points)<br><br>\
-            Right click to add points that do not belong to the object (negative points)<br><br>\
-            Press spacebar to apply<br>\
-            ")
+        #message for message_widget window
+        message = "<p><i>Segment using positive/negative points</i></p>"
+        message += "<p>Zoom in and frame the object of interest to reduce memory use</p>"
+        message += "<p>SHIFT + Left click to add a point inside the object (positive)<br/>\
+                    SHIFT + Right click to add a point outside the object (negative)</p>"
+        message += "<p>Press spacebar to confirm segmentation</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
     def checkPointPosition(self, x, y):
