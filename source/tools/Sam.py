@@ -159,6 +159,10 @@ class Sam(Tool):
 
         # Change the number of points to display
         self.num_points += increase
+        if self.num_points < 2:
+            self.num_points = 2
+        elif self.num_points > 64:
+            self.num_points = 64
 
         # Get the updated number of points
         x_pts, y_pts = build_all_layer_point_grids(self.num_points, 0, 1)[0].T
@@ -324,29 +328,34 @@ class Sam(Tool):
             
     #SAM segmentation on space key pressed instead of left mouse button pressed
     # def leftPressed(self, x, y, mods):
+
+    def leftPressed(self, x, y, mods=None):
+
+        if mods == Qt.ShiftModifier:        
+            if not self.work_area_set:
+                self.setWorkArea()
+                self.pick_points.reset()
+                self.setWorkPoints(increase = self.increase)
+            else:
+                self.reset()
+        
     def apply(self):
-        
-        if not self.work_area_set:
-            self.setWorkArea()
-            self.pick_points.reset()
-            self.setWorkPoints(increase = self.increase)
-        
-        else:        
-            print(f"number of sam_seed is {self.num_points}")
+           
+        print(f"number of sam_seed is {self.num_points}")
 
-            # Crop the part of the map inside the self.rect_item area
-            # rect = self.work_area_rect.boundingRect()
-            # rect.moveTopLeft(self.work_area_rect.pos())
-            # rect = rect.normalized()
-            # rect = rect.intersected(self.viewerplus.sceneRect())
-            # cropped_image = self.viewerplus.img_map.copy(rect.toRect())
+        # Crop the part of the map inside the self.rect_item area
+        # rect = self.work_area_rect.boundingRect()
+        # rect.moveTopLeft(self.work_area_rect.pos())
+        # rect = rect.normalized()
+        # rect = rect.intersected(self.viewerplus.sceneRect())
+        # cropped_image = self.viewerplus.img_map.copy(rect.toRect())
 
 
 
-            # Perform segmentation on the cropped image
-            self.segment(self.image_cropped, self.num_points)
+        # Perform segmentation on the cropped image
+        self.segment(self.image_cropped, self.num_points)
 
-            self.reset()
+        self.reset()
 
     def segment(self, image, seed = 32, save_status=True):
 
