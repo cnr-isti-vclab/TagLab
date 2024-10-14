@@ -78,6 +78,7 @@ class Sam(Tool):
         self.work_area_item = None
         self.work_area_rect = None
         self.work_area_set = False
+        self.shadow_item = None
 
         self.image_cropped = None
         self.image_cropped_np = None
@@ -133,6 +134,18 @@ class Sam(Tool):
         
         self.image_cropped_np = qimageToNumpyArray(image_cropped)
         self.viewerplus.scene.removeItem(self.rect_item)
+
+        # Create a semi-transparent overlay
+        shadow_brush = QBrush(QColor(0, 0, 0, 150))  # Semi-transparent black
+        shadow_path = QPainterPath()
+        shadow_path.addRect(self.viewerplus.sceneRect())  # Cover the entire scene
+        shadow_path.addRect(rect)  # Add the work area rect
+
+        # Subtract the work area from the overlay
+        shadow_path = shadow_path.simplified()
+
+        # Add the overlay to the scene
+        self.shadow_item = self.viewerplus.scene.addPath(shadow_path, QPen(Qt.NoPen), shadow_brush)
 
         self.work_area_set = True
 
@@ -317,6 +330,11 @@ class Sam(Tool):
         self.work_area_item = None
         self.viewerplus.scene.removeItem(self.work_area_rect)
         self.work_area_rect = None
+        
+        if self.shadow_item is not None:
+            self.viewerplus.scene.removeItem(self.shadow_item)
+            self.shadow_item = None
+        
         self.pick_points.reset()
 
         self.viewerplus.scene.addItem(self.rect_item)

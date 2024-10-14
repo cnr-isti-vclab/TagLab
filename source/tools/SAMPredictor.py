@@ -1,6 +1,6 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QMessageBox
-from PyQt5.QtGui import QPen, QBrush
+from PyQt5.QtGui import QPen, QBrush, QColor, QPainterPath
 from source.genutils import qimageToNumpyArray, cropQImage
 
 from source.Blob import Blob
@@ -41,6 +41,7 @@ class SAMPredictor(Tool):
         self.work_area_item = None
         self.work_area_rect = None
         self.work_area_set = False
+        self.shadow_item = None
 
         # Model Type (b, l, or h)
         self.sam_model_type = 'vit_h'
@@ -155,6 +156,18 @@ class SAMPredictor(Tool):
 
         self.sampredictor_net.set_image(self.image_cropped_np)
         self.pick_points.reset()
+
+         # Create a semi-transparent overlay
+        shadow_brush = QBrush(QColor(0, 0, 0, 150))  # Semi-transparent black
+        shadow_path = QPainterPath()
+        shadow_path.addRect(self.viewerplus.sceneRect())  # Cover the entire scene
+        shadow_path.addRect(rect)  # Add the work area rect
+
+        # Subtract the work area from the overlay
+        shadow_path = shadow_path.simplified()
+
+        # Add the overlay to the scene
+        self.shadow_item = self.viewerplus.scene.addPath(shadow_path, QPen(Qt.NoPen), shadow_brush)
         
         self.work_area_set = True
     
@@ -595,6 +608,11 @@ class SAMPredictor(Tool):
         if self.work_area_item is not None:
             self.viewerplus.scene.removeItem(self.work_area_rect)
             self.work_area_item = None
+        
+        if self.shadow_item is not None:
+            self.viewerplus.scene.removeItem(self.shadow_item)
+            self.shadow_item = None
+
         self.work_area_set = False
 
     def reset(self):
