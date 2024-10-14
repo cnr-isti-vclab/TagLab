@@ -232,7 +232,7 @@ class TagLab(QMainWindow):
         self.btnCut                = self.newButton("scissors.png", "Cut segmentation",       flatbuttonstyle1, self.cut)
         self.btnFreehand           = self.newButton("pencil.png",   "Freehand segmentation",  flatbuttonstyle1, self.freehandSegmentation)
         self.btnCreateCrack        = self.newButton("crack.png",    "Create crack",           flatbuttonstyle1, self.createCrack)
-        self.btnWatershed          = self.newButton("brush.png",    "Watershed segmentation", flatbuttonstyle1, self.watershedSegmentation)
+        self.btnWatershed          = self.newButton("watershed.png",    "Watershed segmentation", flatbuttonstyle1, self.watershedSegmentation)
         self.btnBricksSegmentation = self.newButton("brick.png",    "Bricks segmentation",    flatbuttonstyle2, self.bricksSegmentation)
         self.btnSamInteractive = self.newButton("saminteractive2.png", "Box and clicks segmentation", flatbuttonstyle2, self.saminteractive)
         self.btnSam = self.newButton("sam.png", "Segment everything", flatbuttonstyle2, self.sam)
