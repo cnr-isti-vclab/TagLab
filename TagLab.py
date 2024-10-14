@@ -274,6 +274,8 @@ class TagLab(QMainWindow):
         layout_tools.addWidget(self.btnWatershed)
         #layout_tools.addWidget(self.btnBricksSegmentation)
         layout_tools.addWidget(self.btnSam)
+        layout_tools.addWidget(self.btnSamInteractive)
+        # layout_tools.addWidget(self.btnSam_new)
         layout_tools.addWidget(self.btnEditBorder)
         layout_tools.addWidget(self.btnCut)
         #layout_tools.addWidget(self.btnCreateCrack)
@@ -615,6 +617,7 @@ class TagLab(QMainWindow):
             print("Segment Anything (SAM) is not installed -> Sam generator tool will be not available.")
             self.SAM_is_available = False
             self.btnSam.setVisible(False)
+            self.btnSamInteractive.setVisible(False)
 
         # set default opacity
         self.sliderTransparency.setValue(50)
@@ -690,8 +693,10 @@ class TagLab(QMainWindow):
 
         if self.SAM_is_available is not True:
             self.btnSam.setVisible(False)
+            self.btnSamInteractive.setVisible(False)
         else:
             self.btnSam.setVisible(show)
+            self.btnSamInteractive.setVisible(show)
 
     
     def setGuiPreferences(self):
@@ -2498,7 +2503,8 @@ class TagLab(QMainWindow):
         self.btnFourClicks.setChecked(False)
         self.btnRitm.setChecked(False)
         self.btnSam.setChecked(False)
-        # self.btnSamInteractive.setChecked(False)
+        # self.btnSam_new.setChecked(False)
+        self.btnSamInteractive.setChecked(False)
         self.btnCreateGrid.setChecked(False)
         self.btnGrid.setChecked(False)
         self.btnMatch.setChecked(False)
@@ -2526,8 +2532,9 @@ class TagLab(QMainWindow):
             "FOURCLICKS"   : ["4-click"      , self.btnFourClicks],
             "MATCH"        : ["Match"        , self.btnMatch],
             "RITM"         : ["Ritm"         , self.btnRitm],
-            "SAM"            : ["Sam", self.btnSam]
-            #"SAMINTERACTIVE" : ["Saminteractive", self.btnSamInteractive]
+            "SAM"            : ["Sam", self.btnSam],
+            "SAMINTERACTIVE" : ["Saminteractive", self.btnSamInteractive]
+            # "SAM_NEW"    : ["Sam New", self.btnSam_new],
         }
         newtool = tools[tool]
         self.resetToolbar()

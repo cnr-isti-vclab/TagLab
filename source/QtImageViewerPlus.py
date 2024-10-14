@@ -849,6 +849,11 @@ class QtImageViewerPlus(QtImageViewer):
         else:
             self.tools.disableSAM()
 
+        if tool == "SAMINTERACTIVE":
+            self.tools.enableSAMInteractive()
+        else:
+            self.tools.disableSAMInteractive()
+
     def resetTools(self):
 
         self.tools.resetTools()
@@ -1093,6 +1098,14 @@ class QtImageViewerPlus(QtImageViewer):
         if self.tools.tool == "SAM" and mods & Qt.ShiftModifier:    
             self.tools.tools["SAM"].setSize(event.angleDelta())
             return
+        
+        if self.tools.tool == "SAMINTERACTIVE" and mods & Qt.ShiftModifier:
+            if not self.tools.tools["SAMINTERACTIVE"].work_area_set:
+                self.tools.tools["SAMINTERACTIVE"].setSize(event.angleDelta())
+                return
+            else:
+                self.tools.tools["SAMINTERACTIVE"].increasePoint(event.angleDelta())
+                return
 
         if self.zoomEnabled:
 

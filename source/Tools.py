@@ -21,12 +21,15 @@ from source.tools.SelectArea import SelectArea
 from source.tools.Ritm import Ritm
 from source.tools.PlaceAnnPoint import PlaceAnnPoint
 
+
+
 from PyQt5.QtCore import Qt, QObject, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
 
 
 import importlib
 if importlib.util.find_spec("segment_anything"):
     from source.tools.Sam import Sam
+    from source.tools.Sam_new import Sam_new
 
 #from source.tools.SamInteractive import SamInteractive
 
@@ -76,11 +79,13 @@ class Tools(QObject):
             "MATCH": Match(self.viewerplus),
             "SELECTAREA": SelectArea(self.viewerplus, self.pick_points),
             "RITM": Ritm(self.viewerplus, self.corrective_points),
-            #"SAMINTERACTIVE": SamInteractive(self.viewerplus, self.corrective_points),
+            # "SAMINTERACTIVE": SamInteractive(self.viewerplus, self.corrective_points),
+            # "SAM_NEW" : Sam_new(self.viewerplus)
         }
 
         if self.SAM_is_available:
             self.tools["SAM"] = Sam(self.viewerplus)
+            self.tools["SAMINTERACTIVE"] = Sam_new(self.viewerplus, self.pick_points)
 
     def setTool(self, tool):
         self.resetTools()      
@@ -126,6 +131,14 @@ class Tools(QObject):
     def disableSAM(self):
         if self.SAM_is_available:
             self.tools["SAM"].enable(False)
+
+    def enableSAMInteractive(self):
+        if self.SAM_is_available:
+            self.tools["SAMINTERACTIVE"].enable(True)
+
+    def disableSAMInteractive(self):
+        if self.SAM_is_available:
+            self.tools["SAMINTERACTIVE"].enable(False)
       
     #method to select tools for tool message window      
     def toolMessage(self):
