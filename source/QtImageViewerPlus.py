@@ -849,10 +849,10 @@ class QtImageViewerPlus(QtImageViewer):
         else:
             self.tools.disableSAM()
 
-        if tool == "SAMINTERACTIVE":
-            self.tools.enableSAMInteractive()
-        else:
-            self.tools.disableSAMInteractive()
+        # if tool == "SAMINTERACTIVE":
+        #     self.tools.enableSAMInteractive()
+        # else:
+        #     self.tools.disableSAMInteractive()
 
     def resetTools(self):
 
@@ -1096,16 +1096,20 @@ class QtImageViewerPlus(QtImageViewer):
 
         #QUIRINO: added zooming rectangle with shift key
         if self.tools.tool == "SAM" and mods & Qt.ShiftModifier:    
-            self.tools.tools["SAM"].setSize(event.angleDelta())
-            return
-        
-        if self.tools.tool == "SAMINTERACTIVE" and mods & Qt.ShiftModifier:
-            if not self.tools.tools["SAMINTERACTIVE"].work_area_set:
-                self.tools.tools["SAMINTERACTIVE"].setSize(event.angleDelta())
+            if not self.tools.tools["SAM"].work_area_set:
+                self.tools.tools["SAM"].setSize(event.angleDelta())
                 return
             else:
-                self.tools.tools["SAMINTERACTIVE"].increasePoint(event.angleDelta())
+                self.tools.tools["SAM"].increasePoint(event.angleDelta())
                 return
+        
+        # if self.tools.tool == "SAMINTERACTIVE" and mods & Qt.ShiftModifier:
+        #     if not self.tools.tools["SAMINTERACTIVE"].work_area_set:
+        #         self.tools.tools["SAMINTERACTIVE"].setSize(event.angleDelta())
+        #         return
+        #     else:
+        #         self.tools.tools["SAMINTERACTIVE"].increasePoint(event.angleDelta())
+        #         return
 
         if self.zoomEnabled:
 

@@ -234,7 +234,7 @@ class TagLab(QMainWindow):
         self.btnCreateCrack        = self.newButton("crack.png",    "Create crack",           flatbuttonstyle1, self.createCrack)
         self.btnWatershed          = self.newButton("watershed.png",    "Watershed segmentation", flatbuttonstyle1, self.watershedSegmentation)
         self.btnBricksSegmentation = self.newButton("brick.png",    "Bricks segmentation",    flatbuttonstyle2, self.bricksSegmentation)
-        self.btnSamInteractive = self.newButton("saminteractive2.png", "Box and clicks segmentation", flatbuttonstyle2, self.saminteractive)
+        # self.btnSamInteractive = self.newButton("saminteractive2.png", "Box and clicks segmentation", flatbuttonstyle2, self.saminteractive)
         self.btnSam = self.newButton("sam.png", "Segment everything", flatbuttonstyle2, self.sam)
 
         # Split blob operation removed from the toolbar
@@ -274,7 +274,7 @@ class TagLab(QMainWindow):
         layout_tools.addWidget(self.btnWatershed)
         #layout_tools.addWidget(self.btnBricksSegmentation)
         layout_tools.addWidget(self.btnSam)
-        layout_tools.addWidget(self.btnSamInteractive)
+        # layout_tools.addWidget(self.btnSamInteractive)
         # layout_tools.addWidget(self.btnSam_new)
         layout_tools.addWidget(self.btnEditBorder)
         layout_tools.addWidget(self.btnCut)
@@ -617,7 +617,7 @@ class TagLab(QMainWindow):
             print("Segment Anything (SAM) is not installed -> Sam generator tool will be not available.")
             self.SAM_is_available = False
             self.btnSam.setVisible(False)
-            self.btnSamInteractive.setVisible(False)
+            # self.btnSamInteractive.setVisible(False)
 
         # set default opacity
         self.sliderTransparency.setValue(50)
@@ -693,10 +693,10 @@ class TagLab(QMainWindow):
 
         if self.SAM_is_available is not True:
             self.btnSam.setVisible(False)
-            self.btnSamInteractive.setVisible(False)
+            # self.btnSamInteractive.setVisible(False)
         else:
             self.btnSam.setVisible(show)
-            self.btnSamInteractive.setVisible(show)
+            # self.btnSamInteractive.setVisible(show)
 
     
     def setGuiPreferences(self):
@@ -2504,7 +2504,7 @@ class TagLab(QMainWindow):
         self.btnRitm.setChecked(False)
         self.btnSam.setChecked(False)
         # self.btnSam_new.setChecked(False)
-        self.btnSamInteractive.setChecked(False)
+        # self.btnSamInteractive.setChecked(False)
         self.btnCreateGrid.setChecked(False)
         self.btnGrid.setChecked(False)
         self.btnMatch.setChecked(False)
@@ -2533,7 +2533,7 @@ class TagLab(QMainWindow):
             "MATCH"        : ["Match"        , self.btnMatch],
             "RITM"         : ["Ritm"         , self.btnRitm],
             "SAM"            : ["Sam", self.btnSam],
-            "SAMINTERACTIVE" : ["Saminteractive", self.btnSamInteractive]
+            # "SAMINTERACTIVE" : ["Saminteractive", self.btnSamInteractive]
             # "SAM_NEW"    : ["Sam New", self.btnSam_new],
         }
         newtool = tools[tool]
@@ -3814,7 +3814,7 @@ class TagLab(QMainWindow):
 
         for button in [self.btnMove, self.btnPoint, self.btnAssign, self.btnEditBorder, self.btnCut, self.btnFreehand,
                        self.btnCreateCrack, self.btnWatershed, self.btnBricksSegmentation, self.btnRuler, self.btnFourClicks,
-                       self.btnRitm,self.btnSam,self.btnSamInteractive, self.btnAutoClassification, self.btnCreateGrid, self.btnGrid]:
+                       self.btnRitm,self.btnSam, self.btnAutoClassification, self.btnCreateGrid, self.btnGrid]:
             button.setEnabled(len(self.project.images) > 0)
 
         for button in [self.btnSplitScreen, self.btnAutoMatch, self.btnMatch]:

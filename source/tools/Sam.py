@@ -7,6 +7,7 @@ import os
 from skimage import measure
 from PyQt5.QtCore import Qt, pyqtSignal
 from source.Mask import paintMask, jointBox, jointMask, replaceMask, checkIntersection, intersectMask
+from source.genutils import qimageToNumpyArray, cropQImage
 from PyQt5.QtWidgets import QApplication, QMessageBox
 from PyQt5.QtGui import QPen, QBrush
 from source import genutils
@@ -20,6 +21,7 @@ from PyQt5.QtWidgets import QApplication, QGraphicsView, QGraphicsItem, QGraphic
 
 sys.path.append("..")
 from segment_anything import sam_model_registry, SamAutomaticMaskGenerator, SamPredictor
+from segment_anything.utils.amg import build_all_layer_point_grids
 import time
 
 class Sam(Tool):
@@ -27,7 +29,7 @@ class Sam(Tool):
     samEnded = pyqtSignal()
     
 
-    def __init__(self, viewerplus):
+    def __init__(self, viewerplus, pick_points):
         super(Sam, self).__init__(viewerplus)
 
         self.viewerplus.mouseMoved.connect(self.handlemouseMove)
@@ -70,9 +72,140 @@ class Sam(Tool):
         """
 
         #add working area
+         # User defined points
+        self.pick_points = pick_points
+
+        self.work_area_item = None
+        self.work_area_rect = None
+        self.work_area_set = False
+
+        self.image_cropped = None
+        self.image_cropped_np = None
+        
+        self.work_points = []
+        self.num_points = 32
+
+        self.CROSS_LINE_WIDTH = 2
+        self.work_pick_style = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.cyan, 'size': 8}
+        self.pos_pick_style = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.green, 'size': 4}
+        self.increase = 5
+
         self.sam_net = None
         self.device = None
         self.created_blobs = []
+
+    
+    def setWorkArea(self):
+        """
+		Set the work area based on the location of points
+		"""
+
+
+        # Display to GUI
+        brush = QBrush(Qt.NoBrush)
+        pen = QPen(Qt.DashLine)
+        pen.setWidth(2)
+        pen.setColor(Qt.white)
+        pen.setCosmetic(True)
+
+        # From the current view, crop the image
+        # Get the bounding rect of the work area and its position
+        rect = self.rect_item.boundingRect()
+        self.work_area_rect = self.viewerplus.scene.addRect(rect, pen, brush)
+        
+        rect.moveTopLeft(self.rect_item.pos())
+        rect = rect.normalized()
+        rect = rect.intersected(self.viewerplus.sceneRect())
+        self.work_area_rect.setPos(self.rect_item.pos())
+
+        self.work_area_item = rect
+
+        offset = self.work_area_rect.pos()
+        self.offset = [offset.x(), offset.y()]
+
+        image_cropped = self.viewerplus.img_map.copy(rect.toRect())
+        
+        # Crop the image based on the work area
+        self.image_cropped = image_cropped
+
+        # Save the cropped image
+        # image_cropped.save("cropped_image.png")
+        
+        self.image_cropped_np = qimageToNumpyArray(image_cropped)
+        self.viewerplus.scene.removeItem(self.rect_item)
+
+        self.work_area_set = True
+
+    def increasePoint(self, delta):
+       
+        #increase value got from delta angle of mouse wheel
+        increase = int(delta.y())/100
+        print(f'increase is {increase}')
+                
+        #set increase or decrease value on  wheel rotation direction
+        if 0.0 < increase < 1.0:
+            increase = 10
+        elif -1.0 < increase < 0.0:
+            increase = -10
+
+        self.increase = increase
+        print(f'self.increase is {self.increase}')
+        self.setWorkPoints(self.increase)
+
+    def setWorkPoints(self, increase = 0):
+
+        # Reset the current points shown
+        self.pick_points.reset()
+
+        # Change the number of points to display
+        self.num_points += increase
+
+        # Get the updated number of points
+        x_pts, y_pts = build_all_layer_point_grids(self.num_points, 0, 1)[0].T
+
+        left = self.work_area_item.left()
+        top = self.work_area_item.top()
+
+        # Change coordinates to match viewer
+        x_pts = (x_pts * self.image_cropped_np.shape[1]) + left
+        y_pts = (y_pts * self.image_cropped_np.shape[0]) + top
+
+        # Add all of them to the list
+        for x, y in list(zip(x_pts, y_pts)):
+            self.pick_points.addPoint(x, y, self.pos_pick_style)
+
+    def setSize(self, delta):
+        #increase value got from delta angle of mouse wheel
+        increase = float(delta.y()) / 10.0
+        
+        #set increase or decrease value on  wheel rotation direction
+        if 0.0 < increase < 1.0:
+            increase = 100
+        elif -1.0 < increase < 0.0:
+            increase = -100
+
+        #rescale rect_item on zoom factor from wheel event
+        # added *2 to mantain rectangle inside the map
+        new_width = self.width + (increase)
+        new_height = self.height + (increase)
+        
+        #limit the rectangle to 512x512 for SAM segmentation
+        if new_width < 512 or new_height < 512:
+            new_width = 512
+            new_height = 512
+
+        # limit the rectangle to 2048x2048 for SAM segmentation
+        if new_width > 2048 or new_height > 2048:
+            new_width = 2048
+            new_height = 2048
+  
+        # print(f"rect_item width and height are {new_width, new_height}")
+        if self.rect_item is not None:
+            self.rect_item.setRect(0, 0, new_width, new_height)
+
+        self.width = new_width
+        self.height = new_height
+
 
     def loadNetwork(self):
 
@@ -118,16 +251,7 @@ class Sam(Tool):
             #     box.exec()
             #     return False
 
-        return True
-
-    # def reset(self):
-    #     """
-    #     Reset net, tools and wa
-    #     """
-    #
-    #     self.resetNetwork()
-    #     #self.viewerplus.resetTools()
-    #     ##self.resetWorkArea()
+        return True       
 
     #remove blobs on the edge of the rectangle cursor
     def removeEdgeBlobs(self):
@@ -180,66 +304,49 @@ class Sam(Tool):
         if self.sam_net is not None:
             del self.sam_net
             self.sam_net = None
+        
+        self.image_cropped = None
+
         #     #self.viewerplus.resetTools()
         #     ##self.resetWorkArea()
+        self.work_area_set = False
+        self.work_area_item = None
+        self.viewerplus.scene.removeItem(self.work_area_rect)
+        self.work_area_rect = None
+        self.pick_points.reset()
 
-    def setSize(self, delta):
-        #increase value got from delta angle of mouse wheel
-        increase = float(delta.y()) / 10.0
-        
-        #set increase or decrease value on  wheel rotation direction
-        if 0.0 < increase < 1.0:
-            increase = 100
-        elif -1.0 < increase < 0.0:
-            increase = -100
-
-        #rescale rect_item on zoom factor from wheel event
-        # added *2 to mantain rectangle inside the map
-        new_width = self.width + (increase)
-        new_height = self.height + (increase)
-        
-        #limit the rectangle to 512x512 for SAM segmentation
-        if new_width < 512 or new_height < 512:
-            new_width = 512
-            new_height = 512
-
-        # limit the rectangle to 2048x2048 for SAM segmentation
-        if new_width > 2048 or new_height > 2048:
-            new_width = 2048
-            new_height = 2048
-  
-        # print(f"rect_item width and height are {new_width, new_height}")
-        if self.rect_item is not None:
-            self.rect_item.setRect(0, 0, new_width, new_height)
-
-        self.width = new_width
-        self.height = new_height
+        self.viewerplus.scene.addItem(self.rect_item)
         
     def handlemouseMove(self, x, y):
         # print(f"Mouse moved to ({x}, {y})")
         if self.rect_item is not None:
-            # self.center_item.setPos(x, y)
             self.rect_item.setPos(x- self.width//2, y - self.height//2)
             
     #SAM segmentation on space key pressed instead of left mouse button pressed
     # def leftPressed(self, x, y, mods):
     def apply(self):
         
-        sam_seed = self.width//30
-        print(f"number of sam_seed is {sam_seed}")
+        if not self.work_area_set:
+            self.setWorkArea()
+            self.pick_points.reset()
+            self.setWorkPoints(increase = self.increase)
+        
+        else:        
+            print(f"number of sam_seed is {self.num_points}")
 
-        # Crop the part of the map inside the self.rect_item area
-        rect = self.rect_item.boundingRect()
-        rect.moveTopLeft(self.rect_item.pos())
-        rect = rect.normalized()
-        rect = rect.intersected(self.viewerplus.sceneRect())
-        cropped_image = self.viewerplus.img_map.copy(rect.toRect())
+            # Crop the part of the map inside the self.rect_item area
+            # rect = self.work_area_rect.boundingRect()
+            # rect.moveTopLeft(self.work_area_rect.pos())
+            # rect = rect.normalized()
+            # rect = rect.intersected(self.viewerplus.sceneRect())
+            # cropped_image = self.viewerplus.img_map.copy(rect.toRect())
 
-        offset = self.rect_item.pos()
-        self.offset = [offset.x(), offset.y()]
 
-        # Perform segmentation on the cropped image
-        self.segment(cropped_image, sam_seed)
+
+            # Perform segmentation on the cropped image
+            self.segment(self.image_cropped, self.num_points)
+
+            self.reset()
 
     def segment(self, image, seed = 32, save_status=True):
 
@@ -256,7 +363,7 @@ class Sam(Tool):
             model=self.sam_net,
 
             # points_per_side = seed,
-            points_per_side= 32,
+            points_per_side= seed,
             
             points_per_batch=64,
             crop_n_layers = 0,
@@ -272,6 +379,7 @@ class Sam(Tool):
         )
 
         image = genutils.qimageToNumpyArray(image)
+        # image  = self.image_cropped_np
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         start = time.time()
@@ -309,7 +417,7 @@ class Sam(Tool):
 
         # self.removeAnnotatedBlobs()
         # self.removeOverlapping(self.viewerplus.image.annotations.seg_blobs, annotated = True)
-        genutils.removeOverlapping(self.created_blobs, self.viewerplus.image.annotations.seg_blobs, annotated = True)
+        # genutils.removeOverlapping(self.created_blobs, self.viewerplus.image.annotations.seg_blobs, annotated = True)
 
         print(f"self.created_blob len post annotated is {len(self.created_blobs)}")
             
@@ -368,3 +476,4 @@ class Sam(Tool):
             # blob.qpath_gitem = scene.addPath(blob.qpath, pen, brush)
             # blob.qpath_gitem.setZValue(1)
             # blob.qpath_gitem.setOpacity(self.viewerplus.transparency_value)
+

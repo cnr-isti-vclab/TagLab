@@ -29,7 +29,6 @@ from PyQt5.QtCore import Qt, QObject, QPointF, QRectF, QFileInfo, QDir, pyqtSlot
 import importlib
 if importlib.util.find_spec("segment_anything"):
     from source.tools.Sam import Sam
-    from source.tools.Sam_new import Sam_new
 
 #from source.tools.SamInteractive import SamInteractive
 
@@ -84,8 +83,8 @@ class Tools(QObject):
         }
 
         if self.SAM_is_available:
-            self.tools["SAM"] = Sam(self.viewerplus)
-            self.tools["SAMINTERACTIVE"] = Sam_new(self.viewerplus, self.pick_points)
+            self.tools["SAM"] = Sam(self.viewerplus, self.pick_points)
+            # self.tools["SAMINTERACTIVE"] = Sam_new(self.viewerplus, self.pick_points)
 
     def setTool(self, tool):
         self.resetTools()      
