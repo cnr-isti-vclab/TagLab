@@ -31,14 +31,13 @@ class SAMPredictor(Tool):
 
         self.viewerplus.mouseMoved.connect(self.handlemouseMove)
 
+        # Drawing on GUI
+        self.work_area_bbox = None
         #1024x1024 rect_item size
         self.width = 1024
         self.height = 1024
-
         self.offset = [0, 0]
-
         self.rect_item = None
-
         self.work_area_item = None
         self.work_area_rect = None
         self.work_area_set = False
@@ -63,10 +62,6 @@ class SAMPredictor(Tool):
         # SAM, CUDA or CPU
         self.sampredictor_net = None
         self.device = None
-
-        # Drawing on GUI
-        self.work_area_bbox = None
-        self.work_area_item = None
 
         # Updating masks/blobs
         self.current_blobs = []
@@ -595,12 +590,12 @@ class SAMPredictor(Tool):
         """
         Reset working area
         """
-        self.image_resized = None
         self.image_cropped = None
         self.work_area_bbox = [0, 0, 0, 0]
         if self.work_area_item is not None:
-            self.viewerplus.scene.removeItem(self.work_area_item)
+            self.viewerplus.scene.removeItem(self.work_area_rect)
             self.work_area_item = None
+        self.work_area_set = False
 
     def reset(self):
         """
@@ -611,6 +606,7 @@ class SAMPredictor(Tool):
         self.pick_points.reset()
         self.labels = []
         self.resetWorkArea()
+        self.viewerplus.scene.addItem(self.rect_item)
 
 
  #method to display the rectangle on the map
