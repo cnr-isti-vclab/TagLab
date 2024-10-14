@@ -31,7 +31,7 @@ if importlib.util.find_spec("segment_anything"):
     from source.tools.Sam import Sam
 
 #from source.tools.SamInteractive import SamInteractive
-
+from source.tools.SAMPredictor import SAMPredictor
 
 # class Tools(object):
 class Tools(QObject):    
@@ -84,7 +84,7 @@ class Tools(QObject):
 
         if self.SAM_is_available:
             self.tools["SAM"] = Sam(self.viewerplus, self.pick_points)
-            # self.tools["SAMINTERACTIVE"] = Sam_new(self.viewerplus, self.pick_points)
+            self.tools["SAMINTERACTIVE"] = SAMPredictor(self.viewerplus, self.pick_points)
 
     def setTool(self, tool):
         self.resetTools()      
@@ -105,7 +105,7 @@ class Tools(QObject):
 
         if self.SAM_is_available:
             self.tools["SAM"].reset()
-            #self.tools["SAMINTERACTIVE"].reset()
+            self.tools["SAMINTERACTIVE"].reset()
 
         if self.tool == "AUTOCLASS":
             self.corals_classifier.stopProcessing()

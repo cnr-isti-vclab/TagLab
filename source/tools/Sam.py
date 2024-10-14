@@ -140,7 +140,7 @@ class Sam(Tool):
        
         #increase value got from delta angle of mouse wheel
         increase = int(delta.y())/100
-        print(f'increase is {increase}')
+        # print(f'increase is {increase}')
                 
         #set increase or decrease value on  wheel rotation direction
         if 0.0 < increase < 1.0:

@@ -849,10 +849,10 @@ class QtImageViewerPlus(QtImageViewer):
         else:
             self.tools.disableSAM()
 
-        # if tool == "SAMINTERACTIVE":
-        #     self.tools.enableSAMInteractive()
-        # else:
-        #     self.tools.disableSAMInteractive()
+        if tool == "SAMINTERACTIVE":
+            self.tools.enableSAMInteractive()
+        else:
+            self.tools.disableSAMInteractive()
 
     def resetTools(self):
 
@@ -965,14 +965,14 @@ class QtImageViewerPlus(QtImageViewer):
             self.leftMouseButtonPressed.emit(x, y)
 
             if (self.tools.tool == "WATERSHED" or self.tools.tool == "FREEHAND" or self.tools.tool == "EDITBORDER"\
-                 or self.tools.tool == "RULER" or self.tools.tool == "SAM") and mods & Qt.ShiftModifier:
+                 or self.tools.tool == "RULER" or self.tools.tool == "SAM" or self.tools.tool == "SAMINTERACTIVE") and mods & Qt.ShiftModifier:
                 if mods & Qt.ShiftModifier:
                     self.tools.leftPressed(x, y, mods)
             
             #used from area selection and pen drawing,
             elif (self.panEnabled and not (mods & Qt.ShiftModifier)) or (mods & Qt.ControlModifier):
                 self.setDragMode(QGraphicsView.ScrollHandDrag)
-            elif self.tools.tool == "MATCH" or self.tools.tool == "RITM" or self.tools.tool == "SAMINTERACTIVE" or self.tools.tool == "FOURCLICKS" or self.tools.tool == "PLACEANNPOINT":
+            elif self.tools.tool == "MATCH" or self.tools.tool == "RITM" or self.tools.tool == "FOURCLICKS" or self.tools.tool == "PLACEANNPOINT":
                 self.tools.leftPressed(x, y, mods)
 
             elif mods & Qt.ShiftModifier:
@@ -1104,13 +1104,13 @@ class QtImageViewerPlus(QtImageViewer):
                 self.tools.tools["SAM"].increasePoint(event.angleDelta())
                 return
         
-        # if self.tools.tool == "SAMINTERACTIVE" and mods & Qt.ShiftModifier:
-        #     if not self.tools.tools["SAMINTERACTIVE"].work_area_set:
-        #         self.tools.tools["SAMINTERACTIVE"].setSize(event.angleDelta())
-        #         return
-        #     else:
-        #         self.tools.tools["SAMINTERACTIVE"].increasePoint(event.angleDelta())
-        #         return
+        if self.tools.tool == "SAMINTERACTIVE" and mods & Qt.ShiftModifier:
+            # if not self.tools.tools["SAMINTERACTIVE"].work_area_set:
+                self.tools.tools["SAMINTERACTIVE"].setSize(event.angleDelta())
+                return
+            # else:
+                # self.tools.tools["SAMINTERACTIVE"].increasePoint(event.angleDelta())
+                # return
 
         if self.zoomEnabled:
 
