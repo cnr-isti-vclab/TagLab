@@ -74,12 +74,14 @@ class SAMInteractive(Tool):
         self.neg_pick_style = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.red, 'size': 6}
 
         #message for message_widget window
-        message = "<p><i>Segment anything using positive/negative points</i></p>"
-        message += "Choose a working area by resizing the window cursor:<br>\ Hold Shift and Use Mouse Wheel<br><br>"        
-        message += "<p>SHIFT + Left click to add a point in the object inside the working area (positive)<br/>\
-                    SHIFT + Right click to add a point out of the object inside the working area (negative)</p>"
-        message += "<p>Press spacebar to confirm segmentation</p>"
+        message = "<p><i>Segment by using positive/negative points on entities in a work-area</i></p>"
+        message += "<p><b>STEP 1</b>: Choose the work-area:<br/>- SHIFT + WHEEL to change area size<br/>- SHIFT + LMB to set the area</p>"
+        message += "<p><b>STEP 2</b>: Create a blob by adding positive/negative points:<br/>\
+                    - SHIFT + LMB to add a point inside the object (positive)<br/>\
+                    - SHIFT + RMB to add a point outside the object (negative)</p>"
+        message += "SPACEBAR to confirm segmentation:</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
+
 
     def setSize(self, delta):
         #increase value got from delta angle of mouse wheel
