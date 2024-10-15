@@ -2828,6 +2828,7 @@ class TagLab(QMainWindow):
             else:
                 for blob in view.selected_blobs:
                     view.removeBlob(blob)
+                    view.project.updateCorrespondences("REMOVE", None, blob, "")
                     self.logBlobInfo(blob, "[OP-MERGE][BLOB-REMOVED]")
 
                 view.addBlob(union_blob, selected=True)
@@ -2875,6 +2876,9 @@ class TagLab(QMainWindow):
                 view.removeBlob(selectedA)
                 view.removeBlob(selectedB)
                 view.addBlob(blobA, selected=True)
+
+                view.project.updateCorrespondences("REMOVE", None, selectedB, "")
+
                 view.saveUndo()
 
             logfile.info("[OP-SUBTRACT] SUBTRACT LABELS operation ends.")
@@ -3227,10 +3231,14 @@ class TagLab(QMainWindow):
                     pass
                 elif len(created_blobs) == 1:
                     view.updateBlob(blob, created_blobs[0], True, redraw=False)
+                    view.project.updateCorrespondences("UPDATE", created_blobs, blob, "")
                 else:
                     view.removeBlob(blob, redraw=False)
                     for created_blob in created_blobs:
                         view.addBlob(created_blob, selected=True, redraw=False)
+
+                    # FIXME: this case can be managed in a better way.
+                    view.project.updateCorrespondences("REMOVE", None, blob, "")
 
                 view.saveUndo()
 
