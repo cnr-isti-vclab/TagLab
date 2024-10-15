@@ -31,7 +31,7 @@ if importlib.util.find_spec("segment_anything"):
     from source.tools.Sam import Sam
 
 #from source.tools.SamInteractive import SamInteractive
-from source.tools.SAMPredictor import SAMPredictor
+from source.tools.SAMInteractive import SAMInteractive
 
 # class Tools(object):
 class Tools(QObject):    
@@ -84,7 +84,7 @@ class Tools(QObject):
 
         if self.SAM_is_available:
             self.tools["SAM"] = Sam(self.viewerplus, self.pick_points)
-            self.tools["SAMINTERACTIVE"] = SAMPredictor(self.viewerplus, self.pick_points)
+            self.tools["SAMINTERACTIVE"] = SAMInteractive(self.viewerplus, self.pick_points)
 
     def setTool(self, tool):
         self.resetTools()      
@@ -138,12 +138,21 @@ class Tools(QObject):
     def disableSAMInteractive(self):
         if self.SAM_is_available:
             self.tools["SAMINTERACTIVE"].enable(False)
+    
+    def enableRITM(self):
+        # if self.SAM_is_available:
+            self.tools["RITM"].enable(True)
+
+
+    def disableRITM(self):
+        # if self.SAM_is_available:
+            self.tools["RITM"].enable(False)
       
     #method to select tools for tool message window      
     def toolMessage(self):
         if self.tool == "WATERSHED" or self.tool == "SAM" or self.tool == "RITM"\
               or self.tool == "FREEHAND" or self.tool == "BRICKS" or self.tool == "FOURCLICKS" or\
-              self.tool == "EDITBORDER" or self.tool == "CUT" or self.tool == "ASSIGN":
+              self.tool == "EDITBORDER" or self.tool == "CUT" or self.tool == "ASSIGN" or self.tool == "SAMINTERACTIVE":
             self.tol_mess.emit(self.tools[self.tool].tool_message)
         else:
             self.tol_mess.emit(None)

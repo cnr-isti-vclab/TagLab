@@ -22,9 +22,9 @@ from segment_anything import SamPredictor
 from models.dataloaders import helpers as helpers
 
 
-class SAMPredictor(Tool):
+class SAMInteractive(Tool):
     def __init__(self, viewerplus, pick_points):
-        super(SAMPredictor, self).__init__(viewerplus)
+        super(SAMInteractive, self).__init__(viewerplus)
         # User defined points
         self.pick_points = pick_points
 
@@ -72,6 +72,14 @@ class SAMPredictor(Tool):
         self.work_pick_style = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.cyan, 'size': 8}
         self.pos_pick_style = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.green, 'size': 6}
         self.neg_pick_style = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.red, 'size': 6}
+
+        #message for message_widget window
+        message = "<p><i>Segment anything using positive/negative points</i></p>"
+        message += "Choose a working area by resizing the window cursor:<br>\ Hold Shift and Use Mouse Wheel<br><br>"        
+        message += "<p>SHIFT + Left click to add a point in the object inside the working area (positive)<br/>\
+                    SHIFT + Right click to add a point out of the object inside the working area (negative)</p>"
+        message += "<p>Press spacebar to confirm segmentation</p>"
+        self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
     def setSize(self, delta):
         #increase value got from delta angle of mouse wheel

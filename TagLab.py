@@ -349,7 +349,7 @@ class TagLab(QMainWindow):
         #self.viewerplus.tools.tools["SAM"].samEnded.connect(self.resetSam)
         #self.viewerplus2.tools.tools["SAM"].samEnded.connect(self.resetSam)
         
-        #QUIRINO: info messages
+        # tool info messages
         # self.viewerplus.tools.tools["SAM"].tool_message.connect(self.message)
         # self.viewerplus.tools.tools["WATERSHED"].tool_message.connect(self.message)
         self.viewerplus.tools.tol_mess.connect(self.message)    
@@ -4058,9 +4058,13 @@ class TagLab(QMainWindow):
                 self.message_widget = None
                 
         else:
-            if self.message_widget is None:
+            if self.message_widget is not None:
+                self.message_widget.close()
+                self.message_widget = None
+
+
                 
-                self.message_widget = QtMessageWidget(self)
+            self.message_widget = QtMessageWidget(self)
                         
             # self.setParent(self)
             self.message_widget.show()
