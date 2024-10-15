@@ -47,13 +47,11 @@ class Sam(Tool):
         self.seed_nr = 0
         self.not_overlapping = []
         
-        message = "<p><i>Automatic segmentation with SegmentAnything neural network</i></p>"
-        message += "Choose a working area by resizing the window cursor:<br>\ Hold Shift and Use Mouse Wheel<br><br>"
-        message += "Apply SAM segmentation on the area inside the window cursor:<br>"
-        # To resize windows cursor: Hold Shift and Mouse Wheel<br><br>\
-        #     To apply SAM segmentation on the area inside the window cursor:<br>\
-            # mouse left button + Spacebar"
-        self.tool_message = f'<div style="text-align: left;">{message}</div>'
+        message = "<p><i>Automatic segmentation of all entities in a work-area</i></p>"
+        message += "<p><b>STEP 1</b>: Choose the work-area:<br/>- SHIFT + WHEEL to change area size<br/>- SHIFT + LMB to set the area</p>"
+        message += "<p><b>STEP 2</b>: Set seeds:<br/>- SHIFT + WHEEL to change the spacing</p>"
+        message += "SPACEBAR to apply segmentation:</p>"
+        self.tool_message = f'<div style="text-align: left; color: red;">{message}</div>'
        
 
         """
@@ -100,8 +98,6 @@ class Sam(Tool):
         """
 		Set the work area based on the location of points
 		"""
-
-
         # Display to GUI
         brush = QBrush(Qt.NoBrush)
         pen = QPen(Qt.DashLine)
@@ -136,7 +132,7 @@ class Sam(Tool):
         self.viewerplus.scene.removeItem(self.rect_item)
 
         # Create a semi-transparent overlay
-        shadow_brush = QBrush(QColor(0, 0, 0, 150))  # Semi-transparent black
+        shadow_brush = QBrush(QColor(0, 0, 0, 75))  # Semi-transparent black
         shadow_path = QPainterPath()
         shadow_path.addRect(self.viewerplus.sceneRect())  # Cover the entire scene
         shadow_path.addRect(rect)  # Add the work area rect
@@ -150,7 +146,6 @@ class Sam(Tool):
         self.work_area_set = True
 
     def increasePoint(self, delta):
-       
         #increase value got from delta angle of mouse wheel
         increase = int(delta.y())/100
         # print(f'increase is {increase}')

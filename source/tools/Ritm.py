@@ -41,10 +41,9 @@ class Ritm(Tool):
 
         #message for message_widget window
         message = "<p><i>Segment using positive/negative points</i></p>"
-        message += "<p>Zoom in and frame the object of interest to reduce memory use</p>"
-        message += "<p>SHIFT + Left click to add a point inside the object (positive)<br/>\
-                    SHIFT + Right click to add a point outside the object (negative)</p>"
-        message += "<p>Press spacebar to confirm segmentation</p>"
+        message += "<p>Zoom in to frame the work-area containing the objects of interest.<br/> Try keeping this work-area small, to save memory and execution time.</p>"
+        message += "<p>- SHIFT + LMB to add a point inside the object (positive)<br/>- SHIFT + RMB to add a point outside the object (negative)</p>"
+        message += "<p>SPACEBAR to confirm segmentation</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
     def checkPointPosition(self, x, y):
