@@ -51,3 +51,6 @@ class QtMessageWidget(QWidget):
 
     def move(self, x, y):
         super(QtMessageWidget, self).move(x, y)
+
+    def close(self):
+        super(QtMessageWidget, self).close()
