@@ -16,6 +16,7 @@ class Correspondences(object):
         self.born = []
         self.threshold = 1.05
         self.data = pd.DataFrame(data = correspondences, columns=['Genet', 'Blob1', 'Blob2', 'Area1', 'Area2', 'Class', 'Action', 'Split\Fuse'])
+        self.area_type_shown = False  # True means that the surface area is currently shown
 
     def area_in_sq_cm(self, area, is_source):
 
@@ -32,6 +33,13 @@ class Correspondences(object):
             return False
 
         if self.data.loc[1, 'Genet'] >= 0:
+            return True
+        else:
+            return False
+
+    def isSource(self, img):
+
+        if self.source == img:
             return True
         else:
             return False
@@ -91,17 +99,56 @@ class Correspondences(object):
                 else:
                     self.data.loc[index, 'Action'] = "same"
 
-    def setSurfaceAreaValues(self):
+        self.area_shown = use_surface_area
 
-        for index, row in self.data.iterrows():
-            id1 = int(row['Blob1'])
-            id2 = int(row['Blob2'])
-            blob1 = self.source.annotations.blobById(id1)
-            blob2 = self.target.annotations.blobById(id2)
-            if blob1 is not None:
-                self.data.loc[index, 'Area1'] = self.area_in_sq_cm(blob1.area, True)
-            if blob2 is not None:
-                self.data.loc[index, 'Area2'] = self.area_in_sq_cm(blob2.area, False)
+    def updateBlobId(self, img, blob_id, new_id):
+        """
+        Update the id of a region
+        """
+
+        if self.source == img:
+            rows_index = self.data[self.data['Blob1'] == blob_id].index
+            self.data.loc[rows_index, 'Blob1'] = new_id
+        else:
+            rows_index = self.data[self.data['Blob2'] == blob_id].index
+            self.data.loc[rows_index, 'Blob2'] = new_id
+
+    def updateBlobArea(self, img, blob_id, new_area, new_surface_area):
+
+        if self.source == img:
+            rows = self.data[self.data['Blob1' == blob_id]]
+            column_name = 'Area1'
+            is_source = True
+        else:
+            rows = self.data[self.data['Blob2' == blob_id]]
+            column_name = 'Area2'
+            is_source = False
+
+        for index, row in rows.iterrows():
+
+            area = self.area_in_sq_cm(new_area, is_source)
+            self.data.loc[index, column_name] = area
+
+            try:
+                area1 = float(row['Area1'])
+            except:
+                area1 = 0.0
+
+            try:
+                area2 = float(row['Area2'])
+            except:
+                area2 = 0.0
+
+            action = row['Action']
+
+            # update grow/shrink information
+            if action == "grow" or action == "shrink" or action == "same":
+                if area2 > area1*self.threshold:
+                    self.data.loc[index, 'Action'] = "grow"
+                elif area2 < area1 / self.threshold:
+                    self.data.loc[index, 'Action'] = "shrink"
+                else:
+                    self.data.loc[index, 'Action'] = "same"
 
     def save(self):
         return { "source": self.source.id, "target": self.target.id, "correspondences": self.data.values.tolist() }
@@ -173,6 +220,12 @@ class Correspondences(object):
             pass
 
         self.data.reset_index(drop=True, inplace=True)
+
+    def remove(self, img, blob_id):
+        """
+        Remove the rows with the given blob id.
+        """
+        pass
 
     def updateBlob(self, image, old_blob, new_blob):
 
@@ -339,9 +392,7 @@ class Correspondences(object):
         sourcecluster = list(set(sourcecluster))
         targetcluster = list(set(targetcluster))
         rows = list(set(rows))
-
         return sourcecluster, targetcluster, rows
-
 
     def deleteCluster(self, indexes):
 
@@ -376,6 +427,13 @@ class Correspondences(object):
 
         self.sort_data()
 
+    def deleteRows(self, rows):
+
+        # delete rows from the dataframe
+        self.data.drop(rows.index, inplace=True)
+
+        # reindexing
+        self.data.reset_index(drop=True, inplace=True)
 
     def autoMatch(self, blobs1, blobs2):
         self.correspondences.clear()
