@@ -212,57 +212,66 @@ class TagLab(QMainWindow):
 
         ##### LAYOUT EDITING TOOLS (VERTICAL)
 
-        flatbuttonstyle1 = """
+        flatbuttonstyle = """
         QPushButton:checked { background-color: rgb(100,100,100); }
         QPushButton:hover   { border: 1px solid darkgray;         }
         QToolTip { background-color: white; color: rgb(100,100,100); }
         """
 
-        flatbuttonstyle2 = """
+        flatbuttonstyle_red = """
         QPushButton:checked { background-color: rgb(100,100,100); }
         QPushButton:hover   { border: 1px solid rgb(255,100,100); }
         QToolTip { background-color: white; color: rgb(100,100,100); }
         """
 
+        self.btnMove               = self.newButton("move.png",     "Pan",                    flatbuttonstyle, self.move)
+        self.btnPoint              = self.newButton("point.png",    "Place annotation point", flatbuttonstyle, self.placeAnnPoint)
+        self.btnFreehand           = self.newButton("pencil.png",   "Freehand segmentation",  flatbuttonstyle, self.freehandSegmentation)
+        self.btnCreateCrack        = self.newButton("crack.png",    "Create crack",           flatbuttonstyle, self.createCrack)
+        self.btnWatershed          = self.newButton("watershed.png",    "Watershed segmentation", flatbuttonstyle, self.watershedSegmentation)
+        self.btnBricksSegmentation = self.newButton("brick.png",    "Bricks segmentation",    flatbuttonstyle, self.bricksSegmentation)
+        self.btnSamInteractive     = self.newButton("saminteractive2.png", "SAM - positive/negative clicks in a region", flatbuttonstyle, self.saminteractive)
+        self.btnSam                = self.newButton("sam.png", "SAM - all entities in a region", flatbuttonstyle, self.sam)
+        self.btnFourClicks         = self.newButton("dexter.png",   "4-clicks segmentation",  flatbuttonstyle, self.fourClicks)
+        self.btnRitm               = self.newButton("ritm.png",     "Positive/negative clicks segmentation", flatbuttonstyle, self.ritm)
 
-        self.btnMove               = self.newButton("move.png",     "Move",                   flatbuttonstyle1, self.move)
-        self.btnPoint              = self.newButton("point.png",    "Place annotation point", flatbuttonstyle1, self.placeAnnPoint)
-        self.btnAssign             = self.newButton("bucket.png",   "Assign class",           flatbuttonstyle1, self.assign)
-        self.btnEditBorder         = self.newButton("edit.png",     "Edit border",            flatbuttonstyle1, self.editBorder)
-        self.btnCut                = self.newButton("scissors.png", "Cut segmentation",       flatbuttonstyle1, self.cut)
-        self.btnFreehand           = self.newButton("pencil.png",   "Freehand segmentation",  flatbuttonstyle1, self.freehandSegmentation)
-        self.btnCreateCrack        = self.newButton("crack.png",    "Create crack",           flatbuttonstyle1, self.createCrack)
-        self.btnWatershed          = self.newButton("watershed.png",    "Watershed segmentation", flatbuttonstyle1, self.watershedSegmentation)
-        self.btnBricksSegmentation = self.newButton("brick.png",    "Bricks segmentation",    flatbuttonstyle2, self.bricksSegmentation)
-        self.btnSamInteractive = self.newButton("saminteractive2.png", "Box and clicks segmentation", flatbuttonstyle2, self.saminteractive)
-        self.btnSam = self.newButton("sam.png", "Segment everything", flatbuttonstyle2, self.sam)
+        self.btnAssign             = self.newButton("bucket.png",   "Assign class to blob",   flatbuttonstyle, self.assign)
+        self.btnEditBorder         = self.newButton("edit.png",     "Edit blob border",       flatbuttonstyle, self.editBorder)
+        self.btnCut                = self.newButton("scissors.png", "Cut blob",               flatbuttonstyle, self.cut)
+        self.btnRuler              = self.newButton("ruler.png",    "Measure tool",           flatbuttonstyle, self.ruler)
 
         # Split blob operation removed from the toolbar
         # self.btnSplitBlob   = self.newButton("split.png",    "Split Blob",            flatbuttonstyle1, self.splitBlob)
 
-        self.btnRuler         = self.newButton("ruler.png",    "Measure tool",           flatbuttonstyle1, self.ruler)
-        self.btnFourClicks   = self.newButton("dexter.png",   "4-clicks segmentation",  flatbuttonstyle2, self.fourClicks)
-        self.btnRitm          = self.newButton("ritm.png",     "Positive/negative clicks segmentation", flatbuttonstyle2, self.ritm)
-        
-        self.btnAutoClassification = self.newButton("auto.png", "Fully auto semantic segmentation", flatbuttonstyle2, self.selectClassifier)
+        self.btnAutoClassification = self.newButton("auto.png", "Fully auto semantic segmentation", flatbuttonstyle, self.selectClassifier)
 
-        # Split Screen operation removed from the toolbar
-        self.pxmapSeparator = QPixmap("icons/separator.png")
-        self.labelSeparator = QLabel()
-        self.labelSeparator.setPixmap(self.pxmapSeparator.scaled(QSize(35, 30)))
-        self.btnCreateGrid = self.newButton("grid.png", "Create grid",  flatbuttonstyle1, self.createGrid)
-        self.btnGrid = self.newButton("grid-edit.png", "Active/disactive grid operations", flatbuttonstyle1, self.toggleGrid)
-        self.pxmapSeparator2 = QPixmap("icons/separator.png")
-        self.labelSeparator2 = QLabel()
-        self.labelSeparator2.setPixmap(self.pxmapSeparator2.scaled(QSize(35, 30)))
+        self.btnCreateGrid         = self.newButton("grid.png", "Create grid",                flatbuttonstyle, self.createGrid)
+        self.btnGrid               = self.newButton("grid-edit.png", "Active/disactive grid operations", flatbuttonstyle, self.toggleGrid)
 
-        self.btnSplitScreen = self.newButton("split.png", "Split screen", flatbuttonstyle1, self.toggleComparison)
-        self.btnAutoMatch = self.newButton("automatch.png", "Compute automatic matches", flatbuttonstyle1, self.autoCorrespondences)
-        self.btnMatch = self.newButton("manualmatch.png", "Add manual matches ", flatbuttonstyle1, self.matchTool)
+        self.btnSplitScreen        = self.newButton("split.png", "Split screen",              flatbuttonstyle, self.toggleComparison)
+        self.btnAutoMatch          = self.newButton("automatch.png", "Compute automatic matches", flatbuttonstyle, self.autoCorrespondences)
+        self.btnAutoMatch.setCheckable(False) # WARNING: Automatic matches button is not checkable
+        self.btnMatch              = self.newButton("manualmatch.png", "Add manual matches ", flatbuttonstyle, self.matchTool)
 
-        # NOTE: Automatic matches button is not checkable
-        self.btnAutoMatch.setCheckable(False)
 
+        # separator
+        pxmapSeparator = QPixmap("icons/separator.png")
+        labelSeparator1 = QLabel()
+        labelSeparator1.setPixmap(pxmapSeparator.scaled(QSize(35, 30)))
+        labelSeparator2 = QLabel()
+        labelSeparator2.setPixmap(pxmapSeparator.scaled(QSize(35, 30)))
+        labelSeparator3 = QLabel()
+        labelSeparator3.setPixmap(pxmapSeparator.scaled(QSize(35, 30)))
+        labelSeparator4 = QLabel()
+        labelSeparator4.setPixmap(pxmapSeparator.scaled(QSize(35, 30)))
+        """
+        separatorLine = QFrame()
+        separatorLine.setFrameShape(QFrame.HLine) 
+        separatorLine.setFrameShadow(QFrame.Raised)
+        separatorLine.setLineWidth(3)
+        """
+
+        #filling the layout
         layout_tools = QVBoxLayout()
         layout_tools.setSpacing(0)
         layout_tools.addWidget(self.btnMove)
@@ -270,24 +279,22 @@ class TagLab(QMainWindow):
         layout_tools.addWidget(self.btnFourClicks)
         layout_tools.addWidget(self.btnRitm)
         layout_tools.addWidget(self.btnFreehand)
-        layout_tools.addWidget(self.btnAssign)
         layout_tools.addWidget(self.btnWatershed)
         #layout_tools.addWidget(self.btnBricksSegmentation)
         layout_tools.addWidget(self.btnSam)
         layout_tools.addWidget(self.btnSamInteractive)
+        layout_tools.addWidget(labelSeparator1) #separator-----------------------------------        
+        layout_tools.addWidget(self.btnAssign)        
         layout_tools.addWidget(self.btnEditBorder)
         layout_tools.addWidget(self.btnCut)
         #layout_tools.addWidget(self.btnCreateCrack)
         layout_tools.addWidget(self.btnRuler)
+        layout_tools.addWidget(labelSeparator2) #separator-----------------------------------        
         layout_tools.addWidget(self.btnAutoClassification)
-        layout_tools.addSpacing(3)
-        layout_tools.addWidget(self.labelSeparator)
-        layout_tools.addSpacing(3)
+        layout_tools.addWidget(labelSeparator3) #separator-----------------------------------
         layout_tools.addWidget(self.btnCreateGrid)
         layout_tools.addWidget(self.btnGrid)
-        layout_tools.addSpacing(3)
-        layout_tools.addWidget(self.labelSeparator2)
-        layout_tools.addSpacing(3)
+        layout_tools.addWidget(labelSeparator4) #separator-----------------------------------
         layout_tools.addWidget(self.btnSplitScreen)
         layout_tools.addWidget(self.btnAutoMatch)
         layout_tools.addWidget(self.btnMatch)
