@@ -7,7 +7,7 @@ class Assign(Tool):
 
         message = "<p><i>Assign a class to a blob</i></p>"
         message += "<p>Choose the class in the table</p>"
-        message += "<p>Left Click on a blob to assign the class</p>"
+        message += "<p>- LMB on a blob to assign the class<br/>- CTRL + LMB + drag to pan view</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
 

@@ -6,10 +6,10 @@ class Cut(Tool):
 
         self.edit_points = edit_points
 
-        message = "<p><i>Divide existing blobs</i></p>"
+        message = "<p><i>Divide an existing blob</i></p>"
         message += "<p>Double click to select a blob</p>"
-        message += "<p>Left Click and drag to draw a line which intrsects the border of the selected blob</p>"
-        message += "<p>Spacebar to divide the blob into two blobs</p>"
+        message += "<p>- LMB + drag to draw a line that bisects the selected blob</p>"
+        message += "<p>SPACEBAR to divide the blob into two blobs</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
     def leftPressed(self, x, y, mods):
