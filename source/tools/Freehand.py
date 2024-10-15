@@ -7,8 +7,9 @@ class Freehand(Tool):
         self.viewerplus = viewerplus
         self.edit_points = edit_points
 
-        message = "<p><i>Draw a CLOSED curve on the map</i></p>"
-        message += "<p>- LMB + drag to draw<br/>- CTRL + LMB + drag to pan view</p>"
+        message = "<p><i>Segment by drawing a CLOSED curve on the map</i></p>"
+        message += "<p>- LMB + drag to draw<br/>\
+                    - CTRL + LMB + drag to pan view</p>"
         message += "<p>SPACEBAR to apply segmentation</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 

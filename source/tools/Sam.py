@@ -47,10 +47,13 @@ class Sam(Tool):
         self.seed_nr = 0
         self.not_overlapping = []
         
-        message = "<p><i>Automatic segmentation of all entities in a work-area</i></p>"
-        message += "<p><b>STEP 1</b>: Choose the work-area:<br/>- SHIFT + WHEEL to change area size<br/>- SHIFT + LMB to set the area</p>"
-        message += "<p><b>STEP 2</b>: Set seeds:<br/>- SHIFT + WHEEL to change the spacing</p>"
-        message += "SPACEBAR to apply segmentation:</p>"
+        message = "<p><i>Automatic segmentation of all instances in a work-area</i></p>"
+        message += "<p><b>STEP 1</b>: Choose the work-area:<br/>\
+                    - SHIFT + WHEEL to change area size<br/>\
+                    - SHIFT + LMB to set the area</p>"
+        message += "<p><b>STEP 2</b>: Set seeds:<br/>\
+                    - SHIFT + WHEEL to change the spacing</p>"
+        message += "SPACEBAR to apply segmentation</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
        
 

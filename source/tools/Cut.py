@@ -6,15 +6,16 @@ class Cut(Tool):
 
         self.edit_points = edit_points
 
-        message = "<p><i>Divide an existing blob</i></p>"
-        message += "<p>Double click to select a blob</p>"
-        message += "<p>- LMB + drag to draw a line that bisects the selected blob</p>"
-        message += "<p>SPACEBAR to divide the blob into two blobs</p>"
+        message = "<p><i>Divide an existing region</i></p>"
+        message += "<p>Double click to select a region</p>"
+        message += "<p>- LMB + drag to draw a line that bisects the selected region<br/>\
+                    - CTRL + LMB + drag to pan view</p>"
+        message += "<p>SPACEBAR to divide the region into two</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
     def leftPressed(self, x, y, mods):
         if self.edit_points.startDrawing(x, y):
-            self.log.emit("[TOOL][EDITBORDER] DRAWING starts..")
+            self.log.emit("[TOOL][CUT] DRAWING starts..")
 
     def mouseMove(self, x, y):
         self.edit_points.move(x, y)

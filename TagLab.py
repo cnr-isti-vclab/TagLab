@@ -230,14 +230,14 @@ class TagLab(QMainWindow):
         self.btnCreateCrack        = self.newButton("crack.png",    "Create crack",           flatbuttonstyle, self.createCrack)
         self.btnWatershed          = self.newButton("watershed.png",    "Watershed segmentation", flatbuttonstyle, self.watershedSegmentation)
         self.btnBricksSegmentation = self.newButton("brick.png",    "Bricks segmentation",    flatbuttonstyle, self.bricksSegmentation)
-        self.btnSamInteractive     = self.newButton("saminteractive2.png", "SAM - positive/negative clicks in a region", flatbuttonstyle, self.saminteractive)
-        self.btnSam                = self.newButton("sam.png", "SAM - all entities in a region", flatbuttonstyle, self.sam)
+        self.btnSamInteractive     = self.newButton("saminteractive2.png", "SAM - positive/negative clicks in an area", flatbuttonstyle, self.saminteractive)
+        self.btnSam                = self.newButton("sam.png", "SAM - all instances in an area", flatbuttonstyle, self.sam)
         self.btnFourClicks         = self.newButton("dexter.png",   "4-clicks segmentation",  flatbuttonstyle, self.fourClicks)
         self.btnRitm               = self.newButton("ritm.png",     "Positive/negative clicks segmentation", flatbuttonstyle, self.ritm)
 
-        self.btnAssign             = self.newButton("bucket.png",   "Assign class to blob",   flatbuttonstyle, self.assign)
-        self.btnEditBorder         = self.newButton("edit.png",     "Edit blob border",       flatbuttonstyle, self.editBorder)
-        self.btnCut                = self.newButton("scissors.png", "Cut blob",               flatbuttonstyle, self.cut)
+        self.btnAssign             = self.newButton("bucket.png",   "Assign class to region",   flatbuttonstyle, self.assign)
+        self.btnEditBorder         = self.newButton("edit.png",     "Edit region border",       flatbuttonstyle, self.editBorder)
+        self.btnCut                = self.newButton("scissors.png", "Cut region",               flatbuttonstyle, self.cut)
         self.btnRuler              = self.newButton("ruler.png",    "Measure tool",           flatbuttonstyle, self.ruler)
 
         # Split blob operation removed from the toolbar

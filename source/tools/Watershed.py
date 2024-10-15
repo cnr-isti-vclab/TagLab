@@ -24,12 +24,12 @@ class Watershed(Tool):
         self.current_blobs = []
         self.currentLabel = None
         
-        message = "<p><i>Draw scribbles inside and around an area of interest</i></p>"
-        message += "<p>Select a class and draw positive scribbles INSIDE the area,<br/>\
-                    Then draw negative scribbles OUTSIDE the area.<br/>\
+        message = "<p><i>Draw scribbles inside and around an instance</i></p>"
+        message += "<p>Select a class and draw positive scribbles INSIDE the instance,<br/>\
+                    Then draw negative scribbles OUTSIDE the instance.<br/>\
                     The tool needs both positive and negative scribbles to work.</p>"
         message += "<p>- SHIFT + LMB + drag to draw a positive scribble<br/>\
-                    <p>- SHIFT + RMB + drag to draw a negative scribble</p>"
+                    - SHIFT + RMB + drag to draw a negative scribble</p>"
         message += "<p>- SHIFT + wheel to set brush size</p>"
         message += "<p>SPACEBAR to apply segmentation</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'

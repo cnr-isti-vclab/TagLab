@@ -74,12 +74,14 @@ class SAMInteractive(Tool):
         self.neg_pick_style = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.red, 'size': 6}
 
         #message for message_widget window
-        message = "<p><i>Segment by using positive/negative points on entities in a work-area</i></p>"
-        message += "<p><b>STEP 1</b>: Choose the work-area:<br/>- SHIFT + WHEEL to change area size<br/>- SHIFT + LMB to set the area</p>"
-        message += "<p><b>STEP 2</b>: Create a blob by adding positive/negative points:<br/>\
+        message = "<p><i>Segment instances in a work-area by using positive/negative points</i></p>"
+        message += "<p><b>STEP 1</b>: Choose the work-area:<br/>\
+                    - SHIFT + WHEEL to change area size<br/>\
+                    - SHIFT + LMB to set the area</p>"
+        message += "<p><b>STEP 2</b>: Create a region by adding positive/negative points:<br/>\
                     - SHIFT + LMB to add a point inside the object (positive)<br/>\
                     - SHIFT + RMB to add a point outside the object (negative)</p>"
-        message += "SPACEBAR to confirm segmentation:</p>"
+        message += "SPACEBAR to confirm segmentation</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
 
