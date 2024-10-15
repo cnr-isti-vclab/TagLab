@@ -51,7 +51,7 @@ class Sam(Tool):
         message += "<p><b>STEP 1</b>: Choose the work-area:<br/>- SHIFT + WHEEL to change area size<br/>- SHIFT + LMB to set the area</p>"
         message += "<p><b>STEP 2</b>: Set seeds:<br/>- SHIFT + WHEEL to change the spacing</p>"
         message += "SPACEBAR to apply segmentation:</p>"
-        self.tool_message = f'<div style="text-align: left; color: red;">{message}</div>'
+        self.tool_message = f'<div style="text-align: left;">{message}</div>'
        
 
         """
