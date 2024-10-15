@@ -398,6 +398,17 @@ class Project(QObject):
 
                 self.images = image_list
 
+    def indexByImageName(self, image_name):
+        """
+        Returns the position in the list given the image name.
+        """
+
+        for index, image in self.images:
+            if image.name == image_name:
+                return index
+
+        return -1  # it should never happen (!)
+
     def addNewImage(self, image, sort=True):
         """
         Annotated images in the image list are sorted by date.
@@ -431,21 +442,21 @@ class Project(QObject):
 
         return corresp_tables
 
-    def updateGenets(self, img_source_idx, img_target_idx):
+    def updateGenets(self):
         """
-        Update the genets information in (1) the regions and (2) in the correspondences' table
+        Update the genets information in the regions and in the correspondences' tables.
         """
+
         self.genet.updateGenets()
-        corr = self.getImagePairCorrespondences(img_source_idx, img_target_idx)
-        # this is done in genet.py
-        # corr.updateGenets()
-        return corr
 
     def assignClassByGenet(self, class_name, genet_id):
         """
         The given class is assigned to all the regions with the same genet id.
         """
-        pass
+
+        for key, table in self.correspondences.items():
+            rows_index = table.data[table.data['Genet'] == genet_id].index
+            table.data.loc[rows_index, 'Class'] = class_name
 
     def addBlob(self, img, blob, notify=True):
 
@@ -467,7 +478,7 @@ class Project(QObject):
         # update image annotations
         img.annotations.updateBlob(old_blob, new_blob)
 
-        self.updateCorrespondences("UPDATE", [new_blob], [old_blob])
+        self.updateCorrespondences("UPDATE", img, [new_blob], [old_blob])
 
         if notify:
             self.blobUpdated.emit(img, old_blob, new_blob)
@@ -492,24 +503,64 @@ class Project(QObject):
         if operation == "ADD":
             # WARNING: correspondences are not updated automatically!
             # The assignment of the new correspondences is left to the user.
+            # TODO: add a message here, something like "the correspondences with the new blobs must be added manually"
             pass
+
         elif operation == "REMOVE":
             # All the involved rows, starting from the temporal point of the blob removed are deleted.
             # The genet is recomputed for consistency.
-            # TODO
-            pass
+
+            index = self.indexByImageName(img)
+
+            for key, table in self.correspondences.items():
+
+                name1 = str.split(key, "-")[0]
+                name2 = str.split(key, "-")[1]
+
+                index1 = self.indexByImageName(name1)
+                index2 = self.indexByImageName(name2)
+
+                if index >= index1 or index >= index2:
+                    rows = table.data[table.data['Genet'] == blob_removed.genet]
+                    table.deleteRows(rows)
+
+            self.genet.updateGenets()
+
         elif operation == "UPDATE":
-            # The content of the correspondences tables involved is updated with the blobs_added info.
+            # The content of the correspondences tables involved is updated, blobs_added contains the new information,
+            # blob_removed the old information.
             corresp_tables = self.findCorrespTables(img)
-            # TODO
+            for table in corresp_tables:
+                table.updateBlobId(img, blobs_added[0].id, blob_removed.id)
+                table.updateBlobArea(img, blobs_added[0].area, blob_removed.area)
+
         elif operation == "CUT":
             # The new blobs are automatically connected with the ones of the blob removed.
+            # The genet is recomputed for consistency.
+
             corresp_tables = self.findCorrespTables(img)
-            # TODO
+            for table in corresp_tables:
+
+                is_source = table.isSource(img)
+
+                source_blobs, target_blobs, rows = table.findCluster(blob_removed.id, is_source)
+
+                # remove the connections
+                table.deleteRows(rows)
+
+                # create the new correspondences
+                if is_source:
+                    table.set(blobs_added, target_blobs)
+                else:
+                    table.set(source_blobs, blobs_added)
+
+                self.updateGenets()
+
         elif operation == "CLASS_CHANGED":
             # The class is updated along the entire temporal sequence.
             blob = blobs_added[0]
             self.assignClassByGenet(class_name, blob.genet)
+
         else:
             print("Update correspondences WARNING! -> unknown operation")
 
