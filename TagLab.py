@@ -313,6 +313,7 @@ class TagLab(QMainWindow):
         self.erodeAction        = self.newAction("Erode Border",            "-",   self.erode)
         self.attachBoundariesAction = self.newAction("Attach Boundaries",   "B",   self.attachBoundaries)
         self.fillAction         = self.newAction("Fill Label",              "F",   self.fillLabel)
+        self.createNegative = self.newAction("Create a Negative Region around selected regions", "N", self.createNegative)
 
 
         # VIEWERPLUS
@@ -1153,6 +1154,8 @@ class TagLab(QMainWindow):
         self.regionmenu.addAction(self.refineAllAction)
         self.regionmenu.addAction(self.dilateAction)
         self.regionmenu.addAction(self.erodeAction)
+        self.regionmenu.addSeparator()
+        self.regionmenu.addAction(self.createNegative)
 
 
         ###### POINT ANNOTATIONS MENU
@@ -2917,6 +2920,35 @@ class TagLab(QMainWindow):
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
             msgBox.setText("You need to select <em>two</em> regions for DIVIDE operation.")
             msgBox.exec()
+
+    def createNegative(self):
+        """
+        create a negative region form selected blobs
+        """
+        view = self.activeviewer
+        if view is None:
+            return
+
+        if len(view.selected_blobs) >0:
+
+            message = "[OP-CREATE] CREATE NEGATIVE REGIONS BEGIN operation begins.. (number of selected blobs: " + str(
+                len(view.selected_blobs)) + ")"
+            logfile.info(message)
+
+            created_blobs = view.annotations.createNegative(view.selected_blobs)
+
+            if created_blobs:
+                view.resetSelection()
+                for blob in created_blobs:
+                    self.logBlobInfo(blob, "[OP-CREATENEGATIVE][BLOB-ADDED]")
+                    view.addBlob(blob, selected=True)
+
+            else:
+                msgBox = QMessageBox()
+                msgBox.setWindowTitle(self.TAGLAB_VERSION)
+                msgBox.setText("You need to select at least <em> one </em> blobs for CREATE a negative mask.")
+                msgBox.exec()
+
 
 
     def dilate(self):
