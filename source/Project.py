@@ -478,7 +478,7 @@ class Project(QObject):
         # update image annotations
         img.annotations.updateBlob(old_blob, new_blob)
 
-        self.updateCorrespondences("UPDATE", img, new_blob, old_blob)
+        self.updateCorrespondences("UPDATE", img, [new_blob], old_blob)
 
         if notify:
             self.blobUpdated.emit(img, old_blob, new_blob)
@@ -546,8 +546,8 @@ class Project(QObject):
             # blob_removed the old information.
             corresp_tables = self.findCorrespTables(img)
             for table in corresp_tables:
-                table.updateBlobId(img, blobs_added[0].id, blob_removed.id)
-                table.updateBlobArea(img, blobs_added[0].area, blob_removed.area)
+                table.updateBlobId(img, blob_removed.id, blobs_added[0].id)
+                table.updateBlobArea(img, blob_removed.id, blobs_added[0].area, blobs_added[0].surface_area)
 
         elif operation == "CUT":
             # The new blobs are automatically connected with the ones of the blob removed.

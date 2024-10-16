@@ -116,11 +116,11 @@ class Correspondences(object):
     def updateBlobArea(self, img, blob_id, new_area, new_surface_area):
 
         if self.source == img:
-            rows = self.data[self.data['Blob1' == blob_id]]
+            rows = self.data[self.data['Blob1'] == blob_id]
             column_name = 'Area1'
             is_source = True
         else:
-            rows = self.data[self.data['Blob2' == blob_id]]
+            rows = self.data[self.data['Blob2'] == blob_id]
             column_name = 'Area2'
             is_source = False
 
@@ -347,16 +347,16 @@ class Correspondences(object):
             self.data = pd.concat([self.data, df])
 
         if len(sourceblobs) == 0:
-            target = targetblobs[0]
-            row = [-1, -1, target.id, 0.0, self.area_in_sq_cm(target.area, False), target.class_name, action, type]
-            df = pd.DataFrame([row], columns=self.data.columns)
-            self.data = pd.concat([self.data, df])
+            for target in targetblobs:
+                row = [-1, -1, target.id, 0.0, self.area_in_sq_cm(target.area, False), target.class_name, action, type]
+                df = pd.DataFrame([row], columns=self.data.columns)
+                self.data = pd.concat([self.data, df])
 
         elif len(targetblobs) == 0:
-            source = sourceblobs[0]
-            row = [-1, source.id, -1, self.area_in_sq_cm(source.area, True), 0.0, source.class_name, action, type]
-            df = pd.DataFrame([row], columns=self.data.columns)
-            self.data = pd.concat([self.data, df])
+            for source in sourceblobs:
+                row = [-1, source.id, -1, self.area_in_sq_cm(source.area, True), 0.0, source.class_name, action, type]
+                df = pd.DataFrame([row], columns=self.data.columns)
+                self.data = pd.concat([self.data, df])
 
         else:
 
