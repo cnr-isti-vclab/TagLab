@@ -41,9 +41,7 @@ class Sam(Tool):
         self.offset = [0, 0]
 
         self.rect_item = None
-        # self.rect_item = viewerplus.scene.addRect(0, 0, 2048, 2048, QPen(Qt.black, 5, Qt.DotLine)) 
-        # self.center_item = viewerplus.scene.addEllipse(0, 0, 10,10, QPen(Qt.black), QBrush(Qt.red))
-        
+
         self.seed_nr = 0
         self.not_overlapping = []
         
@@ -229,19 +227,12 @@ class Sam(Tool):
             self.infoMessage.emit("Loading SAM network..")
             # add choices related to GPU MEMORY
 
-            # sam_checkpoint = "sam_vit_b_01ec64.pth"
-            # model_type = "vit_b"
-
-            # sam_checkpoint = "sam_vit_l_0b3195.pth"
-            # model_type = "vit_l"
-
             sam_checkpoint = "sam_vit_h_4b8939.pth"
             model_type = "vit_h"
 
             models_dir = "models/"
             network_name = os.path.join(models_dir, sam_checkpoint)
 
-            #
             # if not torch.cuda.is_available():
             #     print("CUDA NOT AVAILABLE!")
             #     device = torch.device("cpu")
@@ -251,20 +242,6 @@ class Sam(Tool):
             self.device = "cuda"
             self.sam_net = sam_model_registry[model_type](checkpoint=network_name)
             self.sam_net.to(device=self.device)
-
-            # CAPIRE DIFFERENZE DA DEMO   !!!!!!!!!!!
-
-            # # try:
-            # #     self.sam_net = genutils.load_is_model(model_path, device, cpu_dist_maps=False)
-            #     self.sam_net = sam_model_registry[model_type](checkpoint=model_name)
-            #     self.sam_net.to(device=self.device)
-
-
-            # except Exception as e:
-            #     box = QMessageBox()
-            #     box.setText("Could not load Sam network. You might need to run update.py.")
-            #     box.exec()
-            #     return False
 
         return True       
 
@@ -289,15 +266,7 @@ class Sam(Tool):
         # filtered_blobs = []
         blobs = self.created_blobs.copy()
         for blob in blobs:
-            
-            # Create a QRectF for each blob's bounding box
-            #bbox = QRectF(blob.bbox[0], blob.bbox[1], blob.bbox[2], blob.bbox[3])
-            # print(f"bbox coordinates are {bbox.top(), bbox.bottom(), bbox.left(), bbox.right()}")
-            #BOUNDING BOX ORDER: WHY?
-            #rect left  right   top bottom
-            #bbox top   bottom  left  right
-           
-            #use directly the blob bounding box instead of QRectF
+
             bbox = blob.bbox
             top = bbox[0]
             left = bbox[1]
@@ -322,8 +291,6 @@ class Sam(Tool):
         
         self.image_cropped = None
 
-        #     #self.viewerplus.resetTools()
-        #     ##self.resetWorkArea()
         self.work_area_set = False
         self.work_area_item = None
         self.viewerplus.scene.removeItem(self.work_area_rect)
@@ -359,16 +326,8 @@ class Sam(Tool):
            
         print(f"number of sam_seed is {self.num_points}")
 
-        # Crop the part of the map inside the self.rect_item area
-        # rect = self.work_area_rect.boundingRect()
-        # rect.moveTopLeft(self.work_area_rect.pos())
-        # rect = rect.normalized()
-        # rect = rect.intersected(self.viewerplus.sceneRect())
-        # cropped_image = self.viewerplus.img_map.copy(rect.toRect())
 
-
-
-        # Perform segmentation on the cropped image
+       # Perform segmentation on the cropped image
         self.segment(self.image_cropped, self.num_points)
 
         self.reset()
@@ -404,7 +363,6 @@ class Sam(Tool):
         )
 
         image = genutils.qimageToNumpyArray(image)
-        # image  = self.image_cropped_np
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         start = time.time()
@@ -426,32 +384,18 @@ class Sam(Tool):
             self.created_blobs.append(blob)
 
         print(f"self.created_blob len pre is {len(self.created_blobs)}")
-        
-        # self.removeOverlappingBlobs(self.created_blobs)
-        # self.removeOverlapping(self.created_blobs)
         genutils.removeOverlapping(self.created_blobs, self.created_blobs)
-        
         print(f"self.created_blob len post is {len(self.created_blobs)}")
-        
         self.removeEdgeBlobs()
-
         print(f"self.created_blob len post removeEdge is {len(self.created_blobs)}")
-        
-
         print(f"Number of yet annotated blobs is {len(self.viewerplus.image.annotations.seg_blobs)}")
-
-        # self.removeAnnotatedBlobs()
-        # self.removeOverlapping(self.viewerplus.image.annotations.seg_blobs, annotated = True)
-        # genutils.removeOverlapping(self.created_blobs, self.viewerplus.image.annotations.seg_blobs, annotated = True)
-
         print(f"self.created_blob len post annotated is {len(self.created_blobs)}")
             
         for blob in self.created_blobs:
             self.viewerplus.addBlob(blob, selected=True)
-        
-        self.created_blobs = []
 
-              
+        self.viewerplus.saveUndo()
+        self.created_blobs = []
         self.samEnded.emit()
 
     
@@ -466,39 +410,3 @@ class Sam(Tool):
             # self.center_item.setVisible(False)
        
        
-    #method to emit the message for the tool     
-    # def toolMessage(self):
-    #     self.tool_message.emit("To resize windows cursor: \
-    #     Shift + Mouse Wheel  \
-    #     \
-    #     To apply SAM segmentation: \
-    #     Spacebar")
-
-    #
-    #
-    # def drawBlobs(self):
-    #
-    #     for blob in self.created_blobs:
-    #         self.viewerplus.addBlob(blob, selected=False)
-
-
-
-            # # if it has just been created remove the current graphics item in order to set it again
-            # if blob.qpath_gitem is not None:
-            #     scene.removeItem(blob.qpath_gitem)
-            #     del blob.qpath_gitem
-            #     blob.qpath_gitem = None
-            #
-            # # custom drawing for created blobs
-            #
-            # blob.setupForDrawing()
-            # pen = QPen(Qt.white)
-            # pen.setWidth(2)
-            # pen.setCosmetic(True)
-            # brush = QBrush(Qt.SolidPattern)
-            # brush.setColor(Qt.white)
-            # brush.setStyle(Qt.Dense4Pattern)
-            # blob.qpath_gitem = scene.addPath(blob.qpath, pen, brush)
-            # blob.qpath_gitem.setZValue(1)
-            # blob.qpath_gitem.setOpacity(self.viewerplus.transparency_value)
-
