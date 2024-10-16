@@ -12,6 +12,7 @@ from sklearn.metrics import confusion_matrix
 from models.coral_dataset import CoralsDataset
 import models.losses as losses
 from PyQt5.QtWidgets import QApplication
+from qhoptim.pyt import QHAdam
 
 # SEED
 torch.manual_seed(997)
@@ -293,6 +294,7 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
     print("NETWORK USED: DEEPLAB V3+")
 
     ###### SETUP THE NETWORK #####
+    # num_classes parmeters adapt the num classes to the new dictionary
     net = DeepLab(backbone='resnet', output_stride=16, num_classes=output_classes)
     state = torch.load("models/deeplab-resnet.pth.tar")
     # RE-INIZIALIZE THE CLASSIFICATION LAYER WITH THE RIGHT NUMBER OF CLASSES, DON'T LOAD WEIGHTS OF THE CLASSIFICATION LAYER
@@ -302,10 +304,41 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
     net.load_state_dict(state['state_dict'], strict=False)
 
     # OPTIMIZER
+
+    freeze_strategy = True             # the last layer of the decoder is first stabilized for EPOCH_SWITCH_FIRST_UNFREEZE epochs
+    EPOCH_SWITCH_FIRST_UNFREEZE = 5   # unfreeze all the decoeder (not only the last layer)
+    EPOCH_SWITCH_SECOND_UNFREEZE = 15  # unfreeze all the DeepLab V3
+
     if optimiz == "SGD":
         optimizer = optim.SGD(net.parameters(), lr=learning_rate, weight_decay=L2_penalty, momentum=0.9)
-    elif optimiz == "ADAM":
+    elif optimiz == "ADAM" and freeze_strategy is False:
         optimizer = optim.Adam(net.parameters(), lr=learning_rate, weight_decay=L2_penalty)
+    elif optimiz == "ADAM" and freeze_strategy is True:
+
+        learning_rate = 0.01
+
+        # different learning rates are used for different part of the DeepLab is also used in this case
+        lr1 = learning_rate / 50.0
+        lr2 = learning_rate / 500.0
+
+        optimizer = optim.Adam([{'params': [param for name, param in net.named_parameters() if 'decoder.last_conv' not in name]},
+                  {'params': net.decoder.last_conv.parameters(), 'lr': lr1}], lr=lr2, weight_decay=L2_penalty)
+
+    elif optimiz == "QHADAM" and freeze_strategy is False:
+
+        optimizer = QHAdam(net.parameters(), lr=learning_rate, weight_decay=L2_penalty,
+                           nus = (0.7, 1.0), betas = (0.99, 0.999))
+
+    elif optimiz == "QHADAM" and freeze_strategy is True:
+
+        learning_rate = 0.01
+
+        # different learning rates are used for different part of the DeepLab is also used in this case
+        lr1 = learning_rate / 100.0
+        lr2 = learning_rate / 500.0
+        optimizer = QHAdam([{'params': [param for name, param in net.named_parameters() if 'decoder.last_conv' not in name]},
+             {'params': net.decoder.last_conv.parameters(), 'lr': lr1}], lr=lr2, weight_decay=L2_penalty,
+                           nus = (0.7, 1.0), betas = (0.99, 0.999))
 
     USE_CUDA = torch.cuda.is_available()
 
@@ -318,12 +351,20 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
 
     ##### TRAINING LOOP #####
 
+    if freeze_strategy is True:
+        for param in net.parameters():
+            param.requires_grad = False
+
+        for param in net.decoder.last_conv[8].parameters():
+            param.requires_grad = True
+
+
     reduce_lr_patience = 2
     if loss_to_use == "DICE+BOUNDARY":
         reduce_lr_patience = 200
         print("patience increased !")
 
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=reduce_lr_patience, verbose=True)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.25, patience=reduce_lr_patience, verbose=True)
 
     best_accuracy = 0.0
     best_jaccard_score = 0.0
@@ -350,7 +391,6 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
     tversky_loss_beta = tversky_loss_beta.to(device)
 
 
-
     print("Training Network")
     num_iter = 0
     total_iter = epochs * int(len(datasetTrain) / dataloaderTrain.batch_size)
@@ -359,7 +399,7 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
     loss_values_train = []
     loss_values_val = []
 
-    for epoch in range(epochs):
+    for epoch in range(1, epochs):
 
         net.train()
         optimizer.zero_grad()
@@ -400,7 +440,7 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
         loss_values_train.append(mean_loss_train)
 
         ### VALIDATION ###
-        if epoch > 0 and (epoch+1) % validation_frequency == 0:
+        if epoch % validation_frequency == 0:
 
             print("RUNNING VALIDATION.. ", end='')
 
@@ -435,11 +475,58 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
                 metrics_filename = save_network_as[:len(save_network_as) - 4] + "-val-metrics.txt"
                 saveMetrics(metrics_val, metrics_filename)
 
+            checkpoint_name = save_network_as.replace(".net", "_checkpoint_{:d}.net".format(epoch))
+            checkpoint_filename = os.path.join("C:\\temp2", os.path.basename(checkpoint_name))
+            torch.save(net.state_dict(), os.path.join("C:\\temp2", checkpoint_filename))
+            metrics_filename = checkpoint_filename[:len(checkpoint_filename) - 4] + "-val-metrics.txt"
+            saveMetrics(metrics_val, metrics_filename)
 
             print("-> CURRENT BEST ACCURACY ", best_accuracy)
 
             # restore training messages
             updateProgressBar(progress, "Training - Iteration ", num_iter, total_iter)
+
+        # unfreeze after stabilization of the classifier
+        if epoch == EPOCH_SWITCH_FIRST_UNFREEZE and freeze_strategy is True:
+
+            lr1 = learning_rate / 100.0
+            lr2 = learning_rate / 500.0
+
+            optimizer = optim.Adam(
+                [{'params': [param for name, param in net.named_parameters() if 'decoder' not in name]},
+                 {'params': net.decoder.last_conv.parameters(), 'lr': lr1}], lr=lr2, weight_decay=L2_penalty)
+
+            #optimizer = QHAdam(
+            #    [{'params': [param for name, param in net.named_parameters() if 'decoder' not in name]},
+            #     {'params': net.decoder.last_conv.parameters(), 'lr': lr1}], lr=lr2, weight_decay=L2_penalty,
+            #    nus = (0.7, 1.0), betas = (0.99, 0.999))
+
+            for param in net.decoder.parameters():
+                param.requires_grad = True
+
+            scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.25, patience=reduce_lr_patience,
+                                                             verbose=True)
+
+        if epoch == EPOCH_SWITCH_SECOND_UNFREEZE and freeze_strategy is True:
+
+            lr1 = learning_rate / 100.0
+            lr2 = learning_rate / 500.0
+
+            optimizer = optim.Adam(
+                [{'params': [param for name, param in net.named_parameters() if 'decoder' not in name]},
+                 {'params': net.decoder.last_conv.parameters(), 'lr': lr1}], lr=lr2, weight_decay=L2_penalty)
+
+            #optimizer = QHAdam(
+            #    [{'params': [param for name, param in net.named_parameters() if 'decoder.last_conv' not in name]},
+            #     {'params': net.decoder.last_conv.parameters(), 'lr': lr1}], lr=lr2, weight_decay=L2_penalty,
+            #   nus = (0.7, 1.0), betas = (0.99, 0.999))
+
+            for param in net.parameters():
+                param.requires_grad = True
+
+            scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.25, patience=reduce_lr_patience,
+                                                             verbose=True)
+
 
     # main loop ended
     torch.cuda.empty_cache()

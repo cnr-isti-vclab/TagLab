@@ -8,21 +8,30 @@ import torch
 from torch.utils.data import Dataset
 from torchvision import transforms
 import glob
-from albumentations import (CLAHE, Blur, HueSaturationValue, RGBShift, RandomBrightnessContrast, Compose)
+from albumentations import (CLAHE, Blur, HueSaturationValue, Equalize, ISONoise, Spatter, PixelDropout, FancyPCA, RandomToneCurve, CoarseDropout, RGBShift, RandomBrightnessContrast, Compose)
 from source.Label import Label
 
 
-
 # ALBUMENTATIONS - USED JUST TO PERFORM THE COLOR AUGMENTATION
-def augmentation_color(p=0.5):
+def augmentation_color(p=0.8):
     return Compose([
 
         CLAHE(clip_limit=3.0, tile_grid_size=(2, 2), always_apply=False, p=0.2),
-        #Blur(blur_limit=(2.0, 4.0), p=0.2),
-        RandomBrightnessContrast(brightness_limit=(-0.3, 0.3), contrast_limit=(-0.2, 0.2), p=0.3),
+        RandomBrightnessContrast(brightness_limit=(-0.2, 0.2), contrast_limit=(-0.1, 0.1), p=0.3),
         RGBShift(r_shift_limit=(-10, 10), g_shift_limit=(0, 10), b_shift_limit=(0, 20), p=0.3),
-        HueSaturationValue(hue_shift_limit=(0, 20), sat_shift_limit=0, val_shift_limit=0, p=0.3),
-        ], p=p)
+        HueSaturationValue(hue_shift_limit=(0, 10), sat_shift_limit=(0, 10), val_shift_limit=0, p=0.3),
+
+        #New
+        CoarseDropout(always_apply=False, p=0.2, max_holes=8, max_height=8, max_width=8, min_holes=8, min_height=8,
+                      min_width=8, fill_value=(0, 0, 0), mask_fill_value=None),
+        Equalize(always_apply=False, p=0.1, mode='cv', by_channels=True),
+        ISONoise(always_apply=False, p=0.2, intensity=(0.1, 0.3), color_shift=(0.01, 0.1)),
+        FancyPCA(always_apply=False, p=0.05, alpha=0.01),
+        Spatter(always_apply=False, p=0.2, mean=(0.65, 0.65), std=(0.3, 0.3), gauss_sigma=(0.72, 0.72),
+                intensity=(0.6, 0.6), cutout_threshold=(0.68, 0.68), mode=['rain']),
+        PixelDropout(always_apply=False, p=0.2, dropout_prob=0.02, per_channel=0, drop_value=(0, 0, 0),
+                     mask_drop_value=None)
+    ], p=p)
 
 
 class CoralsDataset(Dataset):
@@ -62,18 +71,14 @@ class CoralsDataset(Dataset):
         self.RANDOM_TRANSLATION_MAXVALUE = 50
         self.RANDOM_ROTATION_MINVALUE = -10
         self.RANDOM_ROTATION_MAXVALUE = 10
-        self.RANDOM_SCALE_MINVALUE = 0.8     # reduce size by 20%
-        self.RANDOM_SCALE_MAXVALUE = 1.2     # increase size by 20%
+        self.RANDOM_SCALE_MINVALUE = 0.9     # reduce size by 20%
+        self.RANDOM_SCALE_MAXVALUE = 1.1     # increase size by 20%
 
         self.flagDataAugmentationCrop = True
         self.CROP_SIZE = 513
 
-        self.flagDataAugmentationScale = False
-        self.RANDOM_SCALE_MIN = 0.9
-        self.RANDOM_SCALE_MAX = 1.1
-
         # COLOR TRANSFORM
-        self.custom_color_aug = augmentation_color(p=0.4)
+        self.custom_color_aug = augmentation_color(p=0.8)
         self.flagColorAugmentation = True
 
         # NORMALIZATION (True => average is removed)
@@ -96,14 +101,14 @@ class CoralsDataset(Dataset):
 
         self.flagDataAugmentationFlip = augmentation_flip
 
+        self.flagDataAugmentationRT = False
+
         if (range_T > 0.0) or (range_R > 0.0):
             self.flagDataAugmentationRT = True
             self.RANDOM_TRANSLATION_MINVALUE = -range_T
             self.RANDOM_TRANSLATION_MAXVALUE = range_T
             self.RANDOM_ROTATION_MINVALUE = -range_R
             self.RANDOM_ROTATION_MAXVALUE = range_R
-        else:
-            self.flagDataAugmentationRT = False
 
         if crop_size > 0:
             self.flagDataAugmentationCrop = True
@@ -112,11 +117,9 @@ class CoralsDataset(Dataset):
             self.flagDataAugmentationCrop = False
 
         if range_scale > 0.00001:
-            self.flagDataAugmentationScale = True
-            self.RANDOM_SCALE_MIN = 1.0 - range_scale
-            self.RANDOM_SCALE_MAX = 1.0 + range_scale
-        else:
-            self.flagDataAugmentationScale = False
+            self.flagDataAugmentationRT = True
+            self.RANDOM_SCALE_MINVALUE = 1.0 - range_scale
+            self.RANDOM_SCALE_MAXVALUE = 1.0 + range_scale
 
     def enableNormalizationByRemoveAverage(self):
 
@@ -177,6 +180,10 @@ class CoralsDataset(Dataset):
                 img_np = augmented["image"]
                 img = PILimage.fromarray(img_np)
 
+                # filename = os.path.join("C:\\temp4", self.images_names[idx])
+                # filename.replace(".png", "_aug.png")
+                # img.save(filename)
+
             # APPLY GEOMETRIC TRANSFORMATION
 
             # random flip
@@ -201,18 +208,18 @@ class CoralsDataset(Dataset):
                 rot = np.random.randint(self.RANDOM_ROTATION_MINVALUE, self.RANDOM_ROTATION_MAXVALUE)
                 tx = np.random.randint(self.RANDOM_TRANSLATION_MINVALUE, self.RANDOM_TRANSLATION_MAXVALUE)
                 ty = np.random.randint(self.RANDOM_TRANSLATION_MINVALUE, self.RANDOM_TRANSLATION_MAXVALUE)
-                # sc = 1.0
+                #sc = 1.0
                 sc = np.random.uniform(self.RANDOM_SCALE_MINVALUE, self.RANDOM_SCALE_MAXVALUE)
                 img_flipped_RT = transforms.functional.affine(img_flipped, angle=rot, scale=sc, shear=0.0,
                                                               translate=(tx, ty),
                                                               interpolation=transforms.InterpolationMode.BILINEAR)
-                imglbl_flipped_RT = transforms.functional.affine(imglbl_flipped, angle=rot, scale=1.0, shear=0.0,
+                imglbl_flipped_RT = transforms.functional.affine(imglbl_flipped, angle=rot, scale=sc, shear=0.0,
                                                                  translate=(tx, ty),
                                                                  interpolation=transforms.InterpolationMode.NEAREST)
             else:
+                sc = 1.0
                 img_flipped_RT = img_flipped
                 imglbl_flipped_RT = imglbl_flipped
-
 
             # center crop
             if self.flagDataAugmentationCrop:
