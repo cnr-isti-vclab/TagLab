@@ -436,7 +436,7 @@ class Project(QObject):
         """
 
         corresp_tables = []
-        for corresp in self.correspondences:
+        for key, corresp in self.correspondences.items():
             if corresp.target == img or corresp.source == img:
                 corresp_tables.append(corresp)
 
@@ -478,7 +478,7 @@ class Project(QObject):
         # update image annotations
         img.annotations.updateBlob(old_blob, new_blob)
 
-        self.updateCorrespondences("UPDATE", img, [new_blob], [old_blob])
+        self.updateCorrespondences("UPDATE", img, new_blob, old_blob)
 
         if notify:
             self.blobUpdated.emit(img, old_blob, new_blob)
@@ -524,32 +524,20 @@ class Project(QObject):
 
             for table in corresp_tables:
                 is_source = table.isSource(img)
-                sourceblobs, targetblobs, rows = table.findCluster(blob_removed.id, is_source)
+                source_blobs_ids, target_blobs_ids, rows_indexes = table.findCluster(blob_removed.id, is_source)
                 if is_source:
-                    sourceblobs.remove(blob_removed.id)
+                    source_blobs_ids.remove(blob_removed.id)
                 else:
-                    targetblobs.remove(blob_removed.id)
+                    target_blobs_ids.remove(blob_removed.id)
 
-                table.deleteRows(rows)
-                table.set(sourceblobs, targetblobs)
-                source_blobs = table.sourceBlobsById(sourceblobs)
-                target_blobs = table.targetBlobsById(targetblobs)
+                table.deleteRows(rows_indexes)
+                source_blobs = table.sourceBlobsById(source_blobs_ids)
+                target_blobs = table.targetBlobsById(target_blobs_ids)
+                table.set(source_blobs, target_blobs)
 
                 blobs = source_blobs + target_blobs
                 for blob in blobs:
                     blob.correspondence_to_check = True
-
-            for key, table in self.correspondences.items():
-
-                name1 = str.split(key, "-")[0]
-                name2 = str.split(key, "-")[1]
-
-                index1 = self.indexByImageName(name1)
-                index2 = self.indexByImageName(name2)
-
-                if index >= index1 or index >= index2:
-                    rows = table.data[table.data['Genet'] == blob_removed.genet]
-                    table.deleteRows(rows)
 
             self.genet.updateGenets()
 
@@ -570,10 +558,10 @@ class Project(QObject):
 
                 is_source = table.isSource(img)
 
-                source_blobs, target_blobs, rows = table.findCluster(blob_removed.id, is_source)
+                source_blobs, target_blobs, rows_indexes = table.findCluster(blob_removed.id, is_source)
 
                 # remove the connections
-                table.deleteRows(rows)
+                table.deleteRows(rows_indexes)
 
                 # create the new correspondences
                 if is_source:

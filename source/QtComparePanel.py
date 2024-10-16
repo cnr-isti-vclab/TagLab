@@ -31,9 +31,10 @@ imdir =imdir.replace('source', '')
 
 class TableModel(QAbstractTableModel):
 
-    def __init__(self, data):
+    def __init__(self, corresp):
         super(TableModel, self).__init__()
-        self._data = data
+        self.correspondences = corresp
+        self._data = corresp.data
         self.surface_area_mode_enabled = False
 
     def enableSurfaceAreaMode(self):
@@ -50,6 +51,20 @@ class TableModel(QAbstractTableModel):
                 return Qt.AlignRight | Qt.AlignVCenter
 
         if role == Qt.BackgroundRole:
+
+            id1 = self._data.iloc[index.row(), 1]
+            id2 = self._data.iloc[index.row(), 2]
+            blob1 = self.correspondences.sourceBlobsById([id1])
+            blob2 = self.correspondences.targetBlobsById([id2])
+
+            if len(blob1) > 0:
+                if blob1[0].correspondence_to_check:
+                    return QColor(80,40,40)
+
+            if len(blob2) > 0:
+                if blob2[0].correspondence_to_check:
+                    return QColor(80,40,40)
+
             return QColor(40, 40, 40)
 
         value = self._data.iloc[index.row(), index.column()]
@@ -74,8 +89,6 @@ class TableModel(QAbstractTableModel):
             if index.column() < 5:
                 return float(value)
             return str(value)
-
-
 
     def setData(self, index, value, role):
 
@@ -357,7 +370,7 @@ height: 0px;
 
         if self.model is None:
 
-            self.model = TableModel(self.data)
+            self.model = TableModel(self.correspondences)
             self.sortfilter = QSortFilterProxyModel(self)
             self.sortfilter.setSourceModel(self.model)
             self.sortfilter.setSortRole(Qt.UserRole)
@@ -411,6 +424,7 @@ height: 0px;
         self.sortfilter.beginResetModel()
         self.model.beginResetModel()
         self.model._data = corr.data
+        self.model.correspondences = corr
         self.sortfilter.endResetModel()
         self.model.endResetModel()
 

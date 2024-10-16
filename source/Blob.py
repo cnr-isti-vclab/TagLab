@@ -68,6 +68,7 @@ class Blob(object):
         self.qpath = None
         self.qpath_gitem = None
 
+        self.correspondence_to_check = False
 
         if region:
 
@@ -475,6 +476,11 @@ class Blob(object):
             self.data = dic["data"].copy()
         else:
             self.data = {}
+
+        if 'correspondence_to_check' in dic:
+            self.correspondence_to_check = dic['correspondence_to_check']
+        else:
+            self.correspondence_to_check = False
 
     def save(self):
         return self.toDict()

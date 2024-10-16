@@ -1563,9 +1563,11 @@ class QtImageViewerPlus(QtImageViewer):
     def deleteSelectedBlobs(self):
 
         if len(self.selected_blobs) > 0:
-            self.removeBlobs(self.selected_blobs)
+
             for blob in self.selected_blobs:
                 self.project.updateCorrespondences("REMOVE", self.image, None, blob, "")
+
+            self.removeBlobs(self.selected_blobs)
 
         if len(self.selected_annpoints) > 0:
             self.removePoints(self.selected_annpoints)

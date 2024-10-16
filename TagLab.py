@@ -2144,7 +2144,7 @@ class TagLab(QMainWindow):
         img_target_index = self.comboboxTargetImage.currentIndex()
         corr = self.project.getImagePairCorrespondences(img_source_index, img_target_index)
         corr.deleteCluster(indexes)
-        self.project.updateGenets(img_source_index, img_target_index)
+        self.project.updateGenets()
 
         self.viewerplus.resetSelection()
         self.viewerplus2.resetSelection()

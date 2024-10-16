@@ -229,17 +229,21 @@ class Correspondences(object):
 
     def sourceBlobsById(self, sourceblobs):
 
+        blobs = []
         for id in sourceblobs:
             blob = self.source.annotations.blobById(id)
-            blobs.append(blob)
+            if blob is not None:
+                blobs.append(blob)
 
         return blobs
 
     def targetBlobsById(self, targetblobs):
 
+        blobs = []
         for id in targetblobs:
-            blob = self.source.annotations.blobById(id)
-            blobs.append(blob)
+            blob = self.target.annotations.blobById(id)
+            if blob is not None:
+                blobs.append(blob)
 
         return blobs
 
@@ -443,10 +447,10 @@ class Correspondences(object):
 
         self.sort_data()
 
-    def deleteRows(self, rows):
+    def deleteRows(self, rows_indexes):
 
         # delete rows from the dataframe
-        self.data.drop(rows.index, inplace=True)
+        self.data.drop(rows_indexes, inplace=True)
 
         # reindexing
         self.data.reset_index(drop=True, inplace=True)
