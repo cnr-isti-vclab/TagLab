@@ -502,15 +502,42 @@ class Project(QObject):
 
         if operation == "ADD":
             # WARNING: correspondences are not updated automatically!
-            # The assignment of the new correspondences is left to the user.
-            # TODO: add a message here, something like "the correspondences with the new blobs must be added manually"
-            pass
+            # The involved tables are updated considering the blobs added a 'born' or 'dead'.
+            # Eventual correspondence must be added manually by the user!
+            # TODO: ADD MESSAGE FOR THE USER
+            for blob in blobs_added:
+                blob.correspondences_to_track = True
+
+            corresp_tables = self.findCorrespTables(img)
+            for table in corresp_tables:
+                is_source = table.isSource(img)
+                if is_source is True:
+                    table.set(blobs_added, None)
+                else:
+                    table.set(None, blobs_added)
 
         elif operation == "REMOVE":
             # All the involved rows, starting from the temporal point of the blob removed are deleted.
             # The genet is recomputed for consistency.
 
-            index = self.indexByImageName(img)
+            corresp_tables = self.findCorrespTables(img)
+
+            for table in corresp_tables:
+                is_source = table.isSource(img)
+                sourceblobs, targetblobs, rows = table.findCluster(blob_removed.id, is_source)
+                if is_source:
+                    sourceblobs.remove(blob_removed.id)
+                else:
+                    targetblobs.remove(blob_removed.id)
+
+                table.deleteRows(rows)
+                table.set(sourceblobs, targetblobs)
+                source_blobs = table.sourceBlobsById(sourceblobs)
+                target_blobs = table.targetBlobsById(targetblobs)
+
+                blobs = source_blobs + target_blobs
+                for blob in blobs:
+                    blob.correspondence_to_check = True
 
             for key, table in self.correspondences.items():
 
@@ -553,6 +580,10 @@ class Project(QObject):
                     table.set(blobs_added, target_blobs)
                 else:
                     table.set(source_blobs, blobs_added)
+
+                blobs = blobs_added + source_blobs + target_blobs
+                for blob in blobs:
+                    blob.correspondence_to_check = True
 
                 self.updateGenets()
 

@@ -227,6 +227,22 @@ class Correspondences(object):
         """
         pass
 
+    def sourceBlobsById(self, sourceblobs):
+
+        for id in sourceblobs:
+            blob = self.source.annotations.blobById(id)
+            blobs.append(blob)
+
+        return blobs
+
+    def targetBlobsById(self, targetblobs):
+
+        for id in targetblobs:
+            blob = self.source.annotations.blobById(id)
+            blobs.append(blob)
+
+        return blobs
+
     def updateBlob(self, image, old_blob, new_blob):
 
         # check if the class name has changed
