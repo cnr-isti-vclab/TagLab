@@ -109,12 +109,14 @@ class Sam(Tool):
         # From the current view, crop the image
         # Get the bounding rect of the work area and its position
         rect = self.rect_item.boundingRect()
-        self.work_area_rect = self.viewerplus.scene.addRect(rect, pen, brush)
-        
-        rect.moveTopLeft(self.rect_item.pos())
+        pos = self.rect_item.pos()      
+        rect.moveTopLeft(pos)
         rect = rect.normalized()
         rect = rect.intersected(self.viewerplus.sceneRect())
-        self.work_area_rect.setPos(self.rect_item.pos())
+        
+        
+        self.work_area_rect = self.viewerplus.scene.addRect(rect, pen, brush)
+        self.work_area_rect.setPos(pos)
 
         self.work_area_item = rect
 
@@ -323,14 +325,19 @@ class Sam(Tool):
                 self.reset()
         
     def apply(self):
-           
-        print(f"number of sam_seed is {self.num_points}")
+        
+        self.viewerplus.resetSelection()
 
+        print(f"number of sam_seed is {self.num_points}")
 
        # Perform segmentation on the cropped image
         self.segment(self.image_cropped, self.num_points)
 
-        self.reset()
+        # Add a red dotted border to the work area rectangle
+        # red_pen = QPen(Qt.red, 2, Qt.DotLine)
+        # self.viewerplus.scene.addRect(self.work_area_item, red_pen, QBrush(Qt.NoBrush))
+
+        self.viewerplus.resetTools()
 
     def segment(self, image, seed = 32, save_status=True):
 
