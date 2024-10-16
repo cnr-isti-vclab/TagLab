@@ -455,7 +455,19 @@ class Project(QObject):
         """
 
         for key, table in self.correspondences.items():
-            rows_index = table.data[table.data['Genet'] == genet_id].index
+            rows = table.data[table.data['Genet'] == genet_id]
+            for index, row in rows.iterrows():
+                blob1_id = row['Blob1']
+                blob2_id = row['Blob2']
+                blob1 = table.sourceBlobsById([blob1_id])
+                if len(blob1) > 0:
+                    blob1[0].class_name = class_name
+
+                blob2 = table.targetBlobsById([blob2_id])
+                if len(blob2) > 0:
+                    blob2[0].class_name = class_name
+
+            rows_index = rows.index
             table.data.loc[rows_index, 'Class'] = class_name
 
     def addBlob(self, img, blob, notify=True):
