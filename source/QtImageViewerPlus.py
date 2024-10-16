@@ -1634,6 +1634,10 @@ class QtImageViewerPlus(QtImageViewer):
             self.tools.tools["RITM"].undo_click()
             return
         
+        if self.tools.tool == "SAMINTERACTIVE" and self.tools.tools["SAMINTERACTIVE"].hasPoints():
+            self.tools.tools["SAMINTERACTIVE"].undo_click()
+            return
+        
         if self.tools.tool in ["FREEHAND", "CUT", "EDITBORDER"]:
             if self.tools.tools["EDITBORDER"].edit_points.undo():
                 return

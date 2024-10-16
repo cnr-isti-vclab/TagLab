@@ -59,6 +59,7 @@ class SAMInteractive(Tool):
         # Set image
         self.image_resized = None
         self.image_cropped = None
+        self.image_cropped_np = None
 
         # SAM, CUDA or CPU
         self.sampredictor_net = None
@@ -121,6 +122,20 @@ class SAMInteractive(Tool):
         # print(f"Mouse moved to ({x}, {y})")
         if self.rect_item is not None:
             self.rect_item.setPos(x- self.width//2, y - self.height//2)
+
+    def hasPoints(self):
+        return self.pick_points.nclicks() > 0
+
+    
+    def undo_click(self):
+        self.pick_points.removeLastPoint()
+        nclicks = self.pick_points.nclicks()
+        if nclicks == 0:
+            # reset ALL
+            self.pick_points.reset()
+            self.undrawAllBlobs()
+            self.submitBlobs()
+            # return   
 
     def setWorkArea(self):
         """
