@@ -1613,6 +1613,16 @@ class QtImageViewerPlus(QtImageViewer):
             blob.qpath_gitem.setBrush(brush)
             self.scene.invalidate()
 
+    def updateBlobClass(self, img, class_name, blob):
+
+        if self.image == img:
+            self.undo_data.setBlobClass(blob, class_name)
+
+            if blob.qpath_gitem:
+                brush = self.project.classBrushFromName(blob)
+                blob.qpath_gitem.setBrush(brush)
+                self.scene.invalidate()
+
     def setAnnPointClass(self, annpoint, class_name):
 
         if annpoint.class_name == class_name:

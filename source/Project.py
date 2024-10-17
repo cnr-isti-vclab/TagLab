@@ -170,7 +170,8 @@ class Project(QObject):
     blobUpdated = pyqtSignal(Image, Blob, Blob)
     blobClassChanged = pyqtSignal(Image, str, Blob)
     pointClassChanged = pyqtSignal(Image, str, Point)
-    correspTableUpdate = pyqtSignal()
+    blobClassChangedByGenet = pyqtSignal(Image, str, Blob)
+    correspTableChanged = pyqtSignal()
 
     def __init__(self, filename=None, labels={}, images=[], correspondences=None,
                  spatial_reference_system=None, metadata={}, image_metadata_template={}, genet={},
@@ -464,14 +465,16 @@ class Project(QObject):
                 if len(blob1) > 0:
                     old_class_name = blob1[0].class_name
                     blob1[0].class_name = class_name
-                    self.blobClassChanged.emit(table.source, old_class_name, blob1)
+                    self.blobClassChanged.emit(table.source, old_class_name, blob1[0])
+                    self.blobClassChangedByGenet.emit(table.source, old_class_name, blob1[0])
                     table.source.annotations.table_needs_update = True
 
                 blob2 = table.targetBlobsById([blob2_id])
                 if len(blob2) > 0:
                     old_class_name = blob2[0].class_name
                     blob2[0].class_name = class_name
-                    self.blobClassChanged.emit(table.target, old_class_name, blob2)
+                    self.blobClassChanged.emit(table.target, old_class_name, blob2[0])
+                    self.blobClassChangedByGenet.emit(table.target, old_class_name, blob2[0])
                     table.target.annotations.table_needs_update = True
 
             rows_index = rows.index
@@ -616,7 +619,7 @@ class Project(QObject):
 
         # update the table in the comparison panel
         if flag_update_table:
-            self.correspTableUpdate.emit()
+            self.correspTableChanged.emit()
 
     def addPoint(self, img, point, notify=True):
 

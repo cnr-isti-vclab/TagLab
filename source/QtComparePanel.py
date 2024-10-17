@@ -417,6 +417,16 @@ height: 0px;
         Some operations on the table occurs, so the content of the QTable needs to be updated.
         """
 
+        if self.model is None:
+            return
+
+        self.sortfilter.beginResetModel()
+        self.model.beginResetModel()
+        self.model._data = self.model.correspondences.data
+        self.sortfilter.endResetModel()
+        self.model.endResetModel()
+
+        self.data_table.horizontalHeader().showSection(0)
         self.data_table.update()
 
     def updateTable(self, corr):

@@ -645,7 +645,7 @@ class TagLab(QMainWindow):
 
         self.connectLabelsPanelWithViewers()
 
-        self.connectProjectWithPanels()
+        self.connectProject()
 
         self.viewerplus.viewHasChanged[float, float, float].connect(self.viewerplus2.setViewParameters)
         self.viewerplus2.viewHasChanged[float, float, float].connect(self.viewerplus.setViewParameters)
@@ -2495,7 +2495,7 @@ class TagLab(QMainWindow):
         self.layers_widget.setProject(self.project)
 
         # connect project with the panels
-        self.connectProjectWithPanels()
+        self.connectProject()
 
     def resetToolbar(self):
 
@@ -3295,7 +3295,7 @@ class TagLab(QMainWindow):
         logfile.info(message4)
 
 
-    def connectProjectWithPanels(self):
+    def connectProject(self):
 
         # TODO: in the future the Project must be decoupled from the QImageViewerPlus through signals-slots
 
@@ -3378,7 +3378,7 @@ class TagLab(QMainWindow):
         # compare panel
         if self.compare_panel is not None:
             try:
-                self.project.correspTableUpdated.connect(self.compare_panel.updateData)
+                self.project.correspTableChanged.connect(self.compare_panel.updateData)
             except:
                 pass
 
@@ -3417,6 +3417,13 @@ class TagLab(QMainWindow):
             self.project.pointClassChanged[Image, str, Point].connect(self.updatePanelInfoAfterClassChange, type=Qt.UniqueConnection)
         except:
             pass
+
+
+        # viewerplus
+        # NOTE: THIS IS DIRT but the only solution viable at the moment.
+        self.project.blobClassChangedByGenet.connect(self.viewerplus.updateBlobClass, type=Qt.UniqueConnection)
+        self.project.blobClassChangedByGenet.connect(self.viewerplus2.updateBlobClass, type=Qt.UniqueConnection)
+
 
     def updateAfterImport(self):
         """
@@ -5179,7 +5186,7 @@ class TagLab(QMainWindow):
         # TODO check if loadProject actually works!
         try:
             self.project = loadProject(self.taglab_dir, filename, self.default_dictionary)
-            self.connectProjectWithPanels()
+            self.connectProject()
         except Exception as e:
             box = QMessageBox()
             box.setWindowTitle('Failed loading the project')
