@@ -694,6 +694,11 @@ class Project(QObject):
         """
 
         corr = self.getImagePairCorrespondences(img_source_idx, img_target_idx)
+
+        blobs = blobs1 + blobs2
+        for blob in blobs:
+            blob.correspondence_to_check = False
+
         corr.set(blobs1, blobs2)
         self.genet.updateGenets()
         # corr.updateGenets() moved to genet
