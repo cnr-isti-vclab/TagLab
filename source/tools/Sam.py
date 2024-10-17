@@ -250,12 +250,12 @@ class Sam(Tool):
     #remove blobs on the edge of the rectangle cursor
     def removeEdgeBlobs(self):
 
-        if self.rect_item is None:
+        if self.work_area_rect is None:
             return
 
         # Get the bounding rect of the rectangle and its position
-        rect = self.rect_item.boundingRect()
-        rect.moveTopLeft(self.rect_item.pos())
+        rect = self.work_area_rect.boundingRect()
+        rect.moveTopLeft(self.work_area_rect.pos())
         rect = rect.normalized()
 
         print(f"rect coordinates are {rect.left(), rect.right(), rect.top(), rect.bottom()}")
@@ -263,7 +263,6 @@ class Sam(Tool):
 
         #QUIRINO :  margin to consider the edge TO FINETUNE!!!!
         margin = 10  
-
         
         # filtered_blobs = []
         blobs = self.created_blobs.copy()
@@ -332,10 +331,6 @@ class Sam(Tool):
 
        # Perform segmentation on the cropped image
         self.segment(self.image_cropped, self.num_points)
-
-        # Add a red dotted border to the work area rectangle
-        # red_pen = QPen(Qt.red, 2, Qt.DotLine)
-        # self.viewerplus.scene.addRect(self.work_area_item, red_pen, QBrush(Qt.NoBrush))
 
         self.viewerplus.resetTools()
 
