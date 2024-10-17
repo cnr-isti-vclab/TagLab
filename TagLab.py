@@ -3378,25 +3378,9 @@ class TagLab(QMainWindow):
         # compare panel
         if self.compare_panel is not None:
             try:
-                self.project.blobUpdated[Image, Blob, Blob].connect(self.compare_panel.blobUpdated, type=Qt.UniqueConnection)
+                self.project.correspTableUpdated.connect(self.compare_panel.updateData)
             except:
                 pass
-
-            try:
-                self.project.blobAdded[Image, Blob].connect(self.compare_panel.blobAdded, type=Qt.UniqueConnection)
-            except:
-                pass
-
-            try:
-                self.project.blobRemoved[Image, Blob].connect(self.compare_panel.blobRemoved, type=Qt.UniqueConnection)
-            except:
-                pass
-
-            try:
-                self.project.blobClassChanged[Image, str, Blob].connect(self.compare_panel.blobClassChanged, type=Qt.UniqueConnection)
-            except:
-                pass
-
 
         # information panel
         try:

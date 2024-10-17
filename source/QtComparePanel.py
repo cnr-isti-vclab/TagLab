@@ -411,7 +411,11 @@ height: 0px;
         self.data_table.setModel(self.model)
         self.data_table.update()
 
+    @pyqtSlot()
     def updateData(self):
+        """
+        Some operations on the table occurs, so the content of the QTable needs to be updated.
+        """
 
         self.data_table.update()
 
@@ -429,26 +433,6 @@ height: 0px;
         self.model.endResetModel()
 
         self.data_table.horizontalHeader().showSection(0)
-        self.data_table.update()
-
-    @pyqtSlot(Image, Blob)
-    def blobAdded(self, img, blob):
-        # project updates the correspondences data, so we simply need to update the table directly
-        self.data_table.update()
-
-    @pyqtSlot(Image, Blob)
-    def blobRemoved(self, img, blob):
-        # project updates the correspondences data, so we simply need to update the table directly
-        self.data_table.update()
-
-    @pyqtSlot(Image, Blob, Blob)
-    def blobUpdated(self, img, old_blob, new_blob):
-        # project updates the correspondences data, so we simply need to update the table directly
-        self.data_table.update()
-
-    @pyqtSlot(Image, str, Blob)
-    def blobClassChanged(self, img, class_name, blob):
-        # project updates the correspondences data, so we simply need to update the table directly
         self.data_table.update()
 
     def selectById(self, text, isSource):
