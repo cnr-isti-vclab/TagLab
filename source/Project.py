@@ -170,6 +170,7 @@ class Project(QObject):
     blobUpdated = pyqtSignal(Image, Blob, Blob)
     blobClassChanged = pyqtSignal(Image, str, Blob)
     pointClassChanged = pyqtSignal(Image, str, Point)
+    correspTableUpdate = pyqtSignal()
 
     def __init__(self, filename=None, labels={}, images=[], correspondences=None,
                  spatial_reference_system=None, metadata={}, image_metadata_template={}, genet={},
@@ -461,14 +462,21 @@ class Project(QObject):
                 blob2_id = row['Blob2']
                 blob1 = table.sourceBlobsById([blob1_id])
                 if len(blob1) > 0:
+                    old_class_name = blob1[0].class_name
                     blob1[0].class_name = class_name
+                    self.blobClassChanged.emit(table.source, old_class_name, blob1)
+                    table.source.annotations.table_needs_update = True
 
                 blob2 = table.targetBlobsById([blob2_id])
                 if len(blob2) > 0:
+                    old_class_name = blob2[0].class_name
                     blob2[0].class_name = class_name
+                    self.blobClassChanged.emit(table.target, old_class_name, blob2)
+                    table.target.annotations.table_needs_update = True
 
             rows_index = rows.index
             table.data.loc[rows_index, 'Class'] = class_name
+
 
     def addBlob(self, img, blob, notify=True):
 
@@ -512,6 +520,8 @@ class Project(QObject):
 
     def updateCorrespondences(self, operation, img, blobs_added, blob_removed, class_name=""):
 
+        flag_update_table = False
+
         if operation == "ADD":
             # WARNING: correspondences are not updated automatically!
             # The involved tables are updated considering the blobs added a 'born' or 'dead'.
@@ -527,6 +537,8 @@ class Project(QObject):
                     table.set(blobs_added, None)
                 else:
                     table.set(None, blobs_added)
+
+            flag_update_table = True
 
         elif operation == "REMOVE":
             # All the involved rows, starting from the temporal point of the blob removed are deleted.
@@ -553,6 +565,8 @@ class Project(QObject):
 
             self.genet.updateGenets()
 
+            flag_update_table = True
+
         elif operation == "UPDATE":
             # The content of the correspondences tables involved is updated, blobs_added contains the new information,
             # blob_removed the old information.
@@ -560,6 +574,8 @@ class Project(QObject):
             for table in corresp_tables:
                 table.updateBlobId(img, blob_removed.id, blobs_added[0].id)
                 table.updateBlobArea(img, blob_removed.id, blobs_added[0].area, blobs_added[0].surface_area)
+
+            flag_update_table = True
 
         elif operation == "CUT":
             # The new blobs are automatically connected with the ones of the blob removed.
@@ -587,14 +603,20 @@ class Project(QObject):
 
                 self.updateGenets()
 
+                flag_update_table = True
+
         elif operation == "CLASS_CHANGED":
             # The class is updated along the entire temporal sequence.
             blob = blobs_added[0]
             self.assignClassByGenet(class_name, blob.genet)
+            flag_update_table = True
 
         else:
             print("Update correspondences WARNING! -> unknown operation")
 
+        # update the table in the comparison panel
+        if flag_update_table:
+            self.correspTableUpdate.emit()
 
     def addPoint(self, img, point, notify=True):
 
