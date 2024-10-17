@@ -67,6 +67,8 @@ class SAMInteractive(Tool):
 
         # Updating masks/blobs
         self.current_blobs = []
+        self.prev_blobs = []
+        # self.input_labels = []
         self.blob_to_correct = None
 
         self.CROSS_LINE_WIDTH = 2
@@ -130,11 +132,22 @@ class SAMInteractive(Tool):
     def undo_click(self):
         self.pick_points.removeLastPoint()
         nclicks = self.pick_points.nclicks()
-        if nclicks == 0:
+        if nclicks > 0:
+            last_blob = self.prev_blobs.pop()
+            self.labels.pop()
+            self.undrawBlob(last_blob)
+            pre_blob = self.prev_blobs[-1]
+            self.current_blobs.pop()
+            self.current_blobs.append(pre_blob)
+            self.drawBlob(pre_blob)
+
+        elif nclicks == 0:
             # reset ALL
             self.pick_points.reset()
-            self.undrawAllBlobs()
-            self.submitBlobs()
+            last_blob = self.prev_blobs.pop()
+            self.undrawBlob(last_blob)
+            self.labels.pop()
+            self.current_blobs.pop()
             # return   
 
     def setWorkArea(self):
@@ -262,11 +275,12 @@ class SAMInteractive(Tool):
 
         # User has finished selecting points, submitting current blob
         elif len(self.pick_points.points) and self.sampredictor_net.is_image_set:
+            self.prev_blobs = []
             self.submitBlobs()
 
         # User has finished creating working area, saving work area
-        elif len(self.pick_points.points) == 2 and not self.sampredictor_net.is_image_set:
-            self.setWorkArea()
+        # elif len(self.pick_points.points) == 2 and not self.sampredictor_net.is_image_set:
+        #     self.setWorkArea()
 
     def points_within_workarea(self):
         """
@@ -370,7 +384,7 @@ class SAMInteractive(Tool):
         input_points = torch.as_tensor(points_cropped.astype(int), dtype=torch.int64).to(self.device).unsqueeze(0)
         transformed_points = self.sampredictor_net.transform.apply_coords_torch(input_points,
                                                                                 self.image_cropped_np.shape[:2])
-
+        
         # Make prediction given points
         mask, score, logit = self.sampredictor_net.predict_torch(point_coords=transformed_points,
                                                                  point_labels=input_labels,
@@ -424,6 +438,7 @@ class SAMInteractive(Tool):
 
             if blob:
                 self.current_blobs.append(blob)
+                self.prev_blobs.append(blob)
                 self.drawBlob(blob)
 
         self.infoMessage.emit("Segmentation done.")
@@ -581,6 +596,7 @@ class SAMInteractive(Tool):
         self.pick_points.reset()
         self.labels = []
         self.current_blobs = []
+        self.prev_blobs = []
         self.blob_to_correct = None
 
     def loadNetwork(self):
