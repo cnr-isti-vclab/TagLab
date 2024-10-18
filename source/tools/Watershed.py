@@ -9,6 +9,10 @@ from skimage.color import rgb2gray
 from skimage.filters import sobel
 import cv2
 
+from source.Mask import paintMask, jointBox, jointMask, replaceMask, checkIntersection, intersectMask
+from PIL import Image
+
+
 import matplotlib.pyplot as plt
 
 from PyQt5.QtCore import Qt, QObject, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
@@ -23,6 +27,9 @@ class Watershed(Tool):
         self.scribbles = scribbles
         self.current_blobs = []
         self.currentLabel = None
+
+        self.dummy_bounding_box = None
+        self.work_area_mask = None
         
         message = "<p><i>Draw scribbles inside and around an instance</i></p>"
         message += "<p>Select a class and draw positive scribbles INSIDE the instance,<br/>\
@@ -42,17 +49,16 @@ class Watershed(Tool):
 
     def leftPressed(self, x, y, mods):
         if mods == Qt.ShiftModifier:
-            # self.setActiveLabel(self.scribbles.previous_label)
             self.scribbles.setLabel(self.currentLabel)
             if self.scribbles.startDrawing(x, y):
-                self.log.emit("[TOOL][FREEHAND] DRAWING starts..")
+                self.log.emit("[TOOL][WATERSHED] DRAWING POSITIVE starts..")
 
     def rightPressed(self, x, y, mods):
         if mods == Qt.ShiftModifier:
             fakeLabel = Label("Dummy", "Dummy", fill=[255, 255, 255], border=[0, 0, 0]) 
             self.scribbles.setLabel(fakeLabel)
             if self.scribbles.startDrawing(x, y):
-                self.log.emit("[TOOL][FREEHAND] DRAWING starts..")
+                self.log.emit("[TOOL][WATERSHED] DRAWING NEGATIVE starts..")
 
 
     def mouseMove(self, x, y, mods):
@@ -66,6 +72,66 @@ class Watershed(Tool):
         elif -1.0 < increase < 0.0:
             increase = -1
         self.scribbles.setSize(int(increase))
+
+############################################################################################################################################################################   
+
+
+    def createWorkAreaMask(self):
+
+        w = self.dummy_bounding_box[2]
+        h = self.dummy_bounding_box[3]
+        self.work_area_mask = np.zeros((h,w), dtype=np.int32)
+        for blob in self.viewerplus.image.annotations.seg_blobs:
+            if checkIntersection(self.dummy_bounding_box, blob.bbox):
+                mask = blob.getMask()
+                paintMask(self.work_area_mask, self.dummy_bounding_box, mask, blob.bbox, 1)
+
+        # Convert the mask to a PIL image
+        # mask_image = Image.fromarray(self.work_area_mask.astype(np.uint8) * 255)
+
+        # Save the image
+        # mask_image.save("work_area_mask.png")
+
+    def intersectionWithExistingBlobs(self, blob):
+        bigmask = self.work_area_mask.copy()
+        pixels_before = np.count_nonzero(bigmask)
+        mask = blob.getMask()
+        pixels = np.count_nonzero(mask)
+        paintMask(bigmask, self.dummy_bounding_box, mask, blob.bbox, 0)
+        pixels_after = np.count_nonzero(bigmask)
+        perc_intersect = ((pixels_before - pixels_after) * 100.0) / pixels
+
+        return perc_intersect
+    
+    def snapBlobBorders(self, new_blob):
+        # Create the work area mask
+        self.createWorkAreaMask()
+
+        # Check the intersection with existing blobs
+        intersection_percentage = self.intersectionWithExistingBlobs(new_blob)
+        print(intersection_percentage)
+
+        # If there is a significant intersection, adjust the new blob's borders
+        if intersection_percentage > 0:
+            mask = new_blob.getMask()
+            for y in range(mask.shape[0]):
+                for x in range(mask.shape[1]):
+                    if mask[y, x] == 1 and self.work_area_mask[y, x] == 1:
+                        # Snap the border by setting the mask value to 0 where it intersects
+                        mask[y, x] = 0
+
+            # Update the new blob's mask
+            new_blob.updateUsingMask(self.dummy_bounding_box, mask)
+
+        # Save the updated mask
+        # updated_mask_image = Image.fromarray(mask.astype(np.uint8) * 255)
+        # updated_mask_image.save("updated_mask.png")
+
+        return new_blob
+
+
+###########################################################################################################################################################################   
+
 
     def segmentation(self):
 
@@ -221,7 +287,13 @@ class Watershed(Tool):
         blobs = self.segmentation()
 
         for blob in blobs:
-            if blob.class_name != "Dummy":
+            if blob.class_name == "Dummy":
+                self.dummy_bounding_box = blob.bbox
+                self.createWorkAreaMask()
+                
+            
+            elif blob.class_name != "Dummy":
+                self.snapBlobBorders(blob)
                 self.viewerplus.addBlob(blob)
             
         self.viewerplus.resetTools()
