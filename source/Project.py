@@ -324,7 +324,8 @@ class Project(QObject):
                 description = label['description']
                 self.labels[name] = Label(id=id, name=name, fill=fill, border=border)
 
-        except:
+        except Exception as e:
+            QMessageBox.critical(None, "Error", f"Error loading dictionary: {filename}\n{e}")
             return False
 
         return True

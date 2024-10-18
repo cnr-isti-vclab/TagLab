@@ -475,19 +475,34 @@ class TagLab(QMainWindow):
 
         # LABELS PANEL
         self.labels_widget = QtTableLabel()
-        self.default_dictionary = self.settings_widget.settings.value("default-dictionary",
-                                                defaultValue="dictionaries/scripps.json", type=str)
 
+        try:
+            default_dict = "dictionaries/scripps.json"
+            self.default_dictionary = self.settings_widget.settings.value("default-dictionary",
+                                                                          defaultValue=default_dict,
+                                                                          type=str)
+            # Check if previously stored dict actually exists
+            if not os.path.exists(self.default_dictionary):
+                QMessageBox.warning(self,
+                                    "Warning",
+                                    f"Previously loaded dictionary {self.default_dictionary} not found! "
+                                    f"Attempting to load TagLab default {default_dict} instead.")
 
-        if self.project.loadDictionary(self.default_dictionary) is False:
-            # problem with the default dictionary, we will use the scripp's one
-            self.default_dictionary = "dictionaries/scripps.json"
-            if self.project.loadDictionary(self.default_dictionary) is False:
-                print("The current default dictionary cannot be found. If your project defines a custom dictionary "
-                      "inside it go ahead, otherwise download it using install.py.")
+                # If not, check for the scripps dictionary
+                self.default_dictionary = default_dict
+                if not os.path.exists(self.default_dictionary):
+                    raise Exception(f"TagLab default dictionary {self.default_dictionary} not found! "
+                                    f"Please re-download it.")
 
+            # Re-set the default dictionary
+            self.settings_widget.settings.setValue("default-dictionary", self.default_dictionary)
+            # Load the dictionary, load the project
+            self.project.loadDictionary(self.default_dictionary)
+            self.labels_widget.setLabels(self.project, None)
 
-        self.labels_widget.setLabels(self.project, None)
+        except Exception as e:
+            # If neither exist, then open TagLab w/o a dict, and user can reset within
+            QMessageBox.critical(self, "Error", str(e))
 
         groupbox_style = "QGroupBox\
           {\

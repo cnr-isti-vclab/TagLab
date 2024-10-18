@@ -40,7 +40,8 @@ class generalSettingsWidget(QWidget):
 
         self.checkbox_autosave = QCheckBox("Autosave")
         self.spinbox_autosave_interval = QSpinBox()
-        self.spinbox_autosave_interval.setRange(5, 15)
+        self.spinbox_autosave_interval.setRange(1, 15)
+        self.spinbox_autosave_interval.setValue(5)
         self.lbl_autosave_1 = QLabel("Every ")
         self.lbl_autosave_2 = QLabel(" minutes.")
 
@@ -52,7 +53,7 @@ class generalSettingsWidget(QWidget):
         self.combo_research_field.setCurrentIndex(0)
 
         self.lbl_default_dict = QLabel("Default dictionary: ")
-        self.edit_default_dict = QLineEdit("dictionaries/scripps.json")
+        self.edit_default_dict = QLineEdit(self.settings.value("default-dictionary"))
         self.btn_default_dict = QPushButton("...")
         self.btn_default_dict.setFixedWidth(20)
         self.btn_default_dict.clicked.connect(self.chooseDict)
@@ -90,7 +91,7 @@ class generalSettingsWidget(QWidget):
 
         filters = "JSON (*.json)"
         file_name, _ = QFileDialog.getOpenFileName(self, "Default Dictionary File", "", filters)
-        if file_name:
+        if file_name and os.path.exists(file_name):
             default_dict = os.path.relpath(file_name, start=self.taglab_dir)
             self.edit_default_dict.setText(default_dict)
             self.settings.setValue("default-dictionary", default_dict)
@@ -420,6 +421,12 @@ class QtSettingsWidget(QWidget):
 
         self.settings = QSettings("VCLAB", "TagLab")
 
+        default_dict = "dictionaries/scripps.json"
+        # Check that the default dictionary isn't None, if it is set it to the default one
+        # Otherwise, don't set a default dictionary in registry
+        if not "default-dictionary" in self.settings.allKeys() and os.path.exists(default_dict):
+            self.settings.setValue("default-dictionary", default_dict)
+
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.setMinimumWidth(300)
@@ -498,7 +505,3 @@ class QtSettingsWidget(QWidget):
     @pyqtSlot(int)
     def display(self, i):
         self.stackedwidget.setCurrentIndex(i)
-
-
-
-
