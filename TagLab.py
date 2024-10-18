@@ -199,7 +199,7 @@ class TagLab(QMainWindow):
         self.newDatasetWidget = None
         self.help_widget = None
         
-        #QUIRINO: message widget for help
+        #message widget for help
         self.message_widget = None
 
         self.trainYourNetworkWidget = None
@@ -689,7 +689,7 @@ class TagLab(QMainWindow):
 
         self.move()
 
-    def toggle_segmentation_buttons(self, show=False):
+    def toggleHeritageButtons(self, show=False):
         """
         Shows or hides segmentation buttons based on the 'show' parameter.
         
@@ -698,12 +698,12 @@ class TagLab(QMainWindow):
         self.btnWatershed.setVisible(show)
         # self.btnBricksSegmentation.setVisible(show)
 
-        if self.SAM_is_available is not True:
-            self.btnSam.setVisible(False)
-            self.btnSamInteractive.setVisible(False)
-        else:
-            self.btnSam.setVisible(show)
-            self.btnSamInteractive.setVisible(show)
+        # if self.SAM_is_available is not True:
+        #     self.btnSam.setVisible(False)
+        #     self.btnSamInteractive.setVisible(False)
+        # else:
+        #     self.btnSam.setVisible(show)
+        #     self.btnSamInteractive.setVisible(show)
 
     
     def setGuiPreferences(self):
@@ -1299,16 +1299,15 @@ class TagLab(QMainWindow):
         self.settings_widget.show()
 
     @pyqtSlot(str)
-    #QUIRINO, aggiungere Architectural Heritage combobox, show BrickSegmentation, Watershed e SAM
     def researchFieldChanged(self, index):
         # pass
         print(f"index is {index}")
         if index == "Architectural Heritage":
         # if index == 1:
-            self.toggle_segmentation_buttons(show=True)
+            self.toggleHeritageButtons(show=True)
         elif index == "Marine Ecology/Biology":
         # elif index == 0:
-            self.toggle_segmentation_buttons(show=False)
+            self.toggleHeritageButtons(show=False)
 
     @pyqtSlot(QAction)
     def editMapSettings(self, openMapAction):
@@ -4086,7 +4085,7 @@ class TagLab(QMainWindow):
         self.help_widget.show()
         self.help_widget.setWindowOpacity(0.7)
         
-    #QUIRINO: slot for the message_widget
+    #slot for the message_widget
     @pyqtSlot(str)
     def message(self, new_message):
                 
@@ -4109,7 +4108,7 @@ class TagLab(QMainWindow):
             
             self.message_widget.setMessage(new_message)
 
-            #QUIRINO: anchor message_widget window to the top left corner of the viewerplus
+            #anchor message_widget window to the top left corner of the viewerplus
             viewerplus_position = self.viewerplus.mapToGlobal(QPoint(0, 0))
             self.message_widget.move(viewerplus_position.x(), viewerplus_position.y())
 

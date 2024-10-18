@@ -261,7 +261,7 @@ class Sam(Tool):
         print(f"rect coordinates are {rect.left(), rect.right(), rect.top(), rect.bottom()}")
 
 
-        #QUIRINO :  margin to consider the edge TO FINETUNE!!!!
+        # margin to consider the edge TO FINETUNE!!!!
         margin = 10  
         
         # filtered_blobs = []

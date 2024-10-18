@@ -1095,7 +1095,7 @@ class QtImageViewerPlus(QtImageViewer):
             self.tools.wheel(event.angleDelta())
             return
 
-        #QUIRINO: added zooming rectangle with shift key
+        #added zooming rectangle with shift key
         if self.tools.tool == "SAM" and mods & Qt.ShiftModifier:    
             if not self.tools.tools["SAM"].work_area_set:
                 self.tools.tools["SAM"].setSize(event.angleDelta())
