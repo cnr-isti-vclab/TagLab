@@ -596,8 +596,14 @@ class Project(QObject):
                 table.deleteRows(rows_indexes)
 
                 # create the new correspondences
+                if is_source:
+                    source_blobs_ids.remove(blob_removed.id)
+                else:
+                    target_blobs_ids.remove(blob_removed.id)
+
                 source_blobs = table.sourceBlobsById(source_blobs_ids)
                 target_blobs = table.targetBlobsById(target_blobs_ids)
+
                 if is_source:
                     table.set(blobs_added, target_blobs)
                 else:
