@@ -65,12 +65,16 @@ def loadProject(taglab_working_dir, filename, default_dict):
                 else:
 
                     filename = channel.filename
-                    filename = filename.replace(os.path.dirname(filename), new_dir)
-
-                if image.georef_filename == channel.filename:
-                    image.georef_filename = dir.relativeFilePath(filename)
+                    filename = os.path.basename(filename)
+                    filename = os.path.join(new_dir, filename)
 
                 channel.filename = dir.relativeFilePath(filename)
+
+                if image.georef_filename != "":
+                    basename = os.path.basename(image.georef_filename)
+                    image.georef_filename = dir.relativeFilePath(os.path.join(new_dir, basename))
+
+                image.georef_filename = ""
 
     # load geo-reference information
     for im in project.images:
@@ -535,14 +539,17 @@ class Project(QObject):
                 blob.correspondence_to_check = True
 
             corresp_tables = self.findCorrespTables(img)
-            for table in corresp_tables:
-                is_source = table.isSource(img)
-                if is_source is True:
-                    table.set(blobs_added, [])
-                else:
-                    table.set([], blobs_added)
+            if len(corresp_tables) > 0:
+                for table in corresp_tables:
+                    is_source = table.isSource(img)
+                    if is_source is True:
+                        table.set(blobs_added, [])
+                    else:
+                        table.set([], blobs_added)
 
-            flag_update_table = True
+                self.updateGenets()
+
+                flag_update_table = True
 
         elif operation == "REMOVE":
             # All the involved rows, starting from the temporal point of the blob removed are deleted.
@@ -550,68 +557,72 @@ class Project(QObject):
 
             corresp_tables = self.findCorrespTables(img)
 
-            for table in corresp_tables:
-                is_source = table.isSource(img)
-                source_blobs_ids, target_blobs_ids, rows_indexes = table.findCluster(blob_removed.id, is_source)
-                if is_source:
-                    source_blobs_ids.remove(blob_removed.id)
-                else:
-                    target_blobs_ids.remove(blob_removed.id)
+            if len(corresp_tables) > 0:
+                for table in corresp_tables:
+                    is_source = table.isSource(img)
+                    source_blobs_ids, target_blobs_ids, rows_indexes = table.findCluster(blob_removed.id, is_source)
+                    if is_source:
+                        source_blobs_ids.remove(blob_removed.id)
+                    else:
+                        target_blobs_ids.remove(blob_removed.id)
 
-                table.deleteRows(rows_indexes)
-                source_blobs = table.sourceBlobsById(source_blobs_ids)
-                target_blobs = table.targetBlobsById(target_blobs_ids)
-                table.set(source_blobs, target_blobs)
+                    table.deleteRows(rows_indexes)
+                    source_blobs = table.sourceBlobsById(source_blobs_ids)
+                    target_blobs = table.targetBlobsById(target_blobs_ids)
+                    table.set(source_blobs, target_blobs)
 
-                blobs = source_blobs + target_blobs
-                for blob in blobs:
-                    blob.correspondence_to_check = True
+                    blobs = source_blobs + target_blobs
+                    for blob in blobs:
+                        blob.correspondence_to_check = True
 
-            self.genet.updateGenets()
+                self.updateGenets()
 
-            flag_update_table = True
+                flag_update_table = True
 
         elif operation == "UPDATE":
             # The content of the correspondences tables involved is updated, blobs_added contains the new information,
             # blob_removed the old information.
             corresp_tables = self.findCorrespTables(img)
-            for table in corresp_tables:
-                table.updateBlobId(img, blob_removed.id, blobs_added[0].id)
-                table.updateBlobArea(img, blob_removed.id, blobs_added[0].area, blobs_added[0].surface_area)
+            if len(corresp_tables) > 0:
+                for table in corresp_tables:
+                    table.updateBlobId(img, blob_removed.id, blobs_added[0].id)
+                    table.updateBlobArea(img, blob_removed.id, blobs_added[0].area, blobs_added[0].surface_area)
 
-            flag_update_table = True
+                flag_update_table = True
 
         elif operation == "CUT":
             # The new blobs are automatically connected with the ones of the blob removed.
             # The genet is recomputed for consistency.
 
             corresp_tables = self.findCorrespTables(img)
-            for table in corresp_tables:
 
-                is_source = table.isSource(img)
+            if len(corresp_tables) > 0:
+                for table in corresp_tables:
 
-                source_blobs_ids, target_blobs_ids, rows_indexes = table.findCluster(blob_removed.id, is_source)
+                    is_source = table.isSource(img)
 
-                # remove the connections
-                table.deleteRows(rows_indexes)
+                    source_blobs_ids, target_blobs_ids, rows_indexes = table.findCluster(blob_removed.id, is_source)
 
-                # create the new correspondences
-                if is_source:
-                    source_blobs_ids.remove(blob_removed.id)
-                else:
-                    target_blobs_ids.remove(blob_removed.id)
+                    # remove the connections
+                    table.deleteRows(rows_indexes)
 
-                source_blobs = table.sourceBlobsById(source_blobs_ids)
-                target_blobs = table.targetBlobsById(target_blobs_ids)
+                    # create the new correspondences
+                    if is_source:
+                        source_blobs_ids.remove(blob_removed.id)
+                    else:
+                        target_blobs_ids.remove(blob_removed.id)
 
-                if is_source:
-                    table.set(blobs_added, target_blobs)
-                else:
-                    table.set(source_blobs, blobs_added)
+                    source_blobs = table.sourceBlobsById(source_blobs_ids)
+                    target_blobs = table.targetBlobsById(target_blobs_ids)
 
-                blobs = blobs_added + source_blobs + target_blobs
-                for blob in blobs:
-                    blob.correspondence_to_check = True
+                    if is_source:
+                        table.set(blobs_added, target_blobs)
+                    else:
+                        table.set(source_blobs, blobs_added)
+
+                    blobs = blobs_added + source_blobs + target_blobs
+                    for blob in blobs:
+                        blob.correspondence_to_check = True
 
                 self.updateGenets()
 
