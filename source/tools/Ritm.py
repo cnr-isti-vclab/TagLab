@@ -329,11 +329,13 @@ class Ritm(Tool):
         return True
 
     def resetNetwork(self):
-
-        torch.cuda.empty_cache()
-        if self.ritm_net is not None:
-            del self.ritm_net
-            self.ritm_net = None
+        try:
+            torch.cuda.empty_cache()
+            if self.ritm_net is not None:
+                del self.ritm_net
+                self.ritm_net = None
+        except:
+            pass
 
     def apply(self):
         """
@@ -417,5 +419,3 @@ class Ritm(Tool):
             brush = self.viewerplus.project.classBrushFromName(self.blob_to_correct)
 
         utils.drawBlob(blob, brush, scene, self.viewerplus.transparency_value, redraw=False)
-
-
