@@ -159,6 +159,7 @@ class FourClicks(Tool):
             self.viewerplus.resetSelection()
             for blob in blobs:
                 self.viewerplus.addBlob(blob, selected=True)
+                self.viewerplus.project.updateCorrespondences("ADD", self.viewerplus.image, blobs, None, "")
                 self.blobInfo.emit(blob, "[TOOL][DEEPEXTREME][BLOB-CREATED]")
             self.viewerplus.saveUndo()
 

@@ -342,19 +342,28 @@ class Ritm(Tool):
 
         # finalize created blobs
         message = "[TOOL][RITM][BLOB-CREATED]"
-        for blob in self.current_blobs:
-            
-            if self.blob_to_correct is not None:
-                self.viewerplus.removeBlob(self.blob_to_correct)
-                blob.id = self.blob_to_correct.id
-                blob.class_name = self.blob_to_correct.class_name
-                message = "[TOOL][RITM][BLOB-EDITED]"
 
-            # order is important: first add then setblob class!
-            utils.undrawBlob(blob, self.viewerplus.scene, redraw=False)
-            self.viewerplus.addBlob(blob, selected=True)
+        # WARNING!! In the editing mode only the biggest blob is considered (e.g. it is not possible to subdivide
+        # an existing blob in two blobs)
+        if self.blob_to_correct is not None:
+            new_blob = self.current_blobs[0]
+            new_blob.class_name = self.blob_to_correct.class_name
+            utils.undrawBlob(new_blob, self.viewerplus.scene, redraw=False)
+            self.viewerplus.updateBlob(self.blob_to_correct, new_blob, selected=True)
+            message = "[TOOL][RITM][BLOB-EDITED]"
+            self.blobInfo.emit(new_blob, message)
+        else:
+            for blob in self.current_blobs:
 
-            self.blobInfo.emit(blob, message)
+                # undraw preview
+                utils.undrawBlob(blob, self.viewerplus.scene, redraw=False)
+
+                # add blob
+                self.viewerplus.addBlob(blob, selected=True)
+
+                self.blobInfo.emit(blob, message)
+
+            self.viewerplus.project.updateCorrespondences("ADD", self.viewerplus.image, self.current_blobs, None, "")
 
         self.viewerplus.saveUndo()
         self.viewerplus.resetSelection()
