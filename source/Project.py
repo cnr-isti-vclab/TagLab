@@ -552,7 +552,7 @@ class Project(QObject):
                 flag_update_table = True
 
         elif operation == "REMOVE":
-            # All the involved rows, starting from the temporal point of the blob removed are deleted.
+            # All the involved rows are deleted. Target and source blobs are connected together if any.
             # The genet is recomputed for consistency.
 
             corresp_tables = self.findCorrespTables(img)
