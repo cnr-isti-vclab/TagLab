@@ -532,7 +532,7 @@ class Project(QObject):
             # Eventual correspondence must be added manually by the user!
             # TODO: ADD MESSAGE FOR THE USER
             for blob in blobs_added:
-                blob.correspondences_to_track = True
+                blob.correspondence_to_check = True
 
             corresp_tables = self.findCorrespTables(img)
             for table in corresp_tables:
