@@ -969,6 +969,9 @@ class QtImageViewerPlus(QtImageViewer):
                 if mods & Qt.ShiftModifier:
                     self.tools.leftPressed(x, y, mods)
             
+            elif (self.tools.tool == "WATERSHED" or self.tools.tool == "SAM" or self.tools.tool == "SAMINTERACTIVE"):
+                self.setDragMode(QGraphicsView.ScrollHandDrag)
+                            
             #used from area selection and pen drawing,
             elif (self.panEnabled and not (mods & Qt.ShiftModifier)) or (mods & Qt.ControlModifier):
                 self.setDragMode(QGraphicsView.ScrollHandDrag)

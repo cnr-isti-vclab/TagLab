@@ -35,6 +35,8 @@ from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QFileDialog, QCo
     QLabel, QToolButton, QPushButton, QSlider, QCheckBox, \
     QMessageBox, QGroupBox, QLayout, QHBoxLayout, QVBoxLayout, QFrame, QDockWidget, QTextEdit, QAction
 
+
+
 import pprint
 # PYTORCH
 from source.QtAlignmentToolWidget import QtAlignmentToolWidget
@@ -4115,10 +4117,8 @@ class TagLab(QMainWindow):
                 self.message_widget = None
 
 
-                
-            self.message_widget = QtMessageWidget(self)
-                        
-            # self.setParent(self)
+            self.message_widget = QtMessageWidget(self.viewerplus)                        
+            # self.setParent(self.viewerplus)
             self.message_widget.show()
             
             self.message_widget.setMessage(new_message)
