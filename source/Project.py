@@ -590,12 +590,14 @@ class Project(QObject):
 
                 is_source = table.isSource(img)
 
-                source_blobs, target_blobs, rows_indexes = table.findCluster(blob_removed.id, is_source)
+                source_blobs_ids, target_blobs_ids, rows_indexes = table.findCluster(blob_removed.id, is_source)
 
                 # remove the connections
                 table.deleteRows(rows_indexes)
 
                 # create the new correspondences
+                source_blobs = table.sourceBlobsById(source_blobs_ids)
+                target_blobs = table.targetBlobsById(target_blobs_ids)
                 if is_source:
                     table.set(blobs_added, target_blobs)
                 else:
