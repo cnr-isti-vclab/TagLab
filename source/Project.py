@@ -538,9 +538,9 @@ class Project(QObject):
             for table in corresp_tables:
                 is_source = table.isSource(img)
                 if is_source is True:
-                    table.set(blobs_added, None)
+                    table.set(blobs_added, [])
                 else:
-                    table.set(None, blobs_added)
+                    table.set([], blobs_added)
 
             flag_update_table = True
 
