@@ -1403,7 +1403,7 @@ class TagLab(QMainWindow):
 
             # copy blobs
             for blob in img.blobs:
-                img_copy.annotations.addBlob(blob, notify=False)
+                img_copy.annotations.addBlob(blob)
 
             # copy channels
             for channel in img.channels:
