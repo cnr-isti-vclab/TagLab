@@ -333,7 +333,7 @@ class Image(object):
         # Add blobs
         new_blobs = self.annotations.computeBlobsAffineTransform(R, T)
         for blob in new_blobs:
-            cpy.annotations.addBlob(blob, notify=False)
+            cpy.annotations.addBlob(blob)
         # Add channels
         for ch in self.channels:
             newFilename, w, h = self.__updateChannel(ch, tag, -rot, tra, borders, geoTransform, geoRef)
