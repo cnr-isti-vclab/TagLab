@@ -229,6 +229,10 @@ class SAMInteractive(Tool):
                 # Positive points
                 # """
                 # Add points
+                nclicks = self.pick_points.nclicks()
+                if nclicks == 0: 
+                    self.viewerplus.resetSelection()
+
                 self.pick_points.addPoint(x, y, self.pos_pick_style)
                 self.labels.append(1)
                 message = "[TOOL][SAMPREDICTOR] New point picked"
@@ -592,7 +596,7 @@ class SAMInteractive(Tool):
             self.blobInfo.emit(blob, message)
 
         self.viewerplus.saveUndo()
-        self.viewerplus.resetSelection()
+        # self.viewerplus.resetSelection()
         self.pick_points.reset()
         self.labels = []
         self.current_blobs = []
