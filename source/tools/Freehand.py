@@ -39,7 +39,7 @@ class Freehand(Tool):
 
             self.viewerplus.resetSelection()
             self.viewerplus.addBlob(blob, selected=True)
-            self.viewerplus.project.updateCorrespondences("ADD", self.viewerplus.image, blob, None, "")
+            self.viewerplus.project.updateCorrespondences("ADD", self.viewerplus.image, [blob], None, "")
             self.blobInfo.emit(blob, "[TOOL][FREEHAND][BLOB-CREATED]")
             self.viewerplus.saveUndo()
 
