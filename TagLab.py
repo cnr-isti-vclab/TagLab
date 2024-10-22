@@ -3726,6 +3726,7 @@ class TagLab(QMainWindow):
 
             self.activeviewer.drawAllBlobs()
             self.activeviewer.drawAllPoints()
+            self.activeviewer.updateVisibility()
 
         # update labels widget
         self.updatePanels()
