@@ -709,20 +709,16 @@ class TagLab(QMainWindow):
     def toggleHeritageButtons(self, show=False):
         """
         Shows or hides segmentation buttons based on the 'show' parameter.
-        
-        :param show: If True, buttons will be shown; if False, buttons will be hidden.
+        :param show: If True, buttons will be shown; if False, buttons will be hidden
         """
         self.btnWatershed.setVisible(show)
-        # self.btnBricksSegmentation.setVisible(show)
 
-        # if self.SAM_is_available is not True:
-        #     self.btnSam.setVisible(False)
-        #     self.btnSamInteractive.setVisible(False)
-        # else:
-        #     self.btnSam.setVisible(show)
-        #     self.btnSamInteractive.setVisible(show)
+        self.importViscorePointsAct.setVisible(not show)
+        self.importCoralNetPointsAct.setVisible(not show)
+        self.exportCoralNetPointsAct.setVisible(not show)
+        self.exportCoralNetDataAct.setVisible(not show)
+        self.openCoralNetToolboxAct.setVisible(not show)
 
-    
     def setGuiPreferences(self):
 
         settings = QSettings("VCLAB", "TagLab")
@@ -1188,35 +1184,41 @@ class TagLab(QMainWindow):
         samplePointsAct.setStatusTip("Sample Points This Map")
         samplePointsAct.triggered.connect(self.chooseSampling)
 
-        importViscorePointsAct = QAction("Import Viscore Point Annotations", self)
-        importViscorePointsAct.setStatusTip("Import Point Annotations From .CSV")
-        importViscorePointsAct.triggered.connect(self.importViscorePointAnn)
+        self.importViscorePointsAct = QAction("Import Viscore Point Annotations", self)
+        self.importViscorePointsAct.setStatusTip("Import Point Annotations From .CSV")
+        self.importViscorePointsAct.triggered.connect(self.importViscorePointAnn)
+        self.importViscorePointsAct.setVisible(True)
 
-        importCoralNetPointsAct = QAction("Import CoralNet Point Annotations", self)
-        importCoralNetPointsAct.setStatusTip("Import Point Annotations From .CSV")
-        importCoralNetPointsAct.triggered.connect(self.importCoralNetPointAnn)
+        self.importCoralNetPointsAct = QAction("Import CoralNet Point Annotations", self)
+        self.importCoralNetPointsAct.setStatusTip("Import Point Annotations From .CSV")
+        self.importCoralNetPointsAct.triggered.connect(self.importCoralNetPointAnn)
+        self.importCoralNetPointsAct.setVisible(True)
 
-        exportCoralNetPointsAct = QAction("Export CoralNet Point Annotations", self)
-        exportCoralNetPointsAct.setStatusTip("Export Point Annotations As .CSV")
-        exportCoralNetPointsAct.triggered.connect(self.exportCoralNetPointAnn)
+        self.exportCoralNetPointsAct = QAction("Export CoralNet Point Annotations", self)
+        self.exportCoralNetPointsAct.setStatusTip("Export Point Annotations As .CSV")
+        self.exportCoralNetPointsAct.triggered.connect(self.exportCoralNetPointAnn)
+        self.exportCoralNetPointsAct.setVisible(True)
 
-        exportCoralNetDataAct = QAction("Export Tiled Data for CoralNet", self)
-        exportCoralNetDataAct.setStatusTip("Export Data for CoralNet Model Training")
-        exportCoralNetDataAct.triggered.connect(self.exportCoralNetPointData)
+        self.exportCoralNetDataAct = QAction("Export Tiled Data for CoralNet", self)
+        self.exportCoralNetDataAct.setStatusTip("Export Data for CoralNet Model Training")
+        self.exportCoralNetDataAct.triggered.connect(self.exportCoralNetPointData)
+        self.exportCoralNetDataAct.setVisible(True)
 
-        openCoralNetToolboxAct = QAction("Open CoralNet-Toolbox...", self)
-        openCoralNetToolboxAct.triggered.connect(self.openCoralNetToolbox)
+        self.openCoralNetToolboxAct = QAction("Open CoralNet-Toolbox...", self)
+        self.openCoralNetToolboxAct.triggered.connect(self.openCoralNetToolbox)
+        self.openCoralNetToolboxAct.setVisible(True)
 
         self.pointmenu = menubar.addMenu("&Points")
         self.pointmenu.setStyleSheet(styleMenu)
         self.pointmenu.addAction(samplePointsAct)
         self.pointmenu.addSeparator()
-        self.pointmenu.addAction(importViscorePointsAct)
-        self.pointmenu.addAction(importCoralNetPointsAct)
-        self.pointmenu.addAction(exportCoralNetPointsAct)
-        self.pointmenu.addAction(exportCoralNetDataAct)
+        self.pointmenu.addAction(self.importViscorePointsAct)
+        self.pointmenu.addAction(self.importCoralNetPointsAct)
+        self.pointmenu.addAction(self.exportCoralNetPointsAct)
+        self.pointmenu.addAction(self.exportCoralNetDataAct)
         self.pointmenu.addSeparator()
-        self.pointmenu.addAction(openCoralNetToolboxAct)
+        self.pointmenu.addAction(self.openCoralNetToolboxAct)
+
 
         ###### DEM MENU
 
