@@ -590,39 +590,86 @@ class Project(QObject):
 
                 flag_update_table = True
 
-        elif operation == "CUT":
-            # The new blobs are automatically connected with the ones of the blob removed.
+        elif operation == "REPLACE":
+            # The blobs added are connected automatically with the ones of the blob removed (if more than one blob is
+            # removed, the removed_blob is a list of blobs)
             # The genet is recomputed for consistency.
 
             corresp_tables = self.findCorrespTables(img)
 
             if len(corresp_tables) > 0:
-                for table in corresp_tables:
 
-                    is_source = table.isSource(img)
+                if len(blob_removed) == 1:
+                    # one blob is replaced by N blobs, for example this is the case of a CUT operation
 
-                    source_blobs_ids, target_blobs_ids, rows_indexes = table.findCluster(blob_removed.id, is_source)
+                    for table in corresp_tables:
 
-                    # remove the connections
-                    table.deleteRows(rows_indexes)
+                        is_source = table.isSource(img)
 
-                    # create the new correspondences
-                    if is_source:
-                        source_blobs_ids.remove(blob_removed.id)
-                    else:
-                        target_blobs_ids.remove(blob_removed.id)
+                        source_blobs_ids, target_blobs_ids, rows_indexes = table.findCluster(blob_removed[0].id, is_source)
 
-                    source_blobs = table.sourceBlobsById(source_blobs_ids)
-                    target_blobs = table.targetBlobsById(target_blobs_ids)
+                        # remove the current connections from the correspondences' table
+                        table.deleteRows(rows_indexes)
 
-                    if is_source:
-                        table.set(blobs_added, target_blobs)
-                    else:
-                        table.set(source_blobs, blobs_added)
+                        # create the new correspondences
+                        if is_source:
+                            source_blobs_ids.remove(blob_removed[0].id)
+                        else:
+                            target_blobs_ids.remove(blob_removed[0].id)
 
-                    blobs = blobs_added + source_blobs + target_blobs
-                    for blob in blobs:
-                        blob.correspondence_to_check = True
+                        source_blobs = table.sourceBlobsById(source_blobs_ids)
+                        target_blobs = table.targetBlobsById(target_blobs_ids)
+
+                        if is_source:
+                            table.set(blobs_added, target_blobs)
+                        else:
+                            table.set(source_blobs, blobs_added)
+
+                        blobs = blobs_added + source_blobs + target_blobs
+                        for blob in blobs:
+                            blob.correspondence_to_check = True
+                else:
+                    # some blobs are replaced by one blob, for example this is the case of a MERGE operation
+                    for table in corresp_tables:
+
+                        is_source = table.isSource(img)
+
+                        # find all the connections
+                        all_source_blobs_ids = []
+                        all_target_blobs_ids = []
+                        all_rows = []
+                        for blob in blob_removed:
+                            source_blobs_ids, target_blobs_ids, rows_indexes = table.findCluster(blob.id, is_source)
+
+                            # new correspondences to crea
+                            if is_source:
+                                source_blobs_ids.remove(blob.id)
+                            else:
+                                target_blobs_ids.remove(blob.id)
+
+                            all_source_blobs_ids += source_blobs_ids
+                            all_target_blobs_ids += target_blobs_ids
+                            all_rows += rows_indexes
+
+                        # remove such rows from the correspondences' table
+                        table.deleteRows(all_rows)
+
+                        # remove duplicated ids
+                        all_source_blobs_ids = list(set(all_source_blobs_ids))
+                        all_target_blobs_ids = list(set(all_target_blobs_ids))
+
+                        # re-create the connections
+                        source_blobs = table.sourceBlobsById(all_source_blobs_ids)
+                        target_blobs = table.targetBlobsById(all_target_blobs_ids)
+
+                        if is_source:
+                            table.set(blobs_added, target_blobs)
+                        else:
+                            table.set(source_blobs, blobs_added)
+
+                        blobs = blobs_added + source_blobs + target_blobs
+                        for blob in blobs:
+                            blob.correspondence_to_check = True
 
                 self.updateGenets()
 

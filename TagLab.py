@@ -2842,9 +2842,11 @@ class TagLab(QMainWindow):
             if union_blob is None:
                 logfile.info("[OP-MERGE] INVALID MERGE OVERLAPPED LABELS -> blobs are separated.")
             else:
+
+                view.project.updateCorrespondences("REPLACE", view.image, [union_blob], view.selected_blobs, "")
+
                 for blob in view.selected_blobs:
                     view.removeBlob(blob)
-                    view.project.updateCorrespondences("REMOVE", None, blob, "")
                     self.logBlobInfo(blob, "[OP-MERGE][BLOB-REMOVED]")
 
                 view.addBlob(union_blob, selected=True)

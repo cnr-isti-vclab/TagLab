@@ -41,7 +41,7 @@ class Cut(Tool):
             self.viewerplus.addBlob(blob, selected=True)
             self.blobInfo.emit(blob, "[TOOL][CUT][BLOB-CREATED]")
 
-        self.viewerplus.project.updateCorrespondences("CUT", self.viewerplus.image, created_blobs, selected_blob, "")
+        self.viewerplus.project.updateCorrespondences("REPLACE", self.viewerplus.image, created_blobs, [selected_blob], "")
 
         self.log.emit("[TOOL][CUT] Operation ends.")
 
