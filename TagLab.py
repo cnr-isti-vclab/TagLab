@@ -322,7 +322,7 @@ class TagLab(QMainWindow):
         self.erodeAction        = self.newAction("Erode Border",              "-",   self.erode)
         self.attachBoundariesAction = self.newAction("Snap Borders",          "B",   self.attachBoundaries)
         self.fillAction         = self.newAction("Fill Region",               "F",   self.fillLabel)
-        self.createNegative = self.newAction("Create a Negative Region around selected Regions", "N", self.createNegative)
+        self.createNegative = self.newAction("Create a Background Region using the WA", "N", self.createNegative)
 
 
         # VIEWERPLUS
@@ -2957,29 +2957,27 @@ class TagLab(QMainWindow):
         create a negative region form selected blobs
         """
         view = self.activeviewer
+        wa = self.project.working_area
+
         if view is None:
             return
+        if wa is None:
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("You need to set up a working are before using this feature.")
+            msgBox.exec()
+            return
 
-        if len(view.selected_blobs) >0:
+        message = "[OP-CREATE] CREATE NEGATIVE REGIONS BEGIN operation begins "
+        logfile.info(message)
 
-            message = "[OP-CREATE] CREATE NEGATIVE REGIONS BEGIN operation begins.. (number of selected blobs: " + str(
-                len(view.selected_blobs)) + ")"
-            logfile.info(message)
+        created_blobs = view.annotations.createNegative(view.selected_blobs,wa)
 
-            created_blobs = view.annotations.createNegative(view.selected_blobs)
-
-            if created_blobs:
-                view.resetSelection()
-                for blob in created_blobs:
-                    self.logBlobInfo(blob, "[OP-CREATENEGATIVE][BLOB-ADDED]")
-                    view.addBlob(blob, selected=True)
-
-            else:
-                msgBox = QMessageBox()
-                msgBox.setWindowTitle(self.TAGLAB_VERSION)
-                msgBox.setText("You need to select at least <em> one </em> blobs for CREATE a negative mask.")
-                msgBox.exec()
-
+        if created_blobs:
+            view.resetSelection()
+            for blob in created_blobs:
+                self.logBlobInfo(blob, "[OP-CREATENEGATIVE][BLOB-ADDED]")
+                view.addBlob(blob, selected=True)
 
 
     def dilate(self):

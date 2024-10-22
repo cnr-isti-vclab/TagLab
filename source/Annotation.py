@@ -234,28 +234,25 @@ class Annotation(object):
             return True
         return False
 
-    def createNegative(self, blobs):
+    def createNegative(self, blobs, wa):
 
+        inner_blobs = self.calculate_inner_blobs(wa)
         boxes = []
         for blob in blobs:
             boxes.append(blob.bbox)
 
-        jointbox = Mask.jointBox(boxes)
-        jointmask = np.zeros((jointbox[3], jointbox[2])).astype(np.uint8)
+        wamask = np.zeros((wa[3], wa[2])).astype(np.uint8)
+        mask = wamask.copy()
+        box = wa.copy()
 
-        mask = jointmask.copy()
-        box = jointbox.copy()
-
-        for blob in blobs:
+        for blob in inner_blobs:
             Mask.paintMask(mask, box, blob.getMask().astype(np.uint8), blob.bbox, 1)
 
         inversemask = 1 - mask
         area_min = 0.0
-        created_blobs = self.blobsFromMask(inversemask, jointbox[1], jointbox[0], area_min)
+        created_blobs = self.blobsFromMask(inversemask, box[1], box[0], area_min)
 
         return created_blobs
-
-
 
     def addingIntersection(self, blobA, blobB, blobC):
         """
