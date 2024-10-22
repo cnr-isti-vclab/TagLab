@@ -3453,9 +3453,9 @@ class TagLab(QMainWindow):
 
         self.data_panel.setTable(self.activeviewer.image)
         self.labels_widget.setLabels(self.project, self.activeviewer.image)
-        self.activeviewer.redrawAllBlobs()
-        self.activeviewer.redrawAllPoints()
-
+        self.activeviewer.drawAllBlobs()
+        self.activeviewer.drawAllPoints()
+        self.activeviewer.updateVisibility()
 
     @pyqtSlot()
     def newProject(self):
@@ -3693,10 +3693,10 @@ class TagLab(QMainWindow):
         # redraw all blobs
         if self.viewerplus is not None:
             if self.viewerplus.image is not None:
-                self.viewerplus.redrawAllBlobs()
+                self.viewerplus.drawAllBlobs()
         if self.viewerplus2 is not None:
             if self.viewerplus2.image is not None:
-                self.viewerplus2.redrawAllBlobs()
+                self.viewerplus2.drawAllBlobs()
 
     @pyqtSlot(str,list,str,list)
     def updateLabelDictionary(self,oldname,oldcolor,newname,newcolor):
@@ -3724,8 +3724,8 @@ class TagLab(QMainWindow):
                     if point.class_name == oldname:
                         point.class_name = newname
 
-            self.activeviewer.redrawAllBlobs()
-            self.activeviewer.redrawAllPoints()
+            self.activeviewer.drawAllBlobs()
+            self.activeviewer.drawAllPoints()
 
         # update labels widget
         self.updatePanels()
@@ -3733,10 +3733,10 @@ class TagLab(QMainWindow):
         # redraw all blobs
         if self.viewerplus is not None:
             if self.viewerplus.image is not None:
-                self.viewerplus.redrawAllBlobs()
+                self.viewerplus.drawAllBlobs()
         if self.viewerplus2 is not None:
             if self.viewerplus2.image is not None:
-                self.viewerplus2.redrawAllBlobs()
+                self.viewerplus2.drawAllBlobs()
 
         self.groupbox_blobpanel.updateDictionary(self.project.labels)
 
@@ -3759,10 +3759,10 @@ class TagLab(QMainWindow):
         # redraw all blobs
         if self.viewerplus is not None:
             if self.viewerplus.image is not None:
-                self.viewerplus.redrawAllBlobs()
+                self.viewerplus.drawAllBlobs()
         if self.viewerplus2 is not None:
             if self.viewerplus2.image is not None:
-                self.viewerplus2.redrawAllBlobs()
+                self.viewerplus2.drawAllBlobs()
 
     def doNotUpdatePanels(self):
 

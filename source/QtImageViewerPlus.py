@@ -40,6 +40,7 @@ from source.QtImageViewer import QtImageViewer
 from source.genutils import distance_point_AABB
 
 import math
+import time
 
 #note on ZValue:
 # 0: image
@@ -233,11 +234,9 @@ class QtImageViewerPlus(QtImageViewer):
         #clear existing layers
 
         # draw all the annotations
-        for blob in self.annotations.seg_blobs:
-            self.drawBlob(blob)
-
-        for point in self.annotations.annpoints:
-            self.drawPointAnn(point)
+        self.drawAllBlobs()
+        self.drawAllPoints()
+        self.updateVisibility()
 
         # draw the layers
         self.drawAllLayers()
@@ -772,12 +771,12 @@ class QtImageViewerPlus(QtImageViewer):
                annpoint.ellipse_gitem.setOpacity(self.transparency_value)
 
 
-    def redrawAllBlobs(self):
+    def drawAllBlobs(self):
 
         for blob in self.annotations.seg_blobs:
             self.drawBlob(blob)
 
-    def redrawAllPoints(self):
+    def drawAllPoints(self):
 
         for point in self.annotations.annpoints:
             self.drawPointAnn(point)
@@ -1300,6 +1299,7 @@ class QtImageViewerPlus(QtImageViewer):
         for blob in self.annotations.annpoints:
             visibility = self.project.isLabelVisible(blob.class_name)
             self.setBlobVisible(blob, visibility)
+
 
 #SELECTED BLOBS MANAGEMENT
 
