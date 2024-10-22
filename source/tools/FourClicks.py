@@ -208,12 +208,14 @@ class FourClicks(Tool):
                 self.device = device
 
     def resetNetwork(self):
-        torch.cuda.empty_cache()
-        if self.deepextreme_net is not None:
-            del self.deepextreme_net
-            self.deepextreme_net = None
+        try:
+            torch.cuda.empty_cache()
+            if self.deepextreme_net is not None:
+                del self.deepextreme_net
+                self.deepextreme_net = None
+        except:
+            pass
 
     def reset(self):
         self.resetNetwork()
         self.pick_points.reset()
-
