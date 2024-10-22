@@ -76,58 +76,32 @@ class Watershed(Tool):
 ############################################################################################################################################################################   
 
 
-    def createWorkAreaMask(self):
+    def snapBlobBorders(self, blob):
+        # Define the working area using blob.bbox
+        bbox = blob.bbox
+        w = bbox[2]
+        h = bbox[3]
+        working_area_mask = np.zeros((h, w), dtype=np.int32)
 
-        w = self.dummy_bounding_box[2]
-        h = self.dummy_bounding_box[3]
-        self.work_area_mask = np.zeros((h,w), dtype=np.int32)
-        for blob in self.viewerplus.image.annotations.seg_blobs:
-            if checkIntersection(self.dummy_bounding_box, blob.bbox):
-                mask = blob.getMask()
-                paintMask(self.work_area_mask, self.dummy_bounding_box, mask, blob.bbox, 1)
+        # Get the mask of the blob and place it in the working area
+        blob_mask = blob.getMask()
+        working_area_mask[:blob_mask.shape[0], :blob_mask.shape[1]] = blob_mask
 
-        # Convert the mask to a PIL image
-        # mask_image = Image.fromarray(self.work_area_mask.astype(np.uint8) * 255)
+        # Iterate over the existing blobs and remove intersections
+        for existing_blob in self.viewerplus.image.annotations.seg_blobs:
+            if existing_blob != blob and checkIntersection(bbox, existing_blob.bbox):
+                existing_mask = existing_blob.getMask()
+                paintMask(working_area_mask, bbox, existing_mask, existing_blob.bbox, 0)
 
-        # Save the image
-        # mask_image.save("work_area_mask.png")
+        # # Convert the mask to a PIL image
+        # isolated_blob_image = Image.fromarray(working_area_mask.astype(np.uint8) * 255)
+        # # Save the image
+        # isolated_blob_image.save("isolated_blob.png")
+        
+        # Update the new blob's mask
+        blob.updateUsingMask(bbox, working_area_mask)
 
-    def intersectionWithExistingBlobs(self, blob):
-        bigmask = self.work_area_mask.copy()
-        pixels_before = np.count_nonzero(bigmask)
-        mask = blob.getMask()
-        pixels = np.count_nonzero(mask)
-        paintMask(bigmask, self.dummy_bounding_box, mask, blob.bbox, 0)
-        pixels_after = np.count_nonzero(bigmask)
-        perc_intersect = ((pixels_before - pixels_after) * 100.0) / pixels
-
-        return perc_intersect
-    
-    def snapBlobBorders(self, new_blob):
-        # Create the work area mask
-        self.createWorkAreaMask()
-
-        # Check the intersection with existing blobs
-        intersection_percentage = self.intersectionWithExistingBlobs(new_blob)
-        print(intersection_percentage)
-
-        # If there is a significant intersection, adjust the new blob's borders
-        if intersection_percentage > 0:
-            mask = new_blob.getMask()
-            for y in range(mask.shape[0]):
-                for x in range(mask.shape[1]):
-                    if mask[y, x] == 1 and self.work_area_mask[y, x] == 1:
-                        # Snap the border by setting the mask value to 0 where it intersects
-                        mask[y, x] = 0
-
-            # Update the new blob's mask
-            new_blob.updateUsingMask(self.dummy_bounding_box, mask)
-
-        # Save the updated mask
-        # updated_mask_image = Image.fromarray(mask.astype(np.uint8) * 255)
-        # updated_mask_image.save("updated_mask.png")
-
-        return new_blob
+        return blob       
 
 
 ###########################################################################################################################################################################   
@@ -285,14 +259,9 @@ class Watershed(Tool):
             return
 
         blobs = self.segmentation()
-
+        
         for blob in blobs:
-            if blob.class_name == "Dummy":
-                self.dummy_bounding_box = blob.bbox
-                self.createWorkAreaMask()
-                
-            
-            elif blob.class_name != "Dummy":
+            if blob.class_name != "Dummy":
                 self.snapBlobBorders(blob)
                 self.viewerplus.addBlob(blob)
             
