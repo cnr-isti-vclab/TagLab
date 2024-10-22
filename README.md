@@ -41,11 +41,11 @@ We are working hard to create a web site with detailed instructions about TagLab
 ## Software Requirements
 
 
-TagLab runs on __Linux__, __Windows__, and __MacOS__. To run TagLab, the main requirement is just __64bit Python 3.8.x, 3.9.x or 3.10.x__.
+TagLab runs on __Linux__, __Windows__, and __MacOS__. To run TagLab, the main requirement is __64bit Python 3.11.x__.
 
-GPU accelerated computations are not supported on MacOS and on any machine that has not an NVIDIA graphics card.
-To use them, you'll need to install the __NVIDIA CUDA Toolkit__, versions 10.2, 11.3, 11.6 and 11.7 are supported.
-If you don't have a NVida graphics card (or if you use MacOS), CPU will be used.
+GPU accelerated computations are not supported on MacOS and on any machine that has not has a NVIDIA graphics card.
+To use them, you'll need to install the __NVIDIA CUDA Toolkit__, versions 11.8, 12.1, and 12.4 are supported.
+If you don't have a NVIDIA graphics card (or if you use MacOS), the CPU will be used.
 
 ## Installing TagLab
 
