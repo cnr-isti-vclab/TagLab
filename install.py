@@ -9,35 +9,40 @@ if osused != 'Linux' and osused != 'Windows' and osused != 'Darwin':
     raise Exception("Operative System not supported")
 
 # check python version
-if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and (sys.version_info[1] < 10)):
+if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and (sys.version_info[1] != 11)):
     raise Exception("Python " + str(sys.version_info[0]) + "." + str(sys.version_info[1]) + " not supported. Please see https://github.com/cnr-isti-vclab/TagLab/wiki/Install-TagLab")
 
-# manage thorch
+# manage torch
 
-# define a dictionary that, for each nvcc version, contains the corresponding torch and torchvision version
-# the key is the nvcc version, the value is a list of arguments to be passed to pip install
-
-torch_cuda_versions = ['12.1', '11.8', '11.6']
+# define a dictionary that, for each compute platform, contains the corresponding torch and torchvision version
+# the key is the compute platform used (cuda version, rocm or cpu), the value is a list of arguments to be passed 
+# to pip install
 
 torch_install_dict = None
 
 win_torch_install_dict = {
     '11.6': ['torch==1.13.1+cu116', 'torchvision==0.14.1+cu116', '--extra-index-url' + 'https://download.pytorch.org/whl/cu116'],
-    '11.8': ['torch==2.3.1', 'torchvision==0.18.1', '--index-url', 'https://download.pytorch.org/whl/cu118'],
-    '12.1': ['torch==2.3.1', 'torchvision==0.18.1', '--index-url', 'https://download.pytorch.org/whl/cu121'],
-    'cpu' : ['torch==2.3.1', 'torchvision==0.18.1'],
+    '11.8': ['torch==2.5', 'torchvision==0.20', '--index-url', 'https://download.pytorch.org/whl/cu118'],
+    '12.1': ['torch==2.5', 'torchvision==0.20', '--index-url', 'https://download.pytorch.org/whl/cu121'],
+    '12.4': ['torch==2.5', 'torchvision==0.20', '--index-url', 'https://download.pytorch.org/whl/cu124'],
+    'cpu' : ['torch==2.5', 'torchvision==0.20'],
 }
 
 lin_torch_install_dict = {
     '11.6': ['torch==1.13.1+cu116', 'torchvision==0.14.1+cu116', '--extra-index-url' + 'https://download.pytorch.org/whl/cu116'],
-    '11.8': ['torch==2.3.1', 'torchvision==0.18.1', '--index-url', 'https://download.pytorch.org/whl/cu118'],
-    '12.1': ['torch==2.3.1', 'torchvision==0.18.1'],
-    'cpu' : ['torch==2.3.1', 'torchvision==0.18.1', '--index-url', 'https://download.pytorch.org/whl/cpu'],
+    '11.8': ['torch==2.5', 'torchvision==0.20', '--index-url', 'https://download.pytorch.org/whl/cu118'],
+    '12.1': ['torch==2.5', 'torchvision==0.20', '--index-url', 'https://download.pytorch.org/whl/cu121'],
+    '12.4': ['torch==2.5', 'torchvision==0.20'],
+    'cpu' : ['torch==2.5', 'torchvision==0.20', '--index-url', 'https://download.pytorch.org/whl/cpu'],
+    'rocm': ['torch==2.5', 'torchvision==0.20', '--index-url', 'https://download.pytorch.org/whl/rocm6.2'],
 }
 
 mac_torch_install_dict = {
-    'cpu' : ['torch==2.3.1', 'torchvision==0.18.1'],
+    'cpu' : ['torch==2.5', 'torchvision==0.20'],
 }
+
+# supported cuda versions by torch
+torch_cuda_versions = ['12.4', '12.1', '11.8', '11.6']
 
 if osused == 'Windows':
     torch_install_dict = win_torch_install_dict
@@ -47,25 +52,32 @@ elif osused == 'Darwin':
     torch_install_dict = mac_torch_install_dict
 
 something_wrong_with_cuda = False
-flag_install_pythorch_cpu = False
-nvcc_version = ''
+flag_install_pytorch_cpu = False
+flag_download_SAM = False
 torch_package = ''
 torchvision_package = ''
 torch_extra_argument1 = ''
 torch_extra_argument2 = ''
 
 # if the user wants to install cpu torch
-if len(sys.argv)==2 and sys.argv[1]=='cpu':
-    flag_install_pythorch_cpu = True
+if len(sys.argv)>=2:
+    # if sys.argv contains an argument 'cpu'
+    if 'cpu' in sys.argv:
+        flag_install_pytorch_cpu = True
+    if 'SAM' in sys.argv:
+        flag_download_SAM = True
 
 
-# get cuda version
+# checking supported compute platform (cuda, cpu or rocm)
+
+use_cpu = flag_install_pytorch_cpu
+use_cuda = False
+use_rocm = False
+
+# cuda version (in case nvidia-smi is available)
 cuda_version = ''
 
-if osused == 'Darwin':
-    flag_install_pythorch_cpu = True
-    print('NVCC not supported on MacOS. Installing cpu version automatically...')
-elif flag_install_pythorch_cpu == False:
+if use_cpu == False:
     result = subprocess.getstatusoutput('nvidia-smi')
     output = result[1]
     rc = result[0]
@@ -75,53 +87,54 @@ elif flag_install_pythorch_cpu == False:
             pos += 13
             cuda_version = output[pos:pos+6]
             print('Found CUDA version: ' + cuda_version)
+
+            # get the float number of the cuda version
+            n_cuda_version = float(cuda_version)
+
+            if n_cuda_version >= float(torch_cuda_versions[-1]):
+                use_cuda = True
+            else:
+                print('CUDA version not supported. Installing CPU version automatically...')
+                use_cpu = True
         else:
-            raise Exception('Could not read CUDA version.\nInstallation aborted.')
-    else:
-        print('Impossible to run "nvidia-smi" command. CUDA seems to be not installed.')
-        something_wrong_with_cuda = True # remember that we had issues on finding nvcc
+            print('Could not read CUDA version.\n')
 
-    # get the float number of the cuda version
-    n_cuda_version = float(cuda_version)
+    if osused == 'Linux':
+        result = subprocess.getstatusoutput('rocminfo')
+        output = result[1]
+        rc = result[0]
+        if rc == 0:
+            # if the output contains "is loaded"
+            if output.find('is loaded') >= 0:
+                use_rocm = True
+                print('ROCM found.')
+    
+    if use_cuda == False and use_rocm == False and use_cpu == False:
+        print('No supported compute platform found. Installing CPU version automatically...')
 
-    torch_cuda_version = ''
 
-    # for each version of cuda in torch_cuda_versions
+torch_compute_platform = 'cpu'
+
+if use_rocm == True:
+    torch_compute_platform = 'rocm'
+    print ('Using Torch with ROCm support.')
+elif use_cuda == True:
     for version in torch_cuda_versions:
+        n_cuda_version = float(cuda_version)
         if n_cuda_version >= float(version):
-            print ('Using Torch cuda version: ' + version)
-            torch_cuda_version = version
+            print ('Using Torch with CUDA version: ' + version)
+            torch_compute_platform = version
             break
-
-    if torch_cuda_version == '':
-        print('No supported version of Torch for CUDA ' + cuda_version + '.')
-        something_wrong_with_cuda = True
-
-    # set the torch and torchvision packages
-    if flag_install_pythorch_cpu == False:
-        torch_package = torch_install_dict[torch_cuda_version][0]
-        torchvision_package = torch_install_dict[torch_cuda_version][1]
-        if len(torch_install_dict[torch_cuda_version]) > 2:
-            torch_extra_argument1 = torch_install_dict[torch_cuda_version][2]
-            torch_extra_argument2 = torch_install_dict[torch_cuda_version][3]
-
-    # if the user tried to run the installer but there were issues on finding a supported
-    if something_wrong_with_cuda == True and flag_install_pythorch_cpu == False:
-        ans = input('Something is wrong with Cuda. Do you want to install the CPU version of pythorch? [Y/n]')
-        if ans == "Y":
-            flag_install_pythorch_cpu = True
-        else:
-            raise Exception('Installation aborted. Install a proper Cuda version or set the pythorch CPU version.')
+else:
+    print('Using Torch in CPU version.')
 
 
-# somewhere before, this flag has been set to True and the user choose to install the cpu torch version
-if flag_install_pythorch_cpu==True:
-    print('Torch will be installed in its CPU version.')
-    torch_package = torch_install_dict['cpu'][0]
-    torchvision_package = torch_install_dict['cpu'][1]
-    if len(torch_install_dict['cpu']) > 2:
-        torch_extra_argument1 = torch_install_dict['cpu'][2]
-        torch_extra_argument2 = torch_install_dict['cpu'][3]
+torch_package = torch_install_dict[torch_compute_platform][0]
+torchvision_package = torch_install_dict[torch_compute_platform][1]
+if len(torch_install_dict[torch_compute_platform]) > 2:
+    torch_extra_argument1 = torch_install_dict[torch_compute_platform][2]
+    torch_extra_argument2 = torch_install_dict[torch_compute_platform][3]
+
 
 # manage gdal
 gdal_version = ''
@@ -307,8 +320,10 @@ from os import path
 import urllib.request
 this_directory = path.abspath(path.dirname(__file__))
 net_file_names = ['dextr_corals.pth', 'deeplab-resnet.pth.tar', 'ritm_corals.pth',
-                  'pocillopora.net', 'porites.net', 'pocillopora_porite_montipora.net',
-                  'sam_vit_h_4b8939.pth']
+                  'pocillopora.net', 'porites.net', 'pocillopora_porite_montipora.net']
+
+if flag_download_SAM:
+    net_file_names.append('sam_vit_h_4b8939.pth')
 
 for net_name in net_file_names:
     filename_dextr_corals = 'dextr_corals.pth'
