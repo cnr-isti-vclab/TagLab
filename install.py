@@ -54,7 +54,7 @@ elif osused == 'Darwin':
 
 something_wrong_with_cuda = False
 flag_install_pytorch_cpu = False
-flag_download_SAM = False
+flag_install_SAM = False
 torch_package = ''
 torchvision_package = ''
 torch_extra_argument1 = ''
@@ -66,7 +66,7 @@ if len(sys.argv)>=2:
     if 'cpu' in sys.argv:
         flag_install_pytorch_cpu = True
     if 'SAM' in sys.argv:
-        flag_download_SAM = True
+        flag_install_SAM = True
 
 
 # checking supported compute platform (cuda, cpu or rocm)
@@ -243,12 +243,12 @@ install_requires = [
     'selenium',
     'webdriver_manager',
 
-    # SAM
-    'segment-anything',
-
     #forcing numpy 1.24.2 version
     'numpy==1.24.4',
 ]
+
+if flag_install_SAM:
+    install_requires.append('segment-anything')
 
 # if on windows, first install the msvc runtime
 if osused == 'Windows':
@@ -320,7 +320,7 @@ this_directory = path.abspath(path.dirname(__file__))
 net_file_names = ['dextr_corals.pth', 'deeplab-resnet.pth.tar', 'ritm_corals.pth',
                   'pocillopora.net', 'porites.net', 'pocillopora_porite_montipora.net']
 
-if flag_download_SAM:
+if flag_install_SAM:
     net_file_names.append('sam_vit_h_4b8939.pth')
 
 for net_name in net_file_names:
