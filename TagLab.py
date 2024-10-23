@@ -2039,13 +2039,18 @@ class TagLab(QMainWindow):
 
             img_source_index = self.comboboxSourceImage.currentIndex()
             img_target_index = self.comboboxTargetImage.currentIndex()
-            self.project.addCorrespondence(img_source_index, img_target_index, sel1, sel2)
 
-            if self.compare_panel.correspondences is None:
-                self.compare_panel.setTable(self.project, img_source_index, img_target_index)
-            else:
-                corr = self.project.getImagePairCorrespondences(img_source_index, img_target_index)
+            # if the correspondences table does not exist a new one is created
+            corr = self.project.getImagePairCorrespondences(img_source_index, img_target_index)
+            if corr is None:
+                corr = self.project.createCorrespondencesTable(img_source_index, img_target_index)
+
+            self.project.addCorrespondences(corr, sel1, sel2)
+
+            if self.compare_panel.correspondences == corr:
                 self.compare_panel.updateTable(corr)
+            else:
+                self.compare_panel.setTable(self.project, img_source_index, img_target_index)
 
             # highlight the correspondences just added and show it by scroll
             if len(sel1) > 0:
@@ -2394,7 +2399,7 @@ class TagLab(QMainWindow):
         self.setBlobVisualization()
         self.updatePanels()
         if self.compare_panel.isVisible():
-                self.compare_panel.setTable(self.project, index1, index2)
+            self.compare_panel.setTable(self.project, index1, index2)
 
 
     @pyqtSlot(int)
@@ -2423,8 +2428,9 @@ class TagLab(QMainWindow):
         self.viewerplus2.setProject(self.project)
         self.viewerplus2.setImage(self.project.images[index2])
         self.setBlobVisualization()
+        self.updatePanels()
         if self.compare_panel.isVisible():
-                self.compare_panel.setTable(self.project, index1, index2)
+            self.compare_panel.setTable(self.project, index1, index2)
 
 
     @pyqtSlot()

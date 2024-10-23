@@ -735,40 +735,42 @@ class Project(QObject):
                 return img
         return None
 
+    def createCorrespondencesTable(self, img_source_idx, img_target_idx):
+
+        key = self.images[img_source_idx].id + "-" + self.images[img_target_idx].id
+        corr = Correspondences(self.images[img_source_idx], self.images[img_target_idx])
+
+        if self.correspondences is None:
+            self.correspondences = {}
+
+        self.correspondences[key] = corr
+
+        return corr
+
     def getImagePairCorrespondences(self, img_source_idx, img_target_idx):
         """
-        Given two image indices returns the current correspondences table or create a new one.
-        Note that the correspondences between the image A and the image B are not the same of
-        the image B and A.
+        Given two image indices returns the current correspondences table is returned.
+        Note that the correspondences between the image A and the image B are not the same of the image B and A.
         """
         key = self.images[img_source_idx].id + "-" + self.images[img_target_idx].id
 
-        if self.correspondences is None:
-            # create a new correspondences table
-            self.correspondences = {}
-            self.correspondences[key] = Correspondences(self.images[img_source_idx], self.images[img_target_idx])
-        else:
-            corr = self.correspondences.get(key)
-            if corr is None:
-                # create a new correspondences table
-                self.correspondences[key] = Correspondences(self.images[img_source_idx], self.images[img_target_idx])
+        corresp_table = None
+        if self.correspondences :
+            corresp_table = self.correspondences.get(key)
 
-        return self.correspondences[key]
+        return corresp_table
 
-    def addCorrespondence(self, img_source_idx, img_target_idx, blobs1, blobs2):
+    def addCorrespondences(self, corresp_table, blobs1, blobs2):
         """
         Add a correspondences to the current ones.
         """
-
-        corr = self.getImagePairCorrespondences(img_source_idx, img_target_idx)
 
         blobs = blobs1 + blobs2
         for blob in blobs:
             blob.correspondence_to_check = False
 
-        corr.set(blobs1, blobs2)
+        corresp_table.set(blobs1, blobs2)
         self.genet.updateGenets()
-        # corr.updateGenets() moved to genet
 
     def updatePixelSizeInCorrespondences(self, image, flag_surface_area):
 
@@ -802,7 +804,12 @@ class Project(QObject):
             blob_c.area = blob_c.area * conversion2 * conversion2 / 100
             blobs2.append(blob_c)
 
-        corr = self.getImagePairCorrespondences(img_source_idx, img_target_idx)
+        # create correspondences table
+        if self.correspondences is None:
+            self.correspondences = {}
+
+        corr = self.createCorrespondencesTable(img_source_idx, img_target_idx)
+
         corr.autoMatch(blobs1, blobs2)
         #corr.autoMatchM(blobs1, blobs2)   # autoMatchM resolves matching taking into account live/dead specimens (class name constraint is removed)
 

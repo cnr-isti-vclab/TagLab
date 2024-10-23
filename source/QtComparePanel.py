@@ -357,51 +357,66 @@ height: 0px;
 
     def setTable(self, project, img1idx, img2idx):
 
-        self.project = project
-        self.img1idx = img1idx
-        self.img2idx = img2idx
-        self.sourceImg = project.images[img1idx]
-        self.targetImg = project.images[img2idx]
+        corresp_table = project.getImagePairCorrespondences(img1idx, img2idx)
 
-        self.correspondences = project.getImagePairCorrespondences(img1idx, img2idx)
-        #FIXME this is pretty expensive, can we avoid it?
-        self.correspondences.updateAreas()
-        self.data = self.correspondences.data
+        if corresp_table:
 
-        if self.model is None:
+            self.correspondences = corresp_table
+            self.project = project
+            self.img1idx = img1idx
+            self.img2idx = img2idx
+            self.sourceImg = project.images[img1idx]
+            self.targetImg = project.images[img2idx]
 
-            self.model = TableModel(self.correspondences)
-            self.sortfilter = QSortFilterProxyModel(self)
-            self.sortfilter.setSourceModel(self.model)
-            self.sortfilter.setSortRole(Qt.UserRole)
-            self.data_table.setModel(self.sortfilter)
+            #FIXME this is pretty expensive, can we avoid it?
+            self.correspondences.updateAreas()
+            self.data = self.correspondences.data
 
-            self.data_table.setVisible(False)
-            self.data_table.verticalHeader().hide()
-            self.data_table.resizeColumnsToContents()
-            self.data_table.setVisible(True)
+            if self.model is None:
 
-            self.data_table.setItemDelegateForColumn(5, self.combodelegate1)
-            self.data_table.setItemDelegateForColumn(6, self.combodelegate2)
-            self.data_table.setEditTriggers(QAbstractItemView.DoubleClicked)
+                self.model = TableModel(self.correspondences)
+                self.sortfilter = QSortFilterProxyModel(self)
+                self.sortfilter.setSourceModel(self.model)
+                self.sortfilter.setSortRole(Qt.UserRole)
+                self.data_table.setModel(self.sortfilter)
 
-            self.data_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
-            self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
-            self.data_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
-            self.data_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.Fixed)
-            self.data_table.setColumnWidth(3, 80)
-            self.data_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.Fixed)
-            self.data_table.setColumnWidth(4, 80)
-            self.data_table.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeToContents)
-            self.data_table.horizontalHeader().setSectionResizeMode(6, QHeaderView.ResizeToContents)
-            self.data_table.horizontalHeader().setSectionResizeMode(7, QHeaderView.ResizeToContents)
+                self.data_table.setVisible(False)
+                self.data_table.verticalHeader().hide()
+                self.data_table.resizeColumnsToContents()
+                self.data_table.setVisible(True)
 
-            self.data_table.horizontalHeader().showSection(0)
-            self.data_table.update()
+                self.data_table.setItemDelegateForColumn(5, self.combodelegate1)
+                self.data_table.setItemDelegateForColumn(6, self.combodelegate2)
+                self.data_table.setEditTriggers(QAbstractItemView.DoubleClicked)
 
-            self.data_table.setStyleSheet("QHeaderView::section { background-color: rgb(40,40,40) }")
+                self.data_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+                self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+                self.data_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
+                self.data_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.Fixed)
+                self.data_table.setColumnWidth(3, 80)
+                self.data_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.Fixed)
+                self.data_table.setColumnWidth(4, 80)
+                self.data_table.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeToContents)
+                self.data_table.horizontalHeader().setSectionResizeMode(6, QHeaderView.ResizeToContents)
+                self.data_table.horizontalHeader().setSectionResizeMode(7, QHeaderView.ResizeToContents)
+
+                self.data_table.horizontalHeader().showSection(0)
+                self.data_table.update()
+
+                self.data_table.setStyleSheet("QHeaderView::section { background-color: rgb(40,40,40) }")
+            else:
+                self.updateTable(self.correspondences)
+
         else:
-            self.updateTable(self.correspondences)
+
+            self.correspondences = None
+            self.project = None
+            self.img1idx = -1
+            self.img2idx = -1
+            self.sourceImg = None
+            self.targetImg = None
+
+            self.clear()
 
     def clear(self):
 
