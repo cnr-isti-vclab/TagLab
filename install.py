@@ -2,6 +2,7 @@ import platform
 import sys
 import os
 import subprocess
+from subprocess import STDOUT, check_call
 from pathlib import Path
 
 osused = platform.system()
@@ -146,8 +147,6 @@ if osused == 'Linux' or osused == 'Darwin':
     if rc != 0:
         if osused == 'Linux':
             print('Trying to install libxcb-xinerama0...')
-            from subprocess import STDOUT, check_call
-            import os
             try:
                 check_call(['sudo', 'apt-get', 'install', '-y', 'libxcb-xinerama0'],
                    stdout=open(os.devnull, 'wb'), stderr=STDOUT)
@@ -166,8 +165,6 @@ if osused == 'Linux' or osused == 'Darwin':
             rc = result[0]
         elif osused == 'Darwin':
             print('Trying to install gdal...')
-            from subprocess import STDOUT, check_call
-            import os
             try:
                 check_call(['brew', 'install', 'gdal'],
                         stdout=open(os.devnull, 'wb'), stderr=STDOUT)
@@ -188,12 +185,10 @@ gdal_package = 'gdal==' + gdal_version
 # build coraline
 if osused != 'Windows':
     try:
-        out = subprocess.check_output(['cmake', '--version'])
+        out = subprocess.getstatusoutput(['cmake', '--version'])
         if out[0] != 0:
             if osused == 'Darwin':
                 print('Trying to install cmake...')
-                from subprocess import STDOUT, check_call
-                import os
                 try:
                     check_call(['brew', 'install', 'cmake'],
                                stdout=open(os.devnull, 'wb'), stderr=STDOUT)
@@ -202,8 +197,6 @@ if osused != 'Windows':
                                     'this script.\nInstallation aborted.')
             elif osused == 'Linux':
                 print('Trying to install cmake...')
-                from subprocess import STDOUT, check_call
-                import os
                 try:
                     check_call(['sudo', 'apt-get', 'install', '-y', 'cmake'],
                                stdout=open(os.devnull, 'wb'), stderr=STDOUT)
@@ -211,6 +204,11 @@ if osused != 'Windows':
                     raise Exception('Impossible to install cmake. Please install manually cmake before running '
                                     'this script.\nInstallation aborted.')
         os.chdir('coraline')
+
+        # if exists CMakeCache.txt file, remove it
+        if os.path.exists('CMakeCache.txt'):
+            os.remove('CMakeCache.txt')
+
         result = subprocess.getstatusoutput('cmake .')
         if result[0] == 0:
             result = subprocess.getstatusoutput('make')
