@@ -17,20 +17,20 @@ class Tool(QObject):
         self.log[str].connect(self.viewerplus.logMessage)
         self.blobInfo[Blob, str].connect(self.viewerplus.logBlobInfo)
 
-    def leftPressed(self, x, y, mods = None):
+    # virtual methods
+    def leftPressed(self, x, y, mods=None):
         pass
-
-    def rightPressed(self, x, y, mods = None):
+    def rightPressed(self, x, y, mods=None):
         pass
-
     def mouseMove(self, x, y, mods=None):
         pass
-
     def leftReleased(self, x, y):
         pass
-
+    def rightReleased(self, x, y):
+        pass
     def wheel(self, delta):
         pass
-
     def apply(self):
+        pass
+    def reset(self):
         pass
