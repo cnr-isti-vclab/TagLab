@@ -17,7 +17,7 @@ class Freehand(Tool):
         if self.edit_points.startDrawing(x, y):
             self.log.emit("[TOOL][FREEHAND] DRAWING starts..")
 
-    def mouseMove(self, x, y):
+    def mouseMove(self, x, y, mods=None):
         self.edit_points.move(x, y)
 
     def apply(self):

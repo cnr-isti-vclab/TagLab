@@ -120,7 +120,7 @@ class SAMInteractive(Tool):
         self.width = new_width
         self.height = new_height
 
-    def handlemouseMove(self, x, y):
+    def handlemouseMove(self, x, y, mods=None):
         # print(f"Mouse moved to ({x}, {y})")
         if self.rect_item is not None:
             self.rect_item.setPos(x- self.width//2, y - self.height//2)

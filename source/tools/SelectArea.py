@@ -49,7 +49,7 @@ class SelectArea(Tool):
         self.drawArea()
         self.released.emit()
 
-    def mouseMove(self, x, y):
+    def mouseMove(self, x, y, mods=None):
 
         if len(self.pick_points.points) > 0:
             self.pick_points.points[1][0] = x

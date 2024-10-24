@@ -13,11 +13,11 @@ class Cut(Tool):
         message += "<p>SPACEBAR to divide the region into two</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
-    def leftPressed(self, x, y, mods):
+    def leftPressed(self, x, y, mods=None):
         if self.edit_points.startDrawing(x, y):
             self.log.emit("[TOOL][CUT] DRAWING starts..")
 
-    def mouseMove(self, x, y):
+    def mouseMove(self, x, y, mods=None):
         self.edit_points.move(x, y)
 
     def apply(self):
@@ -25,7 +25,6 @@ class Cut(Tool):
         if len(points) == 0:
             self.infoMessage.emit("You need to draw something for this operation.")
             return
-
 
         if len(self.viewerplus.selected_blobs) != 1:
             self.infoMessage.emit("A single selected area is required.")

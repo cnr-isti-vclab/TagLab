@@ -47,13 +47,13 @@ class Watershed(Tool):
         self.currentLabel = label
         self.scribbles.setLabel(self.currentLabel)
 
-    def leftPressed(self, x, y, mods):
+    def leftPressed(self, x, y, mods=None):
         if mods == Qt.ShiftModifier:
             self.scribbles.setLabel(self.currentLabel)
             if self.scribbles.startDrawing(x, y):
                 self.log.emit("[TOOL][WATERSHED] DRAWING POSITIVE starts..")
 
-    def rightPressed(self, x, y, mods):
+    def rightPressed(self, x, y, mods=None):
         if mods == Qt.ShiftModifier:
             fakeLabel = Label("Dummy", "Dummy", fill=[255, 255, 255], border=[0, 0, 0]) 
             self.scribbles.setLabel(fakeLabel)
@@ -61,7 +61,7 @@ class Watershed(Tool):
                 self.log.emit("[TOOL][WATERSHED] DRAWING NEGATIVE starts..")
 
 
-    def mouseMove(self, x, y, mods):
+    def mouseMove(self, x, y, mods=None):
         if mods &  Qt.ShiftModifier:
             self.scribbles.move(x, y)
 

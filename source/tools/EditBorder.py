@@ -16,7 +16,7 @@ class EditBorder(Tool):
         if self.edit_points.startDrawing(x, y):
             self.log.emit("[TOOL][EDITBORDER] DRAWING starts..")
 
-    def mouseMove(self, x, y):
+    def mouseMove(self, x, y, mods=None):
         self.edit_points.move(x, y)
 
     def apply(self):

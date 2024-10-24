@@ -149,22 +149,19 @@ class Tools(QObject):
         else:
             self.tool_mess.emit(None)
             
-    def leftPressed(self, x, y, mods = None):
+    def leftPressed(self, x, y, mods=None):
         if self.tool == "MOVE":
             return
         self.tools[self.tool].leftPressed(x, y, mods)
 
-    def rightPressed(self, x, y, mods = None):
+    def rightPressed(self, x, y, mods=None):
         if self.tool == "RITM" or self.tool == "SAMINTERACTIVE" or self.tool == "WATERSHED":
             self.tools[self.tool].rightPressed(x, y, mods)
 
-    def mouseMove(self, x, y, mods = None):
+    def mouseMove(self, x, y, mods=None):
         if self.tool == "MOVE":
             return
-        if self.tool == "WATERSHED":# or self.tool == "FREEHAND" or self.tool == "EDITBORDER":
-            self.tools[self.tool].mouseMove(x, y, mods)
-        else:
-            self.tools[self.tool].mouseMove(x, y)
+        self.tools[self.tool].mouseMove(x, y, mods)
 
     def leftReleased(self, x, y):
         if self.tool == "MOVE":

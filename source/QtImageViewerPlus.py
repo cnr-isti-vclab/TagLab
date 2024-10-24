@@ -1055,10 +1055,7 @@ class QtImageViewerPlus(QtImageViewer):
             if Qt.ControlModifier & QApplication.queryKeyboardModifiers():
                 return
             
-            if self.tools.tool == "WATERSHED":# or self.tools.tool == "FREEHAND" or self.tools.tool == "EDITBORDER":
-                self.tools.mouseMove(x, y, mods)
-            else:
-                self.tools.mouseMove(x, y)
+            self.tools.mouseMove(x, y, mods)
 
         elif event.buttons() == Qt.RightButton:
             (x, y) = self.clipScenePos(scenePos)
