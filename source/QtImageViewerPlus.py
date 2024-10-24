@@ -1644,6 +1644,10 @@ class QtImageViewerPlus(QtImageViewer):
             self.tools.tools["SAMINTERACTIVE"].undo_click()
             return
         
+        if self.tools.tool == "FOURCLICKS":
+            self.tools.tools["FOURCLICKS"].undo_click()
+            return
+
         if self.tools.tool in ["FREEHAND", "CUT", "EDITBORDER"]:
             if self.tools.tools["EDITBORDER"].edit_points.undo():
                 return

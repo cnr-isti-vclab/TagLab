@@ -53,6 +53,9 @@ class FourClicks(Tool):
             self.segmentWithDeepExtreme()
             self.pick_points.reset()
 
+    def undo_click(self):
+        self.pick_points.removeLastPoint()
+
     def prepareForDeepExtreme(self, four_points, pad_max):
         """
         Crop the image map (QImage) and return a NUMPY array containing it.
