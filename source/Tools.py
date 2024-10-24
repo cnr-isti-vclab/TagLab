@@ -90,63 +90,57 @@ class Tools(QObject):
         self.resetTools()      
         self.tool = tool
 
-    def resetTools(self):
 
+    def resetTools(self):
+        # reset all helpers
         self.pick_points.reset()
         self.edit_points.reset()
         self.scribbles.reset()
         self.corrective_points.reset()
-
+        # invalidate scene
         self.scene.invalidate(self.scene.sceneRect())
-
+        # reset each tool
         self.tools["FOURCLICKS"].reset()
         self.tools["RITM"].reset()
         self.tools["SELECTAREA"].reset()
-
+        self.tools["WATERSHED"].reset()
         if self.SAM_is_available:
             self.tools["SAM"].reset()
             self.tools["SAMINTERACTIVE"].reset()
-
+        # stop autoclassification
         if self.tool == "AUTOCLASS":
             self.corals_classifier.stopProcessing()
-
-        if self.tool == "WATERSHED":
-            self.current_blobs = []
-
         # close crack widget
         if self.viewerplus.crackWidget is not None:
             self.viewerplus.crackWidget.close()
         self.viewerplus.crackWidget = None
-
         # close bricks widget
         if self.viewerplus.bricksWidget is not None:
             self.viewerplus.bricksWidget.close()
         self.viewerplus.bricksWidget = None
 
+
     def enableSAM(self):
         if self.SAM_is_available:
             self.tools["SAM"].enable(True)
-
     def disableSAM(self):
         if self.SAM_is_available:
             self.tools["SAM"].enable(False)
 
+
     def enableSAMInteractive(self):
         if self.SAM_is_available:
             self.tools["SAMINTERACTIVE"].enable(True)
-
     def disableSAMInteractive(self):
         if self.SAM_is_available:
             self.tools["SAMINTERACTIVE"].enable(False)
     
+
     def enableRITM(self):
-        # if self.SAM_is_available:
             self.tools["RITM"].enable(True)
-
-
     def disableRITM(self):
-        # if self.SAM_is_available:
             self.tools["RITM"].enable(False)
+      
       
     #method to select tools for tool message window      
     def toolMessage(self):

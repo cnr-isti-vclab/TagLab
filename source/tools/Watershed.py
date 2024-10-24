@@ -266,3 +266,7 @@ class Watershed(Tool):
                 self.viewerplus.addBlob(blob)
             
         self.viewerplus.resetTools()
+
+    def reset(self):
+        self.scribbles.reset()
+        self.current_blobs = []
