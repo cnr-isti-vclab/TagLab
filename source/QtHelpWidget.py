@@ -30,7 +30,7 @@ class QtHelpWidget(QWidget):
     def __init__(self, parent=None):
         super(QtHelpWidget, self).__init__(parent)
 
-        self.setStyleSheet("background-color: rgba(40,40,40); color: white")
+        self.setStyleSheet("background-color: rgba(40,40,40,100); color: white")
 
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.setMinimumWidth(680)
