@@ -43,8 +43,10 @@ class Ritm(Tool):
         message = "<p><i>Segment by using positive/negative points</i></p>"
         message += "<p>Zoom in to frame the work-area containing the target instance.<br/> Try keeping this work-area small, to save memory and execution time.</p>"
         message += "<p>- SHIFT + LMB to add a point inside the instance (positive)<br/>\
-                    - SHIFT + RMB to add a point outside the instance (negative)</p>"
+                    - SHIFT + RMB to add a point outside the instance (negative)<br/>\
+                    - CTRL + Z to remove last point</p>"
         message += "<p>SPACEBAR to confirm segmentation</p>"
+
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
     def checkPointPosition(self, x, y):

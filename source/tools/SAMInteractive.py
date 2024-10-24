@@ -44,7 +44,7 @@ class SAMInteractive(Tool):
         self.shadow_item = None
 
         # Model Type (b, l, or h)
-        self.sam_model_type = 'vit_h'
+        self.sam_model_type = 'vit_b'
         # Mask score threshold
         self.score_threshold = 0.70
         # Labels for fore/background
@@ -83,8 +83,10 @@ class SAMInteractive(Tool):
                     - SHIFT + LMB to set the area</p>"
         message += "<p><b>STEP 2</b>: Create a region by adding positive/negative points:<br/>\
                     - SHIFT + LMB to add a point inside the object (positive)<br/>\
-                    - SHIFT + RMB to add a point outside the object (negative)</p>"
+                    - SHIFT + RMB to add a point outside the object (negative)<br/>\
+                    - CTRL + Z to remove last point</p>"
         message += "SPACEBAR to confirm segmentation</p>"
+
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
 
@@ -144,11 +146,14 @@ class SAMInteractive(Tool):
         elif nclicks == 0:
             # reset ALL
             self.pick_points.reset()
-            last_blob = self.prev_blobs.pop()
-            self.undrawBlob(last_blob)
-            self.labels.pop()
-            self.current_blobs.pop()
-            # return   
+            print(f"nclicks is {nclicks}")
+            print(f"length of prev_blobs is {len(self.prev_blobs)}")
+            if len(self.prev_blobs) > 0:
+                last_blob = self.prev_blobs.pop()
+                self.undrawBlob(last_blob)
+                self.labels.pop()
+                self.current_blobs.pop()
+            return   
 
     def setWorkArea(self):
         """
