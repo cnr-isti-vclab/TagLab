@@ -44,7 +44,7 @@ class SAMInteractive(Tool):
         self.shadow_item = None
 
         # Model Type (b, l, or h)
-        self.sam_model_type = 'vit_b'
+        self.sam_model_type = 'vit_h'
         # Mask score threshold
         self.score_threshold = 0.70
         # Labels for fore/background
