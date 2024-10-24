@@ -544,34 +544,34 @@ def removeOverlapping(created, sam_blobs, annotated = False):
                                         created.remove(blobO)
 
     
-    #for SAM_new
-    def cropQImage(qimage_map, bbox):
+#for SAM
+def cropQImage(qimage_map, bbox):
 
-        left = bbox[1]
-        top = bbox[0]
-        h = bbox[3]
-        w = bbox[2]
+    left = bbox[1]
+    top = bbox[0]
+    h = bbox[3]
+    w = bbox[2]
 
-        qimage_cropped = qimage_map.copy(left, top, w, h)
+    qimage_cropped = qimage_map.copy(left, top, w, h)
 
-        return qimage_cropped
+    return qimage_cropped
 
-    def qimageToNumpyArray(qimg):
+def qimageToNumpyArray(qimg):
 
-        w = qimg.width()
-        h = qimg.height()
+    w = qimg.width()
+    h = qimg.height()
 
-        fmt = qimg.format()
-        assert (fmt == QImage.Format_RGB32)
+    fmt = qimg.format()
+    assert (fmt == QImage.Format_RGB32)
 
-        arr = np.zeros((h, w, 3), dtype=np.uint8)
+    arr = np.zeros((h, w, 3), dtype=np.uint8)
 
-        bits = qimg.bits()
-        bits.setsize(int(h * w * 4))
-        arrtemp = np.frombuffer(bits, np.uint8).copy()
-        arrtemp = np.reshape(arrtemp, [h, w, 4])
-        arr[:, :, 0] = arrtemp[:, :, 2]
-        arr[:, :, 1] = arrtemp[:, :, 1]
-        arr[:, :, 2] = arrtemp[:, :, 0]
+    bits = qimg.bits()
+    bits.setsize(int(h * w * 4))
+    arrtemp = np.frombuffer(bits, np.uint8).copy()
+    arrtemp = np.reshape(arrtemp, [h, w, 4])
+    arr[:, :, 0] = arrtemp[:, :, 2]
+    arr[:, :, 1] = arrtemp[:, :, 1]
+    arr[:, :, 2] = arrtemp[:, :, 0]
 
-        return arr
+    return arr

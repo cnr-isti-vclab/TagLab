@@ -58,24 +58,18 @@ class QtMessageWidget(QWidget):
         super(QtMessageWidget, self).close()
 
     def enterEvent(self, event):
-        self.setAttribute(Qt.WA_TransparentForMouseEvents, True)
         self.setWindowOpacity(0.0)
-    #     print("i'm in enter")
+        # print("i'm in enter")
     
-    #     super(QtMessageWidget, self).enterEvent(event)
-
     def leaveEvent(self, event):
         # print("i'm in leave")
-        self.setAttribute(Qt.WA_TransparentForMouseEvents, True)
         self.setWindowOpacity(0.6)
-
-    #     super(QtMessageWidget, self).leaveEvent(event)
 
     # def mousePressEvent(self, event):
     # #     # Ignore mouse events so clicks pass through the window
     #     print("i'm in mousePress")
         
-    #     # event.ignore()
+        # event.ignore()
     #     # self.setAttribute(Qt.WA_TransparentForMouseEvents, True)
     #     self.setAttribute(Qt.WA_TransparentForMouseEvents, True)
 

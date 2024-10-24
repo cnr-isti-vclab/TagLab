@@ -391,6 +391,9 @@ class Sam(Tool):
         self.removeEdgeBlobs()
         print(f"self.created_blob len post removeEdge is {len(self.created_blobs)}")
         print(f"Number of yet annotated blobs is {len(self.viewerplus.image.annotations.seg_blobs)}")
+
+        genutils.removeOverlapping(self.created_blobs, self.viewerplus.image.annotations.seg_blobs, annotated = True)
+
         print(f"self.created_blob len post annotated is {len(self.created_blobs)}")
             
         for blob in self.created_blobs:
