@@ -362,7 +362,7 @@ class TagLab(QMainWindow):
         # tool info messages
         # self.viewerplus.tools.tools["SAM"].tool_message.connect(self.message)
         # self.viewerplus.tools.tools["WATERSHED"].tool_message.connect(self.message)
-        self.viewerplus.tools.tol_mess.connect(self.message)    
+        self.viewerplus.tools.tool_mess.connect(self.message)    
 
         # last activated viewerplus: redirect here context menu commands and keyboard commands
         self.activeviewer = None

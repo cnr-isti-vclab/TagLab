@@ -35,7 +35,7 @@ from source.tools.SAMInteractive import SAMInteractive
 
 # class Tools(object):
 class Tools(QObject):    
-    tol_mess = pyqtSignal(str)
+    tool_mess = pyqtSignal(str)
     
     def __init__(self, viewerplus):
         
@@ -78,13 +78,11 @@ class Tools(QObject):
             "MATCH": Match(self.viewerplus),
             "SELECTAREA": SelectArea(self.viewerplus, self.pick_points),
             "RITM": Ritm(self.viewerplus, self.corrective_points),
-            # "SAMINTERACTIVE": SamInteractive(self.viewerplus, self.corrective_points),
-            # "SAM_NEW" : Sam_new(self.viewerplus)
         }
-
-        if self.SAM_is_available:
+        if self.SAM_is_available:   #just if SAM is available
             self.tools["SAM"] = Sam(self.viewerplus, self.pick_points)
             self.tools["SAMINTERACTIVE"] = SAMInteractive(self.viewerplus, self.pick_points)
+
 
     def setTool(self, tool):
         self.resetTools()      
@@ -141,17 +139,16 @@ class Tools(QObject):
     def disableRITM(self):
             self.tools["RITM"].enable(False)
       
-      
+
     #method to select tools for tool message window      
     def toolMessage(self):
         if self.tool == "WATERSHED" or self.tool == "SAM" or self.tool == "RITM"\
               or self.tool == "FREEHAND" or self.tool == "BRICKS" or self.tool == "FOURCLICKS" or\
               self.tool == "EDITBORDER" or self.tool == "CUT" or self.tool == "ASSIGN" or self.tool == "SAMINTERACTIVE":
-            self.tol_mess.emit(self.tools[self.tool].tool_message)
+            self.tool_mess.emit(self.tools[self.tool].tool_message)
         else:
-            self.tol_mess.emit(None)
+            self.tool_mess.emit(None)
             
-
     def leftPressed(self, x, y, mods = None):
         if self.tool == "MOVE":
             return
