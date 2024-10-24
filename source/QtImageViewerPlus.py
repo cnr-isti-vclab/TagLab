@@ -819,13 +819,7 @@ class QtImageViewerPlus(QtImageViewer):
 
         if tool == "WATERSHED":
             self.tools.tools["WATERSHED"].scribbles.setScaleFactor(self.zoom_factor)
-
-            label_info = self.project.labels.get(self.active_label)
-            if label_info is not None:
-                self.tools.tools["WATERSHED"].setActiveLabel(label_info)
-            else:
-                lbl = Label("", "", fill=[0, 0, 0])
-                self.tools.tools["WATERSHED"].setActiveLabel(lbl)
+            self.tools.tools["WATERSHED"].setActiveLabel(self.project.labels.get(self.active_label if (self.active_label is not None) else "Empty"))
 
         if tool == "FOURCLICKS" or tool == "PLACEANNPOINT":
             self.showCrossair = True
