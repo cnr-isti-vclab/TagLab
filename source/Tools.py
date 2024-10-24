@@ -155,8 +155,9 @@ class Tools(QObject):
         self.tools[self.tool].leftPressed(x, y, mods)
 
     def rightPressed(self, x, y, mods=None):
-        if self.tool == "RITM" or self.tool == "SAMINTERACTIVE" or self.tool == "WATERSHED":
-            self.tools[self.tool].rightPressed(x, y, mods)
+        if self.tool == "MOVE":
+            return        
+        self.tools[self.tool].rightPressed(x, y, mods)
 
     def mouseMove(self, x, y, mods=None):
         if self.tool == "MOVE":
@@ -171,8 +172,7 @@ class Tools(QObject):
     def rightReleased(self, x, y):
         if self.tool == "MOVE":
             return
-        if self.tool == "WATERSHED":
-            self.tools[self.tool].rightReleased(x, y)
+        self.tools[self.tool].rightReleased(x, y)
 
     def wheel(self, delta):
         if self.tool == "MOVE":
