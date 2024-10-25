@@ -736,6 +736,19 @@ class Project(QObject):
         return corr
 
 
+    def updateTableKey(self, oldname, newname):
+
+        keys = self.correspondences.copy()
+        if self.correspondences:
+            for key in keys:
+                if key.find(oldname)>=0:
+                    table = self.correspondences[key]
+                    newkey = key.replace(oldname, newname)
+                    self.correspondences[newkey] = table
+                    del self.correspondences[key]
+        else:
+            return
+
 
     def getImagePairCorrespondences(self, img_source_idx, img_target_idx):
         """

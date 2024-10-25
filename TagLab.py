@@ -2140,15 +2140,15 @@ class TagLab(QMainWindow):
         img_source_index = self.comboboxSourceImage.currentIndex()
         img_target_index = self.comboboxTargetImage.currentIndex()
         corr = self.project.getImagePairCorrespondences(img_source_index, img_target_index)
-        index = self.compare_panel.sortfilter.mapToSource(indexes[0]);
-        row = corr.data.iloc[index.row()]
-        blob1id = row['Blob1']
-        blob2id = row['Blob2']
-
-        if blob1id >= 0:
-            self.showCluster(blob1id, is_source=True, center=True)
-        else:
-            self.showCluster(blob2id, is_source=False, center=True)
+        if corr:
+            index = self.compare_panel.sortfilter.mapToSource(indexes[0]);
+            row = corr.data.iloc[index.row()]
+            blob1id = row['Blob1']
+            blob2id = row['Blob2']
+            if blob1id >= 0:
+                self.showCluster(blob1id, is_source=True, center=True)
+            else:
+                self.showCluster(blob2id, is_source=False, center=True)
 
 
     @pyqtSlot()
@@ -2166,17 +2166,17 @@ class TagLab(QMainWindow):
         img_source_index = self.comboboxSourceImage.currentIndex()
         img_target_index = self.comboboxTargetImage.currentIndex()
         corr = self.project.getImagePairCorrespondences(img_source_index, img_target_index)
-        corr.deleteCluster(indexes)
-        self.project.updateGenets()
+        if corr:
+            corr.deleteCluster(indexes)
+            self.project.updateGenets()
 
-        self.viewerplus.resetSelection()
-        self.viewerplus2.resetSelection()
+            self.viewerplus.resetSelection()
+            self.viewerplus2.resetSelection()
 
-        if self.compare_panel.correspondences is not None:
-            self.compare_panel.setTable(self.project, img_source_index, img_target_index)
-        else:
-            self.compare_panel.updateTable(corr)
-
+            if self.compare_panel.correspondences is not None:
+                self.compare_panel.setTable(self.project, img_source_index, img_target_index)
+            else:
+                self.compare_panel.updateTable(corr)
 
 
     @pyqtSlot()
@@ -2207,42 +2207,46 @@ class TagLab(QMainWindow):
 
     def showCluster(self, blobid, is_source, center):
 
-        corr = self.project.getImagePairCorrespondences(self.comboboxSourceImage.currentIndex(),
+          corr = self.project.getImagePairCorrespondences(self.comboboxSourceImage.currentIndex(),
                                                         self.comboboxTargetImage.currentIndex())
-        sourcecluster, targetcluster, rows = corr.findCluster(blobid, is_source)
+          if corr:
 
-        self.viewerplus.resetSelection()
+            sourcecluster, targetcluster, rows = corr.findCluster(blobid, is_source)
 
-        sourceboxes = []
-        for id in sourcecluster:
-            blob = self.viewerplus.annotations.blobById(id)
-            sourceboxes.append(blob.bbox)
-            self.viewerplus.addToSelectedList(blob)
+            self.viewerplus.resetSelection()
 
-        scale = self.viewerplus.px_to_mm
-        if center is True and len(sourceboxes) > 0:
-            box = Mask.jointBox(sourceboxes)
-            x = box[1] + box[2] / 2
-            y = box[0] + box[3] / 2
-            self.viewerplus.centerOn(x, y)
+            sourceboxes = []
+            for id in sourcecluster:
+                blob = self.viewerplus.annotations.blobById(id)
+                sourceboxes.append(blob.bbox)
+                self.viewerplus.addToSelectedList(blob)
 
-        self.viewerplus2.resetSelection()
+            scale = self.viewerplus.px_to_mm
+            if center is True and len(sourceboxes) > 0:
+                box = Mask.jointBox(sourceboxes)
+                x = box[1] + box[2] / 2
+                y = box[0] + box[3] / 2
+                self.viewerplus.centerOn(x, y)
 
-        targetboxes = []
-        for id in targetcluster:
-            blob = self.viewerplus2.annotations.blobById(id)
-            targetboxes.append(blob.bbox)
-            self.viewerplus2.addToSelectedList(blob)
+            self.viewerplus2.resetSelection()
 
-        scale = self.viewerplus2.px_to_mm
-        if center is True and len(targetboxes) > 0:
-            box = Mask.jointBox(sourceboxes + targetboxes)
-            x = box[1] + box[2] / 2
-            y = box[0] + box[3] / 2
-            self.viewerplus2.centerOn(x, y)
+            targetboxes = []
+            for id in targetcluster:
+                blob = self.viewerplus2.annotations.blobById(id)
+                targetboxes.append(blob.bbox)
+                self.viewerplus2.addToSelectedList(blob)
+
+            scale = self.viewerplus2.px_to_mm
+            if center is True and len(targetboxes) > 0:
+                box = Mask.jointBox(sourceboxes + targetboxes)
+                x = box[1] + box[2] / 2
+                y = box[0] + box[3] / 2
+                self.viewerplus2.centerOn(x, y)
 
 
-        self.compare_panel.selectRows(rows)
+            self.compare_panel.selectRows(rows)
+
+
 
     @pyqtSlot(str)
     def updateVisibleMatches(self, type):
@@ -2259,14 +2263,15 @@ class TagLab(QMainWindow):
             img_source_index = self.comboboxSourceImage.currentIndex()
             img_target_index = self.comboboxTargetImage.currentIndex()
             correspondences = self.project.getImagePairCorrespondences(img_source_index, img_target_index)
-            data = correspondences.data
-            selection = data.loc[data["Action"] == type]
-            sourceblobs = selection['Blob1'].tolist()
-            targetblobs = selection['Blob2'].tolist()
-            for b in self.viewerplus.annotations.seg_blobs:
-                self.viewerplus.setBlobVisible(b, b.id in sourceblobs)
-            for b in self.viewerplus2.annotations.seg_blobs:
-                self.viewerplus2.setBlobVisible(b, b.id in targetblobs)
+            if correspondences:
+                data = correspondences.data
+                selection = data.loc[data["Action"] == type]
+                sourceblobs = selection['Blob1'].tolist()
+                targetblobs = selection['Blob2'].tolist()
+                for b in self.viewerplus.annotations.seg_blobs:
+                    self.viewerplus.setBlobVisible(b, b.id in sourceblobs)
+                for b in self.viewerplus2.annotations.seg_blobs:
+                    self.viewerplus2.setBlobVisible(b, b.id in targetblobs)
 
     @pyqtSlot(str)
     def updateAreaMode(self, type):
@@ -2281,12 +2286,13 @@ class TagLab(QMainWindow):
             img_target_index = self.comboboxTargetImage.currentIndex()
             correspondences = self.project.getImagePairCorrespondences(img_source_index, img_target_index)
 
-            if type == "surface area":
-                correspondences.updateAreas(use_surface_area=True)
-            else:
-                correspondences.updateAreas(use_surface_area=False)
+            if correspondences:
+                if type == "surface area":
+                    correspondences.updateAreas(use_surface_area=True)
+                else:
+                    correspondences.updateAreas(use_surface_area=False)
 
-            self.compare_panel.data_table.update()
+                self.compare_panel.data_table.update()
 
 
     @pyqtSlot()
@@ -3988,6 +3994,7 @@ class TagLab(QMainWindow):
 
         if flag_image_name_changed:
             self.layers_widget.updateLayerName(image.name)
+            self.project.updateTableKey(image_old_name, image.name)
 
         # update the comboboxes to select the images
         self.updateImageSelectionMenu()
