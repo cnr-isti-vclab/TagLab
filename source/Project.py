@@ -777,8 +777,8 @@ class Project(QObject):
 
     def updatePixelSizeInCorrespondences(self, image, flag_surface_area):
 
-        correspondences = self.findCorrespondences(image)
-        for corr in correspondences:
+        corresp_tables = self.findCorrespTables(image)
+        for corr in corresp_tables:
             corr.updateAreas(use_surface_area=flag_surface_area)
 
     def computeCorrespondences(self, img_source_idx, img_target_idx):
