@@ -40,6 +40,15 @@ class QtLayersWidget(QTreeWidget):
 
         self.current_images = None
 
+    def updateLayerName(self, newname):
+
+        it = QTreeWidgetItemIterator(self)
+        while it.value():
+            item = it.value()
+            if item.type == 'image' and item.image.name == newname:
+                item.setText(0, newname)
+            it += 1
+
     def setProject(self, project):
 
         if self.current_images == project.images:
