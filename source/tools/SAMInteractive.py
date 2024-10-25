@@ -132,22 +132,26 @@ class SAMInteractive(Tool):
 
     
     def undo_click(self):
-        self.pick_points.removeLastPoint()
         nclicks = self.pick_points.nclicks()
+        self.pick_points.removeLastPoint()
+        
         if nclicks > 0:
-            last_blob = self.prev_blobs.pop()
             self.labels.pop()
-            self.undrawBlob(last_blob)
-            pre_blob = self.prev_blobs[-1]
-            self.current_blobs.pop()
-            self.current_blobs.append(pre_blob)
-            self.drawBlob(pre_blob)
+            if len(self.prev_blobs) > 0:
+                last_blob = self.prev_blobs.pop()
+                self.undrawBlob(last_blob)
+                self.current_blobs.pop()
+                if len(self.prev_blobs) > 0:
+                    pre_blob = self.prev_blobs[-1]
+                    self.current_blobs.append(pre_blob)
+                    self.drawBlob(pre_blob)
+
 
         elif nclicks == 0:
             # reset ALL
             self.pick_points.reset()
-            print(f"nclicks is {nclicks}")
-            print(f"length of prev_blobs is {len(self.prev_blobs)}")
+            # print(f"nclicks is {nclicks}")
+            # print(f"length of prev_blobs is {len(self.prev_blobs)}")
             if len(self.prev_blobs) > 0:
                 last_blob = self.prev_blobs.pop()
                 self.undrawBlob(last_blob)
