@@ -3899,6 +3899,7 @@ class TagLab(QMainWindow):
         dir = QDir(self.taglab_dir)
 
         flag_pixel_size_changed = False
+        flag_image_name_changed = False
 
         try:
             image = self.image2update
@@ -3906,6 +3907,10 @@ class TagLab(QMainWindow):
             if image.map_px_to_mm_factor != self.mapWidget.data["px_to_mm"]:
                 image.map_px_to_mm_factor = self.mapWidget.data["px_to_mm"]
                 flag_pixel_size_changed = True
+
+            if image.name != self.mapWidget.data['name']:
+                flag_image_name_changed = True
+                image_old_name = image.name
 
             image.name = self.mapWidget.data['name']
             image.id = self.mapWidget.data['name']
@@ -3915,7 +3920,6 @@ class TagLab(QMainWindow):
 
             rgb_channel = image.getChannel("RGB")
             dem_channel = image.getChannel("DEM")
-
             rgb_changed = rgb_channel.filename != rgb_filename
 
             if dem_channel is not None:
@@ -3982,12 +3986,12 @@ class TagLab(QMainWindow):
             # update panel info
             self.updatePanelInfo(self.blob_with_info_displayed)
 
+        if flag_image_name_changed:
+            self.layers_widget.updateLayerName(image.name)
+
         # update the comboboxes to select the images
         self.updateImageSelectionMenu()
-        self.layers_widget.setProject(self.project);
-
         self.mapWidget.close()
-
 
     @pyqtSlot(Image)
     def showImage(self, image):

@@ -373,18 +373,6 @@ class Project(QObject):
         brush = QBrush(QColor(color[0], color[1], color[2], 200))
         return brush
 
-    # def classBrushFromNamePoint(self, annpoint):
-    #     brush = QBrush()
-    #     if annpoint.class_name == "Empty":
-    #         return brush
-    #
-    #     if not annpoint.class_name in self.labels:
-    #         print("Missing label for " + annpoint.class_name + ". Creating one.")
-    #         self.labels[annpoint.class_name] = Label(annpoint.class_name, annpoint.class_name, fill = [255, 0, 0])
-    #
-    #     color = self.labels[annpoint.class_name].fill
-    #     brush = QBrush(QColor(color[0], color[1], color[2], 200))
-    #     return brush
 
     def isLabelVisible(self, id):
         if not id in self.labels:
@@ -746,6 +734,8 @@ class Project(QObject):
         self.correspondences[key] = corr
 
         return corr
+
+
 
     def getImagePairCorrespondences(self, img_source_idx, img_target_idx):
         """
