@@ -141,7 +141,7 @@ class MainWindow(QMainWindow):
 class TagLab(QMainWindow):
     
 
-    def __init__(self, parent=None):
+    def __init__(self, screen_size, parent=None):
         super(TagLab, self).__init__(parent)
 
         ##### CUSTOM STYLE #####
@@ -572,26 +572,36 @@ class TagLab(QMainWindow):
         self.viewerplus2.viewUpdated[QRectF].connect(self.mapviewer.drawOverlayImage)
 
 
-        #DOCK
+        # DOCK
+        panels_size = int(screen_size.width() * 0.25)
+        if panels_size > 900:
+            panels_size = 900
+        if panels_size < 500:
+            panels_size = 500
+
         self.layersdock = QDockWidget("Layers", self)
         self.layersdock.setWidget(self.layers_widget)
+        self.layers_widget.setMinimumWidth(panels_size)
         self.layers_widget.setStyleSheet("padding: 0px")
         self.layersdock.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Preferred)
 
-
         self.labelsdock = QDockWidget("Labels", self)
+        self.groupbox_labels.setMinimumWidth(panels_size)
         self.labelsdock.setWidget(self.groupbox_labels)
         self.groupbox_labels.setStyleSheet("padding: 0px")
 
         self.datadock = QDockWidget("Data Table", self)
+        self.groupbox_comparison.setMinimumWidth(panels_size)
         self.datadock.setWidget(self.groupbox_comparison)
         self.groupbox_comparison.setStyleSheet("padding: 0px")
 
         self.blobdock = QDockWidget("Info and Attributes", self)
+        self.groupbox_blobpanel.setMinimumWidth(panels_size)
         self.blobdock.setWidget(self.groupbox_blobpanel)
 
-
         self.mapdock = QDockWidget("Map Preview", self)
+        self.mapviewer.preferred = panels_size
+        self.mapviewer.setMinimumWidth(panels_size)
         self.mapdock.setWidget(self.mapviewer)
         self.mapdock.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.MinimumExpanding)
 
@@ -5667,8 +5677,11 @@ if __name__ == '__main__':
         font = QFont('Roboto')
         app.setFont(font)
 
+    # get the scren size
+    screen_size = app.primaryScreen().size()
+
     # Create the inspection tool
-    tool = TagLab()
+    tool = TagLab(screen_size)
     # create the main window - TagLab widget is the central widget
     mw = MainWindow()
     title = tool.TAGLAB_VERSION
