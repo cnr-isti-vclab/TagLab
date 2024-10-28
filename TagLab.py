@@ -1086,6 +1086,10 @@ class TagLab(QMainWindow):
         helpAct.setStatusTip("Help")
         helpAct.triggered.connect(self.help)
 
+        goToDocumentationAct = QAction("Learn TagLab", self)
+        goToDocumentationAct.setStatusTip("Link to the documentation web page")
+        goToDocumentationAct.triggered.connect(self.goToDocumentation)
+
         repAct = QAction("Report Issues", self)
         repAct.setStatusTip("Report Issues")
         repAct.triggered.connect(self.report)
@@ -1302,6 +1306,7 @@ class TagLab(QMainWindow):
         self.helpmenu = menubar.addMenu("&Help")
         self.helpmenu.setStyleSheet(styleMenu)
         self.helpmenu.addAction(helpAct)
+        self.helpmenu.addAction(goToDocumentationAct)
         self.helpmenu.addAction(repAct)
         self.helpmenu.addAction(aboutAct)
 
@@ -4153,6 +4158,15 @@ class TagLab(QMainWindow):
         self.help_widget.setWindowModality(Qt.WindowModal)
         self.help_widget.show()
         self.help_widget.setWindowOpacity(0.7)
+
+    @pyqtSlot()
+    def goToDocumentation(self):
+
+        try:
+            import webbrowser
+            webbrowser.open_new('https://taglab.isti.cnr.it/docs')
+        except:
+            print("Fail to launch your web browser. Go to the following link: 'https://taglab.isti.cnr.it/docs'")
         
     #slot for the message_widget
     @pyqtSlot(str)
