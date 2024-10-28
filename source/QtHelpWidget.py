@@ -33,7 +33,7 @@ class QtHelpWidget(QWidget):
         self.setStyleSheet("background-color: rgba(40,40,40,100); color: white")
 
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        self.setMinimumWidth(680)
+        self.setMinimumWidth(440)
         self.setMinimumHeight(440)
         self.setAutoFillBackground(False)
 
