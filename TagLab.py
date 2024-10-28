@@ -573,7 +573,7 @@ class TagLab(QMainWindow):
 
 
         # DOCK
-        panels_size = int(screen_size.width() * 0.25)
+        panels_size = int(screen_size.width() * 0.22)
         if panels_size > 900:
             panels_size = 900
         if panels_size < 500:
