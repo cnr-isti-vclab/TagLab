@@ -735,6 +735,14 @@ class Project(QObject):
 
         return corr
 
+    def clearComparisonTable(self,key):
+
+        if self.correspondences.get(key):
+          del self.correspondences[key]
+
+        else:
+            return
+
 
     def updateTableKey(self, oldname, newname):
 

@@ -1258,6 +1258,11 @@ class TagLab(QMainWindow):
         exportMatchLabels.setStatusTip("Export the current matches")
         exportMatchLabels.triggered.connect(self.exportMatches)
 
+        clearComparisonTable = QAction("Clear Comparison Table", self)
+        clearComparisonTable.setStatusTip("EClear Comparison Table")
+        clearComparisonTable.triggered.connect(self.clearComparisonTable)
+
+
         computeGenets = QAction("Compute Genets", self)
         computeGenets.setStatusTip("Compute genet information.")
         computeGenets.triggered.connect(self.computeGenets)
@@ -1282,6 +1287,9 @@ class TagLab(QMainWindow):
         self.comparemenu.addAction(computeGenets);
         self.comparemenu.addAction(exportGenetSVG)
         self.comparemenu.addAction(exportGenetCSV)
+
+        self.comparemenu.addSeparator()
+        self.comparemenu.addAction(clearComparisonTable)
 
 
         self.viewmenu = menubar.addMenu("&View")
@@ -1584,6 +1592,30 @@ class TagLab(QMainWindow):
         self.project.computeCorrespondences(img_source_index, img_target_index)
         self.compare_panel.setTable(self.project, img_source_index, img_target_index)
         self.setTool("MATCH")
+
+    @pyqtSlot()
+    def clearComparisonTable(self):
+
+        if len(self.project.images) < 2:
+            return
+
+        if self.split_screen_flag is False:
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("Please, enable Split Screen and select the source and the target image(!)")
+            msgBox.exec()
+            return
+
+        img_source_index = self.comboboxSourceImage.currentIndex()
+        img_target_index = self.comboboxTargetImage.currentIndex()
+
+        if img_source_index == img_target_index:
+            return
+
+        key = self.project.images[img_source_index].id + "-" + self.project.images[img_target_index].id
+        self.project.clearComparisonTable(key)
+        self.compare_panel.clear()
+
 
 
     @pyqtSlot()
