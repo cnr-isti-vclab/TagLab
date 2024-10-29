@@ -1,10 +1,10 @@
 {
-  "Name": "scripps",
-  "Description": "These color codes are the ones typically used by the Scripps Institution of Oceanography (UCSD)",
+  "Name": "masonry",
+  "Description": "sample class dictionary for historical walls elements",
   "Labels": [
     {
-      "id": "Modern_A",
-      "name": "Modern_A",
+      "id": "Modern A",
+      "name": "Modern A",
       "description": null,
       "fill": [
         252,
@@ -19,8 +19,8 @@
       "visible": true
     },
     {
-      "id": "Modern_B",
-      "name": "Modern_B",
+      "id": "Modern B",
+      "name": "Modern B",
       "description": null,
       "fill": [
         143,
@@ -35,8 +35,8 @@
       "visible": true
     },
     {
-      "id": "Flora_A",
-      "name": "Flora_A",
+      "id": "Vegetation A",
+      "name": "Vegetation A",
       "description": null,
       "fill": [
         138,
@@ -51,8 +51,8 @@
       "visible": true
     },
     {
-      "id": "Flora_B",
-      "name": "Flora_B",
+      "id": "Vegetation B",
+      "name": "Vegetation B",
       "description": null,
       "fill": [
         78,
@@ -67,8 +67,8 @@
       "visible": true
     },
     {
-      "id": "Unknown_A",
-      "name": "Unknown_A",
+      "id": "Unknown A",
+      "name": "Unknown A",
       "description": null,
       "fill": [
         136,
@@ -83,8 +83,8 @@
       "visible": true
     },
     {
-      "id": "Unknown_B",
-      "name": "Unknown_B",
+      "id": "Unknown B",
+      "name": "Unknown B",
       "description": null,
       "fill": [
         46,
@@ -99,8 +99,8 @@
       "visible": true
     },
     {
-      "id": "Buca pontatia_A",
-      "name": "Buca pontatia_A",
+      "id": "Putlog Hole A",
+      "name": "Putlog Hole A",
       "description": null,
       "fill": [
         239,
@@ -115,8 +115,8 @@
       "visible": true
     },
     {
-      "id": "Buca Pontaia_B",
-      "name": "Buca Pontaia_B",
+      "id": "Putlog Hole B",
+      "name": "Putlog Hole B",
       "description": null,
       "fill": [
         164,
@@ -131,8 +131,8 @@
       "visible": true
     },
     {
-      "id": "Pietra_A",
-      "name": "Pietra_A",
+      "id": "Stone A",
+      "name": "Stone A",
       "description": null,
       "fill": [
         32,
@@ -147,8 +147,8 @@
       "visible": true
     },
     {
-      "id": "Pietra_B",
-      "name": "Pietra_B",
+      "id": "Stone B",
+      "name": "Stone B",
       "description": null,
       "fill": [
         52,
@@ -163,8 +163,8 @@
       "visible": true
     },
     {
-      "id": "Pietra_C",
-      "name": "Pietra_C",
+      "id": "Stone C",
+      "name": "Stone C",
       "description": null,
       "fill": [
         114,
@@ -179,8 +179,8 @@
       "visible": true
     },
     {
-      "id": "Mattoni_A",
-      "name": "Mattoni_A",
+      "id": "Bricks A",
+      "name": "Bricks A",
       "description": null,
       "fill": [
         252,
@@ -195,8 +195,8 @@
       "visible": true
     },
     {
-      "id": "Mattoni_B",
-      "name": "Mattoni_B",
+      "id": "Bricks B",
+      "name": "Bricks B",
       "description": null,
       "fill": [
         237,
@@ -211,8 +211,8 @@
       "visible": true
     },
     {
-      "id": "Mattoni_C",
-      "name": "Mattoni_C",
+      "id": "Bricks C",
+      "name": "Bricks C",
       "description": null,
       "fill": [
         196,
@@ -227,8 +227,8 @@
       "visible": true
     },
     {
-      "id": "Mixed_A",
-      "name": "Mixed_A",
+      "id": "Mixed A",
+      "name": "Mixed A",
       "description": null,
       "fill": [
         92,
@@ -243,8 +243,8 @@
       "visible": true
     },
     {
-      "id": "Mixed_B",
-      "name": "Mixed_B",
+      "id": "Mixed B",
+      "name": "Mixed B",
       "description": null,
       "fill": [
         117,
@@ -259,8 +259,8 @@
       "visible": true
     },
     {
-      "id": "Mixed_C",
-      "name": "Mixed_C",
+      "id": "Mixed C",
+      "name": "Mixed C",
       "description": null,
       "fill": [
         173,
@@ -275,8 +275,8 @@
       "visible": true
     },
     {
-      "id": "Struttura_A",
-      "name": "Struttura_A",
+      "id": "Structure A",
+      "name": "Structure A",
       "description": null,
       "fill": [
         62,
@@ -291,8 +291,8 @@
       "visible": true
     },
     {
-      "id": "Struttura_B",
-      "name": "Struttura_B",
+      "id": "Structure B",
+      "name": "Structure B",
       "description": null,
       "fill": [
         64,
@@ -307,8 +307,8 @@
       "visible": true
     },
     {
-      "id": "Struttura_C",
-      "name": "Struttura_C",
+      "id": "Structure C",
+      "name": "Structure C",
       "description": null,
       "fill": [
         21,
