@@ -235,13 +235,13 @@ class Sam(Tool):
             models_dir = "models/"
             network_name = os.path.join(models_dir, sam_checkpoint)
 
-            # if not torch.cuda.is_available():
-            #     print("CUDA NOT AVAILABLE!")
-            #     device = torch.device("cpu")
-            # else:
-            #     device = torch.device("cuda:0")
+            if not torch.cuda.is_available():
+                print("CUDA NOT AVAILABLE!")
+                device = torch.device("cpu")
+            else:
+                device = torch.device("cuda:0")
 
-            self.device = "cuda"
+            self.device = device
             self.sam_net = sam_model_registry[model_type](checkpoint=network_name)
             self.sam_net.to(device=self.device)
 
@@ -413,5 +413,3 @@ class Sam(Tool):
                 self.viewerplus.scene.removeItem(self.rect_item)
             self.rect_item = None
             # self.center_item.setVisible(False)
-       
-       
