@@ -2,177 +2,178 @@ import platform
 import sys
 import os
 import subprocess
+from subprocess import STDOUT, check_call
 from pathlib import Path
-import importlib.util as importutil
-from os import path
-import urllib.request
 
 osused = platform.system()
 if osused != 'Linux' and osused != 'Windows' and osused != 'Darwin':
     raise Exception("Operative System not supported")
 
 # check python version
-if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and (sys.version_info[1] < 8 or sys.version_info[1] > 10)):
-    raise Exception("Python " + sys.version_info[0] + "." + sys.version_info[1] + " not supported. Please see https://github.com/cnr-isti-vclab/TagLab/wiki/Install-TagLab")
+if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and (sys.version_info[1] != 11)):
+    raise Exception("Python " + str(sys.version_info[0]) + "." + str(sys.version_info[1]) + " not supported. Please see https://github.com/cnr-isti-vclab/TagLab/wiki/Install-TagLab")
 
-# manage thorch
-something_wrong_with_nvcc = False
-flag_install_pythorch_cpu = False
-nvcc_version = ''
-torch_package = 'torch'
-torchvision_package = 'torchvision'
+# manage torch
+
+# define a dictionary that, for each compute platform, contains the corresponding torch and torchvision version
+# the key is the compute platform used (cuda version, rocm or cpu), the value is a list of arguments to be passed 
+# to pip install
+
+torch_install_dict = None
+
+win_torch_install_dict = {
+    '11.6': ['torch==1.13.1+cu116', 'torchvision==0.14.1+cu116', '--extra-index-url' + 'https://download.pytorch.org/whl/cu116'],
+    '11.8': ['torch==2.5', 'torchvision==0.20', '--index-url', 'https://download.pytorch.org/whl/cu118'],
+    '12.1': ['torch==2.5', 'torchvision==0.20', '--index-url', 'https://download.pytorch.org/whl/cu121'],
+    '12.4': ['torch==2.5', 'torchvision==0.20', '--index-url', 'https://download.pytorch.org/whl/cu124'],
+    'cpu' : ['torch==2.5', 'torchvision==0.20'],
+}
+
+lin_torch_install_dict = {
+    '11.6': ['torch==1.13.1+cu116', 'torchvision==0.14.1+cu116', '--extra-index-url' + 'https://download.pytorch.org/whl/cu116'],
+    '11.8': ['torch==2.5', 'torchvision==0.20', '--index-url', 'https://download.pytorch.org/whl/cu118'],
+    '12.1': ['torch==2.5', 'torchvision==0.20', '--index-url', 'https://download.pytorch.org/whl/cu121'],
+    '12.4': ['torch==2.5', 'torchvision==0.20'],
+    'cpu' : ['torch==2.5', 'torchvision==0.20', '--index-url', 'https://download.pytorch.org/whl/cpu'],
+    'rocm': ['torch==2.5', 'torchvision==0.20', '--index-url', 'https://download.pytorch.org/whl/rocm6.2'],
+}
+
+mac_torch_install_dict = {
+    'cpu' : ['torch==2.5', 'torchvision==0.20'],
+}
+
+# supported cuda versions by torch
+torch_cuda_versions = ['12.4', '12.1', '11.8', '11.6']
+
+if osused == 'Windows':
+    torch_install_dict = win_torch_install_dict
+elif osused == 'Linux':
+    torch_install_dict = lin_torch_install_dict
+elif osused == 'Darwin':
+    torch_install_dict = mac_torch_install_dict
+
+something_wrong_with_cuda = False
+flag_install_pytorch_cpu = False
+flag_install_SAM = False
+torch_package = ''
+torchvision_package = ''
 torch_extra_argument1 = ''
 torch_extra_argument2 = ''
 
 # if the user wants to install cpu torch
-if len(sys.argv)==2 and sys.argv[1]=='cpu':
-    flag_install_pythorch_cpu = True
+if len(sys.argv)>=2:
+    # if sys.argv contains an argument 'cpu'
+    if 'cpu' in sys.argv:
+        flag_install_pytorch_cpu = True
+    if 'SAM' in sys.argv:
+        flag_install_SAM = True
 
-# get nvcc version
 
-if osused == 'Darwin':
-    flag_install_pythorch_cpu = True
-    print('NVCC not supported on MacOS. Installing cpu version automatically...')
-elif flag_install_pythorch_cpu == False:
-    result = subprocess.getstatusoutput('nvcc --version')
+# checking supported compute platform (cuda, cpu or rocm)
+
+use_cpu = flag_install_pytorch_cpu
+use_cuda = False
+use_rocm = False
+
+# cuda version (in case nvidia-smi is available)
+cuda_version = ''
+
+if use_cpu == False:
+    result = subprocess.getstatusoutput('nvidia-smi')
     output = result[1]
     rc = result[0]
     if rc == 0:
-        pos = output.find('release')
-        cont = True
+        pos = output.find('CUDA Version:')
         if pos >= 0:
-            pos += 8
-            nvcc_version = output[pos:pos+4]
-            print('Found NVCC version: ' + nvcc_version)
+            pos += 13
+            cuda_version = output[pos:pos+6]
+            print('Found CUDA version: ' + cuda_version)
+
+            # get the float number of the cuda version
+            n_cuda_version = float(cuda_version)
+
+            if n_cuda_version >= float(torch_cuda_versions[-1]):
+                use_cuda = True
+            else:
+                print('CUDA version not supported. Installing CPU version automatically...')
+                use_cpu = True
         else:
-            raise Exception('Could not read NVCC version.\nInstallation aborted.')
-    else:
-        print('Impossible to run "nvcc --version" command. CUDA seems to be not installed.')
-        something_wrong_with_nvcc = True # remember that we had issues on finding nvcc
+            print('Could not read CUDA version.\n')
+
+    if osused == 'Linux':
+        result = subprocess.getstatusoutput('rocminfo')
+        output = result[1]
+        rc = result[0]
+        if rc == 0:
+            # if the output contains "is loaded"
+            if output.find('is loaded') >= 0:
+                use_rocm = True
+                print('ROCM found.')
+    
+    if use_cuda == False and use_rocm == False and use_cpu == False:
+        print('No supported compute platform found. Installing CPU version automatically...')
 
 
-    # get nvcc version
-    if '9.2' in nvcc_version:
-        nvcc_version = '9.2'
-        print('Torch 1.7.1 for CUDA 9.2')
-        torch_package += '==1.7.1+cu92'
-        torchvision_package += '==0.8.2+cu92'
-        torch_extra_argument1 = '-f'
-        torch_extra_argument2 = 'https://download.pytorch.org/whl/torch_stable.html'
-    elif nvcc_version == '10.1':
-        print('Torch 1.7.1 for CUDA 10.1')
-        torch_package += '==1.7.1+cu101'
-        torchvision_package += '==0.8.2+cu101'
-        torch_extra_argument1 = '-f'
-        torch_extra_argument2 = 'https://download.pytorch.org/whl/torch_stable.html'
-    elif nvcc_version == '10.2':
-        print('Torch 1.11.0 for CUDA 10.2')
-        torch_package += '==1.11.0+cu102'
-        torchvision_package += '==0.12.0+cu102'
-        torch_extra_argument1 = '--extra-index-url'
-        torch_extra_argument2 = 'https://download.pytorch.org/whl/cu102'
-    elif '11.0' in nvcc_version:
-        print('Torch 1.7.1 for CUDA 11.0')
-        torch_package += '==1.7.1+cu110'
-        torchvision_package += '0.8.2+cu110'
-        torch_extra_argument1 = '-f'
-        torch_extra_argument2 = 'https://download.pytorch.org/whl/torch_stable.html'
-    elif '11.1' in nvcc_version:
-        print('Torch 1.8.0 for CUDA 11.1')
-        torch_package += '==1.8.0+cu111'
-        torchvision_package += '==0.9.0+cu111'
-        torch_extra_argument1 = '-f'
-        torch_extra_argument2 = 'https://download.pytorch.org/whl/torch_stable.html'
-    elif '11.3' in nvcc_version:
-        print('Torch 1.12.1 for CUDA 11.3')
-        torch_package += '==1.12.1+cu113'
-        torchvision_package += '==0.13.1+cu113'
-        torch_extra_argument1 = '--extra-index-url'
-        torch_extra_argument2 = 'https://download.pytorch.org/whl/cu113'
-    elif '11.6' in nvcc_version:
-        print('Torch 1.13.1 for CUDA 11.6')
-        torch_package += '==1.13.1+cu116'
-        torchvision_package += '==0.14.1+cu116'
-        torch_extra_argument1 = '--extra-index-url'
-        torch_extra_argument2 = 'https://download.pytorch.org/whl/cu116'
-    elif '11.7' in nvcc_version:
-        print('Torch 1.13.1 for CUDA 11.7')
-        torch_package += '==1.13.1+cu117'
-        torchvision_package += '==0.14.1+cu117'
-        torch_extra_argument1 = '--extra-index-url'
-        torch_extra_argument2 = 'https://download.pytorch.org/whl/cu117'
-    elif something_wrong_with_nvcc==False:
-        # nvcc is installed, but some version that is not supported by torch
-        print('nvcc version installed not supported by pytorch!!')
-        something_wrong_with_nvcc = True # remember that we had issues on finding nvcc
+torch_compute_platform = 'cpu'
 
-    # if the user tried to run the installer but there were issues on finding a supported
-    if something_wrong_with_nvcc == True and flag_install_pythorch_cpu == False:
-        ans = input('Something is wrong with NVCC. Do you want to install the CPU version of pythorch? [Y/n]')
-        if ans == "Y":
-            flag_install_pythorch_cpu = True
-        else:
-            raise Exception('Installation aborted. Install a proper NVCC version or set the pythorch CPU version.')
+if use_rocm == True:
+    torch_compute_platform = 'rocm'
+    print ('Using Torch with ROCm support.')
+elif use_cuda == True:
+    for version in torch_cuda_versions:
+        n_cuda_version = float(cuda_version)
+        if n_cuda_version >= float(version):
+            print ('Using Torch with CUDA version: ' + version)
+            torch_compute_platform = version
+            break
+else:
+    print('Using Torch in CPU version.')
 
 
-# somewhere before, this flag has been set to True and the user choose to install the cpu torch version
-if flag_install_pythorch_cpu==True:
-    print('Torch will be installed in its CPU version.')
-    if osused != 'Darwin': # for macos, the DEFAULT is cpu, therefore we don't need the extra arguments
-        torch_extra_argument1 = '--extra-index-url'
-        torch_extra_argument2 = 'https://download.pytorch.org/whl/cpu'
+torch_package = torch_install_dict[torch_compute_platform][0]
+torchvision_package = torch_install_dict[torch_compute_platform][1]
+if len(torch_install_dict[torch_compute_platform]) > 2:
+    torch_extra_argument1 = torch_install_dict[torch_compute_platform][2]
+    torch_extra_argument2 = torch_install_dict[torch_compute_platform][3]
+
 
 # manage gdal
 gdal_version = ''
 
-if osused == 'Linux':
+if osused == 'Linux' or osused == 'Darwin':
     result = subprocess.getstatusoutput('gdal-config --version')
     output = result[1]
     rc = result[0]
     if rc != 0:
-        print('Trying to install libgdal-dev...')
-        from subprocess import STDOUT, check_call
-        import os
-        try:
-            check_call(['sudo', 'apt-get', 'install', '-y', 'libgdal-dev'],
-                       stdout=open(os.devnull, 'wb'), stderr=STDOUT)
-        except:
-            raise Exception('Impossible to install libgdal-dev. Please install manually libgdal-dev before running '
-                            'this script.\nInstallation aborted.')
-        result = subprocess.getstatusoutput('gdal-config --version')
-        output = result[1]
-        rc = result[0]
-    if rc == 0:
-        gdal_version = output
-        print('GDAL version installed: ' + output)
-    else:
-        raise Exception('Impossible to access to gdal-config binary.\nInstallation aborted.')
-    print('Trying to install libxcb-xinerama0...')
-    from subprocess import STDOUT, check_call
-    import os
-    try:
-        check_call(['sudo', 'apt-get', 'install', '-y', 'libxcb-xinerama0'],
+        if osused == 'Linux':
+            print('Trying to install libxcb-xinerama0...')
+            try:
+                check_call(['sudo', 'apt-get', 'install', '-y', 'libxcb-xinerama0'],
                    stdout=open(os.devnull, 'wb'), stderr=STDOUT)
-    except:
-        print('Impossible to install libxcb-xinerama0. If TagLab does not start, please install manually libxcb-xinerama0.')
+            except:
+                print('Impossible to install libxcb-xinerama0. If TagLab does not start, please install manually libxcb-xinerama0.')
 
-elif osused == 'Darwin':
-    result = subprocess.getstatusoutput('gdal-config --version')
-    output = result[1]
-    rc = result[0]
-    if rc != 0:
-        print('Trying to install gdal...')
-        from subprocess import STDOUT, check_call
-        import os
-        try:
-            check_call(['brew', 'install', 'gdal'],
-                       stdout=open(os.devnull, 'wb'), stderr=STDOUT)
-        except:
-            raise Exception('Impossible to install gdal through homebrew. Please install manually gdal before running '
-                            'this script.\nInstallation aborted.')
-        result = subprocess.getstatusoutput('gdal-config --version')
-        output = result[1]
-        rc = result[0]
+            print('Trying to install gdal...')
+            try:
+                check_call(['sudo', 'apt-get', 'install', '-y', 'libgdal-dev'],
+                        stdout=open(os.devnull, 'wb'), stderr=STDOUT)
+            except:
+                raise Exception('Impossible to install libgdal-dev. Please install manually libgdal-dev before running '
+                                'this script.\nInstallation aborted.')
+            result = subprocess.getstatusoutput('gdal-config --version')
+            output = result[1]
+            rc = result[0]
+        elif osused == 'Darwin':
+            print('Trying to install gdal...')
+            try:
+                check_call(['brew', 'install', 'gdal'],
+                        stdout=open(os.devnull, 'wb'), stderr=STDOUT)
+            except:
+                raise Exception('Impossible to install gdal through homebrew. Please install manually gdal before running '
+                                'this script.\nInstallation aborted.')
+            result = subprocess.getstatusoutput('gdal-config --version')
+            output = result[1]
+            rc = result[0]
     if rc == 0:
         gdal_version = output
         print('GDAL version installed: ' + output)
@@ -184,12 +185,10 @@ gdal_package = 'gdal==' + gdal_version
 # build coraline
 if osused != 'Windows':
     try:
-        out = subprocess.check_output(['cmake', '--version'])
+        out = subprocess.getstatusoutput(['cmake', '--version'])
         if out[0] != 0:
             if osused == 'Darwin':
                 print('Trying to install cmake...')
-                from subprocess import STDOUT, check_call
-                import os
                 try:
                     check_call(['brew', 'install', 'cmake'],
                                stdout=open(os.devnull, 'wb'), stderr=STDOUT)
@@ -198,8 +197,6 @@ if osused != 'Windows':
                                     'this script.\nInstallation aborted.')
             elif osused == 'Linux':
                 print('Trying to install cmake...')
-                from subprocess import STDOUT, check_call
-                import os
                 try:
                     check_call(['sudo', 'apt-get', 'install', '-y', 'cmake'],
                                stdout=open(os.devnull, 'wb'), stderr=STDOUT)
@@ -207,6 +204,11 @@ if osused != 'Windows':
                     raise Exception('Impossible to install cmake. Please install manually cmake before running '
                                     'this script.\nInstallation aborted.')
         os.chdir('coraline')
+
+        # if exists CMakeCache.txt file, remove it
+        if os.path.exists('CMakeCache.txt'):
+            os.remove('CMakeCache.txt')
+
         result = subprocess.getstatusoutput('cmake .')
         if result[0] == 0:
             result = subprocess.getstatusoutput('make')
@@ -232,8 +234,21 @@ install_requires = [
     'matplotlib',
     'albumentations',
     'shapely',
-    'pycocotools'
+    'pycocotools',
+    'qhoptim',
+
+    # CoralNet Toolbox
+    'Requests',
+    'beautifulsoup4',
+    'selenium',
+    'webdriver_manager',
+
+    #forcing numpy 1.24.2 version
+    'numpy==1.24.4',
 ]
+
+if flag_install_SAM:
+    install_requires.append('segment-anything')
 
 # if on windows, first install the msvc runtime
 if osused == 'Windows':
@@ -258,71 +273,43 @@ if osused != 'Windows':
     subprocess.check_call([sys.executable, "-m", "pip", "install", gdal_package])
     subprocess.check_call([sys.executable, "-m", "pip", "install", 'rasterio'])
 else:
-
-    base_url = 'http://taglab.isti.cnr.it/wheels/'
+    base_url = 'https://github.com/cgohlke/geospatial-wheels/releases/download/v2024.9.22/' # GDAL-3.9.2-cp310-cp310-win32.whl
     pythonversion = str(sys.version_info[0]) + str(sys.version_info[1])
     # compute rasterio and gdal urls download
-    rasterio_win_version = '1.2.10'
-    gdal_win_version = '3.4.3'
+    rasterio_win_version = '1.3.11'
+    gdal_win_version = '3.9.2'
     filename_gdal = 'gdal-' + gdal_win_version + '-cp' + pythonversion + '-cp' + pythonversion
-    filename_rasterio = 'rasterio-' + rasterio_win_version + '-cp' + pythonversion + '-cp' + pythonversion
+    filename_rasterio = 'rasterio-' + rasterio_win_version +'-cp' + pythonversion + '-cp' + pythonversion
     filename_gdal += '-win_amd64.whl'
     filename_rasterio += '-win_amd64.whl'
-    base_url_gdal = base_url + 'gdal/' + filename_gdal
-    base_url_rasterio = base_url + 'rasterio/' + filename_rasterio
+    base_url_gdal = base_url + filename_gdal
+    base_url_rastetio = base_url + filename_rasterio
 
-    rasterio_is_installed = importutil.find_spec("rasterio")
-    gdal_is_installed = importutil.find_spec("osgeo.gdal")
+    print('URL GDAL: ' + base_url_gdal)
 
-    if rasterio_is_installed is not None:
-        import rasterio
-        print("RASTERIO ",rasterio.__version__, " is installed. Version ", rasterio_win_version, " is required.")
-    else:
-        # retrieve rasterio from TagLab web site
-        print('GET RASTERIO FROM URL: ' + base_url_rasterio)
+    # download gdal and rasterio
+    from os import path
+    import urllib.request
 
-        this_directory = path.abspath(path.dirname(__file__))
-        try:
-            slib = 'Rasterio'
-            opener = urllib.request.build_opener()
-            opener.addheaders = [('User-agent', 'Mozilla/5.0')]
-            urllib.request.install_opener(opener)
-            urllib.request.urlretrieve(base_url_rasterio, this_directory + '/' + filename_rasterio)
-        except:
-            raise Exception("Cannot download " + slib + ".")
+    this_directory = path.abspath(path.dirname(__file__))
+    try:
+        slib = 'GDAL'
+        opener = urllib.request.build_opener()
+        opener.addheaders = [('User-agent', 'Mozilla/5.0')]
+        urllib.request.install_opener(opener)
+        urllib.request.urlretrieve(base_url_gdal, this_directory + '/' + filename_gdal)
+        slib = 'Rasterio'
+        urllib.request.urlretrieve(base_url_rastetio, this_directory + '/' + filename_rasterio)
+    except:
+        raise Exception("Cannot download " + slib + ".")
 
-        # install rasterio
-        subprocess.check_call([sys.executable, "-m", "pip", "install", filename_rasterio])
+    # install gdal and rasterio
+    subprocess.check_call([sys.executable, "-m", "pip", "install", filename_gdal])
+    subprocess.check_call([sys.executable, "-m", "pip", "install", filename_rasterio])
 
-        # delete wheel files
-        os.remove(this_directory + '/' + filename_rasterio)
-
-    if gdal_is_installed is not None:
-        import osgeo.gdal
-        print("GDAL ",osgeo.gdal.__version__, " is installed. Version ", gdal_win_version, " is required.")
-    else:
-        # retrieve GDAL from TagLab web site
-        print('GET GDAL FROM URL: ' + base_url_gdal)
-
-        # download gdal and rasterio
-        from os import path
-        import urllib.request
-
-        this_directory = path.abspath(path.dirname(__file__))
-        try:
-            slib = 'GDAL'
-            opener = urllib.request.build_opener()
-            opener.addheaders = [('User-agent', 'Mozilla/5.0')]
-            urllib.request.install_opener(opener)
-            urllib.request.urlretrieve(base_url_gdal, this_directory + '/' + filename_gdal)
-        except:
-            raise Exception("Cannot download " + slib + ".")
-
-        # install gdal
-        subprocess.check_call([sys.executable, "-m", "pip", "install", filename_gdal])
-
-        # delete wheel files
-        os.remove(this_directory + '/' + filename_gdal)
+    #delete wheel files
+    os.remove(this_directory + '/' + filename_gdal)
+    os.remove(this_directory + '/' + filename_rasterio)
 
 # check for other networks
 print('Downloading networks...')
@@ -332,6 +319,9 @@ import urllib.request
 this_directory = path.abspath(path.dirname(__file__))
 net_file_names = ['dextr_corals.pth', 'deeplab-resnet.pth.tar', 'ritm_corals.pth',
                   'pocillopora.net', 'porites.net', 'pocillopora_porite_montipora.net']
+
+if flag_install_SAM:
+    net_file_names.append('sam_vit_h_4b8939.pth')
 
 for net_name in net_file_names:
     filename_dextr_corals = 'dextr_corals.pth'
