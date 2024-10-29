@@ -1,0 +1,326 @@
+{
+  "Name": "masonry",
+  "Description": "sample class dictionary for historical walls elements",
+  "Labels": [
+    {
+      "id": "Modern A",
+      "name": "Modern A",
+      "description": null,
+      "fill": [
+        252,
+        175,
+        62
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Modern B",
+      "name": "Modern B",
+      "description": null,
+      "fill": [
+        143,
+        89,
+        2
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Vegetation A",
+      "name": "Vegetation A",
+      "description": null,
+      "fill": [
+        138,
+        226,
+        52
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Vegetation B",
+      "name": "Vegetation B",
+      "description": null,
+      "fill": [
+        78,
+        154,
+        6
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Unknown A",
+      "name": "Unknown A",
+      "description": null,
+      "fill": [
+        136,
+        138,
+        133
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Unknown B",
+      "name": "Unknown B",
+      "description": null,
+      "fill": [
+        46,
+        52,
+        54
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Putlog Hole A",
+      "name": "Putlog Hole A",
+      "description": null,
+      "fill": [
+        239,
+        41,
+        41
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Putlog Hole B",
+      "name": "Putlog Hole B",
+      "description": null,
+      "fill": [
+        164,
+        0,
+        0
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Stone A",
+      "name": "Stone A",
+      "description": null,
+      "fill": [
+        32,
+        74,
+        135
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Stone B",
+      "name": "Stone B",
+      "description": null,
+      "fill": [
+        52,
+        101,
+        164
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Stone C",
+      "name": "Stone C",
+      "description": null,
+      "fill": [
+        114,
+        159,
+        207
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Bricks A",
+      "name": "Bricks A",
+      "description": null,
+      "fill": [
+        252,
+        233,
+        79
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Bricks B",
+      "name": "Bricks B",
+      "description": null,
+      "fill": [
+        237,
+        212,
+        0
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Bricks C",
+      "name": "Bricks C",
+      "description": null,
+      "fill": [
+        196,
+        160,
+        0
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Mixed A",
+      "name": "Mixed A",
+      "description": null,
+      "fill": [
+        92,
+        53,
+        102
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Mixed B",
+      "name": "Mixed B",
+      "description": null,
+      "fill": [
+        117,
+        80,
+        123
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Mixed C",
+      "name": "Mixed C",
+      "description": null,
+      "fill": [
+        173,
+        127,
+        168
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Structure A",
+      "name": "Structure A",
+      "description": null,
+      "fill": [
+        62,
+        45,
+        178
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Structure B",
+      "name": "Structure B",
+      "description": null,
+      "fill": [
+        64,
+        114,
+        221
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    },
+    {
+      "id": "Structure C",
+      "name": "Structure C",
+      "description": null,
+      "fill": [
+        21,
+        79,
+        138
+      ],
+      "border": [
+        200,
+        200,
+        200
+      ],
+      "visible": true
+    }
+  ]
+}

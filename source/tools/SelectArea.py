@@ -17,6 +17,10 @@ class SelectArea(Tool):
         self.pick_points = pick_points
         self.scene = viewerplus.scene
         self.selected_area_rect = None
+        self.released_flag = True
+        self.working_area_style = QPen(Qt.green, 3, Qt.DashLine)
+        self.working_area_style.setCosmetic(True)
+        self.area_style = None
 
         self.image_width = 0
         self.image_height = 0
@@ -31,18 +35,21 @@ class SelectArea(Tool):
         points = self.pick_points.points
 
         # first point
-        if len(points) != 0:
+        if self.released_flag:
             self.pick_points.reset()
             self.selected_area_rect = None
+            self.released_flag = False
 
-        self.pick_points.points.append(np.array([x, y]))
-        self.pick_points.points.append(np.array([x, y]))
+            self.pick_points.points.append(np.array([x, y]))
+            self.pick_points.points.append(np.array([x, y]))
 
     def leftReleased(self, x, y):
 
+        self.released_flag = True
+        self.drawArea()
         self.released.emit()
 
-    def mouseMove(self, x, y):
+    def mouseMove(self, x, y, mods=None):
 
         if len(self.pick_points.points) > 0:
             self.pick_points.points[1][0] = x
@@ -94,9 +101,11 @@ class SelectArea(Tool):
     def setAreaStyle(self, style_name):
 
         if style_name == "WORKING":
-            self.area_style = self.working_area_style
+            self.area_style = QPen(Qt.green, 3, Qt.DashLine)
         elif style_name == "EXPORT_DATASET":
             self.area_style = QPen(Qt.magenta, 3, Qt.DashLine)
+        elif style_name == "SAMPLING_AREA":
+            self.area_style = QPen(Qt.yellow, 2, Qt.DashLine)
         elif style_name == "PREVIEW":
             self.area_style = QPen(Qt.white, 3, Qt.DotLine)
         else:
@@ -107,24 +116,28 @@ class SelectArea(Tool):
     @pyqtSlot(int, int, int, int)
     def setSelectionRectangle(self, x, y, w, h):
 
-        self.pick_points.reset()
+        self.pick_points.reset()          # markers are reset
+        self.selected_area_rect = None    # this is one of the marker, it is needed to ssign it None to be re-initialized
+
         self.pick_points.points.append(np.array([x, y]))
         self.pick_points.points.append(np.array([x + w, y + h]))
-        self.selected_area_rect = None
+
         self.drawArea()
 
     def drawArea(self):
 
-        x, y, w, h = self.fromPointsToArea()
+        if self.area_style is not None:
 
-        if self.selected_area_rect is None:
-            self.selected_area_rect = self.scene.addRect(x, y, w, h, self.area_style)
-            self.selected_area_rect.setZValue(6)
-            self.selected_area_rect.setVisible(True)
+            x, y, w, h = self.fromPointsToArea()
 
-            self.pick_points.markers.append(self.selected_area_rect)
-        else:
-            self.selected_area_rect.setRect(x, y, w, h)
+            if self.selected_area_rect is None:
+                self.selected_area_rect = self.scene.addRect(x, y, w, h, self.area_style)
+                self.selected_area_rect.setZValue(6)
+                self.selected_area_rect.setVisible(True)
+
+                self.pick_points.markers.append(self.selected_area_rect)
+            else:
+                self.selected_area_rect.setRect(x, y, w, h)
 
 
 

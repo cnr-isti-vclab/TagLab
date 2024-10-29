@@ -24,8 +24,8 @@ from PyQt5.QtWidgets import QWidget, QSizePolicy, QComboBox, QLabel, QTableView,
 from PyQt5.QtGui import QIcon, QColor, QPixmap, QPainter
 from pathlib import Path
 import os
-import pandas as pd
-from source.Blob import Blob
+from source.Point import Point
+from source.Image import Image
 
 path = Path(__file__).parent.absolute()
 imdir = str(path)
@@ -86,10 +86,12 @@ class TableModel(QAbstractTableModel):
             if index.column() == 3:
                txt = int(value)
 
-            # format floating point values
-            elif index.column() == 4:
-                txt = "{:.1f}".format(value)
+            if index.column() == 4:
+               txt = int(value)
 
+            # format floating point values
+            elif index.column() == 5:
+                txt = "{:.1f}".format(value)
 
             else:
                 txt = str(value)
@@ -106,6 +108,9 @@ class TableModel(QAbstractTableModel):
                 return str(value)
 
             if index.column() == 3:
+                return int(value)
+
+            if index.column() == 4:
                 return int(value)
 
             return float(value)
@@ -139,13 +144,12 @@ class TableModel(QAbstractTableModel):
                 return str(self._data.index[section])
 
 
-
 class QtLabelSortFilter(QSortFilterProxyModel):
     def __init__(self, parent=None):
         super(QtLabelSortFilter, self).__init__(parent)
 
     def sort(self, column, order):
-        if column == 3 or column == 4:
+        if column == 3 or column == 4 or column == 5:
             order = 1 - order
         super().sort(column, order)
 
@@ -197,7 +201,7 @@ height: 0px;
         self.setLayout(layout)
         self.labels = None
         self.project = None
-        self.activeImg = None
+        self.active_image = None
         self.active_label_name = "Empty"
 
         self.data_table.clicked.connect(self.clickedCell)
@@ -211,7 +215,7 @@ height: 0px;
             self.toggleVisibility(oldindex.row())
             self.data_table.update()
 
-        if index.column() == 1 or index.column() == 2:
+        if index.column() >= 1:# or index.column() == 2:
            oldindex = self.sortfilter.mapToSource(index)
            self.active_label_name = self.data['Class'][oldindex.row()]
            self.activeLabelChanged.emit(self.active_label_name)
@@ -227,42 +231,17 @@ height: 0px;
     def setLabels(self, project, img):
 
         if self.project is not None:
-          if self.labels == project.labels and self.activeImg == img:
+          if self.labels == project.labels and img == self.active_image:
              return
 
         self.labels = project.labels.copy()
 
         self.project = project
-        self.activeImg = img
+        self.active_image = img
         self.active_label_name = "Empty"
 
         # it works also if there is no active image (i.e. img is None)
-        self.data = project.create_labels_table(self.activeImg)
-
-        if self.activeImg is not None:
-
-            # establish UNIQUE connections, otherwise the slots will be called MORE THAN ONE TIME
-            # when the signal is emitted
-
-            try:
-                self.activeImg.annotations.blobUpdated[Blob,Blob].connect(self.updateBlob, type=Qt.UniqueConnection)
-            except:
-                pass
-
-            try:
-                self.activeImg.annotations.blobAdded[Blob].connect(self.addBlob, type=Qt.UniqueConnection)
-            except:
-                pass
-
-            try:
-                self.activeImg.annotations.blobRemoved[Blob].connect(self.removeBlob, type=Qt.UniqueConnection)
-            except:
-                pass
-
-            try:
-                self.activeImg.annotations.blobClassChanged[str,Blob].connect(self.updateBlobClass, type=Qt.UniqueConnection)
-            except:
-                pass
+        self.data = project.create_labels_table(self.active_image)
 
         if self.model is None:
             self.model = TableModel(self.data)
@@ -284,6 +263,7 @@ height: 0px;
             self.data_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
             self.data_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
             self.data_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeToContents)
+            self.data_table.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeToContents)
 
             self.data_table.horizontalHeader().showSection(0)
             self.data_table.update()
@@ -324,62 +304,98 @@ height: 0px;
             if row['Class'] == labelname:
                 self.data.loc[i, 'Color'] = str(newcolor)
 
-    @pyqtSlot(Blob, Blob)
-    def updateBlob(self, oldblob, newblob):
+    @pyqtSlot(Image, object, object)
+    def updateBlob(self, img, oldblob, newblob):
 
-        self.removeBlob(oldblob)
-        self.addBlob(newblob)
+        if img == self.active_image:  # if the signal arrives from another image that is not connected to this panel it is ignored
 
-    @pyqtSlot(str, Blob)
-    def updateBlobClass(self, old_class_name, newblob):
+            self.removeBlob(img, oldblob)
+            self.addBlob(img, newblob)
 
-        scale_factor = self.activeImg.pixelSize()
-        blobarea = round(newblob.area * (scale_factor) * (scale_factor) / 100, 2)
+    @pyqtSlot(Image, str, object)
+    def updateAnnClass(self, img, old_class_name, newblob_or_newpoint):
 
-        data_table_row = self.data[self.data['Class'] == old_class_name]
-        index = data_table_row.index
-        count = self.data['#'][index]
-        self.data.loc[index, '#'] = count - 1
-        newcover = self.data['Coverage'][index] - blobarea
-        self.data.loc[index, 'Coverage'] = newcover
+        if img == self.active_image: # if the signal arrives from another image that is not connected to this panel it is ignored
 
-        data_table_row = self.data[self.data['Class'] == newblob.class_name]
-        index = data_table_row.index
-        count = self.data['#'][index]
-        self.data.loc[index, '#'] = count + 1
-        newcover = self.data['Coverage'][index] + blobarea
-        self.data.loc[index, 'Coverage'] = newcover
+            if type(newblob_or_newpoint) == Point:
+                newpoint = newblob_or_newpoint
+                data_table_row = self.data[self.data['Class'] == old_class_name]
+                index = data_table_row.index
+                count = self.data['#P'][index]
+                self.data.loc[index, '#P'] = count - 1
 
-        self.data_table.update()
+                data_table_row = self.data[self.data['Class'] == newpoint.class_name]
+                index = data_table_row.index
+                count = self.data['#P'][index]
+                self.data.loc[index, '#P'] = count + 1
+                self.data_table.update()
+            else:
+                newblob = newblob_or_newpoint
+                scale_factor = self.active_image.pixelSize()
+                blobarea = round(newblob.area * scale_factor * scale_factor / 100.0, 2)
 
-    @pyqtSlot(Blob)
-    def addBlob(self, blob):
+                data_table_row = self.data[self.data['Class'] == old_class_name]
+                index = data_table_row.index
+                count = self.data['#R'][index]
+                self.data.loc[index, '#R'] = count - 1
+                newcover = self.data['Coverage'][index] - blobarea
+                self.data.loc[index, 'Coverage'] = newcover
 
-        scale_factor = self.activeImg.pixelSize()
-        data_table_row = self.data[self.data['Class'] == blob.class_name]
-        index = data_table_row.index
-        newcount = self.data['#'][index] + 1
-        blobarea = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
-        newcover = self.data['Coverage'][index] + blobarea
-        self.data.loc[index, '#'] = newcount
-        self.data.loc[index, 'Coverage'] = newcover
+                data_table_row = self.data[self.data['Class'] == newblob.class_name]
+                index = data_table_row.index
+                count = self.data['#R'][index]
+                self.data.loc[index, '#R'] = count + 1
+                newcover = self.data['Coverage'][index] + blobarea
+                self.data.loc[index, 'Coverage'] = newcover
 
-        self.data_table.update()
+                self.data_table.update()
 
-    @pyqtSlot(Blob)
-    def removeBlob(self, blob):
+    @pyqtSlot(Image, object)
+    def addBlob(self, img, blob_or_point):
 
-        scale_factor = self.activeImg.pixelSize()
-        data_table_row = self.data[self.data['Class'] == blob.class_name]
-        index = data_table_row.index
-        newcount = self.data['#'][index] - 1
-        blobarea = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
-        newcover = self.data['Coverage'][index] - blobarea
-        self.data.loc[index, '#'] = newcount
-        self.data.loc[index, 'Coverage'] = newcover
+        if img == self.active_image:  # if the signal arrives from another image that is not connected to this panel it is ignored
 
-        self.data_table.update()
+            if type(blob_or_point) == Point:
+                point = blob_or_point
+                data_table_row = self.data[self.data['Class'] == point.class_name]
+                index = data_table_row.index
+                newcount = self.data['#P'][index] + 1
+                self.data.loc[index, '#P'] = newcount
+            else:
+                blob = blob_or_point
+                scale_factor = self.active_image.pixelSize()
+                data_table_row = self.data[self.data['Class'] == blob.class_name]
+                index = data_table_row.index
+                newcount = self.data['#R'][index] + 1
+                blobarea = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
+                newcover = self.data['Coverage'][index] + blobarea
+                self.data.loc[index, '#R'] = newcount
+                self.data.loc[index, 'Coverage'] = newcover
 
+            self.data_table.update()
+
+    @pyqtSlot(Image, object)
+    def removeBlob(self, img, blob_or_point):
+
+        if img == self.active_image:
+            if type(blob_or_point) == Point:
+                point = blob_or_point
+                data_table_row = self.data[self.data['Class'] == point.class_name]
+                index = data_table_row.index
+                newcount = self.data['#P'][index] - 1
+                self.data.loc[index, '#P'] = newcount
+            else:
+                blob = blob_or_point
+                scale_factor = self.active_image.pixelSize()
+                data_table_row = self.data[self.data['Class'] == blob.class_name]
+                index = data_table_row.index
+                newcount = self.data['#R'][index] - 1
+                blobarea = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
+                newcover = self.data['Coverage'][index] - blobarea
+                self.data.loc[index, '#R'] = newcount
+                self.data.loc[index, 'Coverage'] = newcover
+
+            self.data_table.update()
 
     def updateData(self):
 

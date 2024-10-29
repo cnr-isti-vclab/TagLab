@@ -1,7 +1,7 @@
 #ifndef MUTUALEDGES_H
 #define MUTUALEDGES_H
 
-
+#include <cstdint>
 #include <vector>
 #include <iostream>
 

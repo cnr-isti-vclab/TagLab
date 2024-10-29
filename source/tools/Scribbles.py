@@ -22,6 +22,7 @@ class Scribbles(QObject):
         self.border_pen.setCosmetic(False)
 
         self.current_label = Label("Background", "Background", description=None, fill=[0, 0, 0])
+        self.previous_label = Label("Background", "Background", description=None, fill=[0, 0, 0])
 
         self.qpath_gitem = None
         self.qpath_list = []
@@ -42,21 +43,49 @@ class Scribbles(QObject):
 
     def setCustomCursor(self):
 
-        cursor_size = int(self.current_size * self.scale_factor)
+        cursor_size = 10
+        #for QPen object and pixmap if QPen active
+        pen_size = int(self.current_size * self.scale_factor)
 
-        pxmap = QPixmap(cursor_size, cursor_size)
+        #if pen_size is > cursor_size(10) create a QPixmap of pen_size dimension
+        if pen_size > cursor_size:
+            pxmap = QPixmap(pen_size, pen_size)
+        else:
+            pxmap = QPixmap(cursor_size, cursor_size)
         pxmap.fill(QColor("transparent"))
         painter = QPainter(pxmap)
         color = self.current_label.fill
+        
+        #add a QPen if the size of the pxmap is > 10 (cursor/brush fixed size)
+        #pen same color of the class, brush always black
+        if pen_size > cursor_size:
+            pen = QPen(QColor(color[0], color[1], color[2]), 3, Qt.DotLine)
+            painter.setPen(pen)
+            painter.drawEllipse(0, 0, pen_size, pen_size)
+            # painter.drawRect(0, 0, pen_size, pen_size)
+
+        #brush always black and 10 px dimension
+        # brush = QBrush(QColor(0, 0, 0))
         brush = QBrush(QColor(color[0], color[1], color[2]))
         painter.setBrush(brush)
-        painter.drawEllipse(0, 0, cursor_size, cursor_size)
+        
+        #if pen_size is too small the brush fills all the pxmap
+        if pen_size < cursor_size:
+            painter.drawEllipse(0, 0, cursor_size, cursor_size)
+        #if pen_size is > 10 the brush is put in the middle of the pxmap
+        # -5 needed to have the center of the brush circle and not the top-left corner in the middle
+        else:
+            painter.drawEllipse( int(pen_size/2-5), int(pen_size/2-5), cursor_size, cursor_size)
+
         painter.end()
         custom_cursor = QCursor(pxmap)
         QApplication.setOverrideCursor(custom_cursor)
 
     def setLabel(self, label):
 
+        # if self.current_label.id != "pippo":
+        #     self.previous_label = self.current_label
+        
         self.current_label = label
 
         # new cursor color
@@ -86,7 +115,6 @@ class Scribbles(QObject):
 
     # return true if the first points for a tool
     def startDrawing(self, x, y):
-
         first_start = False
         if len(self.points) == 0:  # first point, initialize
             first_start = True
@@ -110,7 +138,7 @@ class Scribbles(QObject):
         return first_start
 
     def move(self, x, y):
-
+ 
         if len(self.points) == 0:
             return
 

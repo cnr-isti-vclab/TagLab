@@ -1654,276 +1654,6 @@
    "georef_filename": "",
    "metadata": {},
    "grid": null
-  },
-  {
-   "rect": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "map_px_to_mm_factor": "1",
-   "width": 6836,
-   "height": 6822,
-   "annotations": [],
-   "layers": [],
-   "channels": [
-    {
-     "filename": "../00_2020_08_18_C1_orthoprojectionCC/2020_08_18_C1_orthoprojectionCC_25.png",
-     "type": "RGB"
-    }
-   ],
-   "id": "00_C1",
-   "name": "00_C1",
-   "workspace": [],
-   "export_dataset_area": [],
-   "acquisition_date": "2020-08-18",
-   "georef_filename": "",
-   "metadata": {},
-   "grid": null
-  },
-  {
-   "rect": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "map_px_to_mm_factor": "1",
-   "width": 1709,
-   "height": 1706,
-   "annotations": [],
-   "layers": [],
-   "channels": [
-    {
-     "filename": "../00_2020_08_18_C1_orthoprojectionCC/2020_08_18_C1_orthoprojectionCC_25_25.png",
-     "type": "RGB"
-    }
-   ],
-   "id": "00_C1_25_25",
-   "name": "00_C1_25_25",
-   "workspace": [],
-   "export_dataset_area": [],
-   "acquisition_date": "2020-08-18",
-   "georef_filename": "",
-   "metadata": {},
-   "grid": null
-  },
-  {
-   "rect": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "map_px_to_mm_factor": "1",
-   "width": 27342,
-   "height": 27287,
-   "annotations": [],
-   "layers": [],
-   "channels": [
-    {
-     "filename": "../00_2020_08_18_C1_orthoprojectionCC/2020_08_18_C1_orthoprojectionCC.png",
-     "type": "RGB"
-    }
-   ],
-   "id": "00_C1_raw",
-   "name": "00_C1_raw",
-   "workspace": [],
-   "export_dataset_area": [],
-   "acquisition_date": "2020-08-18",
-   "georef_filename": "",
-   "metadata": {},
-   "grid": null
-  },
-  {
-   "rect": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "map_px_to_mm_factor": "1",
-   "width": 6605,
-   "height": 7359,
-   "annotations": [],
-   "layers": [],
-   "channels": [
-    {
-     "filename": "../01_2021_12_08_C1_orthoprojection/2021_12_08_C1_orthoprojection_25.png",
-     "type": "RGB"
-    }
-   ],
-   "id": "01_C1",
-   "name": "01_C1",
-   "workspace": [],
-   "export_dataset_area": [],
-   "acquisition_date": "2021-12-08",
-   "georef_filename": "",
-   "metadata": {},
-   "grid": null
-  },
-  {
-   "rect": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "map_px_to_mm_factor": "1",
-   "width": 6797,
-   "height": 6183,
-   "annotations": [],
-   "layers": [],
-   "channels": [
-    {
-     "filename": "../02_2021_12_08_C1_orthoprojectionCC/2021_12_08_C1_orthoprojectionCC_25.png",
-     "type": "RGB"
-    }
-   ],
-   "id": "02_C1",
-   "name": "02_C1",
-   "workspace": [],
-   "export_dataset_area": [],
-   "acquisition_date": "2021-12-08",
-   "georef_filename": "",
-   "metadata": {},
-   "grid": null
-  },
-  {
-   "rect": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "map_px_to_mm_factor": "1",
-   "width": 6600,
-   "height": 7350,
-   "annotations": [],
-   "layers": [],
-   "channels": [
-    {
-     "filename": "../01_2021_12_08_C1_orthoprojection/2021_12_08_C1_orthoprojection_25_2.png",
-     "type": "RGB"
-    }
-   ],
-   "id": "01_C1_2",
-   "name": "01_C1_2",
-   "workspace": [],
-   "export_dataset_area": [],
-   "acquisition_date": "2021-12-08",
-   "georef_filename": "",
-   "metadata": {},
-   "grid": null
-  },
-  {
-   "rect": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "map_px_to_mm_factor": "1",
-   "width": 6796,
-   "height": 6180,
-   "annotations": [],
-   "layers": [],
-   "channels": [
-    {
-     "filename": "../02_2021_12_08_C1_orthoprojectionCC/2021_12_08_C1_orthoprojectionCC_25_2.png",
-     "type": "RGB"
-    }
-   ],
-   "id": "02_C1_2",
-   "name": "02_C1_2",
-   "workspace": [],
-   "export_dataset_area": [],
-   "acquisition_date": "2021-12-08",
-   "georef_filename": "",
-   "metadata": {},
-   "grid": null
-  },
-  {
-   "rect": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "map_px_to_mm_factor": "1",
-   "width": 1651,
-   "height": 1840,
-   "annotations": [],
-   "layers": [],
-   "channels": [
-    {
-     "filename": "../01_2021_12_08_C1_orthoprojection/2021_12_08_C1_orthoprojection_25_25.png",
-     "type": "RGB"
-    }
-   ],
-   "id": "01_C1_25_25",
-   "name": "01_C1_25_25",
-   "workspace": [],
-   "export_dataset_area": [],
-   "acquisition_date": "2021-12-08",
-   "georef_filename": "",
-   "metadata": {},
-   "grid": null
-  },
-  {
-   "rect": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "map_px_to_mm_factor": "1",
-   "width": 1699,
-   "height": 1546,
-   "annotations": [],
-   "layers": [],
-   "channels": [
-    {
-     "filename": "../02_2021_12_08_C1_orthoprojectionCC/2021_12_08_C1_orthoprojectionCC_25_25.png",
-     "type": "RGB"
-    }
-   ],
-   "id": "02_C1_25_25",
-   "name": "02_C1_25_25",
-   "workspace": [],
-   "export_dataset_area": [],
-   "acquisition_date": "2021-12-08",
-   "georef_filename": "",
-   "metadata": {},
-   "grid": null
-  },
-  {
-   "rect": [
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ],
-   "map_px_to_mm_factor": "1",
-   "width": 26419,
-   "height": 29436,
-   "annotations": [],
-   "layers": [],
-   "channels": [
-    {
-     "filename": "../01_2021_12_08_C1_orthoprojection/2021_12_08_C1_orthoprojection.png",
-     "type": "RGB"
-    }
-   ],
-   "id": "01_C1_raw",
-   "name": "01_C1_raw",
-   "workspace": [],
-   "export_dataset_area": [],
-   "acquisition_date": "2021-12-08",
-   "georef_filename": "",
-   "metadata": {},
-   "grid": null
   }
  ],
  "correspondences": {
@@ -1941,5 +1671,55 @@
  },
  "spatial_reference_system": null,
  "metadata": {},
- "image_metadata_template": {}
+ "image_metadata_template": {},
+ "markers": {
+  "0001": {
+   "0002": {
+    "markers": {
+     "ref": [
+      {
+       "x": 0.0,
+       "y": 0.0
+      },
+      {
+       "x": 3029.291859084806,
+       "y": 334.33899786517924
+      },
+      {
+       "x": 3675.0,
+       "y": 3675.0
+      },
+      {
+       "x": 0.0,
+       "y": 3675.0
+      }
+     ],
+     "coreg": [
+      {
+       "x": 0.0,
+       "y": 0.0
+      },
+      {
+       "x": 1409.2918590848062,
+       "y": 334.33899786517924
+      },
+      {
+       "x": 2055.0,
+       "y": 2038.0
+      },
+      {
+       "x": 0.0,
+       "y": 2038.0
+      }
+     ],
+     "type": [
+      0,
+      0,
+      0,
+      0
+     ]
+    }
+   }
+  }
+ }
 }

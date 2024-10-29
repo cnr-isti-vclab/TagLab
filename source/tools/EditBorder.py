@@ -5,11 +5,18 @@ class EditBorder(Tool):
         super(EditBorder, self).__init__(viewerplus)
         self.edit_points = edit_points
 
+        message = "<p><i>Modify the border of an existing region</i></p>"
+        message += "<p>Double click to select a region</p>"
+        message += "<p>- LMB + drag to draw a line that intersects the border of the selected region<br/>\
+                    - CTRL + LMB + drag to pan view</p>"
+        message += "<p>SPACEBAR to modify the border</p>"
+        self.tool_message = f'<div style="text-align: left;">{message}</div>'
+
     def leftPressed(self, x, y, mods):
         if self.edit_points.startDrawing(x, y):
             self.log.emit("[TOOL][EDITBORDER] DRAWING starts..")
 
-    def mouseMove(self, x, y):
+    def mouseMove(self, x, y, mods=None):
         self.edit_points.move(x, y)
 
     def apply(self):

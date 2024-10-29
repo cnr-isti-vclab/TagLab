@@ -62,7 +62,7 @@ class QtProjectWidget(QWidget):
         #clear all items
         self.mapList.clear()
 
-        row = 0;
+        row = 0
         for img in self.project.images:
             self.mapList.addItem(img.name + " " + img.acquisition_date + " "  + str(img.map_px_to_mm_factor))
 

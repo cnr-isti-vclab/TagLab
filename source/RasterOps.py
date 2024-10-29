@@ -2,7 +2,7 @@
 import numpy as np
 import json
 import ast
-from shapely.geometry import Polygon
+
 from osgeo import gdal, osr
 import osgeo.ogr as ogr
 import rasterio as rio
@@ -14,7 +14,8 @@ from source.Blob import Blob
 from source.Shape import Shape
 from source.Mask import subtract
 from numpy.linalg import inv
-
+import shapely
+from shapely.geometry import Polygon
 
 def changeFormat(contour, transform):
     """
@@ -95,16 +96,16 @@ def read_attributes(filename):
     driver = ogr.GetDriverByName("ESRI Shapefile")
     dataSource = driver.Open(filename, 0)
     layer = dataSource.GetLayer(0)
-    Data = pd.DataFrame()
+    data = pd.DataFrame()
     for feat in layer:
         shpdict =json.loads(feat.ExportToJson())
         properties = shpdict['properties']
-        if Data.empty:
-            Data = pd.DataFrame.from_dict([properties])
-        else:
+        if data.empty:
             data = pd.DataFrame.from_dict([properties])
-            Data = Data.append(data, ignore_index=True)
-    return Data
+        else:
+            new_row = pd.DataFrame.from_dict([properties])
+            data = pd.concat([data, new_row])
+    return data
 
 
 def read_regions_geometry(filename, georef_filename):
@@ -372,10 +373,13 @@ def saveClippedTiff(input, blobs, georef_filename, name):
 
 def saveGeorefLabelMap(label_map, georef_filename, working_area, out_name):
 
+    ## TO DO: CLEAN UP THIS FUNCTION!
+
     # create a georeferenced label image (as raster)
     img = rio.open(georef_filename)
     meta = img.meta
     transform = img.transform
+    crs = img.crs
 
     myLabel = reshape_as_raster(label_map)
     myLabel_meta = meta.copy()
@@ -385,20 +389,23 @@ def saveGeorefLabelMap(label_map, georef_filename, working_area, out_name):
     with rio.open(out_name + ".tif", "w", **myLabel_meta) as dest:
         dest.write(myLabel)
 
-    dataset = rio.open(out_name + ".tif")
-    # convert the working area into a polygon
-    working_area_polygon = createPolygonFromWorkingArea(working_area, transform)
-    # crop the raster using the working area polygon
-    out_image, out_transform = rio.mask.mask(dataset, [working_area_polygon], crop=True)
-    out_meta = dataset.meta
-    # area= out_meta['transform'][0] ** 2*out_image
-    out_meta.update({"driver": "GTiff",
-                      "height": out_image.shape[1],
-                      "width": out_image.shape[2],
-                      "transform": out_transform})
+    if working_area is not None:
 
-    with rio.open(out_name + ".tif", "w", **out_meta) as dest:
-        dest.write(out_image)
+        dataset = rio.open(out_name + ".tif")
+        # convert the working area into a polygon
+        working_area_polygon = createPolygonFromWorkingArea(working_area, transform)
+        # crop the raster using the working area polygon
+        out_image, out_transform = rio.mask.mask(dataset, [working_area_polygon], crop=True)
+        out_meta = dataset.meta.copy()
+        out_meta.update({"driver": "GTiff",
+                          "height": out_image.shape[1],
+                          "width": out_image.shape[2],
+                          "transform": out_transform})
+        dataset.close()
+
+        with rio.open(out_name + ".tif", "w", **out_meta) as dest:
+            dest.write(out_image)
+
 
 def exportSlope(raster, filename):
 

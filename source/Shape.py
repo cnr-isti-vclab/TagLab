@@ -17,12 +17,10 @@
 #GNU General Public License (http://www.gnu.org/licenses/gpl.txt)
 # for more details.
 
-import math
 import copy
 import numpy as np
 from PyQt5.QtGui import QPainterPath, QPolygonF
 from PyQt5.QtCore import QPointF
-from source import utils
 
 class Layer(object):
     """

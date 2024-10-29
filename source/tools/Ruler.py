@@ -5,7 +5,10 @@ from PyQt5.QtWidgets import QGraphicsItem
 from source.tools.Tool import Tool
 
 class Ruler(Tool):
+
     measuretaken = pyqtSignal(float)
+    measuretakencoords = pyqtSignal(float, float, float, float)
+
     def __init__(self, viewerplus, pick_points ):
         super(Ruler, self).__init__(viewerplus)
         self.pick_points = pick_points
@@ -47,7 +50,6 @@ class Ruler(Tool):
         line = self.viewerplus.scene.addLine(start[0], start[1], end[0], end[1], pen)
         line.setZValue(5)
 
-
         self.pick_points.markers.append(line)
 
         middle_x = (start[0] + end[0]) / 2.0
@@ -63,12 +65,13 @@ class Ruler(Tool):
         ruler_text.setParentItem(middle)
         ruler_text.setFlag(QGraphicsItem.ItemIgnoresTransformations)
         ruler_text.setZValue(5)
-        self.pick_points.markers.append(ruler_text);
-        self.pick_points.markers.append(middle);
+        self.pick_points.markers.append(ruler_text)
+        self.pick_points.markers.append(middle)
 
 
         self.log.emit("[TOOL][RULER] Measure taken.")
         self.measuretaken.emit(measure)
+        self.measuretakencoords.emit(start[0], start[1], end[0], end[1])
 
 
     def computeMeasure(self, annotations):

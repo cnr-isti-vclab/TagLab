@@ -247,7 +247,7 @@ class VOCSegmentation(data.Dataset):
             _target = (_tmp == (_obj_ii + 1)).astype(np.float32)
             _background = np.logical_and(_tmp == 0, ~_void_pixels)
             obj_cat = self.obj_dict[self.im_ids[_im_ii]][_obj_ii]
-            for ii in range(1, np.max(_tmp).astype(np.int32)+1):
+            for ii in range(1, np.max(_tmp).astype(int)+1):
                 ii_cat = self.obj_dict[self.im_ids[_im_ii]][ii-1]
                 if obj_cat == ii_cat and ii != _obj_ii+1:
                     _other_same_class = np.logical_or(_other_same_class, _tmp == ii)

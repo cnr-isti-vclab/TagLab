@@ -115,7 +115,7 @@ class QtRegionAttributesWidget(QWidget):
 
 
         self.editType = QComboBox()
-        self.editType.addItems(['string', 'integer number', 'decimal number', 'keyword']);
+        self.editType.addItems(['string', 'integer number', 'decimal number', 'keyword'])
         self.editType.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editType.activated[str].connect(self.updateFieldType)
         edit_layout.addWidget(self.editType)
@@ -160,8 +160,8 @@ class QtRegionAttributesWidget(QWidget):
 
 
         bottom_layout = QHBoxLayout()
-        bottom_layout.addLayout(left_layout);
-        bottom_layout.addLayout(right_layout);
+        bottom_layout.addLayout(left_layout)
+        bottom_layout.addLayout(right_layout)
 
         layout.addLayout(bottom_layout)
 
@@ -169,7 +169,7 @@ class QtRegionAttributesWidget(QWidget):
         line = QFrame()
 
         line.setFrameShape(QFrame.HLine)
-        line.setFrameShadow(QFrame.Sunken);
+        line.setFrameShadow(QFrame.Sunken)
         line.setLineWidth(1)
         layout.addWidget(line)
 
@@ -354,7 +354,7 @@ class QtRegionAttributesWidget(QWidget):
                 self.message("Max value must be greater than Min value.")
                 return False
 
-        keywords =  self.editValues.text();
+        keywords =  self.editValues.text()
         if keywords != '':
             keywords = re.split(' |,|:|;|\t', keywords)
         else:

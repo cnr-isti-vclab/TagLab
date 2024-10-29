@@ -4,8 +4,8 @@ from PyQt5.QtGui import QPen, QBrush
 
 from source.tools.Tool import Tool
 from source.Mask import paintMask, jointBox, jointMask, replaceMask, checkIntersection, intersectMask
-from source.utils import qimageToNumpyArray
-from source.utils import cropQImage, maskToQImage, floatmapToQImage
+from source.genutils import qimageToNumpyArray
+from source.genutils import cropQImage, maskToQImage, floatmapToQImage
 
 import os
 import numpy as np
@@ -14,7 +14,9 @@ import torch
 
 from models.isegm.inference import clicker
 from models.isegm.inference.predictors import get_predictor
-from models.isegm.inference import utils
+from models.isegm.inference import utils as ritmutils
+
+from source.tools import utils
 
 class Ritm(Tool):
 
@@ -23,7 +25,7 @@ class Ritm(Tool):
 
         self.points = corrective_points
         self.ritm_net = None
-        self.MAX_POINTS = 10
+        self.MAX_POINTS = 30
 
         self.clicker = clicker.Clicker() #handles clicked point (original code of ritm)
         self.predictor = None
@@ -37,6 +39,15 @@ class Ritm(Tool):
         self.work_area_item = None
         self.states = []
 
+        #message for message_widget window
+        message = "<p><i>Segment by using positive/negative points</i></p>"
+        message += "<p>Zoom in to frame the work-area containing the target instance.<br/> Try keeping this work-area small, to save memory and execution time.</p>"
+        message += "<p>- SHIFT + LMB to add a point inside the instance (positive)<br/>\
+                    - SHIFT + RMB to add a point outside the instance (negative)<br/>\
+                    - CTRL + Z to remove last point</p>"
+        message += "<p>SPACEBAR to confirm segmentation</p>"
+
+        self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
     def checkPointPosition(self, x, y):
 
@@ -250,7 +261,8 @@ class Ritm(Tool):
                 segm_mask = segm_mask*255
                 torch.cuda.empty_cache()
 
-                self.undrawAllBlobs()
+                utils.undrawAllBlobs(self.current_blobs, self.viewerplus.scene)
+                self.current_blobs = []
 
                 blobs = self.viewerplus.annotations.blobsFromMask(segm_mask, offsetx, offsety, 1000)
 
@@ -305,7 +317,7 @@ class Ritm(Tool):
             self.device = device
 
             try:
-                self.ritm_net = utils.load_is_model(model_path, device, cpu_dist_maps=False)
+                self.ritm_net = ritmutils.load_is_model(model_path, device, cpu_dist_maps=False)
                 self.ritm_net.to(device)
                 # initialize predictor
                 self.predictor = get_predictor(self.ritm_net, device=device, **self.predictor_params)
@@ -319,11 +331,13 @@ class Ritm(Tool):
         return True
 
     def resetNetwork(self):
-
-        torch.cuda.empty_cache()
-        if self.ritm_net is not None:
-            del self.ritm_net
-            self.ritm_net = None
+        try:
+            torch.cuda.empty_cache()
+            if self.ritm_net is not None:
+                del self.ritm_net
+                self.ritm_net = None
+        except:
+            pass
 
     def apply(self):
         """
@@ -332,21 +346,28 @@ class Ritm(Tool):
 
         # finalize created blobs
         message = "[TOOL][RITM][BLOB-CREATED]"
-        for blob in self.current_blobs:
-            
-            if self.blob_to_correct is not None:
-                self.viewerplus.removeBlob(self.blob_to_correct)
-                blob.id = self.blob_to_correct.id
-                blob.class_name = self.blob_to_correct.class_name
-                message = "[TOOL][RITM][BLOB-EDITED]"
 
-            #order is important: first add then setblob class!
-            self.undrawBlob(blob)
-            self.viewerplus.addBlob(blob, selected=True)
-            #if self.blob_to_correct is not None:
-            #    self.viewerplus.setBlobClass(blob, self.blob_to_correct.class_name)
+        # WARNING!! In the editing mode only the biggest blob is considered (e.g. it is not possible to subdivide
+        # an existing blob in two blobs)
+        if self.blob_to_correct is not None:
+            new_blob = self.current_blobs[0]
+            new_blob.class_name = self.blob_to_correct.class_name
+            utils.undrawBlob(new_blob, self.viewerplus.scene, redraw=False)
+            self.viewerplus.updateBlob(self.blob_to_correct, new_blob, selected=True)
+            message = "[TOOL][RITM][BLOB-EDITED]"
+            self.blobInfo.emit(new_blob, message)
+        else:
+            for blob in self.current_blobs:
 
-            self.blobInfo.emit(blob, message)
+                # undraw preview
+                utils.undrawBlob(blob, self.viewerplus.scene, redraw=False)
+
+                # add blob
+                self.viewerplus.addBlob(blob, selected=True)
+
+                self.blobInfo.emit(blob, message)
+
+            self.viewerplus.project.updateCorrespondences("ADD", self.viewerplus.image, self.current_blobs, None, "")
 
         self.viewerplus.saveUndo()
         self.viewerplus.resetSelection()
@@ -382,52 +403,21 @@ class Ritm(Tool):
             self.blob_to_correct = None
 
         self.init_mask = None
-        self.undrawAllBlobs()
+        utils.undrawAllBlobs(self.current_blobs, self.viewerplus.scene)
+        self.current_blobs = []
         self.clicker.reset_clicks()
         self.points.reset()
         self.resetWorkArea()
 
     def drawBlob(self, blob):
 
-        # get the scene
         scene = self.viewerplus.scene
 
-        # if it has just been created remove the current graphics item in order to set it again
-        if blob.qpath_gitem is not None:
-            scene.removeItem(blob.qpath_gitem)
-            del blob.qpath_gitem
-            blob.qpath_gitem = None
-
-        blob.setupForDrawing()
-
-        pen = QPen(Qt.white)
-        pen.setWidth(2)
-        pen.setCosmetic(True)
-
+        # create the suitable brush
         if self.blob_to_correct is None:
             brush = QBrush(Qt.SolidPattern)
             brush.setColor(Qt.white)
         else:
             brush = self.viewerplus.project.classBrushFromName(self.blob_to_correct)
 
-        brush.setStyle(Qt.Dense4Pattern)
-
-        blob.qpath_gitem = scene.addPath(blob.qpath, pen, brush)
-        blob.qpath_gitem.setZValue(1)
-        blob.qpath_gitem.setOpacity(self.viewerplus.transparency_value)
-
-    def undrawBlob(self, blob):
-        # get the scene
-        scene = self.viewerplus.scene
-        # undraw
-        scene.removeItem(blob.qpath_gitem)
-        blob.qpath = None
-        blob.qpath_gitem = None
-        scene.invalidate()
-
-    def undrawAllBlobs(self):
-
-        if len(self.current_blobs) > 0:
-            for blob in self.current_blobs:
-                self.undrawBlob(blob)
-        self.current_blobs = []
+        utils.drawBlob(blob, brush, scene, self.viewerplus.transparency_value, redraw=False)

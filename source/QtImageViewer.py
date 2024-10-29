@@ -129,8 +129,8 @@ class QtImageViewer(QGraphicsView):
         if not self.isVisible():
             return
         self.blockSignals(True)
-        self.horizontalScrollBar().setValue(posx)
-        self.verticalScrollBar().setValue(posy)
+        self.horizontalScrollBar().setValue(int(posx))
+        self.verticalScrollBar().setValue(int(posy))
         self.zoom_factor = zoomfactor * self.px_to_mm
         self.updateViewer()
         self.blockSignals(False)
@@ -244,8 +244,8 @@ class QtImageViewer(QGraphicsView):
         posx = min(posx, self.img_map.width() - w / 2)
         posy = min(posy, self.img_map.height() - h / 2)
 
-        self.horizontalScrollBar().setValue(posx * zf)
-        self.verticalScrollBar().setValue(posy * zf)
+        self.horizontalScrollBar().setValue(int(posx * zf))
+        self.verticalScrollBar().setValue(int(posy * zf))
 
     def mouseMoveEvent(self, event):
         self.mouseMove.emit(event)

@@ -17,11 +17,13 @@
 # GNU General Public License (http://www.gnu.org/licenses/gpl.txt)
 # for more details.                                               
 from PyQt5.QtCore import Qt, QAbstractTableModel, QItemSelectionModel, QSortFilterProxyModel, QRegExp, QModelIndex, pyqtSlot, pyqtSignal
-from PyQt5.QtWidgets import QWidget, QSizePolicy, QComboBox, QLabel, QTableView, QHeaderView, \
+from PyQt5.QtWidgets import QWidget, QSizePolicy, QCheckBox, QComboBox, QLabel, QTableView, QHeaderView, \
     QHBoxLayout, QVBoxLayout, QAbstractItemView, QStyledItemDelegate, QAction, QMenu, QToolButton, QGridLayout, QLineEdit
 from PyQt5.QtGui import QColor
 import pandas as pd
 from source.Blob import Blob
+from source.Point import Point
+from source.Image import Image
 
 class TableModel(QAbstractTableModel):
     def __init__(self, data):
@@ -46,7 +48,7 @@ class TableModel(QAbstractTableModel):
                     return ""
 
             # format floating point values
-            if index.column() == 2 or index.column() == 3:
+            if index.column() == 3 or index.column() == 4:
                 txt = "{:.1f}".format(value) if value > 0 else ""
             else:
                 txt = str(value)
@@ -54,7 +56,7 @@ class TableModel(QAbstractTableModel):
             return txt
         
         if role == Qt.UserRole:
-            if index.column() == 1:
+            if index.column() == 2 or index.column() == 1:
                 return str(value)
 
             return float(value)
@@ -95,6 +97,7 @@ class TableModel(QAbstractTableModel):
 class QtTablePanel(QWidget):
     selectionChanged = pyqtSignal()
     filterChanged = pyqtSignal(str)
+    stateChanged = pyqtSignal(int)
 
     def __init__(self, parent=None):
         super(QtTablePanel, self).__init__(parent)
@@ -106,7 +109,6 @@ class QtTablePanel(QWidget):
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.setMinimumWidth(400)
         self.setMinimumHeight(150)
-
         self.data_table = QTableView()
         self.data_table.setMinimumWidth(400)
         self.data_table.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
@@ -115,21 +117,19 @@ class QtTablePanel(QWidget):
         self.data_table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.data_table.setSortingEnabled(True)
         self.setStyleSheet("""
-QScrollBar::add-line:vertical {
-height: 0px;
-}
-
-QScrollBar::sub-line:vertical {
-height: 0px;
-}
-
-QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
-height: 0px;
-}
-
-""");
-
-
+        QScrollBar::add-line:vertical {
+        height: 0px;
+        }
+        
+        QScrollBar::sub-line:vertical {
+        height: 0px;
+        }
+        
+        QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+        height: 0px;
+        }
+        
+        """);
         self.model = None
         self.data = None
 
@@ -140,49 +140,70 @@ height: 0px;
         filter_layout.addWidget(QLabel("Search Id: "))
         filter_layout.addWidget(self.searchId)
 
+        self.checkBoxRegions = QCheckBox("Regions")
+        self.checkBoxRegions.setChecked(True)
+        self.checkBoxRegions.setMinimumWidth(40)
+        self.checkBoxRegions.stateChanged[int].connect(self.displayDataByType)
+
+        self.checkBoxPoints = QCheckBox("Points")
+        self.checkBoxPoints.setChecked(True)
+        self.checkBoxPoints.setMinimumWidth(40)
+        self.checkBoxPoints.stateChanged[int].connect(self.displayDataByType)
+
+        layoutCheckbox = QHBoxLayout()
+        layoutCheckbox.addWidget(self.checkBoxRegions)
+        layoutCheckbox.addWidget(self.checkBoxPoints)
+
         layout = QVBoxLayout()
         layout.addLayout(filter_layout)
+        layout.addLayout(layoutCheckbox)
         layout.addWidget(self.data_table)
 
         self.setLayout(layout)
 
-        self.project = None
-        self.activeImg = None
+        self.active_image = None
 
-    def setTable(self, project, img):
+    def displayDataByType(self):
 
-        if self.project == project and self.activeImg == img:
+        if self.data is None:
             return
 
-        self.project = project
-        self.activeImg = img
+        regions = False
+        points = False
 
-        # establish UNIQUE connections, otherwise the slots will be called MORE THAN ONE TIME
-        # when the signal is emitted
+        if self.checkBoxRegions.isChecked():
+            regions = True
 
-        if self.activeImg is not None:
+        if self.checkBoxPoints.isChecked():
+            points = True
 
-            try:
-                self.activeImg.annotations.blobUpdated[Blob,Blob].connect(self.updateBlob, type=Qt.UniqueConnection)
-            except:
-                pass
+        if regions == True and points == True:
+            self.sortfilter.setFilterRegExp(QRegExp())
+        else:
+            self.sortfilter.setFilterKeyColumn(1)
 
-            try:
-                self.activeImg.annotations.blobAdded[Blob].connect(self.addBlob, type=Qt.UniqueConnection)
-            except:
-                pass
+            if regions == True:
+                self.sortfilter.setFilterRegExp('R')
+            else:
+                self.sortfilter.setFilterRegExp('P')
 
-            try:
-                self.activeImg.annotations.blobRemoved[Blob].connect(self.removeBlob, type=Qt.UniqueConnection)
-            except:
-                pass
+            self.sortfilter.setFilterRole(Qt.DisplayRole)
 
-            try:
-                self.activeImg.annotations.blobClassChanged[str,Blob].connect(self.updateBlobClass, type=Qt.UniqueConnection)
-            except:
-                pass
+        self.selectById(self.searchId.text())
 
-            self.data = self.activeImg.create_data_table()
+
+    def setTable(self, img):
+        """
+        Set the table with the annotations of the given image.
+        """
+
+        if self.active_image == img:
+            return
+
+        self.active_image = img
+
+        if self.active_image is not None:
+            self.data = self.active_image.create_data_table()
 
         if self.model is None:
             self.model = TableModel(self.data)
@@ -197,8 +218,9 @@ height: 0px;
             self.data_table.setEditTriggers(QAbstractItemView.DoubleClicked)
 
             self.data_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
-            self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+            self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
             self.data_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
+            self.data_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.Stretch)
             self.data_table.horizontalHeader().showSection(0)
             self.data_table.update()
 
@@ -207,50 +229,75 @@ height: 0px;
         else:
             self.updateTable(self.data)
 
-    @pyqtSlot(Blob)
-    def addBlob(self, blob):
+    @pyqtSlot(Image, object)
+    def addBlob(self, img, blob_or_point):
 
-        scale_factor = self.activeImg.pixelSize()
-        area = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
-        new_row = {'Id': blob.id, 'Class': blob.class_name, 'Area':  area }
-        df = pd.DataFrame([new_row])
-        self.data = pd.concat([self.data, df])
+        if img == self.active_image: # if the signal arrives from another image that is not connected to this panel it is ignored
 
-        # index is recalculated so that index i corresponds to row i
-        self.data.reset_index(drop=True, inplace=True)
+            if type(blob_or_point) == Point:
+                point = blob_or_point
+                new_row = {'Id': point.id, 'Type': 'P', 'Class': point.class_name, 'Area': 0}
+            else:
+                blob = blob_or_point
+                scale_factor = self.active_image.pixelSize()
+                area = round(blob.area * (scale_factor) * (scale_factor) / 100, 2)
+                new_row = {'Id': blob.id, 'Type': 'R', 'Class': blob.class_name, 'Area': area}
 
-        self.updateTable(self.data)
+            df = pd.DataFrame([new_row])
+            self.data = pd.concat([self.data, df])
 
-    @pyqtSlot(Blob)
-    def removeBlob(self, blob):
+            # index is recalculated so that index i corresponds to row i
+            self.data.reset_index(drop=True, inplace=True)
 
-        index = self.data.index[self.data["Id"] == blob.id]
-        self.data = self.data.drop(index=index)
+            self.updateTable(self.data)
 
-        # index is recalculated so that index i corresponds to row i
-        self.data.reset_index(drop=True, inplace=True)
+    @pyqtSlot(Image, object)
+    def removeBlob(self, img, blob):
 
-        self.updateTable(self.data)
+        if img == self.active_image: # if the signal arrives from another image that is not connected to this panel it is ignored
 
-    @pyqtSlot(Blob,Blob)
-    def updateBlob(self, oldblob, newblob):
+            index = self.data.index[self.data["Id"] == blob.id]
+            self.data = self.data.drop(index=index)
 
-        for i, row in self.data.iterrows():
-            if row[0] == newblob.id:
-                scale_factor = self.activeImg.pixelSize()
-                self.data.loc[i, 'Area'] = round(newblob.area * (scale_factor) * (scale_factor) / 100, 2)
-                self.data.loc[i, 'Class'] = newblob.class_name
+            # index is recalculated so that index i corresponds to row i
+            self.data.reset_index(drop=True, inplace=True)
 
-        self.data_table.update()
+            self.updateTable(self.data)
 
-    @pyqtSlot(str,Blob)
-    def updateBlobClass(self, old_class_name, newblob):
+    @pyqtSlot(Image, Blob, Blob)
+    def updateBlob(self, img, oldblob, newblob):
 
-        for i, row in self.data.iterrows():
-            if row[0] == newblob.id:
-                self.data.loc[i, 'Class'] = newblob.class_name
+        if img == self.active_image: # if the signal arrives from another image that is not connected to this panel it is ignored
 
-        self.data_table.update()
+            for i, row in self.data.iterrows():
+                if row["Id"] == newblob.id:
+                    scale_factor = self.active_image.pixelSize()
+                    self.data.loc[i, 'Area'] = round(newblob.area * (scale_factor) * (scale_factor) / 100, 2)
+                    self.data.loc[i, 'Class'] = newblob.class_name
+
+            self.data_table.update()
+
+    @pyqtSlot(Image, str, object)
+    def updateBlobClass(self, img, old_class_name, newblob):
+
+        if img == self.active_image:  # if the signal arrives from another image that is not connected to this panel it is ignored
+
+            for i, row in self.data.iterrows():
+                if row["Id"] == newblob.id:
+                    self.data.loc[i, 'Class'] = newblob.class_name
+
+            self.data_table.update()
+
+    @pyqtSlot(Image, str, object)
+    def updatePointClass(self, img, old_class_name, newpoint):
+
+        if img == self.active_image:  # if the signal arrives from another image that is not connected to this panel it is ignored
+
+            for i, row in self.data.iterrows():
+                if row["Id"] == newpoint.id:
+                    self.data.loc[i, 'Class'] = newpoint.class_name
+
+            self.data_table.update()
 
     def clear(self):
 

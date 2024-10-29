@@ -29,7 +29,7 @@ matplotlib.use('agg')
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
-from source import utils
+from source import genutils
 import io
 import cv2
 
@@ -203,7 +203,7 @@ class QtHistogramWidget(QWidget):
         im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
 
         # numpy array to QPixmap
-        qimg = utils.rgbToQImage(im)
+        qimg = genutils.rgbToQImage(im)
         qimg = qimg.scaled(self.preview_W, self.preview_H, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         pxmap = QPixmap(qimg)
 

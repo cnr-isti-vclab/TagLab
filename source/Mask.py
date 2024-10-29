@@ -132,7 +132,7 @@ def replaceMask(dmask, dbox, smask, sbox):
 
 def checkIntersection(bbox1, bbox2):
     """
-    Check if bbox1 and bbox intersects.
+    Check if bbox1 and bbox2 intersects.
     """
 
     # range is [minx, miny, maxx, maxy], absolute ranges

@@ -15,7 +15,7 @@ from source.Annotation import Annotation
 class Genet:
 
     def __init__(self, project):
-        self.project = project;
+        self.project = project
         self.updateGenets()
         pass
 
@@ -55,7 +55,6 @@ class Genet:
                     continue
                 blob1 = corrs.source.annotations.blobById(id1)
                 blob2 = corrs.target.annotations.blobById(id2)
-
 
                 if blob1.genet != blob2.genet:
                     link(blob1.genet, blob2.genet)

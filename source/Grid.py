@@ -183,8 +183,10 @@ class Grid(QObject):
         if state is None:
             self.cell_values[r, c] = (self.cell_values[r, c] + 1) % 3
         else:
-            self.cell_values[r, c] = state
-
+            if (1 <= r <= self.nrow) and (1 <= c <= self.ncol):
+                self.cell_values[r, c] = state
+            else:
+                return
         self.undrawGrid()
         self.drawGrid()
 

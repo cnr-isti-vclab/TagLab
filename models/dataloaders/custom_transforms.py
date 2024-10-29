@@ -88,7 +88,7 @@ class FixedResize(object):
                 bbox = sample['bbox']
                 crop_size = np.array([bbox[3]-bbox[1]+1, bbox[4]-bbox[2]+1])
                 res = np.array(self.resolutions[elem]).astype(np.float32)
-                sample[elem] = np.round(sample[elem]*res/crop_size).astype(np.int32)
+                sample[elem] = np.round(sample[elem]*res/crop_size).astype(int)
                 continue
             if elem in self.resolutions:
                 if self.resolutions[elem] is None:

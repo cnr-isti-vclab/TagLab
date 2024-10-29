@@ -20,7 +20,7 @@
 from PyQt5.QtGui import QImage
 from PyQt5.QtGui import QImageReader
 import rasterio as rio
-from source import utils
+from source import genutils
 import numpy as np
 import os
 
@@ -41,19 +41,22 @@ class Channel(object):
         filename = os.path.join(taglab_dir, self.filename)
 
         if self.type == "RGB":
-            reader = QImageReader(filename)
-            self.qimage = reader.read()
-            if self.qimage.isNull():
-                print(reader.errorString())
 
-            self.qimage = self.qimage.convertToFormat(QImage.Format_RGB32)
+            # reader = QImageReader(self.filename)
+            # self.qimage = reader.read()
+            # if self.qimage.isNull():
+            #     print(reader.errorString())
+            # self.qimage = self.qimage.convertToFormat(QImage.Format_RGB32)
+            img = rio.open(self.filename).read()
+            img = np.moveaxis(img, 0, -1)  # Since Rasterio is channel first shape=(c, h, w)
+            self.qimage = genutils.rgbToQImage(img)
 
         # typically the depth map is stored in a 32-bit Tiff
         if self.type == "DEM":
             dem = rio.open(filename)
             self.float_map = dem.read(1).astype(np.float32)
             self.nodata = dem.nodata
-            self.qimage = utils.floatmapToQImage(self.float_map, self.nodata)
+            self.qimage = genutils.floatmapToQImage(self.float_map, self.nodata)
 
         return self.qimage
 

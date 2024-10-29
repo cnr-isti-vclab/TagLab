@@ -26,6 +26,7 @@ from source.Annotation import Annotation
 from skimage import measure
 from skimage import feature
 from skimage import morphology
+from skimage import segmentation
 from scipy import ndimage as ndi
 import os
 import numpy as np
@@ -34,7 +35,7 @@ import torch
 from models.isegm.inference import clicker
 from models.isegm.inference.predictors import get_predictor
 from models.isegm.inference import utils
-from source.utils import cropQImage, cropImage, qimageToNumpyArray, maskToQImage, rgbToQImage, floatmapToQImage
+from source.genutils import cropQImage, cropImage, qimageToNumpyArray, maskToQImage, rgbToQImage, floatmapToQImage
 from source.Mask import checkIntersection, intersectMask, paintMask
 import random
 
@@ -354,9 +355,23 @@ class QtBricksWidget(QWidget):
         clean = morphology.remove_small_objects(self.edges, 50, connectivity=4)
         distance = ndi.distance_transform_edt(~clean)
 
-        local_max = feature.peak_local_max(distance, indices=False, min_distance=size)
+        #peak_local_max no more indices bool
+        # local_max = feature.peak_local_max(distance, indices=False, min_distance=size)
+        local_max = feature.peak_local_max(distance, footprint=np.ones((5, 5)), min_distance=size, labels=~clean)
         markers = measure.label(local_max, connectivity=2)
-        labels = morphology.watershed(-distance, markers)
+
+        #Convert local_max to boolean array, workaround for missing "indices" argument
+        local_max_bool = np.zeros_like(distance, dtype=bool)
+        local_max_bool[tuple(local_max.T)] = True
+
+        markers = measure.label(local_max_bool, connectivity=2)
+
+        print(distance.shape)
+        print(local_max.shape)
+        print(local_max_bool.shape)
+        print(markers.shape)
+
+        labels = segmentation.watershed(-distance, markers)#, mask=~clean)
 
         regions = measure.regionprops(markers)
         self.seeds = []
@@ -477,6 +492,8 @@ class QtBricksWidget(QWidget):
         self.removeOverlappingBlobs()
 
     def removeOverlappingBlobs(self):
+
+        #some time some problems with np.min/np.max, to check
 
         blobs = self.seg_bricks.copy()
 

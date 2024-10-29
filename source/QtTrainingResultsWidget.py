@@ -7,7 +7,7 @@ from PyQt5.QtCore import Qt, QSize, QFile, QIODevice, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QImage, QPixmap, QIcon, qRgb, qRed, qGreen, qBlue
 from PyQt5.QtWidgets import QSlider, QWidget, QDialog, QGroupBox, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
 
-from source import utils
+from source import genutils
 
 class QtTrainingResultsWidget(QWidget):
 
@@ -254,7 +254,7 @@ class QtTrainingResultsWidget(QWidget):
         plt.tight_layout()
 
         self.figureCM = fig
-        self.pxmapCM = utils.figureToQPixmap(fig, dpi=300, width=800, height=800)
+        self.pxmapCM = genutils.figureToQPixmap(fig, dpi=300, width=800, height=800)
 
         widget = QWidget(parent=self)
         widget.setFixedWidth(840)
@@ -373,4 +373,4 @@ class QtTrainingResultsWidget(QWidget):
         plt.legend()
 
         self.figureTG = fig
-        self.pxmapTG = utils.figureToQPixmap(fig, dpi=300, width=self.TG_WIDTH, height=self.TG_HEIGHT)
+        self.pxmapTG = genutils.figureToQPixmap(fig, dpi=300, width=self.TG_WIDTH, height=self.TG_HEIGHT)

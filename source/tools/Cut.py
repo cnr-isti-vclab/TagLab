@@ -6,11 +6,18 @@ class Cut(Tool):
 
         self.edit_points = edit_points
 
-    def leftPressed(self, x, y, mods):
-        if self.edit_points.startDrawing(x, y):
-            self.log.emit("[TOOL][EDITBORDER] DRAWING starts..")
+        message = "<p><i>Divide an existing region</i></p>"
+        message += "<p>Double click to select a region</p>"
+        message += "<p>- LMB + drag to draw a line that bisects the selected region<br/>\
+                    - CTRL + LMB + drag to pan view</p>"
+        message += "<p>SPACEBAR to divide the region into two</p>"
+        self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
-    def mouseMove(self, x, y):
+    def leftPressed(self, x, y, mods=None):
+        if self.edit_points.startDrawing(x, y):
+            self.log.emit("[TOOL][CUT] DRAWING starts..")
+
+    def mouseMove(self, x, y, mods=None):
         self.edit_points.move(x, y)
 
     def apply(self):
@@ -18,7 +25,6 @@ class Cut(Tool):
         if len(points) == 0:
             self.infoMessage.emit("You need to draw something for this operation.")
             return
-
 
         if len(self.viewerplus.selected_blobs) != 1:
             self.infoMessage.emit("A single selected area is required.")
@@ -33,6 +39,8 @@ class Cut(Tool):
         for blob in created_blobs:
             self.viewerplus.addBlob(blob, selected=True)
             self.blobInfo.emit(blob, "[TOOL][CUT][BLOB-CREATED]")
+
+        self.viewerplus.project.updateCorrespondences("REPLACE", self.viewerplus.image, created_blobs, [selected_blob], "")
 
         self.log.emit("[TOOL][CUT] Operation ends.")
 
