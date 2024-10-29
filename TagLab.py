@@ -253,7 +253,7 @@ class TagLab(QMainWindow):
         self.btnSplitScreen        = self.newButton("split.png", "Split screen",              flatbuttonstyle, self.toggleComparison)
         self.btnAutoMatch          = self.newButton("automatch.png", "Compute automatic matches", flatbuttonstyle, self.autoCorrespondences)
         self.btnAutoMatch.setCheckable(False) # WARNING: Automatic matches button is not checkable
-        self.btnMatch              = self.newButton("manualmatch.png", "Add manual matches ", flatbuttonstyle, self.matchTool)
+        self.btnMatch              = self.newButton("manualmatch.png", "Edit manual matches ", flatbuttonstyle, self.matchTool)
 
 
         # separator
@@ -1264,8 +1264,8 @@ class TagLab(QMainWindow):
         autoMatchLabels.setStatusTip("Match labels between two maps automatically")
         autoMatchLabels.triggered.connect(self.autoCorrespondences)
 
-        manualMatchLabels = QAction("Add Manual Matches", self)
-        manualMatchLabels.setStatusTip("Add manual matches")
+        manualMatchLabels = QAction("Edit Manual Matches", self)
+        manualMatchLabels.setStatusTip("Edit manual matches")
         manualMatchLabels.triggered.connect(self.matchTool)
 
         exportMatchLabels = QAction("Export Matches", self)
@@ -1290,7 +1290,7 @@ class TagLab(QMainWindow):
         exportGenetCSV.triggered.connect(self.exportGenetCSV)
 
 
-        self.comparemenu = menubar.addMenu("&Comparison")
+        self.comparemenu = menubar.addMenu("&Compare")
         self.comparemenu.setStyleSheet(styleMenu)
         self.comparemenu.addAction(splitScreenAction)
         self.comparemenu.addAction(autoMatchLabels)
