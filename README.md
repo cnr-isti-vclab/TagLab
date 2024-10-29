@@ -7,8 +7,6 @@ TagLab was developed to assist with the annotation and extraction of statistical
 
 
 ## Interaction
-TagLab allows to :
-
 
 TagLab allows users to interactively segment regions using the following methods:
 
