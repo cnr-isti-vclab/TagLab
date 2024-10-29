@@ -2,34 +2,32 @@
 
 | &nbsp; [Software Requirements](#software-requirements) &nbsp; | &nbsp; [Install](#installing-taglab) &nbsp; | &nbsp; [Update](#updating-taglab) &nbsp; | &nbsp; [Citation](#citation) &nbsp; |
 
-TagLab was created to support the activity of annotation and extraction of statistical data from ortho-maps of benthic communities. The tool includes different types of CNN-based segmentation networks specially trained for agnostic (relative only to contours) or semantic (also related to species) recognition of corals. TagLab is an ongoing project of the Visual Computing Lab http://vcg.isti.cnr.it/.
-
+TagLab was developed to assist with the annotation and extraction of statistical data from ortho-maps of benthic communities. The tool features various AI segmentation networks specifically trained for agnostic recognition (focused solely on contours) and semantic recognition (which also considers species) of corals. TagLab is an ongoing project of the Visual Computing Lab http://vcg.isti.cnr.it/
 ![ScreenShot](screenshot.jpg)
 
 
 ## Interaction
 TagLab allows to :
 
-- zoom and navigate a large map using (zoom/mouse wheel, pan/'Move' tool selected + left button). With every other tool selected the pan is activated with ctrl + left button
-- segment coral instances in a semi-automatic way by indicating the corals' extremes with the 4-clicks tool. This is achieved using the Deep Extreme Cut network fine-tuned on coral images. Deep Extreme Cut original code can be found here: https://github.com/scaelles/DEXTR-PyTorch
-- segment coral instances in a semi-automatic way by indicating the interior and the exterior of a coral using the positive-negative clicks tool. Use shift+left mouse button to assign the positive (the interior) points and shift+right mouse button to assign the negative (the exterior) points. This tool is based on the RITM interactive segmentation project, code and additional information can be found here: https://github.com/saic-vul/ritm_interactive_segmentation
-- assign a class with the 'Assign class' tool or double-clicking the class in the labels panel
-- Area, perimeter and other information are displayed in the region info panel on the right
-- simultaneously turn off the visibility of one or more classes, (ctrl + left button/disable all but the selected, shift + left button, inverse operation), change the class transparency using the above slider
-- perform boolean operations between existing labels (right button to open the menu)
-- refine the incorrect borders automatically with the Refine operation or manually with the 'Edit Border' tool
-- tracking coral changes in different time intervals
-- import depth information of the seafloor
-- import GeoTiff
-- draw coral internal cracks with the 'Create Crack' tool
-- make freehand measurements or measure the distance between centroids (Ruler tool).
-- save the annotations (as polygons) and import them into a new project
-- export a CSV file table containing the data of each coral colony
-- export a JPG file of a black background with totally opaque labels
-- export shapefiles
-- export a new dataset and train your network (!)
 
-We are working hard to create a web site with detailed instructions about TagLab. Stay tuned(!)
+TagLab allows users to interactively segment regions using the following methods:
+
+- Four-Clicks Tool: This method involves indicating the extremes of regions with four clicks. It utilizes the Deep Extreme Cut network, which has been fine-tuned for complex structures. You can find the original code for Deep Extreme Cut here: https://github.com/scaelles/DEXTR-PyTorch.
+- Positive-Negative Clicks Tool: This tool enables users to define the interior and exterior of a region through positive and negative clicks. It is based on the RITM interactive segmentation project. Additional information and the code can be found here: https://github.com/saic-vul/ritm_interactive_segmentation.
+- SAM Positive/Negative Clicks: This method allows for indicating the interior and exterior of a region within a sub-window using positive and negative clicks. More details can be found on the SAM webpage: https://segment-anything.com/.
+- SAM All Regions in an Area: Users can segment all regions inside a sub-window only by placing region seeds. This technique also utilizes the SAM approach. For more information, please visit the SAM webpage: https://segment-anything.com/.a coral using the positive-negative clicks tool. Use shift+left mouse button to assign the positive (the interior) points and shift+right mouse button to assign the negative (the exterior) points. This tool is based on the RITM interactive segmentation project, code and additional information can be found here: https://github.com/saic-vul/ritm_interactive_segmentation
+
+
+TagLab enables users to automatically segment regions by utilizing custom recognition models. This is accomplished through the following steps:
+
+- Creating and managing a training dataset
+- Training the model using the 'Train Your Network' interface
+- Inferring predictions with the 'Fully Automated Semantic Segmentation' tool
+
+This learning pipeline is used as a backbone of the DeepLab V3+ , https://github.com/jfzhang95/pytorch-deeplab-xception/.
+
+
+TagLab has many resources for image data management and analysis and the ability to track changes among time points. For additional information, please visit the website and the documentation: https://taglab.isti.cnr.it/
 
 
 ## Software Requirements
