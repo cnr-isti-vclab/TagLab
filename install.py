@@ -65,8 +65,6 @@ if len(sys.argv)>=2:
     # if sys.argv contains an argument 'cpu'
     if 'cpu' in sys.argv:
         flag_install_pytorch_cpu = True
-    if 'SAM' in sys.argv:
-        flag_install_SAM = True
 
 
 # checking supported compute platform (cuda, cpu or rocm)
@@ -236,6 +234,7 @@ install_requires = [
     'shapely',
     'pycocotools',
     'qhoptim',
+    'segment-anything',
 
     # CoralNet Toolbox
     'Requests',
@@ -246,9 +245,6 @@ install_requires = [
     #forcing numpy 1.24.2 version
     'numpy==1.24.4',
 ]
-
-if flag_install_SAM:
-    install_requires.append('segment-anything')
 
 # if on windows, first install the msvc runtime
 if osused == 'Windows':
@@ -318,10 +314,8 @@ from os import path
 import urllib.request
 this_directory = path.abspath(path.dirname(__file__))
 net_file_names = ['dextr_corals.pth', 'deeplab-resnet.pth.tar', 'ritm_corals.pth',
-                  'pocillopora.net', 'porites.net', 'pocillopora_porite_montipora.net']
-
-if flag_install_SAM:
-    net_file_names.append('sam_vit_h_4b8939.pth')
+                  'pocillopora.net', 'porites.net', 'pocillopora_porite_montipora.net',
+                  'sam_vit_h_4b8939.pth']
 
 for net_name in net_file_names:
     filename_dextr_corals = 'dextr_corals.pth'
