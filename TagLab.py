@@ -226,7 +226,7 @@ class TagLab(QMainWindow):
         QToolTip { background-color: white; color: rgb(100,100,100); }
         """
 
-        self.btnMove               = self.newButton("move.png",     "Pan",                    flatbuttonstyle, self.move)
+        self.btnMove               = self.newButton("move.png",     "Pan/Zoom",               flatbuttonstyle, self.move)
         self.btnPoint              = self.newButton("point.png",    "Place annotation point", flatbuttonstyle, self.placeAnnPoint)
         self.btnFreehand           = self.newButton("pencil.png",   "Freehand segmentation",  flatbuttonstyle, self.freehandSegmentation)
         self.btnCreateCrack        = self.newButton("crack.png",    "Create crack",           flatbuttonstyle, self.createCrack)
