@@ -2,7 +2,7 @@
 
 | &nbsp; [Software Requirements](#software-requirements) &nbsp; | &nbsp; [Install](#installing-taglab) &nbsp; | &nbsp; [Update](#updating-taglab) &nbsp; | &nbsp; [Citation](#citation) &nbsp; |
 
-TagLab was developed to assist with the annotation and extraction of statistical data from ortho-maps of benthic communities. The tool features various AI segmentation networks specifically trained for agnostic recognition (focused solely on contours) and semantic recognition (which also considers species) of corals. TagLab is an ongoing project of the Visual Computing Lab http://vcg.isti.cnr.it/
+TagLab was developed to assist with the annotation and extraction of statistical data from ortho-maps of benthic communities. The tool features various AI segmentation networks specifically trained for agnostic recognition (focused solely on contours) and semantic recognition (which also considers species) of corals. TagLab is an ongoing project of the [Visual Computing Lab](http://vcg.isti.cnr.it/)
 ![ScreenShot](screenshot.jpg)
 
 
@@ -10,10 +10,10 @@ TagLab was developed to assist with the annotation and extraction of statistical
 
 TagLab allows users to interactively segment regions using the following methods:
 
-- [`DEXTR: Four-Clicks Tool`](https://github.com/scaelles/DEXTR-PyTorch): This method involves indicating the extremes of regions with four clicks. It utilizes the Deep Extreme Cut network, which has been fine-tuned for complex structures.
-- [`RITM: Positive-Negative Clicks Tool`](https://github.com/saic-vul/ritm_interactive_segmentation): This tool enables users to define the interior and exterior of a region through positive and negative clicks.
-- [`SAM: Positive-Negative Clicks Tool`](https://github.com/facebookresearch/segment-anything): This method allows for indicating the interior and exterior of a region within a sub-window using positive and negative clicks.
-- [`SAM: All Regions in an Area Tool`](https://github.com/facebookresearch/segment-anything): Users can segment all regions inside a sub-window only by placing region seeds. This technique also utilizes the SAM approach.
+- [`DEXTR: Four-Clicks Tool`](https://github.com/scaelles/DEXTR-PyTorch): This tool involves indicating the extremes of regions with four clicks. It utilizes the `Deep Extreme Cut` model, which has been fine-tuned for complex structures.
+- [`RITM: Positive-Negative Clicks Tool`](https://github.com/saic-vul/ritm_interactive_segmentation): This tool enables users to define the interior and exterior of a region through positive and negative clicks. It utilizes the `Reviving Iterative Training with Mask Guidance` model, which has been train to work across various domains.
+- [`SAM: Positive-Negative Clicks Tool`](https://github.com/facebookresearch/segment-anything): This tool allows for indicating the interior and exterior of a region within a sub-window using positive and negative clicks. It utilizes the `Segment Anything` model, which has been trained to work across various domains.
+- [`SAM: All Regions in an Area Tool`](https://github.com/facebookresearch/segment-anything): This tool allows users to segment all regions inside a sub-window by automatically placing region seeds. It utilizes the `Segment Anything` model, which has been trained to work across various domains.
 
 ## Fully Automated Segmentation
 
@@ -26,7 +26,8 @@ accomplished through the following steps:
 3. Making predictions with the `Fully Automated Semantic Segmentation` tool
 
 TagLab has many resources for image data management and analysis, including the ability to track changes among time 
-points. For additional information, please visit the website and the documentation: https://taglab.isti.cnr.it/
+points. For additional information, please visit the official TagLab website and documentation 
+[page](https://taglab.isti.cnr.it/)
 
 ## Software Requirements
 
