@@ -253,7 +253,7 @@ class TagLab(QMainWindow):
         self.btnSplitScreen        = self.newButton("split.png", "Split screen",              flatbuttonstyle, self.toggleComparison)
         self.btnAutoMatch          = self.newButton("automatch.png", "Compute automatic matches", flatbuttonstyle, self.autoCorrespondences)
         self.btnAutoMatch.setCheckable(False) # WARNING: Automatic matches button is not checkable
-        self.btnMatch              = self.newButton("manualmatch.png", "Edit manual matches ", flatbuttonstyle, self.matchTool)
+        self.btnMatch              = self.newButton("manualmatch.png", "Edit matches ", flatbuttonstyle, self.matchTool)
 
 
         # separator
@@ -1344,10 +1344,10 @@ class TagLab(QMainWindow):
     def researchFieldChanged(self, index):
         # pass
         print(f"index is {index}")
-        if index == "Architectural Heritage":
+        if index == "Digital Heritage":
         # if index == 1:
             self.toggleHeritageButtons(show=True)
-        elif index == "Marine Ecology/Biology":
+        elif index == "Marine Ecology":
         # elif index == 0:
             self.toggleHeritageButtons(show=False)
 
