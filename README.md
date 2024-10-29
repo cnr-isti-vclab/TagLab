@@ -28,7 +28,7 @@ accomplished through the following steps:
 
 TagLab has many resources for image data management and analysis, including the ability to track changes among time 
 points. For additional information, please visit the official TagLab website and documentation 
-[page](https://taglab.isti.cnr.it/)
+[page](https://taglab.isti.cnr.it/).
 
 ## Software Requirements
 
