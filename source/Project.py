@@ -25,8 +25,8 @@ from source.tools import Cut
 
 def loadProject(taglab_working_dir, filename, default_dict):
     dir = QDir(taglab_working_dir)
-    filename = dir.relativeFilePath(filename)
-    f = open(filename, "r")
+    abspath = os.path.join(taglab_working_dir, dir.relativeFilePath(filename))
+    f = open(abspath, "r")
     try:
         data = json.load(f)
     except json.JSONDecodeError as e:
@@ -34,7 +34,7 @@ def loadProject(taglab_working_dir, filename, default_dict):
 
     if "Map File" in data:
         project = loadOldProject(taglab_working_dir, data)
-        project.loadDictionary(default_dict)
+        project.loadDictionary(os.path.join(taglab_working_dir, default_dict))
         project.region_attributes = RegionAttributes()
     else:
         project = Project(**data)

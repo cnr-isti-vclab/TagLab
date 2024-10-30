@@ -155,7 +155,7 @@ class TagLab(QMainWindow):
 
         ##### DATA INITIALIZATION AND SETUP #####
 
-        self.taglab_dir = os.getcwd()
+        self.taglab_dir = os.path.dirname(__file__)
 
         self.TAGLAB_VERSION = "TagLab " + current_version
 
@@ -166,7 +166,7 @@ class TagLab(QMainWindow):
 
         # LOAD CONFIGURATION FILE
 
-        f = open("config.json", "r")
+        f = open(os.path.join(self.taglab_dir, "config.json"), "r")
         config_dict = json.load(f)
         self.available_classifiers = config_dict["Available Classifiers"]
 
@@ -246,10 +246,8 @@ class TagLab(QMainWindow):
         # self.btnSplitBlob   = self.newButton("split.png",    "Split Blob",            flatbuttonstyle1, self.splitBlob)
 
         self.btnAutoClassification = self.newButton("auto.png", "Fully auto semantic segmentation", flatbuttonstyle, self.selectClassifier)
-
         self.btnCreateGrid         = self.newButton("grid.png", "Create grid",                flatbuttonstyle, self.createGrid)
         self.btnGrid               = self.newButton("grid-edit.png", "Active/disactive grid operations", flatbuttonstyle, self.toggleGrid)
-
         self.btnSplitScreen        = self.newButton("split.png", "Split screen",              flatbuttonstyle, self.toggleComparison)
         self.btnAutoMatch          = self.newButton("automatch.png", "Compute automatic matches", flatbuttonstyle, self.autoCorrespondences)
         self.btnAutoMatch.setCheckable(False) # WARNING: Automatic matches button is not checkable
@@ -477,7 +475,6 @@ class TagLab(QMainWindow):
 
         # LABELS PANEL
         self.labels_widget = QtTableLabel()
-
         try:
             default_dict = "dictionaries/scripps.json"
             self.default_dictionary = self.settings_widget.settings.value("default-dictionary",
@@ -757,7 +754,8 @@ class TagLab(QMainWindow):
         raw_link = 'https://raw.githubusercontent.com/' + github_repo + 'main/TAGLAB_VERSION'
 
         # read offline version
-        f_off_version = open("TAGLAB_VERSION", "r")
+        taglab_version_file = os.path.join(os.path.dirname(__file__), "TAGLAB_VERSION")
+        f_off_version = open(taglab_version_file, "r")
         taglab_offline_version = f_off_version.read()
 
         #print('Raw link: ' + raw_link)
@@ -817,7 +815,7 @@ class TagLab(QMainWindow):
         button.setStyleSheet(style)
         button.setMinimumWidth(ICON_SIZE)
         button.setMinimumHeight(ICON_SIZE)
-        button.setIcon(QIcon(os.path.join("icons", icon)))
+        button.setIcon(QIcon(os.path.join(os.path.join(self.taglab_dir, "icons"), icon)))
         button.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
         button.setMaximumWidth(BUTTON_SIZE)
         button.setToolTip(tooltip)
@@ -2559,7 +2557,7 @@ class TagLab(QMainWindow):
         self.network_name = None
         self.dataset_train_info = None
         self.project = Project()
-        self.project.loadDictionary(self.default_dictionary)
+        self.project.loadDictionary(os.path.join(self.taglab_dir, self.default_dictionary))
         self.last_image_loaded = None
         self.activeviewer = None
         self.contextMenuPosition = None
@@ -4363,7 +4361,7 @@ class TagLab(QMainWindow):
         icon = QLabel()
 
         # BIG taglab icon
-        pxmap = QPixmap(os.path.join("icons", "taglab240px.png"))
+        pxmap = QPixmap(os.path.join(os.path.join(self.taglab_dir, "icons"), "taglab240px.png"))
         pxmap = pxmap.scaledToWidth(160)
         icon.setPixmap(pxmap)
         icon.setStyleSheet("QLabel {padding: 5px; }");

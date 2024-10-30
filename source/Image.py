@@ -156,7 +156,7 @@ class Image(object):
             }
 
             for i, label in enumerate(labels):
-                dict['Visibility'][i] = int(label.visible)
+                dict['Visibility'][i] = np.int32(label.visible)
                 dict['Color'].append(str(label.fill))
                 dict['Class'].append(label.name)
                 count, new_area = self.annotations.calculate_perclass_blobs_value(label, self.map_px_to_mm_factor)

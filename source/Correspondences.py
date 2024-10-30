@@ -359,7 +359,6 @@ class Correspondences(object):
                 self.data = pd.concat([self.data, df])
 
         else:
-
             # place new correspondences
             for source in sourceblobs:
                 for target in targetblobs:

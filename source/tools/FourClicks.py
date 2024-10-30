@@ -132,8 +132,7 @@ class FourClicks(Tool):
                                                    np.min(extreme_points_ori[:, 1])] + [pad, pad]
 
             # remap the input points inside the 512 x 512 cropped box
-            extreme_points = (512 * extreme_points * [1 / crop_image.shape[1], 1 / crop_image.shape[0]]).astype(
-                int)
+            extreme_points = (512 * extreme_points * [1 / crop_image.shape[1], 1 / crop_image.shape[0]]).astype(int)
 
             # create the heatmap
             extreme_heatmap = helpers.make_gt(resize_image, extreme_points, sigma=10)
