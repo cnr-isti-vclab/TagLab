@@ -29,9 +29,7 @@ from PyQt5.QtCore import Qt, QObject, QPointF, QRectF, QFileInfo, QDir, pyqtSlot
 import importlib
 if importlib.util.find_spec("segment_anything"):
     from source.tools.Sam import Sam
-
-#from source.tools.SamInteractive import SamInteractive
-from source.tools.SAMInteractive import SAMInteractive
+    from source.tools.SAMInteractive import SAMInteractive
 
 # class Tools(object):
 class Tools(QObject):    
