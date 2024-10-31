@@ -767,29 +767,34 @@ class QtCoralNetToolboxWidget(QWidget):
             assert len(points) > 0, "No points found in file"
 
             # Remove excess, unnecessary information
-            COLUMNS = ["Id", "X", "Y", "Class", "Note", "Name", "Label", "Row", "Column", "TagLab_PID"]
+            COLUMNS = ["Id", "X", "Y", "Class", "Note", "Name", "Label", "Row", "Column"]
             points = points[[col for col in points.columns if col in COLUMNS]]
 
             # Convert list of names to a list
             images_w_points = points['Name'].to_list()
 
-            # Run the CoralNet API function
-            self.driver, _, self.predictions_file = submit_jobs(self.driver,
-                                                                self.source_id_1,
-                                                                self.source_id_2,
-                                                                "",
-                                                                images_w_points,
-                                                                points,
-                                                                self.output_folder)
+            try:
+                # Run the CoralNet API function
+                self.driver, _, self.predictions_file = submit_jobs(self.driver,
+                                                                    self.source_id_1,
+                                                                    self.source_id_2,
+                                                                    "",
+                                                                    images_w_points,
+                                                                    points,
+                                                                    self.output_folder)
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to submit jobs. {e}")
+                return
 
             # Check that the file was created
             if os.path.exists(self.predictions_file):
                 print("NOTE: Predictions made successfully")
             else:
-                raise Exception("Predictions file was not created")
+                raise Exception("WARNING: Predictions file was not created")
 
         except Exception as e:
-            raise Exception(f"CoralNet API failed. {e}")
+            QMessageBox.critical(self, "Error", f"Failed to make predictions. {e}")
+            return
 
     def getLabelMapping(self):
         """
@@ -838,8 +843,7 @@ class QtCoralNetToolboxWidget(QWidget):
             for column in df.columns:
                 if 'Machine suggestion' in column:
                     # The mapped predictions
-                    new_column_name = f"{column} (Mapped)"
-                    df[new_column_name] = df[column].map(short_code_to_label.get)
+                    df[column] = df[column].map(short_code_to_label.get)
 
             # Save the updated file
             df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
@@ -853,13 +857,29 @@ class QtCoralNetToolboxWidget(QWidget):
 
         """
         try:
-            # Import the points
-            self.parent().activeviewer.annotations.importCoralNetCSVAnn(self.predictions_file,
-                                                                        self.parent().project,
-                                                                        self.parent().activeviewer.image)
+            # Import the points, with project labels and active_image
+            labels = self.parent().project.labels
+            active_image = self.parent().activeviewer.image
+
+            imported_points = self.parent().activeviewer.annotations.importCoralNetCSVAnn(self.predictions_file,
+                                                                                          labels,
+                                                                                          active_image)
+
+            self.parent().labels_widget.setLabels(self.parent().project, self.parent().activeviewer.image)
+            self.parent().groupbox_blobpanel.blockSignals(True)
+
+            for point in imported_points:
+                self.parent().project.addPoint(active_image, point, notify=True)
+
+            self.parent().groupbox_blobpanel.blockSignals(False)
+            self.parent().activeviewer.drawAllPointsAnn()
+
             print("NOTE: Predictions imported successfully")
+
         except Exception as e:
-            raise Exception("TagLab annotations could not be imported")
+            QMessageBox.warning(self,
+                                "Error",
+                                f"Failed to import predictions. {e}")
 
     def deleteTempData(self):
         """

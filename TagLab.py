@@ -5125,27 +5125,23 @@ class TagLab(QMainWindow):
         file_name, _ = QFileDialog.getOpenFileName(self, "Open A .CSV File", self.taglab_dir, filters)
 
         if os.path.exists(file_name):
-
+            # Turn off split screen
             self.disableSplitScreen()
-
-            # Get the current image
-            channel = self.activeviewer.image.getRGBChannel()
-
             try:
                 QApplication.setOverrideCursor(Qt.WaitCursor)
 
                 # Open the file, and draw all the points on viewer
-                imported_points = self.activeviewer.annotations.importCoralNetCSVAnn(file_name, self.project.labels, self.activeviewer.image)
+                imported_points = self.activeviewer.annotations.importCoralNetCSVAnn(file_name,
+                                                                                     self.project.labels,
+                                                                                     self.activeviewer.image)
 
                 self.labels_widget.setLabels(self.project, self.activeviewer.image)
-
                 self.groupbox_blobpanel.blockSignals(True)
 
                 for point in imported_points:
                     self.project.addPoint(self.activeviewer.image, point, notify=True)
 
                 self.groupbox_blobpanel.blockSignals(False)
-
                 self.activeviewer.drawAllPointsAnn()
 
                 box.setText(f"Point annotations imported successfully!")
