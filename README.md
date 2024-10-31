@@ -15,7 +15,7 @@ TagLab allows users to interactively segment regions using the following methods
 - [`RITM: Positive-Negative Clicks Tool`](https://github.com/saic-vul/ritm_interactive_segmentation): This tool enables users to define the interior and exterior of a region through positive and negative clicks. It utilizes the `Reviving Iterative Training with Mask Guidance` model, which has been train to work across various domains.
 - [`SAM: Positive-Negative Clicks Tool`](https://github.com/facebookresearch/segment-anything): This tool allows for indicating the interior and exterior of a region within a sub-window using positive and negative clicks. It utilizes the `Segment Anything` model, which has been trained to work across various domains.
 - [`SAM: All Regions in an Area Tool`](https://github.com/facebookresearch/segment-anything): This tool allows users to segment all regions inside a sub-window by automatically placing region seeds. It utilizes the `Segment Anything` model, which has been trained to work across various domains.
-- [`CoralNet-Toolbox`](https://github.com/Jordan-Pierce/CoralNet-Toolbox): This tool enables users to make predictions on points in TagLab, using a CoralNet model. It utilizes the `CoralNet-Toolbox`, which is an official codebase used fto augment processes related to `CoralNet` and `CPCe`.
+- [`CoralNet-Toolbox`](https://github.com/Jordan-Pierce/CoralNet-Toolbox): This tool enables users to make predictions on points in TagLab, using a CoralNet model. It utilizes the `CoralNet-Toolbox`, which is an official codebase used to augment processes related to `CoralNet` and `CPCe`.
 
 ## Fully Automated Segmentation
 
