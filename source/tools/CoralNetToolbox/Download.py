@@ -669,7 +669,7 @@ def get_image_urls(driver, image_page_urls):
                 if image_url:
                     image_urls.append(image_url)
             except Exception as e:
-                print(f"ERROR: issue retrieving image URL for {url}\n{e}")
+                print(f"ERROR: Issue retrieving image URL for {url}\n{e}")
 
     print(f"NOTE: Retrieved {len(image_urls)} image URLs for {len(image_page_urls)} images")
 
@@ -732,7 +732,8 @@ def get_images(driver, source_id, prefix="", image_list=None):
                 image_page_urls.append(image_page_url)
 
                 # Extract the title attribute (image name)
-                image_name = name_element.get_attribute('title').split(" - ")[0]
+                image_name_tokens = name_element.get_attribute('title').split(" - ")
+                image_name = " - ".join(image_name_tokens[:-1])
                 image_names.append(image_name)
 
             path = 'input[title="Next page"]'
