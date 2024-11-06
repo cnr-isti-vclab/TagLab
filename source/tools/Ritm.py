@@ -110,7 +110,16 @@ class Ritm(Tool):
         image_crop = cropQImage(self.viewerplus.img_map, self.work_area_bbox)
         input_image = qimageToNumpyArray(image_crop)
 
-        # check CUDA memory to prevent crash
+        # check input image size to prevent crash
+        megapixels = (input_image.shape[0] * input_image.shape[1]) / (1024.0 * 1024.0)
+        if megapixels > 9.0:
+            box = QMessageBox()
+            str = "The input size is too big ({:.1f} MPixels). Try to reduce the viewing area by zooming in.".format(megapixels)
+            box.setText(str)
+            box.exec()
+            return False
+
+        # CUDA memory to prevent crash
         oom = False
         try:
             self.predictor.set_input_image(input_image)
@@ -122,15 +131,6 @@ class Ritm(Tool):
             box.setText("CUDA out of memory. Try to reduce the viewing area by zooming in.")
             box.exec()
             return False
-
-        # check size of the input image to prevent stuck of the PC (for CPU version)
-        if torch.cuda.is_available() is False:
-            megapixels = (input_image.shape[0] * input_image.shape[1]) / (1024.0*1024.0)
-            if megapixels > 9.0:
-                box = QMessageBox()
-                box.setText("The input image is too big. Try to reduce the viewing area by zooming in.")
-                box.exec()
-                return False
 
         self.createWorkAreaMask()
         brush = QBrush(Qt.NoBrush)
