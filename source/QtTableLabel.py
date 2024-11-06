@@ -44,7 +44,10 @@ class TableModel(QAbstractTableModel):
     def data(self, index, role):
 
         if role == Qt.TextAlignmentRole:
-            return Qt.AlignCenter
+             if index.column() > 4:
+                return Qt.AlignRight | Qt.AlignVCenter
+             else:
+                return Qt.AlignCenter
 
         if role == Qt.BackgroundRole:
             return QColor(40, 40, 40)
