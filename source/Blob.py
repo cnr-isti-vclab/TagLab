@@ -99,7 +99,7 @@ class Blob(object):
             self.updateUsingMask(self.bbox, input_mask)
 
             # a string with a progressive number to identify the instance
-            self.instance_name = "coral" + str(id)
+            self.instance_name = "region" + str(id)
 
             # a string with a number to identify the blob plus its centroid
             xc = self.centroid[0]
