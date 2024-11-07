@@ -198,17 +198,6 @@ def figureToQPixmap(fig, dpi, width, height):
 
     return pxmap
 
-def cropQImage(qimage_map, bbox):
-
-    left = bbox[1]
-    top = bbox[0]
-    h = bbox[3]
-    w = bbox[2]
-
-    qimage_cropped = qimage_map.copy(int(left), int(top), int(w), int(h))
-
-    return qimage_cropped
-
 def cropImage(img, bbox):
     """
     Copy the given mask inside the box used to crop the plot.
@@ -251,26 +240,6 @@ def cropImage(img, bbox):
         img[source_offy:source_offy+source_h, source_offx:source_offx+source_w, :]
 
     return crop
-
-def qimageToNumpyArray(qimg):
-
-    w = qimg.width()
-    h = qimg.height()
-
-    fmt = qimg.format()
-    #assert (fmt == QImage.Format_RGB32)
-
-    arr = np.zeros((h, w, 3), dtype=np.uint8)
-
-    bits = qimg.bits()
-    bits.setsize(int(h * w * 4))
-    arrtemp = np.frombuffer(bits, np.uint8).copy()
-    arrtemp = np.reshape(arrtemp, [h, w, 4])
-    arr[:, :, 0] = arrtemp[:, :, 2]
-    arr[:, :, 1] = arrtemp[:, :, 1]
-    arr[:, :, 2] = arrtemp[:, :, 0]
-
-    return arr
 
 def autolevel(img, percent):
 
@@ -543,8 +512,6 @@ def removeOverlapping(created, sam_blobs, annotated = False):
                                     if blobO in created:
                                         created.remove(blobO)
 
-    
-#for SAM
 def cropQImage(qimage_map, bbox):
 
     left = bbox[1]
@@ -552,7 +519,7 @@ def cropQImage(qimage_map, bbox):
     h = bbox[3]
     w = bbox[2]
 
-    qimage_cropped = qimage_map.copy(left, top, w, h)
+    qimage_cropped = qimage_map.copy(int(left), int(top), int(w), int(h))
 
     return qimage_cropped
 
@@ -562,7 +529,7 @@ def qimageToNumpyArray(qimg):
     h = qimg.height()
 
     fmt = qimg.format()
-    assert (fmt == QImage.Format_RGB32)
+    #assert (fmt == QImage.Format_RGB32)
 
     arr = np.zeros((h, w, 3), dtype=np.uint8)
 
