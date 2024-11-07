@@ -135,148 +135,171 @@ em {
 	}
 }
 
+.img-fluid {
+    max-width: 100%;
+    height: auto;
+}
 	</style>
 </head>
 <body>
 
 <div class="section docs">
+<!--startdocs-->
+<h1>TagLab Documentation</h1>
 
-<h1>TagLab Interface</h1>
+<ul class="menu">
+<li><a href="https://taglab.isti.cnr.it/docs#interface">Interface</a>
+</li><li><a href="https://taglab.isti.cnr.it/docs#create">Create and manage projects</a>
+</li><li><a href="https://taglab.isti.cnr.it/docs#import">Import options</a>
+</li><li><a href="https://taglab.isti.cnr.it/docs#export">Export options</a>
+</li><li><a href="https://taglab.isti.cnr.it/docs#tools">Tools</a>
+</li><li><a href="https://taglab.isti.cnr.it/docs#labels">Labels operations</a>
+</li><li><a href="https://taglab.isti.cnr.it/docs#annotations">Annotations</a>
+</li><li><a href="https://taglab.isti.cnr.it/docs#howto">How-to</a>
+	<ul>
+	<li><a href="https://taglab.isti.cnr.it/docs#learning">Learning pipeline</a>
+	</li><li><a href="https://taglab.isti.cnr.it/docs#dem">Digital elevation models</a>
+	</li><li><a href="https://taglab.isti.cnr.it/docs#temporal">Multi-temporal comparison</a>
+	</li></ul>
+</li></ul>
 
-<p>TagLab user interface is subdivided into three main components: </p>
- 
- <h3> The Tool Bar </h3>
 
-     <p>The toolbar is located on the left side of the interface. It contains the following operation buttons, individually activable:</p>
+
+<h2 id="interface">Interface</h2>
+
+ <img class="img-fluid" src="./TagLab1_files/interface-thumb.jpg">
+
+     <p>The toolbar on the left side of the interface contains individual operation buttons that can be activated individually:</p>
     
     
-    <ul>
-    <li><a href="#move">Move</a>  enables Pan/Zoom operations. 
-    <li><a href="#assigntool">Assign</a> assigns a semantic class.
-    <li><a href="#freehand">Freehand drawing</a>  allows manually drawing corals borders. 
-    <li><a href="#editborder">Edit Border</a> (coral alike icon) allows quick contour editing.
-    <li><a href="#cut">Cut</a> segmentation (scissors icon) provides a fast guided separation of labels. 
-    <li><a href="#crack">Crack</a> interactively places cracks.
-    <li><a href="#split">Split</a> blob  automatically separates label masks.
-    <li><a href="#ruler">Ruler</a>  takes linear measures, between a pair of points or objects centroids.
-    <li><a href="#4clicks">4-clicks</a> implementsCNN-assisted agnostic segmentation.
-    <li><a href="#fully">Fully automatic classification</a>  allows to select a pre-trained semantic segmentation network from the ones available, and apply it to the map.
-    </ul>
+    <ul>	
+	<li><a href="https://taglab.isti.cnr.it/docs#move">Pan\Zoom</a> enables only pan/zoom operations, turning off all other tools.
+	</li><li><a href="https://taglab.isti.cnr.it/docs#annotationpoints">Place annotation point</a> allows you to place points to annotate manually.
+	</li><li><a href="https://taglab.isti.cnr.it/docs#4clicks">4-clicks segmentation</a> is an AI-based interactive tool that enables users to trace region boundaries using four endpoints. For a demonstration, refer to the video tutorial on the Home page.
+	</li><li><a href="https://taglab.isti.cnr.it/docs#positive-negative">Positive-Negative Clicks Segmentation</a> is an AI-based interactive segmentation tool that enables users to trace region boundaries using both external and internal points. Users can also use it to edit previously segmented areas. For a demonstration, refer to the video tutorials on the home page.
+	</li><li><a href="https://taglab.isti.cnr.it/docs#freehand">Freehand Segmentation</a> freehand segmentation of regions using a pixel-wise drawing tool.
+	</li><li><a href="https://taglab.isti.cnr.it/docs#watershed">Watershed Segmentation tool</a> freehand segmentation of regions using scribbles.
+	</li><li><a href="https://taglab.isti.cnr.it/docs#sam">Sam - all regions in an area</a> is an AI-based interactive segmentation tool that simultaneously segments all non-overlapping regions in a sub-workspace.
+	</li><li><a href="https://taglab.isti.cnr.it/docs#sam">Sam - positive/negative in an area</a> is an AI-based interactive segmentation tool that allows interactive segmentation of a region using external and internal points (similar to Positive-negative clicks segmentation) on a sub-workspace. Compared to positive-negative clicks, once a sub-workspace is defined, the process is faster and sometimes more robust to noise, although less accurate in tracing region boundaries.
+    </li><li><a href="https://taglab.isti.cnr.it/docs#assigntool">Assign class</a> is a tool for the class assignment (select + <key>A</key>).
+    </li><li><a href="https://taglab.isti.cnr.it/docs#editborder">Edit region border</a> this tools permit to edit contour quickly.
+    </li><li><a href="https://taglab.isti.cnr.it/docs#cut">Cut segmentation</a> is a tool to separate regions drawing curves.
+    </li><li><a href="https://taglab.isti.cnr.it/docs#ruler">Measure tool</a> takes linear measures, between a pair of points or objects centroids.
+    </li><li><a href="https://taglab.isti.cnr.it/docs#fully">Fully automatic semantic segmentation</a> allows to select a pre-trained semantic segmentation network from the ones available, and apply it new data.
+	</li><li><a href="https://taglab.isti.cnr.it/docs#splitscreen">Split screen</a> splits the working view in two sincronized views.
+	</li><li><a href="https://taglab.isti.cnr.it/docs#automatch">Compute automatic matches</a> computes automatic correspondences between semantically segmented regions displaying them on a table.
+	</li><li><a href="https://taglab.isti.cnr.it/docs#manualmatch">Add manual matches</a> allows the manual editing of correspondences.
+    </li></ul>
 
 
-     <h3> Working View </h3>
-<p>The Working View covers the central part of the interface and contains the orthomosaic map.
- Navigation is straightforward: zoom (wheel to zoom in and out) is always allowed, but the pan 
- is enabled only when the Pan Tool is active or by pressing the <key>Ctrl</key>+mouse left button (when one of the other tools is active).
- Above the Working View, a slider allows adjusting masks transparency.</p>
+	<p>The <em>Working View</em> displays the image data to annotate. Navigation is straightforward: zoom (wheel to zoom in and out) is always allowed, panning is enabled only when the Move tool is active or by pressing the <key>Ctrl</key>+ mouse left button (when one of the other tools is active).
+	Above the Working View, a slider allows adjusting segmentations transparency.</p>
 
 
- <h3> The Right Panel </h3>
-<p>This section is partitioned into different subpanels.
- From the top: the Warnings message box, the Labels panel, the Comparison panel, the Segmentation info box, and the Map viewer.  
- The Labels Panel displays a list of colors and class names.
- It can be configured by editing a configuration file containing data about the available classifiers and the pair label name-color used by the specific application.</p>
+	 <p> On the right side, the Labels Panel contains your custom list of colours and class names; you can configure labels by editing the dictionary available in the <em>.config</em> file in your TagLab folder. The <em>Eye</em> icon controls the visibility of each class which be switched singularly or in groups (by pressing <key>Ctrl</key> or <key>Shift</key>).
+	 This helps to visualize the distribution of specific species and, considering that only visible tags are processed, 
+	 the export of targeted maps, tabs, or statistics.</p>
 
-<p>The visibility of each class in the working view can be switch using the eye icon, singularly or in groups (by pressing <key>Ctrl</key> or <key>Shift</key>).
- This supports the visualization of the distribution of a specific species and the export of targeted maps, tabs, or statistics (only visible tags are processed).</p>
+	<p>The Region Info box shows properties related to the selected object as <em>id</em>, <em>genet</em>, <em>coordinates</em>, <em>class</em>, <em>perimeter</em>, <em>area</em>, and <em>surface area</em>. This information is updated by double-clicking the object.</p>
 
-<p>The Comparison Panel displays the current editable annotations plus overlapping annotations from others projects, in a non-editable mode, and a dashing appearance. Annotations from multi-temporal surveys can be loaded from File &gt; Compare annotation.</p>
+	<p>The Map Viewer, on the bottom right of the interface, highlights the map region under viewing in the Working View, assisting the navigation of extensive maps. The Map Viewer is interactive, too; the working area can be selected by a single click or by panning on the rectangle of interest.</p>
 
-<p>The Segmentation Info box shows properties related to the selected label.
- More precisely: coordinates, class, perimeter, area, and an editable note field. This information are updated simultaneously after every operation.</p>
-
-<p>The Map viewer, on the bottom right of the interface, highlights the map region under viewing in the Working View, assisting the navigation of extensive maps. The Map Viewer is interactive, too; the working area can be selected by a single click or by panning on the rectangle of interest.</p>
-
-</p>
+	<p></p>
 
 
+<h2 id="create">Create and manage a project</h2>
+<h3> File &gt; Add New Map </h3>
 
-
-<h1>TagLab: HOW TO</h1>
-
-
-<h2>Create an manage a project</h2>
-<h3> File &gt; Load Map </h3>
-
-<p>Browse an image map from your PC, with the current settings: </p>
-
+<p>Choose a name and browse data from your PC. Be careful: </p>
 
 <ul>
 <li>TagLab only supports <b>.jpg</b> and <b>.png</b> RGB images with a maximum size of 32767x32767 pixels.</li>
 <li>TagLab doesn't support images having a transparency channel.</li>
+<li>The loading of a <b>.tiff</b> file with the DEM is not mandatory. </li>
 </ul> 
 
-<p>If TagLab crashes after the map loading the image format is probably not supported.
-Fill all the fields in the <em>map settings</em> menu, the px-to-mm conversion allows to measure areas in cm<sup>2</sup>
-and lengths in cm. If this value is settled to 2.0 a pixel is 2mm long.</p>
+<p> Please, fill all the fields in the <em>Map Settings</em> menu. TagLab will use the Acquisition Date for the multi-temporal comparison, the Pixel Size to convert pixels regions in cm<sup>2</sup>
+and lengths in cm. By clicking apply, you create a new <em>TagLab map</em>. If TagLab crashes after the data loading, the image format is probably not supported.  
+ In TagLab, a map is a data layer containing the ortho, the DEM (if existing), related info and your region-based annotations. TagLab supports the creation of
+multiple maps for multi-temporal comparison. You can select visualized maps through the Map Name field on the top of the Working View. </p>
 
 
-<h3>File &gt; New Project </h3>
+<h3> File &gt; Edit Map Info </h3>
 
-<p>This option discard the current project and re-initializes the interface. </p>
+<p>  You can edit the Map Setting fields of all your TagLab maps in a further moment by using the Edit Map Info. However, you are not allowed to change the ortho. </p>
+
+<h3> File &gt; Save Project  </h3>
+
+<p>It saves the current project. The project file contains one or a set of TagLab maps. References to the loaded map, the settings, and to annotations (as a list of coordinates and assigned classes) are saved in a JSON file. </p>
 
 
 <h3>File &gt; Open Project </h3>
 
-<p>It allows loading an existing project. This command loads both maps and annotations.
-If the map has been moved into another folder, Taglab asks you to load it again.
-The project file can be moved anywhere. Recents open projects are directly visible in the File menu. </p>
+<p>It allows loading an existing project. 
+If the image data has been moved into another folder, Taglab asks you to re-locate and load them again.
+The project file can be moved anywhere. Recents open projects are directly visible in the <em>File </em> menu.</p>
 
 
-<h3> File &gt; Save Project  </h3>
-
-<p>It saves the current project. The project file contains a reference to the loaded map, the map settings,
-your annotations (list of points), and all additional information such as the assigned classes,
-areas, perimeter, centroids. The project is saved as a JSON file. </p>
+<h3>Digital Heritage/Ecology</h3>
+<p>
+TagLab has been tested in two application fields: underwater survey mapping on coral reefs, and the analysis of orthomosaics in Digital Heritage applications. Most of the tools and the menu options for the two application fields are the same, but there are some slight differences. By navigating to <b>File &gt; Settings</b>, the user can switch between the two research fields and access the respective functionalities.</p>
 
 
-
-<h2>Import options</h2>
-
-<h3>File &gt; Import Options &gt; Append Annotation to Current</h3>
-
-<p>Appends a set of polygons (saved in a .json file) to the current project. This is useful when you have a set of polygons belonging to class A and you would like to add the previously segmented class B on the same map. Warnings: previously created annotation must be created on the same map or a map of the same size. </p> 
-
-<h3>File &gt; Import Options &gt; Compare Annotations</h3>
-
-<p>Imports a set of annotations in a separate layer. Multiple annotations are visible in the Comparison panel on the right. New annotations exhibit dashed contours and are not editable. This option is extremely useful to visually compare 2D changes in multi-temporal maps. Visibility might be switched on and of using the eye icon. We planned to add boolean operations between different layers. </p> 
-
-<h3>File &gt; Import Options> Import Label map.</h3>
-
-<p>Loads a segmented .jpg or .png map in an existing projects. This option polygonizes a label map, and new polygons are appended to the existing ones. The map must have a black (RGB(0,0,0)) background, and foreground classes must be present in your .config file. It may be useful to use Taglab edit options on a previous segmentation.</p>
+<h2 id="import">Import options</h2>
 
 
-<h2>Export options</h2>
+<h3>File &gt; Import Options&gt; Import Label Image.</h3>
 
-<h3>File &gt; Export Options &gt; Annotation as data table</h3>
+<p>This option allows you to poligonize a co-registered label image and load the polygons as annotations superimposed on your ortho.   
+The label image must have a black RGB(0,0,0) background, and the foreground classes must be present in your <em>.config</em> file. It may be useful to use Taglab edit tools on a previous segmentation.</p>
 
-<p> saves a.csv files containg a unique ID for each polygon, class information,  area, perimeter, centroids coordinates and additional notes</p> 
+<h3>File &gt; Import Options&gt; Add Another Project.</h3>
 
-<h3>File &gt; Export Options &gt; Annotations as map</h3>
+<p>Append a project (one or a set of TagLab maps) to the current one.</p>
 
-<p> saves a.png label a pixel-wise segmented map with a black background class and foreground classes according to the <em>visible</em> classes in your label panel. Class visibility might be 
-switch on and off using the eye icon </p> 
 
-<h3>File &gt; Export Options &gt; Histograms</h3>
 
-<p> Clicking preview creates a histogram containing all the foreground classes checked in the create and export histogram menu. It calculates the coverage automatically in square meters of each class.</p>
+<h2 id="export">Export Options</h2>
+
+<h3>File &gt; Export Options &gt; Annotation as Data Table</h3>
+
+<p> Saves a <em>.csv </em> file  containg a unique <em>id, genet, class information, area, perimeter, centroids coordinates </em> for each polygon.</p> 
+
+<h3>File &gt; Export Options &gt; Annotations as Label Image</h3>
+
+<p> Saves a <em>.png</em> pixel-wise segmented image with a black background and colored foreground classes according to the <em>visible</em> classes in your label panel. Class visibility might be 
+switch on and off using the <em>Eye</em> icon. </p> 
+
+<h3>File &gt; Export Options &gt; Export Annotations as a GeoTiff</h3>
+
+<p>Exports a geo-referenced labelled image.</p> 
+
+
+<h3>File &gt; Export Options &gt; Annotations as Shapefile</h3>
+
+<p>Exports visible annotations as a geo-referenced shapefile. </p> 
+
+
+<h3>File &gt; Export Options &gt; Histogram</h3>
+
+<p> Creates a histogram containing all the foreground classes checked in the menu. It automatically display per-class coverage.</p>
 
 
 <h3>File &gt; Export Options &gt; Training Dataset</h3>
 
-<p> Export squared tiles of 1026 pixels with an overlap of 50%. TagLab exports each RGB map tile with the corresponding label tile with the same suffix. These are the settings that we use in our training. </p>
-
-</body>
+<p> Export squared tiles of 1026 pixels with an overlap of 50%. TagLab exports each RGB map tile and the corresponding label with the same suffix. For more information, please refers to <a href="https://taglab.isti.cnr.it/docs#learning">Learning pipeline</a>. </p>
 
 
-<h2>Commands</h2>
-<p> Undo and Redo operations work with <key>Ctrl + z</key>, <key>Crtl + Shift + z</key> </p>
+
+
+<h2 id="commands">Commands</h2>
+<p> Undo and Redo operations work with <key>Ctrl</key> + <key>z</key>, <key>Crtl</key> + <key>Shift</key> + <key>z</key></p>
 
 
 <h3>Select</h3>
-<p>Operations can only be applied on selected labels. For the single label selection, double click inside a label. Polygon outline of the selected labels changes from black to white.
-Almost all operations work with a single selected label, except delete, boolean operations (merge, divide, subtract), assign class, that allows multiple selections. Labels can be added to the selection using <key>Shift</key> + left click)
-or a group of label can be selected by dragging a rectangular window (<key>Shift</key> + left click+drag). To select labels in this way, be sure to include them entirely in the rectangle.</p> 
+<p>Operations can only be applied on selected labels. For the single label selection, double click inside a label; the polygon outline changes from black to white.
+Almost all operations work with a single selected label, except delete, boolean operations (merge, divide, subtract), assign class, that allows multiple selections. Labels can be added to the selection using <key>Shift</key> + left click.
+A group of label can be selected by dragging a rectangular window (<key>Shift</key> + left click + drag). To select labels by window dragging, be sure to include them entirely in the rectangle.</p> 
 
 
 <h3>Confirm operation</h3>
@@ -284,128 +307,397 @@ or a group of label can be selected by dragging a rectangular window (<key>Shift
 
 
 <h3>Reset tool </h3>
-<p>Any operation not carried out adequately can be canceled by pressing <key>Esc</key> before confirmation.</p> 
+<p>Any operation can be reset by pressing <key>Esc</key> before confirmation.</p> 
 
 
 
-<h2>Tools</h2>
+<h2 id="tools">Tools</h2>
+
 <a name="zoom"></a>
-<p>The zoom tool is always active by using the scroll. Tools are activable only singularly. Taglab has two smart tools, the 4-click tools and the Fully automatic segmentation tools, all the other implements
-classical image processing algorithms. For each operation computed on labels the information contained in the Info Panel are automatically adjusted. </p>
+<p>The zoom is always active; all tools are activable singularly. In most tools, the tracing/editing actions must be confirmed by pressing the <key>Space bar</key>.</p>
 
 
 <a name="move"></a>
-<h3>Move</h3>
-<p> When the move tool is selected the image pan operation is active (left click + drag) . When on of the others tool is selected the pan operation is allowed only by pressing <key>Ctrl</key> (left click + drag)
-Pan Move and zoom operation in the Main view are sincronized with ones in the Map viewer on the bottom right. The map viewer is interactive too, can be use to navigate large maps and always
-displays the current position inside an highlighted window.  </p> 
+<h3>Pan/Zoom</h3>
+<p>Panning is always enabled using left-click and drag, regardless of the selected tool. However, when the Move tool is active, all other tools are disabled. Pan and zoom operations in the <em>Working Area</em> are synchronized with the Map, and the currently framed <em>Working Area</em> is highlighted. You can use the interactive viewer to navigate through large orthophotos.
 
 <a name="assigntool"></a>
-<h3>Assign</h3>
+</p><h3>Assign</h3>
 
-<p> When the assing (buket icon) tool is active, all the clicked blobs assumes the class property and the correspondig color values of the selected class in the labels panel. Multiple selection is allowed by pressing <key>Shift</key> (same options as below). If multiple blobs are selected and the bucket tool is active, all blobs are simultanously assigned to the same class </p>
+<p> When the assign (bucket icon) tool is active, all the clicked polygons assumes the class name and the correspondig color values of the selected class in the labels panel. Multiple selection is allowed by pressing <key>Shift</key> (same options as below). If multiple polygons are selected and the bucket tool is active, all regions are simultanously assigned to the same class.</p>
 
 <a name="freehand"></a>
-<h3>Freehand drawing</h3>
+<h3>Freehand segmentation</h3>
 
-<p> When the Freehand drawing is active users can draw a pixel-wise curve of a fixed thickness of 1px. The curves doesn't need to be draw continuosly but can be drawn in different overlapping segments. 
-By pressing <key>Space bar</key> the operation is applied and the curve became a polygon. Only closed curve can became polygons, unclosed curves are automatically removed. Curves might intersect themselves several times but they always produced a unique closed polygon without holes.</p>
-
-<p>There is no need to exactly match the start and the end of the line. Additional segments, inside or outside the polygon are automatically removed too. Operation can be discarded in every moment (before confirming) by pressing <key>Esc</key>. Drawing is always allowed also internally to another blob</p>
+<p> When the Freehand segmentation is active, users can draw a pixel-wise curve of a fixed thickness of 1px. The curve doesn't need to be drawn continuously but can be drawn in different overlapping segments. The operation is applied by pressing <key>Space bar</key>, and the curve/curves became a polygon. Only closed curves can become polygons; unclosed curves are automatically removed. Curves might intersect themselves several times, but they always produced a unique closed polygon without holes.
+There is no need to match the start and the end of the line exactly. Additional segments, inside or outside the polygon, are automatically removed too. The operation can be discarded at every moment (before confirming) by pressing <key>Esc</key>. Drawing is always allowed also internally to another blob.</p>
 
 
 <a name="editborder"></a>
-<h3>Edit Border</h3>
+<h3>Edit border</h3>
 
-<p>When this tool is selected, the user can arbitrary draw some segment on a <em>single selected</em> blob. 
-Areas included or excluded from the edit curves are automatically added or removed from the selected blob. Information in the info panel is automatically updated. If no blob is selected or multiple blobs are selected, the edit operation cannot be applyed; select a single area and press <key>Spacebar</key> again.
-<p>Curves don't need to be continue and can be concave or covex. Curves must crossing the coral borders at least <em>twice</em>
-to be effective, otherwise they will be automatically removed. Any inner labels contours can be edited following the same criterion. The snapping option is always active and the resulting polygon cleaned from unwanted scratches.
-By pressing <key>Esc</key> before confirming all the editing curves eill be removed. Undo and Redo operation are always allowed.
- </p> 
+<p>When this tool is selected, the user can arbitrary draw curves on a <em>single selected</em> polygon.  Areas included or excluded from the edit curves are automatically added or removed from the selected polygon. Information in the info panel is automatically updated. If no polygon is selected or multiple polygons are selected, the edit operation cannot be applied; select a single area and press <key>Spacebar</key> again.</p><p>Curves don't need to continue and can be concave or convex. Curves must cross the polygon outline at least <em>twice</em>to be effective; otherwise, they will automatically remove them. You can edit any inner contours following the same criterion. The snapping option is always active, and the resulting polygon is cleaned from unwanted scratches.By pressing <key>Esc</key> before confirming, the tool will remove all the editing curves. Undo and Redo operations are always allowed. Drawing a closed editing curve inside a polygon creates holes. </p> 
 
 <a name="cut"></a>
-<h3>Cut</h3>
+<h3>Cut segmentation</h3>
 
-<p> This tool works exactly like the Edit border tool except that the regions subtended by the edit curves are not removed but separated from the current blob.
- After confirmation (<key>Space bar</key>) of the Cut operation, they become blobs. The class assigned by default is the same as the starting blob.  </p>
+<p> This tool works exactly like the Edit border tool except that the regions subtended by the edit curves are not removed but separated from the current polygon.
+ After confirmation (<key>Space bar</key>) of the cut operation, they become different segmented regions. The class assigned by default is the same as the starting segmentation. </p>
 
 <a name="crack"></a>
-<h3>Crack</h3>
+<h3>Create crack</h3>
 
-<p> The Crack Tool is useful to quickly select cracks inside a blob and remove them, creating inners blob contours.
- When the Crack Tool is active, clicking on a crack point opens the Crack window. The window has a slider that allows 
-adjusting the selected area. The result of the selection is visible through the preview (which is zoomable). The operation is confirmed by pressing the Apply button.</p>
+<p> The Create crack tool is useful to create empty cracks inside a polygon quickly. When the tool is active, clicking on a point inside a crack opens the Crack window. The window has a slider that allows adjusting the selected area. The result of the selection is visible through the preview (which is zoomable). The operation is confirmed by pressing the Apply button..</p>
 
-<a name="split"></a>
-<h3>Split</h3>
-
-<p>This tool is used to separate groups of many blobs connected by bottlenecks quickly.
- Once the group has been selected, the user must place a point in the center of each blob that he intends to split.
- The operation is confirmed by pressing <key>Space bar</key>. If bottlenecks do not join the blobs, the result might be uncertain. </p>
 
 <a name="ruler"></a>
-<h3>Ruler</h3>
+<h3>Measure tool</h3>
 
-<p>The ruler can measure the distance (express in cm if the px to mm transformation is known) between two 
-points or the distance between blob's centroids. In this last case, the user has to select two blobs, and the ruler will be snapped to the centroids. </p>
+<p>The Measure tool can measure the distance (express in cm if the pixel size is known) between two points or the distance between polygons' centroids. In this last case, the user has to select two polygons, and the tool will snap the measure to the centroids. </p>
 
 <a name="4clicks"></a>
-<h3>4-clicks</h3>
+<h3>4-clicks segmentation</h3>
 
-<p>This tool quickly traces the edges of an object. The user, helped by the cross cursor,
- must place four points at the object's extremes (extreme top, extreme bottom, extreme left, extreme right).
- There is no need to follow a specific order, but it's necessary to position them as accurately as possible near the extremes. After placing the fourth point, the contours of the object are 
-automatically delimited through a neural network called <a href="https://github.com/scaelles/DEXTR-PyTorch/"> Deep Extreme Cut</a> . 
-This tool works only if you have the network's weights properly placed in TagLab's 'models' folder. </p>
+<p>This tool implements a CNN for the interactive tracing of object boundaries. The user, helped by the cross cursor, places four points at the object's extremes (extreme top, extreme bottom, extreme left, extreme right). There is no need to follow a specific order, but it's necessary to position them as accurately as possible near the extremes. After placing the fourth point, the contours of the object are automatically delimited through a neural network called <a href="https://github.com/scaelles/DEXTR-PyTorch/"> Deep Extreme Cut</a>. This tool works only if you have the network's weights properly placed in TagLab's <em>models</em> folder. </p>
 
 
+<a name="positive-negative"></a>
+<h3>Positive/negative clicks segmentation</h3>
+<p>This tool implements a CNN for the interactive tracing of object boundaries. To use this tool efficiently, the user must zoom in on the object to be segmented, framing it completely, pressing the <key>Shift</key>, picking positive clicks inside the object (green color), and negative external clicks (red color). The segmented area is visualized progressively;  to create a polygon and confirm the operation, press <key>Space bar</key>. Be sure to frame entirely but strictly the object, as the CNN behind works on the entire area framed by the Working Area. You can use this tool with the same procedure for the click-based correction of already existing polygons. In that case, select the polygon and frame the portion to be corrected. The tool implements the neural network  <a href="https://arxiv.org/abs/2102.06583"> Reviving Iterative Training with Mask Guidance for Interactive Segmentation </a> , optimized for working on  complex shapes. This tool works only if you have the network's weights properly placed in TagLab's <em>models</em> folder. </p>
 
 
 <a name="fully"></a>
 <h3>Fully automatic segmentation </h3>
 
-<p>This tool loads and apply pre-trained binary classifiers based on the fully automatic semantic segmentation network <a href="https://github.com/jfzhang95/pytorch-deeplab-xception/"> DeepLab V3+ </a> . 
-When activated, it opens a window and demands the selection of compatible classifiers among 
-those available in the 'models' folder. The following fields are not editable; they are read directly from the config.json file. The segmentation operation begins when the user press Apply. The progress of processing is declared by the progress bar at the top left. As soon as the classification starts, in the TagLab folder, a 'temp' subfolder is created, and the annotations are saved into separate tiles, and then recomposed in a single mosaic map. At the end of the operation, the user must save
- the project and close TagLab. If the process ends before displaying the labels, 
- but if the labeled map has been created, use the 'File> Import Label Map' option to load them correctly. </p>
+<p>This tool classify pixels using an optimization of the fully automatic semantic segmentation network <a href="https://github.com/jfzhang95/pytorch-deeplab-xception/"> DeepLab V3+ </a> . 
+For a detailed explaination about its usage, please refers to <a href="https://taglab.isti.cnr.it/docs#fully">Create custom classifier</a>.</p>
+
+<a name="alignment"></a>
+<h3>Alignment tool</h3>
+<p>TagLab offers a manual alignment tool (which can be used before or after the annotation pipeline) that utilizes hand-placed markers.</p>
+
+<p>To align two orthomosaics, open <b>Project &gt; Alignment tool</b>. The orthomosaic on the left serves as a reference; a new map (orthomosaic + DEM  annotations), co-registered to the reference, will be created after aligning. There are two types of markers: hard and soft. The hard markers have been designed to be placed on stable, anchored objects that have not changed during the time points, such as ground control points. Hard markers carry more weight in the final roto-translation calculation. Scale adjustments are not permitted.</p>
+
+<p>Markers are placed with the left mouse button+shift, and by default, they are soft constraints denoted with a yellow cross; if they are clicked twice, they become hard and red-colored. If a marker is misplaced, it can be selected and moved (dragging it) or deleted.</p>
+
+<p>When the fourth marker is placed, a first rototranslation is estimated, and the relative error (in pixels) is displayed next to each marker (to display the error, you need to zoom in on it).</p>
+
+<p>The point should be in positioned on the corresponding location, the order identifies the point id. If the points are not corresponding the estimation fails and None appears. 
+Please ensure that markers are placed in corresponding positions across views. If you see the word "None" at the points instead of the pixel error, markers are not placed in the 
+correct order. As shown in figures below, it is advisable to position more than 4 markers evenly across the orthomosaic. You can use the Preview to observe the overlapping orthoimage 
+and check the error for each marker. If needed, you can disable the markers with the highest error to minimize the overall error (Mean Dist).</p>
+
+<p>NOTE: The new coregistered map is aligned by padding each map layer. To avoid problems with the image size limit, it is recommended that excess background around the orthomosaic be removed before to co-register the orthoimages.</p>
 
 
-<h2>Labels Operations</h2>
+<div class="d-flex flex-column align-items-center mt-2">
+<img loading="lazy" class="img-fluid" src="./TagLab1_files/aligntool.jpg">
+<p class="mt-2">Align tool</p>
+</div>
 
 
-<a name="assignop"></a>
-<h3>Assign</h3>
-<p><key>A</key> This shortcut assigns the selected class in the labels panel to the selected blob/blobs.</p>
+<div class="d-flex flex-column align-items-center mt-2">
+<img loading="lazy" class="img-fluid" src="./TagLab1_files/alignpreview.jpg">
+<p class="mt-2">Alignment preview</p>
+</div>
 
-<a name="fill"></a>
-<h3>Fill</h3>
-<p><key>F</key> By pressing F with a selected blob, holes inside the blob are filled. </p>
 
-<a name="delete"></a>
-<h3>Delete</h3>
-<p><key>Canc</key> Remove selected blob/blobs </p>
 
-<a name="merge"></a>
-<h3>Merge</h3>
-<p><key>M</key> This tool creates a single label from some randomly selected overlapping blobs.</p>
+<a name="sam"></a>
+<h3>SAM (Segment Everything) - Segments ALL and positive/negative clicks</h3>
 
-<a name="divide"></a>
-<h3>Divide</h3>
-<p><key>D</key> This tool only works with two overlapping selected blobs for separating them. 
-Be careful — the selection order matters. The contour of the first prevails over the second. </p>
+<p>Both tools utilize a deep learning architecture with many parameters, requiring a GPU with a minimum of 8 GB of RAM. These tools have not been optimized to work on complex shapes, such as corals, unlike other interactive AI tools of TagLab.</p>
 
-<a name="subtract"></a>
-<h3>Subtract</h3>
-<p><key>S</key> This tool only works with two overlapping selected blobs for remove the second from the first. Be careful — the selection order matters.
-The second blob can also be entirely contained in the first. In that case, a hole will be created.</p>
+<p>The use of SAM - Segment ALL requires two inputs in two different steps. First, the user will choose a square window with a size ranging from 512 to 2048 pixels. This window will be used to segment all the instances that are completely contained within it (objects crossing the window's edge will not be considered). The user can adjust the window size using the scroll, and once it is correctly positioned, they can confirm the choice by pressing the space bar. <br>
+Secondly, a grid of seeds will be displayed, and the user can adjust the number of seeds using the scroll based on the number of instances to be segmented. After adjusting the number of seeds, the user can confirm the operation by pressing the space bar.</p>
 
-<a name="refine"></a>
-<h3>Refine</h3>
-<p><key>R</key> The tool works when a single blob is selected. By pressing R blob, contours will be adjusted to follow the edges (the gradient) of the image.
- The refinement tool can be used to improve the precision of the contours of the specimen without straying too far from the existing ones.  Pressing  - or + the tool, the refinement is applied in an erode or dilate modality.</p>
+<p>SAM positive/negative clicks tool follows the same interaction paradigm as the positive/negative clicks tool, except for the placement of the square window at the beginning. Once the window is placed (as done in the first step of SAM- Segment ALL), the user can segment all the objects inside by placing positive and negative clicks. Press the Spacebar to confirm the object segmentation; to exit the tool, press ESC. Since both tools extract image features for segmentation when the window is positioned, and the feature extraction is the most computationally intensive part of the process, it is suggested that the tool be exited until the segmentation work for the entire area is finished.</p>
 
+<p>Compared with the positive/negative clicks tool, the single instance segmentation is faster and sometimes more robust to noise. However, this tool has not been fine-tuned for working with complex shapes, and sometimes, the Positive/negative clicks tool still performs better. Editing existing objects is currently not possible using the SAM positive/negative.</p>
+
+<a name="watershed"></a>
+<h3>Watershed segmentation tool</h3>
+
+<p>This tool uses the watershed algorithm to segment objects and allows users to perform interactive image segmentation using scribbles. The tool is not content-aware and is best for segmenting large areas with non-uniform textures.</p>
+
+<p>First, the user should select a class and draw (positive) scribbles inside the target objects by holding Shift and clicking the left mouse button. This process can be repeated by changing classes and drawing more scribbles inside other objects of interest. Next, the user should draw negative scribbles outside the working area, where the positive scribbles are located, by holding Shift and clicking the right mouse button. These scribbles will serve as markers for the segmentation algorithm.</p>
+
+<p>After defining the inside and outside areas, press spacebar to segment the image. The algorithm snaps region boundaries without overlaps and excludes regions that existed before the operation.</p>
+
+<p>To adjust the size of the scribble brush, the user can hold down Shift and use the mouse wheel.</p>
+
+
+<div class="d-flex flex-column align-items-center mt-2">
+<img loading="lazy" class="img-fluid" src="./TagLab1_files/watershed.jpg">
+<p class="mt-2">Watershed tool. On the left the input scribbles, on the right, the resulting segmentation.</p>
+</div>
+
+
+
+
+<a name="labels"></a>
+<h2 id="label">Regions Operations</h2>
+
+<dl class="row mt-4">
+<dt class="col-lg-2 col-sm-3 col-12 text-sm-right" id="assignop">Assign</dt>
+<dd class="col-12 col-sm-9 col-lg-10"><key>A</key> This shortcut assigns the selected class to the selected polygon/polygons.</dd>
+
+<dt class="col-lg-2 col-sm-3 col-12 text-sm-right" id="fill">Fill</dt>
+<dd class="col-12 col-sm-9 col-lg-10"><key>F</key> By pressing F with a selected polygon, inner holes are filled.</dd>
+
+<dt class="col-lg-2 col-sm-3 col-12 text-sm-right" id="delete">Delete</dt>
+<dd class="col-12 col-sm-9 col-lg-10"><key>Canc</key> Remove selected polygon/polygons.<p></p></dd>
+
+<dt class="col-lg-2 col-sm-3 col-12 text-sm-right" id="merge">Merge</dt>
+<dd class="col-12 col-sm-9 col-lg-10"><key>M</key> This tool creates a single polygon from selected overlapping polygons.</dd>
+
+<dt class="col-lg-2 col-sm-3 col-12 text-sm-right" id="divide">Divide</dt>
+<dd class="col-12 col-sm-9 col-lg-10"><key>D</key> This tool separate two overlapping polygons creating a two non-overlapping boundaries according two the selection order. The contour of the first prevails over the second.</dd>
+
+<dt class="col-lg-2 col-sm-3 col-12 text-sm-right" id="subtract">Subtract</dt>
+<dd class="col-12 col-sm-9 col-lg-10"><key>S</key> This takes two selected polygons and remove the second from the first according to the selection order. 
+
+When the second region lies inside the first, it creates a hole.</dd>
+
+<dt class="col-lg-2 col-sm-3 col-12 text-sm-right" id="refine">Refine</dt>
+<dd class="col-12 col-sm-9 col-lg-10"><key>R</key>  By pressing R on a selected polygon, the tool will adjust contours according to the image gradient. The Refine tool implements a variant of the Graph-Cut algorithm to significantly improve the objects' contours accuracy without straying too far from the existing ones.</dd>
+</dl>
+
+<a name="annotationpoints"></a>
+<h2 id="annotationpoints">Annotation points</h2>
+
+<p>Annotation points can be manually placed with the <em>Place Annotation Point tool</em> or sampled on the ortho mosaics from <em>Points &gt; Sample Points</em> On This Map. Once created, the points maintain the regions' annotation and visualization paradigm.</p>
+
+<p>The <em>Layers panel</em> displays all the plots within the project; each plot has its own <em>Annotations layer</em>, which contains annotations for Regions and Points in two separate sublayers. Each point annotation has a unique id, and its properties are visible from the <em>Info and Attributes panel</em>. The <em>Data Table panel</em>, synchronized (and navigable) with the <em>Main View</em>, shows an overview of the annotations. The class can be assigned from the <em>Labels panel</em>, which interactively counts the points labeled per class. The annotation process in TagLab is made easier through the synchronized navigation of both the main view and data tables, equipped with a sort-and-search mechanism. When users click on a row, they can zoom in for a closer look at a specific point, and vice versa; clicking on any point will highlight its associated information in the table, allowing for easy access to all relevant data.</p>
+
+<p>Taglab’s sampling strategies are designed to improve the flexibility of analysis on large-area imaging. Points are sampled in Sampling Areas. The sampling might follow different methods: uniformly, randomly, or stratified. We refer to Random Sampling, when the points are sampled randomly in a Sampling Area, to Uniform Grid Sampling, when they are assigned to the centers of a regular grid with a constant step defined according to the number of points required in the given area, and to Stratified Random Sampling when a random point is sampled for each cell of the same grid. A Sampling Area can be manually placed or sampled inside a TagLab’s Working Area. The Working area is primarily used when only a part of the orthoimage is being annotated, as the statistics and the import/export functionalities are restricted to it. Additionally, multiple Sampling Areas can be defined along a transect: these can be equally spaced along it or positioned randomly without overlap. The transect is assumed to follow a straight line on the orthoimage; the user needs to specify its start and endpoints. As well as Regions, annotated points can be exported from <b>Export&gt; Export Annotation</b> as Data Table.</p>
+
+<p>Only in the Ecology application, the Points menu contains specific items for TagLab interoperability with other specialized platforms for coral analysis, such as CoralNet and Viscore. For the use of these features, the user is referred to reading the conference paper.</p>
+
+<p><a href="https://isprs-archives.copernicus.org/articles/XLVIII-2-2024/327/2024/isprs-archives-XLVIII-2-2024-327-2024.pdf">
+https://isprs-archives.copernicus.org/articles/XLVIII-2-2024/327/2024/isprs-archives-XLVIII-2-2024-327-2024.pdf</a></p>
+
+
+<h2 id="howto">How To</h2>
+
+<ul>
+<li><a href="https://taglab.isti.cnr.it/docs#learning">Learning pipeline</a>
+</li><li><a href="https://taglab.isti.cnr.it/docs#dem">Digital elevation models</a>
+</li><li><a href="https://taglab.isti.cnr.it/docs#temporal">Multi-temporal comparison</a>
+</li></ul>
+
+
+<h2 id="learning">Learning pipeline</h2>
+
+<p>TagLab supports you in creating automatic classifiers optimized on your labelled data,  automating your annotation and analysis pipeline. Custom models can be saved and later used to classify new data (using the Fully automatic segmentation tool).</p>
+
+
+<h3 id="export">How to export a training dataset</h3>
+
+<p>From the <b>File &gt; Export &gt; Export New Training Dataset</b> opens the following window:
+</p>
+<div class="d-flex flex-column align-items-center mt-2">
+<img loading="lazy" class="img-fluid" src="./TagLab1_files/settings.png">
+<p>Export Dataset Settings</p>
+</div>
+
+
+
+<p>During the export, orthos are cropped into tiles (small sub-images) matching the network input size and partitioned into training, validation tiles, and test tiles. In deep learning, training tiles are used in network weights optimization (actual learning), validation tiles to select the most performing network (weights combination), and the test tiles to evaluate the new classifier's performance. The majority of the tiles, about 75%, are dedicated to learning, 15% to validation and the remaining 15% to testing. This introduction helps you to understand the exporting settings (see figure below).
+</p>
+
+<p>Please note, each different label colour is considered as a different class; if you need to exclude some classes from the training, you need to export the dataset disabling the class's visibility using the eye icon.</p>
+
+<p><b>Dataset folder:</b> folder where you will save the dataset;  training, validation, and test tiles are stored in sub-folders.</p>
+<p>Working area: part of the orthoimage used to create the dataset (visualized with a purple dashed rectangle). By default, the working area is the entire orthoimage, but you can frame a portion by clicking the button on the right and drawing a rectangle on the orthoimage.  Be sure to include in the working area only totally labelled data, avoiding non labelled objects belonging to some minority classes.</p>
+
+<p><b>Dataset split:</b> Training, validation, and test tiles are extracted by subdividing the working area; they represent 75%, 15%, and 15% of the ortho, respectively. The partition can be Uniform vertical (from top to bottom), Uniform horizontal (from left two right), Random (randomly sampled areas), or Ecological-inspired. This last option has been designed for researchers working in marine ecology. Training, validation, and test areas are chosen according to some landscape ecological metrics scores, so they are all equally representative of the species distribution. Regardless of the partition, tiles are generated by clipping the sub-areas in scan order. The figure below shows the sub-area partition and clipped tiles, according to the different Dataset Split options.
+</p>
+
+<p><b>Target scale:</b> orthos and labels are rescaled to a common scale factor before the tiles export. This is useful to create a dataset from a set of ortho mosaics having severe differences in pixel size. If you want to create a dataset from more than one annotated ortho, you have to export tiles in the same folder; the scale factor helps you choose an average pixel size and uniform your data. </p>
+
+<p><b>Oversampling:</b> when this option is checked, the export tries to balance the classes by sampling a higher number of tiles from rare objects.</p>
+
+<p><b>Show exported tiles:</b> save in the Taglab’s directory an image called <em>tiles.png</em> showing the scheme (figure below) of exported tiles.</p>
+
+<div class="col-md-6 text-center pl-lg-5 pr-lg-5 mt-4">
+<img loading="lazy" class="img-fluid mb-2" src="./TagLab1_files/huniform.jpg">
+<p>(a) Uniform (horizontal)</p>
+</div>
+
+<div class="col-md-6 text-center pl-lg-5 pr-lg-5 mt-4">
+<img loading="lazy" class="img-fluid mb-2" src="./TagLab1_files/vuniform.jpg">
+<p>(b) Uniform (vertical)</p>
+</div>
+
+<div class="col-md-6 text-center pl-lg-5 pr-lg-5 mt-4">
+<img loading="lazy" class="img-fluid mb-2" src="./TagLab1_files/random.jpg">
+<p>(c) Random</p>
+</div>
+<div class="col-md-6 text-center pl-lg-5 pr-lg-5 mt-4">
+<img loading="lazy" class="img-fluid mb-2" src="./TagLab1_files/biologically.jpg">
+<p>(d) Ecological-inspired</p>
+</div>
+
+<div class="col-12 text-center">
+<p>Training tiles (green), Validation tiles (blue), and test tiles (red). (a) Uniform vertical split. (b) Uniform horizontal split. (c) Random split. (d) Ecological-inspired split. 
+</p>
+</div>
+
+
+<div class="col-12">
+<h3>How to train your network</h3>
+
+<p>When the dataset is ready, you can create your custom classifier from <b>File &gt; Train Your Network </b>. This feature creates the new classifier by optimizing a <em>DeepLab V3+</em> on your data.</p>
+
+
+<div class="d-flex flex-column align-items-center">
+<img loading="lazy" class="img-fluid" src="./TagLab1_files/trainsettings.png">
+<p>Train Your Network Settings</p>
+</div>
+
+
+
+
+<dl class="row">
+	<dt class="col-lg-2 col-sm-3 col-12 text-sm-right">Dataset folder:</dt>
+	<dd class="col-12 col-sm-9 col-lg-10"> indicate your dataset’s folder.</dd>
+
+	<dt class="col-lg-2 col-sm-3 col-12 text-sm-right">Network name: </dt>
+	<dd class="col-12 col-sm-9 col-lg-10"> choose a name for the new classifier.</dd>
+
+	<dt class="col-lg-2 col-sm-3 col-12 text-sm-right">Number of epochs:</dt>
+	<dd class="col-12 col-sm-9 col-lg-10">  a typical number is between 50 and 80; the higher this value, the longer the time required for training.</dd>
+
+	<dt class="col-lg-2 col-sm-3 col-12 text-sm-right">Learning rate:</dt>
+	<dd class="col-12 col-sm-9 col-lg-10">  this parameter should be changed only if you have some machine learning knowledge. The default value is chosen to work well in many different application cases.</dd>
+
+	<dt class="col-lg-2 col-sm-3 col-12 text-sm-right">L2 regularization:</dt>
+	<dd class="col-12 col-sm-9 col-lg-10"> this parameter should be changed only if you have some machine learning knowledge. The default value is chosen to work well in many different application cases.</dd>
+
+	<dt class="col-lg-2 col-sm-3 col-12 text-sm-right">Batch size:</dt>
+	<dd class="col-12 col-sm-9 col-lg-10"> higher is better; 4 is a reasonable choice. A number greater than 8 can cause memory issues even if you have a GPU with 8 GB of RAM.</dd>
+</dl>
+<p>At the end of the training, TagLab will display training metrics and graphs in the <b>Training Results</b> window. Indicatively, the more the accuracy and mIoU values get closer to 1, the higher is the quality of your classifier (values of mIoU around 0.8 can be considered good). To check the classification correctness, you can select a tile from the test dataset and see how the model has classified the pixels in the <b>Prediction</b> window.  By confirming, the classifier is saved in the TagLab's models folder; it can be loaded using the <b>Fully automatic segmentation tool</b>.
+</p>
+
+<div class="d-flex flex-column align-items-center mt-2">
+<img loading="lazy" class="img-fluid" src="./TagLab1_files/results.jpg">
+<p class="mt-2">Training Result Window</p>
+</div>
+
+
+<h3>Pratical hints</h3>
+
+<ul>
+	<li>Larger training dataset outputs automatic models with better performance.
+	</li><li>A training session with a lot of data and a lot of epochs may need several hours.
+</li></ul>
+
+
+<h3 id="fully">Fully automatic segmentation</h3>
+
+<p>The Fully automatic segmentation tool allows you to select a classifier between the available ones and infer the semantic segmentation on a new ortho. Activating the tool opens the <b>Select Classifier</b> window, where the classifier can be selected through the combobox <b>Classifier</b>.</p>
+
+</div>
+<div class="col-lg-10 offset-lg-1">
+<div class="d-flex flex-column align-items-center mt-3">
+<img loading="lazy" class="img-fluid" src="./TagLab1_files/classifier720.png">
+<p class="mt-2">Select Classifier Window</p>
+</div>
+</div>
+
+<div class="col-12">
+
+<p>Information like the number and the name of recognized classes (a.k.a number of colours in your training dataset)  and the training scale factor are reported immediately below. The new ortho is rescaled at the training scale before the classification.</p>
+
+<p>Before launching the classifier on the entire map, you can select a region of the ortho mosaic by clicking the <img src="./TagLab1_files/button.png">
+   button and previewing the classification on the selected region by pressing the <b>Preview</b> button. The button <b>Apply</b> launches the automatic classification on the entire ortho mosaics; the progress bar illustrates the classification process's progress. During the classification, TagLab creates a <em>temp</em> folder in the TagLab directory containing all the classified tiles and an image, called <em>labelmap.png</em>, the average aggregation of all the scores on the entire ortho.</p>
+
+
+<p><b>WARNING!</b> When the automatic classification finishes, TagLab asks to save the project and re-open the tool. If you don’t save the project, you can re-open it and load the <em>labelmap.png</em> image from <b>File &gt; Import Label Image</b>.</p>
+
+
+<h2 id="dem">Digital elevation model (DEM)</h2>
+
+<h3>Switch between RGB/DEM</h3>
+
+<p>If you have loaded a Digital elevation model (DEM), you can switch between the ortho and the DEM by pressing the key <key>C</key> or clicking on the corresponding voice from the <b>DEM</b> menu.</p>
+
+<h3>Compute surface area using DEM information</h3>
+
+<p>DEM can be used to compute an approximation of each segmented region's surface area. This measure gives a better quantification of change between objects than the planar area.<br>
+</p><p>The surface area is computed only on the ortho currently displayed on the Working Area. So, if your project contains more than one ortho, you need to launch the surface area computation for each one. </p>
+
+<h3>Clipping a DEM </h3>
+
+<p>The menu option <b>DEM &gt; Export Clipped Raster</b> allows clipping a DEM using the segmented regions. The result, a geo-referenced raster object (<em>.tiff</em> file) containing only the depth information of the segmented regions, can be imported in GIS software to perform further DEM processing operations (such as the surface rugosity calculation of a specific class).</p>
+
+<h2 id="temporal">Multi-temporal comparison</h2>
+
+
+
+<p>TagLab allows loading co-registered orthos, reconstructed from temporally different surveys, and tracks the segmentations morphological changes. To facilitate the visual comparison, by clicking the Split screen button, maps (orthos and labels) are navigated through synchronized paired views. You can compare plots only in pairs; when your projects contain more than two labelled orthos, you can select the ones to compare using the Map Name menu on the top. </p>
+
+</div>
+<div class="col-lg-10 offset-lg-1">
+<div class="d-flex flex-column align-items-center mt-3">
+<img loading="lazy" class="img-fluid" src="./TagLab1_files/comparison.jpg">
+</div>
+</div>
+
+<div class="col-12 mt-5">
+<p>By selecting <b>Comparison &gt; Compute automatic matches</b>, the correspondences between regions are automatically calculated, utilizing the overlap of regions.</p>
+
+<p>Matches are displayed in a table in the <em>Comparison</em> panel and marked with a morphological action (growth, erode, born, died, split, fuse). Actions are assigned to corresponding matches by comparing either the planar or surface areas of the regions. You can make your selection from the "Search and Filter" menu under "Compare." The fields are editable; you can modify them by double-clicking. Additionally, using the "Filter" option, the user can display all regions associated with the respective actions for a quick overview.</p>
+
+<p>The table is synchronized with both views. When a user selects a row, the corresponding match is highlighted in both views. Similarly, when a user selects a region, both the related row and the corresponding region(s) are highlighted in the other view and in the Comparison panel.</p>
+
+<p>In Edit Matches mode, which can be accessed from the toolbar, users have the ability to edit matches. To delete a match, select one of the regions (all regions will become selected) and press the Delete key. This will remove one or more rows from the table. To add a match, select one or more regions in both views and press the space bar; this action will create one or more rows in the table.</p>
+
+<p><b>Please be aware that any edits made after matches have been calculated may lead to inconsistencies. Therefore, we strongly advise that all maps be annotated before calculating matches and possibly refining them manually.</b></p>
+
+<p>In order to assist users in identifying any inconsistencies, the rows involved in operations are highlighted in red. If a user selects these red-highlighted rows and reassigns the correspondences using the Edit Matches tool, the relation is confirmed, and the red coloring is removed.  The table below illustrates the outcome of a match editing operation.</p>
+
+<p>Each region is assigned a unique ID that corresponds to a specific time point, but its evolution across all time points can be reconstructed using 'genet' information. This 'genet' information connects all the connected regions from the available surveys through a second identification number that is common to all of them. This number can also be found in the Info and Attributes panel.</p>
+
+<table>
+<thead>
+<tr><th>Operation</th>
+<th>What happens</th>
+</tr></thead>
+<tbody>
+<tr><td>Add a region</td>
+	<td>The new region is added and marked as born with respect to the previous time point and dead for the subsequent time point.</td></tr>
+<tr><td>Edit region boundaries</td>
+	<td>If a region is edited and its area changes at a specific point in time, the area will be updated in the Comparison panel for both the previous and the following year. Additionally, if a region is assigned a new class, this information will be updated on all maps for all regions associated with it through the genet.</td></tr>
+<tr><td>Delete a region</td>
+	<td>When a region is deleted, its row is removed from the Comparison panel. The connected regions are updated so that the previous one is marked as “dead,” and the subsequent ones as “born.” </td></tr>
+<tr><td>Replace a region</td>
+	<td>If one or more regions are replaced—such as during a 'Region Cut' or 'Region Merge' operation—the affected rows will be deleted. Subsequently, all prior and subsequent regions will be reconnected based on their previous links (see Figure XXX).</td></tr>
+</tbody>
+</table>
+
+
+<p>
+<br>An important note, <b>re-running <b>Compute Manual Matches</b> overwrites the table, so please, pay attention to do not lose your manual changes.</b><br>
+Finally, the information contained in the <em>Comparison panel</em> are exportable in a re-usable data format (CSV) form using <b>Comparison &gt; Export Matches</b>
+</p>
+
+<!--
+<p>By clicking <b>Comparison > Compute automatic matches</b>, correspondences between polygons are automatically computed exploiting polygon's overlaps and added to a table in the Comparison panel.</p>
+
+<p>All regions are marked with a morphological action (growth, erode, born, died, split, fuse). Actions can be related to comparing the planar area or the surface area; these fields are always editable, double-clicking on them. Filters allow you to switch on and off objects related to actions facilitating the human inspection of changes. </p>
+
+<p>The table is synchronized with the two views. When the user selects a row, the two views focus on the corresponding match. Conversely, when the user selects a coral, both the corresponding row and the corresponding coral(s) are highlighted in the other view and the Comparison panel. </p>
+
+<p>Eventual mismatches are editable by users, following the human-machine-centric main principle using the Add Manual Matches tool. To delete a match, select an object and press <key>Delete</key>. To add a match, select one (or more objects) and press the <key>Spacebar</key>. Each operation, including the manual editing of polygon shapes, is synchronized with the table.  Rerunning <b>Compute Manual Matches</b> overwrites the table, so please, pay attention to don’t lose your manual changes. </p>
+
+<p>Information contained in this panel is exportable in a re-usable data format (CSV) form using <b>Comparison > Export Matches</b></p>
+
+Each polygon has a unique ID. The evolution of each polygon can be reconstructed using the genet information.  The genet information links all the corresponding objects in multiple surveys assigning a genet id. This information is visible from the Region info panel; after the computation can be exported in a table from <b>Comparison > Export Genet Data</b> or visualized in a figure from <b>Comparison > Export Genet Shape</b>. -->
+
+<!--enddocs-->
 </div>
 
 </body>
