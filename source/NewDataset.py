@@ -1310,7 +1310,7 @@ class NewDataset(object):
 		for sample in self.training_tiles:
 			cx = sample[0] - HALF_SAMPLE_SIZE
 			cy = sample[1] - HALF_SAMPLE_SIZE
-			painter.drawEllipse(cx, cy, SAMPLE_SIZE, SAMPLE_SIZE)
+			painter.drawEllipse(int(cx), int(cy), int(SAMPLE_SIZE), int(SAMPLE_SIZE))
 
 		# brush = QBrush(Qt.NoBrush)
 		# brush.setColor(Qt.green)
@@ -1332,7 +1332,7 @@ class NewDataset(object):
 		for sample in self.validation_tiles:
 			cx = sample[0] - HALF_SAMPLE_SIZE
 			cy = sample[1] - HALF_SAMPLE_SIZE
-			painter.drawEllipse(cx, cy, SAMPLE_SIZE, SAMPLE_SIZE)
+			painter.drawEllipse(int(cx), int(cy), int(SAMPLE_SIZE), int(SAMPLE_SIZE))
 
 		# TEST
 		brush = QBrush(Qt.SolidPattern)
@@ -1341,7 +1341,7 @@ class NewDataset(object):
 		for sample in self.test_tiles:
 			cx = sample[0] - HALF_SAMPLE_SIZE
 			cy = sample[1] - HALF_SAMPLE_SIZE
-			painter.drawEllipse(cx, cy, SAMPLE_SIZE, SAMPLE_SIZE)
+			painter.drawEllipse(int(cx), int(cy), int(SAMPLE_SIZE), int(SAMPLE_SIZE))
 
 		if show_tiles is True:
 
@@ -1359,7 +1359,7 @@ class NewDataset(object):
 				cy = sample[1]
 				top = cy - half_size
 				left = cx - half_size
-				painter.drawRect(left, top, size, size)
+				painter.drawRect(int(left), int(top), int(size), int(size))
 
 			pen = QPen(Qt.blue)
 			pen.setWidth(PEN_WIDTH)
@@ -1369,7 +1369,7 @@ class NewDataset(object):
 				cy = sample[1]
 				top = cy - half_size
 				left = cx - half_size
-				painter.drawRect(left, top, size, size)
+				painter.drawRect(int(left), int(top), int(size), int(size))
 
 			pen = QPen(Qt.red)
 			pen.setWidth(PEN_WIDTH)
@@ -1379,7 +1379,7 @@ class NewDataset(object):
 				cy = sample[1]
 				top = cy - half_size
 				left = cx - half_size
-				painter.drawRect(left, top, size, size)
+				painter.drawRect(int(left), int(top), int(size), int(size))
 
 		if show_areas is True:
 
@@ -1390,14 +1390,14 @@ class NewDataset(object):
 			pen.setWidth(pen_width)
 			pen.setStyle(Qt.DashDotLine)
 			painter.setPen(pen)
-			painter.drawRect(self.val_area[1], self.val_area[0], self.val_area[2], self.val_area[3])
+			painter.drawRect(int(self.val_area[1]), int(self.val_area[0]), int(self.val_area[2]), int(self.val_area[3]))
 
 			painter.setBrush(Qt.NoBrush)
 			pen = QPen(Qt.red)
 			pen.setWidth(pen_width)
 			pen.setStyle(Qt.DashDotLine)
 			painter.setPen(pen)
-			painter.drawRect(self.test_area[1], self.test_area[0], self.test_area[2], self.test_area[3])
+			painter.drawRect(int(self.test_area[1]), int(self.test_area[0]), int(self.test_area[2]), int(self.test_area[3]))
 
 		painter.end()
 
