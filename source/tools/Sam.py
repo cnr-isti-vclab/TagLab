@@ -109,13 +109,12 @@ class Sam(Tool):
         # From the current view, crop the image
         # Get the bounding rect of the work area and its position
         rect = self.rect_item.boundingRect()
+        self.work_area_rect = self.viewerplus.scene.addRect(rect, pen, brush)
+
         pos = self.rect_item.pos()      
         rect.moveTopLeft(pos)
         rect = rect.normalized()
         rect = rect.intersected(self.viewerplus.sceneRect())
-        
-        
-        self.work_area_rect = self.viewerplus.scene.addRect(rect, pen, brush)
         self.work_area_rect.setPos(pos)
 
         self.work_area_item = rect
