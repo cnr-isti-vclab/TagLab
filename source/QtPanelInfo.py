@@ -343,9 +343,10 @@ class QtPanelInfo(QTabWidget):
 
     def assign(self, text, name):
 
-        if self.ann == None:
+        if self.ann is None:
             return
 
+        print(text)
         self.ann.data[name] = text
 
     def updateNotes(self):
