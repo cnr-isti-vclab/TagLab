@@ -3695,7 +3695,7 @@ class TagLab(QMainWindow):
             return
 
         if self.align_tool_widget is None:
-            self.align_tool_widget = QtAlignmentToolWidget(self.project, parent=self)
+            self.align_tool_widget = QtAlignmentToolWidget(self.taglab_dir, self.project, parent=self)
             self.align_tool_widget.setWindowModality(Qt.WindowModal)
             self.align_tool_widget.closed.connect(self.closeAlignmentTool)
             self.align_tool_widget.showMaximized()
