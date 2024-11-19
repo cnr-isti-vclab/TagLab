@@ -4711,7 +4711,7 @@ class TagLab(QMainWindow):
         if self.activeviewer.image is not None:
             if self.activeviewer.image.georef_filename == "":
                 box = QMessageBox()
-                box.setText("Georeference information are not available.")
+                box.setText("Georeferencing is not available.")
                 box.exec()
                 return
 
