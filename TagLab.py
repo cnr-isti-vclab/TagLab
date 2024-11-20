@@ -4755,79 +4755,80 @@ class TagLab(QMainWindow):
             output_filename, _ = QFileDialog.getSaveFileName(self, "Save DXF File As", self.taglab_dir, filters)
 
             if output_filename:
-                # Example: Get data to export (e.g., annotations or coordinates)
-                blobs = self.activeviewer.annotations.seg_blobs  # Adjust based on your data structure
+                # Get blobs from the activeviewer
+                blobs = self.activeviewer.annotations.seg_blobs 
                 # gf = self.activeviewer.image.georef_filename
 
                 # Create a new DXF document
                 doc = ezdxf.new()
                 msp = doc.modelspace()
 
-                # Example: Add points to the DXF file from 'blobs' data
+                try:
+                    # Add points to the DXF file from 'blobs' data
+                    for blob in blobs:
+                        
+                        # Set each class as a new layer
+                        layer_name = blob.class_name
 
-                for blob in blobs:
-                    
-                    layer_name = blob.class_name
+                        # set color for the layer from blob class color
+                        col = self.project.labels[blob.class_name].fill
+                        
+                        # Convert the color to a DXF True color code
+                        color_code = ezdxf.colors.rgb2int(col)
 
-                    # Set the color of the blob based on the class_name
-                    col = self.project.labels[blob.class_name].fill
-                    # Convert the color to a DXF True color code
-                    b = col[2]
-                    g = col[1]
-                    r = col[0]
+                        # If you want to use ACI (Autocad Color Index) and not true_color
+                        # color_code = genutils.rgb_to_aci(r, g, b)
 
+                        if not doc.layers.has_entry(layer_name):
+                            doc.layers.new(name=layer_name, dxfattribs={'true_color': color_code})
 
-                    color_code = b + 256 * g + 65536 * r
-                    color_code = ezdxf.colors.rgb2int(col)
+                        # Add the outer contour
+                        points = [(x, y) for x, y in blob.contour]
+                        if points:
+                            msp.add_lwpolyline(
+                                points,
+                                close=True,
+                                dxfattribs={'layer': layer_name}
+                            )
 
-                    # If you want to use ACI (Autocad Color Index) and not true_color
-                    # color_code = genutils.rgb_to_aci(r, g, b)
-                    # print(color_code)
+                        i = 0
+                        # Add inner contours (holes)
+                        for inner_contour in blob.inner_contours:
+                            inner_points = [(x, y) for x, y in inner_contour]
+                            if inner_points:
+                                msp.add_lwpolyline(inner_points, close=True, dxfattribs={'layer': layer_name})
 
-                    if not doc.layers.has_entry(layer_name):
-                        doc.layers.new(name=layer_name, dxfattribs={'true_color': color_code})
+                        
+                        # Add the class_name as a text annotation at the blob's centroid
+                        if blob.class_name:
+                            x, y = blob.centroid  
+                            msp.add_text(
+                                blob.class_name, height=22.0,
+                                dxfattribs={
+                                    'layer': layer_name
+                                }
+                            ).set_placement((x, y), align=TextEntityAlignment.MIDDLE_CENTER)
+                        i += 1
 
-                    # Add the outer contour
-                    points = [(x, y) for x, y in blob.contour]
-                    if points:
-                        # msp.add_lwpolyline(points, close=True, dxfattribs={'layer': blob.class_name, 'color': color_code})
-                        msp.add_lwpolyline(
-                            points,
-                            close=True,
-                            dxfattribs={'layer': layer_name}
-                        )
+                    # Save the DXF file
+                    doc.saveas(output_filename)
 
-                    i = 0
-                    # Add inner contours (holes)
-                    for inner_contour in blob.inner_contours:
-                        inner_points = [(x, y) for x, y in inner_contour]
-                        if inner_points:
-                            # msp.add_lwpolyline(inner_points, close=True, dxfattribs={'layer': blob.class_name, 'color': color_code})
-                            msp.add_lwpolyline(inner_points, close=True, dxfattribs={'layer': layer_name})
-
-                    
-                    # Add the class_name as a text annotation at the blob's centroid
-                    if blob.class_name:
-                        x, y = blob.centroid  
-                        msp.add_text(
-                            blob.class_name, height=22.0,
-                            dxfattribs={
-                                'layer': layer_name
-                                # 'layer': blob.class_name,
-                                # 'color': color_code
-                            }
-                        ).set_placement((x, y), align=TextEntityAlignment.MIDDLE_CENTER)
-                    i += 1
-
-                # Save the DXF file
-                doc.saveas(output_filename)
-
-                # Show a confirmation message box
-                msgBox = QMessageBox(self)
-                msgBox.setWindowTitle("Export Successful")
-                msgBox.setText("DXF file exported successfully!")
-                msgBox.exec()
-                return
+                    # Show a confirmation message box
+                    msgBox = QMessageBox(self)
+                    msgBox.setWindowTitle("Export Successful")
+                    msgBox.setText("DXF file exported successfully!")
+                    msgBox.exec()
+                    return
+                except Exception as e:
+                    msgBox = QMessageBox(self)
+                    msgBox.setWindowTitle("Export Failed")
+                    if "/" in str(e):
+                        print("/ inside a class, please rename the class before continuing")
+                        msgBox.setText("Error exporting DXF file:\nforbidden character (/) inside class names, please rename the classes before continuing")
+                    else:
+                        msgBox.setText("Error exporting DXF file: " + str(e))
+                    msgBox.exec()
+                    return
 
     @pyqtSlot()
     def exportGeoRefLabelMap(self):
