@@ -4752,9 +4752,7 @@ class TagLab(QMainWindow):
             output_filename, _ = QFileDialog.getSaveFileName(self, "Save DXF File As", self.taglab_dir, filters)
 
             if output_filename:
-                # Get blobs from the activeviewer
-                blobs = self.activeviewer.annotations.seg_blobs
-
+                
                 # Create a new DXF document
                 doc = ezdxf.new()
                 msp = doc.modelspace()
@@ -4771,14 +4769,29 @@ class TagLab(QMainWindow):
                             georef, transform = rasterops.load_georef(self.activeviewer.image.georef_filename)
                             text_height_scale = max(abs(transform.a), abs(transform.e))
 
-                    # Add the outline of the map to layer 0
-                    map_outline = [
-                        (0, 0),
-                        (self.activeviewer.image.width, 0),
-                        (self.activeviewer.image.width, self.activeviewer.image.height),
-                        (0, self.activeviewer.image.height),
-                        (0, 0)
-                    ]
+                    if self.project.working_area is None:
+                        # Get blobs from the activeviewer
+                        blobs = self.activeviewer.annotations.seg_blobs
+                        # Add the outline of the map to layer 0
+                        map_outline = [
+                            (0, 0),
+                            (self.activeviewer.image.width, 0),
+                            (self.activeviewer.image.width, self.activeviewer.image.height),
+                            (0, self.activeviewer.image.height),
+                            (0, 0)
+                        ]
+                    else:
+                        # Get blobs inside the working area
+                        blobs = self.activeviewer.annotations.calculate_inner_blobs(self.project.working_area)
+                        # Add the outline of the working area to layer 0
+                        map_outline = [
+                            (self.project.working_area[1], self.project.working_area[0]),
+                            (self.project.working_area[1] + self.project.working_area[2], self.project.working_area[0]),
+                            (self.project.working_area[1] + self.project.working_area[2], self.project.working_area[0] + self.project.working_area[3]),
+                            (self.project.working_area[1], self.project.working_area[0] + self.project.working_area[3]),
+                            (self.project.working_area[1], self.project.working_area[0])
+                        ]
+
                     if georef:
                         map_outline = [transform * (x, y) for x, y in map_outline]
                     msp.add_lwpolyline(
