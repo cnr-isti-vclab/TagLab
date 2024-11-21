@@ -4771,6 +4771,22 @@ class TagLab(QMainWindow):
                             georef, transform = rasterops.load_georef(self.activeviewer.image.georef_filename)
                             text_height_scale = max(abs(transform.a), abs(transform.e))
 
+                    # Add the outline of the map to layer 0
+                    map_outline = [
+                        (0, 0),
+                        (self.activeviewer.image.width, 0),
+                        (self.activeviewer.image.width, self.activeviewer.image.height),
+                        (0, self.activeviewer.image.height),
+                        (0, 0)
+                    ]
+                    if georef:
+                        map_outline = [transform * (x, y) for x, y in map_outline]
+                    msp.add_lwpolyline(
+                        map_outline,
+                        close=True,
+                        dxfattribs={'layer': '0'}
+                    )
+                    
                     # Add points to the DXF file from 'blobs' data
                     for blob in blobs:
                         # Set each class as a new layer
