@@ -4739,51 +4739,57 @@ class TagLab(QMainWindow):
             msgBox.setText("Shapefile exported successfully!")
             msgBox.exec()
             return
-    
-    
+
     @pyqtSlot()
     def exportAnnAsDXF(self):
-
-        # Check if activeviewer is set and contains necessary data     
+        # Check if activeviewer is set and contains necessary data
         if self.activeviewer is None:
             return
 
         if self.activeviewer.image is not None:
-
             # Open a file dialog to select the output file
             filters = "DXF (*.dxf)"
             output_filename, _ = QFileDialog.getSaveFileName(self, "Save DXF File As", self.taglab_dir, filters)
 
             if output_filename:
                 # Get blobs from the activeviewer
-                blobs = self.activeviewer.annotations.seg_blobs 
-                # gf = self.activeviewer.image.georef_filename
+                blobs = self.activeviewer.annotations.seg_blobs
 
                 # Create a new DXF document
                 doc = ezdxf.new()
                 msp = doc.modelspace()
 
                 try:
+                    # Check if georeferencing information is available and ask the user if wants to use it
+                    georef = None
+                    text_height_scale = 1.0
+                    if hasattr(self.activeviewer.image, 'georef_filename') and self.activeviewer.image.georef_filename:
+                        reply = QMessageBox.question(self, "Georeference Information",
+                                                     "Georeference information is available. Do you want to use it?",
+                                                     QMessageBox.Yes | QMessageBox.No)
+                        if reply == QMessageBox.Yes:
+                            georef, transform = rasterops.load_georef(self.activeviewer.image.georef_filename)
+                            text_height_scale = max(abs(transform.a), abs(transform.e))
+
                     # Add points to the DXF file from 'blobs' data
                     for blob in blobs:
-                        
                         # Set each class as a new layer
                         layer_name = blob.class_name
 
-                        # set color for the layer from blob class color
+                        # Set color for the layer from blob class color
                         col = self.project.labels[blob.class_name].fill
-                        
+
                         # Convert the color to a DXF True color code
                         color_code = ezdxf.colors.rgb2int(col)
-
-                        # If you want to use ACI (Autocad Color Index) and not true_color
-                        # color_code = genutils.rgb_to_aci(r, g, b)
 
                         if not doc.layers.has_entry(layer_name):
                             doc.layers.new(name=layer_name, dxfattribs={'true_color': color_code})
 
                         # Add the outer contour
-                        points = [(x, y) for x, y in blob.contour]
+                        if georef:
+                            points = [transform * (x, y) for x, y in blob.contour]
+                        else:
+                            points = [(x, y) for x, y in blob.contour]
                         if points:
                             msp.add_lwpolyline(
                                 points,
@@ -4791,24 +4797,27 @@ class TagLab(QMainWindow):
                                 dxfattribs={'layer': layer_name}
                             )
 
-                        i = 0
                         # Add inner contours (holes)
                         for inner_contour in blob.inner_contours:
-                            inner_points = [(x, y) for x, y in inner_contour]
+                            # inner_points = transform_coords([(x, y) for x, y in inner_contour])
+                            if georef:
+                                inner_points = [transform * (x, y) for x, y in inner_contour]
+                            else:
+                                inner_points = [(x, y) for x, y in inner_contour]
                             if inner_points:
                                 msp.add_lwpolyline(inner_points, close=True, dxfattribs={'layer': layer_name})
 
-                        
                         # Add the class_name as a text annotation at the blob's centroid
                         if blob.class_name:
-                            x, y = blob.centroid  
+                            x, y = blob.centroid
+                            if georef:
+                                x, y = transform * (x, y)
                             msp.add_text(
-                                blob.class_name, height=22.0,
+                                blob.class_name, height=text_height_scale * 22.0,
                                 dxfattribs={
                                     'layer': layer_name
                                 }
                             ).set_placement((x, y), align=TextEntityAlignment.MIDDLE_CENTER)
-                        i += 1
 
                     # Save the DXF file
                     doc.saveas(output_filename)
