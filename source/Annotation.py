@@ -814,16 +814,16 @@ class Annotation(object):
 
         dict = {
             'Image name': [],
-            'TagLab Id': np.zeros(number_of_rows, dtype=np.int64),
-            'TagLab Type': [],
             'TagLab Date': [],
-            'TagLab Class name': [],
+            'TagLab Type': [],
             'TagLab Genet Id': np.zeros(number_of_rows, dtype=np.int64),
+            'TagLab Id': np.zeros(number_of_rows, dtype=np.int64),
+            'TagLab Class name': [],
             'TagLab Centroid x': np.zeros(number_of_rows),
             'TagLab Centroid y': np.zeros(number_of_rows),
+            'TagLab Perimeter': np.zeros(number_of_rows),
             'TagLab Area': np.zeros(number_of_rows),
             'TagLab Surf. area': np.zeros(number_of_rows),
-            'TagLab Perimeter': np.zeros(number_of_rows),
             'TagLab Note': []}
 
         # Are attributes named the same? Check
