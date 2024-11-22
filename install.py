@@ -236,6 +236,7 @@ install_requires = [
     'shapely',
     'pycocotools',
     'qhoptim',
+    'ezdxf',
 
     # CoralNet Toolbox
     'Requests',

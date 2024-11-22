@@ -343,6 +343,12 @@ def write_shapefile( project, image, blobs, georef_filename, out_shp):
     # Save and close everything
     ds = layer = feat = geom = None
 
+def load_georef(image):
+    # load georeference information to use
+    img = rio.open(image)
+    geoinfo = img.crs
+    transform = img.transform
+    return geoinfo, transform
 
 def saveClippedTiff(input, blobs, georef_filename, name):
 
