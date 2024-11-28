@@ -152,7 +152,7 @@ class Image(object):
                 'Class': [],
                 '#R': np.zeros(len(labels), dtype=int),
                 '#P': np.zeros(len(labels), dtype=int),
-                'Coverage': np.zeros(len(labels),dtype=np.float)
+                'Coverage': np.zeros(len(labels),dtype=np.float32)
             }
 
             for i, label in enumerate(labels):

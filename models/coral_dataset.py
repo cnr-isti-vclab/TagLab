@@ -382,14 +382,14 @@ class CoralsDataset(Dataset):
 
     def computeAverage(self):
 
-        sum = np.zeros((self.CROP_SIZE, self.CROP_SIZE, 3), dtype=np.float)
+        sum = np.zeros((self.CROP_SIZE, self.CROP_SIZE, 3), dtype=np.float32)
         N = len(self.images_names)
         print(" ")
         for i, image_name in enumerate(self.images_names):
 
             img_filename = os.path.join(self.images_dir, image_name)
             img = PILimage.open(img_filename)
-            data = np.array(img, dtype=np.float)
+            data = np.array(img, dtype=np.float32)
             w = data.shape[1]
             h = data.shape[0]
             ox = int((w - self.CROP_SIZE) / 2)
