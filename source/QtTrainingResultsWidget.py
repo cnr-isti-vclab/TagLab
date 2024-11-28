@@ -28,8 +28,8 @@ class QtTrainingResultsWidget(QWidget):
 
         self.LINEWIDTH = 100
 
-        self.TG_WIDTH = 640
-        self.TG_HEIGHT = 640 / 1.77777777
+        self.TG_WIDTH = int(640)
+        self.TG_HEIGHT = int(640 / 1.5)
 
         self.LABEL_SIZE = 256
 
@@ -121,6 +121,7 @@ class QtTrainingResultsWidget(QWidget):
         self.QlabelTG.setMinimumHeight(self.TG_HEIGHT)
         self.figureTG = None
         self.pxmapTG = None
+        self.pxmapTG_HiRes = None
         self.setTrainingGraphs()
         self.QlabelTG.setPixmap(self.pxmapTG)
 
@@ -224,6 +225,7 @@ class QtTrainingResultsWidget(QWidget):
 
         self.figureCM = None
         self.pxmapCM = None
+        self.pxmapCM_HiRes = None
         self.last_tile_selected = None
 
     @pyqtSlot()
@@ -254,7 +256,8 @@ class QtTrainingResultsWidget(QWidget):
         plt.tight_layout()
 
         self.figureCM = fig
-        self.pxmapCM = genutils.figureToQPixmap(fig, dpi=300, width=800, height=800)
+        self.pxmapCM = genutils.figureToQPixmap(fig, dpi=600, width=800, height=800)
+        self.pxmapCM_HiRes = genutils.figureToQPixmap(fig, dpi=600, width=1600, height=1600)
 
         widget = QWidget(parent=self)
         widget.setFixedWidth(840)
@@ -277,9 +280,7 @@ class QtTrainingResultsWidget(QWidget):
         filename, _ = QFileDialog.getSaveFileName(self, "Save the Normalized Confusion Matrix", None, filters)
 
         if filename:
-            file = QFile(filename)
-            file.open(QIODevice.WriteOnly)
-            plt.savefig(file, format="png", dpi=300)
+            self.pxmapCM_HiRes.save(filename)
 
     @pyqtSlot()
     def SaveTG(self):
@@ -288,9 +289,7 @@ class QtTrainingResultsWidget(QWidget):
         filename, _ = QFileDialog.getSaveFileName(self, "Save the Training Graphs", None, filters)
 
         if filename:
-            file = QFile(filename)
-            file.open(QIODevice.WriteOnly)
-            plt.savefig(file, format="png", dpi=300)
+            self.pxmapTG_HiRes.save(filename)
 
     @pyqtSlot()
     def SelectTile(self):
@@ -358,7 +357,7 @@ class QtTrainingResultsWidget(QWidget):
         n_epochs = len(self.train_loss_data)
 
         fig = plt.figure()
-        fig.set_size_inches(6.3, 6.3 / 1.7777)
+        fig.set_size_inches(6.3, 6.3 / 1.5)
         plt.grid(axis="x")
         plt.xticks(np.arange(0, n_epochs, 5))
 
@@ -373,4 +372,5 @@ class QtTrainingResultsWidget(QWidget):
         plt.legend()
 
         self.figureTG = fig
-        self.pxmapTG = genutils.figureToQPixmap(fig, dpi=300, width=self.TG_WIDTH, height=self.TG_HEIGHT)
+        self.pxmapTG = genutils.figureToQPixmap(fig, dpi=600, width=self.TG_WIDTH, height=self.TG_HEIGHT)
+        self.pxmapTG_HiRes = genutils.figureToQPixmap(fig, dpi=600, width=self.TG_WIDTH*3, height=self.TG_HEIGHT*3)
