@@ -119,7 +119,7 @@ class QtAttributeWidget(QWidget):
                 else:
                      chkBox.setProperty('type', 'string')
 
-                self.fields_layout.addWidget(chkBox, i / FIELDS_FOR_ROW, i % FIELDS_FOR_ROW)
+                self.fields_layout.addWidget(chkBox, int(i / FIELDS_FOR_ROW), i % FIELDS_FOR_ROW)
                 self.checkBoxes.append(chkBox)
 
         label_layout = QHBoxLayout()
