@@ -561,7 +561,13 @@ class TagLab(QMainWindow):
         self.groupbox_comparison.setLayout(layout_groupbox2)
 
         # BLOB INFO
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        
         self.groupbox_blobpanel = QtPanelInfo(self.project.region_attributes, self.project.labels)
+
+        self.scroll_area.setWidget(self.groupbox_blobpanel)
+
         self.blob_with_info_displayed = None
 
         # MAP VIEWER
@@ -600,8 +606,10 @@ class TagLab(QMainWindow):
         self.groupbox_comparison.setStyleSheet("padding: 0px")
 
         self.blobdock = QDockWidget("Info and Attributes", self)
-        self.groupbox_blobpanel.setMinimumWidth(panels_size)
-        self.blobdock.setWidget(self.groupbox_blobpanel)
+        # self.groupbox_blobpanel.setMinimumWidth(panels_size)
+        self.scroll_area.setMinimumWidth(panels_size)
+        # self.blobdock.setWidget(self.groupbox_blobpanel)
+        self.blobdock.setWidget(self.scroll_area)
 
         self.mapdock = QDockWidget("Map Preview", self)
         self.mapviewer.preferred = panels_size
