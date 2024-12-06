@@ -87,7 +87,7 @@ class QtDictionaryWidget(QWidget):
         self.edit_dname.setPlaceholderText("Name of the dictionary")
         self.edit_dname.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_dname.setFixedWidth(350)
-        self.edit_dname.setText(project.dictionary_name)
+        self.edit_dname.setText(self.project.dictionary_name)
 
         self.edit_load = QLineEdit()
         self.edit_load.setPlaceholderText("Path of the dictionary")
@@ -100,7 +100,7 @@ class QtDictionaryWidget(QWidget):
         self.edit_description.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_description.setFixedWidth(350)
         self.edit_description.setMaximumHeight(100)
-        self.edit_description.setText(project.dictionary_description)
+        self.edit_description.setText(self.project.dictionary_description)
 
         self.labels_layout = QVBoxLayout()
         self.labels_widget = QWidget()
@@ -308,8 +308,10 @@ class QtDictionaryWidget(QWidget):
 
             f = open(fileName, "r")
             dict = json.load(f)
-            self.edit_dname.setText(dict["Name"])
-            self.edit_description.document().setPlainText(dict["Description"])
+            self.project.dictionary_name = dict["Name"]
+            self.edit_dname.setText(self.project.dictionary_name)
+            self.project.dictionary_description = dict["Description"]
+            self.edit_description.document().setPlainText(self.project.dictionary_description)
             ALLlabels = dict["Labels"]
 
             labels_loaded = []

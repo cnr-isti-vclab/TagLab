@@ -44,6 +44,7 @@ class SplitBlob(Tool):
 
         self.viewerplus.removeBlob(selected_blob)
         created_blobs = self.viewerplus.annotations.splitBlob(self.viewerplus.img_map, selected_blob, points)
+        self.viewerplus.project.updateCorrespondences("SPLIT", created_blobs, selected_blob, "")
 
         self.blobInfo.emit(selected_blob, "[TOOL][SPLITBLOB][BLOB-SELECTED]")
 

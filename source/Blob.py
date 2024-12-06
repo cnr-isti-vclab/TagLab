@@ -68,6 +68,7 @@ class Blob(object):
         self.qpath = None
         self.qpath_gitem = None
 
+        self.correspondence_to_check = False
 
         if region:
 
@@ -98,7 +99,7 @@ class Blob(object):
             self.updateUsingMask(self.bbox, input_mask)
 
             # a string with a progressive number to identify the instance
-            self.instance_name = "coral" + str(id)
+            self.instance_name = "region" + str(id)
 
             # a string with a number to identify the blob plus its centroid
             xc = self.centroid[0]
@@ -475,6 +476,11 @@ class Blob(object):
             self.data = dic["data"].copy()
         else:
             self.data = {}
+
+        if 'correspondence_to_check' in dic:
+            self.correspondence_to_check = dic['correspondence_to_check']
+        else:
+            self.correspondence_to_check = False
 
     def save(self):
         return self.toDict()

@@ -43,3 +43,24 @@ class PickPoints(object):
             line2.setZValue(5)
             # no need to add the lines to the markers, the parent will take care of them
             self.markers.append(point)
+
+    def removeLastPoint(self):
+
+        number_of_clicks = self.nclicks()
+        if number_of_clicks == 0:
+            return
+
+        elif number_of_clicks > 0:
+            self.points.pop()
+
+        if len(self.markers) > 0:
+            marker = self.markers.pop()
+            self.scene.removeItem(marker)
+        
+        elif len(self.markers) == 0:
+            self.markers.clear()
+
+
+    def nclicks(self):
+        # total number of clicked points
+        return len(self.points)# + len(self.negative_points)

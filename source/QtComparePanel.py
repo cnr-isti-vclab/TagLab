@@ -31,9 +31,10 @@ imdir =imdir.replace('source', '')
 
 class TableModel(QAbstractTableModel):
 
-    def __init__(self, data):
+    def __init__(self, corresp):
         super(TableModel, self).__init__()
-        self._data = data
+        self.correspondences = corresp
+        self._data = corresp.data
         self.surface_area_mode_enabled = False
 
     def enableSurfaceAreaMode(self):
@@ -50,6 +51,20 @@ class TableModel(QAbstractTableModel):
                 return Qt.AlignRight | Qt.AlignVCenter
 
         if role == Qt.BackgroundRole:
+
+            id1 = self._data.iloc[index.row(), 1]
+            id2 = self._data.iloc[index.row(), 2]
+            blob1 = self.correspondences.sourceBlobsById([id1])
+            blob2 = self.correspondences.targetBlobsById([id2])
+
+            if len(blob1) > 0:
+                if blob1[0].correspondence_to_check:
+                    return QColor(80,40,40)
+
+            if len(blob2) > 0:
+                if blob2[0].correspondence_to_check:
+                    return QColor(80,40,40)
+
             return QColor(40, 40, 40)
 
         value = self._data.iloc[index.row(), index.column()]
@@ -74,8 +89,6 @@ class TableModel(QAbstractTableModel):
             if index.column() < 5:
                 return float(value)
             return str(value)
-
-
 
     def setData(self, index, value, role):
 
@@ -344,51 +357,66 @@ height: 0px;
 
     def setTable(self, project, img1idx, img2idx):
 
-        self.project = project
-        self.img1idx = img1idx
-        self.img2idx = img2idx
-        self.sourceImg = project.images[img1idx]
-        self.targetImg = project.images[img2idx]
+        corresp_table = project.getImagePairCorrespondences(img1idx, img2idx)
 
-        self.correspondences = project.getImagePairCorrespondences(img1idx, img2idx)
-        #FIXME this is pretty expensive, can we avoid it?
-        self.correspondences.updateAreas()
-        self.data = self.correspondences.data
+        if corresp_table:
 
-        if self.model is None:
+            self.correspondences = corresp_table
+            self.project = project
+            self.img1idx = img1idx
+            self.img2idx = img2idx
+            self.sourceImg = project.images[img1idx]
+            self.targetImg = project.images[img2idx]
 
-            self.model = TableModel(self.data)
-            self.sortfilter = QSortFilterProxyModel(self)
-            self.sortfilter.setSourceModel(self.model)
-            self.sortfilter.setSortRole(Qt.UserRole)
-            self.data_table.setModel(self.sortfilter)
+            #FIXME this is pretty expensive, can we avoid it?
+            self.correspondences.updateAreas()
+            self.data = self.correspondences.data
 
-            self.data_table.setVisible(False)
-            self.data_table.verticalHeader().hide()
-            self.data_table.resizeColumnsToContents()
-            self.data_table.setVisible(True)
+            if self.model is None:
 
-            self.data_table.setItemDelegateForColumn(5, self.combodelegate1)
-            self.data_table.setItemDelegateForColumn(6, self.combodelegate2)
-            self.data_table.setEditTriggers(QAbstractItemView.DoubleClicked)
+                self.model = TableModel(self.correspondences)
+                self.sortfilter = QSortFilterProxyModel(self)
+                self.sortfilter.setSourceModel(self.model)
+                self.sortfilter.setSortRole(Qt.UserRole)
+                self.data_table.setModel(self.sortfilter)
 
-            self.data_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
-            self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
-            self.data_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
-            self.data_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.Fixed)
-            self.data_table.setColumnWidth(3, 80)
-            self.data_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.Fixed)
-            self.data_table.setColumnWidth(4, 80)
-            self.data_table.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeToContents)
-            self.data_table.horizontalHeader().setSectionResizeMode(6, QHeaderView.ResizeToContents)
-            self.data_table.horizontalHeader().setSectionResizeMode(7, QHeaderView.ResizeToContents)
+                self.data_table.setVisible(False)
+                self.data_table.verticalHeader().hide()
+                self.data_table.resizeColumnsToContents()
+                self.data_table.setVisible(True)
 
-            self.data_table.horizontalHeader().showSection(0)
-            self.data_table.update()
+                self.data_table.setItemDelegateForColumn(5, self.combodelegate1)
+                self.data_table.setItemDelegateForColumn(6, self.combodelegate2)
+                self.data_table.setEditTriggers(QAbstractItemView.DoubleClicked)
 
-            self.data_table.setStyleSheet("QHeaderView::section { background-color: rgb(40,40,40) }")
+                self.data_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+                self.data_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+                self.data_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
+                self.data_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.Fixed)
+                self.data_table.setColumnWidth(3, 80)
+                self.data_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.Fixed)
+                self.data_table.setColumnWidth(4, 80)
+                self.data_table.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeToContents)
+                self.data_table.horizontalHeader().setSectionResizeMode(6, QHeaderView.ResizeToContents)
+                self.data_table.horizontalHeader().setSectionResizeMode(7, QHeaderView.ResizeToContents)
+
+                self.data_table.horizontalHeader().showSection(0)
+                self.data_table.update()
+
+                self.data_table.setStyleSheet("QHeaderView::section { background-color: rgb(40,40,40) }")
+            else:
+                self.updateTable(self.correspondences)
+
         else:
-            self.updateTable(self.correspondences)
+
+            self.correspondences = None
+            self.project = None
+            self.img1idx = -1
+            self.img2idx = -1
+            self.sourceImg = None
+            self.targetImg = None
+
+            self.clear()
 
     def clear(self):
 
@@ -398,8 +426,22 @@ height: 0px;
         self.data_table.setModel(self.model)
         self.data_table.update()
 
+    @pyqtSlot()
     def updateData(self):
+        """
+        Some operations on the table occurs, so the content of the QTable needs to be updated.
+        """
 
+        if self.model is None:
+            return
+
+        self.sortfilter.beginResetModel()
+        self.model.beginResetModel()
+        self.model._data = self.model.correspondences.data
+        self.sortfilter.endResetModel()
+        self.model.endResetModel()
+
+        self.data_table.horizontalHeader().showSection(0)
         self.data_table.update()
 
     def updateTable(self, corr):
@@ -411,30 +453,11 @@ height: 0px;
         self.sortfilter.beginResetModel()
         self.model.beginResetModel()
         self.model._data = corr.data
+        self.model.correspondences = corr
         self.sortfilter.endResetModel()
         self.model.endResetModel()
 
         self.data_table.horizontalHeader().showSection(0)
-        self.data_table.update()
-
-    @pyqtSlot(Image, Blob)
-    def blobAdded(self, img, blob):
-        # project updates the correspondences data, so we simply need to update the table directly
-        self.data_table.update()
-
-    @pyqtSlot(Image, Blob)
-    def blobRemoved(self, img, blob):
-        # project updates the correspondences data, so we simply need to update the table directly
-        self.data_table.update()
-
-    @pyqtSlot(Image, Blob, Blob)
-    def blobUpdated(self, img, old_blob, new_blob):
-        # project updates the correspondences data, so we simply need to update the table directly
-        self.data_table.update()
-
-    @pyqtSlot(Image, str, Blob)
-    def blobClassChanged(self, img, class_name, blob):
-        # project updates the correspondences data, so we simply need to update the table directly
         self.data_table.update()
 
     def selectById(self, text, isSource):

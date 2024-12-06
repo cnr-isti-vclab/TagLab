@@ -9,6 +9,10 @@ from skimage.color import rgb2gray
 from skimage.filters import sobel
 import cv2
 
+from source.Mask import paintMask, jointBox, jointMask, replaceMask, checkIntersection, intersectMask
+from PIL import Image
+
+
 import matplotlib.pyplot as plt
 
 from PyQt5.QtCore import Qt, QObject, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
@@ -23,13 +27,18 @@ class Watershed(Tool):
         self.scribbles = scribbles
         self.current_blobs = []
         self.currentLabel = None
+
+        self.dummy_bounding_box = None
+        self.work_area_mask = None
         
-        message = "<p><i>Draw positive/negative scribbles inside and around an area of interest</i></p>"
-        message += "<p>Select a class for the area of interest</p>"
-        message += "<p>SHIFT + Left click + drag to draw a positive scribble INSIDE the area</p>"
-        message += "<p>SHIFT + Right click + drag to draw a negative scribble AROUND the area</p>"
-        message += "<p>SHIFT + wheel to set brush size</p>"        
-        message += "<p>Spacebar to apply segmentation</p>"
+        message = "<p><i>Draw scribbles inside and around an instance</i></p>"
+        message += "<p>Select a class and draw positive scribbles INSIDE the instance,<br/>\
+                    Then draw negative scribbles OUTSIDE the instance.<br/>\
+                    The tool needs both positive and negative scribbles to work.</p>"
+        message += "<p>- SHIFT + LMB + drag to draw a positive scribble<br/>\
+                    - SHIFT + RMB + drag to draw a negative scribble</p>"
+        message += "<p>- SHIFT + wheel to set brush size</p>"
+        message += "<p>SPACEBAR to apply segmentation</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
     
     def setActiveLabel(self, label):
@@ -38,13 +47,13 @@ class Watershed(Tool):
         self.currentLabel = label
         self.scribbles.setLabel(self.currentLabel)
 
-    def leftPressed(self, x, y, mods):
+    def leftPressed(self, x, y, mods=None):
         if mods == Qt.ShiftModifier:
             self.scribbles.setLabel(self.currentLabel)
             if self.scribbles.startDrawing(x, y):
                 self.log.emit("[TOOL][WATERSHED] DRAWING POSITIVE starts..")
 
-    def rightPressed(self, x, y, mods):
+    def rightPressed(self, x, y, mods=None):
         if mods == Qt.ShiftModifier:
             fakeLabel = Label("Dummy", "Dummy", fill=[255, 255, 255], border=[0, 0, 0]) 
             self.scribbles.setLabel(fakeLabel)
@@ -52,7 +61,7 @@ class Watershed(Tool):
                 self.log.emit("[TOOL][WATERSHED] DRAWING NEGATIVE starts..")
 
 
-    def mouseMove(self, x, y, mods):
+    def mouseMove(self, x, y, mods=None):
         if mods &  Qt.ShiftModifier:
             self.scribbles.move(x, y)
 
@@ -63,6 +72,40 @@ class Watershed(Tool):
         elif -1.0 < increase < 0.0:
             increase = -1
         self.scribbles.setSize(int(increase))
+
+############################################################################################################################################################################   
+
+
+    def snapBlobBorders(self, blob):
+        # Define the working area using blob.bbox
+        bbox = blob.bbox
+        w = bbox[2]
+        h = bbox[3]
+        working_area_mask = np.zeros((h, w), dtype=np.int32)
+
+        # Get the mask of the blob and place it in the working area
+        blob_mask = blob.getMask()
+        working_area_mask[:blob_mask.shape[0], :blob_mask.shape[1]] = blob_mask
+
+        # Iterate over the existing blobs and remove intersections
+        for existing_blob in self.viewerplus.image.annotations.seg_blobs:
+            if existing_blob != blob and checkIntersection(bbox, existing_blob.bbox):
+                existing_mask = existing_blob.getMask()
+                paintMask(working_area_mask, bbox, existing_mask, existing_blob.bbox, 0)
+
+        # # Convert the mask to a PIL image
+        # isolated_blob_image = Image.fromarray(working_area_mask.astype(np.uint8) * 255)
+        # # Save the image
+        # isolated_blob_image.save("isolated_blob.png")
+        
+        # Update the new blob's mask
+        blob.updateUsingMask(bbox, working_area_mask)
+
+        return blob       
+
+
+###########################################################################################################################################################################   
+
 
     def segmentation(self):
 
@@ -91,7 +134,7 @@ class Watershed(Tool):
         crop_img = genutils.cropQImage(self.viewerplus.img_map, working_area)
         crop_imgnp = genutils.qimageToNumpyArray(crop_img)
 
-        cv2.imwrite('crop_img.png', crop_imgnp)
+        #cv2.imwrite('crop_img.png', crop_imgnp)
 
         # create markers
         mask = np.zeros((working_area[3], working_area[2], 3), dtype=np.int32)
@@ -128,7 +171,7 @@ class Watershed(Tool):
         mask = np.uint8(mask)
        
         # print(f"mask.shape is {mask.shape}")
-        cv2.imwrite('mask.png', mask)
+       # cv2.imwrite('mask.png', mask)
 
         markers = np.zeros((working_area[3], working_area[2]), dtype='int32')
         print(f"markers.shape pre is {markers.shape}")
@@ -158,23 +201,17 @@ class Watershed(Tool):
             # print(f"value, name is {value, name}")
             markers[idx] = value
 
-        # markers = np.int32(255*rgb2gray(mask))
-        # markersprint = 255*rgb2gray(mask)
-        # markersprint = markers
 
-        #OpenCV doesn't work, using matplotlib instead
-        plt.imshow(markers)
-        plt.savefig('markers.png')
+        #plt.imshow(markers)
+        # plt.savefig('markers.png')
         # cv2.imwrite('markers.png', markersprint)
 
         # watershed segmentation
         segmentation = cv2.watershed(crop_imgnp, markers)
         segmentation = filters.median(segmentation, disk(5), mode="mirror")
-        
-        #OpenCV doesn't work, using matplotlib instead
-        plt.imshow(segmentation)
-        plt.savefig('segmentation.png')
-        # cv2.imwrite('segmentation_cv.png', segmentation)
+
+        #plt.imshow(segmentation)
+        #plt.savefig('segmentation.png')
 
         # the result of the segmentation must be converted into labels again
         lbls = measure.label(segmentation)
@@ -222,9 +259,28 @@ class Watershed(Tool):
             return
 
         blobs = self.segmentation()
-
+        
         for blob in blobs:
             if blob.class_name != "Dummy":
-                self.viewerplus.addBlob(blob)
+                try:
+                    self.snapBlobBorders(blob)
+                    self.viewerplus.addBlob(blob)
+                except Exception as e:
+                    if "Empty contour" in str(e):
+                        print(f"Empty contour exception")
+                        segmented = self.viewerplus.annotations.seg_blobs
+                        # for seg in self.viewerplus.annotations.seg_blobs:
+                        for seg in segmented:
+                            if checkIntersection(blob.bbox, seg.bbox):
+                                # print(seg.id)
+                                self.viewerplus.annotations.subtract(seg, blob)
+                        self.viewerplus.addBlob(blob)   
+                    else:
+                        print(f"Exception: {e}")
+                        
             
         self.viewerplus.resetTools()
+
+    def reset(self):
+        self.scribbles.reset()
+        self.current_blobs = []

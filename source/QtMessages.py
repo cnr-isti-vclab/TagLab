@@ -14,15 +14,17 @@ class QtMessageWidget(QWidget):
     def __init__(self, parent=None):
         super(QtMessageWidget, self).__init__(parent)
 
-        self.setStyleSheet("background-color: rgba(40,40,40); color: white")
+        self.setStyleSheet("background-color: rgba(40,40,40,100); color: white")
 
         
 
         self.setAutoFillBackground(False)
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.Tool)
-
+        self.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        
         #NonModal to let click on map
         self.setWindowModality(Qt.NonModal)
+
         self.setWindowOpacity(0.6) 
         
         self.message = None
@@ -51,3 +53,24 @@ class QtMessageWidget(QWidget):
 
     def move(self, x, y):
         super(QtMessageWidget, self).move(x, y)
+
+    def close(self):
+        super(QtMessageWidget, self).close()
+
+    def enterEvent(self, event):
+        self.setWindowOpacity(0.0)
+        # print("i'm in enter")
+    
+    def leaveEvent(self, event):
+        # print("i'm in leave")
+        self.setWindowOpacity(0.6)
+
+    # def mousePressEvent(self, event):
+    # #     # Ignore mouse events so clicks pass through the window
+    #     print("i'm in mousePress")
+        
+        # event.ignore()
+    #     # self.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+    #     self.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+
+        # super(QtMessageWidget, self).mousePressEvent(event)

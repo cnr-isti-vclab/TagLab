@@ -40,11 +40,13 @@ class Ritm(Tool):
         self.states = []
 
         #message for message_widget window
-        message = "<p><i>Segment using positive/negative points</i></p>"
-        message += "<p>Zoom in and frame the object of interest to reduce memory use</p>"
-        message += "<p>SHIFT + Left click to add a point inside the object (positive)<br/>\
-                    SHIFT + Right click to add a point outside the object (negative)</p>"
-        message += "<p>Press spacebar to confirm segmentation</p>"
+        message = "<p><i>Segment by using positive/negative points</i></p>"
+        message += "<p>Zoom in to frame the work-area containing the target instance.<br/> Try keeping this work-area small, to save memory and execution time.</p>"
+        message += "<p>- SHIFT + LMB to add a point inside the instance (positive)<br/>\
+                    - SHIFT + RMB to add a point outside the instance (negative)<br/>\
+                    - CTRL + Z to remove last point</p>"
+        message += "<p>SPACEBAR to confirm segmentation</p>"
+
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
     def checkPointPosition(self, x, y):
@@ -108,7 +110,16 @@ class Ritm(Tool):
         image_crop = cropQImage(self.viewerplus.img_map, self.work_area_bbox)
         input_image = qimageToNumpyArray(image_crop)
 
-        # check CUDA memory to prevent crash
+        # check input image size to prevent crash
+        megapixels = (input_image.shape[0] * input_image.shape[1]) / (1024.0 * 1024.0)
+        if megapixels > 9.0:
+            box = QMessageBox()
+            str = "The input size is too big ({:.1f} MPixels). Try to reduce the viewing area by zooming in.".format(megapixels)
+            box.setText(str)
+            box.exec()
+            return False
+
+        # CUDA memory to prevent crash
         oom = False
         try:
             self.predictor.set_input_image(input_image)
@@ -120,15 +131,6 @@ class Ritm(Tool):
             box.setText("CUDA out of memory. Try to reduce the viewing area by zooming in.")
             box.exec()
             return False
-
-        # check size of the input image to prevent stuck of the PC (for CPU version)
-        if torch.cuda.is_available() is False:
-            megapixels = (input_image.shape[0] * input_image.shape[1]) / (1024.0*1024.0)
-            if megapixels > 9.0:
-                box = QMessageBox()
-                box.setText("The input image is too big. Try to reduce the viewing area by zooming in.")
-                box.exec()
-                return False
 
         self.createWorkAreaMask()
         brush = QBrush(Qt.NoBrush)
@@ -304,7 +306,7 @@ class Ritm(Tool):
             self.infoMessage.emit("Loading RITM network..")
 
             model_name = 'ritm_corals.pth'
-            model_path = os.path.join("models", model_name)
+            model_path = os.path.join(os.path.join(self.viewerplus.taglab_dir, "models"), model_name)
 
             if not torch.cuda.is_available():
                 print("CUDA NOT AVAILABLE!")
@@ -329,11 +331,13 @@ class Ritm(Tool):
         return True
 
     def resetNetwork(self):
-
-        torch.cuda.empty_cache()
-        if self.ritm_net is not None:
-            del self.ritm_net
-            self.ritm_net = None
+        try:
+            torch.cuda.empty_cache()
+            if self.ritm_net is not None:
+                del self.ritm_net
+                self.ritm_net = None
+        except:
+            pass
 
     def apply(self):
         """
@@ -342,19 +346,28 @@ class Ritm(Tool):
 
         # finalize created blobs
         message = "[TOOL][RITM][BLOB-CREATED]"
-        for blob in self.current_blobs:
-            
-            if self.blob_to_correct is not None:
-                self.viewerplus.removeBlob(self.blob_to_correct)
-                blob.id = self.blob_to_correct.id
-                blob.class_name = self.blob_to_correct.class_name
-                message = "[TOOL][RITM][BLOB-EDITED]"
 
-            # order is important: first add then setblob class!
-            utils.undrawBlob(blob, self.viewerplus.scene, redraw=False)
-            self.viewerplus.addBlob(blob, selected=True)
+        # WARNING!! In the editing mode only the biggest blob is considered (e.g. it is not possible to subdivide
+        # an existing blob in two blobs)
+        if self.blob_to_correct is not None:
+            new_blob = self.current_blobs[0]
+            new_blob.class_name = self.blob_to_correct.class_name
+            utils.undrawBlob(new_blob, self.viewerplus.scene, redraw=False)
+            self.viewerplus.updateBlob(self.blob_to_correct, new_blob, selected=True)
+            message = "[TOOL][RITM][BLOB-EDITED]"
+            self.blobInfo.emit(new_blob, message)
+        else:
+            for blob in self.current_blobs:
 
-            self.blobInfo.emit(blob, message)
+                # undraw preview
+                utils.undrawBlob(blob, self.viewerplus.scene, redraw=False)
+
+                # add blob
+                self.viewerplus.addBlob(blob, selected=True)
+
+                self.blobInfo.emit(blob, message)
+
+            self.viewerplus.project.updateCorrespondences("ADD", self.viewerplus.image, self.current_blobs, None, "")
 
         self.viewerplus.saveUndo()
         self.viewerplus.resetSelection()
@@ -408,5 +421,3 @@ class Ritm(Tool):
             brush = self.viewerplus.project.classBrushFromName(self.blob_to_correct)
 
         utils.drawBlob(blob, brush, scene, self.viewerplus.transparency_value, redraw=False)
-
-

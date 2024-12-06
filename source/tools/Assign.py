@@ -5,6 +5,12 @@ class Assign(Tool):
         super(Assign, self).__init__(viewerplus)
         self.active_label = None
 
+        message = "<p><i>Assign a class to a region</i></p>"
+        message += "<p>Choose the class from the Labels panel</p>"
+        message += "<p>- LMB on a region to assign the class<br/>\
+                    - CTRL + LMB + drag to pan view</p>"
+        self.tool_message = f'<div style="text-align: left;">{message}</div>'
+
 
     def setActiveLabel(self, label):
 

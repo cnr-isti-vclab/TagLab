@@ -34,8 +34,9 @@ class FourClicks(Tool):
         self.deepextreme_net = None
         self.device = None
 
-        message = "<p><i>Mark 4 points on the boundary of the object:<br/>top - bottom - left - right</i></p>"
-        message += "<p>SHIFT + Left Click to add a point</p>"
+        message = "<p><i>Segment by marking 4 points on the boundary of an instance:<br/>top - bottom - left - right</i></p>"
+        message += "<p>- SHIFT + LMB to add a point<br/>\
+                    - CTRL + Z to remove last point</p>"
         message += "<p>When 4th point is chosen, the segmentation will be applied</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
@@ -52,6 +53,9 @@ class FourClicks(Tool):
         if len(points) == 4:
             self.segmentWithDeepExtreme()
             self.pick_points.reset()
+
+    def undo_click(self):
+        self.pick_points.removeLastPoint()
 
     def prepareForDeepExtreme(self, four_points, pad_max):
         """
@@ -128,8 +132,7 @@ class FourClicks(Tool):
                                                    np.min(extreme_points_ori[:, 1])] + [pad, pad]
 
             # remap the input points inside the 512 x 512 cropped box
-            extreme_points = (512 * extreme_points * [1 / crop_image.shape[1], 1 / crop_image.shape[0]]).astype(
-                int)
+            extreme_points = (512 * extreme_points * [1 / crop_image.shape[1], 1 / crop_image.shape[0]]).astype(int)
 
             # create the heatmap
             extreme_heatmap = helpers.make_gt(resize_image, extreme_points, sigma=10)
@@ -159,6 +162,7 @@ class FourClicks(Tool):
             self.viewerplus.resetSelection()
             for blob in blobs:
                 self.viewerplus.addBlob(blob, selected=True)
+                self.viewerplus.project.updateCorrespondences("ADD", self.viewerplus.image, blobs, None, "")
                 self.blobInfo.emit(blob, "[TOOL][DEEPEXTREME][BLOB-CREATED]")
             self.viewerplus.saveUndo()
 
@@ -207,12 +211,14 @@ class FourClicks(Tool):
                 self.device = device
 
     def resetNetwork(self):
-        torch.cuda.empty_cache()
-        if self.deepextreme_net is not None:
-            del self.deepextreme_net
-            self.deepextreme_net = None
+        try:
+            torch.cuda.empty_cache()
+            if self.deepextreme_net is not None:
+                del self.deepextreme_net
+                self.deepextreme_net = None
+        except:
+            pass
 
     def reset(self):
         self.resetNetwork()
         self.pick_points.reset()
-

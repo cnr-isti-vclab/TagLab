@@ -40,6 +40,7 @@ from source.QtImageViewer import QtImageViewer
 from source.genutils import distance_point_AABB
 
 import math
+import time
 
 #note on ZValue:
 # 0: image
@@ -233,11 +234,9 @@ class QtImageViewerPlus(QtImageViewer):
         #clear existing layers
 
         # draw all the annotations
-        for blob in self.annotations.seg_blobs:
-            self.drawBlob(blob)
-
-        for point in self.annotations.annpoints:
-            self.drawPointAnn(point)
+        self.drawAllBlobs()
+        self.drawAllPoints()
+        self.updateVisibility()
 
         # draw the layers
         self.drawAllLayers()
@@ -295,7 +294,7 @@ class QtImageViewerPlus(QtImageViewer):
             img = channel.qimage
         else:
             QApplication.setOverrideCursor(Qt.WaitCursor)
-            img = channel.loadData()
+            img = channel.loadData(self.taglab_dir)
             QApplication.restoreOverrideCursor()
 
         if img.isNull():
@@ -306,7 +305,7 @@ class QtImageViewerPlus(QtImageViewer):
             channel.filename = dir.relativeFilePath(filename)
 
             QApplication.setOverrideCursor(Qt.WaitCursor)
-            img = channel.loadData()
+            img = channel.loadData(self.taglab_dir)
             QApplication.restoreOverrideCursor()
 
             if img.isNull():
@@ -772,12 +771,12 @@ class QtImageViewerPlus(QtImageViewer):
                annpoint.ellipse_gitem.setOpacity(self.transparency_value)
 
 
-    def redrawAllBlobs(self):
+    def drawAllBlobs(self):
 
         for blob in self.annotations.seg_blobs:
             self.drawBlob(blob)
 
-    def redrawAllPoints(self):
+    def drawAllPoints(self):
 
         for point in self.annotations.annpoints:
             self.drawPointAnn(point)
@@ -820,13 +819,7 @@ class QtImageViewerPlus(QtImageViewer):
 
         if tool == "WATERSHED":
             self.tools.tools["WATERSHED"].scribbles.setScaleFactor(self.zoom_factor)
-
-            label_info = self.project.labels.get(self.active_label)
-            if label_info is not None:
-                self.tools.tools["WATERSHED"].setActiveLabel(label_info)
-            else:
-                lbl = Label("", "", fill=[0, 0, 0])
-                self.tools.tools["WATERSHED"].setActiveLabel(lbl)
+            self.tools.tools["WATERSHED"].setActiveLabel(self.project.labels.get(self.active_label if (self.active_label is not None) else "Empty"))
 
         if tool == "FOURCLICKS" or tool == "PLACEANNPOINT":
             self.showCrossair = True
@@ -848,6 +841,11 @@ class QtImageViewerPlus(QtImageViewer):
             self.tools.enableSAM()
         else:
             self.tools.disableSAM()
+
+        if tool == "SAMINTERACTIVE":
+            self.tools.enableSAMInteractive()
+        else:
+            self.tools.disableSAMInteractive()
 
     def resetTools(self):
 
@@ -958,19 +956,22 @@ class QtImageViewerPlus(QtImageViewer):
         if event.button() == Qt.LeftButton:
             (x, y) = self.clipScenePos(scenePos)
             self.leftMouseButtonPressed.emit(x, y)
-            
-            # if (self.tools.tool == "WATERSHED" or self.tools.tool == "FREEHAND" or self.tools.tool == "EDITBORDER" or self.tools.tool == "RULER") and mods & Qt.ShiftModifier:
-            if mods & Qt.ShiftModifier:
+
+            if (self.tools.tool == "WATERSHED" or self.tools.tool == "FREEHAND" or self.tools.tool == "EDITBORDER"\
+                 or self.tools.tool == "RULER" or self.tools.tool == "SAM" or self.tools.tool == "SAMINTERACTIVE") and mods & Qt.ShiftModifier:
+                if mods & Qt.ShiftModifier:
                     self.tools.leftPressed(x, y, mods)
             
-            # #used from area selection and pen drawing,
-            # elif (self.panEnabled and not (mods & Qt.ShiftModifier)) or (mods & Qt.ControlModifier):
-            #     self.setDragMode(QGraphicsView.ScrollHandDrag)
-            
-            # elif self.tools.tool == "MATCH" or self.tools.tool == "RITM" or self.tools.tool == "SAMINTERACTIVE" or self.tools.tool == "FOURCLICKS" or self.tools.tool == "PLACEANNPOINT":
-            #     self.tools.leftPressed(x, y, mods)
+            elif (self.tools.tool == "WATERSHED" or self.tools.tool == "SAM" or self.tools.tool == "SAMINTERACTIVE"):
+                self.setDragMode(QGraphicsView.ScrollHandDrag)
+                            
+            #used from area selection and pen drawing,
+            elif (self.panEnabled and not (mods & Qt.ShiftModifier)) or (mods & Qt.ControlModifier):
+                self.setDragMode(QGraphicsView.ScrollHandDrag)
+            elif self.tools.tool == "MATCH" or self.tools.tool == "RITM" or self.tools.tool == "FOURCLICKS" or self.tools.tool == "PLACEANNPOINT":
+                self.tools.leftPressed(x, y, mods)
 
-            elif self.tools.tool == "MOVE" and mods & Qt.ShiftModifier:
+            elif mods & Qt.ShiftModifier:
                 self.dragSelectionStart = [x, y]
                 self.logfile.info("[SELECTION][DRAG] Selection starts..")
 
@@ -1050,10 +1051,7 @@ class QtImageViewerPlus(QtImageViewer):
             if Qt.ControlModifier & QApplication.queryKeyboardModifiers():
                 return
             
-            # if self.tools.tool == "WATERSHED" or self.tools.tool == "FREEHAND" or self.tools.tool == "EDITBORDER":
             self.tools.mouseMove(x, y, mods)
-            # else:
-            #     self.tools.mouseMove(x, y)
 
         elif event.buttons() == Qt.RightButton:
             (x, y) = self.clipScenePos(scenePos)
@@ -1094,8 +1092,20 @@ class QtImageViewerPlus(QtImageViewer):
 
         #added zooming rectangle with shift key
         if self.tools.tool == "SAM" and mods & Qt.ShiftModifier:    
-            self.tools.tools["SAM"].setSize(event.angleDelta())
-            return
+            if not self.tools.tools["SAM"].work_area_set:
+                self.tools.tools["SAM"].setSize(event.angleDelta())
+                return
+            else:
+                self.tools.tools["SAM"].increasePoint(event.angleDelta())
+                return
+        
+        if self.tools.tool == "SAMINTERACTIVE" and mods & Qt.ShiftModifier:
+            # if not self.tools.tools["SAMINTERACTIVE"].work_area_set:
+                self.tools.tools["SAMINTERACTIVE"].setSize(event.angleDelta())
+                return
+            # else:
+                # self.tools.tools["SAMINTERACTIVE"].increasePoint(event.angleDelta())
+                # return
 
         if self.zoomEnabled:
 
@@ -1282,6 +1292,7 @@ class QtImageViewerPlus(QtImageViewer):
         for blob in self.annotations.annpoints:
             visibility = self.project.isLabelVisible(blob.class_name)
             self.setBlobVisible(blob, visibility)
+
 
 #SELECTED BLOBS MANAGEMENT
 
@@ -1548,6 +1559,10 @@ class QtImageViewerPlus(QtImageViewer):
     def deleteSelectedBlobs(self):
 
         if len(self.selected_blobs) > 0:
+
+            for blob in self.selected_blobs:
+                self.project.updateCorrespondences("REMOVE", self.image, None, blob, "")
+
             self.removeBlobs(self.selected_blobs)
 
         if len(self.selected_annpoints) > 0:
@@ -1594,6 +1609,16 @@ class QtImageViewerPlus(QtImageViewer):
             blob.qpath_gitem.setBrush(brush)
             self.scene.invalidate()
 
+    def updateBlobClass(self, img, class_name, blob):
+
+        if self.image == img:
+            self.undo_data.setBlobClass(blob, class_name)
+
+            if blob.qpath_gitem:
+                brush = self.project.classBrushFromName(blob)
+                blob.qpath_gitem.setBrush(brush)
+                self.scene.invalidate()
+
     def setAnnPointClass(self, annpoint, class_name):
 
         if annpoint.class_name == class_name:
@@ -1617,6 +1642,14 @@ class QtImageViewerPlus(QtImageViewer):
             self.tools.tools["RITM"].undo_click()
             return
         
+        if self.tools.tool == "SAMINTERACTIVE" and self.tools.tools["SAMINTERACTIVE"].hasPoints():
+            self.tools.tools["SAMINTERACTIVE"].undo_click()
+            return
+        
+        if self.tools.tool == "FOURCLICKS":
+            self.tools.tools["FOURCLICKS"].undo_click()
+            return
+
         if self.tools.tool in ["FREEHAND", "CUT", "EDITBORDER"]:
             if self.tools.tools["EDITBORDER"].edit_points.undo():
                 return

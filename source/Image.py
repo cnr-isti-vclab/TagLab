@@ -152,11 +152,11 @@ class Image(object):
                 'Class': [],
                 '#R': np.zeros(len(labels), dtype=int),
                 '#P': np.zeros(len(labels), dtype=int),
-                'Coverage': np.zeros(len(labels),dtype=np.float)
+                'Coverage': np.zeros(len(labels),dtype=np.float32)
             }
 
             for i, label in enumerate(labels):
-                dict['Visibility'][i] = int(label.visible)
+                dict['Visibility'][i] = np.int32(label.visible)
                 dict['Color'].append(str(label.fill))
                 dict['Class'].append(label.name)
                 count, new_area = self.annotations.calculate_perclass_blobs_value(label, self.map_px_to_mm_factor)
@@ -333,7 +333,7 @@ class Image(object):
         # Add blobs
         new_blobs = self.annotations.computeBlobsAffineTransform(R, T)
         for blob in new_blobs:
-            cpy.annotations.addBlob(blob, notify=False)
+            cpy.annotations.addBlob(blob)
         # Add channels
         for ch in self.channels:
             newFilename, w, h = self.__updateChannel(ch, tag, -rot, tra, borders, geoTransform, geoRef)

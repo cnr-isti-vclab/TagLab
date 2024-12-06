@@ -834,13 +834,14 @@ class QtAlignmentToolWidget(QWidget):
     # [SCALE] SCALE_PRECISION = 100  # 1 / 100
     # [SCALE] SCALE_RANGE = 0.50  # [-50%, +50%]
 
-    def __init__(self, project, parent=None):
+    def __init__(self, taglab_dir, project, parent=None):
         super(QtAlignmentToolWidget, self).__init__(parent)
 
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
 
         # ==============================================================
 
+        self.taglab_dir = taglab_dir
         self.project = project
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.setMinimumWidth(1200)
@@ -1247,8 +1248,8 @@ class QtAlignmentToolWidget(QWidget):
         # Initialize views by simulating clicks on the UI
         # ==============================================================
 
-        self.project.images[0].channels[0].loadData()
-        self.project.images[1].channels[0].loadData()
+        self.project.images[0].channels[0].loadData(self.taglab_dir)
+        self.project.images[1].channels[0].loadData(self.taglab_dir)
 
         self.leftCombobox.currentIndexChanged.emit(0)
         self.rightCombobox.currentIndexChanged.emit(1)
@@ -1283,8 +1284,22 @@ class QtAlignmentToolWidget(QWidget):
                 self.__deleteMarker(i)
                 # Redraw markers
                 self.__updateMarkers(keepAlgResults=False)
+
+        if event.modifiers() & Qt.ShiftModifier:
+            self.rightImgViewer.disablePan()
+            self.leftImgViewer.disablePan()
+
         # Default
         super(QtAlignmentToolWidget, self).keyPressEvent(event)
+
+    def keyReleaseEvent(self, event: QKeyEvent) -> None:
+
+        if not (event.modifiers() & Qt.ShiftModifier):
+            self.rightImgViewer.enablePan()
+            self.leftImgViewer.enablePan()
+
+        # Default
+        super(QtAlignmentToolWidget, self).keyReleaseEvent(event)
 
     @pyqtSlot(int)
     def leftImageChanges(self, index: int) -> None:
@@ -1760,21 +1775,36 @@ All markers must be valid to proceed.
         :param: event the mouse event
         :param: isLeft a boolean to choose emitting viewer
         """
-        # Filters out non-right-button events
-        if event.button() != Qt.RightButton:
-            return
         # Map mouse pos
         pos = self.__mapToViewer(event.pos(), isLeft)
         self.lastMousePos = pos
+
         # Check if any marker exist at current position
         hovering = self.__findMarkerAt(pos, isLeft)
-        # Set dragging index (can be None)
-        self.selectedMarker = hovering
+
+        if event.modifiers() & Qt.ShiftModifier and event.button() == Qt.LeftButton:
+
+            # Ensure user wasn't dragging a marker
+            if not self.isDragging:
+                if hovering is None:
+                    # Create marker
+                    pxSize = self.pxSizeL if isLeft else self.pxSizeR
+                    mkPos = QPointF(pos.x() * pxSize, pos.y() * pxSize)
+                    self.__addMarker(mkPos, isLeft)
+                else:
+                    # Toggle marker
+                    self.__toggleMarker(hovering)
+
+        if event.button() == Qt.RightButton and hovering is not None:
+            # Set dragging index (can be None)
+            self.selectedMarker = hovering
+
         # Update hovering
         self.__clearHoveringMarker()
         if hovering is not None:
             self.hoveringMarker = hovering
             self.hoveringSceneObjs = self.__drawHoveringMarker(hovering)
+
         # Redraw markers
         self.__updateMarkers(keepAlgResults=True)
 
@@ -1784,31 +1814,21 @@ All markers must be valid to proceed.
         :param: event the mouse event
         :param: isLeft a boolean to choose emitting viewer
         """
-        # Filters out non-right-button events
-        if event.button() != Qt.RightButton:
-            return
         # Map mouse pos
         pos = self.__mapToViewer(event.pos(), isLeft)
         # Check if any marker exist at current position
         hovering = self.__findMarkerAt(pos, isLeft)
-        # Ensure user wasn't dragging a marker
-        if not self.isDragging:
-            if hovering is None:
-                # Create marker
-                pxSize = self.pxSizeL if isLeft else self.pxSizeR
-                mkPos = QPointF(pos.x() * pxSize, pos.y() * pxSize)
-                self.__addMarker(mkPos, isLeft)
-            else:
-                # Toggle marker
-                self.__toggleMarker(hovering)
+
         # Clear status
         self.isDragging = False
         self.selectedMarker = None
+
         # Update hovering
         self.__clearHoveringMarker()
         if hovering is not None:
             self.hoveringMarker = hovering
             self.hoveringSceneObjs = self.__drawHoveringMarker(hovering)
+
         # Redraw markers
         self.__updateMarkers(keepAlgResults=False)
 
@@ -1818,35 +1838,40 @@ All markers must be valid to proceed.
         :param: event the mouse event
         :param: isLeft a boolean to choose emitting viewer
         """
+
         # Map mouse pos
         pos = self.__mapToViewer(event.pos(), isLeft)
-        # Update dragging status (if needed)
-        if not self.isDragging and self.selectedMarker is not None:
-            self.isDragging = True
-        # Check if user is dragging a marker
-        if self.isDragging:
-            # Calculate delta
-            pxSize = self.pxSizeL if isLeft else self.pxSizeR
-            dx = (pos.x() - self.lastMousePos.x()) * pxSize
-            dy = (pos.y() - self.lastMousePos.y()) * pxSize
-            self.lastMousePos = pos
-            # Update marker position
-            self.markers[self.selectedMarker].move(dx, dy, isLeft, True)
-            self.__clearMarker(self.selectedMarker, False)
+
+        # Check for hover
+        hovering = self.__findMarkerAt(pos, isLeft)
+        if self.hoveringMarker != hovering:
+            # Clear older rect
+            self.__clearHoveringMarker()
+            # Update hovering data
+            if hovering is not None:
+                self.hoveringMarker = hovering
+                self.hoveringSceneObjs = self.__drawHoveringMarker(hovering)
             # Redraw markers
-            self.__updateMarkers(keepAlgResults=False)
-        else:
-            # Check for hover
-            hovering = self.__findMarkerAt(pos, isLeft)
-            if self.hoveringMarker != hovering:
-                # Clear older rect
-                self.__clearHoveringMarker()
-                # Update hovering data
-                if hovering is not None:
-                    self.hoveringMarker = hovering
-                    self.hoveringSceneObjs = self.__drawHoveringMarker(hovering)
+            self.__updateMarkers(keepAlgResults=True)
+
+        if event.buttons() & Qt.RightButton:
+
+            # Update dragging status (if needed)
+            if not self.isDragging and self.selectedMarker is not None:
+                self.isDragging = True
+
+            # Check if user is dragging a marker
+            if self.isDragging:
+                # Calculate delta
+                pxSize = self.pxSizeL if isLeft else self.pxSizeR
+                dx = (pos.x() - self.lastMousePos.x()) * pxSize
+                dy = (pos.y() - self.lastMousePos.y()) * pxSize
+                self.lastMousePos = pos
+                # Update marker position
+                self.markers[self.selectedMarker].move(dx, dy, isLeft, True)
+                self.__clearMarker(self.selectedMarker, False)
                 # Redraw markers
-                self.__updateMarkers(keepAlgResults=True)
+                self.__updateMarkers(keepAlgResults=False)
 
     def __onMouseOut(self, isLeft: bool) -> None:
         """
@@ -2153,11 +2178,11 @@ All markers must be valid to proceed.
         # Check if channel is loaded
         if channel1.qimage is None:
             QApplication.setOverrideCursor(Qt.WaitCursor)
-            channel1.loadData()
+            channel1.loadData(self.taglab_dir)
             QApplication.restoreOverrideCursor()
         if channel2.qimage is None:
             QApplication.setOverrideCursor(Qt.WaitCursor)
-            channel2.loadData()
+            channel2.loadData(self.taglab_dir)
             QApplication.restoreOverrideCursor()
         # Update preview size
         self.__updateSizes(channel1.qimage, self.pxSizeL, channel2.qimage, self.pxSizeR)

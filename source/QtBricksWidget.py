@@ -493,7 +493,7 @@ class QtBricksWidget(QWidget):
 
     def removeOverlappingBlobs(self):
 
-        #QUIRINO, some time some problems with np.min/np.max, to check
+        #some time some problems with np.min/np.max, to check
 
         blobs = self.seg_bricks.copy()
 

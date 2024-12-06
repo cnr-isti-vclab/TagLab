@@ -21,19 +21,19 @@ from source.tools.SelectArea import SelectArea
 from source.tools.Ritm import Ritm
 from source.tools.PlaceAnnPoint import PlaceAnnPoint
 
+
+
 from PyQt5.QtCore import Qt, QObject, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
 
 
 import importlib
 if importlib.util.find_spec("segment_anything"):
     from source.tools.Sam import Sam
-
-#from source.tools.SamInteractive import SamInteractive
-
+    from source.tools.SAMInteractive import SAMInteractive
 
 # class Tools(object):
 class Tools(QObject):    
-    tol_mess = pyqtSignal(str)
+    tool_mess = pyqtSignal(str)
     
     def __init__(self, viewerplus):
         
@@ -76,82 +76,91 @@ class Tools(QObject):
             "MATCH": Match(self.viewerplus),
             "SELECTAREA": SelectArea(self.viewerplus, self.pick_points),
             "RITM": Ritm(self.viewerplus, self.corrective_points),
-            #"SAMINTERACTIVE": SamInteractive(self.viewerplus, self.corrective_points),
         }
+        if self.SAM_is_available:   #just if SAM is available
+            self.tools["SAM"] = Sam(self.viewerplus, self.pick_points)
+            self.tools["SAMINTERACTIVE"] = SAMInteractive(self.viewerplus, self.pick_points)
 
-        if self.SAM_is_available:
-            self.tools["SAM"] = Sam(self.viewerplus)
 
     def setTool(self, tool):
         self.resetTools()      
         self.tool = tool
 
-    def resetTools(self):
 
+    def resetTools(self):
+        # reset all helpers
         self.pick_points.reset()
         self.edit_points.reset()
         self.scribbles.reset()
         self.corrective_points.reset()
-
+        # invalidate scene
         self.scene.invalidate(self.scene.sceneRect())
-
+        # reset each tool
         self.tools["FOURCLICKS"].reset()
         self.tools["RITM"].reset()
         self.tools["SELECTAREA"].reset()
-
+        self.tools["WATERSHED"].reset()
         if self.SAM_is_available:
             self.tools["SAM"].reset()
-            #self.tools["SAMINTERACTIVE"].reset()
-
+            self.tools["SAMINTERACTIVE"].reset()
+        # stop autoclassification
         if self.tool == "AUTOCLASS":
             self.corals_classifier.stopProcessing()
-
-        if self.tool == "WATERSHED":
-            self.current_blobs = []
-
         # close crack widget
         if self.viewerplus.crackWidget is not None:
             self.viewerplus.crackWidget.close()
         self.viewerplus.crackWidget = None
-
         # close bricks widget
         if self.viewerplus.bricksWidget is not None:
             self.viewerplus.bricksWidget.close()
         self.viewerplus.bricksWidget = None
 
+
     def enableSAM(self):
         if self.SAM_is_available:
             self.tools["SAM"].enable(True)
-
     def disableSAM(self):
         if self.SAM_is_available:
             self.tools["SAM"].enable(False)
+
+
+    def enableSAMInteractive(self):
+        if self.SAM_is_available:
+            self.tools["SAMINTERACTIVE"].enable(True)
+    def disableSAMInteractive(self):
+        if self.SAM_is_available:
+            self.tools["SAMINTERACTIVE"].enable(False)
+    
+
+    def enableRITM(self):
+            self.tools["RITM"].enable(True)
+    def disableRITM(self):
+            self.tools["RITM"].enable(False)
       
+
     #method to select tools for tool message window      
     def toolMessage(self):
         if self.tool == "WATERSHED" or self.tool == "SAM" or self.tool == "RITM"\
-              or self.tool == "FREEHAND" or self.tool == "BRICKS" or self.tool == "FOURCLICKS":
-            self.tol_mess.emit(self.tools[self.tool].tool_message)
+              or self.tool == "FREEHAND" or self.tool == "BRICKS" or self.tool == "FOURCLICKS" or\
+              self.tool == "EDITBORDER" or self.tool == "CUT" or self.tool == "ASSIGN" or self.tool == "SAMINTERACTIVE":
+            self.tool_mess.emit(self.tools[self.tool].tool_message)
         else:
-            self.tol_mess.emit(None)
+            self.tool_mess.emit(None)
             
-
-    def leftPressed(self, x, y, mods = None):
+    def leftPressed(self, x, y, mods=None):
         if self.tool == "MOVE":
             return
         self.tools[self.tool].leftPressed(x, y, mods)
 
-    def rightPressed(self, x, y, mods = None):
-        if self.tool == "RITM" or self.tool == "SAMINTERACTIVE" or self.tool == "WATERSHED":
-            self.tools[self.tool].rightPressed(x, y, mods)
+    def rightPressed(self, x, y, mods=None):
+        if self.tool == "MOVE":
+            return        
+        self.tools[self.tool].rightPressed(x, y, mods)
 
-    def mouseMove(self, x, y, mods = None):
+    def mouseMove(self, x, y, mods=None):
         if self.tool == "MOVE":
             return
-        # if self.tool == "WATERSHED" or self.tool == "FREEHAND" or self.tool == "EDITBORDER":
         self.tools[self.tool].mouseMove(x, y, mods)
-        # else:
-            # self.tools[self.tool].mouseMove(x, y)
 
     def leftReleased(self, x, y):
         if self.tool == "MOVE":
@@ -161,8 +170,7 @@ class Tools(QObject):
     def rightReleased(self, x, y):
         if self.tool == "MOVE":
             return
-        if self.tool == "WATERSHED":
-            self.tools[self.tool].rightReleased(x, y)
+        self.tools[self.tool].rightReleased(x, y)
 
     def wheel(self, delta):
         if self.tool == "MOVE":

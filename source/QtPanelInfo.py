@@ -343,9 +343,10 @@ class QtPanelInfo(QTabWidget):
 
     def assign(self, text, name):
 
-        if self.ann == None:
+        if self.ann is None:
             return
 
+        print(text)
         self.ann.data[name] = text
 
     def updateNotes(self):
@@ -420,15 +421,11 @@ class QtPanelInfo(QTabWidget):
                 self.sorted_coralnet_sugg = {}
 
                 for key in ann.data.keys():
-                    # The mapped value represents what users *want* to map the classifier's
-                    # prediction to, within TagLab. Use this first, otherwise use the other.
-                    if "(Mapped)" in key and "suggestion" in key:
-                        key_ = key.split("(Mapped)")[0].strip()
-                        coralnet_sugg[key_] = ann.data[key]
-                    elif "suggestion" in key and key not in coralnet_sugg:
+                    # If machine suggestion exists
+                    if "suggestion" in key:
                         coralnet_sugg[key] = ann.data[key]
 
-                    # If confidence exists, get it, otherwise fill with NULL
+                    # If machine confidence exists
                     if "confidence" in key:
                         coralnet_conf[key] = ann.data[key]
 
