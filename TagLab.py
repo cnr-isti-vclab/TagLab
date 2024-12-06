@@ -243,6 +243,7 @@ class TagLab(QMainWindow):
         self.btnSam                = self.newButton("sam.png", "SAM - all instances in an area", flatbuttonstyle, self.sam)
         self.btnFourClicks         = self.newButton("dexter.png",   "4-clicks segmentation",  flatbuttonstyle, self.fourClicks)
         self.btnRitm               = self.newButton("ritm.png",     "Positive/negative clicks segmentation", flatbuttonstyle, self.ritm)
+        self.btnRows               = self.newButton("brick.png",     "Rows analysis",      flatbuttonstyle, self.rows)
 
         self.btnAssign             = self.newButton("bucket.png",   "Assign class to region",   flatbuttonstyle, self.assign)
         self.btnEditBorder         = self.newButton("edit.png",     "Edit region border",       flatbuttonstyle, self.editBorder)
@@ -290,6 +291,7 @@ class TagLab(QMainWindow):
         #layout_tools.addWidget(self.btnBricksSegmentation)
         layout_tools.addWidget(self.btnSam)
         layout_tools.addWidget(self.btnSamInteractive)
+        layout_tools.addWidget(self.btnRows)
         layout_tools.addWidget(labelSeparator1) #separator-----------------------------------        
         layout_tools.addWidget(self.btnAssign)        
         layout_tools.addWidget(self.btnEditBorder)
@@ -560,7 +562,7 @@ class TagLab(QMainWindow):
         layout_groupbox2.setContentsMargins(QMargins(0, 0, 0, 0))
         self.groupbox_comparison.setLayout(layout_groupbox2)
 
-        # BLOB INFO
+        # # BLOB INFO
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         
@@ -2601,6 +2603,7 @@ class TagLab(QMainWindow):
         self.btnFreehand.setChecked(False)
         self.btnWatershed.setChecked(False)
         self.btnBricksSegmentation.setChecked(False)
+        self.btnRows.setChecked(False)
         self.btnRuler.setChecked(False)
         self.btnCreateCrack.setChecked(False)
         self.btnFourClicks.setChecked(False)
@@ -2630,6 +2633,7 @@ class TagLab(QMainWindow):
             "FREEHAND"     : ["Freehand"     , self.btnFreehand],
             "WATERSHED"    : ["Watershed"    , self.btnWatershed],
             # "BRICKS"       : ["Bricks",        self.btnBricksSegmentation],
+            "ROWS"         : ["Rows"         , self.btnRows],
             "RULER"        : ["Ruler"        , self.btnRuler],
             "FOURCLICKS"   : ["4-click"      , self.btnFourClicks],
             "MATCH"        : ["Match"        , self.btnMatch],
@@ -2715,6 +2719,13 @@ class TagLab(QMainWindow):
         Activate the tool to segment single bricks element.
         """
         self.setTool("BRICKS")
+
+    @pyqtSlot()
+    def rows(self):
+        """
+        Activate the "rows" tool.
+        """
+        self.setTool("ROWS")
 
     @pyqtSlot()
     def ruler(self):
@@ -3944,7 +3955,7 @@ class TagLab(QMainWindow):
     def updateToolStatus(self):
 
         for button in [self.btnMove, self.btnPoint, self.btnAssign, self.btnEditBorder, self.btnCut, self.btnFreehand,
-                       self.btnCreateCrack, self.btnWatershed, self.btnBricksSegmentation, self.btnRuler, self.btnFourClicks,
+                       self.btnCreateCrack, self.btnWatershed, self.btnBricksSegmentation, self.btnRows, self.btnRuler, self.btnFourClicks,
                        self.btnRitm,self.btnSam, self.btnAutoClassification, self.btnCreateGrid, self.btnGrid]:
             button.setEnabled(len(self.project.images) > 0)
 

@@ -12,6 +12,7 @@ from source.tools.Assign import Assign
 from source.tools.EditBorder import EditBorder
 from source.tools.Watershed import Watershed
 from source.tools.BricksSegmentation import BricksSegmentation
+from source.tools.Rows import Rows
 from source.tools.Cut import Cut
 from source.tools.Freehand import Freehand
 from source.tools.Ruler import Ruler
@@ -21,10 +22,7 @@ from source.tools.SelectArea import SelectArea
 from source.tools.Ritm import Ritm
 from source.tools.PlaceAnnPoint import PlaceAnnPoint
 
-
-
 from PyQt5.QtCore import Qt, QObject, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
-
 
 import importlib
 if importlib.util.find_spec("segment_anything"):
@@ -76,6 +74,7 @@ class Tools(QObject):
             "MATCH": Match(self.viewerplus),
             "SELECTAREA": SelectArea(self.viewerplus, self.pick_points),
             "RITM": Ritm(self.viewerplus, self.corrective_points),
+            "ROWS": Rows(self.viewerplus),
         }
         if self.SAM_is_available:   #just if SAM is available
             self.tools["SAM"] = Sam(self.viewerplus, self.pick_points)
@@ -100,6 +99,7 @@ class Tools(QObject):
         self.tools["RITM"].reset()
         self.tools["SELECTAREA"].reset()
         self.tools["WATERSHED"].reset()
+        self.tools["ROWS"].reset()
         if self.SAM_is_available:
             self.tools["SAM"].reset()
             self.tools["SAMINTERACTIVE"].reset()
@@ -130,6 +130,13 @@ class Tools(QObject):
     def disableSAMInteractive(self):
         if self.SAM_is_available:
             self.tools["SAMINTERACTIVE"].enable(False)
+
+    # def enableRows(self):
+    #     # if self.SAM_is_available:
+    #     self.tools["ROWS"].enable(True)
+    # def disableRows(self):
+    #     # if self.SAM_is_available:
+    #     self.tools["ROWS"].enable(False)
     
 
     def enableRITM(self):
@@ -172,7 +179,7 @@ class Tools(QObject):
             return
         self.tools[self.tool].rightReleased(x, y)
 
-    def wheel(self, delta):
+    def wheel(self, delta, mods):
         if self.tool == "MOVE":
             return
         self.tools[self.tool].wheel(delta)

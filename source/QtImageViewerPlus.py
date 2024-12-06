@@ -190,6 +190,7 @@ class QtImageViewerPlus(QtImageViewer):
         self.mouseCoords = QPointF(0.0, 0.0)
         self.crackWidget = None
         self.bricksWidget = None
+        self.struct_widget = None
 
         self.setContextMenuPolicy(Qt.CustomContextMenu)
 
@@ -847,6 +848,11 @@ class QtImageViewerPlus(QtImageViewer):
         else:
             self.tools.disableSAMInteractive()
 
+        # if tool == "ROWS":
+        #     self.tools.enableRows()
+        # else:
+        #     self.tools.disableRows()
+
     def resetTools(self):
 
         self.tools.resetTools()
@@ -1011,6 +1017,10 @@ class QtImageViewerPlus(QtImageViewer):
                     self.dragSelectBlobs(x, y)
                     self.dragSelectionStart = None
                     if self.dragSelectionRect:
+
+                        if self.tools.tool == "ROWS":
+                            self.tools.leftReleased(x,y)
+                        
                         self.scene.removeItem(self.dragSelectionRect)
                         del self.dragSelectionRect
                         self.dragSelectionRect = None
@@ -1021,7 +1031,7 @@ class QtImageViewerPlus(QtImageViewer):
 
         if event.button() == Qt.RightButton:
             (x, y) = self.clipScenePos(scenePos)
-            if self.tools.tool == "WATERSHED":
+            if self.tools.tool == "WATERSHED" :
                 self.tools.rightReleased(x,y)
 
     def mouseMoveEvent(self, event):
@@ -1106,6 +1116,9 @@ class QtImageViewerPlus(QtImageViewer):
             # else:
                 # self.tools.tools["SAMINTERACTIVE"].increasePoint(event.angleDelta())
                 # return
+        if self.tools.tool == "ROWS" and (mods & Qt.ShiftModifier or mods & Qt.ControlModifier):
+            self.tools.tools["ROWS"].setSize(event.angleDelta(), mods)
+            return
 
         if self.zoomEnabled:
 
