@@ -38,6 +38,10 @@ class RowsWidget(QWidget):
         self.viewer.setFixedWidth(IMAGEVIEWER_W)
         self.viewer.setFixedHeight(IMAGEVIEWER_H)
 
+
+        self.setWindowTitle("Rows Analysis")
+        self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowTitleHint)
+
         
         self.image_cropped = cropped_image
         self.image_mask = image_mask
@@ -64,15 +68,6 @@ class RowsWidget(QWidget):
         layout.addWidget(self.btnClose)
         
         self.setLayout(layout)
-
-        # self.progress_bar.hide()
-
-        bounding_rect = self.rect.boundingRect()
-        print(f"Boundig rect top-left: ({bounding_rect.top()}, {bounding_rect.left()})")
-        for blob in self.blob_list:
-            centroid, bbox = self.blobCentroid(self.rect.boundingRect(), blob)
-            self.centroids.append(centroid)
-            self.bboxes.append(bbox)
             
         # self.q_image = genutils.rgbToQImage(self.image_cropped)
         self.viewer.setImg(self.image_cropped)
