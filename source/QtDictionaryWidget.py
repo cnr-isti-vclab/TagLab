@@ -336,16 +336,18 @@ class QtDictionaryWidget(QWidget):
                     for row in reader:
                         id = row['US']  # Assuming 'US' column is used as the id
                         name = row['US']  # Assuming 'US' column is used as the name
-                        fill = f'[\
-                            {random.randint(0, 255)},\
-                            {random.randint(0, 255)},\
-                            {random.randint(0, 255)}\
-                                ]'  # Random RGB value
-                        border = '[\
-                            200,\
+                        # fill = (f'[\
+                        #     {random.randint(0, 255)},\
+                        #     {random.randint(0, 255)},\
+                        #     {random.randint(0, 255)}\
+                        #         ]')  # Random RGB value
+                        fill = [random.randint(0, 255),\
+                                random.randint(0, 255),\
+                                random.randint(0, 255)]
+                        border = [200,\
                             200,\
                             200\
-                            ]'   # Default value for border
+                            ]   # Default value for border
                         description = ''
                         mylabel = Label(id=id, name=name, fill=fill, border=border, description=description)
                         labels_loaded.append(mylabel)
