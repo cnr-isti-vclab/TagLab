@@ -13,6 +13,8 @@ from PyQt5.QtGui import QPainter, QPen, QBrush
 import matplotlib.pyplot as plt
 
 from skimage import measure
+from skimage.morphology import skeletonize
+from scipy.spatial import KDTree
 
 
 
@@ -72,6 +74,9 @@ class RowsWidget(QWidget):
         # self.q_image = genutils.rgbToQImage(self.image_cropped)
         self.viewer.setImg(self.image_cropped)
         self.houghTansformation(self.maschera)
+
+        skel = self.applySkeletonization(self.maschera)
+        self.connectSkeletonIntersections(skel)
 
         # self.loadBlobs()
 
@@ -173,9 +178,74 @@ class RowsWidget(QWidget):
         self.viewer.setOverlayImage(self.image_mask)
 
 
+    def applySkeletonization(self, mask):
+        # Apply skeletonization
+        skeleton = skeletonize(mask)
 
+        # Visualize the skeleton
+        plt.figure(figsize=(8, 8))
+        plt.imshow(skeleton, cmap='gray')
+        plt.title('Skeletonized Mask')
+        plt.savefig("skeletonized_mask.png", bbox_inches='tight', pad_inches=0)
+        plt.close()
 
+        # Update the viewer with the skeletonized mask
+        # skeleton_image = genutils.numpyArrayToQImage(skeleton.astype(np.uint8) * 255)
+        # self.viewer.setOverlayImage(skeleton_image)
+        return skeleton
 
+    def connectSkeletonIntersections(self, skeleton):
+        # Find intersection points in the skeleton
+        intersection_points = self.findIntersectionPoints(skeleton)
+
+        # Create a KDTree for efficient neighbor search
+        tree = KDTree(intersection_points)
+
+        # Plot the intersection points and their connections
+        plt.figure(figsize=(8, 8))
+        plt.imshow(skeleton, cmap='gray')
+
+        for point in intersection_points:
+            x0, y0 = point
+            # Find neighbors within a radius of 5 rows
+            indices = tree.query_ball_point(point, r=10)
+            for idx in indices:
+                x1, y1 = intersection_points[idx]
+                if (x0, y0) != (x1, y1):
+                    plt.plot([x0, x1], [y0, y1], '-o', color=np.random.rand(3,))
+
+        plt.title('Skeleton with Intersection Points Connections')
+        plt.savefig("intersection_points_connections.png", bbox_inches='tight', pad_inches=0)
+        plt.close()
+        
+        # Create a copy of the original image to draw on
+        # image_with_lines = self.image_mask.copy()
+        # painter = QPainter(image_with_lines)
+        # pen = QPen(Qt.green, 2)
+        # painter.setPen(pen)
+
+        # # Draw lines connecting intersection points
+        # for i in range(len(intersection_points) - 1):
+        #     x0, y0 = intersection_points[i]
+        #     x1, y1 = intersection_points[i + 1]
+        #     painter.drawLine(x0, y0, x1, y1)
+
+        # painter.end()
+
+        # # Update the viewer with the new image
+        # self.image_mask = image_with_lines
+        # self.viewer.setOverlayImage(self.image_mask)
+
+    def findIntersectionPoints(self, skeleton):
+        # Find intersection points in the skeleton
+        intersection_points = []
+        for y in range(1, skeleton.shape[0] - 1):
+            for x in range(1, skeleton.shape[1] - 1):
+                if skeleton[y, x] == 1:
+                    neighbors = skeleton[y-1:y+2, x-1:x+2].sum() - 1
+                    if neighbors > 2:
+                        intersection_points.append((x, y))
+        return intersection_points
 
 
 
