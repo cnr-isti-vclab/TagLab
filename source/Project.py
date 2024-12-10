@@ -1,5 +1,6 @@
 import datetime
 import json
+import csv
 import os
 
 import numpy as np
@@ -305,28 +306,84 @@ class Project(QObject):
         f.write(str)
         f.close()
 
+    # def loadDictionary(self, filename):
+    #     """
+    #     It returns True if the dictionary is opened correctly, otherwise it returns False.
+    #     """
+
+    #     try:
+    #         f = open(filename)
+    #         dictionary = json.load(f)
+    #         f.close()
+
+    #         self.dictionary_name = dictionary['Name']
+    #         self.dictionary_description = dictionary['Description']
+    #         labels = dictionary['Labels']
+
+    #         self.labels = {}
+    #         for label in labels:
+    #             id = label['id']
+    #             name = label['name']
+    #             fill = label['fill']
+    #             border = label['border']
+    #             description = label['description']
+    #             self.labels[name] = Label(id=id, name=name, fill=fill, border=border)
+
+    #     except Exception as e:
+    #         QMessageBox.critical(None, "Error", f"Error loading dictionary: {filename}\n{e}")
+    #         return False
+
+    #     return True
+
+
     def loadDictionary(self, filename):
         """
         It returns True if the dictionary is opened correctly, otherwise it returns False.
         """
 
         try:
-            f = open(filename)
-            dictionary = json.load(f)
-            f.close()
+            if filename.endswith('.json'):
+                with open(filename, 'r') as f:
+                    dictionary = json.load(f)
 
-            self.dictionary_name = dictionary['Name']
-            self.dictionary_description = dictionary['Description']
-            labels = dictionary['Labels']
+                self.dictionary_name = dictionary['Name']
+                self.dictionary_description = dictionary['Description']
+                labels = dictionary['Labels']
 
-            self.labels = {}
-            for label in labels:
-                id = label['id']
-                name = label['name']
-                fill = label['fill']
-                border = label['border']
-                description = label['description']
-                self.labels[name] = Label(id=id, name=name, fill=fill, border=border)
+                self.labels = {}
+                for label in labels:
+                    id = label['id']
+                    name = label['name']
+                    fill = label['fill']
+                    border = label['border']
+                    description = label['description']
+                    self.labels[name] = Label(id=id, name=name, fill=fill, border=border)
+
+            elif filename.endswith('.csv'):
+                self.labels = {}
+                with open(filename, 'r') as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        id = row['US']  # Assuming 'US' column is used as the id
+                        name = row['US']  # Assuming 'US' column is used as the name
+                        fill = '[\
+                            143,\
+                            89,\
+                            2\
+                            ]'  # Default value for fill
+                        border = '[\
+                            200,\
+                            200,\
+                            200\
+                            ]'   # Default value for border
+                        description = 'null'#row['description']
+                        self.labels[name] = Label(id=id, name=name, fill=fill, border=border, description=description)
+
+                self.dictionary_name = filename
+                self.dictionary_description = "Loaded from CSV file"
+
+            else:
+                raise ValueError("Unsupported file format")
 
         except Exception as e:
             QMessageBox.critical(None, "Error", f"Error loading dictionary: {filename}\n{e}")

@@ -23,6 +23,7 @@ from PyQt5.QtWidgets import QWidget, QScrollArea,QGroupBox, QColorDialog, QMessa
     QHBoxLayout, QVBoxLayout, QTextEdit, QFrame
 from source.Label import Label
 import json
+import csv, random
 import os
 
 class DictionaryEncoder(json.JSONEncoder):
@@ -282,7 +283,7 @@ class QtDictionaryWidget(QWidget):
     @pyqtSlot()
     def chooseDictionary(self):
 
-        filters = "DICTIONARY (*.json)"
+        filters = "DICTIONARY (*.json *.csv)"
         fileName, _ = QFileDialog.getOpenFileName(self, "Dictionary", "", filters)
 
         if fileName:
@@ -306,21 +307,54 @@ class QtDictionaryWidget(QWidget):
 
             self.edit_load.setText(fileName)
 
-            f = open(fileName, "r")
-            dict = json.load(f)
-            self.project.dictionary_name = dict["Name"]
-            self.edit_dname.setText(self.project.dictionary_name)
-            self.project.dictionary_description = dict["Description"]
-            self.edit_description.document().setPlainText(self.project.dictionary_description)
-            ALLlabels = dict["Labels"]
-
             labels_loaded = []
-            for label in ALLlabels:
-               name= label['name']
-               id = label['name']
-               fill = label['fill']
-               mylabel = Label(id=id, name=name, fill=fill)
-               labels_loaded.append(mylabel)
+
+            if fileName.endswith('.json'):
+                with open(fileName, "r") as f:
+                    dict = json.load(f)
+                    self.project.dictionary_name = dict["Name"]
+                    self.edit_dname.setText(self.project.dictionary_name)
+                    self.project.dictionary_description = dict["Description"]
+                    self.edit_description.document().setPlainText(self.project.dictionary_description)
+                    ALLlabels = dict["Labels"]
+
+                    for label in ALLlabels:
+                        name = label['name']
+                        id = label['name']
+                        fill = label['fill']
+                        mylabel = Label(id=id, name=name, fill=fill)
+                        labels_loaded.append(mylabel)
+
+            elif fileName.endswith('.csv'):
+                with open(fileName, 'r', encoding='utf-8-sig') as f:
+                    reader = csv.DictReader(f, delimiter = ';')
+                    self.project.dictionary_name = os.path.basename(fileName)
+                    self.edit_dname.setText(self.project.dictionary_name)
+                    self.project.dictionary_description = (f"Loaded from {os.path.basename(fileName)} CSV file")
+                    self.edit_description.document().setPlainText(self.project.dictionary_description)
+                    print("CSV Column Names:", reader.fieldnames)
+                    for row in reader:
+                        id = row['US']  # Assuming 'US' column is used as the id
+                        name = row['US']  # Assuming 'US' column is used as the name
+                        fill = f'[\
+                            {random.randint(0, 255)},\
+                            {random.randint(0, 255)},\
+                            {random.randint(0, 255)}\
+                                ]'  # Random RGB value
+                        border = '[\
+                            200,\
+                            200,\
+                            200\
+                            ]'   # Default value for border
+                        description = ''
+                        mylabel = Label(id=id, name=name, fill=fill, border=border, description=description)
+                        labels_loaded.append(mylabel)
+
+                self.project.dictionary_name = fileName
+                self.edit_dname.setText(self.project.dictionary_name)
+                self.project.dictionary_description = "Loaded from CSV file"
+                self.edit_description.document().setPlainText(self.project.dictionary_description)
+
 
             if flag_replace is True:
                 # REPLACE CURRENT DICTIONARY WITH THE LOADED ONE
