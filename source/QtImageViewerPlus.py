@@ -886,7 +886,12 @@ class QtImageViewerPlus(QtImageViewer):
             self.resetSelection()
 
         selected_annpoint = self.annotations.clickedPoint(x,y)
+
+        is_visible = False
         if selected_annpoint:
+            is_visible = self.project.isLabelVisible(selected_annpoint.class_name)
+
+        if selected_annpoint and is_visible:
             if selected_annpoint in self.selected_annpoints:
                 self.removeFromSelectedPointList(selected_annpoint)
             else:
@@ -902,7 +907,12 @@ class QtImageViewerPlus(QtImageViewer):
                 self.drawSamplingAreas()
             else:
                 selected_blob = self.annotations.clickedBlob(x, y)
+
+                is_visible = False
                 if selected_blob:
+                    is_visible = self.project.isLabelVisible(selected_blob.class_name)
+
+                if selected_blob and is_visible:
                     if selected_blob in self.selected_blobs:
                         self.removeFromSelectedList(selected_blob)
                     else:

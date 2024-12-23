@@ -21,7 +21,8 @@ class SplitBlob(Tool):
         # no selected blobs: select it!
         if len(selected_blobs) == 0:
             selected_blob = self.viewerplus.annotations.clickedBlob(x, y)
-            if selected_blob is None:
+            is_visible = self.viewerplus.project.isLabelVisible(selected_blob.class_name)
+            if selected_blob is None or is_visible is False:
                 self.infoMessage.emit("Click on an area to split.")
                 return
             self.viewerplus.addToSelectedList(selected_blob)

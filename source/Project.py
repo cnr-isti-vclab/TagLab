@@ -432,11 +432,15 @@ class Project(QObject):
 
 
     def isLabelVisible(self, id):
+
+        if id is None:
+            return
+
         if not id in self.labels:
             print("WARNING! Unknown label: " + id)
 
         lbl = self.labels.get(id)
-        return self.labels[id].visible
+        return lbl.visible
 
     def orderImagesByAcquisitionDate(self):
         """

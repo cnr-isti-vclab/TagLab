@@ -12,6 +12,10 @@ class BricksSegmentation(Tool):
         if selected_blob is None:
             return
 
+        is_visible = self.viewerplus.project.isLabelVisible(selected_blob.class_name)
+        if is_visible is False:
+            return
+
         self.viewerplus.resetSelection()
         self.viewerplus.addToSelectedList(selected_blob)
 

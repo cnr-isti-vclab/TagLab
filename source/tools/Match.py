@@ -12,6 +12,11 @@ class  Match(Tool):
         selected_blob = self.viewerplus.annotations.clickedBlob(x, y)
         if selected_blob is None:
             return
+
+        is_visible = self.viewerplus.project.isLabelVisible(selected_blob.class_name)
+        if is_visible is False:
+            return
+
         if mods & Qt.ShiftModifier:
             if selected_blob in self.viewerplus.selected_blobs:
                 self.viewerplus.removeFromSelectedList(selected_blob)

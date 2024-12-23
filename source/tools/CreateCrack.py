@@ -8,9 +8,13 @@ class CreateCrack(Tool):
         super(CreateCrack, self).__init__(viewerplus)
 
     def leftPressed(self, x, y, mods):
-        selected_blob = self.viewerplus.annotations.clickedBlob(x, y)
 
+        selected_blob = self.viewerplus.annotations.clickedBlob(x, y)
         if selected_blob is None:
+            return
+
+        is_visible = self.viewerplus.project.isLabelVisible(selected_blob.class_name)
+        if is_visible is False:
             return
 
         self.viewerplus.resetSelection()
