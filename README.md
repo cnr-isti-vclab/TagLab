@@ -1,10 +1,10 @@
-# TagLab: an image segmentation tool oriented to marine and masonry data analysis
+# TagLab: an image segmentation tool oriented to marine data analysis
 
 | &nbsp; [Software Requirements](#software-requirements) &nbsp; | &nbsp; [Install](#installing-taglab) &nbsp; | &nbsp; [Update](#updating-taglab) &nbsp; | &nbsp; [Citation](#citation) &nbsp; |
 
 TagLab was developed to assist with the annotation and extraction of statistical data from ortho-maps of benthic communities. The tool features various AI segmentation networks specifically trained for agnostic recognition (focused solely on contours) and semantic recognition (which also considers species) of corals. TagLab is an ongoing project of the [Visual Computing Lab](http://vcg.isti.cnr.it/).  
 
-![ScreenShot](screenshot_masonry.png)
+![ScreenShot](screenshot.jpg)
 
 
 ## Interaction
@@ -50,8 +50,7 @@ the terminal (be sure to be into the TagLab main folder, see step 2):
 ```bash
 python3 update.py
 ```
-
-oppure, sotto Windows: 
+or, on Windows:
 
 ```bash
 python.exe update.py
