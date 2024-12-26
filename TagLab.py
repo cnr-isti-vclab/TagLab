@@ -4821,51 +4821,54 @@ class TagLab(QMainWindow):
                     
                     # Add points to the DXF file from 'blobs' data
                     for blob in blobs:
-                        # Set each class as a new layer
-                        layer_name = blob.class_name
+                        # if blob.qpath_gitem.isVisible():
+                        if self.viewerplus.project.isLabelVisible(blob.class_name):
+                            # Set each class as a new layer
+                            layer_name = blob.class_name
 
-                        # Set color for the layer from blob class color
-                        col = self.project.labels[blob.class_name].fill
+                            # Set color for the layer from blob class color
+                            col = self.project.labels[blob.class_name].fill
 
-                        # Convert the color to a DXF True color code
-                        color_code = ezdxf.colors.rgb2int(col)
+                            # Convert the color to a DXF True color code
+                            color_code = ezdxf.colors.rgb2int(col)
 
-                        if not doc.layers.has_entry(layer_name):
-                            doc.layers.new(name=layer_name, dxfattribs={'true_color': color_code})
+                            if not doc.layers.has_entry(layer_name):
+                                doc.layers.new(name=layer_name, dxfattribs={'true_color': color_code})
 
-                        # Add the outer contour
-                        if georef:
-                            points = [transform * (x, y) for x, y in blob.contour]
-                        else:
-                            points = [(x, y) for x, y in blob.contour]
-                        if points:
-                            msp.add_lwpolyline(
-                                points,
-                                close=True,
-                                dxfattribs={'layer': layer_name}
-                            )
-
-                        # Add inner contours (holes)
-                        for inner_contour in blob.inner_contours:
-                            # inner_points = transform_coords([(x, y) for x, y in inner_contour])
+                            # Add the outer contour
                             if georef:
-                                inner_points = [transform * (x, y) for x, y in inner_contour]
+                                points = [transform * (x, y) for x, y in blob.contour]
                             else:
-                                inner_points = [(x, y) for x, y in inner_contour]
-                            if inner_points:
-                                msp.add_lwpolyline(inner_points, close=True, dxfattribs={'layer': layer_name})
+                                points = [(x, y) for x, y in blob.contour]
+                            if points:
+                                msp.add_lwpolyline(
+                                    points,
+                                    close=True,
+                                    dxfattribs={'layer': layer_name}
+                                )
 
-                        # Add the class_name as a text annotation at the blob's centroid
-                        if blob.class_name:
-                            x, y = blob.centroid
-                            if georef:
-                                x, y = transform * (x, y)
-                            msp.add_text(
-                                blob.class_name, height=text_height_scale * 22.0,
-                                dxfattribs={
-                                    'layer': layer_name
-                                }
-                            ).set_placement((x, y), align=TextEntityAlignment.MIDDLE_CENTER)
+                            # Add inner contours (holes)
+                            for inner_contour in blob.inner_contours:
+                                # inner_points = transform_coords([(x, y) for x, y in inner_contour])
+                                if georef:
+                                    inner_points = [transform * (x, y) for x, y in inner_contour]
+                                else:
+                                    inner_points = [(x, y) for x, y in inner_contour]
+                                if inner_points:
+                                    msp.add_lwpolyline(inner_points, close=True, dxfattribs={'layer': layer_name})
+
+                            # Add the class_name as a text annotation at the blob's centroid
+                            if blob.class_name:
+                                class_name = blob.class_name[:5] if len(blob.class_name) > 5 else blob.class_name
+                                x, y = blob.centroid
+                                if georef:
+                                    x, y = transform * (x, y)
+                                msp.add_text(
+                                    class_name, height=text_height_scale * 22.0,
+                                    dxfattribs={
+                                        'layer': layer_name
+                                    }
+                                ).set_placement((x, y), align=TextEntityAlignment.MIDDLE_CENTER)
 
                     # Save the DXF file
                     doc.saveas(output_filename)
