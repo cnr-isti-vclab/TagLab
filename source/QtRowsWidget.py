@@ -8,6 +8,8 @@ from source import genutils
 from source.QtImageViewer import QtImageViewer
 
 from skimage.transform import hough_line, hough_line_peaks
+from scipy.interpolate import interp1d
+
 from skimage.draw import line
 from PyQt5.QtGui import QPainter, QPen, QBrush
 import matplotlib.pyplot as plt
@@ -26,13 +28,14 @@ class RowsWidget(QWidget):
     def __init__(self, image_mask,  cropped_image, mask_array, blobs, rect, parent = None):
         super(RowsWidget, self).__init__(parent)
 
+        i = 0
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.setMinimumWidth(800)
         self.setMinimumHeight(500)
 
         IMAGEVIEWER_W = 800
-        IMAGEVIEWER_H = 500
+        IMAGEVIEWER_H = 450
         self.viewer = QtImageViewer()
         self.viewer.disableScrollBars()
         self.viewer.enablePan()
@@ -40,23 +43,17 @@ class RowsWidget(QWidget):
         self.viewer.setFixedWidth(IMAGEVIEWER_W)
         self.viewer.setFixedHeight(IMAGEVIEWER_H)
 
-
         self.setWindowTitle("Rows Analysis")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowTitleHint)
-
         
         self.image_cropped = cropped_image
         self.image_mask = image_mask
         self.maschera = mask_array
-        # self.created_blobs = created_blobs
-        # self.offset = offset
 
         self.rect = rect
         self.blob_list = blobs
         self.centroids = []
         self.bboxes = []
-
-        # self.initUI()
 
         layout = QVBoxLayout()
         # layout.addLayout(layoutTop)
@@ -72,25 +69,23 @@ class RowsWidget(QWidget):
         self.setLayout(layout)
             
         # self.q_image = genutils.rgbToQImage(self.image_cropped)
-        self.viewer.setImg(self.image_cropped)
-        self.houghTansformation(self.maschera)
+        # self.viewer.setImg(self.image_cropped)
+        self.houghTansformation(self.maschera, i)
 
-        skel = self.applySkeletonization(self.maschera)
-        self.connectSkeletonIntersections(skel)
+        # i += 1
+        # skel = self.applySkeletonization(self.maschera)
+        # # # self.connectSkeletonIntersections(skel)
+        # self.houghTansformation(skel, i)
 
-        # self.loadBlobs()
-
-        # self.viewer.setOpacity(1.0)
+        # self.viewer.setOpacity(0.8)
         # self.viewer.setOverlayImage(self.image_mask)
+        self.viewer.setImg(self.image_cropped)
 
-
-    
     def closeWidget(self):
         self.closeRowsWidget.emit()
         self.close()
 
-
-    def houghTansformation(self, mask):
+    def houghTansformation(self, mask, i):
         # Apply the Hough Line Transformation
         h, theta, d = hough_line(mask)
 
@@ -109,6 +104,7 @@ class RowsWidget(QWidget):
         # Extract peaks from the accumulator
         lines = []
         height, width = mask.shape
+        # intersection_points = []
         for _, angle, dist in zip(*hough_line_peaks(h, theta, d)):
             # Calculate line endpoints
             try:
@@ -120,9 +116,48 @@ class RowsWidget(QWidget):
                 if np.isfinite(y0) and np.isfinite(y1):  # Ensure values are not infinite
                     if 0 <= y0 < height and 0 <= y1 < height:  # Clamp to image bounds
                         lines.append(((0, int(y0)), (width, int(y1))))
+
             except ZeroDivisionError:
                 # Handle cases where sin(angle) is zero (e.g., vertical lines)
                 continue
+
+        # # Group lines that intersect each other
+        # grouped_lines = []
+        # used_lines = set()
+        # for i, line1 in enumerate(lines):
+        #     if i in used_lines:
+        #         continue
+        #     group = [line1]
+        #     for j, line2 in enumerate(lines):
+        #         if i != j and j not in used_lines:
+        #             if self.lines_intersect(line1, line2):
+        #                 group.append(line2)
+        #                 used_lines.add(j)
+        #     grouped_lines.append(group)
+        #     used_lines.add(i)
+        # print(grouped_lines)
+
+        # # Interpolate a single line through the intersection points of each group
+        # plt.figure(figsize=(8, 8))
+        # plt.imshow(mask, cmap='gray')
+        # for group in grouped_lines:
+        #     if len(group) > 1:
+        #         intersection_points = []
+        #         for line in group:
+        #             intersection_points.append(line[0])
+        #             intersection_points.append(line[1])
+        #         intersection_points = np.array(intersection_points)
+        #         intersection_points = intersection_points[np.argsort(intersection_points[:, 0])]
+        #         x = intersection_points[:, 0]
+        #         y = intersection_points[:, 1]
+        #         f = interp1d(x, y, kind='linear', fill_value='extrapolate')
+        #         plt.plot(x, f(x), '-r')
+        #     else:
+        #         (x0, y0), (x1, y1) = group[0]
+        #         plt.plot((x0, x1), (y0, y1), '-r')
+        # plt.title('Interpolated Lines')
+        # plt.savefig("interpolated_lines.png", bbox_inches='tight', pad_inches=0)
+        # plt.close()
 
         # Visualize lines on the original mask
         plt.figure(figsize=(8, 8))
@@ -131,9 +166,8 @@ class RowsWidget(QWidget):
             plt.plot((x0, x1), (y0, y1), '-r')
         plt.title('Detected Lines')
         # plt.show()
-        plt.savefig("hough_lines.png", bbox_inches='tight', pad_inches=0)
+        plt.savefig((f"hough_lines_{str(i)}.png"), bbox_inches='tight', pad_inches=0)
         plt.close()
-
 
         plt.figure(figsize=(8, 8))
         plt.imshow(mask, cmap='gray')
@@ -162,9 +196,10 @@ class RowsWidget(QWidget):
         plt.close()
 
         # Draw the detected lines on the qimage mask
-        image_with_lines = self.image_mask.copy()
+        # image_with_lines = self.image_mask.copy()
+        image_with_lines = self.image_cropped.copy()
         painter = QPainter(image_with_lines)
-        pen = QPen(Qt.red, 2)
+        pen = QPen(Qt.red, 5)
         painter.setPen(pen)
 
         for (x0, y0), (x1, y1) in lines:
@@ -172,10 +207,27 @@ class RowsWidget(QWidget):
 
         painter.end()
 
-        self.image_mask = image_with_lines
+        # Save the image with lines
+        image_with_lines.save("image_with_lines.png")
 
-        self.viewer.setOpacity(0.5)
-        self.viewer.setOverlayImage(self.image_mask)
+        # self.image_mask = image_with_lines
+        self.image_cropped = image_with_lines
+
+        # self.viewer.setOpacity(0.5)
+        # self.viewer.setOverlayImage(self.image_mask)
+
+#####################################################################################################3
+
+    def lines_intersect(line1, line2):
+        # Check if two lines intersect
+        (x0, y0), (x1, y1) = line1
+        (x2, y2), (x3, y3) = line2
+        denom = (y3 - y2) * (x1 - x0) - (x3 - x2) * (y1 - y0)
+        if denom == 0:
+            return False  # Lines are parallel
+        ua = ((x3 - x2) * (y0 - y2) - (y3 - y2) * (x0 - x2)) / denom
+        ub = ((x1 - x0) * (y0 - y2) - (y1 - y0) * (x0 - x2)) / denom
+        return 0 <= ua <= 1 and 0 <= ub <= 1
 
 
     def applySkeletonization(self, mask):
@@ -218,7 +270,7 @@ class RowsWidget(QWidget):
         plt.savefig("intersection_points_connections.png", bbox_inches='tight', pad_inches=0)
         plt.close()
         
-        # Create a copy of the original image to draw on
+        # # Create a copy of the original image to draw on
         # image_with_lines = self.image_mask.copy()
         # painter = QPainter(image_with_lines)
         # pen = QPen(Qt.green, 2)
@@ -246,55 +298,3 @@ class RowsWidget(QWidget):
                     if neighbors > 2:
                         intersection_points.append((x, y))
         return intersection_points
-
-
-
-    def showBlobPreview(self, image, blobs):
-        if image is not None and blobs:
-            working_area = self.work_area_rect.boundingRect()
-            width = int(working_area.width())
-            height = int(working_area.height())
-            working_area_mask = np.zeros((height, width), dtype=np.uint8)
-            for blob in blobs:
-                blob_mask = blob.getMask()
-                working_area_mask[:blob_mask.shape[0], :blob_mask.shape[1]] = blob_mask
-
-            self.blob_preview_widget = RowsWidget(image, blobs, working_area_mask, self.offset)
-            self.blob_preview_widget.show()
-
-    def initUI(self):
-        layout = QVBoxLayout()
-
-        self.lblImage = QLabel()
-        self.lblImage.setStyleSheet("background-color: rgb(60,60,60); color: white")
-        layout.addWidget(self.lblImage)
-
-        self.loadBlobs()
-
-        # self.btnLoad = QPushButton("Load Blobs")
-        # self.btnLoad.clicked.connect(self.loadBlobs)
-        # layout.addWidget(self.btnLoad)
-        self.btnClose = QPushButton("Close")
-        self.btnClose.clicked.connect(self.closeWidget)
-        layout.addWidget(self.btnClose)
-
-        self.setLayout(layout)
-
-
-    def loadBlobs(self):
-        self.displayBlobs(self.image_cropped, self.created_blobs)
-
-    def displayBlobs(self, image, blobs):
-        image_np = genutils.qimageToNumpyArray(image)
-        for blob in blobs:
-            bbox = blob.bbox
-            segm_mask = blob.mask.astype('uint8') * 255
-            segm_mask_crop = segm_mask[bbox[1]:bbox[1]+bbox[3], bbox[0]:bbox[0]+bbox[2]]
-            image_np[bbox[1]:bbox[1]+bbox[3], bbox[0]:bbox[0]+bbox[2]] = cv2.addWeighted(
-                image_np[bbox[1]:bbox[1]+bbox[3], bbox[0]:bbox[0]+bbox[2]], 0.5, segm_mask_crop, 0.5, 0
-            )
-
-        height, width, channel = image_np.shape
-        bytesPerLine = 3 * width
-        qImg = QImage(image_np.data, width, height, bytesPerLine, QImage.Format_RGB888)
-        self.lblImage.setPixmap(QPixmap.fromImage(qImg))

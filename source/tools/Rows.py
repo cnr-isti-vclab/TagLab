@@ -106,16 +106,19 @@ class Rows(Tool):
             # self.center_item.setVisible(False)
 
     def leftReleased(self, x, y):
-        self.rect_item = self.viewerplus.dragSelectionRect
-        
-        # rect = self.rect_item.rect()
-        # rect = rect.intersected(self.viewerplus.sceneRect())
-        # image = self.viewerplus.img_map.copy(rect.toRect())
-        # image.save("rows_area.png")
-        # print(f"left released at ({x}, {y})")
+        try:
+            self.rect_item = self.viewerplus.dragSelectionRect
+            
+            # rect = self.rect_item.rect()
+            # rect = rect.intersected(self.viewerplus.sceneRect())
+            # image = self.viewerplus.img_map.copy(rect.toRect())
+            # image.save("rows_area.png")
+            # print(f"left released at ({x}, {y})")
 
-        self.setWorkArea()
-        
+            self.setWorkArea()
+        except Exception as e:
+            pass
+            
     def reset(self):
         
         self.image_cropped = None
@@ -144,7 +147,6 @@ class Rows(Tool):
         pen.setColor(Qt.white)
         pen.setCosmetic(True)
         # From the current view, crop the image
-        # Get the bounding rect of the work area and its position
         rect = self.rect_item.boundingRect()
         
 
@@ -290,7 +292,6 @@ class Rows(Tool):
 
         for blob in self.viewerplus.annotations.seg_blobs:
             if self.isBlobInsideWorkArea(blob):
-                print(blob.id)
                 self.blobs_inside_work_area.append(blob)
 
         print(f"Number of blobs inside work area: {len(self.blobs_inside_work_area)}")

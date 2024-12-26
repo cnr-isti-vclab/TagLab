@@ -4858,7 +4858,7 @@ class TagLab(QMainWindow):
                                     msp.add_lwpolyline(inner_points, close=True, dxfattribs={'layer': layer_name})
 
                             # Add the class_name as a text annotation at the blob's centroid
-                            if blob.class_name:
+                            if blob.class_name and blob.class_name != "Empty":
                                 class_name = blob.class_name[:5] if len(blob.class_name) > 5 else blob.class_name
                                 x, y = blob.centroid
                                 if georef:
