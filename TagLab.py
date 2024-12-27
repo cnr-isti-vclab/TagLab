@@ -736,6 +736,7 @@ class TagLab(QMainWindow):
         :param show: If True, buttons will be shown; if False, buttons will be hidden
         """
         self.btnWatershed.setVisible(show)
+        self.btnRows.setVisible(show)
 
         self.importViscorePointsAct.setVisible(not show)
         self.importCoralNetPointsAct.setVisible(not show)
