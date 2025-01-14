@@ -2952,8 +2952,8 @@ class TagLab(QMainWindow):
                     view.removeBlob(blob)
                     self.logBlobInfo(blob, "[OP-MERGE][BLOB-REMOVED]")
 
-                view.addBlob(union_blob, selected=True)
                 union_blob.data = ref_dict
+                view.addBlob(union_blob, selected=True)
                 view.saveUndo()
 
                 self.logBlobInfo(union_blob, "[OP-MERGE][BLOB-CREATED]")
