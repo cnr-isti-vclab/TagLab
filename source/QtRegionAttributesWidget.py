@@ -65,7 +65,7 @@ class QtRegionAttributesWidget(QWidget):
         #name & description
 
         name_layout = QGridLayout()
-        name_layout.addWidget(QLabel("Attribute name:"), 0, 0)
+        name_layout.addWidget(QLabel("Attribute Set name:"), 0, 0)
 
         self.edit_name = QLineEdit()
         self.edit_name.setPlaceholderText("Name of the attribute set")
