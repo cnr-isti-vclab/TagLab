@@ -2926,6 +2926,19 @@ class TagLab(QMainWindow):
             message = "[OP-MERGE] MERGE OVERLAPPED LABELS operation begins.. (number of selected blobs: " + str(len(view.selected_blobs)) + ")"
             logfile.info(message)
 
+            ref_dict = view.selected_blobs[0].data.copy()
+            flag_different_attributes = False
+            for blob in view.selected_blobs:
+                if blob.data != ref_dict:
+                    flag_different_attributes = True
+
+            if flag_different_attributes:
+                msgBox = QMessageBox()
+                msgBox.setWindowTitle(self.TAGLAB_VERSION)
+                msgBox.setText("The regions you are merging have different custom attributes. The resulting region will have empty fields.")
+                msgBox.exec()
+                ref_dict = {}
+
             #union returns a NEW blob
             union_blob = view.annotations.union(view.selected_blobs)
 
@@ -2940,6 +2953,7 @@ class TagLab(QMainWindow):
                     self.logBlobInfo(blob, "[OP-MERGE][BLOB-REMOVED]")
 
                 view.addBlob(union_blob, selected=True)
+                union_blob.data = ref_dict
                 view.saveUndo()
 
                 self.logBlobInfo(union_blob, "[OP-MERGE][BLOB-CREATED]")
@@ -3332,6 +3346,10 @@ class TagLab(QMainWindow):
                     view.tools.edit_points.last_editborder_points = None
 
                 created_blobs = view.annotations.refineBorder(bbox, blob, img, depth, mask, view.refine_grow, view.tools.edit_points.last_editborder_points)
+
+                # copy attributes
+                for created_blob in created_blobs:
+                    created_blob.data = blob.data.copy()
 
                 if len(created_blobs) == 0:
                     pass
