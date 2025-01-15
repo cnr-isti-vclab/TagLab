@@ -1296,11 +1296,6 @@ class TagLab(QMainWindow):
         clearComparisonTable.setStatusTip("EClear Comparison Table")
         clearComparisonTable.triggered.connect(self.clearComparisonTable)
 
-
-        computeGenets = QAction("Compute Genets", self)
-        computeGenets.setStatusTip("Compute genet information.")
-        computeGenets.triggered.connect(self.computeGenets)
-
         exportGenetSVG = QAction("Export Genet Data As Shapes", self)
         exportGenetSVG.setStatusTip("Export genets history of corals in SVG.")
         exportGenetSVG.triggered.connect(self.exportGenetSVG)
@@ -1318,7 +1313,6 @@ class TagLab(QMainWindow):
         self.comparemenu.addAction(exportMatchLabels)
 
         self.comparemenu.addSeparator()
-        self.comparemenu.addAction(computeGenets);
         self.comparemenu.addAction(exportGenetSVG)
         self.comparemenu.addAction(exportGenetCSV)
 
@@ -1552,17 +1546,6 @@ class TagLab(QMainWindow):
         self.toggleRGBDEM(self.viewerplus)
         if self.split_screen_flag:
             self.toggleRGBDEM(self.viewerplus2)
-
-    @pyqtSlot()
-    def computeGenets(self):
-
-        img_source_index = self.comboboxSourceImage.currentIndex()
-        img_target_index = self.comboboxTargetImage.currentIndex()
-        updated_corresp = self.project.updateGenets(img_source_index, img_target_index)
-        if self.compare_panel.correspondences is None:
-            self.compare_panel.setTable(self.project, img_source_index, img_target_index)
-        else:
-            self.compare_panel.updateTable(updated_corresp)
 
     @pyqtSlot()
     def exportGenetSVG(self):
