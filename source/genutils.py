@@ -141,6 +141,41 @@ def binaryMaskToRle(mask):
     return rle
 
 
+def integerMapToQImage(int_map):
+
+    h = int_map.shape[0]
+    w = int_map.shape[1]
+
+    imap = int_map.copy()
+    max_value = np.max(imap)
+    min_value = np.min(imap)
+
+    # integer to color (integer value = (red + green * 256 + blue * 65536))
+    imap_red = imap.copy()
+    imap_green = imap.copy()
+    imap_green = imap_green >> 8
+    imap_blue = imap.copy()
+    imap_blue = imap_blue >> 16
+
+    img = np.zeros([h, w, 3], dtype=np.uint8)
+    img[:,:,0] = imap_red
+    img[:,:,1] = imap_green
+    img[:,:,2] = imap_blue
+
+    qimg = rgbToQImage(img)
+
+    del imap
+    imap = None
+    del imap_red
+    imap_red = None
+    del imap_green
+    imap_green = None
+    del imap_blue
+    imap_blue = None
+
+    return qimg
+
+
 def floatmapToQImage(floatmap, nodata = float('NaN')):
 
     h = floatmap.shape[0]
