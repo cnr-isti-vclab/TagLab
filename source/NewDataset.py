@@ -544,19 +544,19 @@ class NewDataset(object):
 		self.label_image = labelimg
 
 		if self.flag_coco:
-			self.id_image = np.zeros((h, w), dtype=int)
+			self.id_image = np.zeros((h, w), dtype=np.int32)
 
 			for i, blob in enumerate(self.blobs):
 
 				if blob.qpath_gitem.isVisible():
 					if blob.class_name != "Empty":
-						points = blob.contour.round().astype(int)
+						points = blob.contour.round().astype(np.int32)
 						fillPoly(self.id_image, pts=[points], color = blob.id)
 						for inner_contour in blob.inner_contours:
-							points = inner_contour.round().astype(int)
+							points = inner_contour.round().astype(np.int32)
 							fillPoly(self.id_image, pts=[points], color=0)
 
-			self.id_image = genutils.floatmapToQImage(self.id_image)
+			self.id_image = genutils.integerMapToQImage(self.id_image)
 
 	def convertColorsToLabels(self, target_classes, labels_colors):
 		"""
@@ -1238,12 +1238,14 @@ class NewDataset(object):
 
 				cropidlabel = genutils.cropQImage(self.id_image, [top, left, self.tile_size, self.tile_size])
 				cropidlabel = genutils.qimageToNumpyArray(cropidlabel)
-				cropIdBinary = (cropidlabel[:,:,0] > 0).astype(int)
-				regions = measure.regionprops(measure.label(cropIdBinary, connectivity=1))
+
+				regions_map = np.zeros_like(cropidlabel, dtype=np.int32)
+				regions_map = cropidlabel[:,:,0] + cropidlabel[:,:,1] * 256 + cropidlabel[:,:,2] * 65536
+				regions = measure.regionprops(regions_map)
 
 				for region in regions:
 
-					tilemask = np.zeros_like(cropIdBinary).astype(np.uint8)
+					tilemask = np.zeros_like(regions_map).astype(np.uint8)
 					tilemask[region.coords[:, 1], region.coords[:, 0]] = 1
 					#segmentation = genutils.binaryMaskToRle(tilemask)
 					segmentation = maskcoco.encode(np.asfortranarray(np.transpose(tilemask)))
