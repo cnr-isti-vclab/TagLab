@@ -975,15 +975,18 @@ class QtImageViewerPlus(QtImageViewer):
 
             if (self.tools.tool == "WATERSHED" or self.tools.tool == "FREEHAND" or self.tools.tool == "EDITBORDER"\
                  or self.tools.tool == "RULER" or self.tools.tool == "SAM" or self.tools.tool == "SAMINTERACTIVE") and mods & Qt.ShiftModifier:
-                if mods & Qt.ShiftModifier:
-                    self.tools.leftPressed(x, y, mods)
-            
+                self.tools.leftPressed(x, y, mods)
+
+            elif self.tools.tool == "SELECTAREA":
+                self.tools.leftPressed(x, y, mods)
+
             elif (self.tools.tool == "WATERSHED" or self.tools.tool == "SAM" or self.tools.tool == "SAMINTERACTIVE"):
                 self.setDragMode(QGraphicsView.ScrollHandDrag)
-                            
+
             #used from area selection and pen drawing,
             elif (self.panEnabled and not (mods & Qt.ShiftModifier)) or (mods & Qt.ControlModifier):
                 self.setDragMode(QGraphicsView.ScrollHandDrag)
+
             elif self.tools.tool == "MATCH" or self.tools.tool == "RITM" or self.tools.tool == "FOURCLICKS" or self.tools.tool == "PLACEANNPOINT":
                 self.tools.leftPressed(x, y, mods)
 
