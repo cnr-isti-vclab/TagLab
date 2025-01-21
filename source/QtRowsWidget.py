@@ -68,10 +68,6 @@ class RowsWidget(QWidget):
         self.angleTextBox.setReadOnly(True)
         layout.addWidget(self.angleTextBox)
 
-        self.angleTextBox = QTextEdit(self)
-        self.angleTextBox.setReadOnly(True)
-        layout.addWidget(self.angleTextBox)
-
         self.btnClose = QPushButton("Close")
         self.btnClose.clicked.connect(self.closeWidget)
         layout.addWidget(self.btnClose)
@@ -190,8 +186,9 @@ class RowsWidget(QWidget):
             plt.plot((x0, x1), (y0, y1), color=np.array(color) / 255)
             
             ang = np.pi/2 + ang  
-            ang = round(ang, 4)
             ang = np.rad2deg(ang)
+            ang = round(ang, 4)
+
             
             self.updateAngleTextBox([ang], i, color=f'rgb({color[0]},{color[1]},{color[2]})')
 
