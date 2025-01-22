@@ -185,12 +185,18 @@ class RowsWidget(QWidget):
 
             plt.plot((x0, x1), (y0, y1), color=np.array(color) / 255)
             
-            ang = np.pi/2 + ang  
-            ang = np.rad2deg(ang)
-            ang = round(ang, 4)
+            if ang < 0:
+                ang = np.pi/2 + ang  
+            else:
+                ang = ang - np.pi/2
+
+            ang_deg = np.rad2deg(ang)
+            # ang = round(ang, 4)
+            ang_deg = round(ang_deg, 4)
 
             
-            self.updateAngleTextBox([ang], i, color=f'rgb({color[0]},{color[1]},{color[2]})')
+            # self.updateAngleTextBox([ang], i, color=f'rgb({color[0]},{color[1]},{color[2]})')
+            self.updateAngleTextBox([ang_deg], i, color=f'rgb({color[0]},{color[1]},{color[2]})')
 
         plt.title('Detected Lines')
         plt.savefig("hough_lines.png", bbox_inches='tight', pad_inches=0)
