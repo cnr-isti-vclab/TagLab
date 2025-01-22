@@ -237,13 +237,13 @@ class Rows(Tool):
         rect_mask = rect_mask_grow
         
         # Convert rect_mask to a QImage
-        height, width = rect_mask.shape
-        bytes_per_line = rect_mask.strides[0]
-        qImg = QImage(rect_mask.data, width, height, bytes_per_line, QImage.Format_Grayscale8)
-        qImg.save("rect_mask_qimage.png")
+        # height, width = rect_mask.shape
+        # bytes_per_line = rect_mask.strides[0]
+        # qImg = QImage(rect_mask.data, width, height, bytes_per_line, QImage.Format_Grayscale8)
+        # qImg.save("rect_mask_qimage.png")
 
         # self.structWidget(self.image_cropped, self.blobs_inside_work_area)
-        self.structWidget(qImg, image_cropped, rect_mask, self.blobs_inside_work_area, self.work_area_rect)
+        self.structWidget(image_cropped, rect_mask, self.blobs_inside_work_area, self.work_area_rect)
 
     def isBlobInsideWorkArea(self, blob):
        
@@ -297,11 +297,11 @@ class Rows(Tool):
         print(f"Number of blobs inside work area: {len(self.blobs_inside_work_area)}")
 
 
-    def structWidget(self, image, cropped, mask, blob_list, rect):
+    def structWidget(self, cropped, mask, blob_list, rect):
         
         if self.viewerplus.struct_widget is None:
             
-            struct_widget = RowsWidget(image, cropped, mask, blob_list, rect, parent= self.viewerplus)
+            struct_widget = RowsWidget(cropped, mask, blob_list, rect, parent= self.viewerplus)
             struct_widget.setWindowModality(Qt.NonModal)
             # struct_widget.btnCancel.clicked.connect(self.bricksCancel)
             # struct_widget.btnApply.clicked.connect(self.bricksApply)

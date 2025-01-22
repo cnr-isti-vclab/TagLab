@@ -27,17 +27,17 @@ class RowsWidget(QWidget):
     closeRowsWidget = pyqtSignal()
 
     # def __init__(self, image_cropped, created_blobs, offset, parent=None):
-    def __init__(self, image_mask,  cropped_image, mask_array, blobs, rect, parent = None):
+    def __init__(self, cropped_image, mask_array, blobs, rect, parent = None):
         super(RowsWidget, self).__init__(parent)
 
         # i = 0
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        self.setMinimumWidth(800)
-        self.setMinimumHeight(500)
+        self.setMinimumWidth(1024)
+        self.setMinimumHeight(900)
 
-        IMAGEVIEWER_W = 800
-        IMAGEVIEWER_H = 450
+        IMAGEVIEWER_W = 1024
+        IMAGEVIEWER_H = 640
         self.viewer = QtImageViewer()
         self.viewer.disableScrollBars()
         self.viewer.enablePan()
@@ -49,8 +49,9 @@ class RowsWidget(QWidget):
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowTitleHint)
         
         self.image_cropped = cropped_image
-        self.image_mask = image_mask
+        # self.image_mask = image_mask
         self.maschera = mask_array
+        self.image_overlay = None
 
         self.rect = rect
         self.blob_list = blobs
@@ -60,7 +61,7 @@ class RowsWidget(QWidget):
         layout = QVBoxLayout()
         # layout.addLayout(layoutTop)
         # layout.addWidget(self.progress_bar)
-        layout.addWidget(self.viewer)
+        layout.addWidget(self.viewer, alignment=Qt.AlignCenter)
         # layout.addLayout(layoutButtons)
         layout.setSpacing(10)
 
@@ -74,18 +75,16 @@ class RowsWidget(QWidget):
         
         self.setLayout(layout)
             
-        # self.q_image = genutils.rgbToQImage(self.image_cropped)
-        # self.viewer.setImg(self.image_cropped)
         self.houghTansformation(self.maschera)
 
         # i += 1
         # skel = self.applySkeletonization(self.maschera)
         # # # self.connectSkeletonIntersections(skel)
         # self.houghTansformation(skel, i)
-
-        # self.viewer.setOpacity(0.8)
-        # self.viewer.setOverlayImage(self.image_mask)
+        
         self.viewer.setImg(self.image_cropped)
+        self.viewer.setOpacity(0.7)
+        self.viewer.setOverlayImage(self.image_overlay)
 
     def closeWidget(self):
         self.closeRowsWidget.emit()
@@ -178,13 +177,32 @@ class RowsWidget(QWidget):
         # print(sorted_lines_with_color)
 
         # Visualize lines on the original mask
-        plt.figure(figsize=(8, 8))
-        plt.imshow(mask, cmap='gray')
+        # plt.figure(figsize=(8, 8))
+        # plt.imshow(mask, cmap='gray')
         
-        for i, ((x0, y0), (x1, y1), ang, color) in enumerate(sorted_lines_with_color):
+        # for i, ((x0, y0), (x1, y1), _, color) in enumerate(sorted_lines_with_color):
 
-            plt.plot((x0, x1), (y0, y1), color=np.array(color) / 255)
-            
+        #     plt.plot((x0, x1), (y0, y1), color=np.array(color) / 255)
+
+        # plt.title('Detected Lines')
+        # plt.savefig("hough_lines.png", bbox_inches='tight', pad_inches=0)
+        # plt.show()  # Display the plot
+        # plt.close()
+    
+        # Draw the detected lines on the qimage mask
+        # image_with_lines = self.image_mask.copy()
+        # image_with_lines = self.image_cropped.copy()
+        image_with_lines = genutils.maskToQImage(self.maschera)
+        painter = QPainter(image_with_lines)
+        pen = QPen(Qt.red, 5)
+
+        # with QPainter(image_with_lines) as painter:
+        for i, ((x0, y0), (x1, y1), ang, color) in enumerate(sorted_lines_with_color):
+            # color = colors.pop(0)          
+            pen.setColor(QColor(color[0], color[1], color[2]))
+            painter.setPen(pen)
+            painter.drawLine(x0, y0, x1, y1)
+
             if ang < 0:
                 ang = np.pi/2 + ang  
             else:
@@ -197,24 +215,6 @@ class RowsWidget(QWidget):
             
             # self.updateAngleTextBox([ang], i, color=f'rgb({color[0]},{color[1]},{color[2]})')
             self.updateAngleTextBox([ang_deg], i, color=f'rgb({color[0]},{color[1]},{color[2]})')
-
-        plt.title('Detected Lines')
-        plt.savefig("hough_lines.png", bbox_inches='tight', pad_inches=0)
-        plt.show()  # Display the plot
-        plt.close()
-    
-        # Draw the detected lines on the qimage mask
-        # image_with_lines = self.image_mask.copy()
-        image_with_lines = self.image_cropped.copy()
-        painter = QPainter(image_with_lines)
-        pen = QPen(Qt.red, 5)
-
-        # with QPainter(image_with_lines) as painter:
-        for ((x0, y0), (x1, y1), _, color) in sorted_lines_with_color:
-            # color = colors.pop(0)          
-            pen.setColor(QColor(color[0], color[1], color[2]))
-            painter.setPen(pen)
-            painter.drawLine(x0, y0, x1, y1)
 
         # pen = QPen(Qt.blue, 5)
         # painter.setPen(pen)
@@ -236,8 +236,11 @@ class RowsWidget(QWidget):
         # Save the image with lines
         image_with_lines.save("image_with_lines.png")
 
+        #Set the mask with lines as image overlay
+        self.image_overlay = image_with_lines
+
         # self.image_mask = image_with_lines
-        self.image_cropped = image_with_lines
+        # self.image_cropped = image_with_lines
 
         # self.viewer.setOpacity(0.5)
         # self.viewer.setOverlayImage(self.image_mask)
