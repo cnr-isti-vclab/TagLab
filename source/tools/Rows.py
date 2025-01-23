@@ -1,26 +1,16 @@
 from source.tools.Tool import Tool
-from source.Blob import Blob
-from source import Mask
-from source import genutils
-import numpy as np
-from skimage import measure, filters
-from skimage.morphology import disk
-from skimage.color import rgb2gray
-from skimage.filters import sobel
-import cv2
-from source.genutils import qimageToNumpyArray
 
-from source.Mask import paintMask, jointBox, jointMask, replaceMask, checkIntersection, intersectMask
-from PIL import Image
+import numpy as np
+
+
+from source.genutils import qimageToNumpyArray
 
 
 import matplotlib.pyplot as plt
 from scipy.ndimage import binary_dilation
 
-from PyQt5.QtCore import Qt, QObject, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
-from PyQt5.QtGui import QImage, QPixmap, QPainter, QPainterPath, QPen, QBrush, QCursor, QColor
-
-# from source.Label import Label
+from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal, QT_VERSION_STR
+from PyQt5.QtGui import  QPainterPath, QPen, QBrush, QColor
 
 from source.QtRowsWidget import RowsWidget
 
@@ -32,10 +22,6 @@ class Rows(Tool):
         # self.viewerplus.mouseMoved.connect(self.handlemouseMove)
         
         self.struct_widget = None
-
-        #1024x1024 rect_item size
-        # self.width = 1024
-        # self.height = 1024
 
         self.offset = [0, 0]
 
@@ -50,72 +36,12 @@ class Rows(Tool):
         self.image_cropped = None
         self.image_cropped_np = None
 
-        
-    # def handlemouseMove(self, x, y, mods=None):
-    #     # print(f"Mouse moved to ({x}, {y})")
-    #     if self.rect_item is not None:
-    #         self.rect_item.setPos(x- self.width//2, y - self.height//2)
-
-    # def setSize(self, delta, mods):
-    #     #increase value got from delta angle of mouse wheel
-    #     increase = float(delta.y()) / 10.0
-        
-    #     #set increase or decrease value on  wheel rotation direction
-    #     if 0.0 < increase < 1.0:
-    #         increase = 100
-    #     elif -1.0 < increase < 0.0:
-    #         increase = -100
-
-    #     #rescale rect_item on zoom factor from wheel event
-    #     # added *2 to mantain rectangle inside the map
-    #     if mods & Qt.ShiftModifier:
-    #         new_width = self.width + (increase)
-    #         self.width = new_width
-    #     elif mods & Qt.ControlModifier:
-    #         new_height = self.height + (increase)
-    #         self.height = new_height
-        
-    #     # #limit the rectangle to 512x512 for SAM segmentation
-    #     # if new_width < 512 or new_height < 512:
-    #     #     new_width = 512
-    #     #     new_height = 512
-
-    #     # # limit the rectangle to 2048x2048 for SAM segmentation
-    #     # if new_width > 2048 or new_height > 2048:
-    #     #     new_width = 2048
-    #     #     new_height = 2048
-  
-    #     # print(f"rect_item width and height are {new_width, new_height}")
-    #     if self.rect_item is not None:
-    #         self.rect_item.setRect(0, 0, self.width, self.height)
-
-    # def leftPressed(self, x, y, mods=None):
-    #     if not self.work_area_set:
-    #             self.setWorkArea()
-    #     else:
-    #         self.reset()    
-
-    #method to display the rectangle on the map
-    # def enable(self, enable = False):
-    #     if enable == True:
-    #         self.rect_item = self.viewerplus.scene.addRect(0, 0, self.width, self.height, QPen(Qt.black, 5, Qt.DotLine)) 
-    #     else:
-    #         if self.rect_item is not None:
-    #             self.viewerplus.scene.removeItem(self.rect_item)
-    #         self.rect_item = None
-            # self.center_item.setVisible(False)
-
     def leftReleased(self, x, y):
         try:
             self.rect_item = self.viewerplus.dragSelectionRect
-            
-            # rect = self.rect_item.rect()
-            # rect = rect.intersected(self.viewerplus.sceneRect())
-            # image = self.viewerplus.img_map.copy(rect.toRect())
-            # image.save("rows_area.png")
-            # print(f"left released at ({x}, {y})")
 
             self.setWorkArea()
+
         except Exception as e:
             pass
             
@@ -219,7 +145,6 @@ class Rows(Tool):
         #GROW DEI BLOB, LA MALTA È QUELLA CHE DISTA x PIXEL DAL BLOB
         rect_mask_grow = rect_mask.copy()
 
-
         # Create a structuring element that defines the neighborhood
         # 21x21 to cover 10 positions around each 1 (10 positions
         structuring_element = np.ones((21, 21), dtype=np.uint8)
@@ -236,13 +161,6 @@ class Rows(Tool):
 
         rect_mask = rect_mask_grow
         
-        # Convert rect_mask to a QImage
-        # height, width = rect_mask.shape
-        # bytes_per_line = rect_mask.strides[0]
-        # qImg = QImage(rect_mask.data, width, height, bytes_per_line, QImage.Format_Grayscale8)
-        # qImg.save("rect_mask_qimage.png")
-
-        # self.structWidget(self.image_cropped, self.blobs_inside_work_area)
         self.structWidget(image_cropped, rect_mask, self.blobs_inside_work_area, self.work_area_rect)
 
     def isBlobInsideWorkArea(self, blob):
@@ -264,28 +182,10 @@ class Rows(Tool):
 
         if left >= rect.left() and right <= rect.right() and top >= rect.top() and bottom <= rect.bottom():
             return blob
-        
-    # def blobCentroid(self, blob):
-    #     """
-    #     Calculate and return the centroid of a blob relative to the self.work_area_rect.
-    #     """
-    #     mask = blob.getMask()
-    #     region_props = measure.regionprops(mask.astype(int))
-    #     rect = self.work_area_rect.boundingRect()
-    #     if region_props:
-    #         centroid = region_props[0].centroid
-    #         # Convert centroid coordinates to be relative to the self.work_area_rect
-    #         bbox = blob.bbox
-    #         relative_centroid_x = bbox[1] + centroid[1]# - rect.top()
-    #         relative_centroid_y = (bbox[0] + centroid[0])
-    #         print(f"Relative centroid: ({relative_centroid_x}, {relative_centroid_y})")
-    #         return (relative_centroid_x, relative_centroid_y)  # (x, y) format
-    #     return None
 
     def saveBlobsInsideWorkArea(self):
-        """
-        Save the blobs inside the work area to a variable.
-        """
+        # Save the blobs inside the work area to a variable.
+        
         self.blobs_inside_work_area = []
         if self.viewerplus.annotations.seg_blobs is None:
             return
@@ -303,8 +203,6 @@ class Rows(Tool):
             
             struct_widget = RowsWidget(cropped, mask, blob_list, rect, parent= self.viewerplus)
             struct_widget.setWindowModality(Qt.NonModal)
-            # struct_widget.btnCancel.clicked.connect(self.bricksCancel)
-            # struct_widget.btnApply.clicked.connect(self.bricksApply)
             struct_widget.closeRowsWidget.connect(self.rowsClose)
             struct_widget.show()
             self.viewerplus.struct_widget = struct_widget

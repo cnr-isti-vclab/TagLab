@@ -1,26 +1,22 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QPushButton, QSizePolicy, QTextEdit
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QPushButton, QSizePolicy, QTextEdit
-from PyQt5.QtGui import QPixmap, QImage
-from PyQt5.QtCore import pyqtSignal, Qt
+
 import numpy as np
 import cv2
-from source import genutils
-from source.QtImageViewer import QtImageViewer
-
-from skimage.transform import hough_line, hough_line_peaks
-from scipy.interpolate import interp1d
-
-from skimage.draw import line
-from PyQt5.QtGui import QPainter, QPen, QBrush,QColor
-from PyQt5.QtGui import QPainter, QPen, QBrush,QColor
 import matplotlib.pyplot as plt
 
-from skimage import measure
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QPushButton, QSizePolicy, QTextEdit
+from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen, QColor
+from PyQt5.QtCore import pyqtSignal, Qt
+
+from source.QtImageViewer import QtImageViewer
+from source import genutils
+
+from skimage.transform import hough_line, hough_line_peaks
 from skimage.morphology import skeletonize
+from scipy.interpolate import interp1d
+from skimage import measure
+from skimage.draw import line
 from scipy.spatial import KDTree
-
-
 
 class RowsWidget(QWidget):
 
