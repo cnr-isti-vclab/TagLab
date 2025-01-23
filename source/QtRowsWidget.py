@@ -104,7 +104,7 @@ class RowsWidget(QWidget):
     def resetAngleTextBox(self):
         self.angleTextBox.clear()
 
-    def find_clamped_line(self, mask, x0, y0, x1, y1):
+    def boundary_clamp(self, mask, x0, y0, x1, y1):
         """
         Find the range of the line ((x0, y0), (x1, y1)) clamped to the mask.
         """
@@ -151,10 +151,8 @@ class RowsWidget(QWidget):
 
         # Extract peaks from the accumulator
         lines = []
-        # angles = []
-        # angles = []
         height, width = mask.shape
-        # intersection_points = []
+
         for _, angle, dist in zip(*hough_line_peaks(h, theta, d)):
             # Calculate line endpoints
             try:
@@ -168,7 +166,7 @@ class RowsWidget(QWidget):
                     if y0 < 0 or y1 < 0:
                         pass
                     else:
-                        point1, point2 = self.find_clamped_line(mask, x0, y0, x1, y1)
+                        point1, point2 = self.boundary_clamp(mask, x0, y0, x1, y1)
                         print(point1, point2)
                         if point1 and point2:
                             lines.append((point1, point2, angle))
@@ -186,7 +184,6 @@ class RowsWidget(QWidget):
         # Check for intersections
         lines_ints = lines.copy()
         intersections = []
-
         intersection_points = []
 
         for i, line1 in enumerate(lines_ints):
@@ -194,7 +191,8 @@ class RowsWidget(QWidget):
                 if i >= j:
                     continue
                 if self.do_lines_intersect(line1, line2):
-                    intersection = self.line_intersection(line1, line2)
+                    intersection = self.point_intersection(line1, line2)
+                    intersections.append((line1, line2))
                     if intersection:
                         # intersections.append((line1, line2))
                         intersection_points.append(intersection)
@@ -206,7 +204,7 @@ class RowsWidget(QWidget):
         plt.axis('off')
 
         for ((x0, y0), (x1, y1), ang) in lines_ints:
-            plt.plot((x0, x1), (y0, y1), color='r')  # Plot detected lines in red
+            plt.plot((x0, x1), (y0, y1), color='b')  # Plot detected lines in red
 
         for (px, py) in intersection_points:
             plt.plot(px, py, 'ro')  # Plot intersections as red dots
@@ -216,19 +214,14 @@ class RowsWidget(QWidget):
         plt.show()
         plt.close()
 
-        for i in range(len(lines_ints)):
-            for j in range(i + 1, len(lines_ints)):
-                if self.do_lines_intersect(lines_ints[i], lines_ints[j]):
-                    intersections.append((lines_ints[i], lines_ints[j]))
-                    # lines.remove(lines[i])
-                    # lines.remove(lines[j])
-
-        # Remove lines that are part of intersections
+        # Remove intersectin lines with smaller angles
         for line1, line2 in intersections:
-            if line1 in lines:
-                lines.remove(line1)
-            # if line2 in lines:
-            #     lines.remove(line2)
+            if line1[2] < line2[2]:  # Compare angles
+                if line1 in lines:
+                    lines.remove(line1)
+            else:
+                if line2 in lines:
+                    lines.remove(line2)
 
         lines_with_color = []
         for line in lines:
@@ -323,7 +316,7 @@ class RowsWidget(QWidget):
         return self.ccw(A, C, D) != self.ccw(B, C, D) and self.ccw(A, B, C) != self.ccw(A, B, D)
     
     # Function to calculate the intersection point of two line segments
-    def line_intersection(self,line1, line2):
+    def point_intersection(self,line1, line2):
         (x1, y1), (x2, y2), _ = line1
         (x3, y3), (x4, y4), _ = line2
 
