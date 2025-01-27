@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QGridLayout, QWidget, QTableView, QTabWidget, QSpinB
 from PyQt5.QtGui import QColor, QPixmap, QPainter, QPainterPath, QBrush, QLinearGradient
 import numpy as np
 from source.Blob import Blob
+from source.Point import Point
 import pandas as pd
 from collections import OrderedDict
 
@@ -403,7 +404,7 @@ class QtPanelInfo(QTabWidget):
 
                 self.fields[field].setText(value)
 
-        else:
+        elif type(ann) == Point:
             # It's a point, loop through the fields for points
             for field in self.fields:
                 value = ''
