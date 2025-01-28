@@ -29,10 +29,10 @@ class RowsWidget(QWidget):
         # i = 0
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        self.setMinimumWidth(1024)
+        self.setMinimumWidth(1440)
         self.setMinimumHeight(900)
 
-        IMAGEVIEWER_W = 1024
+        IMAGEVIEWER_W = 960
         IMAGEVIEWER_H = 640
         self.viewer = QtImageViewer()
         self.viewer.disableScrollBars()
@@ -194,35 +194,18 @@ class RowsWidget(QWidget):
                 if self.do_lines_intersect(line1, line2):
                     intersection = self.point_intersection(line1, line2)
                     intersections.append((line1, line2, intersection))
+                    # if intersection:
+                        # intersections.append((line1, line2))
+                    # print(intersections)
                     intersection_points.append(intersection)
                     # print(f"Intersection at: {intersection}")
 
-        # Remove lines that are part of intersections from lines_ints
-        # for line1, line2, _ in intersections:
-        #     if line1 in lines_ints:
-        #         lines_ints.remove(line1)
-        #     if line2 in lines_ints:
-        #         lines_ints.remove(line2)
-
-        # Remove duplicate lines from intersections
-        # unique_intersections = []
-        # seen_lines = set()
-
-        # for line1, line2, intersection in intersections:
-        #     if line1 not in seen_lines and line2 not in seen_lines:
-        #         unique_intersections.append((line1, line2, intersection))
-        #         seen_lines.add(line1)
-        #         seen_lines.add(line2)
-
-        # intersections = unique_intersections
-        
-        # print(f"Intersections list: {intersections}")
         # Visualize lines and intersections on the original mask
         plt.figure(figsize=(8, 8))
         plt.imshow(mask, cmap='gray')
         plt.axis('off')
 
-        for ((x0, y0), (x1, y1), ang) in lines_ints:
+        for ((x0, y0), (x1, y1), ang) in lines:
             plt.plot((x0, x1), (y0, y1), color='b')  # Plot detected lines in red
 
         for (px, py) in intersection_points:
@@ -233,13 +216,34 @@ class RowsWidget(QWidget):
         # plt.show()
         plt.close()
 
+        # Remove lines that are part of intersections from lines_ints
+        for line1, line2, _ in intersections:
+            if line1 in lines_ints:
+                lines_ints.remove(line1)
+            if line2 in lines_ints:
+                lines_ints.remove(line2)
+
+        # Remove duplicate lines from intersections
+        unique_intersections = []
+        seen_lines = set()
+
+        for line1, line2, intersection in intersections:
+            if line1 not in seen_lines and line2 not in seen_lines:
+                unique_intersections.append((line1, line2, intersection))
+                seen_lines.add(line1)
+                seen_lines.add(line2)
+
+        intersections = unique_intersections
+        
+        # print(f"Intersections list: {intersections}")        
+        intersections_cut = []
         plt.figure(figsize=(8, 8))
         plt.imshow(mask, cmap='gray')
         plt.axis('off')        
         
         for (line1, line2, (ix, iy)) in intersections:
-            (x1, y1), (x2, y2), _ = line1
-            (x3, y3), (x4, y4), _ = line2
+            (x1, y1), (x2, y2), ang1 = line1
+            (x3, y3), (x4, y4), ang2 = line2
 
             # Plot the first line up to the intersection point
             plt.plot((x1, ix), (y1, iy), color='b')
@@ -248,27 +252,30 @@ class RowsWidget(QWidget):
             # Plot the second line from to the intersection point
             # plt.plot((x3, ix), (y3, iy), color='g')
             plt.plot((ix, x4), (iy, y4), color='g')
+            intersections_cut.append(((x1,y1),(ix,iy),ang1))
+            intersections_cut.append(((ix,iy),(x2,y2),ang2))
 
             # Plot the intersection point
             plt.plot(ix, iy, 'ro')
 
         # Draw lines between two intersection points
-        # for (line1, line2, (ix, iy)) in intersections:
-            # for (line3, line4, (jx, jy)) in intersections:
-            #     if line1 == line3 or line2 == line4:
-            #         plt.plot((ix, jx), (iy, jy), color='yellow')  # Plot line between intersections in yellow
-            #         print(f"line3 and line4 are {line3} and {line4}")
-            #         intersections.remove((line3, line4, (jx, jy)))
+        for (line1, line2, (ix, iy)) in intersections:
+            for (line3, line4, (jx, jy)) in intersections:
+                # if line4 not in inter_intersections:
+                if line1 == line3 or line2 == line4:
+                    plt.plot((ix, jx), (iy, jy), color='yellow')  # Plot line between intersections in yellow
+                    # print(f"line3 and line4 are {line3} and {line4}")
+                    # inter_intersections.append((jx,jy))
 
         for line in lines_ints:
-            print(line)
+            # print(line)
             (x0, y0), (x1, y1), _ = line
             plt.plot((x0, x1), (y0, y1), color='r')
 
         plt.title('Detected Lines and Intersections')
         plt.savefig("spezzate_with_intersections.png", bbox_inches='tight', pad_inches=0)
         plt.close()
-
+        
         # # Remove intersectin lines with smaller angles
         # for line1, line2 in intersections:
         #     if line1[2] < line2[2]:  # Compare angles
@@ -279,13 +286,29 @@ class RowsWidget(QWidget):
         #             lines.remove(line2)
 
         lines_with_color = []
-        for line in lines:
+        for line in lines_ints:
             color = tuple(np.random.randint(0, 256, 3))
             line_with_color = (*line, color)
             lines_with_color.append(line_with_color)
 
-        
+        # intersections_with_color = []
+        # for line1, line2, _ in intersections:
+        #     color1 = tuple(np.random.randint(0, 256, 3))
+        #     color2 = tuple(np.random.randint(0, 256, 3))
+        #     line1_with_color = (*line1, color1)
+        #     line2_with_color = (*line2, color2)
+        #     lines_with_color.append(line1_with_color)
+        #     lines_with_color.append(line2_with_color)
+
+        for line in intersections_cut:
+            color = tuple(np.random.randint(0, 256, 3))
+            line_with_color = (*line, color)
+            lines_with_color.append(line_with_color)
+
         sorted_lines_with_color = sorted(lines_with_color, key=lambda entry: entry[0][1])
+        # print(f"lines: {sorted_lines_with_color}")
+        # sorted_intersections_with_color = sorted(intersections_with_color, key=lambda entry: entry[0][1])
+        # print(f"intersections: {sorted_intersections_with_color}")
         # print(sorted_lines_with_color)
 
         # Visualize lines on the original mask
