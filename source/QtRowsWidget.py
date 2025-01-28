@@ -252,8 +252,8 @@ class RowsWidget(QWidget):
             # Plot the second line from to the intersection point
             # plt.plot((x3, ix), (y3, iy), color='g')
             plt.plot((ix, x4), (iy, y4), color='g')
-            intersections_cut.append(((x1,y1),(ix,iy),ang1))
-            intersections_cut.append(((ix,iy),(x2,y2),ang2))
+            intersections_cut.append(((x1, y1), (int(ix), int(iy)), ang1))
+            intersections_cut.append(((int(ix), int(iy)), (x2, y2), ang2))
 
             # Plot the intersection point
             plt.plot(ix, iy, 'ro')
@@ -275,7 +275,7 @@ class RowsWidget(QWidget):
         plt.title('Detected Lines and Intersections')
         plt.savefig("spezzate_with_intersections.png", bbox_inches='tight', pad_inches=0)
         plt.close()
-        
+       
         # # Remove intersectin lines with smaller angles
         # for line1, line2 in intersections:
         #     if line1[2] < line2[2]:  # Compare angles
