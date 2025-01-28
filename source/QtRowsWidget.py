@@ -74,7 +74,8 @@ class RowsWidget(QWidget):
         self.houghTansformation(self.maschera)
 
         # i += 1
-        # skel = self.applySkeletonization(self.maschera)
+        skel = self.applySkeletonization(self.maschera)
+        self.findIntersectionPoints(skel)
         # # # self.connectSkeletonIntersections(skel)
         # self.houghTansformation(skel, i)
         
@@ -167,7 +168,7 @@ class RowsWidget(QWidget):
                         pass
                     else:
                         point1, point2 = self.boundary_clamp(mask, x0, y0, x1, y1)
-                        print(point1, point2)
+                        # print(point1, point2)
                         if point1 and point2:
                             lines.append((point1, point2, angle))
 
@@ -192,12 +193,30 @@ class RowsWidget(QWidget):
                     continue
                 if self.do_lines_intersect(line1, line2):
                     intersection = self.point_intersection(line1, line2)
-                    intersections.append((line1, line2))
-                    if intersection:
-                        # intersections.append((line1, line2))
-                        intersection_points.append(intersection)
-                        print(f"Intersection at: {intersection}")
+                    intersections.append((line1, line2, intersection))
+                    intersection_points.append(intersection)
+                    # print(f"Intersection at: {intersection}")
 
+        # Remove lines that are part of intersections from lines_ints
+        # for line1, line2, _ in intersections:
+        #     if line1 in lines_ints:
+        #         lines_ints.remove(line1)
+        #     if line2 in lines_ints:
+        #         lines_ints.remove(line2)
+
+        # Remove duplicate lines from intersections
+        # unique_intersections = []
+        # seen_lines = set()
+
+        # for line1, line2, intersection in intersections:
+        #     if line1 not in seen_lines and line2 not in seen_lines:
+        #         unique_intersections.append((line1, line2, intersection))
+        #         seen_lines.add(line1)
+        #         seen_lines.add(line2)
+
+        # intersections = unique_intersections
+        
+        # print(f"Intersections list: {intersections}")
         # Visualize lines and intersections on the original mask
         plt.figure(figsize=(8, 8))
         plt.imshow(mask, cmap='gray')
@@ -211,17 +230,53 @@ class RowsWidget(QWidget):
 
         plt.title('Detected Lines and Intersections')
         plt.savefig("hough_lines_with_intersections.png", bbox_inches='tight', pad_inches=0)
-        plt.show()
+        # plt.show()
         plt.close()
 
-        # Remove intersectin lines with smaller angles
-        for line1, line2 in intersections:
-            if line1[2] < line2[2]:  # Compare angles
-                if line1 in lines:
-                    lines.remove(line1)
-            else:
-                if line2 in lines:
-                    lines.remove(line2)
+        plt.figure(figsize=(8, 8))
+        plt.imshow(mask, cmap='gray')
+        plt.axis('off')        
+        
+        for (line1, line2, (ix, iy)) in intersections:
+            (x1, y1), (x2, y2), _ = line1
+            (x3, y3), (x4, y4), _ = line2
+
+            # Plot the first line up to the intersection point
+            plt.plot((x1, ix), (y1, iy), color='b')
+            # plt.plot((ix, x2), (iy, y2), color='g')
+
+            # Plot the second line from to the intersection point
+            # plt.plot((x3, ix), (y3, iy), color='g')
+            plt.plot((ix, x4), (iy, y4), color='g')
+
+            # Plot the intersection point
+            plt.plot(ix, iy, 'ro')
+
+        # Draw lines between two intersection points
+        # for (line1, line2, (ix, iy)) in intersections:
+            # for (line3, line4, (jx, jy)) in intersections:
+            #     if line1 == line3 or line2 == line4:
+            #         plt.plot((ix, jx), (iy, jy), color='yellow')  # Plot line between intersections in yellow
+            #         print(f"line3 and line4 are {line3} and {line4}")
+            #         intersections.remove((line3, line4, (jx, jy)))
+
+        for line in lines_ints:
+            print(line)
+            (x0, y0), (x1, y1), _ = line
+            plt.plot((x0, x1), (y0, y1), color='r')
+
+        plt.title('Detected Lines and Intersections')
+        plt.savefig("spezzate_with_intersections.png", bbox_inches='tight', pad_inches=0)
+        plt.close()
+
+        # # Remove intersectin lines with smaller angles
+        # for line1, line2 in intersections:
+        #     if line1[2] < line2[2]:  # Compare angles
+        #         if line1 in lines:
+        #             lines.remove(line1)
+        #     else:
+        #         if line2 in lines:
+        #             lines.remove(line2)
 
         lines_with_color = []
         for line in lines:
@@ -328,3 +383,85 @@ class RowsWidget(QWidget):
         py = ((x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)) / denom
 
         return px, py
+
+####################################################################################################################
+
+    def applySkeletonization(self, mask):
+        # Apply skeletonization
+        skeleton = skeletonize(mask)
+
+        # Visualize the skeleton
+        plt.figure(figsize=(8, 8))
+        plt.imshow(skeleton, cmap='gray')
+        plt.title('Skeletonized Mask')
+        plt.savefig("skeletonized_mask.png", bbox_inches='tight', pad_inches=0)
+        plt.close()
+
+        # Update the viewer with the skeletonized mask
+        # skeleton_image = genutils.numpyArrayToQImage(skeleton.astype(np.uint8) * 255)
+        # self.viewer.setOverlayImage(skeleton_image)
+        return skeleton
+    
+    def findIntersectionPoints(self, skeleton):
+        # Find intersection points in the skeleton
+        intersection_points = []
+        for y in range(1, skeleton.shape[0] - 1):
+            for x in range(1, skeleton.shape[1] - 1):
+                if skeleton[y, x] == 1:
+                    neighbors = skeleton[y-1:y+2, x-1:x+2].sum() - 1
+                    if neighbors > 2:
+                        intersection_points.append((x, y))
+        # print(f"Intersection points: {intersection_points}")
+
+        # Plot the intersection points on the skeleton mask
+        plt.figure(figsize=(8, 8))
+        plt.imshow(skeleton, cmap='gray')
+        for (x, y) in intersection_points:
+            plt.plot(x, y, '-o', color = np.random.rand(3,))  # Plot intersection points in red
+        plt.title('Skeleton with Intersection Points')
+        plt.savefig("intersection_points_on_skeleton.png", bbox_inches='tight', pad_inches=0)
+        plt.close()
+
+        return intersection_points
+
+    def connectSkeletonIntersections(self, skeleton):
+        # Find intersection points in the skeleton
+        intersection_points = self.findIntersectionPoints(skeleton)
+
+        # Create a KDTree for efficient neighbor search
+        tree = KDTree(intersection_points)
+
+        # Plot the intersection points and their connections
+        plt.figure(figsize=(8, 8))
+        plt.imshow(skeleton, cmap='gray')
+
+        for point in intersection_points:
+            x0, y0 = point
+            # Find neighbors within a radius of 5 rows
+            indices = tree.query_ball_point(point, r=10)
+            for idx in indices:
+                x1, y1 = intersection_points[idx]
+                if (x0, y0) != (x1, y1):
+                    plt.plot([x0, x1], [y0, y1], '-o', color=np.random.rand(3,))
+
+        plt.title('Skeleton with Intersection Points Connections')
+        plt.savefig("intersection_points_connections.png", bbox_inches='tight', pad_inches=0)
+        plt.close()
+        
+        # Create a copy of the original image to draw on
+        # image_with_lines = self.image_mask.copy()
+        # painter = QPainter(image_with_lines)
+        # pen = QPen(Qt.green, 2)
+        # painter.setPen(pen)
+
+        # # Draw lines connecting intersection points
+        # for i in range(len(intersection_points) - 1):
+        #     x0, y0 = intersection_points[i]
+        #     x1, y1 = intersection_points[i + 1]
+        #     painter.drawLine(x0, y0, x1, y1)
+
+        # painter.end()
+
+        # # Update the viewer with the new image
+        # self.image_mask = image_with_lines
+        # self.viewer.setOverlayImage(self.image_mask)
