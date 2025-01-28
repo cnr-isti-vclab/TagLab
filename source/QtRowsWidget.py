@@ -4,7 +4,7 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QPushButton, QSizePolicy, QTextEdit
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QSizePolicy, QTextEdit, QSlider
 from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen, QColor
 from PyQt5.QtCore import pyqtSignal, Qt
 
@@ -13,7 +13,10 @@ from source import genutils
 
 from skimage.transform import hough_line, hough_line_peaks
 from skimage.morphology import skeletonize
+
 from scipy.interpolate import interp1d
+from scipy.ndimage import binary_dilation
+
 from skimage import measure
 from skimage.draw import line
 from scipy.spatial import KDTree
@@ -65,27 +68,93 @@ class RowsWidget(QWidget):
         self.angleTextBox.setReadOnly(True)
         layout.addWidget(self.angleTextBox)
 
+        
+        self.setLayout(layout)
+
+        # Add slider for structuring element size
+        self.slider = QSlider(Qt.Horizontal)
+        self.slider.setMinimum(1)
+        self.slider.setMaximum(50)
+        self.slider.setValue(21)
+        self.slider.setTickPosition(QSlider.TicksBelow)
+        self.slider.setTickInterval(1)
+        self.slider.valueChanged.connect(self.updateStructuringElement)
+
+        self.slider_label = QLabel(f"Structuring Element Size: {self.slider.value()}")
+        
+        layout.addWidget(self.slider_label)
+        layout.addWidget(self.slider)
+
+        self.structuring_element_size = self.slider.value()
+        
+        layout.setSpacing(10)
+
+        self.angleTextBox = QTextEdit(self)
+        self.angleTextBox.setReadOnly(True)
+        layout.addWidget(self.angleTextBox)
+
+
+        layout.setSpacing(10)
+        
+        button_layout = QHBoxLayout()
+        self.btnOk = QPushButton("OK")
+        self.btnOk.clicked.connect(self.applyHough)
+        layout.addWidget(self.btnOk)
+
         self.btnClose = QPushButton("Close")
         self.btnClose.clicked.connect(self.closeWidget)
         layout.addWidget(self.btnClose)
-        
+        layout.addLayout(button_layout)
+
+
+        self.viewer.setImg(self.image_cropped)
+
         self.setLayout(layout)
+
+    def updateStructuringElement(self, value):
+        self.structuring_element_size = value
+        self.slider_label.setText(f"Structuring Element Size: {value}")
             
-        self.houghTansformation(self.maschera)
+    def applyHough(self):
+        grow_mask = self.maskGrow(self.maschera, self.structuring_element_size)
+        self.houghTansformation(grow_mask)
 
         # i += 1
-        skel = self.applySkeletonization(self.maschera)
+        skel = self.applySkeletonization(grow_mask)
         self.findIntersectionPoints(skel)
         # # # self.connectSkeletonIntersections(skel)
         # self.houghTansformation(skel, i)
         
-        self.viewer.setImg(self.image_cropped)
+        
         self.viewer.setOpacity(0.7)
         self.viewer.setOverlayImage(self.image_overlay)
 
     def closeWidget(self):
         self.closeRowsWidget.emit()
         self.close()
+
+    def maskGrow(self, mask, value):
+        #GROW DEI BLOB, LA MALTA È QUELLA CHE DISTA x PIXEL DAL BLOB
+        rect_mask_grow = mask.copy()
+
+        # Create a structuring element that defines the neighborhood
+        # 21x21 to cover 10 positions around each 1 (10 positions
+        # structuring_element = np.ones((21, 21), dtype=np.uint8)
+        # structuring_element = np.ones((self.structuring_element_size, self.structuring_element_size), dtype=np.uint8)
+        structuring_element = np.ones((value, value), dtype=np.uint8)
+        print(f"Structuring element size: {value}")
+        rect_mask_grow = binary_dilation(mask, structure=structuring_element)
+
+        rect_mask_grow = rect_mask_grow - mask
+
+        # Save the rect_mask_grow as a matplotlib figure
+        plt.figure(figsize=(10, 10))
+        plt.imshow(rect_mask_grow, cmap='gray')
+        plt.axis('off')
+        plt.savefig("rect_mask_grow.png", bbox_inches='tight', pad_inches=0)
+        plt.close()
+
+        return rect_mask_grow
 
     # def updateAngleTextBox(self, angles):
     def updateAngleTextBox(self, angles, index, color='red'):
@@ -167,7 +236,7 @@ class RowsWidget(QWidget):
                     if y0 < 0 or y1 < 0:
                         pass
                     else:
-                        point1, point2 = self.boundary_clamp(mask, x0, y0, x1, y1)
+                        point1, point2 = self.boundary_clamp(mask, int(x0), int(y0), int(x1), int(y1))
                         # print(point1, point2)
                         if point1 and point2:
                             lines.append((point1, point2, angle))
@@ -306,6 +375,7 @@ class RowsWidget(QWidget):
             lines_with_color.append(line_with_color)
 
         sorted_lines_with_color = sorted(lines_with_color, key=lambda entry: entry[0][1])
+
         # print(f"lines: {sorted_lines_with_color}")
         # sorted_intersections_with_color = sorted(intersections_with_color, key=lambda entry: entry[0][1])
         # print(f"intersections: {sorted_intersections_with_color}")
@@ -327,7 +397,7 @@ class RowsWidget(QWidget):
         # Draw the detected lines on the qimage mask
         # image_with_lines = self.image_mask.copy()
         # image_with_lines = self.image_cropped.copy()
-        image_with_lines = genutils.maskToQImage(self.maschera)
+        image_with_lines = genutils.maskToQImage(mask)
         painter = QPainter(image_with_lines)
         pen = QPen(Qt.red, 5)
 

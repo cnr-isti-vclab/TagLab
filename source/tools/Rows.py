@@ -12,6 +12,9 @@ from scipy.ndimage import binary_dilation
 from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal, QT_VERSION_STR
 from PyQt5.QtGui import  QPainterPath, QPen, QBrush, QColor
 
+from PyQt5.QtWidgets import QSlider, QVBoxLayout, QLabel,QWidget
+from PyQt5.QtCore import Qt
+
 from source.QtRowsWidget import RowsWidget
 
 class Rows(Tool):
@@ -143,23 +146,25 @@ class Rows(Tool):
         # rect_mask[rect_mask == 0] = 255
         # rect_mask[rect_mask == 1] = 0
         #GROW DEI BLOB, LA MALTA È QUELLA CHE DISTA x PIXEL DAL BLOB
-        rect_mask_grow = rect_mask.copy()
+        # rect_mask_grow = rect_mask.copy()
 
-        # Create a structuring element that defines the neighborhood
-        # 21x21 to cover 10 positions around each 1 (10 positions
-        structuring_element = np.ones((21, 21), dtype=np.uint8)
-        rect_mask_grow = binary_dilation(rect_mask, structure=structuring_element)
+        # # Create a structuring element that defines the neighborhood
+        # # 21x21 to cover 10 positions around each 1 (10 positions
+        # # structuring_element = np.ones((21, 21), dtype=np.uint8)
+        # structuring_element = np.ones((self.structuring_element_size, self.structuring_element_size), dtype=np.uint8)
+        # print(f"Structuring element size: {self.structuring_element_size}")
+        # rect_mask_grow = binary_dilation(rect_mask, structure=structuring_element)
 
-        rect_mask_grow = rect_mask_grow - rect_mask
+        # rect_mask_grow = rect_mask_grow - rect_mask
 
-        # Save the rect_mask_grow as a matplotlib figure
-        plt.figure(figsize=(10, 10))
-        plt.imshow(rect_mask_grow, cmap='gray')
-        plt.axis('off')
-        plt.savefig("rect_mask_grow.png", bbox_inches='tight', pad_inches=0)
-        plt.close()
+        # # Save the rect_mask_grow as a matplotlib figure
+        # plt.figure(figsize=(10, 10))
+        # plt.imshow(rect_mask_grow, cmap='gray')
+        # plt.axis('off')
+        # plt.savefig("rect_mask_grow.png", bbox_inches='tight', pad_inches=0)
+        # plt.close()
 
-        rect_mask = rect_mask_grow
+        # rect_mask = rect_mask_grow
         
         self.structWidget(image_cropped, rect_mask, self.blobs_inside_work_area, self.work_area_rect)
 
