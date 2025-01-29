@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QSizePolicy, QTextEdit, QSlider
 from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen, QColor
-from PyQt5.QtCore import pyqtSignal, Qt
+from PyQt5.QtCore import pyqtSignal, Qt, QBuffer
 
 from source.QtImageViewer import QtImageViewer
 from source import genutils
@@ -29,13 +29,15 @@ class RowsWidget(QWidget):
     def __init__(self, cropped_image, mask_array, blobs, rect, parent = None):
         super(RowsWidget, self).__init__(parent)
 
+        # self.q_skel = None
+
         # i = 0
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.setMinimumWidth(1440)
         self.setMinimumHeight(900)
 
-        IMAGEVIEWER_W = 960
+        IMAGEVIEWER_W = 700
         IMAGEVIEWER_H = 640
         self.viewer = QtImageViewer()
         self.viewer.disableScrollBars()
@@ -58,9 +60,29 @@ class RowsWidget(QWidget):
         self.bboxes = []
 
         layout = QVBoxLayout()
+
+        # Create a horizontal layout for the viewers
+        viewers_layout = QHBoxLayout()
+
+        # Add main viewer
+        viewers_layout.addWidget(self.viewer, alignment=Qt.AlignLeft)
+
+        # Add second viewer for q_skel
+        self.skel_viewer = QtImageViewer()
+        self.skel_viewer.disableScrollBars()
+        self.skel_viewer.enablePan()
+        self.skel_viewer.enableZoom()
+        self.skel_viewer.setFixedWidth(IMAGEVIEWER_W)
+        self.skel_viewer.setFixedHeight(IMAGEVIEWER_H)
+        viewers_layout.addWidget(self.skel_viewer, alignment=Qt.AlignRight)
+
+        layout.addLayout(viewers_layout)
+
+        # Add the viewers layout to the main layout
+        # layout.addLayout(viewers_layout)
         # layout.addLayout(layoutTop)
         # layout.addWidget(self.progress_bar)
-        layout.addWidget(self.viewer, alignment=Qt.AlignCenter)
+        # layout.addWidget(self.viewer, alignment=Qt.AlignCenter)
         # layout.addLayout(layoutButtons)
         layout.setSpacing(10)
 
@@ -69,7 +91,7 @@ class RowsWidget(QWidget):
         layout.addWidget(self.angleTextBox)
 
         
-        self.setLayout(layout)
+        # self.setLayout(layout)
 
         # Add slider for structuring element size
         self.slider = QSlider(Qt.Horizontal)
@@ -80,30 +102,23 @@ class RowsWidget(QWidget):
         self.slider.setTickInterval(1)
         self.slider.valueChanged.connect(self.updateStructuringElement)
 
-        self.slider_label = QLabel(f"Structuring Element Size: {self.slider.value()}")
+        self.slider_label = QLabel(f"Pixel Grow: ")# {((self.slider.value()-1)//2)}")
         
         layout.addWidget(self.slider_label)
         layout.addWidget(self.slider)
 
         self.structuring_element_size = self.slider.value()
-        
-        layout.setSpacing(10)
-
-        self.angleTextBox = QTextEdit(self)
-        self.angleTextBox.setReadOnly(True)
-        layout.addWidget(self.angleTextBox)
-
 
         layout.setSpacing(10)
         
         button_layout = QHBoxLayout()
         self.btnOk = QPushButton("OK")
         self.btnOk.clicked.connect(self.applyHough)
-        layout.addWidget(self.btnOk)
+        button_layout.addWidget(self.btnOk)
 
         self.btnClose = QPushButton("Close")
         self.btnClose.clicked.connect(self.closeWidget)
-        layout.addWidget(self.btnClose)
+        button_layout.addWidget(self.btnClose)
         layout.addLayout(button_layout)
 
 
@@ -113,7 +128,7 @@ class RowsWidget(QWidget):
 
     def updateStructuringElement(self, value):
         self.structuring_element_size = value
-        self.slider_label.setText(f"Structuring Element Size: {value}")
+        self.slider_label.setText(f"Pixel Grow: {(value-1)//2}")
             
     def applyHough(self):
         grow_mask = self.maskGrow(self.maschera, self.structuring_element_size)
@@ -121,9 +136,12 @@ class RowsWidget(QWidget):
 
         # i += 1
         skel = self.applySkeletonization(grow_mask)
-        self.findIntersectionPoints(skel)
+        _, skel_int = self.findIntersectionPoints(skel)
+
         # # # self.connectSkeletonIntersections(skel)
         # self.houghTansformation(skel, i)
+
+        self.skel_viewer.setImg(skel_int)
         
         
         self.viewer.setOpacity(0.7)
@@ -490,6 +508,8 @@ class RowsWidget(QWidget):
         plt.savefig("skeletonized_mask.png", bbox_inches='tight', pad_inches=0)
         plt.close()
 
+        # q_skeleton = genutils.maskToQImage(skeleton)
+
         # Update the viewer with the skeletonized mask
         # skeleton_image = genutils.numpyArrayToQImage(skeleton.astype(np.uint8) * 255)
         # self.viewer.setOverlayImage(skeleton_image)
@@ -512,10 +532,19 @@ class RowsWidget(QWidget):
         for (x, y) in intersection_points:
             plt.plot(x, y, '-o', color = np.random.rand(3,))  # Plot intersection points in red
         plt.title('Skeleton with Intersection Points')
+
+        # Save the plot to a QBuffer
+        buffer = QBuffer()
+        buffer.open(QBuffer.ReadWrite)
+        plt.savefig(buffer, format='png', bbox_inches='tight', pad_inches=0)
+
         plt.savefig("intersection_points_on_skeleton.png", bbox_inches='tight', pad_inches=0)
         plt.close()
 
-        return intersection_points
+        q_skeleton = QImage()
+        q_skeleton.loadFromData(buffer.data())
+
+        return intersection_points, q_skeleton
 
     def connectSkeletonIntersections(self, skeleton):
         # Find intersection points in the skeleton
