@@ -29,7 +29,7 @@ def augmentation_color(p=0.8):
         FancyPCA(always_apply=False, p=0.05, alpha=0.01),
         Spatter(always_apply=False, p=0.2, mean=(0.65, 0.65), std=(0.3, 0.3), gauss_sigma=(0.72, 0.72),
                 intensity=(0.6, 0.6), cutout_threshold=(0.68, 0.68), mode=['rain']),
-        PixelDropout(always_apply=False, p=0.2, dropout_prob=0.02, per_channel=0, drop_value=(0, 0, 0),
+        PixelDropout(always_apply=False, p=0.2, dropout_prob=0.02, per_channel=False, drop_value=0.0,
                      mask_drop_value=None)
     ], p=p)
 
