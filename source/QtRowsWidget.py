@@ -15,7 +15,7 @@ from skimage.transform import hough_line, hough_line_peaks
 from skimage.morphology import skeletonize
 
 from scipy.interpolate import interp1d
-from scipy.ndimage import binary_dilation
+from scipy.ndimage import binary_dilation, binary_erosion, convolve
 
 from skimage import measure
 from skimage.draw import line
@@ -58,6 +58,8 @@ class RowsWidget(QWidget):
         self.blob_list = blobs
         self.centroids = []
         self.bboxes = []
+
+        self.set_textbox = False
 
         layout = QVBoxLayout()
 
@@ -102,7 +104,9 @@ class RowsWidget(QWidget):
         self.slider.setTickInterval(1)
         self.slider.valueChanged.connect(self.updateStructuringElement)
 
-        self.slider_label = QLabel(f"Pixel Grow: ")# {((self.slider.value()-1)//2)}")
+        value = self.slider.value()
+
+        self.slider_label = QLabel(f"Pixel Grow: {(value-1)//2}")
         
         layout.addWidget(self.slider_label)
         layout.addWidget(self.slider)
@@ -131,21 +135,28 @@ class RowsWidget(QWidget):
         self.slider_label.setText(f"Pixel Grow: {(value-1)//2}")
             
     def applyHough(self):
-        grow_mask = self.maskGrow(self.maschera, self.structuring_element_size)
-        self.houghTansformation(grow_mask)
+        if self.set_textbox == True:
+            self.resetAngleTextBox()
+
+        grow_mask, final_mask = self.maskGrow(self.maschera, self.structuring_element_size)
+        self.houghTansformation(final_mask)
 
         # i += 1
         skel = self.applySkeletonization(grow_mask)
-        _, skel_int = self.findIntersectionPoints(skel)
+        # _, skel_int = self.findIntersectionPoints(skel)
+        _, skel_int = self.branchPoints(skel)
 
         # # # self.connectSkeletonIntersections(skel)
         # self.houghTansformation(skel, i)
+
+        self.set_textbox = True
 
         self.skel_viewer.setImg(skel_int)
         
         
         self.viewer.setOpacity(0.7)
         self.viewer.setOverlayImage(self.image_overlay)
+
 
     def closeWidget(self):
         self.closeRowsWidget.emit()
@@ -160,20 +171,41 @@ class RowsWidget(QWidget):
         # structuring_element = np.ones((21, 21), dtype=np.uint8)
         # structuring_element = np.ones((self.structuring_element_size, self.structuring_element_size), dtype=np.uint8)
         structuring_element = np.ones((value, value), dtype=np.uint8)
+        structuring_element_half = np.ones((value//2, value//2), dtype=np.uint8)
         print(f"Structuring element size: {value}")
         rect_mask_grow = binary_dilation(mask, structure=structuring_element)
+        rect_mask_grow_sub = rect_mask_grow - mask
 
-        rect_mask_grow = rect_mask_grow - mask
+        # rect_mask_grow = rect_mask_grow - mask
 
         # Save the rect_mask_grow as a matplotlib figure
         plt.figure(figsize=(10, 10))
-        plt.imshow(rect_mask_grow, cmap='gray')
+        plt.imshow(rect_mask_grow_sub, cmap='gray')
         plt.axis('off')
         plt.savefig("rect_mask_grow.png", bbox_inches='tight', pad_inches=0)
         plt.close()
 
-        return rect_mask_grow
+        rect_mask_eroded = binary_erosion(rect_mask_grow, structure=structuring_element_half)
 
+        # Save the rect_mask_eroded as a matplotlib figure
+        plt.figure(figsize=(10, 10))
+        plt.imshow(rect_mask_eroded, cmap='gray')
+        plt.axis('off')
+        plt.savefig("rect_mask_eroded.png", bbox_inches='tight', pad_inches=0)
+        plt.close()
+
+        rect_mask_final = rect_mask_eroded - mask
+
+        # Save the rect_mask_eroded as a matplotlib figure
+        plt.figure(figsize=(10, 10))
+        plt.imshow(rect_mask_final, cmap='gray')
+        plt.axis('off')
+        plt.savefig("rect_mask_final.png", bbox_inches='tight', pad_inches=0)
+        plt.close()
+
+
+        return rect_mask_grow_sub, rect_mask_final
+    
     # def updateAngleTextBox(self, angles):
     def updateAngleTextBox(self, angles, index, color='red'):
         current_text = self.angleTextBox.toHtml()
@@ -182,15 +214,7 @@ class RowsWidget(QWidget):
 
     def resetAngleTextBox(self):
         self.angleTextBox.clear()
-
-    # def updateAngleTextBox(self, angles):
-    def updateAngleTextBox(self, angles, index, color='red'):
-        current_text = self.angleTextBox.toHtml()
-        new_text = ''.join([f'<span style="color: {color};">line {str(index+1)}: {angle}</span><br>' for angle in angles])
-        self.angleTextBox.setHtml(current_text + new_text)
-
-    def resetAngleTextBox(self):
-        self.angleTextBox.clear()
+        self.set_textbox = False
 
     def boundary_clamp(self, mask, x0, y0, x1, y1):
         """
@@ -514,6 +538,52 @@ class RowsWidget(QWidget):
         # skeleton_image = genutils.numpyArrayToQImage(skeleton.astype(np.uint8) * 255)
         # self.viewer.setOverlayImage(skeleton_image)
         return skeleton
+    
+    def branchPoints(self, skeleton):
+        # Define a kernel to detect branch points
+        kernel = np.array([[1, 1, 1],
+                   [1, 10, 1],
+                   [1, 1, 1]])
+
+        # Convolve the skeleton with the kernel
+        convolved = convolve(skeleton.astype(np.uint8), kernel, mode='constant', cval=0) - 10
+
+        # Find branch points where the convolved result equals 11
+        branch_points = (convolved >= 3) & skeleton
+
+        # Get coordinates
+        # endpoints_yx = np.column_stack(np.where(endpoints))
+        branch_points_yx = np.column_stack(np.where(branch_points))
+
+        # Remove branch points that are too close to each other
+        filtered_branch_points = []
+        for point in branch_points_yx:
+            if not any(np.linalg.norm(point - np.array(existing_point)) < 20 for existing_point in filtered_branch_points):
+                filtered_branch_points.append(point)
+
+        # Plot results
+        fig, ax = plt.subplots(figsize=(6, 6))
+        ax.imshow(skeleton, cmap='gray')
+        # ax.scatter(endpoints_yx[:, 1], endpoints_yx[:, 0], color='red', label='Endpoints', s=80, marker='o')
+        # for (y, x) in branch_points_yx:
+        for (y, x) in filtered_branch_points:
+            ax.scatter(x, y, color=np.random.rand(3,), s=40, marker='x')
+        ax.set_title("Skeleton with Branch Points")
+        # ax.legend()
+        ax.axis("off")
+
+        # Save the plot to a QBuffer
+        buffer = QBuffer()
+        buffer.open(QBuffer.ReadWrite)
+        plt.savefig(buffer, format='png', bbox_inches='tight', pad_inches=0)
+
+        plt.savefig("branch_points_on_skeleton.png", bbox_inches='tight', pad_inches=0)
+        plt.close()
+
+        q_skeleton = QImage()
+        q_skeleton.loadFromData(buffer.data())
+
+        return branch_points, q_skeleton
     
     def findIntersectionPoints(self, skeleton):
         # Find intersection points in the skeleton
