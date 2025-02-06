@@ -296,7 +296,12 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
     ###### SETUP THE NETWORK #####
     # num_classes parmeters adapt the num classes to the new dictionary
     net = DeepLab(backbone='resnet', output_stride=16, num_classes=output_classes)
-    state = torch.load("models/deeplab-resnet.pth.tar")
+
+    if torch.cuda.is_available():
+        state = torch.load("models/deeplab-resnet.pth.tar", map_location=torch.device("cuda"))
+    else:
+        state = torch.load("models/deeplab-resnet.pth.tar", map_location=torch.device("cpu"))
+
     # RE-INIZIALIZE THE CLASSIFICATION LAYER WITH THE RIGHT NUMBER OF CLASSES, DON'T LOAD WEIGHTS OF THE CLASSIFICATION LAYER
     new_dictionary = state['state_dict']
     del new_dictionary['decoder.last_conv.8.weight']
@@ -563,7 +568,12 @@ def testNetwork(images_folder, labels_folder, labels_dictionary, target_classes,
 
     # DEEPLAB V3+
     net = DeepLab(backbone='resnet', output_stride=16, num_classes=output_classes)
-    net.load_state_dict(torch.load(network_filename))
+
+    if torch.cuda.is_available():
+        net.load_state_dict(torch.load(network_filename, map_location=torch.device("cuda")))
+    else:
+        net.load_state_dict(torch.load(network_filename, map_location=torch.device("cpu")))
+
     print("Weights loaded.")
 
     metrics_test, loss = evaluateNetwork(datasetTest, dataloaderTest, "NONE", None, [0.0], 0.0, 0.0, 0.0, 0, 0, 0,
