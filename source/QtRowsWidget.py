@@ -5,14 +5,14 @@ import cv2
 import matplotlib.pyplot as plt
 
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QSizePolicy, QTextEdit, QSlider
-from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen, QColor
+from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen, QColor, QBrush
 from PyQt5.QtCore import pyqtSignal, Qt, QBuffer
 
 from source.QtImageViewer import QtImageViewer
 from source import genutils
 
 from skimage.transform import hough_line, hough_line_peaks
-from skimage.morphology import skeletonize
+from skimage.morphology import skeletonize, thin
 
 from skimage.graph import route_through_array
 import networkx as nx
@@ -148,10 +148,11 @@ class RowsWidget(QWidget):
         self.houghTansformation(final_mask)
 
         # i += 1
-        skel = self.applySkeletonization(grow_mask)
-        # _, skel_int = self.findIntersectionPoints(skel)
+        skel = self.applySkeletonization(final_mask)
         _, skel_int = self.branchPoints(skel)
-        self.vectorBranchPoints(skel)
+                
+        # _, skel_int = self.findIntersectionPoints(skel)
+        # self.vectorBranchPoints(skel)
 
         # # # self.connectSkeletonIntersections(skel)
         # self.houghTansformation(skel, i)
@@ -159,7 +160,7 @@ class RowsWidget(QWidget):
         self.set_textbox = True
 
         self.skel_viewer.setOpacity(1.0)
-        # self.skel_viewer.setImg(skel_int)
+        self.skel_viewer.setOverlayImage(skel_int)
         
         
         self.viewer.setOpacity(0.7)
@@ -493,15 +494,6 @@ class RowsWidget(QWidget):
 
         #Set the mask with lines as image overlay
         self.image_overlay = image_with_lines
-
-        # self.image_mask = image_with_lines
-        # self.image_cropped = image_with_lines
-
-        # self.viewer.setOpacity(0.5)
-        # self.viewer.setOverlayImage(self.image_mask)
-
-
-   
     def ccw(self, A, B, C):
             return (C[1] - A[1]) * (B[0] - A[0]) > (B[1] - A[1]) * (C[0] - A[0])
     
@@ -531,22 +523,48 @@ class RowsWidget(QWidget):
 
     def applySkeletonization(self, mask):
         # Apply skeletonization
-        skeleton = skeletonize(mask)
+        # skeleton = skeletonize(mask)
+        # skeleton = median(skeleton, disk(1))
+        skeleton = thin(mask)
+        
+        h, w = skeleton.shape
+        dwg = svgwrite.Drawing(f"skeleton.svg", size=(w, h))
+        
+        # Draw skeleton as black lines
+        y, x = np.where(skeleton)
+        for i in range(len(y)):
+            dwg.add(dwg.circle(center=(int(x[i]), int(y[i])), r=0.5, fill="black"))
+
+        # Save SVG file
+        dwg.save()
+        print("Saved skeleton as skeleton.svg")
+
+        # Create a QImage with the same size as the skeleton
+        # q_image = QImage(skeleton.shape[1], skeleton.shape[0], QImage.Format_ARGB32)
+        # q_image.fill(Qt.transparent)
+
+        # # Draw the skeleton on the QImage
+        # painter = QPainter(q_image)
+        # pen = QPen(Qt.blue, 1)
+        # painter.setPen(pen)
+
+        # for (y, x) in zip(*np.where(skeleton)):
+        #     painter.drawPoint(x, y)
+
+        # painter.end()
+
+        # # Save the QImage
+        # q_image.save("skeleton_qimage.png")
 
         # Visualize the skeleton
-        plt.figure(figsize=(8, 8))
+        plt.figure(figsize=(8,8))
         plt.imshow(skeleton, cmap='gray')
         plt.title('Skeletonized Mask')
         plt.savefig("skeletonized_mask.png", bbox_inches='tight', pad_inches=0)
         plt.close()
 
-        # q_skeleton = genutils.maskToQImage(skeleton)
-
-        # Update the viewer with the skeletonized mask
-        # skeleton_image = genutils.numpyArrayToQImage(skeleton.astype(np.uint8) * 255)
-        # self.viewer.setOverlayImage(skeleton_image)
         return skeleton
-    
+     
     def branchPoints(self, skeleton, filename="skeleton_vector.svg"):
         # Define a kernel to detect branch points
         kernel = np.array([[1, 1, 1],
@@ -557,20 +575,21 @@ class RowsWidget(QWidget):
         convolved = convolve(skeleton.astype(np.uint8), kernel, mode='constant', cval=0) - 10
 
         # Find branch points where the convolved result equals 11
-        branch_points = (convolved == 3) & skeleton
+        branch_points = (convolved >= 3) & skeleton
 
         # Get coordinates
         # endpoints_yx = np.column_stack(np.where(endpoints))
         branch_points_yx = np.column_stack(np.where(branch_points))
 
         # Remove branch points that are too close to each other
-        filtered_branch_points = []
+        filtered_branch_points_yx = []
         for point in branch_points_yx:
-            if not any(np.linalg.norm(point - np.array(existing_point)) < 10 for existing_point in filtered_branch_points):
-                filtered_branch_points.append(point)
-        ##########################################################################################
+            if not any(np.linalg.norm(point - np.array(existing_point)) < 5 for existing_point in filtered_branch_points_yx):
+                filtered_branch_points_yx.append(point)
+
+        ################################################################################################
         h, w = skeleton.shape
-        dwg = svgwrite.Drawing(filename, size=(w, h))
+        dwg = svgwrite.Drawing('pippo.svg', size=(w, h))
         
         # Draw skeleton as black lines
         y, x = np.where(skeleton)
@@ -578,12 +597,13 @@ class RowsWidget(QWidget):
             dwg.add(dwg.circle(center=(int(x[i]), int(y[i])), r=0.5, fill="blue"))
 
         # Draw branch points as red circles
-        for point in filtered_branch_points:
+        for point in filtered_branch_points_yx:
             dwg.add(dwg.circle(center=(int(point[1]), int(point[0])), r=2, fill="red"))
 
         # Save SVG file
         dwg.save()
-        print(f"Saved SVG as {filename}")
+        print(f"Saved SVG as pippo.svg")
+        ################################################################################################
 
         # Create a QImage from the skeleton and branch points
         q_image = QImage(skeleton.shape[1], skeleton.shape[0], QImage.Format_ARGB32)
@@ -600,41 +620,29 @@ class RowsWidget(QWidget):
         # Draw branch points
         pen.setColor(Qt.red)
         painter.setPen(pen)
-        for point in filtered_branch_points:
+        painter.setBrush(QBrush(Qt.red))
+        for point in filtered_branch_points_yx:
             painter.drawEllipse(point[1], point[0], 10, 10)
 
         painter.end()
 
-        # self.skel_viewer.setOverlayImage(q_image)
-
-        # self.skel_viewer.setOverlayImage(q_svg)
         ################################################################################################
 
         # Plot results
         fig, ax = plt.subplots(figsize=(6, 6))
         ax.imshow(skeleton, cmap='gray')
         # ax.scatter(endpoints_yx[:, 1], endpoints_yx[:, 0], color='red', label='Endpoints', s=80, marker='o')
+        for (y, x) in filtered_branch_points_yx:
         # for (y, x) in branch_points_yx:
-        for (y, x) in filtered_branch_points:
             ax.scatter(x, y, color=np.random.rand(3,), s=40, marker='x')
         ax.set_title("Skeleton with Branch Points")
         # ax.legend()
         ax.axis("off")
 
-        # Save the plot to a QBuffer
-        buffer = QBuffer()
-        buffer.open(QBuffer.ReadWrite)
-        plt.savefig(buffer, format='png', bbox_inches='tight', pad_inches=0)
-
         plt.savefig("branch_points_on_skeleton.png", bbox_inches='tight', pad_inches=0)
         plt.close()
 
-        q_skeleton = QImage()
-        q_skeleton.loadFromData(buffer.data())
-
-        return branch_points, q_skeleton
-
-
+        return branch_points, q_image
 
     def vectorBranchPoints(self,skeleton):
 
@@ -653,139 +661,16 @@ class RowsWidget(QWidget):
                 if (ni, nj) in G:
                     G.add_edge((i, j), (ni, nj))
 
-        # Find intersection points (nodes with degree >= 3)
-        intersections = [node for node in G.nodes() if G.degree(node) == 3]
 
-        # Print detected intersections
-        print(f"Found {len(intersections)} intersection points:", intersections)
-
-        h, w = skeleton.shape
-
-        dwg = svgwrite.Drawing("svg_skeleton.svg", size=(w, h))
-        
-        # Draw skeleton as black lines
-        y, x = np.where(skeleton)
-        for i in range(len(y)):
-            dwg.add(dwg.circle(center=(int(x[i]), int(y[i])), r=0.5, fill="blue"))
-
-        # Draw branch points as red circles
-        for point in intersections:
-            dwg.add(dwg.circle(center=(int(point[1]), int(point[0])), r=2, fill="red"))
-
-        # Save SVG file
-        dwg.save()
-        print(f"Saved SVG as svg_skeleton.svg")
-
-        # Create a QImage from the graph
-        q_image = QImage(w, h, QImage.Format_ARGB32)
-        q_image.fill(Qt.transparent)
-
-        painter = QPainter(q_image)
-        pen = QPen(Qt.blue, 5)
-        painter.setPen(pen)
-
-        # Draw edges
-        for (i, j) in G.edges():
-            painter.drawLine(j[1], j[0], i[1], i[0])
-
-        # Draw nodes
-        pen.setColor(Qt.blue)
-        painter.setPen(pen)
-        for (i, j) in G.nodes():
-            painter.drawPoint(j, i)
-
-        # Highlight intersection points
-        pen.setColor(Qt.red)
-        # brush = QBrush(Qt.red)
-        painter.setPen(pen)
-        # painter.setBrush(brush)
-        for (i, j) in intersections:
-            painter.drawEllipse(j - 3, i - 3, 10, 10)  # Adjust coordinates to center the ellipse
-
-        painter.end()
-        self.skel_viewer.setOverlayImage(q_image)
-
-        # Plot using networkx.draw
-        plt.figure(figsize=(8, 8))
+        print(len(G.nodes()))
+        # Draw nodes and edges of the graph
         pos = {node: (node[1], -node[0]) for node in G.nodes()}  # Flip y-axis for correct orientation
-        nx.draw(G, pos, node_size=2, edge_color="blue", width=0.25)  # Draw skeleton graph
-        nx.draw_networkx_nodes(G, pos, nodelist=intersections, node_color="red", node_size=15)  # Highlight intersections
-        plt.title("Skeleton Graph with Intersections")
-        # plt.show()
 
+        plt.figure(figsize=(8, 8))
+        nx.draw_networkx_nodes(G, pos, node_size=0.25, node_color="red")
+        nx.draw_networkx_edges(G, pos, width=2, edge_color="blue")
+
+
+        plt.title("Skeleton Graph with Intersections")
         plt.savefig("vectorized_skeleton.png", bbox_inches='tight', pad_inches=0)
         plt.close()
-
-
-    def findIntersectionPoints(self, skeleton):
-        # Find intersection points in the skeleton
-        intersection_points = []
-        for y in range(1, skeleton.shape[0] - 1):
-            for x in range(1, skeleton.shape[1] - 1):
-                if skeleton[y, x] == 1:
-                    neighbors = skeleton[y-1:y+2, x-1:x+2].sum() - 1
-                    if neighbors > 2:
-                        intersection_points.append((x, y))
-        # print(f"Intersection points: {intersection_points}")
-
-        # Plot the intersection points on the skeleton mask
-        plt.figure(figsize=(8, 8))
-        plt.imshow(skeleton, cmap='gray')
-        for (x, y) in intersection_points:
-            plt.plot(x, y, '-o', color = np.random.rand(3,))  # Plot intersection points in red
-        plt.title('Skeleton with Intersection Points')
-
-        # Save the plot to a QBuffer
-        buffer = QBuffer()
-        buffer.open(QBuffer.ReadWrite)
-        plt.savefig(buffer, format='png', bbox_inches='tight', pad_inches=0)
-
-        plt.savefig("intersection_points_on_skeleton.png", bbox_inches='tight', pad_inches=0)
-        plt.close()
-
-        q_skeleton = QImage()
-        q_skeleton.loadFromData(buffer.data())
-
-        return intersection_points, q_skeleton
-
-    def connectSkeletonIntersections(self, skeleton):
-        # Find intersection points in the skeleton
-        intersection_points = self.findIntersectionPoints(skeleton)
-
-        # Create a KDTree for efficient neighbor search
-        tree = KDTree(intersection_points)
-
-        # Plot the intersection points and their connections
-        plt.figure(figsize=(8, 8))
-        plt.imshow(skeleton, cmap='gray')
-
-        for point in intersection_points:
-            x0, y0 = point
-            # Find neighbors within a radius of 5 rows
-            indices = tree.query_ball_point(point, r=10)
-            for idx in indices:
-                x1, y1 = intersection_points[idx]
-                if (x0, y0) != (x1, y1):
-                    plt.plot([x0, x1], [y0, y1], '-o', color=np.random.rand(3,))
-
-        plt.title('Skeleton with Intersection Points Connections')
-        plt.savefig("intersection_points_connections.png", bbox_inches='tight', pad_inches=0)
-        plt.close()
-        
-        # Create a copy of the original image to draw on
-        # image_with_lines = self.image_mask.copy()
-        # painter = QPainter(image_with_lines)
-        # pen = QPen(Qt.green, 2)
-        # painter.setPen(pen)
-
-        # # Draw lines connecting intersection points
-        # for i in range(len(intersection_points) - 1):
-        #     x0, y0 = intersection_points[i]
-        #     x1, y1 = intersection_points[i + 1]
-        #     painter.drawLine(x0, y0, x1, y1)
-
-        # painter.end()
-
-        # # Update the viewer with the new image
-        # self.image_mask = image_with_lines
-        # self.viewer.setOverlayImage(self.image_mask)
