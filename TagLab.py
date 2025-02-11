@@ -4815,12 +4815,13 @@ class TagLab(QMainWindow):
 
                     if georef:
                         map_outline = [transform * (x, y) for x, y in map_outline]
+
                     msp.add_lwpolyline(
                         map_outline,
                         close=True,
                         dxfattribs={'layer': '0'}
                     )
-                    
+
                     # Add points to the DXF file from 'blobs' data
                     for blob in blobs:
                         # if blob.qpath_gitem.isVisible():
@@ -4841,7 +4842,8 @@ class TagLab(QMainWindow):
                             if georef:
                                 points = [transform * (x, y) for x, y in blob.contour]
                             else:
-                                points = [(x, y) for x, y in blob.contour]
+                                # we must invert Y axis if not referenced
+                                points = [(x, self.activeviewer.image.height-y) for x, y in blob.contour]
                             if points:
                                 msp.add_lwpolyline(
                                     points,
@@ -4855,7 +4857,8 @@ class TagLab(QMainWindow):
                                 if georef:
                                     inner_points = [transform * (x, y) for x, y in inner_contour]
                                 else:
-                                    inner_points = [(x, y) for x, y in inner_contour]
+                                    # we must invert Y axis if not referenced
+                                    inner_points = [(x, self.activeviewer.image.height-y) for x, y in inner_contour]
                                 if inner_points:
                                     msp.add_lwpolyline(inner_points, close=True, dxfattribs={'layer': layer_name})
 
@@ -4865,6 +4868,9 @@ class TagLab(QMainWindow):
                                 x, y = blob.centroid
                                 if georef:
                                     x, y = transform * (x, y)
+                                else:
+                                    # we must invert Y axis if not referenced                                    
+                                    y = self.activeviewer.image.height - y
                                 msp.add_text(
                                     class_name, height=text_height_scale * 22.0,
                                     dxfattribs={
