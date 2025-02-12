@@ -376,7 +376,10 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
 
     # Crossentropy loss
     weights = datasetTrain.weights
-    class_weights = torch.FloatTensor(weights).cuda()
+    if torch.cuda.is_available():
+        class_weights = torch.FloatTensor(weights).cuda()
+    else:
+        class_weights = torch.FloatTensor(weights)
     CEloss = nn.CrossEntropyLoss(weight=class_weights, ignore_index=-1)
 
     # weights for GENERALIZED DICE LOSS (GDL)
