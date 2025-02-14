@@ -238,7 +238,7 @@ class Sam(Tool):
                 print("CUDA NOT AVAILABLE!")
                 device = torch.device("cpu")
             else:
-                device = torch.device("cuda:0")
+                device = torch.device("cuda")
 
             self.device = device
             self.sam_net = sam_model_registry[model_type](checkpoint=network_name)

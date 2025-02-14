@@ -298,9 +298,9 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
     net = DeepLab(backbone='resnet', output_stride=16, num_classes=output_classes)
 
     if torch.cuda.is_available():
-        state = torch.load("models/deeplab-resnet.pth.tar", map_location=torch.device("cuda"))
+        state = torch.load("models/deeplab-resnet.pth.tar", weights_only=False, map_location=torch.device("cuda"))
     else:
-        state = torch.load("models/deeplab-resnet.pth.tar", map_location=torch.device("cpu"))
+        state = torch.load("models/deeplab-resnet.pth.tar", weights_only=False, map_location=torch.device("cpu"))
 
     # RE-INIZIALIZE THE CLASSIFICATION LAYER WITH THE RIGHT NUMBER OF CLASSES, DON'T LOAD WEIGHTS OF THE CLASSIFICATION LAYER
     new_dictionary = state['state_dict']
@@ -573,9 +573,9 @@ def testNetwork(images_folder, labels_folder, labels_dictionary, target_classes,
     net = DeepLab(backbone='resnet', output_stride=16, num_classes=output_classes)
 
     if torch.cuda.is_available():
-        net.load_state_dict(torch.load(network_filename, map_location=torch.device("cuda")))
+        net.load_state_dict(torch.load(network_filename, weights_only=False, map_location=torch.device("cuda")))
     else:
-        net.load_state_dict(torch.load(network_filename, map_location=torch.device("cpu")))
+        net.load_state_dict(torch.load(network_filename, weights_only=False, map_location=torch.device("cpu")))
 
     print("Weights loaded.")
 
