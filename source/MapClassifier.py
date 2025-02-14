@@ -97,9 +97,9 @@ class MapClassifier(QObject):
         classifier = DeepLab(backbone='resnet', output_stride=16, num_classes=self.nclasses)
 
         if torch.cuda.is_available():
-            classifier.load_state_dict(torch.load(network_name, map_location=torch.device("cuda")))
+            classifier.load_state_dict(torch.load(network_name, weights_only=False, map_location=torch.device("cuda")))
         else:
-            classifier.load_state_dict(torch.load(network_name, map_location=torch.device("cpu")))
+            classifier.load_state_dict(torch.load(network_name, weights_only=False, map_location=torch.device("cpu")))
 
         classifier.eval()
 
