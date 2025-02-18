@@ -50,7 +50,7 @@ class QtScaleWidget(QWidget):
         self.edit_mm = QLineEdit()
         self.edit_mm.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_mm.setFixedWidth(100)
-        self.edit_mm.textChanged.connect(self.updateScale)
+        self.edit_mm.textEdited.connect(self.computeScale)
 
         self.edit_px = QLineEdit()
         self.edit_px.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
@@ -60,7 +60,7 @@ class QtScaleWidget(QWidget):
         self.edit_scale = QLineEdit()
         self.edit_scale.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_scale.setFixedWidth(100)
-        self.edit_scale.setReadOnly(True)
+        self.edit_scale.textEdited.connect(self.editScale)
 
         layout_mm = QHBoxLayout()
         layout_mm.setAlignment(Qt.AlignLeft)
@@ -129,32 +129,43 @@ class QtScaleWidget(QWidget):
     @pyqtSlot(float)
     def setMeasure(self, value):
         #NOTE! THE VALUE RETURNED FROM MEASURE (in ruler) IS IN CM
-        self.edit_mm.blockSignals(True)
         conversion = (value*10) / float(self.edit_scale.text())
         self.edit_px.setText("{:.1f}".format(conversion))
         self.edit_mm.setText("{:.1f}".format(value*10))
-        self.edit_mm.blockSignals(False)
 
     # def getScale(self, value):
     #    self.label_current_scale_value.setText(("{:.3f}".format(value)))
 
+    # setScale is called from TagLab to fill in the current scale value
     def setScale(self, value):
         self.label_current_scale_value.setText(("{:.3f}".format(value)))
         self.edit_scale.setText(("{:.3f}".format(value)))
 
     @pyqtSlot(str)
-    def updateScale(self, text):
+    def computeScale(self, text):
         try:
             val = float(text)/float(self.edit_px.text())
             self.edit_scale.setText("{:.3f}".format(val))
         except:
             pass
 
+    @pyqtSlot(str)
+    def editScale(self, text):
+        try:
+            val = float(text)*float(self.edit_px.text())
+            self.edit_mm.setText("{:.1f}".format(val)) 
+        except:
+            pass
+
     @pyqtSlot()
     def setNewScale(self):
-        new_scale = float(self.edit_mm.text())/ float(self.edit_px.text())
-        self.setScale(new_scale)
-        self.newscale.emit(new_scale)
+        try:        
+            new_scale = float(self.edit_scale.text())
+            if new_scale > 0: # must be a positive value
+                self.setScale(new_scale)
+                self.newscale.emit(new_scale)
+        except:
+            pass
 
 
 
