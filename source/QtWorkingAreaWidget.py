@@ -61,22 +61,29 @@ class QtWorkingAreaWidget(QWidget):
         self.edit_X_m = QLineEdit()
         self.edit_X_m.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_X_m.setFixedWidth(100)
-        self.edit_X_m.setReadOnly(True)
+        self.edit_X_m.textEdited[str].connect(self.notifyAreaChangedM)
 
         self.edit_Y_m = QLineEdit()
         self.edit_Y_m.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_Y_m.setFixedWidth(100)
-        self.edit_Y_m.setReadOnly(True)
+        self.edit_Y_m.textEdited[str].connect(self.notifyAreaChangedM)
 
         self.edit_W_m = QLineEdit()
         self.edit_W_m.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_W_m.setFixedWidth(100)
-        self.edit_W_m.setReadOnly(True)
+        self.edit_W_m.textEdited[str].connect(self.notifyAreaChangedM)
 
         self.edit_H_m = QLineEdit()
         self.edit_H_m.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_H_m.setFixedWidth(100)
-        self.edit_H_m.setReadOnly(True)
+        self.edit_H_m.textEdited[str].connect(self.notifyAreaChangedM)
+
+        # If no scale is provided, disable the editing of metric boxes
+        if self.scale is None:
+            self.edit_X_m.setReadOnly(True)
+            self.edit_Y_m.setReadOnly(True)
+            self.edit_W_m.setReadOnly(True)
+            self.edit_H_m.setReadOnly(True)
 
         # Create layout for meters
         layout_h1_m = QHBoxLayout()
@@ -92,7 +99,7 @@ class QtWorkingAreaWidget(QWidget):
         layout_h2_m.addWidget(self.edit_H_m)
 
         layout_edits_m = QVBoxLayout()
-        layout_edits_m.addWidget(QLabel("Coordinates (in meters):"))
+        layout_edits_m.addWidget(QLabel("Coordinates (meters):"))
         layout_edits_m.addSpacing(10)
         layout_edits_m.addLayout(layout_h1_m)
         layout_edits_m.addLayout(layout_h2_m)
@@ -117,22 +124,22 @@ class QtWorkingAreaWidget(QWidget):
         self.edit_X = QLineEdit()
         self.edit_X.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_X.setFixedWidth(100)
-        self.edit_X.textChanged[str].connect(self.notifyAreaChanged)
+        self.edit_X.textEdited[str].connect(self.notifyAreaChanged)
 
         self.edit_Y = QLineEdit()
         self.edit_Y.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_Y.setFixedWidth(100)
-        self.edit_Y.textChanged[str].connect(self.notifyAreaChanged)
+        self.edit_Y.textEdited[str].connect(self.notifyAreaChanged)
 
         self.edit_W = QLineEdit()
         self.edit_W.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_W.setFixedWidth(100)
-        self.edit_W.textChanged[str].connect(self.notifyAreaChanged)
+        self.edit_W.textEdited[str].connect(self.notifyAreaChanged)
 
         self.edit_H = QLineEdit()
         self.edit_H.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_H.setFixedWidth(100)
-        self.edit_H.textChanged[str].connect(self.notifyAreaChanged)
+        self.edit_H.textEdited[str].connect(self.notifyAreaChanged)
 
         # Create layout for pixels
         layout_h1 = QHBoxLayout()
@@ -148,7 +155,7 @@ class QtWorkingAreaWidget(QWidget):
         layout_h2.addWidget(self.edit_H)
 
         layout_edits = QVBoxLayout()
-        layout_edits.addWidget(QLabel("Coordinates (in pixels):"))
+        layout_edits.addWidget(QLabel("Coordinates (pixels):"))
         layout_edits.addSpacing(10)
         layout_edits.addLayout(layout_h1)
         layout_edits.addLayout(layout_h2)
@@ -192,41 +199,38 @@ class QtWorkingAreaWidget(QWidget):
                             Qt.WindowStaysOnTopHint)
 
     def closeEvent(self, event):
-
         self.closed.emit()
         super(QtWorkingAreaWidget, self).closeEvent(event)
 
-    def updateMetricValues(self):
+    def updateAreaValues(self, x, y, w, h):
         """
         Update the metric read-only boxes as the pixel boxes are updated
         """
+        # Update pixel values
+        self.edit_X.setText(str(x))
+        self.edit_Y.setText(str(y))
+        self.edit_W.setText(str(w))
+        self.edit_H.setText(str(h))
 
+        # Update metric values
         if self.scale is not None:
-            # Get pixel values
-            pixel_top = int(self.edit_Y.text())
-            pixel_left = int(self.edit_X.text())
-            pixel_width = int(self.edit_W.text())
-            pixel_height = int(self.edit_H.text())
-
-            # Get the scale factor (millimeters per pixel)
-            scale_factor_mm_per_px = self.scale * 0.1
-
-            # Convert pixel values to meters using the scale factor
-            meter_top = round(pixel_top * scale_factor_mm_per_px / 1000.0, 3)
-            meter_left = round(pixel_left * scale_factor_mm_per_px / 1000.0, 3)
-            meter_width = round(pixel_width * scale_factor_mm_per_px / 1000.0, 3)
-            meter_height = round(pixel_height * scale_factor_mm_per_px / 1000.0, 3)
-
-            # Update metric version values
-            self.edit_Y_m.setText(str(meter_top))
-            self.edit_X_m.setText(str(meter_left))
-            self.edit_W_m.setText(str(meter_width))
-            self.edit_H_m.setText(str(meter_height))
+            # Get the scale factor (meters per pixel)
+            scale_factor_m_per_px = self.scale / 1000.0
+            # Update metric version values using the scale factor
+            self.edit_X_m.setText(str(round(x * scale_factor_m_per_px, 3)))
+            self.edit_Y_m.setText(str(round(y * scale_factor_m_per_px, 3)))
+            self.edit_W_m.setText(str(round(w * scale_factor_m_per_px, 3)))
+            self.edit_H_m.setText(str(round(h * scale_factor_m_per_px, 3)))
+        else:
+            self.edit_Y_m.setText("")
+            self.edit_X_m.setText("")
+            self.edit_W_m.setText("")
+            self.edit_H_m.setText("")
 
     @pyqtSlot(str)
     def notifyAreaChanged(self, txt):
         """
-
+        manual change of the working area in pixels
         """
         try:
             x = int(self.edit_X.text())
@@ -235,25 +239,39 @@ class QtWorkingAreaWidget(QWidget):
             h = int(self.edit_H.text())
 
             self.areaChanged.emit(x, y, w, h)
-            self.updateMetricValues()
+            self.updateAreaValues(x, y, w, h)
+        except:
+            pass
+
+    @pyqtSlot(str)
+    def notifyAreaChangedM(self, txt):
+        """
+        manual change of the working area in meters
+        """
+        try:
+            # Get the scale factor (meters per pixel)
+            scale_factor_m_per_px = self.scale / 1000.0
+            # Convert metric values to pixels using the scale factor
+            x = int(float(self.edit_X_m.text()) / scale_factor_m_per_px)
+            y = int(float(self.edit_Y_m.text()) / scale_factor_m_per_px)
+            w = int(float(self.edit_W_m.text()) / scale_factor_m_per_px)
+            h = int(float(self.edit_H_m.text()) / scale_factor_m_per_px)
+
+            self.areaChanged.emit(x, y, w, h)
+            self.updateAreaValues(x, y, w, h)
         except:
             pass
 
     @pyqtSlot(int, int, int, int)
     def updateArea(self, x, y, w, h):
         """
-
-        """
-        self.blockSignals(True)
-        self.edit_X.setText(str(x))
-        self.edit_Y.setText(str(y))
-        self.edit_W.setText(str(w))
-        self.edit_H.setText(str(h))
-        self.blockSignals(False)
+        area has been updated: update the values
+        """    
+        self.updateAreaValues(x, y, w, h)
 
     def deleteWorkingAreaValues(self):
         """
-
+        area has been deleted, clear all the working area values
         """
         self.edit_X.setText("")
         self.edit_Y.setText("")
