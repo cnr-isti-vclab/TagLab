@@ -1758,9 +1758,9 @@ class TagLab(QMainWindow):
         if modifiers == Qt.ControlModifier:
             msg = "[KEYPRESS] Key CTRL + '" + key_pressed + "' has been pressed."
         elif modifiers == Qt.ShiftModifier:
-            msg = "[KEYPRESS] Key ALT + '" + key_pressed + "' has been pressed."
-        elif modifiers == Qt.AltModifier:
             msg = "[KEYPRESS] Key SHIFT + '" + key_pressed + "' has been pressed."
+        elif modifiers == Qt.AltModifier:
+            msg = "[KEYPRESS] Key ALT + '" + key_pressed + "' has been pressed."
         else:
             msg = "[KEYPRESS] Key '" + key_pressed + "' has been pressed."
 
