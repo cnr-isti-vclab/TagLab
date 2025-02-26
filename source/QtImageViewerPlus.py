@@ -973,11 +973,11 @@ class QtImageViewerPlus(QtImageViewer):
             (x, y) = self.clipScenePos(scenePos)
             self.leftMouseButtonPressed.emit(x, y)
 
-            if (self.tools.tool == "WATERSHED" or self.tools.tool == "FREEHAND" or self.tools.tool == "EDITBORDER"\
-                 or self.tools.tool == "RULER" or self.tools.tool == "SAM" or self.tools.tool == "SAMINTERACTIVE") and mods & Qt.ShiftModifier:
+            if mods & Qt.ShiftModifier and (self.tools.tool == "WATERSHED" or self.tools.tool == "FREEHAND" or self.tools.tool == "EDITBORDER"\
+                 or self.tools.tool == "RULER" or self.tools.tool == "SAM" or self.tools.tool == "SAMINTERACTIVE" or self.tools.tool == "SELECTAREA"):
                 self.tools.leftPressed(x, y, mods)
 
-            elif self.tools.tool == "SELECTAREA":
+            elif self.tools.tool == "MATCH" or self.tools.tool == "RITM" or self.tools.tool == "FOURCLICKS" or self.tools.tool == "PLACEANNPOINT":
                 self.tools.leftPressed(x, y, mods)
 
             elif (self.tools.tool == "WATERSHED" or self.tools.tool == "SAM" or self.tools.tool == "SAMINTERACTIVE"):
@@ -986,9 +986,6 @@ class QtImageViewerPlus(QtImageViewer):
             #used from area selection and pen drawing,
             elif (self.panEnabled and not (mods & Qt.ShiftModifier)) or (mods & Qt.ControlModifier):
                 self.setDragMode(QGraphicsView.ScrollHandDrag)
-
-            elif self.tools.tool == "MATCH" or self.tools.tool == "RITM" or self.tools.tool == "FOURCLICKS" or self.tools.tool == "PLACEANNPOINT":
-                self.tools.leftPressed(x, y, mods)
 
             elif mods & Qt.ShiftModifier:
                 self.dragSelectionStart = [x, y]
@@ -1065,7 +1062,7 @@ class QtImageViewerPlus(QtImageViewer):
 
             if self.dragSelectionStart:
                 start = self.dragSelectionStart
-                if not self.dragSelectionRect:
+                if self.dragSelectionRect is None:
                     self.dragSelectionRect = self.scene.addRect(start[0], start[1], x - start[0],
                                                                            y - start[1], self.dragSelectionStyle)
                 self.dragSelectionRect.setRect(start[0], start[1], x - start[0], y - start[1])
@@ -1207,25 +1204,27 @@ class QtImageViewerPlus(QtImageViewer):
 #VISIBILITY AND SELECTION
 
     def dragSelectBlobs(self, x, y):
-        sx = self.dragSelectionStart[0]
-        sy = self.dragSelectionStart[1]
+        # drag can happen in any direction, if not top-left->bottom-right, we need to adjust the coordinates
+        sx = min(x,self.dragSelectionStart[0])
+        sy = min(y,self.dragSelectionStart[1])
+        ex = max(x,self.dragSelectionStart[0])
+        ey = max(y,self.dragSelectionStart[1])
         self.resetSelection()
+        # select all blobs that are inside the selection rectangle
         for blob in self.annotations.seg_blobs:
             visible = self.project.isLabelVisible(blob.class_name)
             if not visible:
                 continue
             box = blob.bbox
-
-            if sx > box[1] or sy > box[0] or x < box[1] + box[2] or y < box[0] + box[3]:
+            if sx > box[1] or sy > box[0] or ex < box[1] + box[2] or ey < box[0] + box[3]:
                 continue
             self.addToSelectedList(blob)
-
+        # select all points that are inside the selection rectangle
         for annpoint in self.annotations.annpoints:
             visible = self.project.isLabelVisible(annpoint.class_name)
             if not visible:
                 continue
-
-            if sx > annpoint.coordx-20 or sy > annpoint.coordy - 20 or x < annpoint.coordx+20 or y < annpoint.coordy +20:
+            if sx > annpoint.coordx-20 or sy > annpoint.coordy - 20 or ex < annpoint.coordx+20 or ey < annpoint.coordy +20:
                 continue
             self.addToSelectedPointList(annpoint)
 
