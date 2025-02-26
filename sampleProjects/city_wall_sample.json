@@ -1,8 +1,8 @@
 {
  "filename": "sampleProjects/city_wall_sample.json",
  "working_area": null,
- "dictionary_name": "scripps",
- "dictionary_description": "These color codes are the ones typically used by the Scripps Institution of Oceanography (UCSD)",
+ "dictionary_name": "masonry",
+ "dictionary_description": "sample class dictionary for historical walls elements",
  "labels": {
   "Empty": {
    "id": "Empty",
