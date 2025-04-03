@@ -43,11 +43,7 @@ class RowsWidget(QWidget):
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.setMinimumWidth(1440)
-        self.setMinimumHeight(900)
-
-        # IMAGEVIEWER_W = 700
-        # IMAGEVIEWER_H = 640
-        
+        self.setMinimumHeight(900)        
 
         self.setWindowTitle("Rows Analysis")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowTitleHint)
@@ -185,21 +181,7 @@ class RowsWidget(QWidget):
         self.line_viewer.setImg(self.image_cropped)
         self.skel_viewer.setImg(self.image_cropped)
 
-        self.setLayout(layout)
-
-    # # Define the toggle functions
-    # def toggleShowMask(self, checked):
-    #     if checked:
-    #         self.line_viewer.setOverlayImage(self.maschera)  # Show mask
-    #     else:
-    #         self.line_viewer.setOverlayImage(None)  # Hide mask
-
-    # def toggleShowLines(self, checked):
-    #     if checked:
-    #         self.line_viewer.setOverlayImage(self.image_overlay)  # Show lines
-    #     else:
-    #         self.line_viewer.setOverlayImage(None)  # Hide lines
-    
+        self.setLayout(layout)    
     
     def updateStructuringElement(self, value):
         self.structuring_element_size = value
@@ -240,13 +222,7 @@ class RowsWidget(QWidget):
 
         self.set_textbox = True
 
-        # self.skel_viewer.setOpacity(1.0)
-        # self.skel_viewer.setOverlayImage(skel_int)
-        # self.skel_viewer.setOverlayImage(img)
-        
-        
-        # self.line_viewer.setOpacity(0.7)
-        # self.line_viewer.setOverlayImage(self.image_overlay)
+
 
 
     def closeWidget(self):
@@ -259,8 +235,6 @@ class RowsWidget(QWidget):
 
         # Create a structuring element that defines the neighborhood
         # 21x21 to cover 10 positions around each 1 (10 positions
-        # structuring_element = np.ones((21, 21), dtype=np.uint8)
-        # structuring_element = np.ones((self.structuring_element_size, self.structuring_element_size), dtype=np.uint8)
         structuring_element = np.ones((value, value), dtype=np.uint8)
         structuring_element_half = np.ones((value//2, value//2), dtype=np.uint8)
         print(f"Structuring element size: {value}")
@@ -297,7 +271,6 @@ class RowsWidget(QWidget):
 
         return rect_mask_grow_sub, rect_mask_final
     
-    # def updateAngleTextBox(self, angles):
     def updateAngleTextBox(self, angles, index, color='red'):
         current_text = self.angleTextBox.toHtml()
         new_text = ''.join([f'<span style="color: {color};">line {str(index+1)}: {angle}</span><br>' for angle in angles])
@@ -308,11 +281,9 @@ class RowsWidget(QWidget):
         self.set_textbox = False
 
     def boundary_clamp(self, mask, x0, y0, x1, y1):
-        """
-        Find the range of the line ((x0, y0), (x1, y1)) clamped to the mask.
-        """
+        
+        #Find the range of the line ((x0, y0), (x1, y1)) clamped to the mask.
         height, width = mask.shape
-
 
         # Generate points along the line (using Bresenham's or linear interpolation)
         num_points = max(abs(x1 - x0), abs(y1 - y0))  # Ensure enough points
@@ -509,50 +480,6 @@ class RowsWidget(QWidget):
 
         sorted_lines_with_color = sorted(lines_with_color, key=lambda entry: entry[0][1])
 
-        # print(f"lines: {sorted_lines_with_color}")
-        # sorted_intersections_with_color = sorted(intersections_with_color, key=lambda entry: entry[0][1])
-        # print(f"intersections: {sorted_intersections_with_color}")
-        # print(sorted_lines_with_color)
-
-        # Visualize lines on the original mask
-        # plt.figure(figsize=(8, 8))
-        # plt.imshow(mask, cmap='gray')
-        
-        # for i, ((x0, y0), (x1, y1), _, color) in enumerate(sorted_lines_with_color):
-
-        #     plt.plot((x0, x1), (y0, y1), color=np.array(color) / 255)
-
-        # plt.title('Detected Lines')
-        # plt.savefig("hough_lines.png", bbox_inches='tight', pad_inches=0)
-        # plt.show()  # Display the plot
-        # plt.close()
-    
-        # Draw the detected lines on the qimage mask
-        # image_with_lines = self.image_mask.copy()
-        # image_with_lines = self.image_cropped.copy()
-        # # image_with_lines = genutils.maskToQImage(mask)
-        # image_with_lines = self.image_cropped.copy()
-        # painter = QPainter(image_with_lines)
-        # pen = QPen(Qt.red, 5)
-
-        # # with QPainter(image_with_lines) as painter:
-        # for i, ((x0, y0), (x1, y1), ang, color) in enumerate(sorted_lines_with_color):
-        #     # color = colors.pop(0)          
-        #     pen.setColor(QColor(color[0], color[1], color[2]))
-        #     painter.setPen(pen)
-        #     painter.drawLine(x0, y0, x1, y1)
-
-        #     if ang < 0:
-        #         ang = np.pi/2 + ang  
-        #     else:
-        #         ang = ang - np.pi/2
-
-        #     ang_deg = np.rad2deg(ang)
-        #     # ang = round(ang, 4)
-        #     ang_deg = round(ang_deg, 4)
-
-            
-        #     # self.updateAngleTextBox([ang], i, color=f'rgb({color[0]},{color[1]},{color[2]})')
         for i, (_, _, ang, color) in enumerate(sorted_lines_with_color):
         # for i, (_, _,ang, color) in enumerate(sorted_lines_with_color):            
             if ang < 0:
@@ -565,31 +492,9 @@ class RowsWidget(QWidget):
             ang_deg = round(ang_deg, 4)
 
             self.updateAngleTextBox([ang_deg], i, color=f'rgb({color[0]},{color[1]},{color[2]})')
-
-        # # pen = QPen(Qt.blue, 5)
-        # # painter.setPen(pen)
-        # # for (line1, line2) in intersections:
-        # #     # (x0, y0), (x1, y1) = line1
-        # #     # painter.drawLine(x0, y0, x1, y1)
-        # #     (x2, y2), (x3, y3), _ = line2
-        # #     painter.drawLine(x2, y2, x3, y3)
-        # # pen = QPen(Qt.blue, 5)
-        # # painter.setPen(pen)
-        # # for (line1, line2) in intersections:
-        # #     # (x0, y0), (x1, y1) = line1
-        # #     # painter.drawLine(x0, y0, x1, y1)
-        # #     (x2, y2), (x3, y3), _ = line2
-        # #     painter.drawLine(x2, y2, x3, y3)
-
-        # painter.end()
-
-        # # Save the image with lines
-        # image_with_lines.save("image_with_lines.png")
-
-        # #Set the mask with lines as image overlay
-        # self.image_overlay = image_with_lines
         
         return sorted_lines_with_color
+    
     def ccw(self, A, B, C):
             return (C[1] - A[1]) * (B[0] - A[0]) > (B[1] - A[1]) * (C[0] - A[0])
     
@@ -624,33 +529,16 @@ class RowsWidget(QWidget):
         skeleton = thin(mask)
         
         h, w = skeleton.shape
-        dwg = svgwrite.Drawing(f"skeleton.svg", size=(w, h))
+        # dwg = svgwrite.Drawing(f"skeleton.svg", size=(w, h))
         
-        # Draw skeleton as black lines
-        y, x = np.where(skeleton)
-        for i in range(len(y)):
-            dwg.add(dwg.circle(center=(int(x[i]), int(y[i])), r=0.5, fill="black"))
+        # # Draw skeleton as black lines
+        # y, x = np.where(skeleton)
+        # for i in range(len(y)):
+        #     dwg.add(dwg.circle(center=(int(x[i]), int(y[i])), r=0.5, fill="black"))
 
-        # Save SVG file
-        dwg.save()
-        print("Saved skeleton as skeleton.svg")
-
-        # Create a QImage with the same size as the skeleton
-        # q_image = QImage(skeleton.shape[1], skeleton.shape[0], QImage.Format_ARGB32)
-        # q_image.fill(Qt.transparent)
-
-        # # Draw the skeleton on the QImage
-        # painter = QPainter(q_image)
-        # pen = QPen(Qt.blue, 1)
-        # painter.setPen(pen)
-
-        # for (y, x) in zip(*np.where(skeleton)):
-        #     painter.drawPoint(x, y)
-
-        # painter.end()
-
-        # # Save the QImage
-        # q_image.save("skeleton_qimage.png")
+        # # Save SVG file
+        # dwg.save()
+        # print("Saved skeleton as skeleton.svg")
 
         # Visualize the skeleton
         plt.figure(figsize=(8,8))
@@ -684,63 +572,22 @@ class RowsWidget(QWidget):
                 filtered_branch_points_yx.append(point)
 
         ################################################################################################
-        h, w = skeleton.shape
-        dwg = svgwrite.Drawing('pippo.svg', size=(w, h))
+        # h, w = skeleton.shape
+        # dwg = svgwrite.Drawing('pippo.svg', size=(w, h))
         
-        # Draw skeleton as black lines
-        y, x = np.where(skeleton)
-        for i in range(len(y)):
-            dwg.add(dwg.circle(center=(int(x[i]), int(y[i])), r=0.5, fill="blue"))
+        # # Draw skeleton as black lines
+        # y, x = np.where(skeleton)
+        # for i in range(len(y)):
+        #     dwg.add(dwg.circle(center=(int(x[i]), int(y[i])), r=0.5, fill="blue"))
 
-        # Draw branch points as red circles
-        for point in filtered_branch_points_yx:
-            dwg.add(dwg.circle(center=(int(point[1]), int(point[0])), r=2, fill="red"))
-
-        # Save SVG file
-        dwg.save()
-        print(f"Saved SVG as pippo.svg")
-        ################################################################################################
-
-        # # Create a QImage from the skeleton and branch points
-        # q_image = QImage(skeleton.shape[1], skeleton.shape[0], QImage.Format_ARGB32)
-        # q_image.fill(Qt.transparent)
-
-        # painter = QPainter(q_image)
-        # pen = QPen(Qt.blue, 5)
-        # painter.setPen(pen)
-
-        # # Draw skeleton
-        # for (y, x) in zip(*np.where(skeleton)):
-        #     painter.drawPoint(x, y)
-
-        # # Draw branch points
-        # pen.setColor(Qt.red)
-        # painter.setPen(pen)
-        # painter.setBrush(QBrush(Qt.red))
+        # # Draw branch points as red circles
         # for point in filtered_branch_points_yx:
-        #     painter.drawEllipse(point[1], point[0], 10, 10)
+        #     dwg.add(dwg.circle(center=(int(point[1]), int(point[0])), r=2, fill="red"))
 
-        # painter.end()
-
-        # ################################################################################################
-
-        # # Plot results
-        # fig, ax = plt.subplots(figsize=(6, 6))
-        # ax.imshow(skeleton, cmap='gray')
-        # # ax.scatter(endpoints_yx[:, 1], endpoints_yx[:, 0], color='red', label='Endpoints', s=80, marker='o')
-        # for (y, x) in filtered_branch_points_yx:
-        # # for (y, x) in branch_points_yx:
-        #     ax.scatter(x, y, color=np.random.rand(3,), s=40, marker='x')
-        # ax.set_title("Skeleton with Branch Points")
-        # # ax.legend()
-        # ax.axis("off")
-
-        # plt.savefig("branch_points_on_skeleton.png", bbox_inches='tight', pad_inches=0)
-        # plt.close()
-
-        # image = self.drawBranchSkel(skeleton, filtered_branch_points_yx, branch=True, skel=False)   
-
-        # return branch_points, q_image
+        # # Save SVG file
+        # dwg.save()
+        # print(f"Saved SVG as pippo.svg")
+ 
         return filtered_branch_points_yx
 
     def vectorBranchPoints(self,skeleton):
@@ -825,9 +672,6 @@ class RowsWidget(QWidget):
         # plt.close()
 
 
-        
-
-
     def drawBranchSkel(self, skeleton, branch_points, branch, skel):
          # Create a QImage from the skeleton and branch points
         branch_image = QImage(skeleton.shape[1], skeleton.shape[0], QImage.Format_ARGB32)
@@ -853,66 +697,16 @@ class RowsWidget(QWidget):
 
         return branch_image
 
-    # def drawEdges(self,skeleton):
-    #     # Create a QImage from the skeleton and branch points
-    #     skel_image = QImage(skeleton.shape[1], skeleton.shape[0], QImage.Format_ARGB32)
-    #     skel_image.fill(Qt.transparent)
-
-    #     painter = QPainter(skel_image)
-    #     pen = QPen(Qt.blue, 5)
-    #     painter.setPen(pen)
-
-    #     # Draw skeleton
-    #     for (y, x) in zip(*np.where(skeleton)):
-    #         painter.drawPoint(x, y)
-
-    #     return skel_image
-
-
-        # plt.title("Skeleton Graph with Intersections")
-        # plt.savefig("vectorized_skeleton.png", bbox_inches='tight', pad_inches=0)
-        # plt.close()
-
-###############################################################################
-
     def paintLinesImage(self, image, lines):
         painter = QPainter(image)
         pen = QPen(Qt.red, 5)
 
         # with QPainter(image) as painter:
-        for i, ((x0, y0), (x1, y1), ang, color) in enumerate(lines):
+        for i, ((x0, y0), (x1, y1), _, color) in enumerate(lines):
             # color = colors.pop(0)          
             pen.setColor(QColor(color[0], color[1], color[2]))
             painter.setPen(pen)
             painter.drawLine(x0, y0, x1, y1)
-
-            # if ang < 0:
-            #     ang = np.pi/2 + ang  
-            # else:
-            #     ang = ang - np.pi/2
-
-            # ang_deg = np.rad2deg(ang)
-            # # ang = round(ang, 4)
-            # ang_deg = round(ang_deg, 4)
-
-            
-            # self.updateAngleTextBox([ang], i, color=f'rgb({color[0]},{color[1]},{color[2]})')
-            # self.updateAngleTextBox([ang_deg], i, color=f'rgb({color[0]},{color[1]},{color[2]})')
-
-        # pen = QPen(Qt.blue, 5)
-        # painter.setPen(pen)
-        # for (line1, line2) in intersections:
-        #     # (x0, y0), (x1, y1) = line1
-        #     # painter.drawLine(x0, y0, x1, y1)
-        #     (x2, y2), (x3, y3), _ = line2
-        #     painter.drawLine(x2, y2, x3, y3)
-        # pen = QPen(Qt.blue, 5)
-        # painter.setPen(pen)
-        # for (line1, line2) in intersections:
-        #     # (x0, y0), (x1, y1) = line1
-        #     # painter.drawLine(x0, y0, x1, y1)
-        #     (x2, y2), (x3, y3), _ = line2
-        #     painter.drawLine(x2, y2, x3, y3)
 
         painter.end()
 
@@ -948,7 +742,6 @@ class RowsWidget(QWidget):
     def toggleShow(self, line_checked, mask_checked):
         
         if line_checked  == True and mask_checked == True:
-            # lines = self.houghTansformation(self.masch)
             qmask = genutils.maskToQImage(self.masch)
             mask_with_lines = self.paintLinesImage(qmask, self.lines)
 
@@ -956,8 +749,6 @@ class RowsWidget(QWidget):
             self.line_viewer.setOverlayImage(mask_with_lines)
         
         elif line_checked == True and mask_checked == False:
-            # lines = self.houghTansformation(self.masch)
-            # lines = self.applyHough()
             image = self.image_cropped.copy()
             image_with_lines = self.paintLinesImage(image, self.lines)
 
@@ -965,7 +756,6 @@ class RowsWidget(QWidget):
             self.line_viewer.setOverlayImage(image_with_lines)
         
         elif line_checked == False and mask_checked == True:
-            # lines = self.houghTansformation(mask)
             qmask = genutils.maskToQImage(self.masch)
             
             self.line_viewer.setOpacity(0.7)

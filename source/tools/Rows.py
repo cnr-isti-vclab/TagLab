@@ -215,6 +215,7 @@ class Rows(Tool):
     @pyqtSlot()
     def rowsClose(self):
         self.viewerplus.resetTools()
+        self.viewerplus.resetSelection()
 
 
 
