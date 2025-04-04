@@ -59,6 +59,7 @@ class RowsWidget(QWidget):
         self.image_overlay = None
         self.skeleton = None
         self.branch_points =  []
+        self.edges = []
 
         self.rect = rect
         self.blob_list = blobs
@@ -246,14 +247,25 @@ class RowsWidget(QWidget):
         # i += 1
         self.skeleton = self.applySkeletonization(self.masch)
         self.branch_points = self.branchPoints(self.skeleton)
+        self.connectBranchPoints(self.branch_points)
+        # print(self.branch_points)
         self.actionShowSkel.setCheckable(True)
-        self.actionShowSkel.setChecked(True)
+
+        if self.edges_checked == False:
+            self.actionShowSkel.setChecked(True)
+        else:
+            self.actionShowSkel.setChecked(False)
+
         self.actionShowBranch.setCheckable(True)
         self.actionShowBranch.setChecked(True)
-        branch_image = self.drawBranchSkel(self.skeleton, self.branch_points, self.branch_checked, self.skel_checked)
+        self.actionShowEdges.setCheckable(True)
+        # self.actionShowBranch.setChecked(True)
+        branch_image = self.drawBranchSkel(self.skeleton, self.branch_points, self.edges, self.branch_checked, self.skel_checked, self.edges_checked)
         self.skel_viewer.setOpacity(1.0)
         self.skel_viewer.setOverlayImage(branch_image)
 
+
+        self.connectBranchPoints(self.branch_points)
         # _, _, img = self.vectorBranchPoints(skel)
                 
         # _, skel_int = self.findIntersectionPoints(skel)
@@ -264,6 +276,9 @@ class RowsWidget(QWidget):
 
         self.set_textbox = True
 
+    
+    
+    
     def closeWidget(self):
         self.closeRowsWidget.emit()
         self.close()
@@ -566,7 +581,7 @@ class RowsWidget(QWidget):
         # skeleton = median(skeleton, disk(1))
         skeleton = thin(mask)
         
-        h, w = skeleton.shape
+        # h, w = skeleton.shape
         # dwg = svgwrite.Drawing(f"skeleton.svg", size=(w, h))
         
         # # Draw skeleton as black lines
@@ -579,11 +594,11 @@ class RowsWidget(QWidget):
         # print("Saved skeleton as skeleton.svg")
 
         # Visualize the skeleton
-        plt.figure(figsize=(8,8))
-        plt.imshow(skeleton, cmap='gray')
-        plt.title('Skeletonized Mask')
-        plt.savefig("skeletonized_mask.png", bbox_inches='tight', pad_inches=0)
-        plt.close()
+        # plt.figure(figsize=(8,8))
+        # plt.imshow(skeleton, cmap='gray')
+        # plt.title('Skeletonized Mask')
+        # plt.savefig("skeletonized_mask.png", bbox_inches='tight', pad_inches=0)
+        # plt.close()
 
         return skeleton
      
@@ -710,7 +725,7 @@ class RowsWidget(QWidget):
         # plt.close()
 
 
-    def drawBranchSkel(self, skeleton, branch_points, branch, skel):
+    def drawBranchSkel(self, skeleton, branch_points, connections, branch, skel, conn):
          # Create a QImage from the skeleton and branch points
         branch_image = QImage(skeleton.shape[1], skeleton.shape[0], QImage.Format_ARGB32)
         branch_image.fill(Qt.transparent)
@@ -730,6 +745,14 @@ class RowsWidget(QWidget):
             # Draw skeleton
             for (y, x) in zip(*np.where(skeleton)):
                 painter.drawPoint(x, y)
+        
+        if conn: 
+            pen = QPen(Qt.green, 3)
+            for point1, point2, color in connections:
+                pen.setColor(QColor(color[0], color[1], color[2]))
+                painter.setPen(pen)
+
+                painter.drawLine(point1[1], point1[0], point2[1], point2[0])
 
         painter.end()
 
@@ -838,21 +861,78 @@ class RowsWidget(QWidget):
         self.toggleSkelBranchEdges(self.skel_checked, self.branch_checked, self.edges_checked)
 
     def toggleSkelBranchEdges(self, skel, branch, edges):
-        if skel == True or branch == True:
-            branch_image = self.drawBranchSkel(self.skeleton, self.branch_points, branch, skel)
+        if skel == True or branch == True or edges == True:
+            branch_image = self.drawBranchSkel(self.skeleton, self.branch_points, self.edges, branch, skel, edges)
             self.skel_viewer.setOpacity(1.0)
             self.skel_viewer.setOverlayImage(branch_image)
-        
-        elif skel == False and branch == False and edges == True:
-            pass
-        
-        elif skel == True and branch == False and edges == True:
-            pass
-        
-        elif skel == False and branch == True and edges == True:
-            pass
+
 
         else:
             self.skel_viewer.setFixedWidth(IMAGEVIEWER_W)
             self.skel_viewer.setFixedHeight(IMAGEVIEWER_H)
             self.skel_viewer.setImg(self.image_cropped)
+
+
+###########################################################
+    def connectBranchPoints(self, branch_points):
+        
+        # Connect branch points that are adjacent on the same row (within ±15 pixels vertically).
+        if not branch_points:
+            print("No branch points to connect.")
+            return
+
+        # Sort branch points by their y-coordinate (row)
+        branch_points.sort(key=lambda point: point[0])
+
+        # Define the vertical tolerance for a row
+        row_tolerance = 10
+
+        # Group branch points by rows
+        rows = []
+        current_row = [branch_points[0]]
+
+        for i in range(1, len(branch_points)):
+            if abs(self.branch_points[i][0] - current_row[-1][0]) <= row_tolerance:
+                current_row.append(branch_points[i])
+            else:
+                rows.append(current_row)
+                current_row = [branch_points[i]]
+
+        # Add the last row
+        if current_row:
+            rows.append(current_row)
+
+        # Connect points within each row
+        connections = []
+        for row in rows:
+            row.sort(key=lambda point: point[1])  # Sort by x-coordinate
+            for i in range(len(row) - 1):
+                color = tuple(np.random.randint(0, 256, 3))  # RGB color
+                connections.append((row[i], row[i + 1], color))
+
+        # Save the connections image
+        # self.visualizeConnections(connections)
+        self.edges = connections
+
+    def visualizeConnections(self, connections, output_file = 'connections.png'):
+        
+        # Save immage of the connections between branch points
+        connection_image = QImage(self.skeleton.shape[1], self.skeleton.shape[0], QImage.Format_ARGB32)
+        connection_image.fill(Qt.transparent)
+        painter = QPainter(connection_image)
+        pen = QPen(Qt.green, 2)
+        painter.setPen(pen)
+
+        for point1, point2 in connections:
+            painter.drawLine(point1[1], point1[0], point2[1], point2[0])
+
+        painter.end()
+
+        # Save the connection image as a .png file
+        connection_image.save(output_file)
+        print(f"Connections saved to {output_file}")
+
+
+        # Set the connection image as the overlay
+        # self.skel_viewer.setOpacity(1.0)
+        # self.skel_viewer.setOverlayImage(connection_image)
