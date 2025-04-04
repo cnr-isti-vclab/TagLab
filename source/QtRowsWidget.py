@@ -47,6 +47,9 @@ class RowsWidget(QWidget):
 
         self.setWindowTitle("Rows Analysis")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowTitleHint)
+
+        if parent is not None:
+            self.parent_viewer = parent
         
         self.image_cropped = cropped_image
         # self.image_mask = image_mask
@@ -73,7 +76,7 @@ class RowsWidget(QWidget):
 
         # Enable context menu policy
         self.line_viewer.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.line_viewer.customContextMenuRequested.connect(self.showLinesMenu)
+        self.line_viewer.customContextMenuRequested.connect(self.showMaskLinesMenu)
         self.lines = []
 
         # Create checkable actions for the mask and lines
@@ -96,6 +99,10 @@ class RowsWidget(QWidget):
         self.skel_viewer.enableZoom()
         self.skel_viewer.setFixedWidth(IMAGEVIEWER_W)
         self.skel_viewer.setFixedHeight(IMAGEVIEWER_H)
+
+        #draw blobs
+        # for blob in self.blob_list:
+        #     self.parent_viewer.drawBlob(blob)
 
         # Enable context menu policy
         self.skel_viewer.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -202,7 +209,7 @@ class RowsWidget(QWidget):
         self.actionShowLines.setChecked(True)
         self.mask_checked = True
         self.actionShowMask.setChecked(True)
-        self.toggleShow(self.line_checked, self.mask_checked)
+        self.toggleMaskLines(self.line_checked, self.mask_checked)
 
         # i += 1
         self.skeleton = self.applySkeletonization(self.masch)
@@ -211,6 +218,9 @@ class RowsWidget(QWidget):
         self.actionShowSkel.setChecked(True)
         self.actionShowBranch.setCheckable(True)
         self.actionShowBranch.setChecked(True)
+        branch_image = self.drawBranchSkel(self.skeleton, self.branch_points, self.branch_checked, self.skel_checked)
+        self.skel_viewer.setOpacity(1.0)
+        self.skel_viewer.setOverlayImage(branch_image)
 
         # _, _, img = self.vectorBranchPoints(skel)
                 
@@ -221,9 +231,6 @@ class RowsWidget(QWidget):
         # self.houghTansformation(skel, i)
 
         self.set_textbox = True
-
-
-
 
     def closeWidget(self):
         self.closeRowsWidget.emit()
@@ -267,7 +274,6 @@ class RowsWidget(QWidget):
         plt.axis('off')
         plt.savefig("rect_mask_final.png", bbox_inches='tight', pad_inches=0)
         plt.close()
-
 
         return rect_mask_grow_sub, rect_mask_final
     
@@ -717,7 +723,7 @@ class RowsWidget(QWidget):
         # self.image_overlay = image
         return image
 
-    def showLinesMenu(self, position):
+    def showMaskLinesMenu(self, position):
             menu = QMenu(self)
             menu.addAction(self.actionShowMask)
             menu.addAction(self.actionShowLines)
@@ -729,7 +735,7 @@ class RowsWidget(QWidget):
         else:
             self.mask_checked = False
         
-        self.toggleShow(self.line_checked, self.mask_checked)
+        self.toggleMaskLines(self.line_checked, self.mask_checked)
 
     def toggleShowLines(self, checked):
         if checked:
@@ -737,9 +743,9 @@ class RowsWidget(QWidget):
         else:
             self.line_checked = False
         
-        self.toggleShow(self.line_checked, self.mask_checked)
+        self.toggleMaskLines(self.line_checked, self.mask_checked)
 
-    def toggleShow(self, line_checked, mask_checked):
+    def toggleMaskLines(self, line_checked, mask_checked):
         
         if line_checked  == True and mask_checked == True:
             qmask = genutils.maskToQImage(self.masch)
@@ -799,13 +805,11 @@ class RowsWidget(QWidget):
         
         self.toggleSkelBranchEdges(self.skel_checked, self.branch_checked, self.edges_checked)
 
-
     def toggleSkelBranchEdges(self, skel, branch, edges):
         if skel == True or branch == True:
             branch_image = self.drawBranchSkel(self.skeleton, self.branch_points, branch, skel)
             self.skel_viewer.setOpacity(1.0)
             self.skel_viewer.setOverlayImage(branch_image)
-        
         
         elif skel == False and branch == False and edges == True:
             pass
