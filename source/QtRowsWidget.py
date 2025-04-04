@@ -272,12 +272,7 @@ class RowsWidget(QWidget):
         # self.vectorBranchPoints(skel)
 
         # # # self.connectSkeletonIntersections(skel)
-        # self.houghTansformation(skel, i)
-
-        self.set_textbox = True
-
-    
-    
+        # self.houghTansformation(skel, i) 
     
     def closeWidget(self):
         self.closeRowsWidget.emit()
@@ -328,10 +323,19 @@ class RowsWidget(QWidget):
         current_text = self.angleTextBox.toHtml()
         new_text = ''.join([f'<span style="color: {color};">line {str(index+1)}: {angle}</span><br>' for angle in angles])
         self.angleTextBox.setHtml(current_text + new_text)
-
+    
     def resetAngleTextBox(self):
         self.angleTextBox.clear()
         self.set_textbox = False
+
+    def updateSkelTextBox(self, angles, index, color='red'):
+        current_text = self.skelTextBox.toHtml()
+        new_text = ''.join([f'<span style="color: {color};">line {str(index+1)}: {angle}</span><br>' for angle in angles])
+        self.skelTextBox.setHtml(current_text + new_text)
+
+    def resetSkelTextBox(self):
+        self.skelTextBox.clear()
+        # self.set_textbox = False
 
     def boundary_clamp(self, mask, x0, y0, x1, y1):
         
@@ -545,6 +549,7 @@ class RowsWidget(QWidget):
             ang_deg = round(ang_deg, 4)
 
             self.updateAngleTextBox([ang_deg], i, color=f'rgb({color[0]},{color[1]},{color[2]})')
+        self.set_textbox = True
         
         return sorted_lines_with_color
     
@@ -748,11 +753,12 @@ class RowsWidget(QWidget):
         
         if conn: 
             pen = QPen(Qt.green, 3)
-            for point1, point2, color in connections:
+            for i, (point1, point2, color, ang) in enumerate(connections):
                 pen.setColor(QColor(color[0], color[1], color[2]))
                 painter.setPen(pen)
 
                 painter.drawLine(point1[1], point1[0], point2[1], point2[0])
+                self.updateSkelTextBox([ang], i, color=f'rgb({color[0]},{color[1]},{color[2]})')
 
         painter.end()
 
@@ -795,8 +801,24 @@ class RowsWidget(QWidget):
     def toggleShowLines(self, checked):
         if checked:
             self.line_checked = True
+
+            if self.set_textbox == False:
+                for i, (_, _, ang, color) in enumerate(self.lines):
+                # for i, (_, _,ang, color) in enumerate(sorted_lines_with_color):            
+                    if ang < 0:
+                        ang = np.pi/2 + ang  
+                    else:
+                        ang = ang - np.pi/2
+
+                    ang_deg = np.rad2deg(ang)
+                    # ang = round(ang, 4)
+                    ang_deg = round(ang_deg, 4)
+
+                    self.updateAngleTextBox([ang_deg], i, color=f'rgb({color[0]},{color[1]},{color[2]})')
         else:
             self.line_checked = False
+            self.resetAngleTextBox()
+            self.set_textbox = False
         
         self.toggleMaskLines(self.line_checked, self.mask_checked)
 
@@ -857,6 +879,7 @@ class RowsWidget(QWidget):
             self.edges_checked = True
         else:
             self.edges_checked = False
+            self.resetSkelTextBox()
         
         self.toggleSkelBranchEdges(self.skel_checked, self.branch_checked, self.edges_checked)
 
@@ -865,8 +888,7 @@ class RowsWidget(QWidget):
             branch_image = self.drawBranchSkel(self.skeleton, self.branch_points, self.edges, branch, skel, edges)
             self.skel_viewer.setOpacity(1.0)
             self.skel_viewer.setOverlayImage(branch_image)
-
-
+        
         else:
             self.skel_viewer.setFixedWidth(IMAGEVIEWER_W)
             self.skel_viewer.setFixedHeight(IMAGEVIEWER_H)
@@ -908,7 +930,14 @@ class RowsWidget(QWidget):
             row.sort(key=lambda point: point[1])  # Sort by x-coordinate
             for i in range(len(row) - 1):
                 color = tuple(np.random.randint(0, 256, 3))  # RGB color
-                connections.append((row[i], row[i + 1], color))
+                
+                # Calculate the angle of the connection (in degrees)
+                point1, point2 = row[i], row[i + 1]
+                dy = point2[0] - point1[0]
+                dx = point2[1] - point1[1]
+                angle = np.degrees(np.arctan2(dy, dx))  # Angle in degrees
+                
+                connections.append((row[i], row[i + 1], color, angle))
 
         # Save the connections image
         # self.visualizeConnections(connections)
