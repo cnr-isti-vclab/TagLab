@@ -29,6 +29,7 @@ from PyQt5.QtSvg import QSvgRenderer
 
 IMAGEVIEWER_W = 640
 IMAGEVIEWER_H = 480
+TEXTBOX_H = 200
 class RowsWidget(QWidget):
 
     closeRowsWidget = pyqtSignal()
@@ -67,6 +68,7 @@ class RowsWidget(QWidget):
         self.set_textbox = False
 
         #create line viewer
+        line_viewer_layout = QVBoxLayout()
         self.line_viewer = QtImageViewer()
         self.line_viewer.disableScrollBars()
         self.line_viewer.enablePan()
@@ -91,8 +93,19 @@ class RowsWidget(QWidget):
         self.actionShowLines.setCheckable(False)
         self.actionShowLines.toggled.connect(self.toggleShowLines)
         self.line_checked = False
+        line_viewer_layout.addWidget(self.line_viewer, alignment=Qt.AlignTop)
+        
+        line_viewer_layout.setSpacing(15)
+        
+        self.angleTextBox = QTextEdit(self)
+        self.angleTextBox.setReadOnly(True)
+        self.angleTextBox.setFixedWidth(IMAGEVIEWER_W)
+        self.angleTextBox.setFixedHeight(TEXTBOX_H)
+        # layout.addWidget(self.angleTextBox)
+        line_viewer_layout.addWidget(self.angleTextBox, alignment=Qt.AlignTop)
 
         # create skeleton viewer
+        skel_viewer_layout = QVBoxLayout()
         self.skel_viewer = QtImageViewer()
         self.skel_viewer.disableScrollBars()
         self.skel_viewer.enablePan()
@@ -126,6 +139,17 @@ class RowsWidget(QWidget):
         self.actionShowEdges.setCheckable(False)
         self.actionShowEdges.toggled.connect(self.toggleShowEdges)
         self.edges_checked = False
+
+        skel_viewer_layout.addWidget(self.skel_viewer, alignment=Qt.AlignTop)
+
+        skel_viewer_layout.setSpacing(15)
+
+        self.skelTextBox = QTextEdit(self)
+        self.skelTextBox.setReadOnly(True)
+        self.skelTextBox.setFixedWidth(IMAGEVIEWER_W)
+        self.skelTextBox.setFixedHeight(TEXTBOX_H)
+        # layout.addWidget(self.angleTextBox)
+        skel_viewer_layout.addWidget(self.skelTextBox, alignment=Qt.AlignTop)
         
         #Create the layout
         layout = QVBoxLayout()
@@ -134,9 +158,14 @@ class RowsWidget(QWidget):
         viewers_layout = QHBoxLayout()
         
         # Add line_viewer to viewers layout
-        viewers_layout.addWidget(self.line_viewer, alignment=Qt.AlignLeft)
+        # viewers_layout.addWidget(self.line_viewer, alignment=Qt.AlignLeft)
+        viewers_layout.addLayout(line_viewer_layout)
+        
+        viewers_layout.setSpacing(10)
+        
         # Add skeleton viewer to viewers layout
-        viewers_layout.addWidget(self.skel_viewer, alignment=Qt.AlignRight)
+        # viewers_layout.addWidget(self.skel_viewer, alignment=Qt.AlignTop)
+        viewers_layout.addLayout(skel_viewer_layout)
         # Add the viewers to the main layout
         layout.addLayout(viewers_layout)
 
@@ -148,14 +177,14 @@ class RowsWidget(QWidget):
         # layout.addLayout(layoutButtons)
         layout.setSpacing(10)
 
-        self.angleTextBox = QTextEdit(self)
-        self.angleTextBox.setReadOnly(True)
-        layout.addWidget(self.angleTextBox)
+        # self.angleTextBox = QTextEdit(self)
+        # self.angleTextBox.setReadOnly(True)
+        # layout.addWidget(self.angleTextBox)
 
-        
         # self.setLayout(layout)
 
         # Add slider for structuring element size
+        slider_layout = QVBoxLayout()
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setMinimum(1)
         self.slider.setMaximum(50)
@@ -163,15 +192,18 @@ class RowsWidget(QWidget):
         self.slider.setTickPosition(QSlider.TicksBelow)
         self.slider.setTickInterval(1)
         self.slider.valueChanged.connect(self.updateStructuringElement)
+        self.slider.setFixedHeight(30)
 
         value = self.slider.value()
 
         self.slider_label = QLabel(f"Pixel Grow: {(value-1)//2}")
+        self.slider_label.setFixedHeight(30)
         
-        layout.addWidget(self.slider_label)
-        layout.addWidget(self.slider)
+        slider_layout.addWidget(self.slider_label)
+        slider_layout.addWidget(self.slider)
 
         self.structuring_element_size = self.slider.value()
+        layout.addLayout(slider_layout)
 
         layout.setSpacing(10)
         
