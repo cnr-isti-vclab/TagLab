@@ -105,6 +105,11 @@ class RowsWidget(QWidget):
         # layout.addWidget(self.angleTextBox)
         line_viewer_layout.addWidget(self.angleTextBox, alignment=Qt.AlignTop)
 
+        # Add export lines
+        self.btnLineExport = QPushButton("Export Data")
+        # self.btnLineExport.clicked.connect(self.exportLineViewerData)
+        line_viewer_layout.addWidget(self.btnLineExport, alignment=Qt.AlignTop)
+
         # create skeleton viewer
         skel_viewer_layout = QVBoxLayout()
         self.skel_viewer = QtImageViewer()
@@ -144,16 +149,42 @@ class RowsWidget(QWidget):
         skel_viewer_layout.addWidget(self.skel_viewer, alignment=Qt.AlignTop)
 
         skel_viewer_layout.setSpacing(15)
+        
+        
+        brickwidth_layout = QHBoxLayout()
+        self.default_width = 150
+        #textbox to set brick width 
+        brickwidth_label = QLabel(f"Brick width:")
+        self.BrickTextBox = QTextEdit(self)
+        self.BrickTextBox.setReadOnly(False)
+        self.BrickTextBox.setFixedWidth(200)
+        self.BrickTextBox.setFixedHeight(25)
+        self.BrickTextBox.setText(str(self.default_width))
+
+        default_width = 150 
+        # layout.addWidget(self.angleTextBox)
+        brickwidth_layout.addWidget(brickwidth_label, alignment=Qt.AlignLeft)
+        brickwidth_layout.setSpacing(5)
+        brickwidth_layout.addWidget(self.BrickTextBox, alignment=Qt.AlignLeft)
+
+        skel_viewer_layout.addLayout(brickwidth_layout)
+        
+        skel_viewer_layout.setSpacing(5)
 
         self.skelTextBox = QTextEdit(self)
         self.skelTextBox.setReadOnly(True)
         self.skelTextBox.setFixedWidth(IMAGEVIEWER_W)
         self.skelTextBox.setFixedHeight(TEXTBOX_H)
         # layout.addWidget(self.angleTextBox)
-        skel_viewer_layout.addWidget(self.skelTextBox, alignment=Qt.AlignTop)
         
-        #Create the layout
-        layout = QVBoxLayout()
+        skel_viewer_layout.addWidget(self.skelTextBox, alignment=Qt.AlignTop)
+
+        skel_viewer_layout.setSpacing(5)
+
+        # Add export lines
+        self.btnSkelExport = QPushButton("Export Skeleton Data")
+        # self.btnSkelExport.clicked.connect(self.exportSkelViewerData)
+        skel_viewer_layout.addWidget(self.btnSkelExport, alignment=Qt.AlignTop)
         
         # Create a horizontal layout for the viewers
         viewers_layout = QHBoxLayout()
@@ -168,7 +199,8 @@ class RowsWidget(QWidget):
         # viewers_layout.addWidget(self.skel_viewer, alignment=Qt.AlignTop)
         viewers_layout.addLayout(skel_viewer_layout)
         # Add the viewers to the main layout
-        layout.addLayout(viewers_layout)
+        
+        viewers_layout.setSpacing(10)
 
         # Add the viewers layout to the main layout
         # layout.addLayout(viewers_layout)
@@ -176,7 +208,13 @@ class RowsWidget(QWidget):
         # layout.addWidget(self.progress_bar)
         # layout.addWidget(self.viewer, alignment=Qt.AlignCenter)
         # layout.addLayout(layoutButtons)
+
+        #Create the layout
+        layout = QVBoxLayout()
+
         layout.setSpacing(10)
+
+        layout.addLayout(viewers_layout)        
 
         # self.angleTextBox = QTextEdit(self)
         # self.angleTextBox.setReadOnly(True)
@@ -247,7 +285,14 @@ class RowsWidget(QWidget):
         # i += 1
         self.skeleton = self.applySkeletonization(self.masch)
         self.branch_points = self.branchPoints(self.skeleton)
-        self.connectBranchPoints(self.branch_points)
+
+            # Get brick_width from BrickTextBox
+        try:
+            brick_width = int(self.BrickTextBox.toPlainText())
+        except ValueError:
+            brick_width = self.default_width  # Default value if no valid input is provided
+
+        self.connectBranchPoints(self.branch_points, brick_width)
         # print(self.branch_points)
         self.actionShowSkel.setCheckable(True)
 
@@ -265,7 +310,7 @@ class RowsWidget(QWidget):
         self.skel_viewer.setOverlayImage(branch_image)
 
 
-        self.connectBranchPoints(self.branch_points)
+        # self.connectBranchPoints(self.branch_points)
         # _, _, img = self.vectorBranchPoints(skel)
                 
         # _, skel_int = self.findIntersectionPoints(skel)
@@ -861,6 +906,8 @@ class RowsWidget(QWidget):
     def toggleShowSkel(self, checked):
         if checked:
             self.skel_checked = True
+            self.edges_checked = False
+            self.actionShowEdges.setChecked(False)
         else:
             self.skel_checked = False
         
@@ -877,6 +924,8 @@ class RowsWidget(QWidget):
     def toggleShowEdges(self, checked):
         if checked:
             self.edges_checked = True
+            self.skel_checked = False
+            self.actionShowSkel.setChecked(False)
         else:
             self.edges_checked = False
             self.resetSkelTextBox()
@@ -896,7 +945,7 @@ class RowsWidget(QWidget):
 
 
 ###########################################################
-    def connectBranchPoints(self, branch_points):
+    def connectBranchPoints(self, branch_points, brick_width):  
         
         # Connect branch points that are adjacent on the same row (within ±15 pixels vertically).
         if not branch_points:
@@ -928,16 +977,30 @@ class RowsWidget(QWidget):
         connections = []
         for row in rows:
             row.sort(key=lambda point: point[1])  # Sort by x-coordinate
+            # for i in range(len(row) - 1):
+            #     color = tuple(np.random.randint(0, 256, 3))  # RGB color
+                
+            #     # Calculate the angle of the connection (in degrees)
+            #     point1, point2 = row[i], row[i + 1]
+            #     dy = point2[0] - point1[0]
+            #     dx = point2[1] - point1[1]
+            #     angle = np.degrees(np.arctan2(dy, dx))  # Angle in degrees
+                
+            #     connections.append((row[i], row[i + 1], color, angle))
+
+            print(brick_width)
             for i in range(len(row) - 1):
-                color = tuple(np.random.randint(0, 256, 3))  # RGB color
-                
-                # Calculate the angle of the connection (in degrees)
                 point1, point2 = row[i], row[i + 1]
-                dy = point2[0] - point1[0]
-                dx = point2[1] - point1[1]
-                angle = np.degrees(np.arctan2(dy, dx))  # Angle in degrees
-                
-                connections.append((row[i], row[i + 1], color, angle))
+                dx = abs(point2[1] - point1[1])  # Horizontal distance
+                if dx <= brick_width:  # Only connect if within column_tolerance
+                    color = tuple(np.random.randint(0, 256, 3))  # RGB color
+                    
+                    # Calculate the angle of the connection (in degrees)
+                    dy = point2[0] - point1[0]
+                    angle = np.degrees(np.arctan2(dy, dx))  # Angle in degrees
+                    
+                    connections.append((point1, point2, color, angle))
+
 
         # Save the connections image
         # self.visualizeConnections(connections)
