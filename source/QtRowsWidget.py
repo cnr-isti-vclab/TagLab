@@ -4,7 +4,7 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QSizePolicy, QTextEdit, QSlider, QMenu, QCheckBox, QMenuBar, QAction
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QSizePolicy, QTextEdit, QLineEdit, QSlider, QMenu, QCheckBox, QMenuBar, QAction
 from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen, QColor, QBrush
 from PyQt5.QtCore import pyqtSignal, Qt, QBuffer
 
@@ -26,6 +26,7 @@ from scipy.spatial import KDTree
 
 import svgwrite
 from PyQt5.QtSvg import QSvgRenderer
+from PyQt5.QtWidgets import QMessageBox
 
 IMAGEVIEWER_W = 640
 IMAGEVIEWER_H = 480
@@ -106,8 +107,8 @@ class RowsWidget(QWidget):
         line_viewer_layout.addWidget(self.angleTextBox, alignment=Qt.AlignTop)
 
         # Add export lines
-        self.btnLineExport = QPushButton("Export Data")
-        # self.btnLineExport.clicked.connect(self.exportLineViewerData)
+        self.btnLineExport = QPushButton("Export Line Data")
+        self.btnLineExport.clicked.connect(self.exportLineViewerData)
         line_viewer_layout.addWidget(self.btnLineExport, alignment=Qt.AlignTop)
 
         # create skeleton viewer
@@ -155,28 +156,42 @@ class RowsWidget(QWidget):
         self.default_width = 150
         #textbox to set brick width 
         brickwidth_label = QLabel(f"Brick width:")
-        self.BrickTextBox = QTextEdit(self)
-        self.BrickTextBox.setReadOnly(False)
-        self.BrickTextBox.setFixedWidth(200)
-        self.BrickTextBox.setFixedHeight(25)
-        self.BrickTextBox.setText(str(self.default_width))
+        self.BrickWidthBox = QLineEdit(self)
+        self.BrickWidthBox.setReadOnly(False)
+        self.BrickWidthBox.setFixedWidth(150)
+        self.BrickWidthBox.setFixedHeight(25)
+        self.BrickWidthBox.setText(str(self.default_width))
 
-        default_width = 150 
+        self.default_dist = 10
+        brickdist_label = QLabel(f"Brick distance:")
+        self.BrickDistBox = QLineEdit(self)
+        self.BrickDistBox.setReadOnly(False)
+        self.BrickDistBox.setFixedWidth(150)
+        self.BrickDistBox.setFixedHeight(25)
+        self.BrickDistBox.setText(str(self.default_dist))
+
         # layout.addWidget(self.angleTextBox)
         brickwidth_layout.addWidget(brickwidth_label, alignment=Qt.AlignLeft)
         brickwidth_layout.setSpacing(5)
-        brickwidth_layout.addWidget(self.BrickTextBox, alignment=Qt.AlignLeft)
+        brickwidth_layout.addWidget(self.BrickWidthBox, alignment=Qt.AlignLeft)
+
+        brickwidth_layout.addWidget(brickdist_label, alignment=Qt.AlignLeft)
+        brickwidth_layout.setSpacing(5)
+        brickwidth_layout.addWidget(self.BrickDistBox, alignment=Qt.AlignLeft)
+
 
         skel_viewer_layout.addLayout(brickwidth_layout)
         
         skel_viewer_layout.setSpacing(5)
 
+        skelangle_label = QLabel(f"Angles:")
         self.skelTextBox = QTextEdit(self)
         self.skelTextBox.setReadOnly(True)
         self.skelTextBox.setFixedWidth(IMAGEVIEWER_W)
         self.skelTextBox.setFixedHeight(TEXTBOX_H)
         # layout.addWidget(self.angleTextBox)
         
+        skel_viewer_layout.addWidget(skelangle_label, alignment=Qt.AlignTop)
         skel_viewer_layout.addWidget(self.skelTextBox, alignment=Qt.AlignTop)
 
         skel_viewer_layout.setSpacing(5)
@@ -286,13 +301,15 @@ class RowsWidget(QWidget):
         self.skeleton = self.applySkeletonization(self.masch)
         self.branch_points = self.branchPoints(self.skeleton)
 
-            # Get brick_width from BrickTextBox
+            # Get brick_width and row_distance from BrickWidthBox and BrickDistBox
         try:
-            brick_width = int(self.BrickTextBox.toPlainText())
+            brick_width = int(self.BrickWidthBox.text())
+            brick_dist = int(self.BrickDistBox.text())
         except ValueError:
             brick_width = self.default_width  # Default value if no valid input is provided
+            brick_dist = self.default_dist
 
-        self.connectBranchPoints(self.branch_points, brick_width)
+        self.connectBranchPoints(self.branch_points, brick_width, brick_dist)
         # print(self.branch_points)
         self.actionShowSkel.setCheckable(True)
 
@@ -674,7 +691,7 @@ class RowsWidget(QWidget):
             if not any(np.linalg.norm(point - np.array(existing_point)) < 5 for existing_point in filtered_branch_points_yx):
                 filtered_branch_points_yx.append(point)
 
-        ################################################################################################
+################################################################################################
         # h, w = skeleton.shape
         # dwg = svgwrite.Drawing('pippo.svg', size=(w, h))
         
@@ -945,7 +962,7 @@ class RowsWidget(QWidget):
 
 
 ###########################################################
-    def connectBranchPoints(self, branch_points, brick_width):  
+    def connectBranchPoints(self, branch_points, brick_width, brick_dist):  
         
         # Connect branch points that are adjacent on the same row (within ±15 pixels vertically).
         if not branch_points:
@@ -956,7 +973,8 @@ class RowsWidget(QWidget):
         branch_points.sort(key=lambda point: point[0])
 
         # Define the vertical tolerance for a row
-        row_tolerance = 10
+        print(f"Row distance: {brick_dist}")
+        row_tolerance = brick_dist
 
         # Group branch points by rows
         rows = []
@@ -1028,3 +1046,49 @@ class RowsWidget(QWidget):
         # Set the connection image as the overlay
         # self.skel_viewer.setOpacity(1.0)
         # self.skel_viewer.setOverlayImage(connection_image)
+
+#####################################################################################################################
+
+    def exportLineViewerData(self):
+        # Export the mask with lines drawn on it (if self.lines is not empty)
+        export_success = False
+        if self.masch is not None:
+            mask_filename = "exported_mask.png"
+            if self.lines:
+                qmask = genutils.maskToQImage(self.masch)
+                mask_with_lines = self.paintLinesImage(qmask, self.lines)  # Draw lines on the mask
+                mask_with_lines.save(mask_filename)
+                print(f"Mask with lines exported to {mask_filename}")
+            else:
+                mask_image = genutils.maskToQImage(self.masch)
+                mask_image.save(mask_filename)
+                print(f"Mask exported to {mask_filename}")
+
+            # Export the angles as a CSV file
+            if self.lines:
+                angles_filename = "exported_angles.csv"
+                with open(angles_filename, "w") as file:
+                    file.write("Line Index,Angle (degrees)\n")  # CSV header
+                    for i, (_, _, angle, _) in enumerate(self.lines):
+                        # Convert angle to degrees
+                        angle_deg = np.rad2deg(angle)
+                        file.write(f"{i + 1},{angle_deg:.2f}\n")
+                print(f"Angles exported to {angles_filename}")
+            export_success = True
+        # else:
+        if export_success:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Information)
+            message = f"Mask exported to {mask_filename} and angles to {angles_filename}"
+            msg.setText(message)
+            msg.setWindowTitle("Export")
+            msg.setStandardButtons(QMessageBox.Ok)
+            msg.exec_()
+        else:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Warning)
+            msg.setText("No data to export")
+            msg.setWindowTitle("Export")
+            msg.setStandardButtons(QMessageBox.Ok)
+            msg.exec_()
+            
