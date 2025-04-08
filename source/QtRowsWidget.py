@@ -163,7 +163,7 @@ class RowsWidget(QWidget):
         self.BrickWidthBox.setText(str(self.default_width))
 
         self.default_dist = 10
-        brickdist_label = QLabel(f"Brick distance:")
+        brickdist_label = QLabel(f"Row distance:")
         self.BrickDistBox = QLineEdit(self)
         self.BrickDistBox.setReadOnly(False)
         self.BrickDistBox.setFixedWidth(150)
@@ -198,7 +198,7 @@ class RowsWidget(QWidget):
 
         # Add export lines
         self.btnSkelExport = QPushButton("Export Skeleton Data")
-        # self.btnSkelExport.clicked.connect(self.exportSkelViewerData)
+        self.btnSkelExport.clicked.connect(self.exportSkelViewerData)
         skel_viewer_layout.addWidget(self.btnSkelExport, alignment=Qt.AlignTop)
         
         # Create a horizontal layout for the viewers
@@ -1088,6 +1088,61 @@ class RowsWidget(QWidget):
             msg = QMessageBox()
             msg.setIcon(QMessageBox.Warning)
             msg.setText("No data to export")
+            msg.setWindowTitle("Export")
+            msg.setStandardButtons(QMessageBox.Ok)
+            msg.exec_()
+
+    def exportSkelViewerData(self):
+        # Export the skeleton with branch points and connections drawn on it
+        export_success = False
+        skeleton_filename = None
+        angles_filename = None
+
+        if self.skel_checked == True:
+            if self.skeleton is not None:            
+                skeleton_filename = "exported_skeleton_with_connections.png"
+                branch_image = self.drawBranchSkel(
+                    self.skeleton, self.branch_points, self.edges, self.branch_checked, self.skel_checked, self.edges_checked
+                )
+                branch_image.save(skeleton_filename)
+                print(f"Skeleton with branch_points exported to {skeleton_filename}")
+                name = skeleton_filename
+                export_success = True
+
+        elif self.edges_checked == True:            
+            # Export the angles of the connections as a CSV file
+            if self.edges:
+                edges_filename = "exported_edges_with_branch_points.png"
+                edge_image = self.drawBranchSkel(
+                    self.skeleton, self.branch_points, self.edges, self.branch_checked, self.skel_checked, self.edges_checked
+                )
+                edge_image.save(edges_filename)
+                print(f"Edges with branch_points exported to {edges_filename}")
+
+                angles_filename = "exported_edges_angles.csv"
+                with open(angles_filename, "w") as file:
+                    file.write("Connection Index,Angle (degrees)\n")  # CSV header
+                    for i, (_, _, _, angle) in enumerate(self.edges):
+                        file.write(f"{i + 1},{angle:.2f}\n")
+                print(f"Angles exported to {angles_filename}")
+                name = edges_filename
+                export_success = True
+
+        if export_success:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Information)
+            if angles_filename:
+                message = f"Image exported to {name} and angles to {angles_filename}"
+            else:
+                message = f"Image exported to {name}"
+            msg.setText(message)
+            msg.setWindowTitle("Export")
+            msg.setStandardButtons(QMessageBox.Ok)
+            msg.exec_()
+        else:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Warning)
+            msg.setText("No skeleton data to export")
             msg.setWindowTitle("Export")
             msg.setStandardButtons(QMessageBox.Ok)
             msg.exec_()
