@@ -4,11 +4,12 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QSizePolicy, QTextEdit, QLineEdit, QSlider, QMenu, QCheckBox, QMenuBar, QAction
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QSizePolicy, QTextEdit, QLineEdit, QSlider, QMenu, QCheckBox, QMenuBar, QAction, QDialog
 from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen, QColor, QBrush
 from PyQt5.QtCore import pyqtSignal, Qt, QBuffer
 
 from source.QtImageViewer import QtImageViewer
+from source.QtExportRows import ExportDialog
 from source import genutils
 
 from skimage.transform import hough_line, hough_line_peaks
@@ -1019,131 +1020,124 @@ class RowsWidget(QWidget):
                     
                     connections.append((point1, point2, color, angle))
 
-
-        # Save the connections image
-        # self.visualizeConnections(connections)
         self.edges = connections
-
-    def visualizeConnections(self, connections, output_file = 'connections.png'):
-        
-        # Save immage of the connections between branch points
-        connection_image = QImage(self.skeleton.shape[1], self.skeleton.shape[0], QImage.Format_ARGB32)
-        connection_image.fill(Qt.transparent)
-        painter = QPainter(connection_image)
-        pen = QPen(Qt.green, 2)
-        painter.setPen(pen)
-
-        for point1, point2 in connections:
-            painter.drawLine(point1[1], point1[0], point2[1], point2[0])
-
-        painter.end()
-
-        # Save the connection image as a .png file
-        connection_image.save(output_file)
-        print(f"Connections saved to {output_file}")
-
-
-        # Set the connection image as the overlay
-        # self.skel_viewer.setOpacity(1.0)
-        # self.skel_viewer.setOverlayImage(connection_image)
 
 #####################################################################################################################
 
     def exportLineViewerData(self):
-        # Export the mask with lines drawn on it (if self.lines is not empty)
-        export_success = False
-        if self.masch is not None:
-            mask_filename = "exported_mask.png"
-            if self.lines:
-                qmask = genutils.maskToQImage(self.masch)
-                mask_with_lines = self.paintLinesImage(qmask, self.lines)  # Draw lines on the mask
-                mask_with_lines.save(mask_filename)
-                print(f"Mask with lines exported to {mask_filename}")
-            else:
-                mask_image = genutils.maskToQImage(self.masch)
-                mask_image.save(mask_filename)
-                print(f"Mask exported to {mask_filename}")
+            options = self.getLineExportOptions()
+            if not options:
+                return  # User canceled the dialog or provided invalid input
 
-            # Export the angles as a CSV file
-            if self.lines:
-                angles_filename = "exported_angles.csv"
-                with open(angles_filename, "w") as file:
-                    file.write("Line Index,Angle (degrees)\n")  # CSV header
-                    for i, (_, _, angle, _) in enumerate(self.lines):
-                        # Convert angle to degrees
-                        angle_deg = np.rad2deg(angle)
-                        file.write(f"{i + 1},{angle_deg:.2f}\n")
-                print(f"Angles exported to {angles_filename}")
-            export_success = True
-        # else:
-        if export_success:
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Information)
-            message = f"Mask exported to {mask_filename} and angles to {angles_filename}"
-            msg.setText(message)
-            msg.setWindowTitle("Export")
-            msg.setStandardButtons(QMessageBox.Ok)
-            msg.exec_()
-        else:
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Warning)
-            msg.setText("No data to export")
-            msg.setWindowTitle("Export")
-            msg.setStandardButtons(QMessageBox.Ok)
-            msg.exec_()
+            path = options["path"]
+            name = options["name"]
+            export_angles = options["export_angles"]
+            export_mask = options["export_mask"]
 
-    def exportSkelViewerData(self):
-        # Export the skeleton with branch points and connections drawn on it
-        export_success = False
-        skeleton_filename = None
-        angles_filename = None
+            export_success = False
+            if self.masch is not None:
+                if export_mask:
+                    mask_filename = f"{path}/{name}_mask.png"
+                    if self.lines:
+                        qmask = genutils.maskToQImage(self.masch)
+                        mask_with_lines = self.paintLinesImage(qmask, self.lines)
+                        mask_with_lines.save(mask_filename)
+                    else:
+                        mask_image = genutils.maskToQImage(self.masch)
+                        mask_image.save(mask_filename)
+                    print(f"Mask exported to {mask_filename}")
 
-        if self.skel_checked == True:
-            if self.skeleton is not None:            
-                skeleton_filename = "exported_skeleton_with_connections.png"
-                branch_image = self.drawBranchSkel(
-                    self.skeleton, self.branch_points, self.edges, self.branch_checked, self.skel_checked, self.edges_checked
-                )
-                branch_image.save(skeleton_filename)
-                print(f"Skeleton with branch_points exported to {skeleton_filename}")
-                name = skeleton_filename
+                if export_angles and self.lines:
+                    angles_filename = f"{path}/{name}_angles.csv"
+                    with open(angles_filename, "w") as file:
+                        file.write("Line Index,Angle (degrees)\n")
+                        for i, (_, _, angle, _) in enumerate(self.lines):
+                            angle_deg = np.rad2deg(angle)
+                            file.write(f"{i + 1},{angle_deg:.2f}\n")
+                    print(f"Angles exported to {angles_filename}")
                 export_success = True
 
-        elif self.edges_checked == True:            
-            # Export the angles of the connections as a CSV file
-            if self.edges:
-                edges_filename = "exported_edges_with_branch_points.png"
+            if export_success:
+                QMessageBox.information(self, "Export Successful", "Data exported successfully.")
+            else:
+                QMessageBox.warning(self, "Export Failed", "No data to export.")
+
+
+    def getLineExportOptions(self):
+        # Displays the export dialog for line viewer data and returns the selected options."""
+        dialog = ExportDialog(self)
+        dialog.angle_checkbox.setChecked(self.line_checked)  # Default options
+        dialog.angle_checkbox.setEnabled(False)  
+
+        dialog.mask_checkbox.setChecked(self.mask_checked)
+        dialog.mask_checkbox.setEnabled(False)  
+
+        dialog.skeleton_checkbox.hide()  # Hide irrelevant options
+        dialog.branch_points_checkbox.hide()
+        dialog.edges_checkbox.hide()
+
+        if dialog.exec_() == QDialog.Accepted:
+            return dialog.getExportOptions()
+        return None
+    
+
+    def exportSkelViewerData(self):
+            options = self.getSkelExportOptions()
+            if not options:
+                return  # User canceled the dialog or provided invalid input
+
+            path = options["path"]
+            name = options["name"]
+            export_skeleton = options["export_skeleton"]
+            export_branch_points = options["export_branch_points"]
+            export_edges = options["export_edges"]
+            export_success = False
+            if export_skeleton and self.skeleton is not None:
+                skeleton_filename = f"{path}/{name}_skeleton.png"
+                branch_image = self.drawBranchSkel(
+                    self.skeleton, self.branch_points, self.edges, export_branch_points, export_skeleton, export_edges
+                )
+                branch_image.save(skeleton_filename)
+                print(f"Skeleton exported to {skeleton_filename}")
+                export_success = True
+
+            if export_edges and self.edges:
+                edges_filename = f"{path}/{name}_edges.png"
                 edge_image = self.drawBranchSkel(
                     self.skeleton, self.branch_points, self.edges, self.branch_checked, self.skel_checked, self.edges_checked
                 )
                 edge_image.save(edges_filename)
                 print(f"Edges with branch_points exported to {edges_filename}")
-
-                angles_filename = "exported_edges_angles.csv"
+                
+                angles_filename = f"{path}/{name}_edges_angles.csv"
                 with open(angles_filename, "w") as file:
-                    file.write("Connection Index,Angle (degrees)\n")  # CSV header
+                    file.write("Connection Index,Angle (degrees)\n")
                     for i, (_, _, _, angle) in enumerate(self.edges):
                         file.write(f"{i + 1},{angle:.2f}\n")
                 print(f"Angles exported to {angles_filename}")
-                name = edges_filename
                 export_success = True
 
-        if export_success:
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Information)
-            if angles_filename:
-                message = f"Image exported to {name} and angles to {angles_filename}"
+            if export_success:
+                QMessageBox.information(self, "Export Successful", "Data exported successfully.")
             else:
-                message = f"Image exported to {name}"
-            msg.setText(message)
-            msg.setWindowTitle("Export")
-            msg.setStandardButtons(QMessageBox.Ok)
-            msg.exec_()
-        else:
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Warning)
-            msg.setText("No skeleton data to export")
-            msg.setWindowTitle("Export")
-            msg.setStandardButtons(QMessageBox.Ok)
-            msg.exec_()
-            
+                QMessageBox.warning(self, "Export Failed", "No data to export.")
+
+    def getSkelExportOptions(self):
+        # Displays the export dialog for skeleton viewer data and returns the selected options.
+        dialog = ExportDialog(self)
+        dialog.skeleton_checkbox.setChecked(self.skel_checked)
+        # dialog.skeleton_checkbox.setEnabled(False)
+
+        dialog.branch_points_checkbox.setChecked(self.branch_checked)
+        # dialog.branch_points_checkbox.setEnabled(False)  
+
+        dialog.edges_checkbox.setChecked(self.edges_checked)
+        # dialog.edges_checkbox.setEnabled(False)  
+
+        dialog.angle_checkbox.hide()  # Hide irrelevant options
+        dialog.mask_checkbox.hide()
+
+        if dialog.exec_() == QDialog.Accepted:
+            return dialog.getExportOptions()
+        return None
+                
