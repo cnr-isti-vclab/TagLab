@@ -1126,13 +1126,13 @@ class RowsWidget(QWidget):
         # Displays the export dialog for skeleton viewer data and returns the selected options.
         dialog = ExportDialog(self)
         dialog.skeleton_checkbox.setChecked(self.skel_checked)
-        # dialog.skeleton_checkbox.setEnabled(False)
+        dialog.skeleton_checkbox.setEnabled(False)
 
         dialog.branch_points_checkbox.setChecked(self.branch_checked)
-        # dialog.branch_points_checkbox.setEnabled(False)  
+        dialog.branch_points_checkbox.setEnabled(False)  
 
         dialog.edges_checkbox.setChecked(self.edges_checked)
-        # dialog.edges_checkbox.setEnabled(False)  
+        dialog.edges_checkbox.setEnabled(False)  
 
         dialog.angle_checkbox.hide()  # Hide irrelevant options
         dialog.mask_checkbox.hide()
