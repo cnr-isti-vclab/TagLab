@@ -33,7 +33,10 @@ from PyQt5.QtCore import Qt, QSize, QMargins, QDir, QPoint, QPointF, QRectF, QTi
 from PyQt5.QtGui import QFontDatabase, QFont, QPixmap, QIcon, QKeySequence, QPen, QImageReader, QImage
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QFileDialog, QComboBox, QMenuBar, QMenu, QSizePolicy, QScrollArea, \
     QLabel, QToolButton, QPushButton, QSlider, QCheckBox, \
-    QMessageBox, QGroupBox, QLayout, QHBoxLayout, QVBoxLayout, QFrame, QDockWidget, QTextEdit, QAction
+    QMessageBox, QGroupBox, QLayout, QHBoxLayout, QVBoxLayout, QFrame, QDockWidget, QTextEdit, QAction, \
+    QDialog
+
+from source.QtDXFExport import QtDXFExportOptions  # Import the options dialog
 
 
 
@@ -4764,6 +4767,144 @@ class TagLab(QMainWindow):
             msgBox.exec()
             return
 
+    # @pyqtSlot()
+    # def exportAnnAsDXF(self):
+    #     # Check if activeviewer is set and contains necessary data
+    #     if self.activeviewer is None:
+    #         return
+
+    #     if self.activeviewer.image is not None:
+    #         # Open a file dialog to select the output file
+    #         filters = "DXF (*.dxf)"
+    #         output_filename, _ = QFileDialog.getSaveFileName(self, "Save DXF File As", self.taglab_dir, filters)
+
+    #         if output_filename:
+                
+    #             # Create a new DXF document
+    #             doc = ezdxf.new()
+    #             msp = doc.modelspace()
+
+    #             try:
+    #                 # Check if georeferencing information is available and ask the user if wants to use it
+    #                 georef = None
+    #                 text_height_scale = 1.0
+    #                 if hasattr(self.activeviewer.image, 'georef_filename') and self.activeviewer.image.georef_filename:
+    #                     reply = QMessageBox.question(self, "Georeference Information",
+    #                                                  "Georeference information is available. Do you want to use it?",
+    #                                                  QMessageBox.Yes | QMessageBox.No)
+    #                     if reply == QMessageBox.Yes:
+    #                         georef, transform = rasterops.load_georef(self.activeviewer.image.georef_filename)
+    #                         text_height_scale = max(abs(transform.a), abs(transform.e))
+
+    #                 if self.project.working_area is None:
+    #                     # Get blobs from the activeviewer
+    #                     blobs = self.activeviewer.annotations.seg_blobs
+    #                     # Add the outline of the map to layer 0
+    #                     map_outline = [
+    #                         (0, 0),
+    #                         (self.activeviewer.image.width, 0),
+    #                         (self.activeviewer.image.width, self.activeviewer.image.height),
+    #                         (0, self.activeviewer.image.height),
+    #                         (0, 0)
+    #                     ]
+    #                 else:
+    #                     # Get blobs inside the working area
+    #                     blobs = self.activeviewer.annotations.calculate_inner_blobs(self.project.working_area)
+    #                     # Add the outline of the working area to layer 0
+    #                     map_outline = [
+    #                         (self.project.working_area[1], self.project.working_area[0]),
+    #                         (self.project.working_area[1] + self.project.working_area[2], self.project.working_area[0]),
+    #                         (self.project.working_area[1] + self.project.working_area[2], self.project.working_area[0] + self.project.working_area[3]),
+    #                         (self.project.working_area[1], self.project.working_area[0] + self.project.working_area[3]),
+    #                         (self.project.working_area[1], self.project.working_area[0])
+    #                     ]
+
+    #                 if georef:
+    #                     map_outline = [transform * (x, y) for x, y in map_outline]
+
+    #                 msp.add_lwpolyline(
+    #                     map_outline,
+    #                     close=True,
+    #                     dxfattribs={'layer': '0'}
+    #                 )
+
+    #                 # Add points to the DXF file from 'blobs' data
+    #                 for blob in blobs:
+    #                     # if blob.qpath_gitem.isVisible():
+    #                     if self.viewerplus.project.isLabelVisible(blob.class_name):
+    #                         # Set each class as a new layer
+    #                         layer_name = blob.class_name
+
+    #                         # Set color for the layer from blob class color
+    #                         col = self.project.labels[blob.class_name].fill
+
+    #                         # Convert the color to a DXF True color code
+    #                         color_code = ezdxf.colors.rgb2int(col)
+
+    #                         if not doc.layers.has_entry(layer_name):
+    #                             doc.layers.new(name=layer_name, dxfattribs={'true_color': color_code})
+
+    #                         # Add the outer contour
+    #                         if georef:
+    #                             points = [transform * (x, y) for x, y in blob.contour]
+    #                         else:
+    #                             # we must invert Y axis if not referenced
+    #                             points = [(x, self.activeviewer.image.height-y) for x, y in blob.contour]
+    #                         if points:
+    #                             msp.add_lwpolyline(
+    #                                 points,
+    #                                 close=True,
+    #                                 dxfattribs={'layer': layer_name}
+    #                             )
+
+    #                         # Add inner contours (holes)
+    #                         for inner_contour in blob.inner_contours:
+    #                             # inner_points = transform_coords([(x, y) for x, y in inner_contour])
+    #                             if georef:
+    #                                 inner_points = [transform * (x, y) for x, y in inner_contour]
+    #                             else:
+    #                                 # we must invert Y axis if not referenced
+    #                                 inner_points = [(x, self.activeviewer.image.height-y) for x, y in inner_contour]
+    #                             if inner_points:
+    #                                 msp.add_lwpolyline(inner_points, close=True, dxfattribs={'layer': layer_name})
+
+    #                         # Add the class_name as a text annotation at the blob's centroid
+    #                         if blob.class_name and blob.class_name != "Empty":
+    #                             class_name = blob.class_name[:5] if len(blob.class_name) > 5 else blob.class_name
+    #                             x, y = blob.centroid
+    #                             if georef:
+    #                                 x, y = transform * (x, y)
+    #                             else:
+    #                                 # we must invert Y axis if not referenced                                    
+    #                                 y = self.activeviewer.image.height - y
+    #                             msp.add_text(
+    #                                 class_name, height=text_height_scale * 22.0,
+    #                                 dxfattribs={
+    #                                     'layer': layer_name
+    #                                 }
+    #                             ).set_placement((x, y), align=TextEntityAlignment.MIDDLE_CENTER)
+
+    #                 # Save the DXF file
+    #                 doc.saveas(output_filename)
+
+    #                 # Show a confirmation message box
+    #                 msgBox = QMessageBox(self)
+    #                 msgBox.setWindowTitle("Export Successful")
+    #                 msgBox.setText("DXF file exported successfully!")
+    #                 msgBox.exec()
+    #                 return
+    #             except Exception as e:
+    #                 msgBox = QMessageBox(self)
+    #                 msgBox.setWindowTitle("Export Failed")
+    #                 if "/" in str(e):
+    #                     print("/ inside a class, please rename the class before continuing")
+    #                     msgBox.setText("Error exporting DXF file:\nforbidden character (/) inside class names, please rename the classes before continuing")
+    #                 else:
+    #                     msgBox.setText("Error exporting DXF file: " + str(e))
+    #                 msgBox.exec()
+    #                 return
+
+
     @pyqtSlot()
     def exportAnnAsDXF(self):
         # Check if activeviewer is set and contains necessary data
@@ -4771,135 +4912,199 @@ class TagLab(QMainWindow):
             return
 
         if self.activeviewer.image is not None:
-            # Open a file dialog to select the output file
-            filters = "DXF (*.dxf)"
-            output_filename, _ = QFileDialog.getSaveFileName(self, "Save DXF File As", self.taglab_dir, filters)
+            # Show the DXF export options dialog
+            options_dialog = QtDXFExportOptions(self)
+            if hasattr(self.activeviewer.image, 'georef_filename') and self.activeviewer.image.georef_filename:
+                options_dialog.enable_georeferencing(True)
+            if options_dialog.exec_() == QDialog.Accepted:
+            # options_dialog.exec_()
 
-            if output_filename:
-                
-                # Create a new DXF document
-                doc = ezdxf.new()
-                msp = doc.modelspace()
+                # Retrieve the selected options
+                export_all_blobs = options_dialog.blobs_group.checkedButton().text() == "All Blobs"
+                use_georef = options_dialog.georef_checkbox.isChecked()
+                export_grid = options_dialog.grid_checkbox.isChecked()
+                use_full_name = options_dialog.class_name_group.checkedButton().text() == "Full Class Names"
+                shortened_length = options_dialog.shortened_length_spinbox.value()
 
-                try:
-                    # Check if georeferencing information is available and ask the user if wants to use it
-                    georef = None
-                    text_height_scale = 1.0
-                    if hasattr(self.activeviewer.image, 'georef_filename') and self.activeviewer.image.georef_filename:
-                        reply = QMessageBox.question(self, "Georeference Information",
-                                                     "Georeference information is available. Do you want to use it?",
-                                                     QMessageBox.Yes | QMessageBox.No)
-                        if reply == QMessageBox.Yes:
+                # Open a file dialog to select the output file
+                filters = "DXF (*.dxf)"
+                output_filename, _ = QFileDialog.getSaveFileName(self, "Save DXF File As", self.taglab_dir, filters)
+
+                if output_filename:
+                    # Create a new DXF document
+                    doc = ezdxf.new()
+                    msp = doc.modelspace()
+
+                    try:
+                        # Check if georeferencing information is available and process accordingly
+                        georef = None
+                        text_height_scale = 1.0
+                        if use_georef and hasattr(self.activeviewer.image, 'georef_filename') and self.activeviewer.image.georef_filename:
                             georef, transform = rasterops.load_georef(self.activeviewer.image.georef_filename)
                             text_height_scale = max(abs(transform.a), abs(transform.e))
 
-                    if self.project.working_area is None:
-                        # Get blobs from the activeviewer
-                        blobs = self.activeviewer.annotations.seg_blobs
-                        # Add the outline of the map to layer 0
-                        map_outline = [
-                            (0, 0),
-                            (self.activeviewer.image.width, 0),
-                            (self.activeviewer.image.width, self.activeviewer.image.height),
-                            (0, self.activeviewer.image.height),
-                            (0, 0)
-                        ]
-                    else:
-                        # Get blobs inside the working area
-                        blobs = self.activeviewer.annotations.calculate_inner_blobs(self.project.working_area)
-                        # Add the outline of the working area to layer 0
-                        map_outline = [
-                            (self.project.working_area[1], self.project.working_area[0]),
-                            (self.project.working_area[1] + self.project.working_area[2], self.project.working_area[0]),
-                            (self.project.working_area[1] + self.project.working_area[2], self.project.working_area[0] + self.project.working_area[3]),
-                            (self.project.working_area[1], self.project.working_area[0] + self.project.working_area[3]),
-                            (self.project.working_area[1], self.project.working_area[0])
-                        ]
+                        # Determine which blobs to export
+                        if export_all_blobs:
+                            blobs = self.activeviewer.annotations.seg_blobs
+                        else:
+                            blobs = []
+                            for segmented in self.activeviewer.annotations.seg_blobs:
+                                if self.viewerplus.project.isLabelVisible(segmented.class_name):
+                                    blobs.append(segmented)
+                                
 
-                    if georef:
-                        map_outline = [transform * (x, y) for x, y in map_outline]
+                        # Add the outline of the map or working area
+                        if self.project.working_area is None:
+                            map_outline = [
+                                (0, 0),
+                                (self.activeviewer.image.width, 0),
+                                (self.activeviewer.image.width, self.activeviewer.image.height),
+                                (0, self.activeviewer.image.height),
+                                (0, 0)
+                            ]
+                        else:
+                            map_outline = [
+                                (self.project.working_area[1], self.project.working_area[0]),
+                                (self.project.working_area[1] + self.project.working_area[2], self.project.working_area[0]),
+                                (self.project.working_area[1] + self.project.working_area[2], self.project.working_area[0] + self.project.working_area[3]),
+                                (self.project.working_area[1], self.project.working_area[0] + self.project.working_area[3]),
+                                (self.project.working_area[1], self.project.working_area[0])
+                            ]
 
-                    msp.add_lwpolyline(
-                        map_outline,
-                        close=True,
-                        dxfattribs={'layer': '0'}
-                    )
+                        if georef:
+                            map_outline = [transform * (x, y) for x, y in map_outline]
 
-                    # Add points to the DXF file from 'blobs' data
-                    for blob in blobs:
-                        # if blob.qpath_gitem.isVisible():
-                        if self.viewerplus.project.isLabelVisible(blob.class_name):
-                            # Set each class as a new layer
-                            layer_name = blob.class_name
+                        msp.add_lwpolyline(
+                            map_outline,
+                            close=True,
+                            dxfattribs={'layer': '0'}
+                        )
 
-                            # Set color for the layer from blob class color
-                            col = self.project.labels[blob.class_name].fill
+                        # Add blobs and grid (if selected)
+                        for blob in blobs:
+                            if self.viewerplus.project.isLabelVisible(blob.class_name):
+                                layer_name = blob.class_name
+                                col = self.project.labels[blob.class_name].fill
+                                color_code = ezdxf.colors.rgb2int(col)
 
-                            # Convert the color to a DXF True color code
-                            color_code = ezdxf.colors.rgb2int(col)
+                                if not doc.layers.has_entry(layer_name):
+                                    doc.layers.new(name=layer_name, dxfattribs={'true_color': color_code})
 
-                            if not doc.layers.has_entry(layer_name):
-                                doc.layers.new(name=layer_name, dxfattribs={'true_color': color_code})
+                                if georef:
+                                    points = [transform * (x, y) for x, y in blob.contour]
+                                else:
+                                    points = [(x, self.activeviewer.image.height - y) for x, y in blob.contour]
 
-                            # Add the outer contour
-                            if georef:
-                                points = [transform * (x, y) for x, y in blob.contour]
+                                if points:
+                                    msp.add_lwpolyline(
+                                        points,
+                                        close=True,
+                                        dxfattribs={'layer': layer_name}
+                                    )
+
+                                for inner_contour in blob.inner_contours:
+                                    if georef:
+                                        inner_points = [transform * (x, y) for x, y in inner_contour]
+                                    else:
+                                        inner_points = [(x, self.activeviewer.image.height - y) for x, y in inner_contour]
+
+                                    if inner_points:
+                                        msp.add_lwpolyline(inner_points, close=True, dxfattribs={'layer': layer_name})
+
+                                if blob.class_name and blob.class_name != "Empty":
+                                    # class_name = blob.class_name[:5] if len(blob.class_name) > 5 else blob.class_name
+                                    if use_full_name:
+                                        class_name = blob.class_name
+                                    else:
+                                        class_name = blob.class_name[:shortened_length]
+                                    x, y = blob.centroid
+                                    if georef:
+                                        x, y = transform * (x, y)
+                                    else:
+                                        y = self.activeviewer.image.height - y
+                                    msp.add_text(
+                                        class_name, height=text_height_scale * 22.0,
+                                        dxfattribs={'layer': layer_name}
+                                    ).set_placement((x, y), align=TextEntityAlignment.MIDDLE_CENTER)
+
+                        if export_grid:                        
+                            if self.activeviewer.image.grid is not None:
+                                print("grid present")
+                                grid = self.activeviewer.image.grid
+                                grid_layer_name = "Grid"
+                                
+                                # Create a new layer for the grid if it doesn't exist
+                                if not doc.layers.has_entry(grid_layer_name):
+                                    doc.layers.new(name=grid_layer_name, dxfattribs={'color': 0})  # Black color for the grid
+                                
+                                # Get grid dimensions
+                                cell_width = grid.width / grid.ncol
+                                cell_height = grid.height / grid.nrow
+
+                                # Iterate through the grid cells
+                                for r in range(grid.nrow):
+                                    for c in range(grid.ncol):
+                                        value = grid.cell_values[r, c]
+                                        if value > 0:  # Only draw cells with a state > 0
+                                            x1 = grid.offx + c * cell_width
+                                            y1 = grid.offy + r * cell_height
+                                            x2 = x1 + cell_width
+                                            y2 = y1 + cell_height
+
+                                            if georef:
+                                                # Transform the coordinates if georeferenced
+                                                p1 = transform * (x1, y1)
+                                                p2 = transform * (x2, y1)
+                                                p3 = transform * (x2, y2)
+                                                p4 = transform * (x1, y2)
+                                            else:
+                                                # Invert Y-axis if not georeferenced
+                                                height = self.activeviewer.image.height
+                                                p1 = (x1, height - y1)
+                                                p2 = (x2, height - y1)
+                                                p3 = (x2, height - y2)
+                                                p4 = (x1, height - y2)
+
+                                            # Add the cell as a polyline
+                                            msp.add_lwpolyline(
+                                                [p1, p2, p3, p4, p1],  # Close the polyline
+                                                close=True,
+                                                dxfattribs={'layer': grid_layer_name}
+                                            )
+
+                                # Add notes to the DXF file
+                                for note in grid.notes:
+                                    x, y, text = note["x"], note["y"], note["txt"]
+                                    if georef:
+                                        x, y = transform * (x, y)
+                                    else:
+                                        y = self.activeviewer.image.height - y
+                                    msp.add_text(
+                                        text, height=10.0,  # Adjust text height as needed
+                                        dxfattribs={'layer': grid_layer_name}
+                                    ).set_placement((x, y), align=TextEntityAlignment.MIDDLE_CENTER)
+                                
                             else:
-                                # we must invert Y axis if not referenced
-                                points = [(x, self.activeviewer.image.height-y) for x, y in blob.contour]
-                            if points:
-                                msp.add_lwpolyline(
-                                    points,
-                                    close=True,
-                                    dxfattribs={'layer': layer_name}
-                                )
+                                print("grid NOT present")
 
-                            # Add inner contours (holes)
-                            for inner_contour in blob.inner_contours:
-                                # inner_points = transform_coords([(x, y) for x, y in inner_contour])
-                                if georef:
-                                    inner_points = [transform * (x, y) for x, y in inner_contour]
-                                else:
-                                    # we must invert Y axis if not referenced
-                                    inner_points = [(x, self.activeviewer.image.height-y) for x, y in inner_contour]
-                                if inner_points:
-                                    msp.add_lwpolyline(inner_points, close=True, dxfattribs={'layer': layer_name})
 
-                            # Add the class_name as a text annotation at the blob's centroid
-                            if blob.class_name and blob.class_name != "Empty":
-                                class_name = blob.class_name[:5] if len(blob.class_name) > 5 else blob.class_name
-                                x, y = blob.centroid
-                                if georef:
-                                    x, y = transform * (x, y)
-                                else:
-                                    # we must invert Y axis if not referenced                                    
-                                    y = self.activeviewer.image.height - y
-                                msp.add_text(
-                                    class_name, height=text_height_scale * 22.0,
-                                    dxfattribs={
-                                        'layer': layer_name
-                                    }
-                                ).set_placement((x, y), align=TextEntityAlignment.MIDDLE_CENTER)
+                        # Save the DXF file
+                        doc.saveas(output_filename)
 
-                    # Save the DXF file
-                    doc.saveas(output_filename)
-
-                    # Show a confirmation message box
-                    msgBox = QMessageBox(self)
-                    msgBox.setWindowTitle("Export Successful")
-                    msgBox.setText("DXF file exported successfully!")
-                    msgBox.exec()
-                    return
-                except Exception as e:
-                    msgBox = QMessageBox(self)
-                    msgBox.setWindowTitle("Export Failed")
-                    if "/" in str(e):
-                        print("/ inside a class, please rename the class before continuing")
-                        msgBox.setText("Error exporting DXF file:\nforbidden character (/) inside class names, please rename the classes before continuing")
-                    else:
+                        # Show a confirmation message box
+                        msgBox = QMessageBox(self)
+                        msgBox.setWindowTitle("Export Successful")
+                        msgBox.setText("DXF file exported successfully!")
+                        msgBox.exec()
+                        return
+                    except Exception as e:
+                        msgBox = QMessageBox(self)
+                        msgBox.setWindowTitle("Export Failed")
                         msgBox.setText("Error exporting DXF file: " + str(e))
-                    msgBox.exec()
-                    return
+                        msgBox.exec()
+                        return
+            else:
+                return
 
     @pyqtSlot()
     def exportGeoRefLabelMap(self):
