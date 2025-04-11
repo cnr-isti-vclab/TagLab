@@ -36,7 +36,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QFileDialog, QCo
     QMessageBox, QGroupBox, QLayout, QHBoxLayout, QVBoxLayout, QFrame, QDockWidget, QTextEdit, QAction, \
     QDialog
 
-from source.QtDXFExport import QtDXFExportOptions  # Import the options dialog
+from source.QtExportDXF import QtDXFExportOptions  # Import the options dialog
 
 
 
@@ -4945,12 +4945,12 @@ class TagLab(QMainWindow):
 
                         # Determine which blobs to export
                         if export_all_blobs:
-                            blobs = self.activeviewer.annotations.seg_blobs
+                            exported_blobs = self.activeviewer.annotations.seg_blobs
                         else:
-                            blobs = []
-                            for segmented in self.activeviewer.annotations.seg_blobs:
-                                if self.viewerplus.project.isLabelVisible(segmented.class_name):
-                                    blobs.append(segmented)
+                            exported_blobs = []
+                            for to_export in self.activeviewer.annotations.seg_blobs:
+                                if self.viewerplus.project.isLabelVisible(to_export.class_name):
+                                    exported_blobs.append(to_export)
                                 
 
                         # Add the outline of the map or working area
@@ -4981,51 +4981,51 @@ class TagLab(QMainWindow):
                         )
 
                         # Add blobs and grid (if selected)
-                        for blob in blobs:
-                            if self.viewerplus.project.isLabelVisible(blob.class_name):
-                                layer_name = blob.class_name
-                                col = self.project.labels[blob.class_name].fill
-                                color_code = ezdxf.colors.rgb2int(col)
+                        for blob in exported_blobs:
+                            # if self.viewerplus.project.isLabelVisible(blob.class_name):
+                            layer_name = blob.class_name
+                            col = self.project.labels[blob.class_name].fill
+                            color_code = ezdxf.colors.rgb2int(col)
 
-                                if not doc.layers.has_entry(layer_name):
-                                    doc.layers.new(name=layer_name, dxfattribs={'true_color': color_code})
+                            if not doc.layers.has_entry(layer_name):
+                                doc.layers.new(name=layer_name, dxfattribs={'true_color': color_code})
 
+                            if georef:
+                                points = [transform * (x, y) for x, y in blob.contour]
+                            else:
+                                points = [(x, self.activeviewer.image.height - y) for x, y in blob.contour]
+
+                            if points:
+                                msp.add_lwpolyline(
+                                    points,
+                                    close=True,
+                                    dxfattribs={'layer': layer_name}
+                                )
+
+                            for inner_contour in blob.inner_contours:
                                 if georef:
-                                    points = [transform * (x, y) for x, y in blob.contour]
+                                    inner_points = [transform * (x, y) for x, y in inner_contour]
                                 else:
-                                    points = [(x, self.activeviewer.image.height - y) for x, y in blob.contour]
+                                    inner_points = [(x, self.activeviewer.image.height - y) for x, y in inner_contour]
 
-                                if points:
-                                    msp.add_lwpolyline(
-                                        points,
-                                        close=True,
-                                        dxfattribs={'layer': layer_name}
-                                    )
+                                if inner_points:
+                                    msp.add_lwpolyline(inner_points, close=True, dxfattribs={'layer': layer_name})
 
-                                for inner_contour in blob.inner_contours:
-                                    if georef:
-                                        inner_points = [transform * (x, y) for x, y in inner_contour]
-                                    else:
-                                        inner_points = [(x, self.activeviewer.image.height - y) for x, y in inner_contour]
-
-                                    if inner_points:
-                                        msp.add_lwpolyline(inner_points, close=True, dxfattribs={'layer': layer_name})
-
-                                if blob.class_name and blob.class_name != "Empty":
-                                    # class_name = blob.class_name[:5] if len(blob.class_name) > 5 else blob.class_name
-                                    if use_full_name:
-                                        class_name = blob.class_name
-                                    else:
-                                        class_name = blob.class_name[:shortened_length]
-                                    x, y = blob.centroid
-                                    if georef:
-                                        x, y = transform * (x, y)
-                                    else:
-                                        y = self.activeviewer.image.height - y
-                                    msp.add_text(
-                                        class_name, height=text_height_scale * 22.0,
-                                        dxfattribs={'layer': layer_name}
-                                    ).set_placement((x, y), align=TextEntityAlignment.MIDDLE_CENTER)
+                            if blob.class_name and blob.class_name != "Empty":
+                                # class_name = blob.class_name[:5] if len(blob.class_name) > 5 else blob.class_name
+                                if use_full_name:
+                                    class_name = blob.class_name
+                                else:
+                                    class_name = blob.class_name[:shortened_length]
+                                x, y = blob.centroid
+                                if georef:
+                                    x, y = transform * (x, y)
+                                else:
+                                    y = self.activeviewer.image.height - y
+                                msp.add_text(
+                                    class_name, height=text_height_scale * 22.0,
+                                    dxfattribs={'layer': layer_name}
+                                ).set_placement((x, y), align=TextEntityAlignment.MIDDLE_CENTER)
 
                         if export_grid:                        
                             if self.activeviewer.image.grid is not None:

@@ -5,51 +5,53 @@ class QtDXFExportOptions(QDialog):  # Change QWidget to QDialog
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("DXF Export Options")
-        self.setFixedSize(300, 500)
+        self.adjustSize()
+        self.setSizeGripEnabled(True)
+
+        # self.setFixedSize(300, 500)
 
         # Main layout
         main_layout = QVBoxLayout()
-
+        
+        # Create blobs layout
+        blobs_layout = QVBoxLayout()
+        blobs_layout.setSpacing(5)
         # Export blobs options
-        blobs_label = QLabel("Export Blobs:")
-        main_layout.addWidget(blobs_label)
+        blobs_label = QLabel("Export")
+        blobs_layout.addWidget(blobs_label)
+        
 
         self.blobs_group = QButtonGroup(self)
-        all_blobs_radio = QRadioButton("All Blobs")
-        visible_blobs_radio = QRadioButton("Only Visible Blobs")
+        all_blobs_radio = QRadioButton("All Regions")
+        visible_blobs_radio = QRadioButton("Only Visible Regions")
         all_blobs_radio.setChecked(True)
         self.blobs_group.addButton(all_blobs_radio)
         self.blobs_group.addButton(visible_blobs_radio)
-
-        blobs_layout = QVBoxLayout()
+        
         blobs_layout.addWidget(all_blobs_radio)
         blobs_layout.addWidget(visible_blobs_radio)
         main_layout.addLayout(blobs_layout)
 
-        # Georeferencing option
-        self.georef_checkbox = QCheckBox("Use Georeferencing (if available)")
-        self.georef_checkbox.setEnabled(False)  # Initially greyed out
-        main_layout.addWidget(self.georef_checkbox)
-
-        # Export grid option
-        self.grid_checkbox = QCheckBox("Export Grid")
-        main_layout.addWidget(self.grid_checkbox)
-
+        main_layout.setSpacing(20)
+        
         # Export class name options
-        class_name_label = QLabel("Export Class Names:")
-        main_layout.addWidget(class_name_label)
+        class_layout = QVBoxLayout()
+        class_layout.setSpacing(5)
+        class_name_label = QLabel("Export Labels")
+        class_layout.addWidget(class_name_label)
+        class_layout.setSpacing(5)
+
 
         self.class_name_group = QButtonGroup(self)
-        full_name_radio = QRadioButton("Full Class Names")
-        shortened_name_radio = QRadioButton("Shortened Class Names")
+        full_name_radio = QRadioButton("Full Label Names")
+        shortened_name_radio = QRadioButton("Shortened Label Names")
         full_name_radio.setChecked(True)
         self.class_name_group.addButton(full_name_radio)
         self.class_name_group.addButton(shortened_name_radio)
 
-        class_name_layout = QVBoxLayout()
-        class_name_layout.addWidget(full_name_radio)
-        class_name_layout.addWidget(shortened_name_radio)
-        main_layout.addLayout(class_name_layout)
+        class_layout.addWidget(full_name_radio)
+        class_layout.addWidget(shortened_name_radio)
+        class_layout.setSpacing(5)
 
         # Shortened class name length option
         self.shortened_length_label = QLabel("Initial characters:")
@@ -62,10 +64,27 @@ class QtDXFExportOptions(QDialog):  # Change QWidget to QDialog
         shortened_length_layout = QHBoxLayout()
         shortened_length_layout.addWidget(self.shortened_length_label)
         shortened_length_layout.addWidget(self.shortened_length_spinbox)
-        main_layout.addLayout(shortened_length_layout)
+        class_layout.addLayout(shortened_length_layout)
 
         # Enable/disable shortened name length based on selection
         shortened_name_radio.toggled.connect(self.toggleShortenedNameLength)
+
+        main_layout.addLayout(class_layout)
+
+        # Others options layout
+        others_layout = QVBoxLayout()
+        others_layout.setSpacing(10)
+
+        # Georeferencing option
+        self.georef_checkbox = QCheckBox("Use Georeferencing")
+        self.georef_checkbox.setEnabled(False)  # Initially greyed out
+        others_layout.addWidget(self.georef_checkbox)
+
+        # Export grid option
+        self.grid_checkbox = QCheckBox("Export Grid")
+        others_layout.addWidget(self.grid_checkbox)
+
+        main_layout.addLayout(others_layout)
 
         # Buttons
         buttons_layout = QHBoxLayout()
