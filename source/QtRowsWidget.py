@@ -51,8 +51,11 @@ class RowsWidget(QWidget):
         self.setWindowTitle("Rows Analysis")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowTitleHint)
 
-        if parent is not None:
+        self.parent_viewer = None
+        if parent:
             self.parent_viewer = parent
+            self.scale = self.parent_viewer.image.map_px_to_mm_factor
+            # print(f"Scale is {self.scale}")
         
         self.image_cropped = cropped_image
         # self.image_mask = image_mask
@@ -100,11 +103,13 @@ class RowsWidget(QWidget):
         
         line_viewer_layout.setSpacing(15)
         
+        lineangle_label = QLabel(f"Slopes")
         self.angleTextBox = QTextEdit(self)
         self.angleTextBox.setReadOnly(True)
         self.angleTextBox.setFixedWidth(IMAGEVIEWER_W)
         self.angleTextBox.setFixedHeight(TEXTBOX_H)
         # layout.addWidget(self.angleTextBox)
+        line_viewer_layout.addWidget(lineangle_label, alignment=Qt.AlignTop)
         line_viewer_layout.addWidget(self.angleTextBox, alignment=Qt.AlignTop)
 
         # Add export lines
@@ -164,7 +169,7 @@ class RowsWidget(QWidget):
         self.BrickWidthBox.setText(str(self.default_width))
 
         self.default_dist = 10
-        brickdist_label = QLabel(f"Row distance:")
+        brickdist_label = QLabel(f"Rows distance:")
         self.BrickDistBox = QLineEdit(self)
         self.BrickDistBox.setReadOnly(False)
         self.BrickDistBox.setFixedWidth(150)
@@ -180,12 +185,11 @@ class RowsWidget(QWidget):
         brickwidth_layout.setSpacing(5)
         brickwidth_layout.addWidget(self.BrickDistBox, alignment=Qt.AlignLeft)
 
-
         skel_viewer_layout.addLayout(brickwidth_layout)
         
         skel_viewer_layout.setSpacing(5)
 
-        skelangle_label = QLabel(f"Angles:")
+        skelangle_label = QLabel(f"Slopes")
         self.skelTextBox = QTextEdit(self)
         self.skelTextBox.setReadOnly(True)
         self.skelTextBox.setFixedWidth(IMAGEVIEWER_W)
@@ -251,7 +255,12 @@ class RowsWidget(QWidget):
 
         value = self.slider.value()
 
-        self.slider_label = QLabel(f"Pixel Grow: {(value-1)//2}")
+        if self.scale:
+            self.slider_label = QLabel(f"Joint Thickness (mm): {((value-1)//2) * float(self.scale)}")
+        else:
+            self.slider_label = QLabel(f"Joint Thickness (px): {((value-1)//2)}")
+        
+
         self.slider_label.setFixedHeight(30)
         
         slider_layout.addWidget(self.slider_label)
@@ -279,7 +288,10 @@ class RowsWidget(QWidget):
     
     def updateStructuringElement(self, value):
         self.structuring_element_size = value
-        self.slider_label.setText(f"Pixel Grow: {(value-1)//2}")
+        if self.scale:
+            self.slider_label.setText(f"Joint Thickness (mm): {((value-1)//2) * float(self.scale)}")
+        else:
+            self.slider_label.setText(f"Joint Thickness (px): {((value-1)//2)}")
             
     def applyHough(self):
         if self.set_textbox == True:
