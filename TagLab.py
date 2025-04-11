@@ -4920,15 +4920,18 @@ class TagLab(QMainWindow):
             # options_dialog.exec_()
 
                 # Retrieve the selected options
-                export_all_blobs = options_dialog.blobs_group.checkedButton().text() == "All Blobs"
+                export_all_blobs = options_dialog.blobs_group.checkedButton().text() == "All Regions"
                 use_georef = options_dialog.georef_checkbox.isChecked()
                 export_grid = options_dialog.grid_checkbox.isChecked()
-                use_full_name = options_dialog.class_name_group.checkedButton().text() == "Full Class Names"
+                use_full_name = options_dialog.class_name_group.checkedButton().text() == "Full Label Names"
                 shortened_length = options_dialog.shortened_length_spinbox.value()
 
                 # Open a file dialog to select the output file
                 filters = "DXF (*.dxf)"
                 output_filename, _ = QFileDialog.getSaveFileName(self, "Save DXF File As", self.taglab_dir, filters)
+                if not output_filename.endswith(".dxf"):
+                    output_filename = output_filename + ".dxf"
+                print(output_filename)
 
                 if output_filename:
                     # Create a new DXF document
