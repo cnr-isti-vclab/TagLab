@@ -5,8 +5,8 @@ import cv2
 import matplotlib.pyplot as plt
 
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QSizePolicy, QTextEdit, QLineEdit, QSlider, QMenu, QCheckBox, QMenuBar, QAction, QDialog
-from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen, QColor, QBrush
-from PyQt5.QtCore import pyqtSignal, Qt, QBuffer
+from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen, QColor, QBrush, QPolygonF
+from PyQt5.QtCore import pyqtSignal, Qt, QBuffer, QPointF
 
 from source.QtImageViewer import QtImageViewer
 from source.QtExportRows import ExportDialog
@@ -56,6 +56,9 @@ class RowsWidget(QWidget):
             self.parent_viewer = parent
             self.scale = self.parent_viewer.image.map_px_to_mm_factor
             # print(f"Scale is {self.scale}")
+            self.blob_list = blobs
+            rettangolo = self.parent_viewer.dragSelectionRect.rect()
+            self.off = [rettangolo.x(), rettangolo.y()]
         
         self.image_cropped = cropped_image
         # self.image_mask = image_mask
@@ -69,7 +72,7 @@ class RowsWidget(QWidget):
         self.rect = rect
         self.blob_list = blobs
         self.centroids = []
-        self.bboxes = []
+        self.bboxes = []        
 
         self.set_textbox = False
 
@@ -100,6 +103,12 @@ class RowsWidget(QWidget):
         self.actionShowLines.toggled.connect(self.toggleShowLines)
         self.line_checked = False
         line_viewer_layout.addWidget(self.line_viewer, alignment=Qt.AlignTop)
+
+        self.actionShowBlobs = QAction("Show Blobs", self)
+        
+        self.actionShowBlobs.setCheckable(False)
+        self.actionShowBlobs.toggled.connect(self.toggleShowBlobs)
+        self.blobs_checked = False
         
         line_viewer_layout.setSpacing(15)
         
@@ -303,12 +312,13 @@ class RowsWidget(QWidget):
 
         self.actionShowLines.setCheckable(True)
         self.actionShowMask.setCheckable(True)
+        self.actionShowBlobs.setCheckable(True)
 
         self.line_checked = True
         self.actionShowLines.setChecked(True)
         self.mask_checked = True
         self.actionShowMask.setChecked(True)
-        self.toggleMaskLines(self.line_checked, self.mask_checked)
+        self.toggleMaskLines(self.line_checked, self.mask_checked, self.blobs_checked)
 
         # i += 1
         self.skeleton = self.applySkeletonization(self.masch)
@@ -368,29 +378,29 @@ class RowsWidget(QWidget):
         # rect_mask_grow = rect_mask_grow - mask
 
         # Save the rect_mask_grow as a matplotlib figure
-        plt.figure(figsize=(10, 10))
-        plt.imshow(rect_mask_grow_sub, cmap='gray')
-        plt.axis('off')
-        plt.savefig("rect_mask_grow.png", bbox_inches='tight', pad_inches=0)
-        plt.close()
+        # plt.figure(figsize=(10, 10))
+        # plt.imshow(rect_mask_grow_sub, cmap='gray')
+        # plt.axis('off')
+        # plt.savefig("rect_mask_grow.png", bbox_inches='tight', pad_inches=0)
+        # plt.close()
 
         rect_mask_eroded = binary_erosion(rect_mask_grow, structure=structuring_element_half)
 
         # Save the rect_mask_eroded as a matplotlib figure
-        plt.figure(figsize=(10, 10))
-        plt.imshow(rect_mask_eroded, cmap='gray')
-        plt.axis('off')
-        plt.savefig("rect_mask_eroded.png", bbox_inches='tight', pad_inches=0)
-        plt.close()
+        # plt.figure(figsize=(10, 10))
+        # plt.imshow(rect_mask_eroded, cmap='gray')
+        # plt.axis('off')
+        # plt.savefig("rect_mask_eroded.png", bbox_inches='tight', pad_inches=0)
+        # plt.close()
 
         rect_mask_final = rect_mask_eroded - mask
 
         # Save the rect_mask_eroded as a matplotlib figure
-        plt.figure(figsize=(10, 10))
-        plt.imshow(rect_mask_final, cmap='gray')
-        plt.axis('off')
-        plt.savefig("rect_mask_final.png", bbox_inches='tight', pad_inches=0)
-        plt.close()
+        # plt.figure(figsize=(10, 10))
+        # plt.imshow(rect_mask_final, cmap='gray')
+        # plt.axis('off')
+        # plt.savefig("rect_mask_final.png", bbox_inches='tight', pad_inches=0)
+        # plt.close()
 
         return rect_mask_grow_sub, rect_mask_final
     
@@ -444,16 +454,16 @@ class RowsWidget(QWidget):
         h, theta, d = hough_line(mask)
 
         # Visualize the Hough Transform accumulator
-        plt.figure(figsize=(10, 6))
-        plt.imshow(np.log(1 + h), extent=[np.rad2deg(theta[0]), np.rad2deg(theta[-1]), d[-1], d[0]],
-                cmap='hot', aspect=1.5)
-        plt.title('Hough Transform Accumulator')
-        plt.xlabel('Theta (degrees)')
-        plt.ylabel('Rho (pixels)')
-        plt.colorbar(label='Votes')
-        # plt.show()
-        plt.savefig("hough_transf.png", bbox_inches='tight', pad_inches=0)
-        plt.close()
+        # plt.figure(figsize=(10, 6))
+        # plt.imshow(np.log(1 + h), extent=[np.rad2deg(theta[0]), np.rad2deg(theta[-1]), d[-1], d[0]],
+        #         cmap='hot', aspect=1.5)
+        # plt.title('Hough Transform Accumulator')
+        # plt.xlabel('Theta (degrees)')
+        # plt.ylabel('Rho (pixels)')
+        # plt.colorbar(label='Votes')
+        # # plt.show()
+        # plt.savefig("hough_transf.png", bbox_inches='tight', pad_inches=0)
+        # plt.close()
 
         # Extract peaks from the accumulator
         lines = []
@@ -506,20 +516,20 @@ class RowsWidget(QWidget):
                     # print(f"Intersection at: {intersection}")
 
         # Visualize lines and intersections on the original mask
-        plt.figure(figsize=(8, 8))
-        plt.imshow(mask, cmap='gray')
-        plt.axis('off')
+        # plt.figure(figsize=(8, 8))
+        # plt.imshow(mask, cmap='gray')
+        # plt.axis('off')
 
-        for ((x0, y0), (x1, y1), ang) in lines:
-            plt.plot((x0, x1), (y0, y1), color='b')  # Plot detected lines in red
+        # for ((x0, y0), (x1, y1), ang) in lines:
+        #     plt.plot((x0, x1), (y0, y1), color='b')  # Plot detected lines in red
 
-        for (px, py) in intersection_points:
-            plt.plot(px, py, 'ro')  # Plot intersections as red dots
+        # for (px, py) in intersection_points:
+        #     plt.plot(px, py, 'ro')  # Plot intersections as red dots
 
-        plt.title('Detected Lines and Intersections')
-        plt.savefig("hough_lines_with_intersections.png", bbox_inches='tight', pad_inches=0)
-        # plt.show()
-        plt.close()
+        # plt.title('Detected Lines and Intersections')
+        # plt.savefig("hough_lines_with_intersections.png", bbox_inches='tight', pad_inches=0)
+        # # plt.show()
+        # plt.close()
 
         # Remove lines that are part of intersections from lines_ints
         for line1, line2, _ in intersections:
@@ -803,42 +813,9 @@ class RowsWidget(QWidget):
         # plt.title("Skeleton Graph with Intersections")
         # plt.savefig("vectorized_skeleton.png", bbox_inches='tight', pad_inches=0)
         # plt.close()
-
-
-    def drawBranchSkel(self, skeleton, branch_points, connections, branch, skel, conn):
-         # Create a QImage from the skeleton and branch points
-        branch_image = QImage(skeleton.shape[1], skeleton.shape[0], QImage.Format_ARGB32)
-        branch_image.fill(Qt.transparent)
-        painter = QPainter(branch_image)
-
-        if branch:                
-            pen = QPen(Qt.red, 10)
-            painter.setPen(pen)
-            painter.setBrush(QBrush(Qt.red))
-            for point in branch_points:
-                painter.drawEllipse(point[1], point[0], 10, 10)
-
-        if skel:
-            pen = QPen(Qt.blue, 5)
-            painter.setPen(pen)
-
-            # Draw skeleton
-            for (y, x) in zip(*np.where(skeleton)):
-                painter.drawPoint(x, y)
-        
-        if conn: 
-            pen = QPen(Qt.green, 3)
-            for i, (point1, point2, color, ang) in enumerate(connections):
-                pen.setColor(QColor(color[0], color[1], color[2]))
-                painter.setPen(pen)
-
-                painter.drawLine(point1[1], point1[0], point2[1], point2[0])
-                self.updateSkelTextBox([ang], i, color=f'rgb({color[0]},{color[1]},{color[2]})')
-
-        painter.end()
-
-        return branch_image
-
+    
+    #####MASK-LINES METHODS#####
+    
     def paintLinesImage(self, image, lines):
         painter = QPainter(image)
         pen = QPen(Qt.red, 5)
@@ -858,20 +835,95 @@ class RowsWidget(QWidget):
         #Set the mask with lines as image overlay
         # self.image_overlay = image
         return image
+    
+    def drawBlobs(self, blob_image, blobs):
+            if blob_image is None:
+                print("No image loaded in the viewer.")
+                return
+            
+            if not blobs:
+                print("No blobs to display.")
+                return
+
+            # Use QPainter to draw blobs
+            painter = QPainter(blob_image)
+            # pen = QPen(QColor(255, 0, 0), 2)  # Red color with a width of 2
+            # painter.setPen(pen)
+
+            for  blob in blobs:
+                # set the color for the contour same of the blob 
+                label_color = self.parent_viewer.project.classBrushFromName(blob).color()  
+                pen = QPen(label_color, 4)  # Use the label color for the contour
+                painter.setPen(pen)
+                
+                cx, cy = blob.centroid
+                # print(f" centroid is {blob.centroid}")
+
+                mapped_centroid = [cx - self.off[0], cy - self.off[1]]
+                # print(f"mapped centroid is {mapped_centroid}")
+
+                # Draw the centroid on the image
+                painter.setBrush(QBrush(QColor(0, 0, 255)))  # Blue color for the centroid
+                painter.drawEllipse(int(mapped_centroid[0]) - 5, int(mapped_centroid[1]) - 5, 10, 10)  # Circle with radius 5
+                
+                painter.setBrush(Qt.NoBrush)  # No fill
+                
+                # x, y, width, height = blob.bbox  # blob boundingbox 
+                # print(f"original is {blob.bbox}")
+                # mapped = [int(x - self.off[1]), int(y - self.off[0])] 
+                # print(f"mapped is {mapped}")
+                # painter.drawRect(mapped[1], mapped[0], width, height)
+
+                # Draw the perimeter (contour)
+                contour = blob.contour
+                if contour is not None and len(contour) > 1:
+                    # Map the contour points to the viewer's coordinate system
+                    mapped_contour = [
+                        QPointF(point[0] - self.off[0], point[1] - self.off[1]) for point in contour
+                    ]
+
+                    # Create a QPolygonF from the mapped contour
+                    polygon = QPolygonF(mapped_contour)
+
+                    # Draw the perimeter                
+                    painter.drawPolygon(polygon)
+
+
+            painter.end()
+
+            # Save the blob_image to a file
+            # blob_image.save("blob_image.png")
+
+            # Update the viewer with the new image
+            # self.line_viewer.setOverlayImage(overlay_image)
+            return blob_image
 
     def showMaskLinesMenu(self, position):
             menu = QMenu(self)
             menu.addAction(self.actionShowMask)
             menu.addAction(self.actionShowLines)
+            menu.addAction(self.actionShowBlobs)
             menu.exec_(self.line_viewer.mapToGlobal(position))
 
     def toggleShowMask(self, checked):
         if checked:
             self.mask_checked = True
+            self.blobs_checked = False
+            self.actionShowBlobs.setChecked(False)
         else:
             self.mask_checked = False
         
-        self.toggleMaskLines(self.line_checked, self.mask_checked)
+        self.toggleMaskLines(self.line_checked, self.mask_checked, self.blobs_checked)
+
+    def toggleShowBlobs(self, checked):
+        if checked:
+            self.blobs_checked = True
+            self.mask_checked = False
+            self.actionShowMask.setChecked(False)
+        else:
+            self.blobs_checked = False
+        
+        self.toggleMaskLines(self.line_checked, self.mask_checked, self.blobs_checked)
 
     def toggleShowLines(self, checked):
         if checked:
@@ -895,19 +947,31 @@ class RowsWidget(QWidget):
             self.resetAngleTextBox()
             self.set_textbox = False
         
-        self.toggleMaskLines(self.line_checked, self.mask_checked)
+        self.toggleMaskLines(self.line_checked, self.mask_checked, self.blobs_checked)
 
-    def toggleMaskLines(self, line_checked, mask_checked):
-        
+    def toggleMaskLines(self, line_checked, mask_checked, blobs_checked):
         if line_checked  == True and mask_checked == True:
             qmask = genutils.maskToQImage(self.masch)
             mask_with_lines = self.paintLinesImage(qmask, self.lines)
 
             self.line_viewer.setOpacity(0.7)
             self.line_viewer.setOverlayImage(mask_with_lines)
-        
-        elif line_checked == True and mask_checked == False:
-            image = self.image_cropped.copy()
+
+        elif line_checked == True and blobs_checked == True: 
+            # image = self.image_cropped.copy()
+            image = QImage(self.image_cropped.size(), QImage.Format_ARGB32)
+            image.fill(Qt.transparent)
+            image_with_lines = self.paintLinesImage(image, self.lines)
+
+            blob_image = self.drawBlobs(image_with_lines, self.blob_list)
+
+            self.line_viewer.setOpacity(0.7)
+            self.line_viewer.setOverlayImage(blob_image)
+
+        elif line_checked == True and mask_checked == False and blobs_checked == False:
+            # image = self.image_cropped.copy()
+            image = QImage(self.image_cropped.size(), QImage.Format_ARGB32)
+            image.fill(Qt.transparent)
             image_with_lines = self.paintLinesImage(image, self.lines)
 
             self.line_viewer.setOpacity(0.7)
@@ -918,13 +982,23 @@ class RowsWidget(QWidget):
             
             self.line_viewer.setOpacity(0.7)
             self.line_viewer.setOverlayImage(qmask)
+
+        elif line_checked == False and blobs_checked == True: 
+            # image = self.image_cropped.copy()
+            image = QImage(self.image_cropped.size(), QImage.Format_ARGB32)
+            image.fill(Qt.transparent)
+            
+            blob_image = self.drawBlobs(image, self.blob_list)
+
+            self.line_viewer.setOpacity(0.7)
+            self.line_viewer.setOverlayImage(blob_image)
         
         else:
             self.line_viewer.setFixedWidth(IMAGEVIEWER_W)
             self.line_viewer.setFixedHeight(IMAGEVIEWER_H)
             self.line_viewer.setImg(self.image_cropped)
 
-######################################################################
+    #####BRANCHSKELETON METHODS#####
 
     def showSkelMenu(self, position):
             menu = QMenu(self)
@@ -973,8 +1047,40 @@ class RowsWidget(QWidget):
             self.skel_viewer.setFixedHeight(IMAGEVIEWER_H)
             self.skel_viewer.setImg(self.image_cropped)
 
+    def drawBranchSkel(self, skeleton, branch_points, connections, branch, skel, conn):
+         # Create a QImage from the skeleton and branch points
+        branch_image = QImage(skeleton.shape[1], skeleton.shape[0], QImage.Format_ARGB32)
+        branch_image.fill(Qt.transparent)
+        painter = QPainter(branch_image)
 
-###########################################################
+        if skel:
+            pen = QPen(Qt.blue, 5)
+            painter.setPen(pen)
+
+            # Draw skeleton
+            for (y, x) in zip(*np.where(skeleton)):
+                painter.drawPoint(x, y)
+        
+        if conn: 
+            pen = QPen(Qt.green, 3)
+            for i, (point1, point2, color, ang) in enumerate(connections):
+                pen.setColor(QColor(color[0], color[1], color[2]))
+                painter.setPen(pen)
+
+                painter.drawLine(point1[1], point1[0], point2[1], point2[0])
+                self.updateSkelTextBox([ang], i, color=f'rgb({color[0]},{color[1]},{color[2]})')
+
+        if branch:                
+            pen = QPen(Qt.red, 7)
+            painter.setPen(pen)
+            painter.setBrush(QBrush(Qt.red))
+            for point in branch_points:
+                painter.drawEllipse(point[1], point[0], 7, 7)
+        
+        painter.end()
+
+        return branch_image
+    
     def connectBranchPoints(self, branch_points, brick_width, brick_dist):  
         
         # Connect branch points that are adjacent on the same row (within ±15 pixels vertically).
@@ -1019,7 +1125,7 @@ class RowsWidget(QWidget):
                 
             #     connections.append((row[i], row[i + 1], color, angle))
 
-            print(brick_width)
+            # print(brick_width)
             for i in range(len(row) - 1):
                 point1, point2 = row[i], row[i + 1]
                 dx = abs(point2[1] - point1[1])  # Horizontal distance
@@ -1034,7 +1140,7 @@ class RowsWidget(QWidget):
 
         self.edges = connections
 
-#####################################################################################################################
+    #####EXPORT METHODS#####
 
     def exportLineViewerData(self):
             options = self.getLineExportOptions()
@@ -1092,7 +1198,6 @@ class RowsWidget(QWidget):
             return dialog.getExportOptions()
         return None
     
-
     def exportSkelViewerData(self):
             options = self.getSkelExportOptions()
             if not options:
@@ -1152,4 +1257,4 @@ class RowsWidget(QWidget):
         if dialog.exec_() == QDialog.Accepted:
             return dialog.getExportOptions()
         return None
-                
+  
