@@ -247,7 +247,7 @@ class TagLab(QMainWindow):
         self.btnBricksSegmentation = self.newButton("brick.png",    "Bricks segmentation",    flatbuttonstyle, self.bricksSegmentation)
         self.btnSamInteractive     = self.newButton("saminteractive2.png", "SAM - positive/negative clicks in an area", flatbuttonstyle, self.saminteractive)
         self.btnSam                = self.newButton("sam.png", "SAM - all instances in an area", flatbuttonstyle, self.sam)
-        self.btnSamAuto            = self.newButton("sam.png", "SAMAutomatic - all instances in an area", flatbuttonstyle, self.samAuto)        
+        self.btnSamAuto            = self.newButton("split.png", "SAMAutomatic - all instances in an rectangle", flatbuttonstyle, self.samAuto)        
         self.btnFourClicks         = self.newButton("dexter.png",   "4-clicks segmentation",  flatbuttonstyle, self.fourClicks)
         self.btnRitm               = self.newButton("ritm.png",     "Positive/negative clicks segmentation", flatbuttonstyle, self.ritm)
         self.btnRows               = self.newButton("brick.png",     "Rows analysis",      flatbuttonstyle, self.rows)

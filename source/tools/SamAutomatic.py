@@ -178,8 +178,10 @@ class SamAuto(Tool):
                     rect = QRectF(x, y, chunk_size, chunk_size).intersected(QRectF(0, 0, w, h))
                     # if rect.width() >= 512 and rect.height() >= 512:  # Ensure minimum chunk size
                     chunk = image.copy(rect.toRect())
-                    # Save the chunk as a .png file
-                    chunk.save(f"chunk_{x}_{y}.png")
+                    
+                    # VISUALIZATION: Save the chunk as a .png file
+                    # chunk.save(f"chunk_{x}_{y}.png")
+                    
                     chunks.append((chunk, (x, y)))  # Store the chunk and its top-left offset
         except Exception as e:
             print(f"Error dividing image: {e}")
