@@ -169,7 +169,7 @@ class SamAuto(Tool):
         h = image.height()
         w = image.width()
         chunk_size = 1024
-        overlap = 50
+        overlap = 200
 
         try:
             for y in range(0, h, chunk_size - overlap):
@@ -254,7 +254,7 @@ class SamAuto(Tool):
         return True       
 
     #remove blobs on the edge of the rectangle cursor
-    def removeEdgeBlobs(self):
+    def removeGlobalEdgeBlobs(self):
 
         if self.work_area_rect is None:
             return
@@ -287,7 +287,42 @@ class SamAuto(Tool):
                 top - rect.top() < margin or
                 rect.bottom() - bottom < margin
             ):
-                self.created_blobs.remove(blob)    
+                self.created_blobs.remove(blob)   
+    
+    def removeEdgeBlobs(self,blobs,x_offset, y_offset):        
+        rect = QRectF(x_offset, y_offset, 1024, 1024)
+        rect = rect.normalized()
+        
+        # VISUALIZATION: Draw only the rectangle on the map in black        
+        # pen = QPen(Qt.black)
+        # pen.setWidth(2)
+        # rect = QRectF(x_offset, y_offset, 1024, 1024)
+        # self.viewerplus.scene.addRect(rect, pen)
+
+        print(f"rect coordinates are {rect.left(), rect.right(), rect.top(), rect.bottom()}")
+
+        # margin to consider the edge TO FINETUNE!!!!
+        margin = 10  
+        
+        # filtered_blobs = []
+        # blobs = self.created_blobs.copy()
+        copied = blobs.copy()
+        for blob in copied:
+
+            bbox = blob.bbox
+            top = bbox[0]
+            left = bbox[1]
+            right = bbox[1] + bbox[2]
+            bottom = bbox[0] + bbox[3]
+            
+            #remove blobs if they are on the edges
+            if  (
+                left - rect.left() < margin or
+                rect.right() - right < margin or
+                top - rect.top() < margin or
+                rect.bottom() - bottom < margin
+            ):
+                blobs.remove(blob)    
 
     def reset(self):
 
@@ -300,6 +335,7 @@ class SamAuto(Tool):
 
         self.work_area_set = False
         self.work_area_item = None
+        #  VISUALIZATION: Remove the rectangle on the map
         self.viewerplus.scene.removeItem(self.work_area_rect)
         self.work_area_rect = None
         
@@ -338,6 +374,13 @@ class SamAuto(Tool):
             else:
                 print(f"Segmentation failed: {e}")
 
+        # for blob in self.created_blobs:
+        #     self.viewerplus.addBlob(blob, selected=True)
+
+        # self.viewerplus.saveUndo()
+        # self.created_blobs = []
+        # self.samEnded.emit()
+        
         self.removeBlobs()
         self.viewerplus.resetTools()
 
@@ -385,26 +428,35 @@ class SamAuto(Tool):
         print(x_off, y_off)
         global_offx = self.offset[0]
         global_offy = self.offset[1]
+        created = []
         for mask in masks:
             bbox = mask["bbox"]
             bbox = [int(value) for value in bbox]
             segm_mask = mask["segmentation"].astype('uint8')*255
             segm_mask_crop = segm_mask[bbox[1]:bbox[1]+bbox[3], bbox[0]:bbox[0]+bbox[2]]
             blob = self.viewerplus.image.annotations.createBlobFromSingleMask(segm_mask_crop, bbox[0] + global_offx + x_off, bbox[1] + global_offy + y_off)
-            self.created_blobs.append(blob)
+            # self.created_blobs.append(blob)
+            created.append(blob)
+
+        print(f"number of blobs created is {len(created)}")
+
+        self.removeEdgeBlobs(created, global_offx+x_off, global_offy+y_off)
+        print(f"number of blobs created after removeEdge is {len(created)}")
+        self.created_blobs.extend(created)
+        print(f"number of appended blobs created is {len(self.created_blobs)}")
 
     def removeBlobs(self):
         try:
             print(f"self.created_blob len pre is {len(self.created_blobs)}")
             genutils.removeOverlapping(self.created_blobs, self.created_blobs)
             print(f"self.created_blob len post is {len(self.created_blobs)}")
-            self.removeEdgeBlobs()
+            self.removeGlobalEdgeBlobs()
             print(f"self.created_blob len post removeEdge is {len(self.created_blobs)}")
-            # print(f"Number of yet annotated blobs is {len(self.viewerplus.image.annotations.seg_blobs)}")
+            print(f"Number of yet annotated blobs is {len(self.viewerplus.image.annotations.seg_blobs)}")
 
-            # genutils.removeOverlapping(self.created_blobs, self.viewerplus.image.annotations.seg_blobs, annotated = True)
+            genutils.removeOverlapping(self.created_blobs, self.viewerplus.image.annotations.seg_blobs, annotated = True)
 
-            # print(f"self.created_blob len post annotated is {len(self.created_blobs)}")
+            print(f"self.created_blob len post annotated is {len(self.created_blobs)}")
         
         except Exception as e:
             print(f"Error removing blobs: {e}")
@@ -418,13 +470,90 @@ class SamAuto(Tool):
         self.created_blobs = []
         self.samEnded.emit()
 
-    
-    #method to display the rectangle on the map
-    def enable(self, enable = False):
-        if enable == True:
-            self.rect_item = self.viewerplus.scene.addRect(0, 0, self.width, self.height, QPen(Qt.black, 5, Qt.DotLine)) 
-        else:
-            if self.rect_item is not None:
-                self.viewerplus.scene.removeItem(self.rect_item)
-            self.rect_item = None
-            # self.center_item.setVisible(False)
+#####################################################################################
+
+    #removeOverlapping for SAM and other tools
+    # def removeOverlap(self, created_first, created_last):
+            
+    #     blobs = created_first.copy()
+
+    #     widths = []
+    #     heights = []
+    #     for blob in blobs:
+    #         widths.append(blob.bbox[2])
+    #         heights.append(blob.bbox[3])
+
+    #     widths = np.asarray(widths)
+    #     heights = np.asarray(heights)
+    #     medianw = np.median(widths)
+    #     medianh = np.median(heights)
+
+    #     # not_overlapping = []
+    #     for blob in blobs:
+
+    #         if blob not in created_first:
+    #             continue
+
+    #         bbox = blob.bbox
+    #         mask = blob.getMask()
+    #         npixel = np.count_nonzero(mask)
+
+    #         intersected_blobs = []
+
+    #         for blob2 in created_last:
+    #             if blob != blob2 and checkIntersection(bbox, blob2.bbox) is True:
+    #                 mask2 = blob2.getMask()
+    #                 npixel2 = np.count_nonzero(mask2)
+    #                 (imask, ibbox) = intersectMask(mask, bbox, mask2, blob2.bbox)
+    #                 npixeli = np.count_nonzero(imask)
+
+    #                 overlap12 = npixeli / npixel
+    #                 overlap21 = npixeli / npixel2
+
+    #                 remove created_blob if in overlapping with seg_blobs
+    #                 if annotated == True:
+    #                     # overlap = overlap12
+
+    #                     if overlap12 > 0.0:
+    #                         intersected_blobs.append(blob2)
+
+    #                     num_intersections = len(intersected_blobs)
+
+    #                     if num_intersections > 0:
+    #                         intersected_blobs.append(blob)
+
+    #                         for blobO in intersected_blobs:     
+    #                             if blobO in created:
+    #                                 created.remove(blobO)                    
+                    
+    #                 #remove created_blobs in overlapping with themselves (bigger is better)
+    #                 else:
+
+    #                     overlap = max(overlap12, overlap21)
+
+    #                     if overlap > 0.10:
+    #                         intersected_blobs.append(blob2)
+
+    #                     num_intersections = len(intersected_blobs)
+
+    #                     if num_intersections > 0:
+    #                         intersected_blobs.append(blob)
+
+    #                         #using inf instead of hard coded value works better
+    #                         # diff_min = 10000000
+    #                         diff_min = float('inf') 
+    #                         blob_to_keep = None
+    #                         for blobO in intersected_blobs:
+    #                             diff = abs(blobO.bbox[2] - medianw) + abs(blobO.bbox[3] - medianh)
+    #                             if diff < diff_min:
+    #                                 diff_min = diff
+    #                                 blob_to_keep = blobO
+
+                            
+    #                         for blobO in intersected_blobs:
+    #                             if blobO != blob_to_keep:
+    #                                     if blobO in created:
+    #                                         created.remove(blobO)
+                        
+    #                     if overlap12 > 0.0:
+    #                         intersected_blobs.append(blob2)
