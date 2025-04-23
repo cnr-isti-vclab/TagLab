@@ -247,6 +247,7 @@ class TagLab(QMainWindow):
         self.btnBricksSegmentation = self.newButton("brick.png",    "Bricks segmentation",    flatbuttonstyle, self.bricksSegmentation)
         self.btnSamInteractive     = self.newButton("saminteractive2.png", "SAM - positive/negative clicks in an area", flatbuttonstyle, self.saminteractive)
         self.btnSam                = self.newButton("sam.png", "SAM - all instances in an area", flatbuttonstyle, self.sam)
+        self.btnSamAuto            = self.newButton("sam.png", "SAMAutomatic - all instances in an area", flatbuttonstyle, self.samAuto)        
         self.btnFourClicks         = self.newButton("dexter.png",   "4-clicks segmentation",  flatbuttonstyle, self.fourClicks)
         self.btnRitm               = self.newButton("ritm.png",     "Positive/negative clicks segmentation", flatbuttonstyle, self.ritm)
         self.btnRows               = self.newButton("brick.png",     "Rows analysis",      flatbuttonstyle, self.rows)
@@ -297,6 +298,7 @@ class TagLab(QMainWindow):
         #layout_tools.addWidget(self.btnBricksSegmentation)
         layout_tools.addWidget(self.btnSam)
         layout_tools.addWidget(self.btnSamInteractive)
+        layout_tools.addWidget(self.btnSamAuto)
         layout_tools.addWidget(self.btnRows)
         layout_tools.addWidget(labelSeparator1) #separator-----------------------------------        
         layout_tools.addWidget(self.btnAssign)        
@@ -672,6 +674,7 @@ class TagLab(QMainWindow):
             self.SAM_is_available = False
             self.btnSam.setVisible(False)
             self.btnSamInteractive.setVisible(False)
+            self.btnSamAuto.setVisible(False)
 
         # set default opacity
         self.sliderTransparency.setValue(50)
@@ -2600,6 +2603,7 @@ class TagLab(QMainWindow):
         self.btnRitm.setChecked(False)
         self.btnSam.setChecked(False)
         self.btnSamInteractive.setChecked(False)
+        self.btnSamAuto.setChecked(False)
         self.btnCreateGrid.setChecked(False)
         self.btnGrid.setChecked(False)
         self.btnMatch.setChecked(False)
@@ -2629,8 +2633,8 @@ class TagLab(QMainWindow):
             "MATCH"        : ["Match"        , self.btnMatch],
             "RITM"         : ["Ritm"         , self.btnRitm],
             "SAM"            : ["Sam", self.btnSam],
-            "SAMINTERACTIVE" : ["Saminteractive", self.btnSamInteractive]
-            # "SAM_NEW"    : ["Sam New", self.btnSam_new],
+            "SAMINTERACTIVE" : ["Saminteractive", self.btnSamInteractive],
+            "SAMAUTOMATIC"    : ["SamAuto", self.btnSamAuto]
         }
         newtool = tools[tool]
         self.resetToolbar()
@@ -2773,6 +2777,13 @@ class TagLab(QMainWindow):
         """
         self.setTool("SAMINTERACTIVE")
 
+    @pyqtSlot()
+    def samAuto(self):
+        """
+        Activate the "Segmeent Everything" tool.
+        """
+        self.setTool("SAMAUTOMATIC")
+    
     @pyqtSlot()
     def ritm(self):
         """

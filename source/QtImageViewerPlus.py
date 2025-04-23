@@ -1031,7 +1031,7 @@ class QtImageViewerPlus(QtImageViewer):
                     self.dragSelectionStart = None
                     if self.dragSelectionRect:
 
-                        if self.tools.tool == "ROWS":
+                        if self.tools.tool == "ROWS" or self.tools.tool == "SAMAUTOMATIC":
                             self.tools.leftReleased(x,y)
                         
                         self.scene.removeItem(self.dragSelectionRect)
@@ -1132,6 +1132,11 @@ class QtImageViewerPlus(QtImageViewer):
         if self.tools.tool == "ROWS" and (mods & Qt.ShiftModifier or mods & Qt.ControlModifier):
             self.tools.tools["ROWS"].setSize(event.angleDelta(), mods)
             return
+        
+        if self.tools.tool == "SAMAUTOMATIC" and mods & Qt.ShiftModifier:
+            if self.tools.tools["SAMAUTOMATIC"].work_area_set:
+                self.tools.tools["SAMAUTOMATIC"].increasePoint(event.angleDelta())
+                return
 
         if self.zoomEnabled:
 
