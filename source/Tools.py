@@ -149,7 +149,8 @@ class Tools(QObject):
     def toolMessage(self):
         if self.tool == "WATERSHED" or self.tool == "SAM" or self.tool == "RITM"\
               or self.tool == "FREEHAND" or self.tool == "BRICKS" or self.tool == "FOURCLICKS" or\
-              self.tool == "EDITBORDER" or self.tool == "CUT" or self.tool == "ASSIGN" or self.tool == "SAMINTERACTIVE":
+              self.tool == "EDITBORDER" or self.tool == "CUT" or self.tool == "ASSIGN" or\
+              self.tool == "SAMINTERACTIVE" or self.tool == "ROWS":
             self.tool_mess.emit(self.tools[self.tool].tool_message)
         else:
             self.tool_mess.emit(None)

@@ -35,6 +35,8 @@ class ExportDialog(QDialog):
         self.angle_checkbox = QCheckBox("Export Angles")
         
         self.mask_checkbox = QCheckBox("Export Mask")
+
+        self.blob_checkbox = QCheckBox("Export Blobs")
         
         self.skeleton_checkbox = QCheckBox("Export Skeleton")
         
@@ -44,6 +46,7 @@ class ExportDialog(QDialog):
 
         layout.addWidget(self.angle_checkbox)
         layout.addWidget(self.mask_checkbox)
+        layout.addWidget(self.blob_checkbox)
         layout.addWidget(self.skeleton_checkbox)
         layout.addWidget(self.branch_points_checkbox)
         layout.addWidget(self.edges_checkbox)
@@ -73,6 +76,7 @@ class ExportDialog(QDialog):
             "name": self.name_input.text(),
             "export_angles": self.angle_checkbox.isChecked(),
             "export_mask": self.mask_checkbox.isChecked(),
+            "export_blobs": self.blob_checkbox.isChecked(),
             "export_skeleton": self.skeleton_checkbox.isChecked(),
             "export_branch_points": self.branch_points_checkbox.isChecked(),
             "export_edges": self.edges_checkbox.isChecked(),

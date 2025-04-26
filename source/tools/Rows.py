@@ -39,6 +39,11 @@ class Rows(Tool):
         self.image_cropped = None
         self.image_cropped_np = None
 
+        message = "<p><i>ROWS TOOL </i></p>"
+        message += "<p>Choose the work-area:<br/>\
+                    - CTRL + LMB: drag on the map to set the working area<br/></p>"
+        self.tool_message = f'<div style="text-align: left;">{message}</div>'
+
     def leftReleased(self, x, y):
         try:
             self.rect_item = self.viewerplus.dragSelectionRect

@@ -64,6 +64,7 @@ class RowsWidget(QWidget):
         # self.image_mask = image_mask
         self.maschera = mask_array
         self.masch = None
+        self.blob_image = None
         self.image_overlay = None
         self.skeleton = None
         self.branch_points =  []
@@ -587,9 +588,9 @@ class RowsWidget(QWidget):
             (x0, y0), (x1, y1), _ = line
             plt.plot((x0, x1), (y0, y1), color='r')
 
-        plt.title('Detected Lines and Intersections')
-        plt.savefig("spezzate_with_intersections.png", bbox_inches='tight', pad_inches=0)
-        plt.close()
+        # plt.title('Detected Lines and Intersections')
+        # plt.savefig("spezzate_with_intersections.png", bbox_inches='tight', pad_inches=0)
+        # plt.close()
        
         # # Remove intersectin lines with smaller angles
         # for line1, line2 in intersections:
@@ -963,10 +964,10 @@ class RowsWidget(QWidget):
             image.fill(Qt.transparent)
             image_with_lines = self.paintLinesImage(image, self.lines)
 
-            blob_image = self.drawBlobs(image_with_lines, self.blob_list)
+            self.blob_image = self.drawBlobs(image_with_lines, self.blob_list)
 
             self.line_viewer.setOpacity(0.7)
-            self.line_viewer.setOverlayImage(blob_image)
+            self.line_viewer.setOverlayImage(self.blob_image)
 
         elif line_checked == True and mask_checked == False and blobs_checked == False:
             # image = self.image_cropped.copy()
@@ -988,15 +989,18 @@ class RowsWidget(QWidget):
             image = QImage(self.image_cropped.size(), QImage.Format_ARGB32)
             image.fill(Qt.transparent)
             
-            blob_image = self.drawBlobs(image, self.blob_list)
+            self.blob_image = self.drawBlobs(image, self.blob_list)
 
             self.line_viewer.setOpacity(0.7)
-            self.line_viewer.setOverlayImage(blob_image)
+            self.line_viewer.setOverlayImage(self.blob_image)
         
         else:
             self.line_viewer.setFixedWidth(IMAGEVIEWER_W)
             self.line_viewer.setFixedHeight(IMAGEVIEWER_H)
             self.line_viewer.setImg(self.image_cropped)
+
+            self.masch = None
+            self.blob_image = None
 
     #####BRANCHSKELETON METHODS#####
 
@@ -1151,35 +1155,46 @@ class RowsWidget(QWidget):
             name = options["name"]
             export_angles = options["export_angles"]
             export_mask = options["export_mask"]
+            export_blobs = options["export_blobs"]
 
             export_success = False
-            if self.masch is not None:
-                if export_mask:
-                    mask_filename = f"{path}/{name}_mask.png"
-                    if self.lines:
-                        qmask = genutils.maskToQImage(self.masch)
-                        mask_with_lines = self.paintLinesImage(qmask, self.lines)
-                        mask_with_lines.save(mask_filename)
-                    else:
-                        mask_image = genutils.maskToQImage(self.masch)
-                        mask_image.save(mask_filename)
-                    print(f"Mask exported to {mask_filename}")
+            if export_mask:
+                mask_filename = f"{path}/{name}_mask.png"
+                if self.line_checked:
+                    qmask = genutils.maskToQImage(self.masch)
+                    mask_with_lines = self.paintLinesImage(qmask, self.lines)
+                    mask_with_lines.save(mask_filename)
+                else:
+                    mask_image = genutils.maskToQImage(self.masch)
+                    mask_image.save(mask_filename)
+                print(f"Mask exported to {mask_filename}")
 
-                if export_angles and self.lines:
-                    angles_filename = f"{path}/{name}_angles.csv"
-                    with open(angles_filename, "w") as file:
-                        file.write("Line Index,Angle (degrees)\n")
-                        for i, (_, _, angle, _) in enumerate(self.lines):
-                            angle_deg = np.rad2deg(angle)
-                            file.write(f"{i + 1},{angle_deg:.2f}\n")
-                    print(f"Angles exported to {angles_filename}")
-                export_success = True
+            if export_blobs:
+                blobs_filename = f"{path}/{name}_blobs.png"
+                blob_image = self.drawBlobs(self.blob_image, self.blob_list)
+                blob_image.save(blobs_filename)
+                print(f"Blobs exported to {blobs_filename}")
+            
+            if export_angles:
+                angles_filename = f"{path}/{name}_angles.csv"
+                with open(angles_filename, "w") as file:
+                    file.write("Line Index,Angle (degrees)\n")
+                    for i, (_, _, angle, _) in enumerate(self.lines):
+                        if angle < 0:
+                            angle = np.pi/2 + angle  
+                        else:
+                            angle = angle - np.pi/2
+                        
+                        angle_deg = np.rad2deg(angle)
+                        file.write(f"{i + 1},{angle_deg:.2f}\n")
+                print(f"Angles exported to {angles_filename}")
+                
+            export_success = True
 
             if export_success:
                 QMessageBox.information(self, "Export Successful", "Data exported successfully.")
             else:
                 QMessageBox.warning(self, "Export Failed", "No data to export.")
-
 
     def getLineExportOptions(self):
         # Displays the export dialog for line viewer data and returns the selected options."""
@@ -1189,6 +1204,9 @@ class RowsWidget(QWidget):
 
         dialog.mask_checkbox.setChecked(self.mask_checked)
         dialog.mask_checkbox.setEnabled(False)  
+
+        dialog.blob_checkbox.setChecked(self.blobs_checked)
+        dialog.blob_checkbox.setEnabled(False)  
 
         dialog.skeleton_checkbox.hide()  # Hide irrelevant options
         dialog.branch_points_checkbox.hide()
