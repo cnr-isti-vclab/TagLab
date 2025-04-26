@@ -45,8 +45,7 @@ class SamAuto(Tool):
         
         message = "<p><i>Automatic segmentation of all instances in a work-area</i></p>"
         message += "<p><b>STEP 1</b>: Choose the work-area:<br/>\
-                    - SHIFT + WHEEL to change area size<br/>\
-                    - SHIFT + LMB to set the area</p>"
+                    - CTRL + LMB: drag on the map to set the area<br/></p>"
         message += "<p><b>STEP 2</b>: Set seeds:<br/>\
                     - SHIFT + WHEEL to change the spacing</p>"
         message += "SPACEBAR to apply segmentation</p>"
@@ -59,12 +58,6 @@ class SamAuto(Tool):
             stability_score_thresh (float): A filtering threshold in [0,1], using the stability of the mask under changes to the cutoff used to binarize  the model's mask predictions.
             stability_score_offset (float): The amount to shift the cutoff when calculated the stability score.
             box_nms_thresh (float): The box IoU cutoff used by non-maximal suppression to filter duplicate masks.
-            
-        IDEA: SE ZOOM LEVEL 0 ALLORA FA TUTTA IMMAGINE 
-              SE ZOOM LEVEL E' X >>  1024 AVVISA CHE è GROSSA
-              SE ZOMM LEVEL +- 1024 allora prende 1024
-              se zoom level << 1024 sovracampiona a 1024 (lo fa lui già mi sA) E CONTA 
-            
         
         """
 
