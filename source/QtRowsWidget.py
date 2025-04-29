@@ -29,8 +29,8 @@ import svgwrite
 from PyQt5.QtSvg import QSvgRenderer
 from PyQt5.QtWidgets import QMessageBox
 
-IMAGEVIEWER_W = 940
-IMAGEVIEWER_H = 600
+IMAGEVIEWER_W = 1250
+IMAGEVIEWER_H = 1100
 TEXTBOX_H = 150
 class RowsWidget(QWidget):
 
@@ -45,8 +45,8 @@ class RowsWidget(QWidget):
         # i = 0
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        self.setMinimumWidth(1920)
-        self.setMinimumHeight(1080)     
+        self.setMinimumWidth(2560)
+        self.setMinimumHeight(1600)     
 
         self.setWindowTitle("Rows Analysis")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowTitleHint)
@@ -85,6 +85,7 @@ class RowsWidget(QWidget):
         self.line_viewer.enableZoom()
         self.line_viewer.setFixedWidth(IMAGEVIEWER_W)
         self.line_viewer.setFixedHeight(IMAGEVIEWER_H)
+        self.line_viewer.setImg(self.image_cropped)
 
         # Enable context menu policy
         self.line_viewer.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -98,18 +99,17 @@ class RowsWidget(QWidget):
         self.actionShowMask.toggled.connect(self.toggleShowMask)
         self.mask_checked = False
 
+        self.actionShowBlobs = QAction("Show Blobs", self)
+        self.actionShowBlobs.setCheckable(False)
+        self.actionShowBlobs.toggled.connect(self.toggleShowBlobs)
+        self.blobs_checked = False
+
         self.actionShowLines = QAction("Show Lines", self)
         
         self.actionShowLines.setCheckable(False)
         self.actionShowLines.toggled.connect(self.toggleShowLines)
         self.line_checked = False
         line_viewer_layout.addWidget(self.line_viewer, alignment=Qt.AlignTop)
-
-        self.actionShowBlobs = QAction("Show Blobs", self)
-        
-        self.actionShowBlobs.setCheckable(False)
-        self.actionShowBlobs.toggled.connect(self.toggleShowBlobs)
-        self.blobs_checked = False
         
         line_viewer_layout.setSpacing(45)
         
@@ -144,6 +144,7 @@ class RowsWidget(QWidget):
         self.skel_viewer.enableZoom()
         self.skel_viewer.setFixedWidth(IMAGEVIEWER_W)
         self.skel_viewer.setFixedHeight(IMAGEVIEWER_H)
+        self.skel_viewer.setImg(self.image_cropped)
 
         #draw blobs
         # for blob in self.blob_list:
@@ -307,19 +308,8 @@ class RowsWidget(QWidget):
         button_layout.addWidget(self.btnClose)
         layout.addLayout(button_layout)
 
-        # Resize image_cropped to fit within IMAGEVIEWER_H while maintaining aspect ratio
-        if self.image_cropped:
-            original_width = self.image_cropped.width()
-            original_height = self.image_cropped.height()
-            aspect_ratio = original_width / original_height
-
-            if original_height > IMAGEVIEWER_H:
-                new_height = IMAGEVIEWER_H
-                new_width = int(new_height * aspect_ratio)
-                self.image_cropped = self.image_cropped.scaled(new_width, new_height, Qt.KeepAspectRatio)
-
-        self.line_viewer.setImg(self.image_cropped)
-        self.skel_viewer.setImg(self.image_cropped)
+        # self.line_viewer.setImg(self.image_cropped)
+        # self.skel_viewer.setImg(self.image_cropped)
 
         self.setLayout(layout)    
     
@@ -929,8 +919,15 @@ class RowsWidget(QWidget):
     def showMaskLinesMenu(self, position):
             menu = QMenu(self)
             menu.addAction(self.actionShowMask)
-            menu.addAction(self.actionShowLines)
             menu.addAction(self.actionShowBlobs)
+            
+            # Add a separator line between actions in the context menu
+            self.actionSeparator = QAction(self)
+            self.actionSeparator.setSeparator(True)
+            menu.addAction(self.actionSeparator)
+            
+            menu.addAction(self.actionShowLines)
+
             menu.exec_(self.line_viewer.mapToGlobal(position))
 
     def toggleShowMask(self, checked):
@@ -993,7 +990,7 @@ class RowsWidget(QWidget):
 
             self.blob_image = self.drawBlobs(image_with_lines, self.blob_list)
 
-            self.line_viewer.setOpacity(0.7)
+            self.line_viewer.setOpacity(0.9)
             self.line_viewer.setOverlayImage(self.blob_image)
 
         elif line_checked == True and mask_checked == False and blobs_checked == False:
@@ -1018,7 +1015,7 @@ class RowsWidget(QWidget):
             
             self.blob_image = self.drawBlobs(image, self.blob_list)
 
-            self.line_viewer.setOpacity(0.7)
+            self.line_viewer.setOpacity(0.9)
             self.line_viewer.setOverlayImage(self.blob_image)
         
         else:
@@ -1026,7 +1023,6 @@ class RowsWidget(QWidget):
             self.line_viewer.setFixedHeight(IMAGEVIEWER_H)
             self.line_viewer.setImg(self.image_cropped)
 
-            self.masch = None
             self.blob_image = None
 
     #####BRANCHSKELETON METHODS#####
@@ -1034,8 +1030,15 @@ class RowsWidget(QWidget):
     def showSkelMenu(self, position):
             menu = QMenu(self)
             menu.addAction(self.actionShowSkel)
-            menu.addAction(self.actionShowBranch)
             menu.addAction(self.actionShowEdges)
+
+             # Add a separator line between actions in the context menu
+            self.actionSeparator = QAction(self)
+            self.actionSeparator.setSeparator(True)
+            menu.addAction(self.actionSeparator)
+
+            menu.addAction(self.actionShowBranch)
+
             menu.exec_(self.skel_viewer.mapToGlobal(position))
     
     def toggleShowSkel(self, checked):
