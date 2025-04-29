@@ -29,9 +29,9 @@ import svgwrite
 from PyQt5.QtSvg import QSvgRenderer
 from PyQt5.QtWidgets import QMessageBox
 
-IMAGEVIEWER_W = 640
-IMAGEVIEWER_H = 480
-TEXTBOX_H = 200
+IMAGEVIEWER_W = 940
+IMAGEVIEWER_H = 600
+TEXTBOX_H = 150
 class RowsWidget(QWidget):
 
     closeRowsWidget = pyqtSignal()
@@ -45,8 +45,8 @@ class RowsWidget(QWidget):
         # i = 0
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        self.setMinimumWidth(1440)
-        self.setMinimumHeight(900)        
+        self.setMinimumWidth(1920)
+        self.setMinimumHeight(1080)     
 
         self.setWindowTitle("Rows Analysis")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowTitleHint)
@@ -111,21 +111,30 @@ class RowsWidget(QWidget):
         self.actionShowBlobs.toggled.connect(self.toggleShowBlobs)
         self.blobs_checked = False
         
-        line_viewer_layout.setSpacing(15)
+        line_viewer_layout.setSpacing(45)
+        
+        lineslopes_layout = QVBoxLayout()
         
         lineangle_label = QLabel(f"Slopes")
+        
         self.angleTextBox = QTextEdit(self)
         self.angleTextBox.setReadOnly(True)
         self.angleTextBox.setFixedWidth(IMAGEVIEWER_W)
         self.angleTextBox.setFixedHeight(TEXTBOX_H)
-        # layout.addWidget(self.angleTextBox)
-        line_viewer_layout.addWidget(lineangle_label, alignment=Qt.AlignTop)
-        line_viewer_layout.addWidget(self.angleTextBox, alignment=Qt.AlignTop)
 
         # Add export lines
         self.btnLineExport = QPushButton("Export Line Data")
         self.btnLineExport.clicked.connect(self.exportLineViewerData)
-        line_viewer_layout.addWidget(self.btnLineExport, alignment=Qt.AlignTop)
+
+        lineslopes_layout.setSpacing(5)  # Reduce spacing to bring QLabel closer to QTextEdit
+
+        lineslopes_layout.addWidget(lineangle_label, alignment=Qt.AlignBottom)
+        lineslopes_layout.addWidget(self.angleTextBox, alignment=Qt.AlignTop)
+        lineslopes_layout.addWidget(self.btnLineExport, alignment=Qt.AlignTop)
+
+
+        line_viewer_layout.addLayout(lineslopes_layout)
+        
 
         # create skeleton viewer
         skel_viewer_layout = QVBoxLayout()
@@ -195,26 +204,33 @@ class RowsWidget(QWidget):
         brickwidth_layout.setSpacing(5)
         brickwidth_layout.addWidget(self.BrickDistBox, alignment=Qt.AlignLeft)
 
-        skel_viewer_layout.addLayout(brickwidth_layout)
         
-        skel_viewer_layout.setSpacing(5)
+        skel_viewer_layout.addLayout(brickwidth_layout)
+        skel_viewer_layout.setSpacing(10)
 
+        skelangle_layout = QVBoxLayout()
         skelangle_label = QLabel(f"Slopes")
         self.skelTextBox = QTextEdit(self)
         self.skelTextBox.setReadOnly(True)
         self.skelTextBox.setFixedWidth(IMAGEVIEWER_W)
         self.skelTextBox.setFixedHeight(TEXTBOX_H)
         # layout.addWidget(self.angleTextBox)
-        
-        skel_viewer_layout.addWidget(skelangle_label, alignment=Qt.AlignTop)
-        skel_viewer_layout.addWidget(self.skelTextBox, alignment=Qt.AlignTop)
-
-        skel_viewer_layout.setSpacing(5)
-
         # Add export lines
         self.btnSkelExport = QPushButton("Export Skeleton Data")
         self.btnSkelExport.clicked.connect(self.exportSkelViewerData)
-        skel_viewer_layout.addWidget(self.btnSkelExport, alignment=Qt.AlignTop)
+        # skel_viewer_layout.addWidget(self.btnSkelExport, alignment=Qt.AlignTop)
+        skelangle_layout.setSpacing(5)  # Reduce spacing to bring QLabel closer to QTextEdit
+
+        
+        skelangle_layout.addWidget(skelangle_label, alignment=Qt.AlignBottom)
+        skelangle_layout.addWidget(self.skelTextBox, alignment=Qt.AlignTop)
+        skelangle_layout.addWidget(self.btnSkelExport, alignment=Qt.AlignTop)
+
+        skel_viewer_layout.addLayout(skelangle_layout)
+
+        # skel_viewer_layout.setSpacing(5)
+
+
         
         # Create a horizontal layout for the viewers
         viewers_layout = QHBoxLayout()
@@ -290,6 +306,17 @@ class RowsWidget(QWidget):
         self.btnClose.clicked.connect(self.closeWidget)
         button_layout.addWidget(self.btnClose)
         layout.addLayout(button_layout)
+
+        # Resize image_cropped to fit within IMAGEVIEWER_H while maintaining aspect ratio
+        if self.image_cropped:
+            original_width = self.image_cropped.width()
+            original_height = self.image_cropped.height()
+            aspect_ratio = original_width / original_height
+
+            if original_height > IMAGEVIEWER_H:
+                new_height = IMAGEVIEWER_H
+                new_width = int(new_height * aspect_ratio)
+                self.image_cropped = self.image_cropped.scaled(new_width, new_height, Qt.KeepAspectRatio)
 
         self.line_viewer.setImg(self.image_cropped)
         self.skel_viewer.setImg(self.image_cropped)
