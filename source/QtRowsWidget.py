@@ -1,7 +1,7 @@
 import sys
 
 import numpy as np
-import cv2
+# import cv2
 import matplotlib.pyplot as plt
 
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QSizePolicy, QTextEdit, QLineEdit, QSlider, QMenu, QCheckBox, QMenuBar, QAction, QDialog
@@ -18,19 +18,22 @@ from skimage.morphology import skeletonize, thin
 from skimage.graph import route_through_array
 import networkx as nx
 
-from scipy.interpolate import interp1d
+# from scipy.interpolate import interp1d
 from scipy.ndimage import binary_dilation, binary_erosion, convolve
 
-from skimage import measure, morphology, io, color
+# from skimage import measure, morphology, io, color
 from skimage.draw import line
 from scipy.spatial import KDTree
 
-import svgwrite
-from PyQt5.QtSvg import QSvgRenderer
+# import svgwrite
+# from PyQt5.QtSvg import QSvgRenderer
 from PyQt5.QtWidgets import QMessageBox
+# from subprocess import check_call
 
-IMAGEVIEWER_W = 1250
-IMAGEVIEWER_H = 1100
+# from itertools import combinations
+
+IMAGEVIEWER_W = 640
+IMAGEVIEWER_H = 480
 TEXTBOX_H = 150
 class RowsWidget(QWidget):
 
@@ -45,8 +48,8 @@ class RowsWidget(QWidget):
         # i = 0
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        self.setMinimumWidth(2560)
-        self.setMinimumHeight(1600)     
+        self.setMinimumWidth(1440)
+        self.setMinimumHeight(900)     
 
         self.setWindowTitle("Rows Analysis")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowTitleHint)
@@ -178,35 +181,22 @@ class RowsWidget(QWidget):
         skel_viewer_layout.setSpacing(15)
         
         
-        brickwidth_layout = QHBoxLayout()
-        self.default_width = 150
-        #textbox to set brick width 
-        brickwidth_label = QLabel(f"Brick width:")
-        self.BrickWidthBox = QLineEdit(self)
-        self.BrickWidthBox.setReadOnly(False)
-        self.BrickWidthBox.setFixedWidth(150)
-        self.BrickWidthBox.setFixedHeight(25)
-        self.BrickWidthBox.setText(str(self.default_width))
+        brickdist_layout = QHBoxLayout()
 
-        self.default_dist = 10
+        self.row_dist = 20
         brickdist_label = QLabel(f"Rows distance:")
         self.BrickDistBox = QLineEdit(self)
         self.BrickDistBox.setReadOnly(False)
         self.BrickDistBox.setFixedWidth(150)
         self.BrickDistBox.setFixedHeight(25)
-        self.BrickDistBox.setText(str(self.default_dist))
+        self.BrickDistBox.setText(str(self.row_dist))
 
-        # layout.addWidget(self.angleTextBox)
-        brickwidth_layout.addWidget(brickwidth_label, alignment=Qt.AlignLeft)
-        brickwidth_layout.setSpacing(5)
-        brickwidth_layout.addWidget(self.BrickWidthBox, alignment=Qt.AlignLeft)
 
-        brickwidth_layout.addWidget(brickdist_label, alignment=Qt.AlignLeft)
-        brickwidth_layout.setSpacing(5)
-        brickwidth_layout.addWidget(self.BrickDistBox, alignment=Qt.AlignLeft)
+        brickdist_layout.addWidget(brickdist_label, alignment=Qt.AlignLeft)
+        brickdist_layout.addWidget(self.BrickDistBox, alignment=Qt.AlignLeft)
 
         
-        skel_viewer_layout.addLayout(brickwidth_layout)
+        skel_viewer_layout.addLayout(brickdist_layout)
         skel_viewer_layout.setSpacing(10)
 
         skelangle_layout = QVBoxLayout()
@@ -340,17 +330,17 @@ class RowsWidget(QWidget):
 
         # i += 1
         self.skeleton = self.applySkeletonization(self.masch)
-        self.branch_points = self.branchPoints(self.skeleton)
+        
 
-            # Get brick_width and row_distance from BrickWidthBox and BrickDistBox
+        # Get row_distance from  BrickDistBox
         try:
-            brick_width = int(self.BrickWidthBox.text())
-            brick_dist = int(self.BrickDistBox.text())
+            self.row_dist = int(self.BrickDistBox.text())
         except ValueError:
-            brick_width = self.default_width  # Default value if no valid input is provided
-            brick_dist = self.default_dist
+            self.row_dist = 20
 
-        self.connectBranchPoints(self.branch_points, brick_width, brick_dist)
+        self.branch_points, self.edges = self.vectorBranchPoints(self.skeleton)
+
+        # self.connectBranchPoints(self.branch_points, brick_width, brick_dist)
         # print(self.branch_points)
         self.actionShowSkel.setCheckable(True)
 
@@ -367,15 +357,6 @@ class RowsWidget(QWidget):
         self.skel_viewer.setOpacity(1.0)
         self.skel_viewer.setOverlayImage(branch_image)
 
-
-        # self.connectBranchPoints(self.branch_points)
-        # _, _, img = self.vectorBranchPoints(skel)
-                
-        # _, skel_int = self.findIntersectionPoints(skel)
-        # self.vectorBranchPoints(skel)
-
-        # # # self.connectSkeletonIntersections(skel)
-        # self.houghTansformation(skel, i) 
     
     def closeWidget(self):
         self.closeRowsWidget.emit()
@@ -570,9 +551,9 @@ class RowsWidget(QWidget):
         
         # print(f"Intersections list: {intersections}")        
         intersections_cut = []
-        plt.figure(figsize=(8, 8))
-        plt.imshow(mask, cmap='gray')
-        plt.axis('off')        
+        # plt.figure(figsize=(8, 8))
+        # plt.imshow(mask, cmap='gray')
+        # plt.axis('off')        
         
         for (line1, line2, (ix, iy)) in intersections:
             (x1, y1), (x2, y2), ang1 = line1
@@ -607,7 +588,7 @@ class RowsWidget(QWidget):
 
         # plt.title('Detected Lines and Intersections')
         # plt.savefig("spezzate_with_intersections.png", bbox_inches='tight', pad_inches=0)
-        # plt.close()
+        plt.close()
        
         # # Remove intersectin lines with smaller angles
         # for line1, line2 in intersections:
@@ -685,9 +666,9 @@ class RowsWidget(QWidget):
 
     def applySkeletonization(self, mask):
         # Apply skeletonization
-        # skeleton = skeletonize(mask)
+        skeleton = skeletonize(mask)
         # skeleton = median(skeleton, disk(1))
-        skeleton = thin(mask)
+        # skeleton = thin(mask)
         
         # h, w = skeleton.shape
         # dwg = svgwrite.Drawing(f"skeleton.svg", size=(w, h))
@@ -709,128 +690,160 @@ class RowsWidget(QWidget):
         # plt.close()
 
         return skeleton
-     
-    def branchPoints(self, skeleton, filename="skeleton_vector.svg"):
-        # Define a kernel to detect branch points
-        kernel = np.array([[1, 1, 1],
-                   [1, 10, 1],
-                   [1, 1, 1]])
-
-        # Convolve the skeleton with the kernel
-        convolved = convolve(skeleton.astype(np.uint8), kernel, mode='constant', cval=0) - 10
-
-        # Find branch points where the convolved result equals 11
-        branch_points = (convolved >= 3) & skeleton
-
-        # Get coordinates
-        # endpoints_yx = np.column_stack(np.where(endpoints))
-        branch_points_yx = np.column_stack(np.where(branch_points))
-
-        # Remove branch points that are too close to each other
-        filtered_branch_points_yx = []
-        for point in branch_points_yx:
-            if not any(np.linalg.norm(point - np.array(existing_point)) < 5 for existing_point in filtered_branch_points_yx):
-                filtered_branch_points_yx.append(point)
-
-################################################################################################
-        # h, w = skeleton.shape
-        # dwg = svgwrite.Drawing('pippo.svg', size=(w, h))
-        
-        # # Draw skeleton as black lines
-        # y, x = np.where(skeleton)
-        # for i in range(len(y)):
-        #     dwg.add(dwg.circle(center=(int(x[i]), int(y[i])), r=0.5, fill="blue"))
-
-        # # Draw branch points as red circles
-        # for point in filtered_branch_points_yx:
-        #     dwg.add(dwg.circle(center=(int(point[1]), int(point[0])), r=2, fill="red"))
-
-        # # Save SVG file
-        # dwg.save()
-        # print(f"Saved SVG as pippo.svg")
- 
-        return filtered_branch_points_yx
 
     def vectorBranchPoints(self,skeleton):
 
         # Extract skeleton pixels
         y, x = np.where(skeleton)
+        coords = list(zip(y, x))
 
-        zipped = zip(y,x)
-
-        # Create a graph from skeleton
+        # Create graph
         G = nx.Graph()
-        for (i, j) in zip(y, x):
-            G.add_node((i, j))
+        neighbor_offsets = [(-1, -1), (-1, 0), (-1, 1),
+                            ( 0, -1),          ( 0, 1),
+                            ( 1, -1), ( 1, 0), ( 1, 1)]
 
-        # Find edges (connect nearby pixels)
-        # for (i, j) in zip(y, x):
-        for (i, j) in zipped:
-            for dy, dx in [(-1,0), (1,0), (0,-1), (0,1)]:  # 4-neighborhood
-                ni, nj = i + dy, j + dx
-                if (ni, nj) in G:
-                    G.add_edge((i, j), (ni, nj))
+        skeleton_set = set(coords)  # for fast lookup
 
+        for y0, x0 in coords:
+            for dy, dx in neighbor_offsets:
+                neighbor = (y0 + dy, x0 + dx)
+                if neighbor in skeleton_set:
+                    G.add_edge((x0, y0), (neighbor[1], neighbor[0]))  # note: (x, y) order
 
-        print(len(G.nodes()))
-        # Draw nodes and edges of the graph
-        pos = {node: (node[1], -node[0]) for node in G.nodes()}  # Flip y-axis for correct orientation
+        # Branch points: nodes with degree > 2
+        branch_points = [node for node in G.nodes if G.degree(node) > 2]
 
-        nx.draw_networkx_nodes(G, pos, node_size=0.25, node_color="red")
-        nx.draw_networkx_edges(G, pos, width=2, edge_color="blue")
-
-        img = self.saveGraphToQImage(G, pos, skeleton)
-    
-        return G, pos, img
-    
-    def saveGraphToQImage(self, graph, pos, skeleton, output_file="graph.png"):
-
-        width, height = skeleton.shape[1], skeleton.shape[0]
-        # Create a QImage with the specified dimensions
-        q_image = QImage(skeleton.shape[1], skeleton.shape[0], QImage.Format_ARGB32)
-        q_image.fill(Qt.white)  # Fill the background with white
-
-        # Create a QPainter to draw on the QImage
-        painter = QPainter(q_image)
-        pen = QPen(Qt.black, 1)  # Black pen for edges
-        painter.setPen(pen)
-
-       # Scale positions to fit the QImage
-        scaled_pos = {node: (x, height - y) for node, (x, y) in pos.items()}  # Flip y-axis for QImage
-
-        # Draw edges
-        for edge in graph.edges():
-            node1, node2 = edge
-            x1, y1 = scaled_pos[node1]
-            x2, y2 = scaled_pos[node2]
-            painter.drawLine(int(x1), int(y1), int(x2), int(y2))
-
-        # Draw nodes
-        pen.setColor(Qt.red)  # Red pen for nodes
-        painter.setPen(pen)
-        for node in graph.nodes():
-            x, y = scaled_pos[node]
-            painter.drawEllipse(int(x) - 2, int(y) - 2, 4, 4)  # Draw a small circle for each node
-
-        # Finish painting
-        painter.end()
-
-        # Save the QImage to a file
-        q_image.save(output_file)
-        print(f"Graph saved to {output_file}")
-
-        return q_image
-        
-        # self.drawBranchPoints(G, pos)
-        
-        # plt.figure(figsize=(8, 8))
-        # nx.draw_networkx_nodes(G, pos, node_size=0.25, node_color="red")
-        # nx.draw_networkx_edges(G, pos, width=2, edge_color="blue")
-
-
-        # plt.title("Skeleton Graph with Intersections")
-        # plt.savefig("vectorized_skeleton.png", bbox_inches='tight', pad_inches=0)
+        # Optional: Visualize
+        # plt.imshow(skeleton, cmap='gray')
+        # for x, y in branch_points:
+        #     plt.plot(x, y, 'ro', markersize=3)
+        # plt.title('Branch Points')
+        # plt.savefig("arara.png", bbox_inches='tight', pad_inches=0)
+        # # plt.show()
         # plt.close()
+        
+        # Plot skeleton
+        # plt.figure(figsize=(8, 8))
+        # plt.imshow(skeleton, cmap='gray')
+
+        # Plot edges (lines between connected nodes)
+        # for (x1, y1), (x2, y2) in G.edges:
+        #     plt.plot([x1, x2], [y1, y2], color='blue', linewidth=0.5)
+
+        # Plot branch points
+        # for x, y in branch_points:
+        #     plt.plot(x, y, 'ro', markersize=3)
+
+        # for i, (x1, y1) in enumerate(branch_points):
+        #     for j in range(i+1, len(branch_points)):
+        #         x2, y2 = branch_points[j]
+        #         plt.plot([x1, x2], [y1, y2], color='green', linestyle='--', linewidth=0.5)
+
+        # plt.title('Skeleton with Edges and Branch Points')
+        # plt.axis('off')
+        # plt.savefig("arara.png", bbox_inches='tight', pad_inches=0)
+        # # plt.show()
+        # plt.close()
+
+        
+        visited_edges = set()
+        segments = []
+
+        for bp in branch_points:
+            for neighbor in G.neighbors(bp):
+                edge = tuple(sorted([bp, neighbor]))
+                if edge in visited_edges:
+                    continue
+
+                path = [bp, neighbor]
+                current = neighbor
+                prev = bp
+
+                while True:
+                    visited_edges.add(tuple(sorted([prev, current])))
+                    neighbors = [n for n in G.neighbors(current) if n != prev]
+
+                    if len(neighbors) != 1 or current in branch_points:
+                        # We hit another branch point or an endpoint
+                        break
+
+                    next_node = neighbors[0]
+                    path.append(next_node)
+                    prev, current = current, next_node
+
+                # Only add if it ends at another branch or endpoint
+                if current in branch_points or G.degree[current] == 1:
+                    color = tuple(np.random.randint(0, 256, 3))  # Generate a random RGB color
+                    dx = path[-1][0] - path[0][0]
+                    dy = path[-1][1] - path[0][1]
+                    angle = np.arctan2(dy, dx)  # Angle in radians
+                    angle_deg = np.degrees(angle)  # Convert to degrees
+                    segments.append((path[0], path[-1], color, angle_deg))
+                    # segments.append((path[0], path[-1], color))
+                    # segments.append((path[0], path[-1]))
+
+        # # Plot the skeleton
+        # plt.figure(figsize=(8, 8))
+        # # plt.imshow(skeleton, cmap='gray')
+
+        # # Plot segments between branch points, recreates the skeleton in another way
+        # # for segment in segments:
+        # #     x_vals, y_vals = zip(*segment)
+        # #     color = tuple(np.random.rand(3))  # Generate a random RGB color
+        # #     plt.plot(x_vals, y_vals, color=color, linewidth=2)
+
+        # # Plot polylines between branch points, that is connected nodes
+        # for start, end, color in segments:
+        #     x_vals = [start[0], end[0]]
+        #     y_vals = [start[1], end[1]]
+        #     # color = tuple(np.random.rand(3))  # Generate a random RGB color
+        #     plt.plot(x_vals, y_vals, color=color, linewidth=2)
+
+        # # Plot branch points
+        # for x, y in branch_points:
+        #     plt.plot(x, y, 'ro', markersize=3)
+
+        # plt.title('Directly Connected Branch Points')
+        # plt.axis('off')
+        # # plt.show()
+        # plt.savefig("wawawa.png", bbox_inches='tight', pad_inches=0)
+        # plt.close()
+        
+        # angle = 90
+        # filtered_segments = []
+        # y_threshold = 25  # Adjust this threshold as needed 
+        # # Plot only segments that are nearly horizontal (same Y level)
+        # for start, end in segments:
+        #     y1, y2 = start[1], end[1]  # Remember: start = (x, y)
+
+        #     if abs(y1 - y2) <= y_threshold:
+        #         x_vals = [start[0], end[0]]
+        #         y_vals = [start[1], end[1]]
+                
+        #         dx = end[0] - start[0]
+        #         dy = end[1] - start[1]
+        #         # angle_deg = np.degrees(np.arctan(dy, dx))
+                
+                
+        #         color = tuple(np.random.rand(3))  # Random RGB color
+        #         # filtered_segments.append((start, end))
+        #         plt.plot(x_vals, y_vals, color=color, linewidth=2)
+
+        # # Optionally, still show branch points
+        # for x, y in branch_points:
+        #     plt.plot(x, y, 'ro', markersize=3)
+
+        # plt.title(f'Segments with Δy ≤ {y_threshold}')
+        # plt.axis('off')
+        # plt.savefig("horizontal_segments.png", bbox_inches='tight', pad_inches=0)
+        # plt.close()
+
+        # Convert branch points to (y, x) format
+        branch_points = [(y, x) for x, y in branch_points]
+
+        return branch_points, segments
+        
     
     #####MASK-LINES METHODS#####
     
@@ -1097,12 +1110,34 @@ class RowsWidget(QWidget):
         
         if conn: 
             pen = QPen(Qt.green, 3)
-            for i, (point1, point2, color, ang) in enumerate(connections):
+
+            # Draw filtered segments
+            y_threshold = self.row_dist
+            print(f"len of connections is {len(connections)}")
+            filterd_segments = []  
+            for start, end, color, angle in connections:
+                y1, y2 = start[1], end[1]  # Remember: start = (x, y)
+                if abs(y1 - y2) <= y_threshold:  # Filter segments
+                    filterd_segments.append((start, end, color, angle))
+                    
+            print(f"len of filtered segments is {len(filterd_segments)}")
+                    
+            for i, (start, end, color, angle) in enumerate(filterd_segments):                    
                 pen.setColor(QColor(color[0], color[1], color[2]))
                 painter.setPen(pen)
+                # print(f"angle of {i} is {angle}")
+                painter.drawLine(start[0], start[1], end[0], end[1])
 
-                painter.drawLine(point1[1], point1[0], point2[1], point2[0])
-                self.updateSkelTextBox([ang], i, color=f'rgb({color[0]},{color[1]},{color[2]})')
+                # self.updateSkelTextBox([angle], i, color=f'rgb({color[0]},{color[1]},{color[2]})')
+
+
+                # Draw the angle value above each line
+                # angle_text = f"{angle:.2f}°"
+                # text_x = (start[0] + end[0]) // 2
+                # text_y = (start[1] + end[1]) // 2 - 10  # Slightly above the line
+                # pen.setColor(Qt.black)  # Set text color to black
+                # painter.setPen(pen)
+                # painter.drawText(text_x, text_y, angle_text)
 
         if branch:                
             pen = QPen(Qt.red, 7)
@@ -1114,65 +1149,6 @@ class RowsWidget(QWidget):
         painter.end()
 
         return branch_image
-    
-    def connectBranchPoints(self, branch_points, brick_width, brick_dist):  
-        
-        # Connect branch points that are adjacent on the same row (within ±15 pixels vertically).
-        if not branch_points:
-            print("No branch points to connect.")
-            return
-
-        # Sort branch points by their y-coordinate (row)
-        branch_points.sort(key=lambda point: point[0])
-
-        # Define the vertical tolerance for a row
-        print(f"Row distance: {brick_dist}")
-        row_tolerance = brick_dist
-
-        # Group branch points by rows
-        rows = []
-        current_row = [branch_points[0]]
-
-        for i in range(1, len(branch_points)):
-            if abs(self.branch_points[i][0] - current_row[-1][0]) <= row_tolerance:
-                current_row.append(branch_points[i])
-            else:
-                rows.append(current_row)
-                current_row = [branch_points[i]]
-
-        # Add the last row
-        if current_row:
-            rows.append(current_row)
-
-        # Connect points within each row
-        connections = []
-        for row in rows:
-            row.sort(key=lambda point: point[1])  # Sort by x-coordinate
-            # for i in range(len(row) - 1):
-            #     color = tuple(np.random.randint(0, 256, 3))  # RGB color
-                
-            #     # Calculate the angle of the connection (in degrees)
-            #     point1, point2 = row[i], row[i + 1]
-            #     dy = point2[0] - point1[0]
-            #     dx = point2[1] - point1[1]
-            #     angle = np.degrees(np.arctan2(dy, dx))  # Angle in degrees
-                
-            #     connections.append((row[i], row[i + 1], color, angle))
-
-            # print(brick_width)
-            for i in range(len(row) - 1):
-                point1, point2 = row[i], row[i + 1]
-                dx = abs(point2[1] - point1[1])  # Horizontal distance
-                if dx <= brick_width:  # Only connect if within column_tolerance
-                    color = tuple(np.random.randint(0, 256, 3))  # RGB color
-                    
-                    # Calculate the angle of the connection (in degrees)
-                    dy = point2[0] - point1[0]
-                    angle = np.degrees(np.arctan2(dy, dx))  # Angle in degrees
-                    
-                    connections.append((point1, point2, color, angle))
-
-        self.edges = connections
 
     #####EXPORT METHODS#####
 
@@ -1305,4 +1281,7 @@ class RowsWidget(QWidget):
         if dialog.exec_() == QDialog.Accepted:
             return dialog.getExportOptions()
         return None
+    
+
+
   
