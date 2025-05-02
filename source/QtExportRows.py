@@ -17,7 +17,7 @@ class ExportDialog(QDialog):
         self.path_label = QLabel("Export Path:")
         self.path_input = QLineEdit(self)
         self.browse_button = QPushButton("Browse")
-        self.browse_button.clicked.connect(self.browseDirectory)
+        self.browse_button.clicked.connect(self.browseFile)
         path_layout.addWidget(self.path_label)
         path_layout.addWidget(self.path_input)
         path_layout.addWidget(self.browse_button)
@@ -63,11 +63,16 @@ class ExportDialog(QDialog):
 
         self.setLayout(layout)
 
-    def browseDirectory(self):
-        """Open a directory selection dialog."""
-        directory = QFileDialog.getExistingDirectory(self, "Select Directory")
-        if directory:
-            self.path_input.setText(directory)
+    # def browseDirectory(self):
+    #     """Open a directory selection dialog."""
+    #     directory = QFileDialog.getExistingDirectory(self, "Select Directory")
+    #     if directory:
+    #         self.path_input.setText(directory)
+    def browseFile(self):
+        # Open a file save dialog.
+        file_path, _ = QFileDialog.getSaveFileName(self, "Select File", "", "All Files (*)")
+        if file_path:
+            self.path_input.setText(file_path)
 
     def getExportOptions(self):
         """Return the selected export options."""

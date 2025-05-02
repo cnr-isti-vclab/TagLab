@@ -1181,15 +1181,14 @@ class RowsWidget(QWidget):
             if not options:
                 return  # User canceled the dialog or provided invalid input
 
-            path = options["path"]
-            name = options["name"]
+            file_path = options["path"]
             export_angles = options["export_angles"]
             export_mask = options["export_mask"]
             export_blobs = options["export_blobs"]
 
             export_success = False
             if export_mask:
-                mask_filename = f"{path}/{name}_mask.png"
+                mask_filename = f"{file_path}_mask.png"
                 if self.line_checked:
                     qmask = genutils.maskToQImage(self.masch)
                     mask_with_lines = self.paintLinesImage(qmask, self.lines)
@@ -1200,13 +1199,13 @@ class RowsWidget(QWidget):
                 print(f"Mask exported to {mask_filename}")
 
             if export_blobs:
-                blobs_filename = f"{path}/{name}_blobs.png"
+                blobs_filename = f"{file_path}_blobs.png"
                 blob_image = self.drawBlobs(self.blob_image, self.blob_list)
                 blob_image.save(blobs_filename)
                 print(f"Blobs exported to {blobs_filename}")
             
             if export_angles:
-                angles_filename = f"{path}/{name}_angles.csv"
+                angles_filename = f"{file_path}_angles.csv"
                 with open(angles_filename, "w") as file:
                     file.write("Line Index,Angle (degrees)\n")
                     for i, (_, _, angle, _) in enumerate(self.lines):
@@ -1251,14 +1250,13 @@ class RowsWidget(QWidget):
             if not options:
                 return  # User canceled the dialog or provided invalid input
 
-            path = options["path"]
-            name = options["name"]
+            file_path = options["path"]
             export_skeleton = options["export_skeleton"]
             export_branch_points = options["export_branch_points"]
             export_edges = options["export_edges"]
             export_success = False
             if export_skeleton and self.skeleton is not None:
-                skeleton_filename = f"{path}/{name}_skeleton.png"
+                skeleton_filename = f"{file_path}_skeleton.png"
                 branch_image = self.drawBranchSkel(
                     self.skeleton, self.branch_points, self.edges, export_branch_points, export_skeleton, export_edges
                 )
@@ -1267,14 +1265,14 @@ class RowsWidget(QWidget):
                 export_success = True
 
             if export_edges and self.edges:
-                edges_filename = f"{path}/{name}_edges.png"
+                edges_filename = f"{file_path}_edges.png"
                 edge_image = self.drawBranchSkel(
                     self.skeleton, self.branch_points, self.edges, self.branch_checked, self.skel_checked, self.edges_checked
                 )
                 edge_image.save(edges_filename)
                 print(f"Edges with branch_points exported to {edges_filename}")
                 
-                angles_filename = f"{path}/{name}_edges_angles.csv"
+                angles_filename = f"{file_path}_edges_angles.csv"
                 with open(angles_filename, "w") as file:
                     file.write("Connection Index,Angle (degrees)\n")
                     for i, (_, _, _, angle) in enumerate(self.edges):
@@ -1301,6 +1299,8 @@ class RowsWidget(QWidget):
 
         dialog.angle_checkbox.hide()  # Hide irrelevant options
         dialog.mask_checkbox.hide()
+        dialog.blob_checkbox.hide()
+
 
         if dialog.exec_() == QDialog.Accepted:
             return dialog.getExportOptions()
