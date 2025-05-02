@@ -29,9 +29,9 @@ import svgwrite
 from PyQt5.QtSvg import QSvgRenderer
 from PyQt5.QtWidgets import QMessageBox
 
-IMAGEVIEWER_W = 640
-IMAGEVIEWER_H = 480
-TEXTBOX_H = 200
+IMAGEVIEWER_W = 1250
+IMAGEVIEWER_H = 1100
+TEXTBOX_H = 150
 class RowsWidget(QWidget):
 
     closeRowsWidget = pyqtSignal()
@@ -45,8 +45,8 @@ class RowsWidget(QWidget):
         # i = 0
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        self.setMinimumWidth(1440)
-        self.setMinimumHeight(900)        
+        self.setMinimumWidth(2560)
+        self.setMinimumHeight(1600)     
 
         self.setWindowTitle("Rows Analysis")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowTitleHint)
@@ -64,6 +64,7 @@ class RowsWidget(QWidget):
         # self.image_mask = image_mask
         self.maschera = mask_array
         self.masch = None
+        self.blob_image = None
         self.image_overlay = None
         self.skeleton = None
         self.branch_points =  []
@@ -84,6 +85,7 @@ class RowsWidget(QWidget):
         self.line_viewer.enableZoom()
         self.line_viewer.setFixedWidth(IMAGEVIEWER_W)
         self.line_viewer.setFixedHeight(IMAGEVIEWER_H)
+        self.line_viewer.setImg(self.image_cropped)
 
         # Enable context menu policy
         self.line_viewer.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -97,34 +99,42 @@ class RowsWidget(QWidget):
         self.actionShowMask.toggled.connect(self.toggleShowMask)
         self.mask_checked = False
 
+        self.actionShowBlobs = QAction("Show Blobs", self)
+        self.actionShowBlobs.setCheckable(False)
+        self.actionShowBlobs.toggled.connect(self.toggleShowBlobs)
+        self.blobs_checked = False
+
         self.actionShowLines = QAction("Show Lines", self)
         
         self.actionShowLines.setCheckable(False)
         self.actionShowLines.toggled.connect(self.toggleShowLines)
         self.line_checked = False
         line_viewer_layout.addWidget(self.line_viewer, alignment=Qt.AlignTop)
-
-        self.actionShowBlobs = QAction("Show Blobs", self)
         
-        self.actionShowBlobs.setCheckable(False)
-        self.actionShowBlobs.toggled.connect(self.toggleShowBlobs)
-        self.blobs_checked = False
+        line_viewer_layout.setSpacing(45)
         
-        line_viewer_layout.setSpacing(15)
+        lineslopes_layout = QVBoxLayout()
         
         lineangle_label = QLabel(f"Slopes")
+        
         self.angleTextBox = QTextEdit(self)
         self.angleTextBox.setReadOnly(True)
         self.angleTextBox.setFixedWidth(IMAGEVIEWER_W)
         self.angleTextBox.setFixedHeight(TEXTBOX_H)
-        # layout.addWidget(self.angleTextBox)
-        line_viewer_layout.addWidget(lineangle_label, alignment=Qt.AlignTop)
-        line_viewer_layout.addWidget(self.angleTextBox, alignment=Qt.AlignTop)
 
         # Add export lines
         self.btnLineExport = QPushButton("Export Line Data")
         self.btnLineExport.clicked.connect(self.exportLineViewerData)
-        line_viewer_layout.addWidget(self.btnLineExport, alignment=Qt.AlignTop)
+
+        lineslopes_layout.setSpacing(5)  # Reduce spacing to bring QLabel closer to QTextEdit
+
+        lineslopes_layout.addWidget(lineangle_label, alignment=Qt.AlignBottom)
+        lineslopes_layout.addWidget(self.angleTextBox, alignment=Qt.AlignTop)
+        lineslopes_layout.addWidget(self.btnLineExport, alignment=Qt.AlignTop)
+
+
+        line_viewer_layout.addLayout(lineslopes_layout)
+        
 
         # create skeleton viewer
         skel_viewer_layout = QVBoxLayout()
@@ -134,6 +144,7 @@ class RowsWidget(QWidget):
         self.skel_viewer.enableZoom()
         self.skel_viewer.setFixedWidth(IMAGEVIEWER_W)
         self.skel_viewer.setFixedHeight(IMAGEVIEWER_H)
+        self.skel_viewer.setImg(self.image_cropped)
 
         #draw blobs
         # for blob in self.blob_list:
@@ -194,26 +205,33 @@ class RowsWidget(QWidget):
         brickwidth_layout.setSpacing(5)
         brickwidth_layout.addWidget(self.BrickDistBox, alignment=Qt.AlignLeft)
 
-        skel_viewer_layout.addLayout(brickwidth_layout)
         
-        skel_viewer_layout.setSpacing(5)
+        skel_viewer_layout.addLayout(brickwidth_layout)
+        skel_viewer_layout.setSpacing(10)
 
+        skelangle_layout = QVBoxLayout()
         skelangle_label = QLabel(f"Slopes")
         self.skelTextBox = QTextEdit(self)
         self.skelTextBox.setReadOnly(True)
         self.skelTextBox.setFixedWidth(IMAGEVIEWER_W)
         self.skelTextBox.setFixedHeight(TEXTBOX_H)
         # layout.addWidget(self.angleTextBox)
-        
-        skel_viewer_layout.addWidget(skelangle_label, alignment=Qt.AlignTop)
-        skel_viewer_layout.addWidget(self.skelTextBox, alignment=Qt.AlignTop)
-
-        skel_viewer_layout.setSpacing(5)
-
         # Add export lines
         self.btnSkelExport = QPushButton("Export Skeleton Data")
         self.btnSkelExport.clicked.connect(self.exportSkelViewerData)
-        skel_viewer_layout.addWidget(self.btnSkelExport, alignment=Qt.AlignTop)
+        # skel_viewer_layout.addWidget(self.btnSkelExport, alignment=Qt.AlignTop)
+        skelangle_layout.setSpacing(5)  # Reduce spacing to bring QLabel closer to QTextEdit
+
+        
+        skelangle_layout.addWidget(skelangle_label, alignment=Qt.AlignBottom)
+        skelangle_layout.addWidget(self.skelTextBox, alignment=Qt.AlignTop)
+        skelangle_layout.addWidget(self.btnSkelExport, alignment=Qt.AlignTop)
+
+        skel_viewer_layout.addLayout(skelangle_layout)
+
+        # skel_viewer_layout.setSpacing(5)
+
+
         
         # Create a horizontal layout for the viewers
         viewers_layout = QHBoxLayout()
@@ -290,8 +308,8 @@ class RowsWidget(QWidget):
         button_layout.addWidget(self.btnClose)
         layout.addLayout(button_layout)
 
-        self.line_viewer.setImg(self.image_cropped)
-        self.skel_viewer.setImg(self.image_cropped)
+        # self.line_viewer.setImg(self.image_cropped)
+        # self.skel_viewer.setImg(self.image_cropped)
 
         self.setLayout(layout)    
     
@@ -587,9 +605,9 @@ class RowsWidget(QWidget):
             (x0, y0), (x1, y1), _ = line
             plt.plot((x0, x1), (y0, y1), color='r')
 
-        plt.title('Detected Lines and Intersections')
-        plt.savefig("spezzate_with_intersections.png", bbox_inches='tight', pad_inches=0)
-        plt.close()
+        # plt.title('Detected Lines and Intersections')
+        # plt.savefig("spezzate_with_intersections.png", bbox_inches='tight', pad_inches=0)
+        # plt.close()
        
         # # Remove intersectin lines with smaller angles
         # for line1, line2 in intersections:
@@ -901,8 +919,15 @@ class RowsWidget(QWidget):
     def showMaskLinesMenu(self, position):
             menu = QMenu(self)
             menu.addAction(self.actionShowMask)
-            menu.addAction(self.actionShowLines)
             menu.addAction(self.actionShowBlobs)
+            
+            # Add a separator line between actions in the context menu
+            self.actionSeparator = QAction(self)
+            self.actionSeparator.setSeparator(True)
+            menu.addAction(self.actionSeparator)
+            
+            menu.addAction(self.actionShowLines)
+
             menu.exec_(self.line_viewer.mapToGlobal(position))
 
     def toggleShowMask(self, checked):
@@ -963,10 +988,10 @@ class RowsWidget(QWidget):
             image.fill(Qt.transparent)
             image_with_lines = self.paintLinesImage(image, self.lines)
 
-            blob_image = self.drawBlobs(image_with_lines, self.blob_list)
+            self.blob_image = self.drawBlobs(image_with_lines, self.blob_list)
 
-            self.line_viewer.setOpacity(0.7)
-            self.line_viewer.setOverlayImage(blob_image)
+            self.line_viewer.setOpacity(0.9)
+            self.line_viewer.setOverlayImage(self.blob_image)
 
         elif line_checked == True and mask_checked == False and blobs_checked == False:
             # image = self.image_cropped.copy()
@@ -988,23 +1013,32 @@ class RowsWidget(QWidget):
             image = QImage(self.image_cropped.size(), QImage.Format_ARGB32)
             image.fill(Qt.transparent)
             
-            blob_image = self.drawBlobs(image, self.blob_list)
+            self.blob_image = self.drawBlobs(image, self.blob_list)
 
-            self.line_viewer.setOpacity(0.7)
-            self.line_viewer.setOverlayImage(blob_image)
+            self.line_viewer.setOpacity(0.9)
+            self.line_viewer.setOverlayImage(self.blob_image)
         
         else:
             self.line_viewer.setFixedWidth(IMAGEVIEWER_W)
             self.line_viewer.setFixedHeight(IMAGEVIEWER_H)
             self.line_viewer.setImg(self.image_cropped)
 
+            self.blob_image = None
+
     #####BRANCHSKELETON METHODS#####
 
     def showSkelMenu(self, position):
             menu = QMenu(self)
             menu.addAction(self.actionShowSkel)
-            menu.addAction(self.actionShowBranch)
             menu.addAction(self.actionShowEdges)
+
+             # Add a separator line between actions in the context menu
+            self.actionSeparator = QAction(self)
+            self.actionSeparator.setSeparator(True)
+            menu.addAction(self.actionSeparator)
+
+            menu.addAction(self.actionShowBranch)
+
             menu.exec_(self.skel_viewer.mapToGlobal(position))
     
     def toggleShowSkel(self, checked):
@@ -1147,39 +1181,49 @@ class RowsWidget(QWidget):
             if not options:
                 return  # User canceled the dialog or provided invalid input
 
-            path = options["path"]
-            name = options["name"]
+            file_path = options["path"]
             export_angles = options["export_angles"]
             export_mask = options["export_mask"]
+            export_blobs = options["export_blobs"]
 
             export_success = False
-            if self.masch is not None:
-                if export_mask:
-                    mask_filename = f"{path}/{name}_mask.png"
-                    if self.lines:
-                        qmask = genutils.maskToQImage(self.masch)
-                        mask_with_lines = self.paintLinesImage(qmask, self.lines)
-                        mask_with_lines.save(mask_filename)
-                    else:
-                        mask_image = genutils.maskToQImage(self.masch)
-                        mask_image.save(mask_filename)
-                    print(f"Mask exported to {mask_filename}")
+            if export_mask:
+                mask_filename = f"{file_path}_mask.png"
+                if self.line_checked:
+                    qmask = genutils.maskToQImage(self.masch)
+                    mask_with_lines = self.paintLinesImage(qmask, self.lines)
+                    mask_with_lines.save(mask_filename)
+                else:
+                    mask_image = genutils.maskToQImage(self.masch)
+                    mask_image.save(mask_filename)
+                print(f"Mask exported to {mask_filename}")
 
-                if export_angles and self.lines:
-                    angles_filename = f"{path}/{name}_angles.csv"
-                    with open(angles_filename, "w") as file:
-                        file.write("Line Index,Angle (degrees)\n")
-                        for i, (_, _, angle, _) in enumerate(self.lines):
-                            angle_deg = np.rad2deg(angle)
-                            file.write(f"{i + 1},{angle_deg:.2f}\n")
-                    print(f"Angles exported to {angles_filename}")
-                export_success = True
+            if export_blobs:
+                blobs_filename = f"{file_path}_blobs.png"
+                blob_image = self.drawBlobs(self.blob_image, self.blob_list)
+                blob_image.save(blobs_filename)
+                print(f"Blobs exported to {blobs_filename}")
+            
+            if export_angles:
+                angles_filename = f"{file_path}_angles.csv"
+                with open(angles_filename, "w") as file:
+                    file.write("Line Index,Angle (degrees)\n")
+                    for i, (_, _, angle, _) in enumerate(self.lines):
+                        if angle < 0:
+                            angle = np.pi/2 + angle  
+                        else:
+                            angle = angle - np.pi/2
+                        
+                        angle_deg = np.rad2deg(angle)
+                        file.write(f"{i + 1},{angle_deg:.2f}\n")
+                print(f"Angles exported to {angles_filename}")
+                
+            export_success = True
 
             if export_success:
                 QMessageBox.information(self, "Export Successful", "Data exported successfully.")
             else:
                 QMessageBox.warning(self, "Export Failed", "No data to export.")
-
 
     def getLineExportOptions(self):
         # Displays the export dialog for line viewer data and returns the selected options."""
@@ -1189,6 +1233,9 @@ class RowsWidget(QWidget):
 
         dialog.mask_checkbox.setChecked(self.mask_checked)
         dialog.mask_checkbox.setEnabled(False)  
+
+        dialog.blob_checkbox.setChecked(self.blobs_checked)
+        dialog.blob_checkbox.setEnabled(False)  
 
         dialog.skeleton_checkbox.hide()  # Hide irrelevant options
         dialog.branch_points_checkbox.hide()
@@ -1203,14 +1250,13 @@ class RowsWidget(QWidget):
             if not options:
                 return  # User canceled the dialog or provided invalid input
 
-            path = options["path"]
-            name = options["name"]
+            file_path = options["path"]
             export_skeleton = options["export_skeleton"]
             export_branch_points = options["export_branch_points"]
             export_edges = options["export_edges"]
             export_success = False
             if export_skeleton and self.skeleton is not None:
-                skeleton_filename = f"{path}/{name}_skeleton.png"
+                skeleton_filename = f"{file_path}_skeleton.png"
                 branch_image = self.drawBranchSkel(
                     self.skeleton, self.branch_points, self.edges, export_branch_points, export_skeleton, export_edges
                 )
@@ -1219,14 +1265,14 @@ class RowsWidget(QWidget):
                 export_success = True
 
             if export_edges and self.edges:
-                edges_filename = f"{path}/{name}_edges.png"
+                edges_filename = f"{file_path}_edges.png"
                 edge_image = self.drawBranchSkel(
                     self.skeleton, self.branch_points, self.edges, self.branch_checked, self.skel_checked, self.edges_checked
                 )
                 edge_image.save(edges_filename)
                 print(f"Edges with branch_points exported to {edges_filename}")
                 
-                angles_filename = f"{path}/{name}_edges_angles.csv"
+                angles_filename = f"{file_path}_edges_angles.csv"
                 with open(angles_filename, "w") as file:
                     file.write("Connection Index,Angle (degrees)\n")
                     for i, (_, _, _, angle) in enumerate(self.edges):
@@ -1253,6 +1299,8 @@ class RowsWidget(QWidget):
 
         dialog.angle_checkbox.hide()  # Hide irrelevant options
         dialog.mask_checkbox.hide()
+        dialog.blob_checkbox.hide()
+
 
         if dialog.exec_() == QDialog.Accepted:
             return dialog.getExportOptions()
