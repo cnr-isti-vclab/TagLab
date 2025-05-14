@@ -150,7 +150,7 @@ def integerMapToQImage(int_map):
     max_value = np.max(imap)
     min_value = np.min(imap)
 
-    # integer to color (integer value = (red + green * 256 + blue * 65536))
+    # integer to color (integer value = (red + green / 256 + blue / 65536))
     imap_red = imap.copy()
     imap_green = imap.copy()
     imap_green = imap_green >> 8
