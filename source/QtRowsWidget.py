@@ -1095,7 +1095,7 @@ class RowsWidget(QWidget):
             self.skel_viewer.setImg(self.image_cropped)
 
     def drawBranchSkel(self, skeleton, branch_points, connections, branch, skel, conn):
-         # Create a QImage from the skeleton and branch points
+         # Create a transparent QImage from the skeleton and branch points
         branch_image = QImage(skeleton.shape[1], skeleton.shape[0], QImage.Format_ARGB32)
         branch_image.fill(Qt.transparent)
         painter = QPainter(branch_image)
@@ -1104,9 +1104,26 @@ class RowsWidget(QWidget):
             pen = QPen(Qt.blue, 5)
             painter.setPen(pen)
 
-            # Draw skeleton
-            for (y, x) in zip(*np.where(skeleton)):
-                painter.drawPoint(x, y)
+            h, w = skeleton.shape
+            neighbor_offsets = [(-1, -1), (-1, 0), (-1, 1),
+                                ( 0, -1),          ( 0, 1),
+                                ( 1, -1), ( 1, 0), ( 1, 1)]
+            yx = np.column_stack(np.where(skeleton))
+            skeleton_set = set((y, x) for y, x in yx)
+            for y, x in yx:
+                for dy, dx in neighbor_offsets:
+                    ny, nx_ = y + dy, x + dx
+                    if 0 <= ny < h and 0 <= nx_ < w and (ny, nx_) in skeleton_set:
+                        # To avoid duplicate lines, only draw if neighbor is "after" current
+                        if (ny > y) or (ny == y and nx_ > x):
+                            painter.drawLine(x, y, nx_, ny)
+
+            # # to draw the skeleton by points in yellow
+            # pen = QPen(Qt.yellow, 2)
+            # painter.setPen(pen)
+
+            # for (y, x) in zip(*np.where(skeleton)):
+            #     painter.drawPoint(x, y)
         
         if conn: 
             pen = QPen(Qt.green, 3)
@@ -1120,7 +1137,7 @@ class RowsWidget(QWidget):
                 if abs(y1 - y2) <= y_threshold:  # Filter segments
                     filterd_segments.append((start, end, color, angle))
                     
-            print(f"len of filtered segments is {len(filterd_segments)}")
+            print(f"len of filtered segments pre is {len(filterd_segments)}")
                     
             for i, (start, end, color, angle) in enumerate(filterd_segments):                    
                 pen.setColor(QColor(color[0], color[1], color[2]))
@@ -1228,33 +1245,50 @@ class RowsWidget(QWidget):
 
             file_path = options["path"]
             export_skeleton = options["export_skeleton"]
+            print(f"export_skeleton is {export_skeleton}")
             export_branch_points = options["export_branch_points"]
+            print(f"export_branch_points is {export_branch_points}")
             export_edges = options["export_edges"]
+            print(f"export_edges is {export_edges}")
             export_success = False
-            if export_skeleton and self.skeleton is not None:
-                skeleton_filename = f"{file_path}_skeleton.png"
-                branch_image = self.drawBranchSkel(
-                    self.skeleton, self.branch_points, self.edges, export_branch_points, export_skeleton, export_edges
-                )
-                branch_image.save(skeleton_filename)
-                print(f"Skeleton exported to {skeleton_filename}")
+            # DXF export integration
+            if options["format"] == ".dxf":
+                if not file_path.lower().endswith(".dxf"):
+                    file_path += ".dxf"
+                dialog = ExportDialog(self)
+                # Pass the data to the dialog for DXFExport
+                dialog.skeleton = self.skeleton if export_skeleton else None
+                dialog.branch_points = self.branch_points if export_branch_points else []
+                dialog.edges = self.edges if export_edges else []
+                dialog.DXFExport(file_path, export_skeleton, export_branch_points, export_edges)
+                print(f"DXF exported to {file_path}")
                 export_success = True
+            
+            else:
+                if export_skeleton and self.skeleton is not None:
+                    skeleton_filename = f"{file_path}_skeleton.png"
+                    branch_image = self.drawBranchSkel(
+                        self.skeleton, self.branch_points, self.edges, export_branch_points, export_skeleton, export_edges
+                    )
+                    branch_image.save(skeleton_filename)
+                    print(f"Skeleton exported to {skeleton_filename}")
+                    export_success = True
 
-            if export_edges and self.edges:
-                edges_filename = f"{file_path}_edges.png"
-                edge_image = self.drawBranchSkel(
-                    self.skeleton, self.branch_points, self.edges, self.branch_checked, self.skel_checked, self.edges_checked
-                )
-                edge_image.save(edges_filename)
-                print(f"Edges with branch_points exported to {edges_filename}")
-                
-                angles_filename = f"{file_path}_edges_angles.csv"
-                with open(angles_filename, "w") as file:
-                    file.write("Connection Index,Angle (degrees)\n")
-                    for i, (_, _, _, angle) in enumerate(self.edges):
-                        file.write(f"{i + 1},{angle:.2f}\n")
-                print(f"Angles exported to {angles_filename}")
-                export_success = True
+                if export_edges and self.edges:
+                    edges_filename = f"{file_path}_edges.png"
+                    edge_image = self.drawBranchSkel(
+                        self.skeleton, self.branch_points, self.edges, self.branch_checked, self.skel_checked, self.edges_checked
+                    )
+                    edge_image.save(edges_filename)
+                    print(f"Edges with branch_points exported to {edges_filename}")
+                    
+                    angles_filename = f"{file_path}_edges_angles.csv"
+                    with open(angles_filename, "w") as file:
+                        file.write("Connection Index,Angle (degrees)\n")
+                        for i, (_, _, _, angle) in enumerate(self.edges):
+                            file.write(f"{i + 1},{angle:.2f}\n")
+                    print(f"Angles exported to {angles_filename}")
+                    export_success = True
 
             if export_success:
                 QMessageBox.information(self, "Export Successful", "Data exported successfully.")
@@ -1265,13 +1299,13 @@ class RowsWidget(QWidget):
         # Displays the export dialog for skeleton viewer data and returns the selected options.
         dialog = ExportDialog(self)
         dialog.skeleton_checkbox.setChecked(self.skel_checked)
-        dialog.skeleton_checkbox.setEnabled(False)
+        # dialog.skeleton_checkbox.setEnabled(False)
 
         dialog.branch_points_checkbox.setChecked(self.branch_checked)
-        dialog.branch_points_checkbox.setEnabled(False)  
+        # dialog.branch_points_checkbox.setEnabled(False)  
 
         dialog.edges_checkbox.setChecked(self.edges_checked)
-        dialog.edges_checkbox.setEnabled(False)  
+        # dialog.edges_checkbox.setEnabled(False)  
 
         dialog.angle_checkbox.hide()  # Hide irrelevant options
         dialog.mask_checkbox.hide()

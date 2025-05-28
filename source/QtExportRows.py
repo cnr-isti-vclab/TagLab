@@ -1,6 +1,7 @@
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QFileDialog
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QFileDialog, QComboBox
 from PyQt5.QtCore import Qt
-
+import ezdxf 
+import numpy as np
 
 class ExportDialog(QDialog):
     def __init__(self, parent=None):
@@ -23,14 +24,15 @@ class ExportDialog(QDialog):
         path_layout.addWidget(self.browse_button)
         layout.addLayout(path_layout)
 
-        # File name
-        name_layout = QHBoxLayout()
-        self.name_label = QLabel("File Name:")
-        self.name_input = QLineEdit(self)
-        name_layout.addWidget(self.name_label)
-        name_layout.addWidget(self.name_input)
-        layout.addLayout(name_layout)
-
+        # Format selection
+        format_layout = QHBoxLayout()
+        self.format_label = QLabel("File Format:")
+        self.format_combo = QComboBox(self)
+        self.format_combo.addItems([".dxf", ".png"])
+        format_layout.addWidget(self.format_label)
+        format_layout.addWidget(self.format_combo)
+        layout.addLayout(format_layout)
+        
         # Export options
         self.angle_checkbox = QCheckBox("Export Angles")
         
@@ -63,11 +65,70 @@ class ExportDialog(QDialog):
 
         self.setLayout(layout)
 
-    # def browseDirectory(self):
-    #     """Open a directory selection dialog."""
-    #     directory = QFileDialog.getExistingDirectory(self, "Select Directory")
-    #     if directory:
-    #         self.path_input.setText(directory)
+    def DXFExport(self, file_path, skel, branch, edges):
+        # Export skeleton, branch points, and edges to a DXF file, each in a different layer.
+        
+        doc = ezdxf.new(dxfversion="R2010")
+        msp = doc.modelspace()
+
+        # Skeleton layer
+        if skel:
+            doc.layers.add("Skeleton", color=1)
+        
+            skeleton = self.skeleton
+            h, w = skeleton.shape
+            for y, x in zip(*np.where(skeleton)):
+                for dy in [-1, 0, 1]:
+                    for dx in [-1, 0, 1]:
+                        if dx == 0 and dy == 0:
+                            continue
+                        ny, nx_ = y + dy, x + dx
+                        if 0 <= ny < h and 0 <= nx_ < w and skeleton[ny, nx_]:
+                            # To avoid duplicate lines, only draw if neighbor is "after" current
+                            if (ny > y) or (ny == y and nx_ > x):
+                                msp.add_line((x, y), (nx_, ny), dxfattribs={"layer": "Skeleton"})
+
+
+        # Branch points layer
+        if branch:
+            doc.layers.add("BranchPoints", color=2)
+        
+            # #Draw ALL the branch points
+            # for (y, x) in self.branch_points:
+            #     msp.add_circle((x, y), radius=1, dxfattribs={"layer": "BranchPoints"})
+            
+            # Draw branch points, if points are closer than 10 pixels, draw only one at the median position
+            remaining_points = list(self.branch_points)
+            drawn_points = []
+            while remaining_points:
+                (y, x) = remaining_points.pop(0)
+                close_points = [(y, x)]
+                to_remove = []
+                for idx, (yy, xx) in enumerate(remaining_points):
+                    if np.hypot(x - xx, y - yy) < 10:
+                        close_points.append((yy, xx))
+                        to_remove.append(idx)
+                # Remove close points from remaining_points
+                for idx in reversed(to_remove):
+                    remaining_points.pop(idx)
+                # Compute median position
+                ys, xs = zip(*close_points)
+                median_y = int(np.median(ys))
+                median_x = int(np.median(xs))
+                # Empty circle
+                msp.add_circle((median_x, median_y), radius=1, dxfattribs={"layer": "BranchPoints"})
+                drawn_points.append((median_y, median_x))
+
+        # Edges layer
+        if edges:
+            doc.layers.add("Edges", color=3)
+            for start, end, color, angle in self.edges:
+                msp.add_line((start[0], start[1]), (end[0], end[1]), dxfattribs={"layer": "Edges"})
+
+        doc.saveas(file_path)
+        print(f"DXF exported to {file_path}")
+
+
     def browseFile(self):
         # Open a file save dialog.
         file_path, _ = QFileDialog.getSaveFileName(self, "Select File", "", "All Files (*)")
@@ -75,10 +136,10 @@ class ExportDialog(QDialog):
             self.path_input.setText(file_path)
 
     def getExportOptions(self):
-        """Return the selected export options."""
+        #Return the selected export options.
         return {
             "path": self.path_input.text(),
-            "name": self.name_input.text(),
+            "format": self.format_combo.currentText(),
             "export_angles": self.angle_checkbox.isChecked(),
             "export_mask": self.mask_checkbox.isChecked(),
             "export_blobs": self.blob_checkbox.isChecked(),
