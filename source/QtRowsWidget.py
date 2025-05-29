@@ -1312,6 +1312,10 @@ class RowsWidget(QWidget):
         dialog.mask_checkbox.hide()
         # dialog.blob_checkbox.hide()
 
+         # Show format combo only for skeleton export
+        dialog.format_label.show()
+        dialog.format_combo.show()
+
 
         if dialog.exec_() == QDialog.Accepted:
             return dialog.getExportOptions()

@@ -9,7 +9,7 @@ class ExportDialog(QDialog):
         self.setWindowTitle("Export Options")
         self.setModal(True)
         self.setMinimumWidth(400)
-        
+
         # Layouts
         layout = QVBoxLayout()
 
@@ -32,6 +32,9 @@ class ExportDialog(QDialog):
         format_layout.addWidget(self.format_label)
         format_layout.addWidget(self.format_combo)
         layout.addLayout(format_layout)
+        self.format_label.hide()
+        self.format_combo.hide()
+        format_layout.setSpacing(10)
         
         # Export options
         self.angle_checkbox = QCheckBox("Export Angles")
