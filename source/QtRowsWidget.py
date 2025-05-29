@@ -1245,12 +1245,12 @@ class RowsWidget(QWidget):
 
             file_path = options["path"]
             export_skeleton = options["export_skeleton"]
-            print(f"export_skeleton is {export_skeleton}")
             export_branch_points = options["export_branch_points"]
-            print(f"export_branch_points is {export_branch_points}")
             export_edges = options["export_edges"]
-            print(f"export_edges is {export_edges}")
+            export_blobs = options["export_blobs"]
+
             export_success = False
+            
             # DXF export integration
             if options["format"] == ".dxf":
                 if not file_path.lower().endswith(".dxf"):
@@ -1260,7 +1260,8 @@ class RowsWidget(QWidget):
                 dialog.skeleton = self.skeleton if export_skeleton else None
                 dialog.branch_points = self.branch_points if export_branch_points else []
                 dialog.edges = self.edges if export_edges else []
-                dialog.DXFExport(file_path, export_skeleton, export_branch_points, export_edges)
+                dialog.blobs = self.blob_list if export_blobs else []
+                dialog.DXFExport(file_path, export_skeleton, export_branch_points, export_edges, export_blobs, offset = self.off, img_size = (self.parent_viewer.image.width, self.parent_viewer.image.height))
                 print(f"DXF exported to {file_path}")
                 export_success = True
             
@@ -1309,7 +1310,7 @@ class RowsWidget(QWidget):
 
         dialog.angle_checkbox.hide()  # Hide irrelevant options
         dialog.mask_checkbox.hide()
-        dialog.blob_checkbox.hide()
+        # dialog.blob_checkbox.hide()
 
 
         if dialog.exec_() == QDialog.Accepted:
