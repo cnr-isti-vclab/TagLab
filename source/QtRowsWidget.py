@@ -1261,7 +1261,12 @@ class RowsWidget(QWidget):
                 dialog.branch_points = self.branch_points if export_branch_points else []
                 dialog.edges = self.edges if export_edges else []
                 dialog.blobs = self.blob_list if export_blobs else []
-                dialog.DXFExport(file_path, export_skeleton, export_branch_points, export_edges, export_blobs, offset = self.off, img_size = (self.parent_viewer.image.width, self.parent_viewer.image.height))
+
+                georef_filename = None
+                if hasattr(self.parent_viewer.image, 'georef_filename') and self.parent_viewer.image.georef_filename:
+                    georef_filename = self.parent_viewer.image.georef_filename
+
+                dialog.DXFExport(file_path, export_skeleton, export_branch_points, export_edges, export_blobs, georef = georef_filename, offset = self.off, img_size = (self.parent_viewer.image.width, self.parent_viewer.image.height))
                 print(f"DXF exported to {file_path}")
                 export_success = True
             

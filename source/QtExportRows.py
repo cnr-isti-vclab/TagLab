@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit
 # from PyQt5.QtCore import Qt
 import ezdxf 
 import numpy as np
+import source.RasterOps as rasterops
 
 class ExportDialog(QDialog):
     def __init__(self, parent=None):
@@ -68,10 +69,16 @@ class ExportDialog(QDialog):
 
         self.setLayout(layout)
 
-    def DXFExport(self, file_path, skel, branch, edges, blobs, offset = [0, 0], img_size = (0,0)):
+    def DXFExport(self, file_path, skel, branch, edges, blobs, georef, offset = [0, 0], img_size = (0,0)):
         # Export skeleton, branch points, and edges to a DXF file, each in a different layer.
         offset_x, offset_y = offset
         img_width, img_height = img_size
+
+        text_height_scale = 1.0
+        transform = None
+        if georef is not None:
+            georef_data, transform = rasterops.load_georef(georef)
+            text_height_scale = max(abs(transform.a), abs(transform.e))
 
         doc = ezdxf.new(dxfversion="R2010")
         msp = doc.modelspace()
@@ -83,6 +90,10 @@ class ExportDialog(QDialog):
             (0, img_height),
             (0, 0)
         ]
+
+        if transform is not None:
+            map_outline = [transform * (x, y) for x, y in map_outline]
+        
         msp.add_lwpolyline(
             map_outline,
             close=True,
@@ -109,8 +120,14 @@ class ExportDialog(QDialog):
                         if 0 <= ny < h and 0 <= nx_ < w and skeleton[ny, nx_]:
                             # To avoid duplicate lines, only draw if neighbor is "after" current
                             if (ny > y) or (ny == y and nx_ > x):
-                                ny_flipped = img_height - ny_global
-                                msp.add_line((x_global, y_flipped), (nx_global, ny_flipped), dxfattribs={"layer": "Skeleton"})
+                                if transform is not None:
+                                    p1 = transform * (x_global, y_global)
+                                    p2 = transform * (nx_global, ny_global)
+                                else:
+                                    p1 = (x_global, img_height - y_global)
+                                    p2 = (nx_global, img_height - ny_global)
+                                    # ny_flipped = img_height - ny_global
+                                msp.add_line(p1, p2, dxfattribs={"layer": "Skeleton"})
 
         # Branch points layer
         if branch:
@@ -141,13 +158,22 @@ class ExportDialog(QDialog):
                 # Apply offset and flip y
                 median_x_global = median_x + offset_x
                 median_y_global = median_y + offset_y
-                median_y_flipped = img_height - median_y_global
-                # Empty circle
-                msp.add_circle((median_x_global, median_y_flipped), radius=1, dxfattribs={"layer": "BranchPoints"})
-                drawn_points.append((median_y_global, median_x_global))
+                # median_y_flipped = img_height - median_y_global
+                # # Empty circle
+                # msp.add_circle((median_x_global, median_y_flipped), radius=1, dxfattribs={"layer": "BranchPoints"})
+                # drawn_points.append((median_y_global, median_x_global))
 
                 # msp.add_circle((median_x, median_y), radius=1, dxfattribs={"layer": "BranchPoints"})
                 # drawn_points.append((median_y, median_x))
+
+                if transform is not None:
+                    center = transform * (median_x_global, median_y_global)
+                    radius = 1 * text_height_scale
+                else:
+                    center = (median_x_global, img_height - median_y_global)
+                    radius = 1
+                msp.add_circle(center, radius=radius, dxfattribs={"layer": "BranchPoints"})
+
 
         # Edges layer
         if edges:
@@ -158,17 +184,26 @@ class ExportDialog(QDialog):
                 start_y_global = start[1] + offset_y
                 end_x_global = end[0] + offset_x
                 end_y_global = end[1] + offset_y
-                start_y_flipped = img_height - start_y_global
-                end_y_flipped = img_height - end_y_global
-                msp.add_line((start_x_global, start_y_flipped), (end_x_global, end_y_flipped), dxfattribs={"layer": "Edges"})
+                # start_y_flipped = img_height - start_y_global
+                # end_y_flipped = img_height - end_y_global
+                # msp.add_line((start_x_global, start_y_flipped), (end_x_global, end_y_flipped), dxfattribs={"layer": "Edges"})
+                if transform is not None:
+                    p1 = transform * (start_x_global, start_y_global)
+                    p2 = transform * (end_x_global, end_y_global)
+                else:
+                    p1 = (start_x_global, img_height - start_y_global)
+                    p2 = (end_x_global, img_height - end_y_global)
+                msp.add_line(p1, p2, dxfattribs={"layer": "Edges"})
+
 
         # Blobs layer
         if blobs:
             doc.layers.add("Blobs", color=4)
             for blob in self.blobs:
-                # Draw each blob as a circle with radius equal to the blob's radius
-                # Convert contour to (x, y) tuples
-                points = [(float(x), float(img_height - y)) for x, y in blob.contour]
+                if transform is not None:
+                    points = [transform * (float(x), float(y)) for x, y in blob.contour]
+                else:
+                    points = [(float(x), float(img_height - y)) for x, y in blob.contour]
                 # Optionally close the polyline if the contour is closed
                 is_closed = np.allclose(points[0], points[-1])
                 msp.add_lwpolyline(points, close=is_closed, dxfattribs={"layer": "Blobs"})
