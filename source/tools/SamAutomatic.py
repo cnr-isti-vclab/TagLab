@@ -156,13 +156,13 @@ class SamAuto(Tool):
 
         self.work_area_set = True
 
-    def divideImage(self, image):
+    def divideImage(self, image, overlap=200):
         # Divide the image into chunks of 1024x1024
         chunks = []
         h = image.height()
         w = image.width()
         chunk_size = 1024
-        overlap = 200
+        # overlap = 200
 
         try:
             for y in range(0, h, chunk_size - overlap):
@@ -209,19 +209,27 @@ class SamAuto(Tool):
         elif self.num_points > 64:
             self.num_points = 64
 
-        # Get the updated number of points
-        x_pts, y_pts = build_all_layer_point_grids(self.num_points, 0, 1)[0].T
+        # Divide the cropped image into tiles
+        tiles = self.divideImage(self.image_cropped, overlap=0)
 
-        left = self.work_area_item.left()
-        top = self.work_area_item.top()
+        # Get WorkArea boundaries
+        work_area_left = self.work_area_item.left()
+        work_area_top = self.work_area_item.top()
+        work_area_right = self.work_area_item.right()
+        work_area_bottom = self.work_area_item.bottom()
+        
+        # Place points in each tile
+        for _, (x_offset, y_offset) in tiles:
+            x_pts, y_pts = build_all_layer_point_grids(self.num_points, 0, 1)[0].T
 
-        # Change coordinates to match viewer
-        x_pts = (x_pts * self.image_cropped_np.shape[1]) + left
-        y_pts = (y_pts * self.image_cropped_np.shape[0]) + top
+            # Scale points to match the tile dimensions
+            x_pts = (x_pts * 1024) + x_offset + self.offset[0]
+            y_pts = (y_pts * 1024) + y_offset + self.offset[1]
 
-        # Add all of them to the list
-        for x, y in list(zip(x_pts, y_pts)):
-            self.pick_points.addPoint(x, y, self.pos_pick_style)
+            # Add points to the list
+            for x, y in zip(x_pts, y_pts):
+                if work_area_left <= x <= work_area_right and work_area_top <= y <= work_area_bottom:
+                    self.pick_points.addPoint(x, y, self.pos_pick_style)
 
     def loadNetwork(self):
 
@@ -346,7 +354,7 @@ class SamAuto(Tool):
         
         self.viewerplus.resetSelection()
 
-        print(f"number of sam_seed is {self.num_points}")
+        # print(f"number of sam_seed is {self.num_points}")
 
         image_chunks = self.divideImage(self.image_cropped)
 
