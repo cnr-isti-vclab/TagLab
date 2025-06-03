@@ -114,7 +114,7 @@ class RowsWidget(QWidget):
         self.line_checked = False
         line_viewer_layout.addWidget(self.line_viewer, alignment=Qt.AlignTop)
         
-        line_viewer_layout.setSpacing(45)
+        # line_viewer_layout.setSpacing(45)
         
         lineslopes_layout = QVBoxLayout()
         
@@ -133,10 +133,13 @@ class RowsWidget(QWidget):
 
         lineslopes_layout.addWidget(lineangle_label, alignment=Qt.AlignBottom)
         lineslopes_layout.addWidget(self.angleTextBox, alignment=Qt.AlignTop)
-        lineslopes_layout.addWidget(self.btnLineExport, alignment=Qt.AlignTop)
+        # lineslopes_layout.addWidget(self.btnLineExport, alignment=Qt.AlignTop)
 
 
         line_viewer_layout.addLayout(lineslopes_layout)
+        # line_viewer_layout.addWidget(lineangle_label, alignment=Qt.AlignTop)
+        # line_viewer_layout.addWidget(self.angleTextBox, alignment=Qt.AlignTop)
+        line_viewer_layout.addWidget(self.btnLineExport, alignment=Qt.AlignBottom)
         
 
         # create skeleton viewer
@@ -199,25 +202,26 @@ class RowsWidget(QWidget):
         skel_viewer_layout.addLayout(brickdist_layout)
         skel_viewer_layout.setSpacing(10)
 
-        skelangle_layout = QVBoxLayout()
-        skelangle_label = QLabel(f"Slopes")
-        self.skelTextBox = QTextEdit(self)
-        self.skelTextBox.setReadOnly(True)
-        self.skelTextBox.setFixedWidth(IMAGEVIEWER_W)
-        self.skelTextBox.setFixedHeight(TEXTBOX_H)
+        # skelangle_layout = QVBoxLayout()
+        # skelangle_label = QLabel(f"Slopes")
+        # self.skelTextBox = QTextEdit(self)
+        # self.skelTextBox.setReadOnly(True)
+        # self.skelTextBox.setFixedWidth(IMAGEVIEWER_W)
+        # self.skelTextBox.setFixedHeight(TEXTBOX_H)
         # layout.addWidget(self.angleTextBox)
         # Add export lines
         self.btnSkelExport = QPushButton("Export Skeleton Data")
         self.btnSkelExport.clicked.connect(self.exportSkelViewerData)
         # skel_viewer_layout.addWidget(self.btnSkelExport, alignment=Qt.AlignTop)
-        skelangle_layout.setSpacing(5)  # Reduce spacing to bring QLabel closer to QTextEdit
+        # skelangle_layout.setSpacing(5)  # Reduce spacing to bring QLabel closer to QTextEdit
+        skel_viewer_layout.addWidget(self.btnSkelExport, alignment=Qt.AlignBottom)
 
         
-        skelangle_layout.addWidget(skelangle_label, alignment=Qt.AlignBottom)
-        skelangle_layout.addWidget(self.skelTextBox, alignment=Qt.AlignTop)
-        skelangle_layout.addWidget(self.btnSkelExport, alignment=Qt.AlignTop)
+        # skelangle_layout.addWidget(skelangle_label, alignment=Qt.AlignBottom)
+        # skelangle_layout.addWidget(self.skelTextBox, alignment=Qt.AlignTop)
+        # skelangle_layout.addWidget(self.btnSkelExport, alignment=Qt.AlignTop)
 
-        skel_viewer_layout.addLayout(skelangle_layout)
+        # skel_viewer_layout.addLayout(skelangle_layout)
 
         # skel_viewer_layout.setSpacing(5)
 
@@ -405,20 +409,20 @@ class RowsWidget(QWidget):
     
     def updateAngleTextBox(self, angles, index, color='red'):
         current_text = self.angleTextBox.toHtml()
-        new_text = ''.join([f'<span style="color: {color};">line {str(index+1)}: {angle}</span><br>' for angle in angles])
+        new_text = ''.join([f'<div style="color: {color};">line {str(index+1)}: {angle}</div>' for angle in angles])
         self.angleTextBox.setHtml(current_text + new_text)
     
     def resetAngleTextBox(self):
         self.angleTextBox.clear()
         self.set_textbox = False
 
-    def updateSkelTextBox(self, angles, index, color='red'):
-        current_text = self.skelTextBox.toHtml()
-        new_text = ''.join([f'<span style="color: {color};">line {str(index+1)}: {angle}</span><br>' for angle in angles])
-        self.skelTextBox.setHtml(current_text + new_text)
+    # def updateSkelTextBox(self, angles, index, color='red'):
+    #     current_text = self.skelTextBox.toHtml()
+    #     new_text = ''.join([f'<span style="color: {color};">line {str(index+1)}: {angle}</span><br>' for angle in angles])
+    #     self.skelTextBox.setHtml(current_text + new_text)
 
-    def resetSkelTextBox(self):
-        self.skelTextBox.clear()
+    # def resetSkelTextBox(self):
+    #     self.skelTextBox.clear()
         # self.set_textbox = False
 
     def boundary_clamp(self, mask, x0, y0, x1, y1):
@@ -852,11 +856,25 @@ class RowsWidget(QWidget):
         pen = QPen(Qt.red, 5)
 
         # with QPainter(image) as painter:
-        for i, ((x0, y0), (x1, y1), _, color) in enumerate(lines):
+        for i, ((x0, y0), (x1, y1), angle, color) in enumerate(lines):
             # color = colors.pop(0)          
             pen.setColor(QColor(color[0], color[1], color[2]))
             painter.setPen(pen)
             painter.drawLine(x0, y0, x1, y1)
+
+            # Draw angle value at the midpoint of the line
+            mid_x = int((x0 + x1) / 2)
+            mid_y = int((y0 + y1) / 2) - 10  # Slightly above the line
+
+            # Convert angle to degrees and format
+            if angle < 0:
+                angle_disp = np.pi/2 + angle
+            else:
+                angle_disp = angle - np.pi/2
+            angle_deg = np.rad2deg(angle_disp)
+            angle_text = f"{angle_deg:.2f}°"
+
+            painter.drawText(mid_x, mid_y, angle_text)
 
         painter.end()
 
@@ -1079,7 +1097,7 @@ class RowsWidget(QWidget):
             self.actionShowSkel.setChecked(False)
         else:
             self.edges_checked = False
-            self.resetSkelTextBox()
+            # self.resetSkelTextBox()
         
         self.toggleSkelBranchEdges(self.skel_checked, self.branch_checked, self.edges_checked)
 
