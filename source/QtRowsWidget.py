@@ -126,20 +126,21 @@ class RowsWidget(QWidget):
         self.angleTextBox.setFixedHeight(TEXTBOX_H)
 
         # Add export lines
-        self.btnLineExport = QPushButton("Export Line Data")
-        self.btnLineExport.clicked.connect(self.exportLineViewerData)
+        # self.btnLineExport = QPushButton("Export Line Data")
+        # self.btnLineExport.clicked.connect(self.exportLineViewerData)
 
         lineslopes_layout.setSpacing(5)  # Reduce spacing to bring QLabel closer to QTextEdit
 
         lineslopes_layout.addWidget(lineangle_label, alignment=Qt.AlignBottom)
         lineslopes_layout.addWidget(self.angleTextBox, alignment=Qt.AlignTop)
         # lineslopes_layout.addWidget(self.btnLineExport, alignment=Qt.AlignTop)
+        # lineslopes_layout.addWidget(self.btnLineExport, alignment=Qt.AlignTop)
 
 
         line_viewer_layout.addLayout(lineslopes_layout)
         # line_viewer_layout.addWidget(lineangle_label, alignment=Qt.AlignTop)
         # line_viewer_layout.addWidget(self.angleTextBox, alignment=Qt.AlignTop)
-        line_viewer_layout.addWidget(self.btnLineExport, alignment=Qt.AlignBottom)
+        # line_viewer_layout.addWidget(self.btnLineExport, alignment=Qt.AlignBottom)
         
 
         # create skeleton viewer
@@ -210,11 +211,11 @@ class RowsWidget(QWidget):
         # self.skelTextBox.setFixedHeight(TEXTBOX_H)
         # layout.addWidget(self.angleTextBox)
         # Add export lines
-        self.btnSkelExport = QPushButton("Export Skeleton Data")
-        self.btnSkelExport.clicked.connect(self.exportSkelViewerData)
+        # self.btnSkelExport = QPushButton("Export Skeleton Data")
+        # self.btnSkelExport.clicked.connect(self.exportSkelViewerData)
         # skel_viewer_layout.addWidget(self.btnSkelExport, alignment=Qt.AlignTop)
         # skelangle_layout.setSpacing(5)  # Reduce spacing to bring QLabel closer to QTextEdit
-        skel_viewer_layout.addWidget(self.btnSkelExport, alignment=Qt.AlignBottom)
+        # skel_viewer_layout.addWidget(self.btnSkelExport, alignment=Qt.AlignBottom)
 
         
         # skelangle_layout.addWidget(skelangle_label, alignment=Qt.AlignBottom)
@@ -263,6 +264,21 @@ class RowsWidget(QWidget):
 
         # self.setLayout(layout)
 
+        self.btnExport = QPushButton("Export Data")
+        self.btnExport.clicked.connect(self.exportData)
+        # self.btnExport.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)  # Make button expand horizontally
+        self.btnExport.setFixedWidth(1440//2)
+
+        # layout.addWidget(self.btnExport)#, alignment=Qt.AlignCenter)
+        # Create a horizontal layout to center the button
+        export_button_layout = QHBoxLayout()
+        export_button_layout.addStretch()
+        export_button_layout.addWidget(self.btnExport)
+        export_button_layout.addStretch()
+
+        # Add the horizontal layout to the main layout
+        layout.addLayout(export_button_layout)
+
         # Add slider for structuring element size
         slider_layout = QVBoxLayout()
         self.slider = QSlider(Qt.Horizontal)
@@ -293,9 +309,9 @@ class RowsWidget(QWidget):
         layout.setSpacing(10)
         
         button_layout = QHBoxLayout()
-        self.btnOk = QPushButton("OK")
-        self.btnOk.clicked.connect(self.applyHough)
-        button_layout.addWidget(self.btnOk)
+        self.btnCompute = QPushButton("Compute")
+        self.btnCompute.clicked.connect(self.applyHough)
+        button_layout.addWidget(self.btnCompute)
 
         self.btnClose = QPushButton("Close")
         self.btnClose.clicked.connect(self.closeWidget)
@@ -1187,35 +1203,93 @@ class RowsWidget(QWidget):
 
     #####EXPORT METHODS#####
 
-    def exportLineViewerData(self):
-            options = self.getLineExportOptions()
-            if not options:
-                return  # User canceled the dialog or provided invalid input
+    def exportData(self):
+        
+        # Unified export function for both line and skeleton data.
 
-            file_path = options["path"]
-            export_angles = options["export_angles"]
-            export_mask = options["export_mask"]
-            export_blobs = options["export_blobs"]
+        dialog = ExportDialog(self)
+        # Show all checkboxes and options
+        dialog.angle_checkbox.show()
+        dialog.mask_checkbox.show()
+        dialog.blob_checkbox.show()
+        dialog.skeleton_checkbox.show()
+        dialog.branch_points_checkbox.show()
+        dialog.edges_checkbox.show()
+        dialog.format_label.show()
+        dialog.format_combo.show()
 
-            export_success = False
+        # Set current state as default
+        dialog.angle_checkbox.setChecked(self.line_checked)
+        dialog.mask_checkbox.setChecked(self.mask_checked)
+        dialog.blob_checkbox.setChecked(self.blobs_checked)
+        dialog.skeleton_checkbox.setChecked(self.skel_checked)
+        dialog.branch_points_checkbox.setChecked(self.branch_checked)
+        dialog.edges_checkbox.setChecked(self.edges_checked)
+
+        # Connect format change to onExportFormatChanged method
+        dialog.format_combo.currentTextChanged.connect(
+            lambda _: self.onExportFormatChanged(dialog)
+        )
+        # Set initial state
+        self.onExportFormatChanged(dialog)
+
+        if dialog.exec_() != QDialog.Accepted:
+            return
+
+        options = dialog.getExportOptions()
+        file_path = options["path"]
+        export_angles = options.get("export_angles", False)
+        export_mask = options.get("export_mask", False)
+        export_blobs = options.get("export_blobs", False)
+        export_skeleton = options.get("export_skeleton", False)
+        export_branch_points = options.get("export_branch_points", False)
+        export_edges = options.get("export_edges", False)
+        export_format = options.get("format", "")
+
+        export_success = False
+
+        # DXF export (if selected)
+        if export_format == ".dxf":
+            if not file_path.lower().endswith(".dxf"):
+                file_path += ".dxf"
+            dialog.skeleton = self.skeleton if export_skeleton else None
+            dialog.branch_points = self.branch_points if export_branch_points else []
+            dialog.edges = self.edges if export_edges else []
+            dialog.blobs = self.blob_list if export_blobs else []
+
+            georef_filename = None
+            if hasattr(self.parent_viewer.image, 'georef_filename') and self.parent_viewer.image.georef_filename:
+                georef_filename = self.parent_viewer.image.georef_filename
+
+            dialog.DXFExport(
+                file_path, export_skeleton, export_branch_points, export_edges, export_blobs,
+                georef=georef_filename, offset=self.off,
+                img_size=(self.parent_viewer.image.width, self.parent_viewer.image.height)
+            )
+            export_success = True
+
+        # PNG/CSV export for each selected option
+        else:
             if export_mask:
                 mask_filename = f"{file_path}_mask.png"
-                if self.line_checked:
+                if self.line_checked and hasattr(self, "lines"):
                     qmask = genutils.maskToQImage(self.masch)
                     mask_with_lines = self.paintLinesImage(qmask, self.lines)
+                    # self.blob_image = mask_with_lines
+                    self.blob_image = self.paintLinesImage(self.image_cropped,self.lines)
                     mask_with_lines.save(mask_filename)
                 else:
                     mask_image = genutils.maskToQImage(self.masch)
                     mask_image.save(mask_filename)
-                print(f"Mask exported to {mask_filename}")
+                export_success = True
 
             if export_blobs:
                 blobs_filename = f"{file_path}_blobs.png"
                 blob_image = self.drawBlobs(self.blob_image, self.blob_list)
                 blob_image.save(blobs_filename)
-                print(f"Blobs exported to {blobs_filename}")
-            
-            if export_angles:
+                export_success = True
+
+            if export_angles and hasattr(self, "lines"):
                 angles_filename = f"{file_path}_angles.csv"
                 with open(angles_filename, "w") as file:
                     file.write("Line Index,Angle (degrees)\n")
@@ -1224,125 +1298,206 @@ class RowsWidget(QWidget):
                             angle = np.pi/2 + angle  
                         else:
                             angle = angle - np.pi/2
-                        
                         angle_deg = np.rad2deg(angle)
                         file.write(f"{i + 1},{angle_deg:.2f}\n")
-                print(f"Angles exported to {angles_filename}")
-                
-            export_success = True
-
-            if export_success:
-                QMessageBox.information(self, "Export Successful", "Data exported successfully.")
-            else:
-                QMessageBox.warning(self, "Export Failed", "No data to export.")
-
-    def getLineExportOptions(self):
-        # Displays the export dialog for line viewer data and returns the selected options."""
-        dialog = ExportDialog(self)
-        dialog.angle_checkbox.setChecked(self.line_checked)  # Default options
-        dialog.angle_checkbox.setEnabled(False)  
-
-        dialog.mask_checkbox.setChecked(self.mask_checked)
-        dialog.mask_checkbox.setEnabled(False)  
-
-        dialog.blob_checkbox.setChecked(self.blobs_checked)
-        dialog.blob_checkbox.setEnabled(False)  
-
-        dialog.skeleton_checkbox.hide()  # Hide irrelevant options
-        dialog.branch_points_checkbox.hide()
-        dialog.edges_checkbox.hide()
-
-        if dialog.exec_() == QDialog.Accepted:
-            return dialog.getExportOptions()
-        return None
-    
-    def exportSkelViewerData(self):
-            options = self.getSkelExportOptions()
-            if not options:
-                return  # User canceled the dialog or provided invalid input
-
-            file_path = options["path"]
-            export_skeleton = options["export_skeleton"]
-            export_branch_points = options["export_branch_points"]
-            export_edges = options["export_edges"]
-            export_blobs = options["export_blobs"]
-
-            export_success = False
-            
-            # DXF export integration
-            if options["format"] == ".dxf":
-                if not file_path.lower().endswith(".dxf"):
-                    file_path += ".dxf"
-                dialog = ExportDialog(self)
-                # Pass the data to the dialog for DXFExport
-                dialog.skeleton = self.skeleton if export_skeleton else None
-                dialog.branch_points = self.branch_points if export_branch_points else []
-                dialog.edges = self.edges if export_edges else []
-                dialog.blobs = self.blob_list if export_blobs else []
-
-                georef_filename = None
-                if hasattr(self.parent_viewer.image, 'georef_filename') and self.parent_viewer.image.georef_filename:
-                    georef_filename = self.parent_viewer.image.georef_filename
-
-                dialog.DXFExport(file_path, export_skeleton, export_branch_points, export_edges, export_blobs, georef = georef_filename, offset = self.off, img_size = (self.parent_viewer.image.width, self.parent_viewer.image.height))
-                print(f"DXF exported to {file_path}")
                 export_success = True
+
+            if export_skeleton and self.skeleton is not None:
+                skeleton_filename = f"{file_path}_skeleton.png"
+                branch_image = self.drawBranchSkel(
+                    self.skeleton, self.branch_points, self.edges,
+                    export_branch_points, export_skeleton, export_edges
+                )
+                branch_image.save(skeleton_filename)
+                export_success = True
+
+            if export_edges and self.edges:
+                edges_filename = f"{file_path}_edges.png"
+                edge_image = self.drawBranchSkel(
+                    self.skeleton, self.branch_points, self.edges,
+                    self.branch_checked, self.skel_checked, self.edges_checked
+                )
+                edge_image.save(edges_filename)
+                angles_filename = f"{file_path}_edges_angles.csv"
+                with open(angles_filename, "w") as file:
+                    file.write("Connection Index,Angle (degrees)\n")
+                    for i, (_, _, _, angle) in enumerate(self.edges):
+                        file.write(f"{i + 1},{angle:.2f}\n")
+                export_success = True
+
+        if export_success:
+            QMessageBox.information(self, "Export Successful", "Data exported successfully.")
+        else:
+            QMessageBox.warning(self, "Export Failed", "No data to export.")
+
+    def onExportFormatChanged(self, dialog):
+        format = dialog.format_combo.currentText()
+        if format == ".dxf":
+            dialog.angle_checkbox.setEnabled(False)
+            dialog.angle_checkbox.setChecked(False)
+            dialog.mask_checkbox.setEnabled(False)
+            dialog.mask_checkbox.setChecked(False)
+        else:
+            dialog.angle_checkbox.setEnabled(True)
+            dialog.mask_checkbox.setEnabled(True)
+
+
+    # def exportLineViewerData(self):
+    #         options = self.getLineExportOptions()
+    #         if not options:
+    #             return  # User canceled the dialog or provided invalid input
+
+    #         file_path = options["path"]
+    #         export_angles = options["export_angles"]
+    #         export_mask = options["export_mask"]
+    #         export_blobs = options["export_blobs"]
+
+    #         export_success = False
+    #         if export_mask:
+    #             mask_filename = f"{file_path}_mask.png"
+    #             if self.line_checked:
+    #                 qmask = genutils.maskToQImage(self.masch)
+    #                 mask_with_lines = self.paintLinesImage(qmask, self.lines)
+    #                 mask_with_lines.save(mask_filename)
+    #             else:
+    #                 mask_image = genutils.maskToQImage(self.masch)
+    #                 mask_image.save(mask_filename)
+    #             print(f"Mask exported to {mask_filename}")
+
+    #         if export_blobs:
+    #             blobs_filename = f"{file_path}_blobs.png"
+    #             blob_image = self.drawBlobs(self.blob_image, self.blob_list)
+    #             blob_image.save(blobs_filename)
+    #             print(f"Blobs exported to {blobs_filename}")
             
-            else:
-                if export_skeleton and self.skeleton is not None:
-                    skeleton_filename = f"{file_path}_skeleton.png"
-                    branch_image = self.drawBranchSkel(
-                        self.skeleton, self.branch_points, self.edges, export_branch_points, export_skeleton, export_edges
-                    )
-                    branch_image.save(skeleton_filename)
-                    print(f"Skeleton exported to {skeleton_filename}")
-                    export_success = True
+    #         if export_angles:
+    #             angles_filename = f"{file_path}_angles.csv"
+    #             with open(angles_filename, "w") as file:
+    #                 file.write("Line Index,Angle (degrees)\n")
+    #                 for i, (_, _, angle, _) in enumerate(self.lines):
+    #                     if angle < 0:
+    #                         angle = np.pi/2 + angle  
+    #                     else:
+    #                         angle = angle - np.pi/2
+                        
+    #                     angle_deg = np.rad2deg(angle)
+    #                     file.write(f"{i + 1},{angle_deg:.2f}\n")
+    #             print(f"Angles exported to {angles_filename}")
+                
+    #         export_success = True
 
-                if export_edges and self.edges:
-                    edges_filename = f"{file_path}_edges.png"
-                    edge_image = self.drawBranchSkel(
-                        self.skeleton, self.branch_points, self.edges, self.branch_checked, self.skel_checked, self.edges_checked
-                    )
-                    edge_image.save(edges_filename)
-                    print(f"Edges with branch_points exported to {edges_filename}")
+    #         if export_success:
+    #             QMessageBox.information(self, "Export Successful", "Data exported successfully.")
+    #         else:
+    #             QMessageBox.warning(self, "Export Failed", "No data to export.")
+
+    # def getLineExportOptions(self):
+    #     # Displays the export dialog for line viewer data and returns the selected options."""
+    #     dialog = ExportDialog(self)
+    #     dialog.angle_checkbox.setChecked(self.line_checked)  # Default options
+    #     dialog.angle_checkbox.setEnabled(False)  
+
+    #     dialog.mask_checkbox.setChecked(self.mask_checked)
+    #     dialog.mask_checkbox.setEnabled(False)  
+
+    #     dialog.blob_checkbox.setChecked(self.blobs_checked)
+    #     dialog.blob_checkbox.setEnabled(False)  
+
+    #     dialog.skeleton_checkbox.hide()  # Hide irrelevant options
+    #     dialog.branch_points_checkbox.hide()
+    #     dialog.edges_checkbox.hide()
+
+    #     if dialog.exec_() == QDialog.Accepted:
+    #         return dialog.getExportOptions()
+    #     return None
+    
+    # def exportSkelViewerData(self):
+    #         options = self.getSkelExportOptions()
+    #         if not options:
+    #             return  # User canceled the dialog or provided invalid input
+
+    #         file_path = options["path"]
+    #         export_skeleton = options["export_skeleton"]
+    #         export_branch_points = options["export_branch_points"]
+    #         export_edges = options["export_edges"]
+    #         export_blobs = options["export_blobs"]
+
+    #         export_success = False
+            
+    #         # DXF export integration
+    #         if options["format"] == ".dxf":
+    #             if not file_path.lower().endswith(".dxf"):
+    #                 file_path += ".dxf"
+    #             dialog = ExportDialog(self)
+    #             # Pass the data to the dialog for DXFExport
+    #             dialog.skeleton = self.skeleton if export_skeleton else None
+    #             dialog.branch_points = self.branch_points if export_branch_points else []
+    #             dialog.edges = self.edges if export_edges else []
+    #             dialog.blobs = self.blob_list if export_blobs else []
+
+    #             georef_filename = None
+    #             if hasattr(self.parent_viewer.image, 'georef_filename') and self.parent_viewer.image.georef_filename:
+    #                 georef_filename = self.parent_viewer.image.georef_filename
+
+    #             dialog.DXFExport(file_path, export_skeleton, export_branch_points, export_edges, export_blobs, georef = georef_filename, offset = self.off, img_size = (self.parent_viewer.image.width, self.parent_viewer.image.height))
+    #             print(f"DXF exported to {file_path}")
+    #             export_success = True
+            
+    #         else:
+    #             if export_skeleton and self.skeleton is not None:
+    #                 skeleton_filename = f"{file_path}_skeleton.png"
+    #                 branch_image = self.drawBranchSkel(
+    #                     self.skeleton, self.branch_points, self.edges, export_branch_points, export_skeleton, export_edges
+    #                 )
+    #                 branch_image.save(skeleton_filename)
+    #                 print(f"Skeleton exported to {skeleton_filename}")
+    #                 export_success = True
+
+    #             if export_edges and self.edges:
+    #                 edges_filename = f"{file_path}_edges.png"
+    #                 edge_image = self.drawBranchSkel(
+    #                     self.skeleton, self.branch_points, self.edges, self.branch_checked, self.skel_checked, self.edges_checked
+    #                 )
+    #                 edge_image.save(edges_filename)
+    #                 print(f"Edges with branch_points exported to {edges_filename}")
                     
-                    angles_filename = f"{file_path}_edges_angles.csv"
-                    with open(angles_filename, "w") as file:
-                        file.write("Connection Index,Angle (degrees)\n")
-                        for i, (_, _, _, angle) in enumerate(self.edges):
-                            file.write(f"{i + 1},{angle:.2f}\n")
-                    print(f"Angles exported to {angles_filename}")
-                    export_success = True
+    #                 angles_filename = f"{file_path}_edges_angles.csv"
+    #                 with open(angles_filename, "w") as file:
+    #                     file.write("Connection Index,Angle (degrees)\n")
+    #                     for i, (_, _, _, angle) in enumerate(self.edges):
+    #                         file.write(f"{i + 1},{angle:.2f}\n")
+    #                 print(f"Angles exported to {angles_filename}")
+    #                 export_success = True
 
-            if export_success:
-                QMessageBox.information(self, "Export Successful", "Data exported successfully.")
-            else:
-                QMessageBox.warning(self, "Export Failed", "No data to export.")
+    #         if export_success:
+    #             QMessageBox.information(self, "Export Successful", "Data exported successfully.")
+    #         else:
+    #             QMessageBox.warning(self, "Export Failed", "No data to export.")
 
-    def getSkelExportOptions(self):
-        # Displays the export dialog for skeleton viewer data and returns the selected options.
-        dialog = ExportDialog(self)
-        dialog.skeleton_checkbox.setChecked(self.skel_checked)
-        # dialog.skeleton_checkbox.setEnabled(False)
+    # def getSkelExportOptions(self):
+    #     # Displays the export dialog for skeleton viewer data and returns the selected options.
+    #     dialog = ExportDialog(self)
+    #     dialog.skeleton_checkbox.setChecked(self.skel_checked)
+    #     # dialog.skeleton_checkbox.setEnabled(False)
 
-        dialog.branch_points_checkbox.setChecked(self.branch_checked)
-        # dialog.branch_points_checkbox.setEnabled(False)  
+    #     dialog.branch_points_checkbox.setChecked(self.branch_checked)
+    #     # dialog.branch_points_checkbox.setEnabled(False)  
 
-        dialog.edges_checkbox.setChecked(self.edges_checked)
-        # dialog.edges_checkbox.setEnabled(False)  
+    #     dialog.edges_checkbox.setChecked(self.edges_checked)
+    #     # dialog.edges_checkbox.setEnabled(False)  
 
-        dialog.angle_checkbox.hide()  # Hide irrelevant options
-        dialog.mask_checkbox.hide()
-        # dialog.blob_checkbox.hide()
+    #     dialog.angle_checkbox.hide()  # Hide irrelevant options
+    #     dialog.mask_checkbox.hide()
+    #     # dialog.blob_checkbox.hide()
 
-         # Show format combo only for skeleton export
-        dialog.format_label.show()
-        dialog.format_combo.show()
+    #      # Show format combo only for skeleton export
+    #     dialog.format_label.show()
+    #     dialog.format_combo.show()
 
 
-        if dialog.exec_() == QDialog.Accepted:
-            return dialog.getExportOptions()
-        return None
+    #     if dialog.exec_() == QDialog.Accepted:
+    #         return dialog.getExportOptions()
+    #     return None
     
 
 
