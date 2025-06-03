@@ -405,29 +405,29 @@ class RowsWidget(QWidget):
         # rect_mask_grow = rect_mask_grow - mask
 
         # Save the rect_mask_grow as a matplotlib figure
-        # plt.figure(figsize=(10, 10))
-        # plt.imshow(rect_mask_grow_sub, cmap='gray')
-        # plt.axis('off')
-        # plt.savefig("rect_mask_grow.png", bbox_inches='tight', pad_inches=0)
-        # plt.close()
+        plt.figure(figsize=(10, 10))
+        plt.imshow(rect_mask_grow_sub, cmap='gray')
+        plt.axis('off')
+        plt.savefig("rect_mask_grow.png", bbox_inches='tight', pad_inches=0)
+        plt.close()
 
         rect_mask_eroded = binary_erosion(rect_mask_grow, structure=structuring_element_half)
 
         # Save the rect_mask_eroded as a matplotlib figure
-        # plt.figure(figsize=(10, 10))
-        # plt.imshow(rect_mask_eroded, cmap='gray')
-        # plt.axis('off')
-        # plt.savefig("rect_mask_eroded.png", bbox_inches='tight', pad_inches=0)
-        # plt.close()
+        plt.figure(figsize=(10, 10))
+        plt.imshow(rect_mask_eroded, cmap='gray')
+        plt.axis('off')
+        plt.savefig("rect_mask_eroded.png", bbox_inches='tight', pad_inches=0)
+        plt.close()
 
         rect_mask_final = rect_mask_eroded - mask
 
         # Save the rect_mask_eroded as a matplotlib figure
-        # plt.figure(figsize=(10, 10))
-        # plt.imshow(rect_mask_final, cmap='gray')
-        # plt.axis('off')
-        # plt.savefig("rect_mask_final.png", bbox_inches='tight', pad_inches=0)
-        # plt.close()
+        plt.figure(figsize=(10, 10))
+        plt.imshow(rect_mask_final, cmap='gray')
+        plt.axis('off')
+        plt.savefig("rect_mask_final.png", bbox_inches='tight', pad_inches=0)
+        plt.close()
 
         return rect_mask_grow_sub, rect_mask_final
     
@@ -1143,7 +1143,7 @@ class RowsWidget(QWidget):
         painter = QPainter(branch_image)
 
         if skel:
-            pen = QPen(Qt.blue, 5)
+            pen = QPen(Qt.blue, 2)
             painter.setPen(pen)
 
             h, w = skeleton.shape

@@ -16,6 +16,7 @@ from PyQt5.QtWidgets import QSlider, QVBoxLayout, QLabel,QWidget
 from PyQt5.QtCore import Qt
 
 from source.QtRowsWidget import RowsWidget
+from scipy.ndimage import binary_erosion
 
 class Rows(Tool):
         
@@ -138,17 +139,18 @@ class Rows(Tool):
             bottom = bbox[0] + bbox[3]
 
             blob_mask = blob.getMask()
+            blob_mask = binary_erosion(blob_mask, structure=np.ones((3, 3)), border_value=0)
             
             # rect_mask[top - int(rect.top()):bottom - int(rect.top()), left - int(rect.left()):right - int(rect.left())] = blob_mask
             rect_mask[top - int(rect.top()):bottom - int(rect.top()), left - int(rect.left()):right - int(rect.left())] |= blob_mask
 
 
         # Save the rect_mask as a matplotlib figure
-        # plt.figure(figsize=(10, 10))
-        # plt.imshow(rect_mask, cmap='gray')
-        # plt.axis('off')
-        # plt.savefig("rect_mask.png", bbox_inches='tight', pad_inches=0)
-        # plt.close()
+        plt.figure(figsize=(10, 10))
+        plt.imshow(rect_mask, cmap='gray')
+        plt.axis('off')
+        plt.savefig("rect_mask.png", bbox_inches='tight', pad_inches=0)
+        plt.close()
 
         # rect_mask[rect_mask == 0] = 255
         # rect_mask[rect_mask == 1] = 0
