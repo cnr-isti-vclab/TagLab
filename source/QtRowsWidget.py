@@ -264,20 +264,7 @@ class RowsWidget(QWidget):
 
         # self.setLayout(layout)
 
-        self.btnExport = QPushButton("Export Data")
-        self.btnExport.clicked.connect(self.exportData)
-        # self.btnExport.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)  # Make button expand horizontally
-        self.btnExport.setFixedWidth(1440//2)
-
         # layout.addWidget(self.btnExport)#, alignment=Qt.AlignCenter)
-        # Create a horizontal layout to center the button
-        export_button_layout = QHBoxLayout()
-        export_button_layout.addStretch()
-        export_button_layout.addWidget(self.btnExport)
-        export_button_layout.addStretch()
-
-        # Add the horizontal layout to the main layout
-        layout.addLayout(export_button_layout)
 
         # Add slider for structuring element size
         slider_layout = QVBoxLayout()
@@ -307,16 +294,37 @@ class RowsWidget(QWidget):
         layout.addLayout(slider_layout)
 
         layout.setSpacing(10)
-        
-        button_layout = QHBoxLayout()
+
+        # Create a horizontal layout to center the button
+        data_button_layout = QHBoxLayout()
+
+        self.btnExport = QPushButton("Export Data")
+        self.btnExport.clicked.connect(self.exportData)
+        # self.btnExport.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)  # Make button expand horizontally
+        self.btnExport.setFixedWidth(1440//2)
+           
         self.btnCompute = QPushButton("Compute")
         self.btnCompute.clicked.connect(self.applyHough)
-        button_layout.addWidget(self.btnCompute)
+        
+        data_button_layout.addWidget(self.btnCompute)
+        data_button_layout.addWidget(self.btnExport)
+
+        # Add the horizontal layout to the main layout
+        layout.addLayout(data_button_layout)
+        
+        # button_layout = QHBoxLayout()
+        
+
+        # Add a separator line for visual separation
+        separator = QLabel()
+        separator.setFixedHeight(5)
+        separator.setStyleSheet("background-color: #666; margin-top: 10px; margin-bottom: 10px;")
+        layout.addWidget(separator)
 
         self.btnClose = QPushButton("Close")
         self.btnClose.clicked.connect(self.closeWidget)
-        button_layout.addWidget(self.btnClose)
-        layout.addLayout(button_layout)
+        layout.addWidget(self.btnClose)
+        # layout.addLayout(button_layout)
 
         # self.line_viewer.setImg(self.image_cropped)
         # self.skel_viewer.setImg(self.image_cropped)

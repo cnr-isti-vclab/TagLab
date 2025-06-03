@@ -139,7 +139,9 @@ class Rows(Tool):
 
             blob_mask = blob.getMask()
             
-            rect_mask[top - int(rect.top()):bottom - int(rect.top()), left - int(rect.left()):right - int(rect.left())] = blob_mask
+            # rect_mask[top - int(rect.top()):bottom - int(rect.top()), left - int(rect.left()):right - int(rect.left())] = blob_mask
+            rect_mask[top - int(rect.top()):bottom - int(rect.top()), left - int(rect.left()):right - int(rect.left())] |= blob_mask
+
 
         # Save the rect_mask as a matplotlib figure
         # plt.figure(figsize=(10, 10))
