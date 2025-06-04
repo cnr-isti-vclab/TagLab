@@ -12,7 +12,7 @@ from scipy.ndimage import binary_dilation
 from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal, QT_VERSION_STR
 from PyQt5.QtGui import  QPainterPath, QPen, QBrush, QColor
 
-from PyQt5.QtWidgets import QSlider, QVBoxLayout, QLabel,QWidget
+from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import Qt
 
 from source.QtRowsWidget import RowsWidget
@@ -146,11 +146,11 @@ class Rows(Tool):
 
 
         # Save the rect_mask as a matplotlib figure
-        plt.figure(figsize=(10, 10))
-        plt.imshow(rect_mask, cmap='gray')
-        plt.axis('off')
-        plt.savefig("rect_mask.png", bbox_inches='tight', pad_inches=0)
-        plt.close()
+        # plt.figure(figsize=(10, 10))
+        # plt.imshow(rect_mask, cmap='gray')
+        # plt.axis('off')
+        # plt.savefig("rect_mask.png", bbox_inches='tight', pad_inches=0)
+        # plt.close()
 
         # rect_mask[rect_mask == 0] = 255
         # rect_mask[rect_mask == 1] = 0
@@ -214,8 +214,9 @@ class Rows(Tool):
     def structWidget(self, cropped, mask, blob_list, rect):
         
         if self.viewerplus.struct_widget is None:
-            
-            struct_widget = RowsWidget(cropped, mask, blob_list, rect, parent= self.viewerplus)
+            screen_size = QApplication.primaryScreen().size()
+
+            struct_widget = RowsWidget(cropped, mask, blob_list, rect, parent= self.viewerplus, screen_size=screen_size)
             struct_widget.setWindowModality(Qt.NonModal)
             struct_widget.closeRowsWidget.connect(self.rowsClose)
             struct_widget.show()

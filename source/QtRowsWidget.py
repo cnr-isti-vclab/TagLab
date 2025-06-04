@@ -32,15 +32,14 @@ from PyQt5.QtWidgets import QMessageBox
 
 # from itertools import combinations
 
-IMAGEVIEWER_W = 640
-IMAGEVIEWER_H = 480
-TEXTBOX_H = 150
+
+TEXTBOX_H = 100
 class RowsWidget(QWidget):
 
     closeRowsWidget = pyqtSignal()
 
     # def __init__(self, image_cropped, created_blobs, offset, parent=None):
-    def __init__(self, cropped_image, mask_array, blobs, rect, parent = None):
+    def __init__(self, cropped_image, mask_array, blobs, rect, parent = None, screen_size = None):    
         super(RowsWidget, self).__init__(parent)
 
         # self.q_skel = None
@@ -48,8 +47,19 @@ class RowsWidget(QWidget):
         # i = 0
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        self.setMinimumWidth(1440)
-        self.setMinimumHeight(900)     
+        if screen_size is not None:
+            
+            width = int(screen_size.width() * 0.9)
+            height = int(screen_size.height()* 0.9)
+            self.setMinimumSize(width, height)
+            self.resize(width, height)
+            IMAGEVIEWER_W = width//2 - 5
+            IMAGEVIEWER_H = height//2 - 5
+        else:
+            self.setMinimumWidth(1440)
+            self.setMinimumHeight(900)   
+            IMAGEVIEWER_W = 640
+            IMAGEVIEWER_H = 480  
 
         self.setWindowTitle("Rows Analysis")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowTitleHint)
@@ -137,7 +147,7 @@ class RowsWidget(QWidget):
         # lineslopes_layout.addWidget(self.btnLineExport, alignment=Qt.AlignTop)
 
 
-        line_viewer_layout.addLayout(lineslopes_layout)
+        # line_viewer_layout.addLayout(lineslopes_layout)
         # line_viewer_layout.addWidget(lineangle_label, alignment=Qt.AlignTop)
         # line_viewer_layout.addWidget(self.angleTextBox, alignment=Qt.AlignTop)
         # line_viewer_layout.addWidget(self.btnLineExport, alignment=Qt.AlignBottom)
@@ -195,14 +205,11 @@ class RowsWidget(QWidget):
         self.BrickDistBox.setFixedHeight(25)
         self.BrickDistBox.setText(str(self.row_dist))
 
-
-        brickdist_layout.addWidget(brickdist_label, alignment=Qt.AlignLeft)
-        brickdist_layout.addWidget(self.BrickDistBox, alignment=Qt.AlignLeft)
-
         
-        skel_viewer_layout.addLayout(brickdist_layout)
-        skel_viewer_layout.setSpacing(10)
-
+        brickdist_layout.addWidget(brickdist_label, alignment=Qt.AlignCenter)
+        brickdist_layout.addWidget(self.BrickDistBox, alignment=Qt.AlignLeft)
+        brickdist_layout.setSpacing(2)
+    
         # skelangle_layout = QVBoxLayout()
         # skelangle_label = QLabel(f"Slopes")
         # self.skelTextBox = QTextEdit(self)
@@ -226,8 +233,6 @@ class RowsWidget(QWidget):
 
         # skel_viewer_layout.setSpacing(5)
 
-
-        
         # Create a horizontal layout for the viewers
         viewers_layout = QHBoxLayout()
         
@@ -242,7 +247,7 @@ class RowsWidget(QWidget):
         viewers_layout.addLayout(skel_viewer_layout)
         # Add the viewers to the main layout
         
-        viewers_layout.setSpacing(10)
+        # viewers_layout.setSpacing(10)
 
         # Add the viewers layout to the main layout
         # layout.addLayout(viewers_layout)
@@ -251,12 +256,11 @@ class RowsWidget(QWidget):
         # layout.addWidget(self.viewer, alignment=Qt.AlignCenter)
         # layout.addLayout(layoutButtons)
 
-        #Create the layout
-        layout = QVBoxLayout()
-
-        layout.setSpacing(10)
-
-        layout.addLayout(viewers_layout)        
+        textbox_layout = QHBoxLayout()
+        # Add line slopes and rows distance widgets to the layout
+        textbox_layout.addLayout(lineslopes_layout)
+        textbox_layout.setSpacing(10)
+        textbox_layout.addLayout(brickdist_layout)   
 
         # self.angleTextBox = QTextEdit(self)
         # self.angleTextBox.setReadOnly(True)
@@ -291,9 +295,6 @@ class RowsWidget(QWidget):
         slider_layout.addWidget(self.slider)
 
         self.structuring_element_size = self.slider.value()
-        layout.addLayout(slider_layout)
-
-        layout.setSpacing(10)
 
         # Create a horizontal layout to center the button
         data_button_layout = QHBoxLayout()
@@ -309,6 +310,18 @@ class RowsWidget(QWidget):
         data_button_layout.addWidget(self.btnCompute)
         data_button_layout.addWidget(self.btnExport)
 
+        #Create the layout
+        layout = QVBoxLayout()
+
+        layout.setSpacing(10)
+
+        layout.addLayout(viewers_layout) 
+        layout.addLayout(textbox_layout, stretch=1)    
+        layout.addLayout(slider_layout)
+
+        layout.setSpacing(10)
+
+
         # Add the horizontal layout to the main layout
         layout.addLayout(data_button_layout)
         
@@ -317,7 +330,7 @@ class RowsWidget(QWidget):
 
         # Add a separator line for visual separation
         separator = QLabel()
-        separator.setFixedHeight(5)
+        separator.setFixedHeight(3)
         separator.setStyleSheet("background-color: #666; margin-top: 10px; margin-bottom: 10px;")
         layout.addWidget(separator)
 
@@ -405,29 +418,29 @@ class RowsWidget(QWidget):
         # rect_mask_grow = rect_mask_grow - mask
 
         # Save the rect_mask_grow as a matplotlib figure
-        plt.figure(figsize=(10, 10))
-        plt.imshow(rect_mask_grow_sub, cmap='gray')
-        plt.axis('off')
-        plt.savefig("rect_mask_grow.png", bbox_inches='tight', pad_inches=0)
-        plt.close()
+        # plt.figure(figsize=(10, 10))
+        # plt.imshow(rect_mask_grow_sub, cmap='gray')
+        # plt.axis('off')
+        # plt.savefig("rect_mask_grow.png", bbox_inches='tight', pad_inches=0)
+        # plt.close()
 
         rect_mask_eroded = binary_erosion(rect_mask_grow, structure=structuring_element_half)
 
         # Save the rect_mask_eroded as a matplotlib figure
-        plt.figure(figsize=(10, 10))
-        plt.imshow(rect_mask_eroded, cmap='gray')
-        plt.axis('off')
-        plt.savefig("rect_mask_eroded.png", bbox_inches='tight', pad_inches=0)
-        plt.close()
+        # plt.figure(figsize=(10, 10))
+        # plt.imshow(rect_mask_eroded, cmap='gray')
+        # plt.axis('off')
+        # plt.savefig("rect_mask_eroded.png", bbox_inches='tight', pad_inches=0)
+        # plt.close()
 
         rect_mask_final = rect_mask_eroded - mask
 
         # Save the rect_mask_eroded as a matplotlib figure
-        plt.figure(figsize=(10, 10))
-        plt.imshow(rect_mask_final, cmap='gray')
-        plt.axis('off')
-        plt.savefig("rect_mask_final.png", bbox_inches='tight', pad_inches=0)
-        plt.close()
+        # plt.figure(figsize=(10, 10))
+        # plt.imshow(rect_mask_final, cmap='gray')
+        # plt.axis('off')
+        # plt.savefig("rect_mask_final.png", bbox_inches='tight', pad_inches=0)
+        # plt.close()
 
         return rect_mask_grow_sub, rect_mask_final
     
@@ -805,9 +818,11 @@ class RowsWidget(QWidget):
                     color = tuple(np.random.randint(0, 256, 3))  # Generate a random RGB color
                     dx = path[-1][0] - path[0][0]
                     dy = path[-1][1] - path[0][1]
-                    angle = np.arctan2(dy, dx)  # Angle in radians
-                    angle_deg = np.degrees(angle)  # Convert to degrees
-                    segments.append((path[0], path[-1], color, angle_deg))
+                    dist = np.hypot(dx, dy)
+                    if dist > 4:
+                        angle = np.arctan2(dy, dx)  # Angle in radians
+                        angle_deg = np.degrees(angle)  # Convert to degrees
+                        segments.append((path[0], path[-1], color, angle_deg))
                     # segments.append((path[0], path[-1], color))
                     # segments.append((path[0], path[-1]))
 
@@ -1199,11 +1214,12 @@ class RowsWidget(QWidget):
                 # painter.drawText(text_x, text_y, angle_text)
 
         if branch:                
-            pen = QPen(Qt.red, 7)
-            painter.setPen(pen)
-            painter.setBrush(QBrush(Qt.red))
+            # pen = QPen(QColor(255, 0, 0, 100), )
+            # painter.setPen(pen)
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(QColor(255, 0, 0, 100))
             for point in branch_points:
-                painter.drawEllipse(point[1], point[0], 7, 7)
+                painter.drawEllipse(point[1] - 2, point[0] - 2, 4, 4)
         
         painter.end()
 
@@ -1348,164 +1364,6 @@ class RowsWidget(QWidget):
         else:
             dialog.angle_checkbox.setEnabled(True)
             dialog.mask_checkbox.setEnabled(True)
-
-
-    # def exportLineViewerData(self):
-    #         options = self.getLineExportOptions()
-    #         if not options:
-    #             return  # User canceled the dialog or provided invalid input
-
-    #         file_path = options["path"]
-    #         export_angles = options["export_angles"]
-    #         export_mask = options["export_mask"]
-    #         export_blobs = options["export_blobs"]
-
-    #         export_success = False
-    #         if export_mask:
-    #             mask_filename = f"{file_path}_mask.png"
-    #             if self.line_checked:
-    #                 qmask = genutils.maskToQImage(self.masch)
-    #                 mask_with_lines = self.paintLinesImage(qmask, self.lines)
-    #                 mask_with_lines.save(mask_filename)
-    #             else:
-    #                 mask_image = genutils.maskToQImage(self.masch)
-    #                 mask_image.save(mask_filename)
-    #             print(f"Mask exported to {mask_filename}")
-
-    #         if export_blobs:
-    #             blobs_filename = f"{file_path}_blobs.png"
-    #             blob_image = self.drawBlobs(self.blob_image, self.blob_list)
-    #             blob_image.save(blobs_filename)
-    #             print(f"Blobs exported to {blobs_filename}")
-            
-    #         if export_angles:
-    #             angles_filename = f"{file_path}_angles.csv"
-    #             with open(angles_filename, "w") as file:
-    #                 file.write("Line Index,Angle (degrees)\n")
-    #                 for i, (_, _, angle, _) in enumerate(self.lines):
-    #                     if angle < 0:
-    #                         angle = np.pi/2 + angle  
-    #                     else:
-    #                         angle = angle - np.pi/2
-                        
-    #                     angle_deg = np.rad2deg(angle)
-    #                     file.write(f"{i + 1},{angle_deg:.2f}\n")
-    #             print(f"Angles exported to {angles_filename}")
-                
-    #         export_success = True
-
-    #         if export_success:
-    #             QMessageBox.information(self, "Export Successful", "Data exported successfully.")
-    #         else:
-    #             QMessageBox.warning(self, "Export Failed", "No data to export.")
-
-    # def getLineExportOptions(self):
-    #     # Displays the export dialog for line viewer data and returns the selected options."""
-    #     dialog = ExportDialog(self)
-    #     dialog.angle_checkbox.setChecked(self.line_checked)  # Default options
-    #     dialog.angle_checkbox.setEnabled(False)  
-
-    #     dialog.mask_checkbox.setChecked(self.mask_checked)
-    #     dialog.mask_checkbox.setEnabled(False)  
-
-    #     dialog.blob_checkbox.setChecked(self.blobs_checked)
-    #     dialog.blob_checkbox.setEnabled(False)  
-
-    #     dialog.skeleton_checkbox.hide()  # Hide irrelevant options
-    #     dialog.branch_points_checkbox.hide()
-    #     dialog.edges_checkbox.hide()
-
-    #     if dialog.exec_() == QDialog.Accepted:
-    #         return dialog.getExportOptions()
-    #     return None
-    
-    # def exportSkelViewerData(self):
-    #         options = self.getSkelExportOptions()
-    #         if not options:
-    #             return  # User canceled the dialog or provided invalid input
-
-    #         file_path = options["path"]
-    #         export_skeleton = options["export_skeleton"]
-    #         export_branch_points = options["export_branch_points"]
-    #         export_edges = options["export_edges"]
-    #         export_blobs = options["export_blobs"]
-
-    #         export_success = False
-            
-    #         # DXF export integration
-    #         if options["format"] == ".dxf":
-    #             if not file_path.lower().endswith(".dxf"):
-    #                 file_path += ".dxf"
-    #             dialog = ExportDialog(self)
-    #             # Pass the data to the dialog for DXFExport
-    #             dialog.skeleton = self.skeleton if export_skeleton else None
-    #             dialog.branch_points = self.branch_points if export_branch_points else []
-    #             dialog.edges = self.edges if export_edges else []
-    #             dialog.blobs = self.blob_list if export_blobs else []
-
-    #             georef_filename = None
-    #             if hasattr(self.parent_viewer.image, 'georef_filename') and self.parent_viewer.image.georef_filename:
-    #                 georef_filename = self.parent_viewer.image.georef_filename
-
-    #             dialog.DXFExport(file_path, export_skeleton, export_branch_points, export_edges, export_blobs, georef = georef_filename, offset = self.off, img_size = (self.parent_viewer.image.width, self.parent_viewer.image.height))
-    #             print(f"DXF exported to {file_path}")
-    #             export_success = True
-            
-    #         else:
-    #             if export_skeleton and self.skeleton is not None:
-    #                 skeleton_filename = f"{file_path}_skeleton.png"
-    #                 branch_image = self.drawBranchSkel(
-    #                     self.skeleton, self.branch_points, self.edges, export_branch_points, export_skeleton, export_edges
-    #                 )
-    #                 branch_image.save(skeleton_filename)
-    #                 print(f"Skeleton exported to {skeleton_filename}")
-    #                 export_success = True
-
-    #             if export_edges and self.edges:
-    #                 edges_filename = f"{file_path}_edges.png"
-    #                 edge_image = self.drawBranchSkel(
-    #                     self.skeleton, self.branch_points, self.edges, self.branch_checked, self.skel_checked, self.edges_checked
-    #                 )
-    #                 edge_image.save(edges_filename)
-    #                 print(f"Edges with branch_points exported to {edges_filename}")
-                    
-    #                 angles_filename = f"{file_path}_edges_angles.csv"
-    #                 with open(angles_filename, "w") as file:
-    #                     file.write("Connection Index,Angle (degrees)\n")
-    #                     for i, (_, _, _, angle) in enumerate(self.edges):
-    #                         file.write(f"{i + 1},{angle:.2f}\n")
-    #                 print(f"Angles exported to {angles_filename}")
-    #                 export_success = True
-
-    #         if export_success:
-    #             QMessageBox.information(self, "Export Successful", "Data exported successfully.")
-    #         else:
-    #             QMessageBox.warning(self, "Export Failed", "No data to export.")
-
-    # def getSkelExportOptions(self):
-    #     # Displays the export dialog for skeleton viewer data and returns the selected options.
-    #     dialog = ExportDialog(self)
-    #     dialog.skeleton_checkbox.setChecked(self.skel_checked)
-    #     # dialog.skeleton_checkbox.setEnabled(False)
-
-    #     dialog.branch_points_checkbox.setChecked(self.branch_checked)
-    #     # dialog.branch_points_checkbox.setEnabled(False)  
-
-    #     dialog.edges_checkbox.setChecked(self.edges_checked)
-    #     # dialog.edges_checkbox.setEnabled(False)  
-
-    #     dialog.angle_checkbox.hide()  # Hide irrelevant options
-    #     dialog.mask_checkbox.hide()
-    #     # dialog.blob_checkbox.hide()
-
-    #      # Show format combo only for skeleton export
-    #     dialog.format_label.show()
-    #     dialog.format_combo.show()
-
-
-    #     if dialog.exec_() == QDialog.Accepted:
-    #         return dialog.getExportOptions()
-    #     return None
     
 
 
