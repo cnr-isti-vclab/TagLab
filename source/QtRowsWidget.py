@@ -53,13 +53,13 @@ class RowsWidget(QWidget):
             height = int(screen_size.height()* 0.9)
             self.setMinimumSize(width, height)
             self.resize(width, height)
-            IMAGEVIEWER_W = width//2 - 5
-            IMAGEVIEWER_H = height//2 - 5
+            self.IMAGEVIEWER_W = width//2 - 40
+            self.IMAGEVIEWER_H = height - 400
         else:
             self.setMinimumWidth(1440)
             self.setMinimumHeight(900)   
-            IMAGEVIEWER_W = 640
-            IMAGEVIEWER_H = 480  
+            self.IMAGEVIEWER_W = 640
+            self.IMAGEVIEWER_H = 480  
 
         self.setWindowTitle("Rows Analysis")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowTitleHint)
@@ -96,8 +96,8 @@ class RowsWidget(QWidget):
         self.line_viewer.disableScrollBars()
         self.line_viewer.enablePan()
         self.line_viewer.enableZoom()
-        self.line_viewer.setFixedWidth(IMAGEVIEWER_W)
-        self.line_viewer.setFixedHeight(IMAGEVIEWER_H)
+        self.line_viewer.setFixedWidth(self.IMAGEVIEWER_W)
+        self.line_viewer.setFixedHeight(self.IMAGEVIEWER_H)
         self.line_viewer.setImg(self.image_cropped)
 
         # Enable context menu policy
@@ -132,7 +132,7 @@ class RowsWidget(QWidget):
         
         self.angleTextBox = QTextEdit(self)
         self.angleTextBox.setReadOnly(True)
-        self.angleTextBox.setFixedWidth(IMAGEVIEWER_W)
+        self.angleTextBox.setFixedWidth(self.IMAGEVIEWER_W)
         self.angleTextBox.setFixedHeight(TEXTBOX_H)
 
         # Add export lines
@@ -159,8 +159,8 @@ class RowsWidget(QWidget):
         self.skel_viewer.disableScrollBars()
         self.skel_viewer.enablePan()
         self.skel_viewer.enableZoom()
-        self.skel_viewer.setFixedWidth(IMAGEVIEWER_W)
-        self.skel_viewer.setFixedHeight(IMAGEVIEWER_H)
+        self.skel_viewer.setFixedWidth(self.IMAGEVIEWER_W)
+        self.skel_viewer.setFixedHeight(self.IMAGEVIEWER_H)
         self.skel_viewer.setImg(self.image_cropped)
 
         #draw blobs
@@ -214,7 +214,7 @@ class RowsWidget(QWidget):
         # skelangle_label = QLabel(f"Slopes")
         # self.skelTextBox = QTextEdit(self)
         # self.skelTextBox.setReadOnly(True)
-        # self.skelTextBox.setFixedWidth(IMAGEVIEWER_W)
+        # self.skelTextBox.setFixedWidth(self.IMAGEVIEWER_W)
         # self.skelTextBox.setFixedHeight(TEXTBOX_H)
         # layout.addWidget(self.angleTextBox)
         # Add export lines
@@ -302,7 +302,7 @@ class RowsWidget(QWidget):
         self.btnExport = QPushButton("Export Data")
         self.btnExport.clicked.connect(self.exportData)
         # self.btnExport.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)  # Make button expand horizontally
-        self.btnExport.setFixedWidth(1440//2)
+        # self.btnExport.setFixedWidth(1440//2)
            
         self.btnCompute = QPushButton("Compute")
         self.btnCompute.clicked.connect(self.applyHough)
@@ -327,7 +327,6 @@ class RowsWidget(QWidget):
         
         # button_layout = QHBoxLayout()
         
-
         # Add a separator line for visual separation
         separator = QLabel()
         separator.setFixedHeight(3)
@@ -372,7 +371,6 @@ class RowsWidget(QWidget):
         # i += 1
         self.skeleton = self.applySkeletonization(self.masch)
         
-
         # Get row_distance from  BrickDistBox
         try:
             self.row_dist = int(self.BrickDistBox.text())
@@ -1089,8 +1087,8 @@ class RowsWidget(QWidget):
             self.line_viewer.setOverlayImage(self.blob_image)
         
         else:
-            self.line_viewer.setFixedWidth(IMAGEVIEWER_W)
-            self.line_viewer.setFixedHeight(IMAGEVIEWER_H)
+            self.line_viewer.setFixedWidth(self.IMAGEVIEWER_W)
+            self.line_viewer.setFixedHeight(self.IMAGEVIEWER_H)
             self.line_viewer.setImg(self.image_cropped)
 
             self.blob_image = None
@@ -1147,8 +1145,8 @@ class RowsWidget(QWidget):
             self.skel_viewer.setOverlayImage(branch_image)
         
         else:
-            self.skel_viewer.setFixedWidth(IMAGEVIEWER_W)
-            self.skel_viewer.setFixedHeight(IMAGEVIEWER_H)
+            self.skel_viewer.setFixedWidth(self.IMAGEVIEWER_W)
+            self.skel_viewer.setFixedHeight(self.IMAGEVIEWER_H)
             self.skel_viewer.setImg(self.image_cropped)
 
     def drawBranchSkel(self, skeleton, branch_points, connections, branch, skel, conn):
