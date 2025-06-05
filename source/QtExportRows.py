@@ -1,6 +1,8 @@
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QFileDialog, QComboBox
 # from PyQt5.QtCore import Qt
 import ezdxf 
+from skimage import measure
+
 import numpy as np
 import source.RasterOps as rasterops
 
@@ -42,6 +44,8 @@ class ExportDialog(QDialog):
         
         self.mask_checkbox = QCheckBox("Export Mask")
 
+        self.line_checkbox = QCheckBox("Export Lines")
+
         self.blob_checkbox = QCheckBox("Export Blobs")
         
         self.skeleton_checkbox = QCheckBox("Export Skeleton")
@@ -52,6 +56,7 @@ class ExportDialog(QDialog):
 
         layout.addWidget(self.angle_checkbox)
         layout.addWidget(self.mask_checkbox)
+        layout.addWidget(self.line_checkbox)
         layout.addWidget(self.blob_checkbox)
         layout.addWidget(self.skeleton_checkbox)
         layout.addWidget(self.branch_points_checkbox)
@@ -69,7 +74,8 @@ class ExportDialog(QDialog):
 
         self.setLayout(layout)
 
-    def DXFExport(self, file_path, skel, branch, edges, blobs, georef, offset = [0, 0], img_size = (0,0)):
+    def DXFExport(self, file_path, skel, branch, edges, blobs, mask, lines, georef, offset = [0, 0], img_size = (0,0)):
+
         # Export skeleton, branch points, and edges to a DXF file, each in a different layer.
         offset_x, offset_y = offset
         img_width, img_height = img_size
@@ -220,6 +226,41 @@ class ExportDialog(QDialog):
                 is_closed = np.allclose(points[0], points[-1])
                 msp.add_lwpolyline(points, close=is_closed, dxfattribs={"layer": "Blobs"})
 
+        # Mask layer
+        if mask:
+            doc.layers.add("Mask", color=6)
+            # Find contours at a constant value of 0.5
+            contours = measure.find_contours(self.mask, 0.5)
+            for contour in contours:
+                # contour is an array of (row, col) = (y, x)
+                if transform is not None:
+                    points = [transform * (float(x) + offset_x, float(y) + offset_y) for y, x in contour]
+                else:
+                    points = [(float(x) + offset_x, img_height - (float(y) + offset_y)) for y, x in contour]
+                if len(points) > 1:
+                    msp.add_lwpolyline(points, close=True, dxfattribs={"layer": "Mask"})
+
+        #Lines layer
+        if lines:
+            doc.layers.add("Lines", color=5)
+            for (start, end, angle, color) in self.lines:
+                start_x_global = start[0] + offset_x
+                start_y_global = start[1] + offset_y
+                end_x_global = end[0] + offset_x
+                end_y_global = end[1] + offset_y
+                if transform is not None:
+                    p1 = transform * (start_x_global, start_y_global)
+                    p2 = transform * (end_x_global, end_y_global)
+                else:
+                    p1 = (start_x_global, img_height - start_y_global)
+                    p2 = (end_x_global, img_height - end_y_global)
+                # Use truecolor if color is RGB
+                if isinstance(color, (tuple, list)) and len(color) == 3:
+                    color_code = ezdxf.colors.rgb2int(tuple(int(max(0, min(255, v))) for v in color))
+                    msp.add_line(p1, p2, dxfattribs={"layer": "Lines", "true_color": color_code})
+                else:
+                    msp.add_line(p1, p2, dxfattribs={"layer": "Lines"})
+
         doc.saveas(file_path)
         print(f"DXF exported to {file_path}")
 
@@ -237,6 +278,7 @@ class ExportDialog(QDialog):
             "format": self.format_combo.currentText(),
             "export_angles": self.angle_checkbox.isChecked(),
             "export_mask": self.mask_checkbox.isChecked(),
+            "export_lines": self.line_checkbox.isChecked(),
             "export_blobs": self.blob_checkbox.isChecked(),
             "export_skeleton": self.skeleton_checkbox.isChecked(),
             "export_branch_points": self.branch_points_checkbox.isChecked(),
