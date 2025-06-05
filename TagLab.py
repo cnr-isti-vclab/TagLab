@@ -90,6 +90,7 @@ from source.QtGridWidget import QtGridWidget
 from source.QtDictionaryWidget import QtDictionaryWidget
 from source.QtRegionAttributesWidget import QtRegionAttributesWidget
 from source.QtShapefileAttributeWidget import QtAttributeWidget
+from source.QtGeometricInfoWidget import QtGeometricInfoWidget
 
 # from source.QtDXFfileAttributeWidget import QtDXFExportWidget
 import ezdxf
@@ -336,6 +337,7 @@ class TagLab(QMainWindow):
         self.attachBoundariesAction = self.newAction("Snap Borders",          "B",   self.attachBoundaries)
         self.fillAction         = self.newAction("Fill Region",               "F",   self.fillLabel)
         self.createNegative = self.newAction("Create a Background Region using the WA", "N", self.createNegative)
+        self.computeGeometricInfo = self.newAction("Compute Geometric Info", None, self.computeGeometricInfo)
 
 
         # VIEWERPLUS
@@ -1216,7 +1218,7 @@ class TagLab(QMainWindow):
         self.regionmenu.addAction(self.erodeAction)
         self.regionmenu.addSeparator()
         self.regionmenu.addAction(self.createNegative)
-
+        self.regionmenu.addAction(self.computeGeometricInfo)
 
         ###### POINT ANNOTATIONS MENU
 
@@ -3070,6 +3072,26 @@ class TagLab(QMainWindow):
                 self.logBlobInfo(blob, "[OP-CREATENEGATIVE][BLOB-ADDED]")
                 view.addBlob(blob, selected=True)
 
+    def computeGeometricInfo(self):
+        """
+        Compute geometric information of the selected blobs.
+        """
+        view = self.activeviewer
+        #wa = self.project.working_area
+
+        if view is None:
+            return
+        
+        if len(view.selected_blobs) == 0:
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("You need to select at least one region for this operation.")
+            msgBox.exec()
+            return
+
+        self.geometricInfo_widget = QtGeometricInfoWidget(view, parent = self)
+        self.geometricInfo_widget.setWindowModality(Qt.ApplicationModal)
+        self.geometricInfo_widget.show()
 
     def dilate(self):
         """
