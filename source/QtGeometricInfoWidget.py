@@ -60,10 +60,11 @@ class QtGeometricInfoWidget(QWidget):
         self.regions_table.setSortingEnabled(False)
         self.regions_table.setShowGrid(True)
         self.regions_table.setAlternatingRowColors(False)
-        self.regions_table.setStyleSheet("QTableWidget { background-color: rgb(60,60,60); color: white; }"
+        self.regions_table.setStyleSheet("QTableWidget { background-color: rgb(50,50,50);  }"
                                         "QHeaderView::section { background-color: rgb(80,80,80); color: white; }"
-                                        "QTableWidget::item { padding: 5px; }"
-                                        "QTableWidget::item:selected { background-color: rgb(50,50,120); }")
+                                        "QToolTip { background-color: rgb(80,80,80); color: white; border: 1px solid rgb(100,100,100); }"                                        
+                                        "QTableWidget::item { padding: 5px; color: white;}"
+                                        "QTableWidget::item:selected { background-color: rgb(50,50,120);")
 
         layout.addWidget(self.regions_table)
 
@@ -73,15 +74,19 @@ class QtGeometricInfoWidget(QWidget):
         self.stats_table.setColumnCount(len(self.properties))
         headerLabels = [self.properties[prop]["label"] for prop in self.properties]
         self.stats_table.setHorizontalHeaderLabels(headerLabels)
+        #setting tooltip for headers
+        for i, prop in enumerate(self.properties):
+            self.stats_table.horizontalHeaderItem(1).setToolTip(self.properties[prop]["name"])        
         self.stats_table.setVerticalHeaderLabels(["MIN", "MAX", "AVG", "STD", "MED"])
         self.stats_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.stats_table.setSelectionMode(QTableWidget.NoSelection)
         self.stats_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.stats_table.setShowGrid(True)
         self.stats_table.setAlternatingRowColors(False)
-        self.stats_table.setStyleSheet("QTableWidget { background-color: rgb(60,60,60); color: white; }"
+        self.stats_table.setStyleSheet("QTableWidget { background-color: rgb(50,50,50); }"
                                         "QHeaderView::section { background-color: rgb(80,80,80); color: white; }"
-                                        "QTableWidget::item { padding: 5px; }"
+                                        "QToolTip { background-color: rgb(80,80,80); color: white; border: 1px solid rgb(100,100,100); }"
+                                        "QTableWidget::item { padding: 5px; color: white;}"
                                         "QTableWidget::item:selected { background-color: rgb(50,50,120); }")
         layout.addWidget(self.stats_table)
 
@@ -174,36 +179,50 @@ class QtGeometricInfoWidget(QWidget):
         return
 
     properties = {
-        "area": {"name": "Area",
+        "area": {"name": "Area of region",
                  "label": "AREA",
-                 "calculable": True},
-        "areaBox": {"name": "Area Box",
-                    "label": "BBOX A.",
-                    "calculable": True},
-        "areaConvex": {"name": "Area Convex",
-                       "label": "CONVEX A.",
-                       "calculable": True},
-        "perimeter": {"name": "Perimeter",
-                      "label": "PERIM.",
-                      "calculable": True},
-        "P2": {"name": "P2",
-               "label": "P2",
-               "calculable": True},
-        "eccentricity": {"name": "Eccentricity",
-                         "label": "ECCENTR.",
-                         "calculable": True},
-        "major_axis_length": {"name": "Major Axis Length",
-                              "label": "MAJ AXIS",
-                              "calculable": True},
-        "minor_axis_length": {"name": "Minor Axis Length",
-                              "label": "MIN AXIS",
-                              "calculable": True},        
-        "orientation": {"name": "Orientation",
-                        "label": "ORIENT.",
-                        "calculable": True},
+                 "calculable": True,
+                 "round": 1},
+        "perimeter": {"name": "Perimeter of region",
+                      "label": "PERIMETER",
+                      "calculable": True,
+                      "round": 1},
         "solidity": {"name": "Solidity",
                      "label": "SOLIDITY",
-                     "calculable": True}
+                     "calculable": True,
+                     "round": 3},                      
+        "areaConvex": {"name": "Area of Convex Hull",
+                       "label": "CONVEX \n AREA",
+                       "calculable": True,
+                       "round": 1},
+        "areaBox": {"name": "Area of Bounding Box",
+                    "label": "BBOX \n AREA",
+                    "calculable": True,
+                    "round": 1},
+        "widthBox": {"name": "Horizontal size of Bounding Box",
+                    "label": "BBOX \n WIDTH",
+                    "calculable": True,
+                    "round": 1},
+        "heightBox": {"name": "Vertical size of Bounding Box",
+                      "label": "BBOX \n HEIGHT",
+                      "calculable": True,
+                      "round": 1},
+        "eccentricity": {"name": "Eccentricity of fit ellipse",
+                         "label": "ELLIPSE \n ECCENTRICITY",
+                         "calculable": True,
+                         "round": 3},
+        "orientation": {"name": "Orientation of fit ellipse",
+                        "label": "ELLIPSE \n ORIENTATION",
+                        "calculable": True,
+                        "round": 3},                         
+        "major_axis_length": {"name": "Major Axis Length of fit ellipse",
+                              "label": "ELLIPSE \n MAJ AXIS",
+                              "calculable": True,
+                              "round": 1},
+        "minor_axis_length": {"name": "Minor Axis Length of fit ellipse",
+                              "label": "ELLIPSE \n MIN AXIS",
+                              "calculable": True,
+                              "round": 1}
     }
 
     # compute the measures
@@ -211,18 +230,25 @@ class QtGeometricInfoWidget(QWidget):
         # get measurements for the selected blobs
         self.geometricData = {}
         for blob in self.parent.activeviewer.selected_blobs:
-            self.geometricData[blob.id] = {}
-            self.geometricData[blob.id]["perimeter"] = blob.perimeter
             blobMeasure = measure.regionprops(blob.getMask())
-            self.geometricData[blob.id]["area"] = round(blobMeasure[0].area,1)
-            self.geometricData[blob.id]["areaBox"] = round(blobMeasure[0].area_bbox,1)
-            self.geometricData[blob.id]["areaConvex"] = round(blobMeasure[0].area_convex,1)
-            self.geometricData[blob.id]["P2"] = round(blobMeasure[0].perimeter,1)
-            self.geometricData[blob.id]["eccentricity"] = round(blobMeasure[0].eccentricity,3)
-            self.geometricData[blob.id]["orientation"] = round((blobMeasure[0].orientation * 180 / math.pi),3)
-            self.geometricData[blob.id]["major_axis_length"] = round(blobMeasure[0].major_axis_length,1)
-            self.geometricData[blob.id]["minor_axis_length"] = round(blobMeasure[0].minor_axis_length,1)
-            self.geometricData[blob.id]["solidity"] = round(blobMeasure[0].solidity,3)
+            self.geometricData[blob.id] = {}
+            # base properties
+            self.geometricData[blob.id]["area"] = round(blob.area, self.properties["area"]["round"])            
+            self.geometricData[blob.id]["perimeter"] = round(blob.perimeter, self.properties["perimeter"]["round"])
+            self.geometricData[blob.id]["solidity"] = round(blobMeasure[0].solidity, self.properties["solidity"]["round"])
+            # convex hull
+            self.geometricData[blob.id]["areaConvex"] = round(blobMeasure[0].area_convex, self.properties["areaConvex"]["round"])
+            # bbox fit
+            self.geometricData[blob.id]["areaBox"] = round(blobMeasure[0].area_bbox, self.properties["areaBox"]["round"])
+            self.geometricData[blob.id]["widthBox"] = round(blobMeasure[0].bbox[2] - blobMeasure[0].bbox[0], self.properties["widthBox"]["round"])
+            self.geometricData[blob.id]["heightBox"] = round(blobMeasure[0].bbox[3] - blobMeasure[0].bbox[1], self.properties["heightBox"]["round"])
+            #ellipse fit
+            self.geometricData[blob.id]["eccentricity"] = round(blobMeasure[0].eccentricity, self.properties["eccentricity"]["round"])
+            self.geometricData[blob.id]["orientation"] = round((blobMeasure[0].orientation * 180 / math.pi), self.properties["orientation"]["round"])
+            self.geometricData[blob.id]["major_axis_length"] = round(blobMeasure[0].major_axis_length, self.properties["major_axis_length"]["round"])
+            self.geometricData[blob.id]["minor_axis_length"] = round(blobMeasure[0].minor_axis_length, self.properties["minor_axis_length"]["round"])
+            # rectangle fit
+            
 
         # compute the stats        
         self.geometricStats = {}
@@ -232,8 +258,8 @@ class QtGeometricInfoWidget(QWidget):
                 self.geometricStats[key] = {
                     "min": min(values),
                     "max": max(values),
-                    "average": sum(values) / len(values),
-                    "std": (sum((x - (sum(values) / len(values))) ** 2 for x in values) / len(values)) ** 0.5,
+                    "average": round(sum(values) / len(values), self.properties[key]["round"]),
+                    "std": round((sum((x - (sum(values) / len(values))) ** 2 for x in values) / len(values)) ** 0.5, self.properties[key]["round"]),
                     "median": sorted(values)[len(values) // 2],
                 }
             else:
@@ -263,9 +289,9 @@ class QtGeometricInfoWidget(QWidget):
             self.stats_table.item(0, i).setTextAlignment(Qt.AlignRight)
             self.stats_table.setItem(1, i, QTableWidgetItem(str(self.geometricStats[prop]["max"])))
             self.stats_table.item(1, i).setTextAlignment(Qt.AlignRight)
-            self.stats_table.setItem(2, i, QTableWidgetItem(str(round(self.geometricStats[prop]["average"],3))))
+            self.stats_table.setItem(2, i, QTableWidgetItem(str(self.geometricStats[prop]["average"])))
             self.stats_table.item(2, i).setTextAlignment(Qt.AlignRight)
-            self.stats_table.setItem(3, i, QTableWidgetItem(str(round(self.geometricStats[prop]["std"],3))))
+            self.stats_table.setItem(3, i, QTableWidgetItem(str(self.geometricStats[prop]["std"])))
             self.stats_table.item(3, i).setTextAlignment(Qt.AlignRight)
             self.stats_table.setItem(4, i, QTableWidgetItem(str(self.geometricStats[prop]["median"])))
             self.stats_table.item(4, i).setTextAlignment(Qt.AlignRight)
