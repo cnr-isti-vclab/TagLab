@@ -1229,6 +1229,7 @@ class RowsWidget(QWidget):
         # Show all checkboxes and options
         dialog.angle_checkbox.show()
         dialog.mask_checkbox.show()
+        dialog.line_checkbox.show()
         dialog.blob_checkbox.show()
         dialog.skeleton_checkbox.show()
         dialog.branch_points_checkbox.show()
@@ -1239,17 +1240,18 @@ class RowsWidget(QWidget):
         # Set current state as default
         dialog.angle_checkbox.setChecked(self.line_checked)
         dialog.mask_checkbox.setChecked(self.mask_checked)
+        dialog.line_checkbox.setChecked(self.line_checked)
         dialog.blob_checkbox.setChecked(self.blobs_checked)
         dialog.skeleton_checkbox.setChecked(self.skel_checked)
         dialog.branch_points_checkbox.setChecked(self.branch_checked)
         dialog.edges_checkbox.setChecked(self.edges_checked)
 
         # Connect format change to onExportFormatChanged method
-        dialog.format_combo.currentTextChanged.connect(
-            lambda _: self.onExportFormatChanged(dialog)
-        )
-        # Set initial state
-        self.onExportFormatChanged(dialog)
+        # dialog.format_combo.currentTextChanged.connect(
+        #     lambda _: self.onExportFormatChanged(dialog)
+        # )
+        # # Set initial state
+        # self.onExportFormatChanged(dialog)
 
         if dialog.exec_() != QDialog.Accepted:
             return
@@ -1258,6 +1260,7 @@ class RowsWidget(QWidget):
         file_path = options["path"]
         export_angles = options.get("export_angles", False)
         export_mask = options.get("export_mask", False)
+        export_lines = options.get("export_lines", False)
         export_blobs = options.get("export_blobs", False)
         export_skeleton = options.get("export_skeleton", False)
         export_branch_points = options.get("export_branch_points", False)
@@ -1266,10 +1269,25 @@ class RowsWidget(QWidget):
 
         export_success = False
 
+        if export_angles and hasattr(self, "lines"):
+            angles_filename = f"{file_path}_angles.csv"
+            with open(angles_filename, "w") as file:
+                file.write("Line Index,Angle (degrees)\n")
+                for i, (_, _, angle, _) in enumerate(self.lines):
+                    if angle < 0:
+                        angle = np.pi/2 + angle  
+                    else:
+                        angle = angle - np.pi/2
+                    angle_deg = np.rad2deg(angle)
+                    file.write(f"{i + 1},{angle_deg:.2f}\n")
+            export_success = True
+        
         # DXF export (if selected)
         if export_format == ".dxf":
             if not file_path.lower().endswith(".dxf"):
                 file_path += ".dxf"
+            dialog.mask = self.masch if export_mask else None
+            dialog.lines = self.lines if export_lines else []
             dialog.skeleton = self.skeleton if export_skeleton else None
             dialog.branch_points = self.branch_points if export_branch_points else []
             dialog.edges = self.edges if export_edges else []
@@ -1280,7 +1298,7 @@ class RowsWidget(QWidget):
                 georef_filename = self.parent_viewer.image.georef_filename
 
             dialog.DXFExport(
-                file_path, export_skeleton, export_branch_points, export_edges, export_blobs,
+                file_path, export_skeleton, export_branch_points, export_edges, export_blobs, export_mask, export_lines,
                 georef=georef_filename, offset=self.off,
                 img_size=(self.parent_viewer.image.width, self.parent_viewer.image.height)
             )
@@ -1307,19 +1325,6 @@ class RowsWidget(QWidget):
                 blob_image.save(blobs_filename)
                 export_success = True
 
-            if export_angles and hasattr(self, "lines"):
-                angles_filename = f"{file_path}_angles.csv"
-                with open(angles_filename, "w") as file:
-                    file.write("Line Index,Angle (degrees)\n")
-                    for i, (_, _, angle, _) in enumerate(self.lines):
-                        if angle < 0:
-                            angle = np.pi/2 + angle  
-                        else:
-                            angle = angle - np.pi/2
-                        angle_deg = np.rad2deg(angle)
-                        file.write(f"{i + 1},{angle_deg:.2f}\n")
-                export_success = True
-
             if export_skeleton and self.skeleton is not None:
                 skeleton_filename = f"{file_path}_skeleton.png"
                 branch_image = self.drawBranchSkel(
@@ -1339,7 +1344,7 @@ class RowsWidget(QWidget):
                 angles_filename = f"{file_path}_edges_angles.csv"
                 with open(angles_filename, "w") as file:
                     file.write("Connection Index,Angle (degrees)\n")
-                    for i, (_, _, _, angle) in enumerate(self.edges):
+                    for i, (_, _, _, angle, _) in enumerate(self.edges):
                         file.write(f"{i + 1},{angle:.2f}\n")
                 export_success = True
 
@@ -1348,16 +1353,6 @@ class RowsWidget(QWidget):
         else:
             QMessageBox.warning(self, "Export Failed", "No data to export.")
 
-    def onExportFormatChanged(self, dialog):
-        format = dialog.format_combo.currentText()
-        if format == ".dxf":
-            dialog.angle_checkbox.setEnabled(False)
-            dialog.angle_checkbox.setChecked(False)
-            dialog.mask_checkbox.setEnabled(False)
-            dialog.mask_checkbox.setChecked(False)
-        else:
-            dialog.angle_checkbox.setEnabled(True)
-            dialog.mask_checkbox.setEnabled(True)
     
 
 
