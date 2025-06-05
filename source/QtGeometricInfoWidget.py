@@ -240,8 +240,8 @@ class QtGeometricInfoWidget(QWidget):
             self.geometricData[blob.id]["areaConvex"] = round(blobMeasure[0].area_convex, self.properties["areaConvex"]["round"])
             # bbox fit
             self.geometricData[blob.id]["areaBox"] = round(blobMeasure[0].area_bbox, self.properties["areaBox"]["round"])
-            self.geometricData[blob.id]["widthBox"] = round(blobMeasure[0].bbox[2] - blobMeasure[0].bbox[0], self.properties["widthBox"]["round"])
-            self.geometricData[blob.id]["heightBox"] = round(blobMeasure[0].bbox[3] - blobMeasure[0].bbox[1], self.properties["heightBox"]["round"])
+            self.geometricData[blob.id]["widthBox"] = round(blobMeasure[0].bbox[3] - blobMeasure[0].bbox[1], self.properties["widthBox"]["round"]) #warning: bbox is in (min_row, min_col, max_row, max_col) format
+            self.geometricData[blob.id]["heightBox"] = round(blobMeasure[0].bbox[2] - blobMeasure[0].bbox[0], self.properties["heightBox"]["round"]) #warning: bbox is in (min_row, min_col, max_row, max_col) format
             #ellipse fit
             self.geometricData[blob.id]["eccentricity"] = round(blobMeasure[0].eccentricity, self.properties["eccentricity"]["round"])
             self.geometricData[blob.id]["orientation"] = round((blobMeasure[0].orientation * 180 / math.pi), self.properties["orientation"]["round"])
