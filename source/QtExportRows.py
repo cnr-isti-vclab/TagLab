@@ -135,9 +135,12 @@ class ExportDialog(QDialog):
         
             # #Draw ALL the branch points
             # for (y, x) in self.branch_points:
-            #     msp.add_circle((x, y), radius=1, dxfattribs={"layer": "BranchPoints"})
+            #     x_global = x + offset_x
+            #     y_global = y + offset_y
+            #     y_flipped = img_height - y_global
+            #     msp.add_circle((x_global, y_flipped), radius=1, dxfattribs={"layer": "BranchPoints"})
             
-            # Draw branch points, if points are closer than 10 pixels, draw only one at the median position
+            # Draw branch points, if points are closer than 2 pixels, draw only one at the median position
             remaining_points = list(self.branch_points)
             drawn_points = []
             while remaining_points:
@@ -178,7 +181,7 @@ class ExportDialog(QDialog):
         # Edges layer
         if edges:
             doc.layers.add("Edges", color=3)
-            for start, end, color, angle in self.edges:
+            for start, end, color, _, _ in self.edges:
                 # msp.add_line((start[0], start[1]), (end[0], end[1]), dxfattribs={"layer": "Edges"})
                 start_x_global = start[0] + offset_x
                 start_y_global = start[1] + offset_y
@@ -194,6 +197,15 @@ class ExportDialog(QDialog):
                     p1 = (start_x_global, img_height - start_y_global)
                     p2 = (end_x_global, img_height - end_y_global)
                 msp.add_line(p1, p2, dxfattribs={"layer": "Edges"})
+                
+                # # Use truecolor for each edge if color is provided as RGB
+                # if isinstance(color, (tuple, list)) and len(color) == 3:
+                #     color_code = ezdxf.colors.rgb2int(tuple(int(max(0, min(255, v))) for v in color))
+                #     msp.add_line(p1, p2, dxfattribs={"layer": "Edges", "true_color": color_code})
+                # # elif isinstance(color, int) and 1 <= color <= 256:
+                # #     msp.add_line(p1, p2, dxfattribs={"layer": "Edges", "color": color})
+                # else:
+                #     msp.add_line(p1, p2, dxfattribs={"layer": "Edges"})
 
 
         # Blobs layer

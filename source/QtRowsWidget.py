@@ -817,11 +817,9 @@ class RowsWidget(QWidget):
                     dx = path[-1][0] - path[0][0]
                     dy = path[-1][1] - path[0][1]
                     dist = np.hypot(dx, dy)
-                    if dist > 4:
-                        angle = np.arctan2(dy, dx)  # Angle in radians
-                        angle_deg = np.degrees(angle)  # Convert to degrees
-                        segments.append((path[0], path[-1], color, angle_deg))
-                    # segments.append((path[0], path[-1], color))
+                    angle = np.arctan2(dy, dx)  # Angle in radians
+                    angle_deg = np.degrees(angle)  # Convert to degrees
+                    segments.append((path[0], path[-1], color, angle_deg, dist))
                     # segments.append((path[0], path[-1]))
 
         # # Plot the skeleton
@@ -1187,35 +1185,33 @@ class RowsWidget(QWidget):
             y_threshold = self.row_dist
             print(f"len of connections is {len(connections)}")
             filterd_segments = []  
-            for start, end, color, angle in connections:
+            for start, end, color, angle, dist in connections:
                 y1, y2 = start[1], end[1]  # Remember: start = (x, y)
                 if abs(y1 - y2) <= y_threshold:  # Filter segments
-                    filterd_segments.append((start, end, color, angle))
+                    filterd_segments.append((start, end, color, angle, dist))
                     
             print(f"len of filtered segments pre is {len(filterd_segments)}")
                     
-            for i, (start, end, color, angle) in enumerate(filterd_segments):                    
+            for i, (start, end, color, angle, dist) in enumerate(filterd_segments):                    
                 pen.setColor(QColor(color[0], color[1], color[2]))
                 painter.setPen(pen)
                 # print(f"angle of {i} is {angle}")
-                painter.drawLine(start[0], start[1], end[0], end[1])
+                if dist > 2:
+                    painter.drawLine(start[0], start[1], end[0], end[1])
 
-                # self.updateSkelTextBox([angle], i, color=f'rgb({color[0]},{color[1]},{color[2]})')
+                    # self.updateSkelTextBox([angle], i, color=f'rgb({color[0]},{color[1]},{color[2]})')
 
-
-                # Draw the angle value above each line
-                # angle_text = f"{angle:.2f}°"
-                # text_x = (start[0] + end[0]) // 2
-                # text_y = (start[1] + end[1]) // 2 - 10  # Slightly above the line
-                # pen.setColor(Qt.black)  # Set text color to black
-                # painter.setPen(pen)
-                # painter.drawText(text_x, text_y, angle_text)
+                    # #Draw the angle value above each line
+                    # angle_text = f"{angle:.2f}°"
+                    # text_x = (start[0] + end[0]) // 2 - 20
+                    # text_y = (start[1] + end[1]) // 2 - 10  # Slightly above the line
+                    # painter.drawText(text_x, text_y, angle_text)
 
         if branch:                
             # pen = QPen(QColor(255, 0, 0, 100), )
             # painter.setPen(pen)
             painter.setPen(Qt.NoPen)
-            painter.setBrush(QColor(255, 0, 0, 100))
+            painter.setBrush(QColor(255, 0, 0))
             for point in branch_points:
                 painter.drawEllipse(point[1] - 2, point[0] - 2, 4, 4)
         
