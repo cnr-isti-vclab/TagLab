@@ -237,7 +237,7 @@ class Annotation(object):
 
     def createNegative(self, blobs, wa):
 
-        inner_blobs = self.calculate_inner_blobs(wa)
+        inner_blobs = self.calculate_inner_intersecting_blobs(wa) # blobs that are fully inside OR just intersecting the working area
         boxes = []
         for blob in blobs:
             boxes.append(blob.bbox)
@@ -661,7 +661,6 @@ class Annotation(object):
         """
         This consider only blobs falling ENTIRELY in the working area"
         """
-
         selected_blobs = self.seg_blobs
         inner_blobs = []
         for blob in selected_blobs:
@@ -670,12 +669,23 @@ class Annotation(object):
 
         return inner_blobs
 
+    def calculate_inner_intersecting_blobs(self, working_area):
+        """
+        This consider only blobs inside or intersecting the working area"
+        """
+        selected_blobs = self.seg_blobs
+        intersecting_blobs = []
+        for blob in selected_blobs:
+            if Mask.checkIntersection(working_area, blob.bbox):
+                intersecting_blobs.append(blob)
+
+        return intersecting_blobs
+
 
     def calculate_inner_points(self, working_area):
         """
         This consider only points having center inside the working area"
         """
-
         selected_annpoints = self.annpoints
         inner_annpoints = []
         for annpoint in selected_annpoints:
@@ -703,7 +713,6 @@ class Annotation(object):
         return count, tot_area
 
     def countPoints(self, label):
-
         """
         This consider all the existing points, inside and outside the working area.
         It returns number of points per label
@@ -721,7 +730,6 @@ class Annotation(object):
         It imports a label map and create the corresponding blobs.
         The offset is stored as a [top, left] coordinates and scale are the scale factors of X and Y axis respectively.
         """
-
         qimg_label_map = QImage(filename)
         qimg_label_map = qimg_label_map.convertToFormat(QImage.Format_RGB32)
 
