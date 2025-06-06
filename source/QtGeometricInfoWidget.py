@@ -179,11 +179,23 @@ class QtGeometricInfoWidget(QWidget):
         return
 
     properties = {
-        "area": {"name": "Area of region",
+        "class": {"name": "Class of region",
+                "label": "CLASS",
+                "calculable": False,
+                "round": 0},
+        "centroidx": {"name": "Centroid, X coordinate (mm)",
+                 "label": "CENTROID\nX",
+                 "calculable": True,
+                 "round": 2},
+        "centroidy": {"name": "Centroid, Y coordinate (mm)",
+                 "label": "CENTROID\nY",
+                 "calculable": True,
+                 "round": 2},
+        "area": {"name": "Area of region (mm2)",
                  "label": "AREA",
                  "calculable": True,
                  "round": 1},
-        "perimeter": {"name": "Perimeter of region",
+        "perimeter": {"name": "Perimeter of region (mm)",
                       "label": "PERIMETER",
                       "calculable": True,
                       "round": 1},
@@ -191,36 +203,36 @@ class QtGeometricInfoWidget(QWidget):
                      "label": "SOLIDITY",
                      "calculable": True,
                      "round": 3},                      
-        "areaConvex": {"name": "Area of Convex Hull",
-                       "label": "CONVEX \n AREA",
+        "areaConvex": {"name": "Area of Convex Hull (mm2)",
+                       "label": "CONVEX\nAREA",
                        "calculable": True,
                        "round": 1},
-        "areaBox": {"name": "Area of Bounding Box",
-                    "label": "BBOX \n AREA",
+        "areaBox": {"name": "Area of Bounding Box (mm2)",
+                    "label": "BBOX\nAREA",
                     "calculable": True,
                     "round": 1},
-        "widthBox": {"name": "Horizontal size of Bounding Box",
-                    "label": "BBOX \n WIDTH",
+        "widthBox": {"name": "Horizontal size of\nBounding Box (mm)",
+                    "label": "BBOX\nWIDTH",
                     "calculable": True,
                     "round": 1},
-        "heightBox": {"name": "Vertical size of Bounding Box",
-                      "label": "BBOX \n HEIGHT",
+        "heightBox": {"name": "Vertical size of\nBounding Box (mm)",
+                      "label": "BBOX\nHEIGHT",
                       "calculable": True,
                       "round": 1},
-        "eccentricity": {"name": "Eccentricity of fit ellipse",
-                         "label": "ELLIPSE \n ECCENTRICITY",
+        "eccentricity": {"name": "Eccentricity of fitted ellipse\n(0=round, 1=elongated)",
+                         "label": "ELLIPSE\nECCENTRICITY",
                          "calculable": True,
                          "round": 3},
-        "orientation": {"name": "Orientation of fit ellipse",
-                        "label": "ELLIPSE \n ORIENTATION",
+        "orientation": {"name": "Orientation of fitted ellipse\n(degrees: 0=vertical, 90=horizontal)",
+                        "label": "ELLIPSE\nORIENTATION",
                         "calculable": True,
                         "round": 3},                         
-        "major_axis_length": {"name": "Major Axis Length of fit ellipse",
-                              "label": "ELLIPSE \n MAJ AXIS",
+        "major_axis_length": {"name": "Major Axis Length\nof fitted ellipse (mm)",
+                              "label": "ELLIPSE\nMAJ AXIS",
                               "calculable": True,
                               "round": 1},
-        "minor_axis_length": {"name": "Minor Axis Length of fit ellipse",
-                              "label": "ELLIPSE \n MIN AXIS",
+        "minor_axis_length": {"name": "Minor Axis Length\nof fitted ellipse (mm)",
+                              "label": "ELLIPSE\nMIN AXIS",
                               "calculable": True,
                               "round": 1}
     }
@@ -230,23 +242,28 @@ class QtGeometricInfoWidget(QWidget):
         # get measurements for the selected blobs
         self.geometricData = {}
         for blob in self.parent.activeviewer.selected_blobs:
+            pxmm = self.parent.activeviewer.px_to_mm
+            pxmm2 = pxmm * pxmm
             blobMeasure = measure.regionprops(blob.getMask())
             self.geometricData[blob.id] = {}
             # base properties
-            self.geometricData[blob.id]["area"] = round(blob.area, self.properties["area"]["round"])            
-            self.geometricData[blob.id]["perimeter"] = round(blob.perimeter, self.properties["perimeter"]["round"])
+            self.geometricData[blob.id]["class"] = blob.class_name
+            self.geometricData[blob.id]["centroidx"] = round(blob.centroid[0], self.properties["centroidx"]["round"])
+            self.geometricData[blob.id]["centroidy"] = round(self.parent.activeviewer.image.height - blob.centroid[1], self.properties["centroidy"]["round"]) # warning, image Y coordinate is inverted
+            self.geometricData[blob.id]["area"] = round(blob.area * pxmm2, self.properties["area"]["round"])            
+            self.geometricData[blob.id]["perimeter"] = round(blob.perimeter * pxmm, self.properties["perimeter"]["round"])
             self.geometricData[blob.id]["solidity"] = round(blobMeasure[0].solidity, self.properties["solidity"]["round"])
             # convex hull
-            self.geometricData[blob.id]["areaConvex"] = round(blobMeasure[0].area_convex, self.properties["areaConvex"]["round"])
+            self.geometricData[blob.id]["areaConvex"] = round(blobMeasure[0].area_convex * pxmm2, self.properties["areaConvex"]["round"])
             # bbox fit
-            self.geometricData[blob.id]["areaBox"] = round(blobMeasure[0].area_bbox, self.properties["areaBox"]["round"])
-            self.geometricData[blob.id]["widthBox"] = round(blobMeasure[0].bbox[3] - blobMeasure[0].bbox[1], self.properties["widthBox"]["round"]) #warning: bbox is in (min_row, min_col, max_row, max_col) format
-            self.geometricData[blob.id]["heightBox"] = round(blobMeasure[0].bbox[2] - blobMeasure[0].bbox[0], self.properties["heightBox"]["round"]) #warning: bbox is in (min_row, min_col, max_row, max_col) format
+            self.geometricData[blob.id]["areaBox"] = round(blobMeasure[0].area_bbox * pxmm2, self.properties["areaBox"]["round"])
+            self.geometricData[blob.id]["widthBox"] = round((blobMeasure[0].bbox[3] - blobMeasure[0].bbox[1]) * pxmm, self.properties["widthBox"]["round"]) #warning: bbox is in (min_row, min_col, max_row, max_col) format
+            self.geometricData[blob.id]["heightBox"] = round((blobMeasure[0].bbox[2] - blobMeasure[0].bbox[0]) * pxmm, self.properties["heightBox"]["round"]) #warning: bbox is in (min_row, min_col, max_row, max_col) format
             #ellipse fit
             self.geometricData[blob.id]["eccentricity"] = round(blobMeasure[0].eccentricity, self.properties["eccentricity"]["round"])
             self.geometricData[blob.id]["orientation"] = round((blobMeasure[0].orientation * 180 / math.pi), self.properties["orientation"]["round"])
-            self.geometricData[blob.id]["major_axis_length"] = round(blobMeasure[0].major_axis_length, self.properties["major_axis_length"]["round"])
-            self.geometricData[blob.id]["minor_axis_length"] = round(blobMeasure[0].minor_axis_length, self.properties["minor_axis_length"]["round"])
+            self.geometricData[blob.id]["major_axis_length"] = round(blobMeasure[0].major_axis_length * pxmm, self.properties["major_axis_length"]["round"])
+            self.geometricData[blob.id]["minor_axis_length"] = round(blobMeasure[0].minor_axis_length * pxmm, self.properties["minor_axis_length"]["round"])
             # rectangle fit
             
 
@@ -264,11 +281,11 @@ class QtGeometricInfoWidget(QWidget):
                 }
             else:
                 self.geometricStats[key] = {
-                    "min": 0,
-                    "max": 0,
-                    "average": 0,
-                    "std": 0,
-                    "median": 0
+                    "min": "-",
+                    "max": "-",
+                    "average": "-",
+                    "std": "-",
+                    "median": "-"
                 }                
         return
 
