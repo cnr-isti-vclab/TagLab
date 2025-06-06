@@ -76,7 +76,7 @@ class QtGeometricInfoWidget(QWidget):
         self.stats_table.setHorizontalHeaderLabels(headerLabels)
         #setting tooltip for headers
         for i, prop in enumerate(self.properties):
-            self.stats_table.horizontalHeaderItem(1).setToolTip(self.properties[prop]["name"])        
+            self.stats_table.horizontalHeaderItem(i).setToolTip(self.properties[prop]["name"])        
         self.stats_table.setVerticalHeaderLabels(["MIN", "MAX", "AVG", "STD", "MED"])
         self.stats_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.stats_table.setSelectionMode(QTableWidget.NoSelection)
