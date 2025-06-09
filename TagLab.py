@@ -339,6 +339,12 @@ class TagLab(QMainWindow):
         self.createNegative = self.newAction("Create a Background Region using the WA", "N", self.createNegative)
         self.computeGeometricInfo = self.newAction("Compute Geometric Info", None, self.computeGeometricInfo)
 
+        # SELECTION ACTIONS
+        self.selectAllAction           = self.newAction("Select All",                "Ctrl+A", self.selectAll)
+        self.selectNoneAction          = self.newAction("Select None",               "Ctrl+D", self.selectNone)
+        self.selectInvertAction        = self.newAction("Invert Selection",          "Ctrl+I", self.selectInvert)
+        self.selectByClassAction       = self.newAction("Select by Class",           "",       self.selectByClass)
+        self.selectByWorkingAreaAction = self.newAction("Select by Working Area",    "",       self.selectByWorkingArea)
 
         # VIEWERPLUS
 
@@ -654,6 +660,7 @@ class TagLab(QMainWindow):
         self.submenuWorkingArea = None
         self.submenuExport = None
         self.submenuImport = None
+        self.selectmenu = None
         self.regionmenu = None
         self.comparemenu = None
         self.demmenu = None
@@ -1195,6 +1202,18 @@ class TagLab(QMainWindow):
         self.projectmenu.addAction(createDicAct)
         self.projectmenu.addSeparator()
         self.projectmenu.addAction(regionAttributesAct)
+
+        ###### SELECT MENU
+        self.selectmenu = menubar.addMenu("&Select")
+        self.selectmenu.setStyleSheet(styleMenu)
+        self.selectmenu.addAction(self.selectAllAction)
+        self.selectmenu.addAction(self.selectNoneAction)
+        self.selectmenu.addAction(self.selectInvertAction)
+        self.selectmenu.addSeparator()
+        self.selectmenu.addAction(self.selectByClassAction)
+        #self.selectmenu.addAction(self.selectByAttributeAction)
+        self.selectmenu.addAction(self.selectByWorkingAreaAction)
+        self.selectmenu.addSeparator()
 
         ###### REGIONS MENU
 
@@ -2888,6 +2907,63 @@ class TagLab(QMainWindow):
             self.activeviewer.tools.edit_points.reset()
             self.activeviewer.deleteSelectedBlobs()
             logfile.info("[OP-DELETE] Selected blobs has been DELETED")
+
+    #SELECTION
+    def selectAll(self):
+        """
+        Select all blobs in the active viewer.
+        """
+        view = self.activeviewer
+        if view is None:
+            return
+        view.selectAllBlobs()
+        logfile.info("[OP-SELECT] All blobs have been selected.")
+
+    def selectNone(self):
+        """
+        Deselect all blobs in the active viewer.
+        """
+        view = self.activeviewer
+        if view is None:
+            return
+        view.selectNoneBlobs()
+        logfile.info("[OP-SELECT] All blobs have been deselected.")
+
+    def selectInvert(self):
+        """
+        Invert the selection of blobs in the active viewer.
+        """
+        view = self.activeviewer
+        if view is None:
+            return
+        view.selectInverseBlobs()
+        logfile.info("[OP-SELECT] Selection has been inverted.")
+
+    def selectByClass(self):
+        """
+        Select blobs by class.
+        """
+        view = self.activeviewer
+        if view is None:
+            return
+        label_name = self.labels_widget.getActiveLabelName()
+        if label_name is None:
+            return
+        view.selectByClass(label_name)
+        logfile.info("[OP-SELECT] Blobs of class '" + label_name + "' have been selected.")
+
+    def selectByWorkingArea(self):
+        """
+        Select blobs by working area.
+        """
+        view = self.activeviewer
+        if view is None:
+            return
+        wa = self.project.working_area
+        if wa is None:
+            return
+        view.selectByWorkingArea(wa)
+        logfile.info("[OP-SELECT] Blobs in the working area have been selected.")
 
     #OPERATIONS
 

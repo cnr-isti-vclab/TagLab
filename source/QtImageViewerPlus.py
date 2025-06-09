@@ -34,6 +34,7 @@ from source.Point import Point
 from source.Annotation import Blob
 from source.Tools import Tools
 from source.Label import Label
+import source.Mask as Mask
 
 from source.QtImageViewer import QtImageViewer
 
@@ -1323,46 +1324,134 @@ class QtImageViewerPlus(QtImageViewer):
 
 
 #SELECTED BLOBS MANAGEMENT
+    def selectAllBlobs(self, redraw=True):
+        """
+        Select all the blobs in the current image.
+        """
+        for blob in self.image.annotations.seg_blobs:        
+            if blob not in self.selected_blobs:
+                self.selected_blobs.append(blob)
+                self.updateBlobQPath(blob, True)
 
-    def selectAllBlobs(self):
+        if redraw:
+            self.scene.invalidate()
+        self.selectionChanged.emit()
 
-        self.resetSelection()
+    def selectNoneBlobs(self, redraw=True):
+        """
+        Deselect all the selected blobs.
+        """
+        for blob in self.selected_blobs:
+            self.updateBlobQPath(blob, False)
+        self.selected_blobs.clear()
+
+        if redraw:
+            self.scene.invalidate()
+        self.selectionChanged.emit()
+
+    def selectInverseBlobs(self, redraw=True):
+        """
+        Inverse the selection of blobs.
+        """
         for blob in self.image.annotations.seg_blobs:
-            self.addToSelectedList(blob, redraw=False)
+            if blob in self.selected_blobs:
+                self.selected_blobs.remove(blob)
+                self.updateBlobQPath(blob, False)
+            else:
+                self.selected_blobs.append(blob)
+                self.updateBlobQPath(blob, True)
 
-        self.scene.invalidate()
+        if redraw:
+            self.scene.invalidate()
+        self.selectionChanged.emit()
+
+    def selectByClass(self, class_name, redraw=True):
+        """
+        Select all the blobs of the given class.
+        """
+        for blob in self.image.annotations.seg_blobs:
+            if blob.class_name == class_name:
+                if blob not in self.selected_blobs:
+                    self.selected_blobs.append(blob)
+                    self.updateBlobQPath(blob, True)
+
+        if redraw:
+            self.scene.invalidate()
+        self.selectionChanged.emit()
+
+    def selectByWorkingArea(self, wa, redraw=True):
+        """
+        Select all the blobs that are inside the working area.
+        """
+        for blob in self.selected_blobs:
+            self.updateBlobQPath(blob, False)
+        self.selected_blobs.clear()        
+        for blob in self.image.annotations.seg_blobs:
+            if Mask.checkIntersection(wa, blob.bbox):
+                if blob not in self.selected_blobs:
+                    self.selected_blobs.append(blob)
+                    self.updateBlobQPath(blob, True)
+
+        if redraw:
+            self.scene.invalidate()
+        self.selectionChanged.emit()
 
     def addToSelectedList(self, blob, redraw=True):
         """
         Add the given blob to the list of selected blob.
         """
-
-        if blob in self.selected_blobs:
-            self.logfile.info("[SELECTION] An already selected blob has been added to the current selection.")
-        else:
+        if blob not in self.selected_blobs:
             self.selected_blobs.append(blob)
-            str = "[SELECTION] A new blob (" + blob.blob_name + ";" + blob.class_name + ") has been selected."
-            self.logfile.info(str)
 
-        if blob.qpath_gitem is not None:
-            blob.qpath_gitem.setPen(self.border_selected_pen)
-            blob.qpath_gitem.setZValue(3)
-            blob.id_item.setZValue(4)
-            blob.id_item.setOpacity(1.0)
-        else:
-            print("blob qpath_qitem is None!")
+        self.updateBlobQPath(blob, True)
 
         if redraw:
             self.scene.invalidate()
-
         self.selectionChanged.emit()
 
+    def removeFromSelectedList(self, blob, redraw=True):
+        """
+        Remove the given blob from the list of selected blobs.
+        """
+        try:
+            # safer if iterating over selected_blobs and calling this function.
+            self.selected_blobs = [x for x in self.selected_blobs if not x == blob]
+            self.updateBlobQPath(blob, False)
+
+            if redraw:
+                self.scene.invalidate()
+            self.selectionChanged.emit()
+
+        except Exception as e:
+            print("Exception: e", e)
+            pass
+
+    def updateBlobQPath(self, blob, selected=True):
+        """
+        updates the the blob qpath graphic item to show its selection status.
+        """
+        if blob.qpath_gitem is not None:
+            if selected:
+                blob.qpath_gitem.setPen(self.border_selected_pen)
+                blob.qpath_gitem.setZValue(3)
+                blob.id_item.setZValue(4)
+                blob.id_item.setOpacity(1.0)
+            else:
+                if self.border_enabled is True:
+                    blob.qpath_gitem.setPen(self.border_pen)
+                else:
+                    blob.qpath_gitem.setPen(QPen(Qt.NoPen))
+                blob.qpath_gitem.setZValue(1)
+                blob.id_item.setZValue(2)
+                blob.id_item.setOpacity(0.7)
+
+
+#SELECTED POINTS MANAGEMENT
 
     def addToSelectedPointList(self, annpoint, redraw=True):
         """
-        Add the given blob to the list of selected blob.
+        Add the given blob to the list of selected points.
         """
-
         if annpoint in self.selected_annpoints:
             self.logfile.info("[SELECTION] An already selected blob has been added to the current selection.")
         else:
@@ -1389,35 +1478,12 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.selectionChanged.emit()
 
-
-    def removeFromSelectedList(self, blob, redraw=True):
-        try:
-            # safer if iterating over selected_blobs and calling this function.
-            self.selected_blobs = [x for x in self.selected_blobs if not x == blob]
-
-            if blob.qpath_gitem is not None:
-                if self.border_enabled is True:
-                    blob.qpath_gitem.setPen(self.border_pen)
-                else:
-                    blob.qpath_gitem.setPen(QPen(Qt.NoPen))
-
-                blob.qpath_gitem.setZValue(1)
-                blob.id_item.setZValue(2)
-                blob.id_item.setOpacity(0.7)
-
-            if redraw:
-                self.scene.invalidate()
-
-
-        except Exception as e:
-            print("Exception: e", e)
-            pass
-        self.selectionChanged.emit()
-
-
     def removeFromSelectedPointList(self, annpoint, redraw=True):
-
+        """
+        Remove the given blob from the list of selected points.
+        """
         try:
+            # safer if iterating over selected_annpoints and calling this function.            
             self.selected_annpoints = [x for x in self.selected_annpoints if not x == annpoint]
 
             if annpoint.cross1_gitem is not None:
@@ -1440,18 +1506,11 @@ class QtImageViewerPlus(QtImageViewer):
             pass
         self.selectionChanged.emit()
 
-    def resizeEvent(self, event):
-        """ Maintain current zoom on resize.
-        """
-        if self.imgheight:
-            self.ZOOM_FACTOR_MIN = min(1.0 * self.width() / self.imgwidth, 1.0 * self.height() / self.imgheight)
-        self.updateScaleBar(self.zoom_factor)
-        self.updateViewer()
-
-        event.accept()
-
+#RESET SELECTION
     def resetSelection(self):
-
+        """
+        Reset the selection of blobs and points.
+        """
         for blob in self.selected_blobs:
             if blob.qpath_gitem is None:
                 print("Selected item with no path!")
@@ -1460,22 +1519,18 @@ class QtImageViewerPlus(QtImageViewer):
                     blob.qpath_gitem.setPen(self.border_pen)
                 else:
                     blob.qpath_gitem.setPen(QPen(Qt.NoPen))
-
                 blob.qpath_gitem.setZValue(1)
                 blob.id_item.setZValue(2)
                 blob.id_item.setOpacity(0.7)
-
 
         for annpoint in self.selected_annpoints:
             if annpoint.cross1_gitem is not None:
                 annpoint.cross1_gitem.setPen(self.annpoints_pen)
                 annpoint.cross2_gitem.setPen(self.annpoints_pen)
                 annpoint.ellipse_gitem.setPen(self.annpoints_pen)
-
                 annpoint.cross1_gitem.setZValue(1)
                 annpoint.cross2_gitem.setZValue(1)
                 annpoint.ellipse_gitem.setZValue(1)
-
                 annpoint.id_item.setZValue(2)
                 annpoint.id_item.setOpacity(0.7)
 
@@ -1483,26 +1538,22 @@ class QtImageViewerPlus(QtImageViewer):
             self.selected_sampling_area = None
             self.drawSamplingAreas()
 
-
         self.selected_blobs.clear()
         self.selected_annpoints.clear()
-        self.scene.invalidate(self.scene.sceneRect())
+        self.scene.invalidate()
         self.selectionChanged.emit()
         self.selectionReset.emit()
 
-
-#CREATION and DESTRUCTION of BLOBS
+#CREATION and DESTRUCTION of BLOBS / ANNOTATION POINTS
     def addBlob(self, blob_or_point, selected=False, redraw=True):
         """
         The only function to add annotations. will take care of undo and QGraphicItems.
         """
-
         if type(blob_or_point) == Point:
             self.drawPointAnn(blob_or_point)
             if selected:
                 self.addToSelectedPointList(blob_or_point, redraw=False)
                 self.project.addPoint(self.image,blob_or_point)
-
         else:
             self.undo_data.addBlob(blob_or_point)
             self.project.addBlob(self.image, blob_or_point)
@@ -1521,7 +1572,6 @@ class QtImageViewerPlus(QtImageViewer):
             self.scene.invalidate()
 
     def removeBlobs(self, blobs):
-
         for blob in blobs:
             self.removeFromSelectedList(blob, redraw=False)
             self.undrawBlob(blob, redraw=False)
@@ -1531,7 +1581,6 @@ class QtImageViewerPlus(QtImageViewer):
         self.scene.invalidate()
 
     def removePoints(self, points):
-
         for point in points:
             self.removeFromSelectedPointList(point, redraw=False)
             self.undrawAnnPoint(point, redraw=False)
@@ -1736,6 +1785,18 @@ class QtImageViewerPlus(QtImageViewer):
             blob.qpath_gitem.setBrush(brush)
 
         self.updateVisibility()
+
+
+    def resizeEvent(self, event):
+        """
+        Maintain current zoom on resize.
+        """
+        if self.imgheight:
+            self.ZOOM_FACTOR_MIN = min(1.0 * self.width() / self.imgwidth, 1.0 * self.height() / self.imgheight)
+        self.updateScaleBar(self.zoom_factor)
+        self.updateViewer()
+        event.accept()
+
 
     @pyqtSlot(str)
     def logMessage(self, message):
