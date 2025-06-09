@@ -1260,6 +1260,7 @@ class RowsWidget(QWidget):
         file_path = options["path"]
         export_angles = options.get("export_angles", False)
         export_mask = options.get("export_mask", False)
+        export_mask_as_blob = options.get("export_mask_as_blob", False)
         export_lines = options.get("export_lines", False)
         export_blobs = options.get("export_blobs", False)
         export_skeleton = options.get("export_skeleton", False)
@@ -1269,6 +1270,10 @@ class RowsWidget(QWidget):
 
         export_success = False
 
+        if export_mask_as_blob and self.parent_viewer:
+            # Export the mask as a blob using the parent viewer method
+            self.parent_viewer.exportMaskAsBlob(self.masch, offset=self.off, class_name="Empty")
+        
         if export_angles and hasattr(self, "lines"):
             angles_filename = f"{file_path}_angles.csv"
             with open(angles_filename, "w") as file:

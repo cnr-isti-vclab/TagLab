@@ -42,6 +42,8 @@ from source.genutils import distance_point_AABB
 
 import math
 import time
+from skimage import measure
+
 
 #note on ZValue:
 # 0: image
@@ -1813,3 +1815,32 @@ class QtImageViewerPlus(QtImageViewer):
         self.logfile.info(message1)
         self.logfile.info(message2)
         self.logfile.info(message3)
+
+    def exportMaskAsBlob(self, mask, offset=(0, 0), class_name="Empty"):
+        #Export a binary mask as a Blob and add it to the current image's annotations.
+        #:param mask: 2D numpy array (binary mask)
+        #:param offset: (x, y) offset to place the blob in global coordinates
+        #:param class_name: class name to assign to the blob
+        
+        # Label connected regions in the mask
+        labeled_mask = measure.label(mask)
+        regions = measure.regionprops(labeled_mask)
+
+        added_blobs = []
+        for region in regions:
+            # Assign a new unique ID (e.g., max existing + 1)
+            if hasattr(self.image, "annotations") and hasattr(self.image.annotations, "seg_blobs"):
+                existing_ids = [b.id for b in self.image.annotations.seg_blobs]
+                new_id = max(existing_ids, default=0) + 1
+            else:
+                new_id = 1
+
+            blob = Blob(region, offset[0], offset[1], new_id)
+            blob.class_name = class_name
+            # Add to annotations
+            self.image.annotations.seg_blobs.append(blob)
+            # self.drawBlob(blob)
+            self.addBlob(blob, selected=False, redraw=False)
+            added_blobs.append(blob)
+
+        return added_blobs

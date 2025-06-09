@@ -1,4 +1,5 @@
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QFileDialog, QComboBox
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, \
+                            QCheckBox, QFileDialog, QComboBox, QFrame
 # from PyQt5.QtCore import Qt
 import ezdxf 
 from skimage import measure
@@ -40,9 +41,11 @@ class ExportDialog(QDialog):
         format_layout.setSpacing(10)
         
         # Export options
-        self.angle_checkbox = QCheckBox("Export Angles")
+        self.angle_checkbox = QCheckBox("Export Slopes (in .csv format)")
         
         self.mask_checkbox = QCheckBox("Export Mask")
+
+        self.mask_as_blob_checkbox = QCheckBox("Draw Mask as Blob")
 
         self.line_checkbox = QCheckBox("Export Lines")
 
@@ -54,14 +57,38 @@ class ExportDialog(QDialog):
         
         self.edges_checkbox = QCheckBox("Export Edges")
 
-        layout.addWidget(self.angle_checkbox)
+        
         layout.addWidget(self.mask_checkbox)
+        
         layout.addWidget(self.line_checkbox)
         layout.addWidget(self.blob_checkbox)
         layout.addWidget(self.skeleton_checkbox)
         layout.addWidget(self.branch_points_checkbox)
         layout.addWidget(self.edges_checkbox)
 
+        # Separator
+        line1 = QFrame()
+        line1.setFrameShape(QFrame.HLine)
+        line1.setFrameShadow(QFrame.Sunken)
+        layout.addWidget(line1)
+
+        layout.addWidget(self.angle_checkbox)
+
+        # Separator
+        line2 = QFrame()
+        line2.setFrameShape(QFrame.HLine)
+        line2.setFrameShadow(QFrame.Sunken)
+        layout.addWidget(line2)
+        
+        layout.addWidget(self.mask_as_blob_checkbox)
+
+        # Separator
+        line3 = QFrame()
+        line3.setFrameShape(QFrame.HLine)
+        line3.setFrameShadow(QFrame.Sunken)
+        line3.setLineWidth(5)
+        layout.addWidget(line3)
+        
         # Buttons
         button_layout = QHBoxLayout()
         self.ok_button = QPushButton("OK")
@@ -278,6 +305,7 @@ class ExportDialog(QDialog):
             "format": self.format_combo.currentText(),
             "export_angles": self.angle_checkbox.isChecked(),
             "export_mask": self.mask_checkbox.isChecked(),
+            "export_mask_as_blob": self.mask_as_blob_checkbox.isChecked(),
             "export_lines": self.line_checkbox.isChecked(),
             "export_blobs": self.blob_checkbox.isChecked(),
             "export_skeleton": self.skeleton_checkbox.isChecked(),
