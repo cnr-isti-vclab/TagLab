@@ -47,8 +47,7 @@ class RowsWidget(QWidget):
         # i = 0
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        if screen_size is not None:
-            
+        if screen_size is not None:   
             width = int(screen_size.width() * 0.9)
             height = int(screen_size.height()* 0.9)
             self.setMinimumSize(width, height)
@@ -296,47 +295,58 @@ class RowsWidget(QWidget):
 
         self.structuring_element_size = self.slider.value()
 
-        # Create a horizontal layout to center the button
+        # buttons for data processing
         data_button_layout = QHBoxLayout()
+        self.btnCompute = QPushButton("Compute")
+        self.btnCompute.clicked.connect(self.computeRows)
+        data_button_layout.setAlignment(Qt.AlignLeft)
+        data_button_layout.addWidget(self.btnCompute)
+        data_button_layout.addStretch()
 
+        #buttons for output
+        output_button_layout = QHBoxLayout()
+        self.btnBlob = QPushButton("Add mask as region to project")
+        self.btnBlob.clicked.connect(self.addMaskToProject)
+        self.btnBlob.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.btnBlob.setEnabled(False)
+        self.btnBlob.setToolTip("Add the mask as a region to the project, so it can be used in other analyses.")
         self.btnExport = QPushButton("Export Data")
         self.btnExport.clicked.connect(self.exportData)
-        # self.btnExport.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)  # Make button expand horizontally
-        # self.btnExport.setFixedWidth(1440//2)
-           
-        self.btnCompute = QPushButton("Compute")
-        self.btnCompute.clicked.connect(self.applyHough)
-        
-        data_button_layout.addWidget(self.btnCompute)
-        data_button_layout.addWidget(self.btnExport)
+        self.btnExport.setEnabled(False)
+        output_button_layout.addWidget(self.btnBlob)
+        output_button_layout.addWidget(self.btnExport)
+        output_button_layout.setAlignment(Qt.AlignLeft)
 
-        #Create the layout
-        layout = QVBoxLayout()
-
-        layout.setSpacing(10)
-
-        layout.addLayout(viewers_layout) 
-        layout.addLayout(textbox_layout, stretch=1)    
-        layout.addLayout(slider_layout)
-
-        layout.setSpacing(10)
-
-
-        # Add the horizontal layout to the main layout
-        layout.addLayout(data_button_layout)
-        
-        # button_layout = QHBoxLayout()
-        
-        # Add a separator line for visual separation
+        # separator line for visual separation
         separator = QLabel()
         separator.setFixedHeight(3)
         separator.setStyleSheet("background-color: #666; margin-top: 10px; margin-bottom: 10px;")
-        layout.addWidget(separator)
 
+        # bottom row buttons
+        bottom_layout = QHBoxLayout()
         self.btnClose = QPushButton("Close")
         self.btnClose.clicked.connect(self.closeWidget)
-        layout.addWidget(self.btnClose)
-        # layout.addLayout(button_layout)
+        bottom_layout.setAlignment(Qt.AlignRight)
+        bottom_layout.addStretch()
+        bottom_layout.addWidget(self.btnClose)
+
+        ##########################################################################################################################
+        #Create the full window layout and assemble the widgets
+        layout = QVBoxLayout()
+
+        layout.setSpacing(10)
+        # Add the viewers layout to the main layout
+        layout.addLayout(viewers_layout) 
+        layout.addLayout(textbox_layout, stretch=1)    
+        layout.addLayout(slider_layout)
+        layout.setSpacing(10)
+        # Add the button rows
+        layout.addLayout(data_button_layout)
+        layout.addLayout(output_button_layout)
+        # separator line
+        layout.addWidget(separator)
+        # Add the bottom layout with the close button
+        layout.addLayout(bottom_layout)
 
         # self.line_viewer.setImg(self.image_cropped)
         # self.skel_viewer.setImg(self.image_cropped)
@@ -350,9 +360,13 @@ class RowsWidget(QWidget):
         else:
             self.slider_label.setText(f"Joint Thickness (px): {((value-1)//2)}")
             
-    def applyHough(self):
+    def computeRows(self):
         if self.set_textbox == True:
             self.resetAngleTextBox()
+
+        # enable export buttons
+        self.btnBlob.setEnabled(True)
+        self.btnExport.setEnabled(True)
 
         _, self.masch = self.maskGrow(self.maschera, self.structuring_element_size)
         # self.houghTansformation(final_mask)
@@ -1221,10 +1235,13 @@ class RowsWidget(QWidget):
 
     #####EXPORT METHODS#####
 
-    def exportData(self):
-        
-        # Unified export function for both line and skeleton data.
+    def addMaskToProject(self):
+        if self.parent_viewer:
+            self.parent_viewer.exportMaskAsBlob(self.masch, offset=self.off, class_name="Empty")
+        return
 
+    # Unified export function for both line and skeleton data.
+    def exportData(self):
         dialog = ExportDialog(self)
         # Show all checkboxes and options
         dialog.angle_checkbox.show()
@@ -1260,19 +1277,14 @@ class RowsWidget(QWidget):
         file_path = options["path"]
         export_angles = options.get("export_angles", False)
         export_mask = options.get("export_mask", False)
-        export_mask_as_blob = options.get("export_mask_as_blob", False)
         export_lines = options.get("export_lines", False)
         export_blobs = options.get("export_blobs", False)
         export_skeleton = options.get("export_skeleton", False)
         export_branch_points = options.get("export_branch_points", False)
         export_edges = options.get("export_edges", False)
         export_format = options.get("format", "")
-
         export_success = False
 
-        if export_mask_as_blob and self.parent_viewer:
-            # Export the mask as a blob using the parent viewer method
-            self.parent_viewer.exportMaskAsBlob(self.masch, offset=self.off, class_name="Empty")
         
         if export_angles and hasattr(self, "lines"):
             angles_filename = f"{file_path}_angles.csv"

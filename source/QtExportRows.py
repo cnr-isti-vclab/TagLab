@@ -45,8 +45,6 @@ class ExportDialog(QDialog):
         
         self.mask_checkbox = QCheckBox("Export Mask")
 
-        self.mask_as_blob_checkbox = QCheckBox("Draw Mask as Blob")
-
         self.line_checkbox = QCheckBox("Export Lines")
 
         self.blob_checkbox = QCheckBox("Export Blobs")
@@ -79,8 +77,6 @@ class ExportDialog(QDialog):
         line2.setFrameShape(QFrame.HLine)
         line2.setFrameShadow(QFrame.Sunken)
         layout.addWidget(line2)
-        
-        layout.addWidget(self.mask_as_blob_checkbox)
 
         # Separator
         line3 = QFrame()
@@ -305,7 +301,6 @@ class ExportDialog(QDialog):
             "format": self.format_combo.currentText(),
             "export_angles": self.angle_checkbox.isChecked(),
             "export_mask": self.mask_checkbox.isChecked(),
-            "export_mask_as_blob": self.mask_as_blob_checkbox.isChecked(),
             "export_lines": self.line_checkbox.isChecked(),
             "export_blobs": self.blob_checkbox.isChecked(),
             "export_skeleton": self.skeleton_checkbox.isChecked(),
