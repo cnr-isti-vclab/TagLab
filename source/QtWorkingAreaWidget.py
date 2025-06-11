@@ -100,7 +100,6 @@ class QtWorkingAreaWidget(QWidget):
 
         layout_edits_m = QVBoxLayout()
         layout_edits_m.addWidget(QLabel("Coordinates (meters):"))
-        layout_edits_m.addSpacing(10)
         layout_edits_m.addLayout(layout_h1_m)
         layout_edits_m.addLayout(layout_h2_m)
 
@@ -156,23 +155,39 @@ class QtWorkingAreaWidget(QWidget):
 
         layout_edits = QVBoxLayout()
         layout_edits.addWidget(QLabel("Coordinates (pixels):"))
-        layout_edits.addSpacing(10)
         layout_edits.addLayout(layout_h1)
         layout_edits.addLayout(layout_h2)
 
+
+        # add label with extent
+        self.label_extent = QLabel("WA extent:")
+
         # Create a vertical layout for both meters and pixels
         layout_main_vert = QVBoxLayout()
+        
         layout_main_vert.addLayout(layout_edits_m)
-        layout_main_vert.addLayout(layout_edits)
+        separator1 = QLabel()
+        separator1.setStyleSheet("QLabel { border-bottom: 1px solid rgb(80,80,80); padding: 1px; margin: 1px; }")
+        layout_main_vert.addWidget(separator1)
 
+        layout_main_vert.addLayout(layout_edits)
+        separator2 = QLabel()
+        separator2.setStyleSheet("QLabel { border-bottom: 1px solid rgb(80,80,80); padding: 1px; margin: 1px; }")
+        layout_main_vert.addWidget(separator2)
+
+        layout_main_vert.addWidget(self.label_extent)
+        separator3 = QLabel()
+        separator3.setStyleSheet("QLabel { border-bottom: 1px solid rgb(80,80,80); padding: 1px; margin: 1px; }")
+        layout_main_vert.addWidget(separator3)
+
+
+        # choose / Cancel / Apply buttons
+        buttons_layout = QHBoxLayout()
         self.btnChooseArea = QPushButton()
         self.btnChooseArea.setFixedWidth(32)
         self.btnChooseArea.setFixedHeight(32)
         ChooseAreaIcon = QIcon("icons\\select_area.png")
         self.btnChooseArea.setIcon(ChooseAreaIcon)
-
-        # Cancel / Apply buttons
-        buttons_layout = QHBoxLayout()
         self.btnDelete = QPushButton("Delete")
         self.btnCancel = QPushButton("Cancel")
         self.btnApply = QPushButton("Set")
@@ -226,6 +241,9 @@ class QtWorkingAreaWidget(QWidget):
             self.edit_X_m.setText("")
             self.edit_W_m.setText("")
             self.edit_H_m.setText("")
+
+        extent_text = f"WA extent: {round(w * h, 0)} (pix^2)   {round((w * scale_factor_m_per_px) * (h * scale_factor_m_per_px), 3)} (m^2)"
+        self.label_extent.setText(extent_text)
 
     @pyqtSlot(str)
     def notifyAreaChanged(self, txt):
