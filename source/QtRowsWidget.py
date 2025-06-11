@@ -3,6 +3,7 @@ import sys
 import numpy as np
 # import cv2
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QSizePolicy, QTextEdit, QLineEdit, QSlider, QMenu, QCheckBox, QMenuBar, QAction, QDialog
 from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen, QColor, QBrush, QPolygonF
@@ -19,7 +20,7 @@ from skimage.graph import route_through_array
 import networkx as nx
 
 # from scipy.interpolate import interp1d
-from scipy.ndimage import binary_dilation, binary_erosion, convolve
+from scipy.ndimage import binary_dilation, binary_erosion, distance_transform_edt, convolve
 
 # from skimage import measure, morphology, io, color
 from skimage.draw import line
@@ -79,6 +80,8 @@ class RowsWidget(QWidget):
         self.blob_image = None
         self.image_overlay = None
         self.skeleton = None
+        self.thickness = None
+        self.thickness_image = None
         self.branch_points =  []
         self.edges = []
 
@@ -106,10 +109,14 @@ class RowsWidget(QWidget):
 
         # Create checkable actions for the mask and lines
         self.actionShowMask = QAction("Show Mask", self)
-        
         self.actionShowMask.setCheckable(False)
         self.actionShowMask.toggled.connect(self.toggleShowMask)
         self.mask_checked = False
+
+        self.actionShowThickness = QAction("Show Thickness Map", self)
+        self.actionShowThickness.setCheckable(False)
+        self.actionShowThickness.toggled.connect(self.toggleShowThickness)
+        self.thickness_checked = False
 
         self.actionShowBlobs = QAction("Show Blobs", self)
         self.actionShowBlobs.setCheckable(False)
@@ -117,7 +124,6 @@ class RowsWidget(QWidget):
         self.blobs_checked = False
 
         self.actionShowLines = QAction("Show Lines", self)
-        
         self.actionShowLines.setCheckable(False)
         self.actionShowLines.toggled.connect(self.toggleShowLines)
         self.line_checked = False
@@ -372,18 +378,22 @@ class RowsWidget(QWidget):
         # self.houghTansformation(final_mask)
         self.lines = self.houghTansformation(self.masch)
 
+        # i += 1
+        self.skeleton = self.applySkeletonization(self.masch)
+
+        self.thickness_image = self.thicknessMap(self.masch)
+
         self.actionShowLines.setCheckable(True)
         self.actionShowMask.setCheckable(True)
+        self.actionShowThickness.setCheckable(True)
         self.actionShowBlobs.setCheckable(True)
 
         self.line_checked = True
         self.actionShowLines.setChecked(True)
         self.mask_checked = True
         self.actionShowMask.setChecked(True)
-        self.toggleMaskLines(self.line_checked, self.mask_checked, self.blobs_checked)
+        self.toggleMaskLines(self.line_checked, self.mask_checked, self.thickness_checked, self.blobs_checked)
 
-        # i += 1
-        self.skeleton = self.applySkeletonization(self.masch)
         
         # Get row_distance from  BrickDistBox
         try:
@@ -741,8 +751,70 @@ class RowsWidget(QWidget):
         # plt.title('Skeletonized Mask')
         # plt.savefig("skeletonized_mask.png", bbox_inches='tight', pad_inches=0)
         # plt.close()
-
         return skeleton
+
+    def thicknessMap(self, mask):
+
+        # Method to get a thickness map from mask
+        dist = distance_transform_edt(mask)
+        
+        # plt.figure(figsize=(10, 5))
+        # # plt.subplot(1, 2, 2)
+        # plt.title("Distance Transform")
+        # plt.imshow(dist, cmap='viridis')
+        # plt.colorbar()
+        # plt.savefig("dist.png", bbox_inches='tight', pad_inches=0)
+        # plt.close()
+
+        thickness = dist * 2
+        # mean_thickness = np.mean(thickness_along_skel)
+        # print(f"Mean thickness along skeleton: {mean_thickness:.2f} pixels")
+
+        if thickness.max() > 0:
+            norm = thickness / thickness.max()
+            norm = np.power(norm, 0.5)
+        else:
+            norm = (thickness * 0)
+
+        # Create QImage from numpy array
+        h, w = thickness.shape
+        thickness_img = QImage(w, h, QImage.Format_RGB32)
+
+        cmap = cm.get_cmap('viridis')
+
+        for y in range(h):
+            for x in range(w):
+                if mask[y, x]:
+                    v = norm[y, x]
+                    
+                    # Colormap with green gradient (very flat)
+                    # r = 0
+                    # g = int(255 - 255 * v)
+                    # g = max(0, min(255, g))
+                    # b = 0
+
+                    # Colormap with viridis gradient of matplotlib
+                    r_f, g_f, b_f, _ = cmap(v)
+                    r = int(r_f * 255)
+                    g = int(g_f * 255)
+                    b = int(b_f * 255)
+                    thickness_img.setPixelColor(x, y, QColor(r, g, b))
+                else:
+                    thickness_img.setPixelColor(x, y, QColor(0, 0, 0))  # black background
+        
+        # # Colormap in grayscale
+        # if thickness.max() > 0:
+        #     thickness_norm = (thickness / thickness.max() * 255).astype(np.uint8)
+        # else:
+        #     thickness_norm = (thickness * 0).astype(np.uint8)
+
+        # # Create QImage from numpy array
+        # h, w = thickness_norm.shape
+        # thickness_img = QImage(thickness_norm.data, w, h, w, QImage.Format_Grayscale8).copy()
+
+        # thickness_img.save("thickness_image.png", "PNG")
+
+        return thickness_img
 
     def vectorBranchPoints(self,skeleton):
 
@@ -999,6 +1071,7 @@ class RowsWidget(QWidget):
     def showMaskLinesMenu(self, position):
             menu = QMenu(self)
             menu.addAction(self.actionShowMask)
+            menu.addAction(self.actionShowThickness)
             menu.addAction(self.actionShowBlobs)
             
             # Add a separator line between actions in the context menu
@@ -1014,21 +1087,35 @@ class RowsWidget(QWidget):
         if checked:
             self.mask_checked = True
             self.blobs_checked = False
+            self.thickness_checked = False
             self.actionShowBlobs.setChecked(False)
+            self.actionShowThickness.setChecked(False)
         else:
             self.mask_checked = False
         
-        self.toggleMaskLines(self.line_checked, self.mask_checked, self.blobs_checked)
+        self.toggleMaskLines(self.line_checked, self.mask_checked, self.thickness_checked, self.blobs_checked)
 
+    def toggleShowThickness(self, checked):
+        if checked:
+            self.thickness_checked = True
+            self.mask_checked = False
+            self.blobs_checked = False
+            self.actionShowMask.setChecked(False)
+            self.actionShowBlobs.setChecked(False)
+        else:
+            self.thickness_checked = False
+        self.toggleMaskLines(self.line_checked, self.mask_checked, self.thickness_checked, self.blobs_checked)
+    
     def toggleShowBlobs(self, checked):
         if checked:
             self.blobs_checked = True
             self.mask_checked = False
             self.actionShowMask.setChecked(False)
+            self.actionShowThickness.setChecked(False)
         else:
             self.blobs_checked = False
         
-        self.toggleMaskLines(self.line_checked, self.mask_checked, self.blobs_checked)
+        self.toggleMaskLines(self.line_checked, self.mask_checked, self.thickness_checked, self.blobs_checked)
 
     def toggleShowLines(self, checked):
         if checked:
@@ -1052,9 +1139,9 @@ class RowsWidget(QWidget):
             self.resetAngleTextBox()
             self.set_textbox = False
         
-        self.toggleMaskLines(self.line_checked, self.mask_checked, self.blobs_checked)
+        self.toggleMaskLines(self.line_checked, self.mask_checked, self.thickness_checked, self.blobs_checked)
 
-    def toggleMaskLines(self, line_checked, mask_checked, blobs_checked):
+    def toggleMaskLines(self, line_checked, mask_checked, thickness_checked, blobs_checked):
         if line_checked  == True and mask_checked == True:
             qmask = genutils.maskToQImage(self.masch)
             mask_with_lines = self.paintLinesImage(qmask, self.lines)
@@ -1073,7 +1160,14 @@ class RowsWidget(QWidget):
             self.line_viewer.setOpacity(0.9)
             self.line_viewer.setOverlayImage(self.blob_image)
 
-        elif line_checked == True and mask_checked == False and blobs_checked == False:
+        elif line_checked == True and thickness_checked == True:
+            image = self.thickness_image.copy() 
+            image = image.convertToFormat(QImage.Format_ARGB32)
+            image_with_lines = self.paintLinesImage(image, self.lines)
+            self.line_viewer.setOpacity(0.7)
+            self.line_viewer.setOverlayImage(image_with_lines)
+
+        elif line_checked == True and mask_checked == False and thickness_checked == False and blobs_checked == False:
             # image = self.image_cropped.copy()
             image = QImage(self.image_cropped.size(), QImage.Format_ARGB32)
             image.fill(Qt.transparent)
@@ -1087,6 +1181,14 @@ class RowsWidget(QWidget):
             
             self.line_viewer.setOpacity(0.7)
             self.line_viewer.setOverlayImage(qmask)
+        
+        elif line_checked == False and thickness_checked == True:
+            if self.thickness_image is not None:
+                image = self.thickness_image.copy()
+                self.line_viewer.setOpacity(0.7)
+                self.line_viewer.setOverlayImage(image)
+            else:
+                print("Thickness image is not available.")
 
         elif line_checked == False and blobs_checked == True: 
             # image = self.image_cropped.copy()
