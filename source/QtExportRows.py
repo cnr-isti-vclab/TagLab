@@ -43,6 +43,8 @@ class ExportDialog(QDialog):
         # Export options
         self.angle_checkbox = QCheckBox("Export Slopes (in .csv format)")
         
+        self.thick_checkbox = QCheckBox("Export Thickness Data (in .csv format)")
+        
         self.mask_checkbox = QCheckBox("Export Mask")
 
         self.line_checkbox = QCheckBox("Export Lines")
@@ -71,6 +73,7 @@ class ExportDialog(QDialog):
         layout.addWidget(line1)
 
         layout.addWidget(self.angle_checkbox)
+        layout.addWidget(self.thick_checkbox)
 
         # Separator
         line2 = QFrame()
@@ -300,6 +303,7 @@ class ExportDialog(QDialog):
             "path": self.path_input.text(),
             "format": self.format_combo.currentText(),
             "export_angles": self.angle_checkbox.isChecked(),
+            "export_thickness": self.thick_checkbox.isChecked(),
             "export_mask": self.mask_checkbox.isChecked(),
             "export_lines": self.line_checkbox.isChecked(),
             "export_blobs": self.blob_checkbox.isChecked(),

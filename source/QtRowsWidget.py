@@ -82,6 +82,7 @@ class RowsWidget(QWidget):
         self.skeleton = None
         self.thickness = None
         self.thickness_image = None
+        self.thickness_data = []
         self.branch_points =  []
         self.edges = []
 
@@ -90,7 +91,8 @@ class RowsWidget(QWidget):
         self.centroids = []
         self.bboxes = []        
 
-        self.set_textbox = False
+        self.set_anglebox = False
+        self.set_thickbox = False
 
         #create line viewer
         line_viewer_layout = QVBoxLayout()
@@ -133,7 +135,7 @@ class RowsWidget(QWidget):
         
         lineslopes_layout = QVBoxLayout()
         
-        lineangle_label = QLabel(f"Slopes")
+        lineangle_label = QLabel(f"Data")
         
         self.angleTextBox = QTextEdit(self)
         self.angleTextBox.setReadOnly(True)
@@ -367,7 +369,7 @@ class RowsWidget(QWidget):
             self.slider_label.setText(f"Joint Thickness (px): {((value-1)//2)}")
             
     def computeRows(self):
-        if self.set_textbox == True:
+        if self.set_anglebox == True or self.set_thickbox == True:
             self.resetAngleTextBox()
 
         # enable export buttons
@@ -392,8 +394,10 @@ class RowsWidget(QWidget):
         self.actionShowLines.setChecked(True)
         self.mask_checked = True
         self.actionShowMask.setChecked(True)
+        
         self.toggleMaskLines(self.line_checked, self.mask_checked, self.thickness_checked, self.blobs_checked)
-
+        self.toggleShowLines(self.line_checked)
+        self.toggleShowMask(self.mask_checked)
         
         # Get row_distance from  BrickDistBox
         try:
@@ -473,7 +477,8 @@ class RowsWidget(QWidget):
     
     def resetAngleTextBox(self):
         self.angleTextBox.clear()
-        self.set_textbox = False
+        self.set_anglebox = False
+        self.set_thickbox = False
 
     # def updateSkelTextBox(self, angles, index, color='red'):
     #     current_text = self.skelTextBox.toHtml()
@@ -683,20 +688,6 @@ class RowsWidget(QWidget):
             lines_with_color.append(line_with_color)
 
         sorted_lines_with_color = sorted(lines_with_color, key=lambda entry: entry[0][1])
-
-        for i, (_, _, ang, color) in enumerate(sorted_lines_with_color):
-        # for i, (_, _,ang, color) in enumerate(sorted_lines_with_color):            
-            if ang < 0:
-                ang = np.pi/2 + ang  
-            else:
-                ang = ang - np.pi/2
-
-            ang_deg = np.rad2deg(ang)
-            # ang = round(ang, 4)
-            ang_deg = round(ang_deg, 4)
-
-            self.updateAngleTextBox([ang_deg], i, color=f'rgb({color[0]},{color[1]},{color[2]})')
-        self.set_textbox = True
         
         return sorted_lines_with_color
     
@@ -767,8 +758,16 @@ class RowsWidget(QWidget):
         # plt.close()
 
         thickness = dist * 2
-        # mean_thickness = np.mean(thickness_along_skel)
+
+        thickness_nonzero = thickness[mask > 0]
+        mean_thickness = np.mean(thickness_nonzero)
+        max_thickness = np.max(thickness_nonzero)
+        min_thickness = np.min(thickness_nonzero)
+        self.thickness_data = [mean_thickness, max_thickness, min_thickness]
+
+        # mean_thickness = np.mean(thickness)
         # print(f"Mean thickness along skeleton: {mean_thickness:.2f} pixels")
+        
 
         if thickness.max() > 0:
             norm = thickness / thickness.max()
@@ -815,6 +814,32 @@ class RowsWidget(QWidget):
         # thickness_img.save("thickness_image.png", "PNG")
 
         return thickness_img
+    
+    def updateThicknessTextBox(self, thickness_data, color='white'):
+        
+        #Update the angleTextBox with thickness statistics.
+
+        if self.scale:
+            thickness_data = [
+                value * float(self.scale) for value in thickness_data
+            ]
+
+        mean_thickness, max_thickness, min_thickness = thickness_data
+
+        print(f"Mean thickness: {mean_thickness:.2f}")
+        print(f"Max thickness: {max_thickness:.2f}")
+        print(f"Min thickness: {min_thickness:.2f}")
+
+        text = (
+            f'<div style="color: {color};">'
+            f"<b>Thickness Statistics:</b><br>"
+            f"Mean: {mean_thickness:.2f}<br>"
+            f"Max: {max_thickness:.2f}<br>"
+            f"Min: {min_thickness:.2f}"
+            f"</div>"
+        )
+        current_text = self.angleTextBox.toHtml()
+        self.angleTextBox.setHtml(current_text + text)
 
     def vectorBranchPoints(self,skeleton):
 
@@ -1102,8 +1127,32 @@ class RowsWidget(QWidget):
             self.blobs_checked = False
             self.actionShowMask.setChecked(False)
             self.actionShowBlobs.setChecked(False)
+
+            self.updateThicknessTextBox(self.thickness_data, color='white')
+            self.set_thickbox = True
+
         else:
             self.thickness_checked = False
+            # self.resetAngleTextBox()
+            self.set_thickbox = False
+        
+        if self.set_thickbox == False and self.set_anglebox == True:
+            self.resetAngleTextBox()
+            self.angleTextBox.setHtml('<div style="color: white;"><b>Slopes:</b></div>')
+            for i, (_, _, ang, color) in enumerate(self.lines):
+            # for i, (_, _,ang, color) in enumerate(sorted_lines_with_color):            
+                if ang < 0:
+                    ang = np.pi/2 + ang  
+                else:
+                    ang = ang - np.pi/2
+
+                ang_deg = np.rad2deg(ang)
+                # ang = round(ang, 4)
+                ang_deg = round(ang_deg, 4)
+
+                self.updateAngleTextBox([ang_deg], i, color=f'rgb({color[0]},{color[1]},{color[2]})')
+        elif self.set_anglebox == False and self.set_thickbox == False:
+            self.resetAngleTextBox()
         self.toggleMaskLines(self.line_checked, self.mask_checked, self.thickness_checked, self.blobs_checked)
     
     def toggleShowBlobs(self, checked):
@@ -1121,7 +1170,8 @@ class RowsWidget(QWidget):
         if checked:
             self.line_checked = True
 
-            if self.set_textbox == False:
+            if self.set_anglebox == False:
+                self.angleTextBox.setHtml('<div style="color: white;"><b>Slopes:</b></div>')
                 for i, (_, _, ang, color) in enumerate(self.lines):
                 # for i, (_, _,ang, color) in enumerate(sorted_lines_with_color):            
                     if ang < 0:
@@ -1134,10 +1184,19 @@ class RowsWidget(QWidget):
                     ang_deg = round(ang_deg, 4)
 
                     self.updateAngleTextBox([ang_deg], i, color=f'rgb({color[0]},{color[1]},{color[2]})')
+                    self.set_anglebox = True
         else:
             self.line_checked = False
+            # self.resetAngleTextBox()
+            self.set_anglebox = False
+
+        if self.set_anglebox == False and self.set_thickbox == True:
             self.resetAngleTextBox()
-            self.set_textbox = False
+            self.updateThicknessTextBox(self.thickness_data, color='white')
+        elif self.set_anglebox == False and self.set_thickbox == False:
+            self.resetAngleTextBox()
+            
+            
         
         self.toggleMaskLines(self.line_checked, self.mask_checked, self.thickness_checked, self.blobs_checked)
 
@@ -1378,6 +1437,7 @@ class RowsWidget(QWidget):
         options = dialog.getExportOptions()
         file_path = options["path"]
         export_angles = options.get("export_angles", False)
+        export_thickness = options.get("export_thickness", False)
         export_mask = options.get("export_mask", False)
         export_lines = options.get("export_lines", False)
         export_blobs = options.get("export_blobs", False)
@@ -1390,15 +1450,25 @@ class RowsWidget(QWidget):
         
         if export_angles and hasattr(self, "lines"):
             angles_filename = f"{file_path}_angles.csv"
-            with open(angles_filename, "w") as file:
-                file.write("Line Index,Angle (degrees)\n")
+            with open(angles_filename, "w") as angle_file:
+                angle_file.write("Line Index,Angle (degrees)\n")
                 for i, (_, _, angle, _) in enumerate(self.lines):
                     if angle < 0:
                         angle = np.pi/2 + angle  
                     else:
                         angle = angle - np.pi/2
                     angle_deg = np.rad2deg(angle)
-                    file.write(f"{i + 1},{angle_deg:.2f}\n")
+                    angle_file.write(f"{i + 1},{angle_deg:.2f}\n")
+            export_success = True
+
+        if export_thickness and hasattr(self, "thickness_image"):
+            thick_filename = f"{file_path}_thickness.csv"
+            with open(thick_filename, "w") as thick_file:
+                # writer = csv.writer(csvfile)
+                # writer.writerow(["Mean", "Max", "Min"])
+                # writer.writerow([f"{self.thickness_data[0]:.2f}", f"{self.thickness_data[1]:.2f}", f"{self.thickness_data[2]:.2f}"])
+                thick_file.write("Mean,Max,Min\n")
+                thick_file.write(f"{self.thickness_data[0]:.2f},{self.thickness_data[1]:.2f},{self.thickness_data[2]:.2f}\n")
             export_success = True
         
         # DXF export (if selected)
