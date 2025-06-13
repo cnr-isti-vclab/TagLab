@@ -823,19 +823,23 @@ class RowsWidget(QWidget):
             thickness_data = [
                 value * float(self.scale) for value in thickness_data
             ]
+            unit = "mm"
+        else:
+            unit = "px"
+
 
         mean_thickness, max_thickness, min_thickness = thickness_data
 
-        print(f"Mean thickness: {mean_thickness:.2f}")
-        print(f"Max thickness: {max_thickness:.2f}")
-        print(f"Min thickness: {min_thickness:.2f}")
+        # print(f"Mean thickness: {mean_thickness:.2f} {unit}")
+        # print(f"Max thickness: {max_thickness:.2f} {unit}")
+        # print(f"Min thickness: {min_thickness:.2f} {unit}")
 
         text = (
             f'<div style="color: {color};">'
             f"<b>Thickness Statistics:</b><br>"
-            f"Mean: {mean_thickness:.2f}<br>"
-            f"Max: {max_thickness:.2f}<br>"
-            f"Min: {min_thickness:.2f}"
+            f"Mean: {mean_thickness:.2f} {unit}<br>"
+            f"Max: {max_thickness:.2f} {unit}<br>"
+            f"Min: {min_thickness:.2f} {unit}<br>"
             f"</div>"
         )
         current_text = self.angleTextBox.toHtml()
