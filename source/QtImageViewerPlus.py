@@ -43,6 +43,7 @@ from source.genutils import distance_point_AABB
 import math
 import time
 from skimage import measure
+from skimage.morphology import binary_erosion
 
 
 #note on ZValue:
@@ -1821,7 +1822,9 @@ class QtImageViewerPlus(QtImageViewer):
         #:param mask: 2D numpy array (binary mask)
         #:param offset: (x, y) offset to place the blob in global coordinates
         #:param class_name: class name to assign to the blob
-        
+
+        mask = binary_erosion(mask)
+            
         # Label connected regions in the mask
         labeled_mask = measure.label(mask)
         regions = measure.regionprops(labeled_mask)
@@ -1835,7 +1838,7 @@ class QtImageViewerPlus(QtImageViewer):
             else:
                 new_id = 1
 
-            blob = Blob(region, offset[0], offset[1], new_id)
+            blob = Blob(region, offset[0] - 1, offset[1] - 1, new_id)
             blob.class_name = class_name
             # Add to annotations
             self.image.annotations.seg_blobs.append(blob)
