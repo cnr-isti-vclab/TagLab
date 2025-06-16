@@ -236,14 +236,17 @@ class QtWorkingAreaWidget(QWidget):
             self.edit_Y_m.setText(str(round(y * scale_factor_m_per_px, 3)))
             self.edit_W_m.setText(str(round(w * scale_factor_m_per_px, 3)))
             self.edit_H_m.setText(str(round(h * scale_factor_m_per_px, 3)))
+            extent_text = f"WA extent: {round(w * h, 0)} (pix^2)   {round((w * scale_factor_m_per_px) * (h * scale_factor_m_per_px), 3)} (m^2)"
+            self.label_extent.setText(extent_text)
         else:
             self.edit_Y_m.setText("")
             self.edit_X_m.setText("")
             self.edit_W_m.setText("")
             self.edit_H_m.setText("")
+            extent_text = f"WA extent: {round(w * h, 0)} (pix^2)"
+            self.label_extent.setText(extent_text)
 
-        extent_text = f"WA extent: {round(w * h, 0)} (pix^2)   {round((w * scale_factor_m_per_px) * (h * scale_factor_m_per_px), 3)} (m^2)"
-        self.label_extent.setText(extent_text)
+        
 
     @pyqtSlot(str)
     def notifyAreaChanged(self, txt):
