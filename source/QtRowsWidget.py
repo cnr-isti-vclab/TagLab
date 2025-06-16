@@ -54,7 +54,7 @@ class RowsWidget(QWidget):
             self.setMinimumSize(width, height)
             self.resize(width, height)
             self.IMAGEVIEWER_W = width//2 - 40
-            self.IMAGEVIEWER_H = height - 400
+            self.IMAGEVIEWER_H = height - 450
         else:
             self.setMinimumWidth(1440)
             self.setMinimumHeight(900)   
@@ -202,19 +202,37 @@ class RowsWidget(QWidget):
         skel_viewer_layout.setSpacing(15)
         
         
-        brickdist_layout = QHBoxLayout()
+        brickdist_layout = QVBoxLayout()
 
         self.row_dist = 20
         brickdist_label = QLabel(f"Rows distance:")
-        self.BrickDistBox = QLineEdit(self)
-        self.BrickDistBox.setReadOnly(False)
-        self.BrickDistBox.setFixedWidth(150)
-        self.BrickDistBox.setFixedHeight(25)
-        self.BrickDistBox.setText(str(self.row_dist))
+        # self.BrickDistBox = QLineEdit(self)
+        # self.BrickDistBox.setReadOnly(False)
+        # self.BrickDistBox.setFixedWidth(150)
+        # self.BrickDistBox.setFixedHeight(25)
+        # self.BrickDistBox.setText(str(self.row_dist))
 
         
+        # brickdist_layout.addWidget(brickdist_label, alignment=Qt.AlignCenter)
+        # brickdist_layout.addWidget(self.BrickDistBox, alignment=Qt.AlignLeft)
+        # brickdist_layout.setSpacing(2)
+
+        self.BrickDistSlider = QSlider(Qt.Horizontal)
+        self.BrickDistSlider.setMinimum(5)
+        self.BrickDistSlider.setMaximum(100)  # Adjust max as needed
+        self.BrickDistSlider.setValue(self.row_dist)
+        self.BrickDistSlider.setFixedWidth(self.IMAGEVIEWER_W)
+        self.BrickDistSlider.setTickPosition(QSlider.TicksBelow)
+        self.BrickDistSlider.setTickInterval(1)
+
+        self.BrickDistValueLabel = QLabel(str(self.row_dist))
+        self.BrickDistSlider.valueChanged.connect(
+            lambda val: self.BrickDistValueLabel.setText(str(val))
+        )
+
         brickdist_layout.addWidget(brickdist_label, alignment=Qt.AlignCenter)
-        brickdist_layout.addWidget(self.BrickDistBox, alignment=Qt.AlignLeft)
+        brickdist_layout.addWidget(self.BrickDistSlider, alignment=Qt.AlignCenter)
+        brickdist_layout.addWidget(self.BrickDistValueLabel, alignment=Qt.AlignCenter)
         brickdist_layout.setSpacing(2)
     
         # skelangle_layout = QVBoxLayout()
@@ -400,10 +418,13 @@ class RowsWidget(QWidget):
         self.toggleShowMask(self.mask_checked)
         
         # Get row_distance from  BrickDistBox
-        try:
-            self.row_dist = int(self.BrickDistBox.text())
-        except ValueError:
-            self.row_dist = 20
+        # try:
+        #     self.row_dist = int(self.BrickDistBox.text())
+        # except ValueError:
+        #     self.row_dist = 20
+
+        self.row_dist = self.BrickDistSlider.value()
+        print(self.row_dist)
 
         self.branch_points, self.edges = self.vectorBranchPoints(self.skeleton)
 
@@ -1062,8 +1083,8 @@ class RowsWidget(QWidget):
                 # print(f"mapped centroid is {mapped_centroid}")
 
                 # Draw the centroid on the image
-                painter.setBrush(QBrush(QColor(0, 0, 255)))  # Blue color for the centroid
-                painter.drawEllipse(int(mapped_centroid[0]) - 5, int(mapped_centroid[1]) - 5, 10, 10)  # Circle with radius 5
+                # painter.setBrush(QBrush(QColor(0, 0, 255)))  # Blue color for the centroid
+                # painter.drawEllipse(int(mapped_centroid[0]) - 5, int(mapped_centroid[1]) - 5, 10, 10)  # Circle with radius 5
                 
                 painter.setBrush(Qt.NoBrush)  # No fill
                 
