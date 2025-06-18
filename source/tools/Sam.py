@@ -407,8 +407,14 @@ class Sam(Tool):
         genutils.removeOverlapping(self.created_blobs, self.viewerplus.image.annotations.seg_blobs, annotated = True)
 
         print(f"self.created_blob len post annotated is {len(self.created_blobs)}")
-            
-        for blob in self.created_blobs:
+        
+        kernel = np.ones((5, 5), np.uint8)
+        created = self.created_blobs.copy()
+        for blob in created:
+            mask = blob.getMask()
+            closed_mask = cv2.morphologyEx(mask.astype('uint8')*255, cv2.MORPH_CLOSE, kernel)
+            closed_mask = (closed_mask > 0).astype('uint8')
+            blob.updateUsingMask(blob.bbox, closed_mask)
             self.viewerplus.addBlob(blob, selected=True)
 
         self.viewerplus.saveUndo()
