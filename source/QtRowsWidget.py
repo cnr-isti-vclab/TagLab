@@ -84,7 +84,8 @@ class RowsWidget(QWidget):
         self.thickness_image = None
         self.thickness_data = []
         self.branch_points =  []
-        self.edges = []
+        # self.edges = []
+        self.filtered_edges = []
 
         self.rect = rect
         self.blob_list = blobs
@@ -142,23 +143,15 @@ class RowsWidget(QWidget):
         self.angleTextBox.setFixedWidth(self.IMAGEVIEWER_W)
         self.angleTextBox.setFixedHeight(TEXTBOX_H)
 
-        # Add export lines
-        # self.btnLineExport = QPushButton("Export Line Data")
-        # self.btnLineExport.clicked.connect(self.exportLineViewerData)
-
         lineslopes_layout.setSpacing(5)  # Reduce spacing to bring QLabel closer to QTextEdit
-
+        
+        # lineslopes_layout.addLayout(checkbox_layout)
         lineslopes_layout.addWidget(lineangle_label, alignment=Qt.AlignBottom)
         lineslopes_layout.addWidget(self.angleTextBox, alignment=Qt.AlignTop)
         # lineslopes_layout.addWidget(self.btnLineExport, alignment=Qt.AlignTop)
         # lineslopes_layout.addWidget(self.btnLineExport, alignment=Qt.AlignTop)
 
-
-        # line_viewer_layout.addLayout(lineslopes_layout)
-        # line_viewer_layout.addWidget(lineangle_label, alignment=Qt.AlignTop)
-        # line_viewer_layout.addWidget(self.angleTextBox, alignment=Qt.AlignTop)
-        # line_viewer_layout.addWidget(self.btnLineExport, alignment=Qt.AlignBottom)
-        
+        line_viewer_layout.addLayout(lineslopes_layout)
 
         # create skeleton viewer
         skel_viewer_layout = QVBoxLayout()
@@ -169,10 +162,6 @@ class RowsWidget(QWidget):
         self.skel_viewer.setFixedWidth(self.IMAGEVIEWER_W)
         self.skel_viewer.setFixedHeight(self.IMAGEVIEWER_H)
         self.skel_viewer.setImg(self.image_cropped)
-
-        #draw blobs
-        # for blob in self.blob_list:
-        #     self.parent_viewer.drawBlob(blob)
 
         # Enable context menu policy
         self.skel_viewer.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -205,35 +194,108 @@ class RowsWidget(QWidget):
         brickdist_layout = QVBoxLayout()
 
         self.row_dist = 20
+        self.column_dist = 50
+
+         # Add checkboxes for Rows and Columns
+        checkbox_layout = QHBoxLayout()
+
+        rows_layout = QVBoxLayout()  
+        self.rowsCheckBox = QCheckBox("Rows", self)
+        self.rowsCheckBox.setChecked(True)
+
+        rowAngle_label = QLabel("Max angle for row (deg)")
+        self.maxRowAngleEdit = QLineEdit(self)
+        # self.maxRowAngleEdit.setPlaceholderText("Max angle for row (deg)")
+        self.maxRowAngleEdit.setFixedWidth(120)
+        self.maxRowAngleEdit.setText("30")
+
         brickdist_label = QLabel(f"Rows distance:")
-        # self.BrickDistBox = QLineEdit(self)
-        # self.BrickDistBox.setReadOnly(False)
-        # self.BrickDistBox.setFixedWidth(150)
-        # self.BrickDistBox.setFixedHeight(25)
-        # self.BrickDistBox.setText(str(self.row_dist))
 
-        
+        # SLIDER FOR ROW DISTANCE
+        # self.BrickDistSlider = QSlider(Qt.Horizontal)
+        # self.BrickDistSlider.setMinimum(10)
+        # self.BrickDistSlider.setMaximum(100)  # Adjust max as needed
+        # self.BrickDistSlider.setValue(self.row_dist)
+        # self.BrickDistSlider.setFixedWidth(self.IMAGEVIEWER_W)
+        # self.BrickDistSlider.setTickPosition(QSlider.TicksBelow)
+        # self.BrickDistSlider.setTickInterval(2)
+
+        # self.BrickDistValueLabel = QLabel(str(self.row_dist))
+        # self.BrickDistSlider.valueChanged.connect(
+        #     lambda val: self.BrickDistValueLabel.setText(str(val))
+        # )
+
+        # TEXTBOX FOR ROW DISTANCE
+        self.BrickDistBox = QLineEdit(self)
+        self.BrickDistBox.setReadOnly(False)
+        self.BrickDistBox.setFixedWidth(150)
+        self.BrickDistBox.setFixedHeight(25)
+        self.BrickDistBox.setText(str(self.row_dist))
+
+        rows_layout.addWidget(self.rowsCheckBox)
+        rows_layout.addWidget(rowAngle_label)
+        rows_layout.addWidget(self.maxRowAngleEdit)
+        rows_layout.addWidget(brickdist_label)
+        # rows_layout.addWidget(self.BrickDistSlider)
+        # rows_layout.addWidget(self.BrickDistValueLabel)
+        rows_layout.addWidget(self.BrickDistBox)
+
         # brickdist_layout.addWidget(brickdist_label, alignment=Qt.AlignCenter)
-        # brickdist_layout.addWidget(self.BrickDistBox, alignment=Qt.AlignLeft)
+        # brickdist_layout.addWidget(self.BrickDistSlider, alignment=Qt.AlignCenter)
+        # brickdist_layout.addWidget(self.BrickDistValueLabel, alignment=Qt.AlignCenter)
         # brickdist_layout.setSpacing(2)
+        
+        columns_layout = QVBoxLayout() 
+        self.columnsCheckBox = QCheckBox("Columns", self)
+        self.columnsCheckBox.setChecked(False)
 
-        self.BrickDistSlider = QSlider(Qt.Horizontal)
-        self.BrickDistSlider.setMinimum(5)
-        self.BrickDistSlider.setMaximum(100)  # Adjust max as needed
-        self.BrickDistSlider.setValue(self.row_dist)
-        self.BrickDistSlider.setFixedWidth(self.IMAGEVIEWER_W)
-        self.BrickDistSlider.setTickPosition(QSlider.TicksBelow)
-        self.BrickDistSlider.setTickInterval(1)
+        columnAngle_label = QLabel("Min angle for column (deg)")
+        self.minColAngleEdit = QLineEdit(self)
+        self.minColAngleEdit.setPlaceholderText("Min angle for column (deg)")
+        self.minColAngleEdit.setFixedWidth(120)
+        self.minColAngleEdit.setText("70")  # Default value
 
-        self.BrickDistValueLabel = QLabel(str(self.row_dist))
-        self.BrickDistSlider.valueChanged.connect(
-            lambda val: self.BrickDistValueLabel.setText(str(val))
-        )
 
-        brickdist_layout.addWidget(brickdist_label, alignment=Qt.AlignCenter)
-        brickdist_layout.addWidget(self.BrickDistSlider, alignment=Qt.AlignCenter)
-        brickdist_layout.addWidget(self.BrickDistValueLabel, alignment=Qt.AlignCenter)
-        brickdist_layout.setSpacing(2)
+        columndist_label = QLabel(f"Column distance:")
+        
+        # SLIDER FOR COLUMN DISTANCE
+        # self.columnDistSlider = QSlider(Qt.Horizontal)
+        # self.columnDistSlider.setMinimum(10)
+        # self.columnDistSlider.setMaximum(100)  # Adjust max as needed
+        # self.columnDistSlider.setValue(self.row_dist)
+        # self.columnDistSlider.setFixedWidth(self.IMAGEVIEWER_W)
+        # self.columnDistSlider.setTickPosition(QSlider.TicksBelow)
+        # self.columnDistSlider.setTickInterval(2)
+
+        # self.columnDistValueLabel = QLabel(str(self.row_dist))
+        # self.columnDistSlider.valueChanged.connect(
+        #     lambda val: self.columnDistValueLabel.setText(str(val))
+        # )
+
+        # TEXTBOX FOR COLUMN DISTANCE
+        self.columnDistBox = QLineEdit(self)
+        self.columnDistBox.setReadOnly(False)
+        self.columnDistBox.setFixedWidth(150)
+        self.columnDistBox.setFixedHeight(25)
+        self.columnDistBox.setText(str(self.column_dist))
+
+
+        columns_layout.addWidget(self.columnsCheckBox) 
+        columns_layout.addWidget(columnAngle_label)
+        columns_layout.addWidget(self.minColAngleEdit)
+        columns_layout.addWidget(columndist_label)
+        # columns_layout.addWidget(self.columnDistSlider)
+        # columns_layout.addWidget(self.columnDistValueLabel)
+        columns_layout.addWidget(self.columnDistBox)
+
+
+        checkbox_layout.addLayout(rows_layout)
+        checkbox_layout.addLayout(columns_layout)
+        
+        
+        brickdist_layout.addLayout(checkbox_layout)
+
+        skel_viewer_layout.addLayout(brickdist_layout)
     
         # skelangle_layout = QVBoxLayout()
         # skelangle_label = QLabel(f"Slopes")
@@ -270,30 +332,6 @@ class RowsWidget(QWidget):
         # Add skeleton viewer to viewers layout
         # viewers_layout.addWidget(self.skel_viewer, alignment=Qt.AlignTop)
         viewers_layout.addLayout(skel_viewer_layout)
-        # Add the viewers to the main layout
-        
-        # viewers_layout.setSpacing(10)
-
-        # Add the viewers layout to the main layout
-        # layout.addLayout(viewers_layout)
-        # layout.addLayout(layoutTop)
-        # layout.addWidget(self.progress_bar)
-        # layout.addWidget(self.viewer, alignment=Qt.AlignCenter)
-        # layout.addLayout(layoutButtons)
-
-        textbox_layout = QHBoxLayout()
-        # Add line slopes and rows distance widgets to the layout
-        textbox_layout.addLayout(lineslopes_layout)
-        textbox_layout.setSpacing(10)
-        textbox_layout.addLayout(brickdist_layout)   
-
-        # self.angleTextBox = QTextEdit(self)
-        # self.angleTextBox.setReadOnly(True)
-        # layout.addWidget(self.angleTextBox)
-
-        # self.setLayout(layout)
-
-        # layout.addWidget(self.btnExport)#, alignment=Qt.AlignCenter)
 
         # Add slider for structuring element size
         slider_layout = QVBoxLayout()
@@ -363,7 +401,7 @@ class RowsWidget(QWidget):
         layout.setSpacing(10)
         # Add the viewers layout to the main layout
         layout.addLayout(viewers_layout) 
-        layout.addLayout(textbox_layout, stretch=1)    
+        # layout.addLayout(textbox_layout, stretch=1)    
         layout.addLayout(slider_layout)
         layout.setSpacing(10)
         # Add the button rows
@@ -412,39 +450,81 @@ class RowsWidget(QWidget):
         self.actionShowLines.setChecked(True)
         self.mask_checked = True
         self.actionShowMask.setChecked(True)
+
+        self.skel_checked = True
+        self.actionShowSkel.setChecked(True)
+        self.branch_checked = True
+        self.actionShowBranch.setChecked(True)
+        
+        # Get row_distance from  BrickDistBox
+        try:
+            self.row_dist = int(self.BrickDistBox.text())
+            self.column_dist = int(self.columnDistBox.text())
+        except ValueError:
+            self.row_dist = 20
+            self.column_dist = 50
+
+        # Get row_distance from  slider
+        # self.row_dist = self.BrickDistSlider.value()
+        # print(self.row_dist)
+
+        self.branch_points, edges = self.vectorBranchPoints(self.skeleton)
+
+        ####################################################
+
+        # Determine which checkboxes are checked
+        show_rows = self.rowsCheckBox.isChecked()
+        show_columns = self.columnsCheckBox.isChecked()
+
+        # Filter edges based on angle and distance
+        self.filtered_edges = []
+        max_row_angle = float(self.maxRowAngleEdit.text()) if self.maxRowAngleEdit.text() else 30
+        min_col_angle = float(self.minColAngleEdit.text()) if self.minColAngleEdit.text() else 70
+
+        for i, (start, end, color, angle_deg, dist) in enumerate(edges):
+            
+            angle =angle_deg
+            if angle > 90:
+                angle -= 180
+            abs_angle = abs(angle)
+
+            # print(f"Edge {i+1}: abs_angle={abs_angle}, angle={angle}")
+
+            if show_rows and not show_columns:
+                # Only rows: angle within max_row_angle and distance within row_dist
+                if abs_angle <= max_row_angle and abs(start[1] - end[1]) <= self.row_dist:
+                # if abs(start[1] - end[1]) <= self.row_dist: #Without angle check
+                    self.filtered_edges.append((start, end, color, angle_deg, dist))
+            elif show_columns and not show_rows:
+                # Only columns: angle >= min_col_angle and distance within column_dist
+                if abs_angle >= min_col_angle and abs(start[0] - end[0]) <= self.column_dist:
+                # if abs(start[0] - end[0]) <= self.column_dist: #Without angle check
+                    self.filtered_edges.append((start, end, color, angle_deg, dist))
+            elif show_rows and show_columns:
+                # Both: add if either row or column criteria match
+                if (abs_angle <= max_row_angle and abs(start[1] - end[1]) <= self.row_dist) or \
+                (abs_angle >= min_col_angle and abs(start[0] - end[0]) <= self.column_dist):
+                # if (abs(start[1] - end[1]) <= self.row_dist) or \
+                #    (abs(start[0] - end[0]) <= self.column_dist): #Without angle check
+                    self.filtered_edges.append((start, end, color, angle_deg, dist))
+
+        ####################################################
         
         self.toggleMaskLines(self.line_checked, self.mask_checked, self.thickness_checked, self.blobs_checked)
         self.toggleShowLines(self.line_checked)
-        self.toggleShowMask(self.mask_checked)
+        self.toggleShowMask(self.mask_checked)    
         
-        # Get row_distance from  BrickDistBox
-        # try:
-        #     self.row_dist = int(self.BrickDistBox.text())
-        # except ValueError:
-        #     self.row_dist = 20
-
-        self.row_dist = self.BrickDistSlider.value()
-        print(self.row_dist)
-
-        self.branch_points, self.edges = self.vectorBranchPoints(self.skeleton)
-
         # self.connectBranchPoints(self.branch_points, brick_width, brick_dist)
         # print(self.branch_points)
+
         self.actionShowSkel.setCheckable(True)
-
-        if self.edges_checked == False:
-            self.actionShowSkel.setChecked(True)
-        else:
-            self.actionShowSkel.setChecked(False)
-
         self.actionShowBranch.setCheckable(True)
         self.actionShowBranch.setChecked(True)
         self.actionShowEdges.setCheckable(True)
         # self.actionShowBranch.setChecked(True)
-        branch_image = self.drawBranchSkel(self.skeleton, self.branch_points, self.edges, self.branch_checked, self.skel_checked, self.edges_checked)
+        branch_image = self.drawBranchSkel(self.skeleton, self.branch_points, self.filtered_edges, self.branch_checked, self.skel_checked, self.edges_checked)
         self.skel_viewer.setOpacity(1.0)
         self.skel_viewer.setOverlayImage(branch_image)
-
     
     def closeWidget(self):
         self.closeRowsWidget.emit()
@@ -1338,7 +1418,7 @@ class RowsWidget(QWidget):
 
     def toggleSkelBranchEdges(self, skel, branch, edges):
         if skel == True or branch == True or edges == True:
-            branch_image = self.drawBranchSkel(self.skeleton, self.branch_points, self.edges, branch, skel, edges)
+            branch_image = self.drawBranchSkel(self.skeleton, self.branch_points, self.filtered_edges, branch, skel, edges)
             self.skel_viewer.setOpacity(1.0)
             self.skel_viewer.setOverlayImage(branch_image)
         
@@ -1381,18 +1461,8 @@ class RowsWidget(QWidget):
         if conn: 
             pen = QPen(Qt.green, 3)
 
-            # Draw filtered segments
-            y_threshold = self.row_dist
-            print(f"len of connections is {len(connections)}")
-            filterd_segments = []  
-            for start, end, color, angle, dist in connections:
-                y1, y2 = start[1], end[1]  # Remember: start = (x, y)
-                if abs(y1 - y2) <= y_threshold:  # Filter segments
-                    filterd_segments.append((start, end, color, angle, dist))
-                    
-            print(f"len of filtered segments pre is {len(filterd_segments)}")
-                    
-            for i, (start, end, color, angle, dist) in enumerate(filterd_segments):                    
+            # Draw edges                    
+            for i, (start, end, color, angle, dist) in enumerate(connections):                    
                 pen.setColor(QColor(color[0], color[1], color[2]))
                 painter.setPen(pen)
                 # print(f"angle of {i} is {angle}")
@@ -1504,7 +1574,7 @@ class RowsWidget(QWidget):
             dialog.lines = self.lines if export_lines else []
             dialog.skeleton = self.skeleton if export_skeleton else None
             dialog.branch_points = self.branch_points if export_branch_points else []
-            dialog.edges = self.edges if export_edges else []
+            dialog.edges = self.filtered_edges if export_edges else []
             dialog.blobs = self.blob_list if export_blobs else []
 
             georef_filename = None
@@ -1542,23 +1612,23 @@ class RowsWidget(QWidget):
             if export_skeleton and self.skeleton is not None:
                 skeleton_filename = f"{file_path}_skeleton.png"
                 branch_image = self.drawBranchSkel(
-                    self.skeleton, self.branch_points, self.edges,
+                    self.skeleton, self.branch_points, self.filtered_edges,
                     export_branch_points, export_skeleton, export_edges
                 )
                 branch_image.save(skeleton_filename)
                 export_success = True
 
-            if export_edges and self.edges:
+            if export_edges and self.filtered_edges:
                 edges_filename = f"{file_path}_edges.png"
                 edge_image = self.drawBranchSkel(
-                    self.skeleton, self.branch_points, self.edges,
+                    self.skeleton, self.branch_points, self.filtered_edges,
                     self.branch_checked, self.skel_checked, self.edges_checked
                 )
                 edge_image.save(edges_filename)
                 angles_filename = f"{file_path}_edges_angles.csv"
                 with open(angles_filename, "w") as file:
                     file.write("Connection Index,Angle (degrees)\n")
-                    for i, (_, _, _, angle, _) in enumerate(self.edges):
+                    for i, (_, _, _, angle, _) in enumerate(self.filtered_edges):
                         file.write(f"{i + 1},{angle:.2f}\n")
                 export_success = True
 
