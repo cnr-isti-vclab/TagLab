@@ -142,6 +142,9 @@ def binaryMaskToRle(mask):
 
 
 def integerMapToQImage(int_map):
+    """
+    It encodes integer values into an RGB QImage.
+    """
 
     h = int_map.shape[0]
     w = int_map.shape[1]

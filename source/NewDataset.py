@@ -83,6 +83,10 @@ class NewDataset(object):
 		self.sP_min = 0.0
 		self.sP_max = 0.0
 
+		# used to create the dataset.YAML file at the end of the export
+		self.yolo_class_mapper = {}
+		self.yolo_class_counter = 0
+
 
 	def exportAreaCropAndRescale(self, current_pixel_size, target_pixel_size, export_area):
 
@@ -1150,15 +1154,31 @@ class NewDataset(object):
 		The training tiles are the ones of the entire map minus the ones inside the test validation and test area.
 		"""
 
-		##### VALIDATION AREA
+		if self.data_format == "YOLO-v5":
+			yolo_cache_filename = os.path.join(basename, "yolo-cache.json")
+			if os.path.exists(yolo_cache_filename):
+				with open(yolo_cache_filename) as f:
+					data = json.load(f)
+					self.yolo_class_counter = data["Class number"]
+					self.yolo_class_mapper = data["Class mapper"]
+			else:
+				self.yolo_class_counter = 0
+				self.class_mapper = {}
 
-		basenameVim = os.path.join(basename, os.path.join("validation", "images"))
+		##### VALIDATION
+
+		if self.data_format == "YOLO-v5":
+			basenameVim = os.path.join(basename, os.path.join("images", "val"))
+			basenameVlab = os.path.join(basename, os.path.join("labels", "val"))
+		else:
+			basenameVim = os.path.join(basename, os.path.join("validation", "images"))
+			basenameVlab = os.path.join(basename, os.path.join("validation", "labels"))
+
 		try:
 			os.makedirs(basenameVim)
 		except:
 			pass
 
-		basenameVlab = os.path.join(basename, os.path.join("validation", "labels"))
 		try:
 			os.makedirs(basenameVlab)
 		except:
@@ -1166,29 +1186,40 @@ class NewDataset(object):
 
 		self.cropAndSaveTiles(self.validation_tiles, tilename, basenameVim, basenameVlab)
 
-		##### TEST AREA
 
-		basenameTestIm = os.path.join(basename, os.path.join("test", "images"))
-		try:
-			os.makedirs(basenameTestIm)
-		except:
-			pass
+		##### TEST
 
-		basenameTestLab = os.path.join(basename, os.path.join("test", "labels"))
-		try:
-			os.makedirs(basenameTestLab)
-		except:
-			pass
+		if self.data_format != "YOLO-v5":
 
-		self.cropAndSaveTiles(self.test_tiles, tilename, basenameTestIm, basenameTestLab)
+			basenameTestIm = os.path.join(basename, os.path.join("test", "images"))
+			try:
+				os.makedirs(basenameTestIm)
+			except:
+				pass
 
-		basenameTrainIm = os.path.join(basename, os.path.join("training", "images"))
+			basenameTestLab = os.path.join(basename, os.path.join("test", "labels"))
+			try:
+				os.makedirs(basenameTestLab)
+			except:
+				pass
+
+			self.cropAndSaveTiles(self.test_tiles, tilename, basenameTestIm, basenameTestLab)
+
+
+		##### TRAIN
+
+		if self.data_format == "YOLO-v5":
+			basenameTrainIm = os.path.join(basename, os.path.join("images", "train"))
+			basenameTrainLab = os.path.join(basename, os.path.join("labels", "train"))
+		else:
+			basenameTrainIm = os.path.join(basename, os.path.join("training", "images"))
+			basenameTrainLab = os.path.join(basename, os.path.join("training", "labels"))
+
 		try:
 			os.makedirs(basenameTrainIm)
 		except:
 			pass
 
-		basenameTrainLab = os.path.join(basename, os.path.join("training", "labels"))
 		try:
 			os.makedirs(basenameTrainLab)
 		except:
@@ -1196,6 +1227,27 @@ class NewDataset(object):
 
 		self.cropAndSaveTiles(self.training_tiles, tilename, basenameTrainIm, basenameTrainLab)
 
+		if self.data_format == "YOLO-v5":
+			# create dataset.YAML
+			dataset_yaml_filename = os.path.join(basename, "dataset.yaml")
+			fy = open(dataset_yaml_filename, 'wt')
+			fy.write("names:\n")
+			for i in range(self.yolo_class_counter):
+				txt = ("  {:d}: class{:d}\n").format(i,i+1)
+				fy.write(txt)
+			txt = "path: " + basename + "\n"
+			fy.write(txt)
+			fy.write("train: ./images/train\n")
+			fy.write("val: ./images/val\n")
+			fy.close()
+
+			yolo_cache_filename = os.path.join(basename, "yolo-cache.json")
+			fc = open(yolo_cache_filename, "w")
+			data = {}
+			data["Class number"] = self.yolo_class_counter
+			data["Class mapper"] = self.yolo_class_mapper
+			json.dump(data, fc)
+			fc.close()
 
 
 	def cropAndSaveTiles(self, tiles, tilename, basenameim, basenamelab):
@@ -1285,18 +1337,18 @@ class NewDataset(object):
 			filenameRGB = os.path.join(basenameim, tilename + str.format("_{0:04d}", (i)) + ".png")
 			cropimg.save(filenameRGB)
 
-			if self.data_format == "YOLO-v5":
-				# image label
-				croplabel = genutils.cropQImage(self.label_image, [top, left, self.tile_size, self.tile_size])
-				filenameLabel = os.path.join(basenamelab, tilename + str.format("_{0:04d}", (i)) + ".png")
-				croplabel.save(filenameLabel)
+			# image label
+			croplabel = genutils.cropQImage(self.label_image, [top, left, self.tile_size, self.tile_size])
+			filenameLabel = os.path.join(basenamelab, tilename + str.format("_{0:04d}", (i)) + ".png")
+			croplabel.save(filenameLabel)
 
 			if self.data_format == "COCO" or self.data_format == "YOLO-v5":
 
 				cropidlabel = genutils.cropQImage(self.id_image, [top, left, self.tile_size, self.tile_size])
 				cropidlabel = genutils.qimageToNumpyArray(cropidlabel)
 
-				regions_map = np.zeros_like(cropidlabel, dtype=np.int32)
+				# decode ids
+				regions_map = np.zeros((cropidlabel.shape[0], cropidlabel.shape[1]), dtype=np.int32)
 				regions_map = cropidlabel[:,:,0] + cropidlabel[:,:,1] * 256 + cropidlabel[:,:,2] * 65536
 				regions = measure.regionprops(regions_map)
 
@@ -1308,17 +1360,28 @@ class NewDataset(object):
 					for region in regions:
 						blob = Blob(region,0,0,0)
 						n = blob.contour.shape[0]
-						txt = "1 "
-						for i in range(n):
-							x = blob.contour[i, 0] / self.tile_size
-							y = blob.contour[i, 1] / self.tile_size
-							value = "{:.6f} {:.6f}".format(x,y)
-							txt += value
-							txt += " "
+						row = region.centroid[0]
+						col = region.centroid[1]
+						rgb = croplabel.pixel(int(col), int(row))
+						color_key = str(qRed(rgb)) + "-" + str(qGreen(rgb)) + "-" + str(qBlue(rgb))
+						if color_key != "0-0-0":
+							class_code = self.yolo_class_mapper.get(color_key)
+							if class_code is None:
+								self.yolo_class_mapper[color_key] = self.yolo_class_counter
+								class_code = self.yolo_class_counter
+								self.yolo_class_counter += 1
 
-						txt = txt[:-1]
-						txt += "\n"
-						fp.write(txt)
+							txt = "{:d} ".format(class_code)
+							for i in range(n):
+								x = blob.contour[i, 0] / self.tile_size
+								y = blob.contour[i, 1] / self.tile_size
+								value = "{:.6f} {:.6f}".format(x,y)
+								txt += value
+								txt += " "
+
+							txt = txt[:-1]
+							txt += "\n"
+							fp.write(txt)
 
 					fp.close()
 
