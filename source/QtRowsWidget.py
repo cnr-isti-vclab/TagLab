@@ -222,7 +222,7 @@ class RowsWidget(QWidget):
         self.row_dist = 20
         self.set_angle = 45
 
-        brickdist_label = QLabel(f"Distance:")
+        brickdist_label = QLabel(f"Rows/Columns Distance:")
         # self.BrickDistBox = QLineEdit(self)
         # self.BrickDistBox.setReadOnly(False)
         # self.BrickDistBox.setFixedWidth(150)
@@ -248,7 +248,7 @@ class RowsWidget(QWidget):
             lambda val: self.BrickDistValueLabel.setText(str(val))
         )
 
-        angle_label = QLabel(f"Angle:")
+        angle_label = QLabel(f"Rows/Columns Angle:")
         self.AngleSlider = QSlider(Qt.Horizontal)
         self.AngleSlider.setMinimum(0)
         self.AngleSlider.setMaximum(90)  # Adjust max as needed
@@ -373,11 +373,19 @@ class RowsWidget(QWidget):
 
         # buttons for data processing
         data_button_layout = QHBoxLayout()
+        
         self.btnCompute = QPushButton("Compute")
         self.btnCompute.clicked.connect(self.computeRows)
+        
+        self.btnThickness = QPushButton("Compute Thickness Map")
+        self.btnThickness.clicked.connect(lambda: self.thicknessMap(self.masch))
+        
         data_button_layout.setAlignment(Qt.AlignLeft)
         data_button_layout.addWidget(self.btnCompute)
+        data_button_layout.addWidget(self.btnThickness)
+        self.btnThickness.setEnabled(False)
         data_button_layout.addStretch()
+
 
         #buttons for output
         output_button_layout = QHBoxLayout()
@@ -458,11 +466,11 @@ class RowsWidget(QWidget):
         # i += 1
         self.skeleton = self.applySkeletonization(self.masch)
 
-        self.thickness_image = self.thicknessMap(self.masch)
+        # self.thickness_image = self.thicknessMap(self.masch)
 
         self.actionShowLines.setCheckable(True)
         self.actionShowMask.setCheckable(True)
-        self.actionShowThickness.setCheckable(True)
+        # self.actionShowThickness.setCheckable(True)
         self.actionShowBlobs.setCheckable(True)
 
         self.line_checked = True
@@ -473,6 +481,8 @@ class RowsWidget(QWidget):
         self.toggleMaskLines(self.line_checked, self.mask_checked, self.thickness_checked, self.blobs_checked)
         self.toggleShowLines(self.line_checked)
         self.toggleShowMask(self.mask_checked)
+
+        self.btnThickness.setEnabled(True)
         
         # Get row_distance from  BrickDistBox
         # try:
@@ -505,35 +515,8 @@ class RowsWidget(QWidget):
         self.actionShowBranch.setChecked(True)
         self.actionShowEdges.setCheckable(True)
 
-        y_threshold = self.row_dist
-        angle_threshold = self.set_angle
-        self.row_segments = []  
-        for start, end, color, angle, dist in self.edges:
-            y1, y2 = start[1], end[1]  
-            ang = angle
-            if ang > 90:
-                ang -= 180
+        self.updateRowsColumns(self.edges)
 
-            ang = abs(ang)
-
-            if ang < angle_threshold and abs(y1 - y2) <= y_threshold:
-                self.row_segments.append((start, end, color, angle, dist))
-                    
-        x_threshold = self.row_dist
-        angle_threshold = self.set_angle
-        self.column_segments = []  
-        for start, end, color, angle, dist in self.edges:
-            x1, x2 = start[0], end[0]  # Remember: start = (x, y)
-            ang = angle
-            if ang > 90:
-                ang -= 180
-
-            ang = abs(ang)
-
-            if abs(x1 - x2) <= x_threshold and ang > self.set_angle:
-                self.column_segments.append((start, end, color, angle, dist))
-                    
-        
         self.actionShowRows.setCheckable(True)
         self.actionShowColumns.setCheckable(True)
 
@@ -929,8 +912,10 @@ class RowsWidget(QWidget):
         # thickness_img = QImage(thickness_norm.data, w, h, w, QImage.Format_Grayscale8).copy()
 
         # thickness_img.save("thickness_image.png", "PNG")
-
-        return thickness_img
+        
+        self.thickness_image = thickness_img
+        self.actionShowThickness.setCheckable(True)
+        # return thickness_img
     
     def updateThicknessTextBox(self, thickness_data, color='white'):
         
@@ -1458,8 +1443,8 @@ class RowsWidget(QWidget):
             self.actionShowSkel.setChecked(False)
             self.edges_checked = False
             self.actionShowEdges.setChecked(False)
-            self.columns_checked = False
-            self.actionShowColumns.setChecked(False)
+            # self.columns_checked = False
+            # self.actionShowColumns.setChecked(False)
         else:
             self.rows_checked = False
             # self.resetSkelTextBox()
@@ -1474,8 +1459,8 @@ class RowsWidget(QWidget):
             self.actionShowSkel.setChecked(False)
             self.edges_checked = False
             self.actionShowEdges.setChecked(False)
-            self.rows_checked = False
-            self.actionShowRows.setChecked(False)
+            # self.rows_checked = False
+            # self.actionShowRows.setChecked(False)
         else:
             self.columns_checked = False
             # self.resetSkelTextBox()
@@ -1493,6 +1478,28 @@ class RowsWidget(QWidget):
             self.skel_viewer.setFixedHeight(self.IMAGEVIEWER_H)
             self.skel_viewer.setImg(self.image_cropped)
 
+    def updateRowsColumns(self, connections):
+        x_threshold = self.row_dist
+        y_threshold = self.row_dist
+        angle_threshold = self.set_angle
+        self.row_segments = []
+        self.column_segments = []
+
+        for start, end, color, angle, dist in connections:
+            x1, x2 = start[0], end[0]
+            y1, y2 = start[1], end[1]  
+            ang = angle
+            if ang > 90:
+                ang -= 180
+
+            ang = abs(ang)
+
+            if ang < angle_threshold and abs(y1 - y2) <= y_threshold:
+                self.row_segments.append((start, end, color, angle, dist))
+
+            if abs(x1 - x2) <= x_threshold and ang > self.set_angle:
+                self.column_segments.append((start, end, color, angle, dist))
+                    
     def drawBranchSkel(self, skeleton, branch_points, connections, branch, skel, conn, rows, columns):
          # Create a transparent QImage from the skeleton and branch points
         branch_image = QImage(skeleton.shape[1], skeleton.shape[0], QImage.Format_ARGB32)
@@ -1546,20 +1553,7 @@ class RowsWidget(QWidget):
             painter.setPen(pen)
 
             # Draw rows segments
-            y_threshold = self.row_dist
-            angle_threshold = self.set_angle
-            self.row_segments = []  
-            for start, end, color, angle, dist in connections:
-                y1, y2 = start[1], end[1]  
-                ang = angle
-                if ang > 90:
-                    ang -= 180
-
-                ang = abs(ang)
-
-                if ang < angle_threshold and abs(y1 - y2) <= y_threshold:
-                    self.row_segments.append((start, end, color, angle, dist))
-                    
+            self.updateRowsColumns(connections)
                     
             for i, (start, end, color, angle, dist) in enumerate(self.row_segments):                    
                 # pen.setColor(QColor(color[0], color[1], color[2]))
@@ -1573,22 +1567,8 @@ class RowsWidget(QWidget):
             painter.setPen(pen)
 
             # Draw column segments
-            x_threshold = self.row_dist
-            angle_threshold = self.set_angle
-            self.column_segments = []  
-            for start, end, color, angle, dist in connections:
-                x1, x2 = start[0], end[0]  # Remember: start = (x, y)
-                ang = angle
-                if ang > 90:
-                    ang -= 180
+            self.updateRowsColumns(connections)
 
-                ang = abs(ang)
-
-                if abs(x1 - x2) <= x_threshold and ang > self.set_angle:
-                    self.column_segments.append((start, end, color, angle, dist))
-                    
-            # print(f"len of filtered segments pre is {len(filterd_segments)}")
-                    
             for i, (start, end, color, angle, dist) in enumerate(self.column_segments):                    
                 # pen.setColor(QColor(color[0], color[1], color[2]))
                 # painter.setPen(pen)

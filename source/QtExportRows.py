@@ -270,9 +270,9 @@ class ExportDialog(QDialog):
                 #     color_code = ezdxf.colors.rgb2int(tuple(int(max(0, min(255, v))) for v in color))
                 #     msp.add_line(p1, p2, dxfattribs={"layer": "Edges", "true_color": color_code})
                 # # elif isinstance(color, int) and 1 <= color <= 256:
-                # #     msp.add_line(p1, p2, dxfattribs={"layer": "Edges", "color": color})
+                # #     msp.add_line(p1, p2, dxfattribs={"layer": "Rows", "color": color})
                 # else:
-                #     msp.add_line(p1, p2, dxfattribs={"layer": "Edges"})
+                #     msp.add_line(p1, p2, dxfattribs={"layer": "Rows"})
 
         # Columns layer
         if columns:
@@ -299,9 +299,9 @@ class ExportDialog(QDialog):
                 #     color_code = ezdxf.colors.rgb2int(tuple(int(max(0, min(255, v))) for v in color))
                 #     msp.add_line(p1, p2, dxfattribs={"layer": "Edges", "true_color": color_code})
                 # # elif isinstance(color, int) and 1 <= color <= 256:
-                # #     msp.add_line(p1, p2, dxfattribs={"layer": "Edges", "color": color})
+                # #     msp.add_line(p1, p2, dxfattribs={"layer": "Columns", "color": color})
                 # else:
-                #     msp.add_line(p1, p2, dxfattribs={"layer": "Edges"})
+                #     msp.add_line(p1, p2, dxfattribs={"layer": "Columns"})
 
         # Blobs layer
         if blobs:
