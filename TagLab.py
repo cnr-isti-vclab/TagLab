@@ -4931,24 +4931,25 @@ class TagLab(QMainWindow):
     def exportAnnAsTrainingDataset(self):
 
         if self.activeviewer is not None:
-            if self.newDatasetWidget is None:
+            if self.activeviewer.image is not None:
+                if self.newDatasetWidget is None:
 
-                if not self.activeviewer.image.export_dataset_area:
-                    self.activeviewer.image.export_dataset_area = [0, 0 , self.activeviewer.img_map.width(), self.activeviewer.img_map.height()]
+                    if not self.activeviewer.image.export_dataset_area:
+                        self.activeviewer.image.export_dataset_area = [0, 0 , self.activeviewer.img_map.width(), self.activeviewer.img_map.height()]
 
-                annotations = self.activeviewer.annotations
-                self.newDatasetWidget = QtNewDatasetWidget(self.activeviewer.image.export_dataset_area, parent=self)
-                self.newDatasetWidget.setWindowModality(Qt.NonModal)
-                self.newDatasetWidget.btnChooseExportArea.clicked.connect(self.enableAreaSelection)
-                self.newDatasetWidget.btnExport.clicked.connect(self.exportNewDataset)
-                self.newDatasetWidget.btnCancel.clicked.connect(self.disableAreaSelection)
-                self.newDatasetWidget.closed.connect(self.disableAreaSelection)
-                select_area_tool = self.activeviewer.tools.tools["SELECTAREA"]
-                select_area_tool.setAreaStyle("EXPORT_DATASET")
-                genutils.disconnectSignal(select_area_tool, "rectChanged", select_area_tool.rectChanged)
-                select_area_tool.rectChanged[int, int, int, int].connect(self.updateExportDatasetArea)
+                    annotations = self.activeviewer.annotations
+                    self.newDatasetWidget = QtNewDatasetWidget(self.activeviewer.image.export_dataset_area, parent=self)
+                    self.newDatasetWidget.setWindowModality(Qt.NonModal)
+                    self.newDatasetWidget.btnChooseExportArea.clicked.connect(self.enableAreaSelection)
+                    self.newDatasetWidget.btnExport.clicked.connect(self.exportNewDataset)
+                    self.newDatasetWidget.btnCancel.clicked.connect(self.disableAreaSelection)
+                    self.newDatasetWidget.closed.connect(self.disableAreaSelection)
+                    select_area_tool = self.activeviewer.tools.tools["SELECTAREA"]
+                    select_area_tool.setAreaStyle("EXPORT_DATASET")
+                    genutils.disconnectSignal(select_area_tool, "rectChanged", select_area_tool.rectChanged)
+                    select_area_tool.rectChanged[int, int, int, int].connect(self.updateExportDatasetArea)
 
-            self.newDatasetWidget.show()
+                self.newDatasetWidget.show()
 
     @pyqtSlot(int, int, int, int)
     def updateExportDatasetArea(self, x, y, width, height):
@@ -4977,13 +4978,12 @@ class TagLab(QMainWindow):
             QApplication.processEvents()
 
             self.activeviewer.image.export_dataset_area = self.newDatasetWidget.getAreaToExport()
-            flag_coco = self.newDatasetWidget.checkCoco.isChecked()
 
             index = self.comboboxSourceImage.currentIndex()
             current_image = self.project.images[index]
 
             new_dataset = NewDataset(self.activeviewer.img_map, self.project.labels, current_image,
-                                     tile_size=1026, step=256, flag_coco=flag_coco)
+                                     tile_size=1024, step=512, data_format=self.newDatasetWidget.comboDataFormat.currentText())
 
             target_classes = training.createTargetClasses(self.activeviewer.annotations)
 
@@ -4992,8 +4992,10 @@ class TagLab(QMainWindow):
             new_dataset.computeFrequencies(target_classes)
             target_pixel_size = self.newDatasetWidget.getTargetScale()
 
-            check_size = new_dataset.workingAreaCropAndRescale(self.activeviewer.image.pixelSize(), target_pixel_size,
-                                                               self.activeviewer.image.export_dataset_area)
+            area_to_export = self.activeviewer.image.export_dataset_area.copy()
+
+            check_size = new_dataset.exportAreaCropAndRescale(self.activeviewer.image.pixelSize(), target_pixel_size,
+                                                              area_to_export)
 
             if check_size is False:
                 msgBox = QMessageBox()
@@ -5029,7 +5031,7 @@ class TagLab(QMainWindow):
             # else:
             new_dataset.cut_tiles(regular=True, oversampling=False, classes_to_sample=None, radii=None)
 
-            flag_save = self.newDatasetWidget.checkTiles.isChecked()
+            flag_save = self.newDatasetWidget.checkShowTiles.isChecked()
             if flag_save:
                 new_dataset.save_samples("tiles_cutted.png", show_tiles=True, show_areas=True, radii=None)
 
@@ -5047,7 +5049,6 @@ class TagLab(QMainWindow):
             fl = open(target_pixel_size_file, "w")
             fl.write(str(target_pixel_size))
             fl.close()
-
 
             self.deleteProgressBar()
             self.deleteNewDatasetWidget()
