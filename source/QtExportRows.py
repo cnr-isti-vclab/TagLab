@@ -57,6 +57,10 @@ class ExportDialog(QDialog):
         
         self.edges_checkbox = QCheckBox("Export Edges")
 
+        self.rows_checkbox = QCheckBox("Export Rows")
+
+        self.columns_checkbox = QCheckBox("Export Columns")
+
         
         layout.addWidget(self.mask_checkbox)
         
@@ -65,6 +69,8 @@ class ExportDialog(QDialog):
         layout.addWidget(self.skeleton_checkbox)
         layout.addWidget(self.branch_points_checkbox)
         layout.addWidget(self.edges_checkbox)
+        layout.addWidget(self.rows_checkbox)
+        layout.addWidget(self.columns_checkbox)
 
         # Separator
         line1 = QFrame()
@@ -100,7 +106,7 @@ class ExportDialog(QDialog):
 
         self.setLayout(layout)
 
-    def DXFExport(self, file_path, skel, branch, edges, blobs, mask, lines, georef, offset = [0, 0], img_size = (0,0)):
+    def DXFExport(self, file_path, skel, branch, edges, rows, columns, blobs, mask, lines, georef, offset = [0, 0], img_size = (0,0)):
 
         # Export skeleton, branch points, and edges to a DXF file, each in a different layer.
         offset_x, offset_y = offset
@@ -239,6 +245,63 @@ class ExportDialog(QDialog):
                 # else:
                 #     msp.add_line(p1, p2, dxfattribs={"layer": "Edges"})
 
+        # Rows layer
+        if rows:
+            doc.layers.add("Rows", color=8)
+            for start, end, color, _, _ in self.rows:
+                # msp.add_line((start[0], start[1]), (end[0], end[1]), dxfattribs={"layer": "Edges"})
+                start_x_global = start[0] + offset_x
+                start_y_global = start[1] + offset_y
+                end_x_global = end[0] + offset_x
+                end_y_global = end[1] + offset_y
+                # start_y_flipped = img_height - start_y_global
+                # end_y_flipped = img_height - end_y_global
+                # msp.add_line((start_x_global, start_y_flipped), (end_x_global, end_y_flipped), dxfattribs={"layer": "Edges"})
+                if transform is not None:
+                    p1 = transform * (start_x_global, start_y_global)
+                    p2 = transform * (end_x_global, end_y_global)
+                else:
+                    p1 = (start_x_global, img_height - start_y_global)
+                    p2 = (end_x_global, img_height - end_y_global)
+                msp.add_line(p1, p2, dxfattribs={"layer": "Rows"})
+                
+                # # Use truecolor for each edge if color is provided as RGB
+                # if isinstance(color, (tuple, list)) and len(color) == 3:
+                #     color_code = ezdxf.colors.rgb2int(tuple(int(max(0, min(255, v))) for v in color))
+                #     msp.add_line(p1, p2, dxfattribs={"layer": "Edges", "true_color": color_code})
+                # # elif isinstance(color, int) and 1 <= color <= 256:
+                # #     msp.add_line(p1, p2, dxfattribs={"layer": "Edges", "color": color})
+                # else:
+                #     msp.add_line(p1, p2, dxfattribs={"layer": "Edges"})
+
+        # Columns layer
+        if columns:
+            doc.layers.add("Columns", color=9)
+            for start, end, color, _, _ in self.columns:
+                # msp.add_line((start[0], start[1]), (end[0], end[1]), dxfattribs={"layer": "Edges"})
+                start_x_global = start[0] + offset_x
+                start_y_global = start[1] + offset_y
+                end_x_global = end[0] + offset_x
+                end_y_global = end[1] + offset_y
+                # start_y_flipped = img_height - start_y_global
+                # end_y_flipped = img_height - end_y_global
+                # msp.add_line((start_x_global, start_y_flipped), (end_x_global, end_y_flipped), dxfattribs={"layer": "Edges"})
+                if transform is not None:
+                    p1 = transform * (start_x_global, start_y_global)
+                    p2 = transform * (end_x_global, end_y_global)
+                else:
+                    p1 = (start_x_global, img_height - start_y_global)
+                    p2 = (end_x_global, img_height - end_y_global)
+                msp.add_line(p1, p2, dxfattribs={"layer": "Columns"})
+                
+                # # Use truecolor for each edge if color is provided as RGB
+                # if isinstance(color, (tuple, list)) and len(color) == 3:
+                #     color_code = ezdxf.colors.rgb2int(tuple(int(max(0, min(255, v))) for v in color))
+                #     msp.add_line(p1, p2, dxfattribs={"layer": "Edges", "true_color": color_code})
+                # # elif isinstance(color, int) and 1 <= color <= 256:
+                # #     msp.add_line(p1, p2, dxfattribs={"layer": "Edges", "color": color})
+                # else:
+                #     msp.add_line(p1, p2, dxfattribs={"layer": "Edges"})
 
         # Blobs layer
         if blobs:
@@ -310,4 +373,6 @@ class ExportDialog(QDialog):
             "export_skeleton": self.skeleton_checkbox.isChecked(),
             "export_branch_points": self.branch_points_checkbox.isChecked(),
             "export_edges": self.edges_checkbox.isChecked(),
+            "export_rows": self.rows_checkbox.isChecked(),
+            "export_columns": self.columns_checkbox.isChecked(),
         }

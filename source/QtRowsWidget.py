@@ -84,7 +84,10 @@ class RowsWidget(QWidget):
         self.thickness_image = None
         self.thickness_data = []
         self.branch_points =  []
+        
         self.edges = []
+        self.row_segments = []
+        self.column_segments = []
 
         self.rect = rect
         self.blob_list = blobs
@@ -501,6 +504,36 @@ class RowsWidget(QWidget):
         self.actionShowBranch.setCheckable(True)
         self.actionShowBranch.setChecked(True)
         self.actionShowEdges.setCheckable(True)
+
+        y_threshold = self.row_dist
+        angle_threshold = self.set_angle
+        self.row_segments = []  
+        for start, end, color, angle, dist in self.edges:
+            y1, y2 = start[1], end[1]  
+            ang = angle
+            if ang > 90:
+                ang -= 180
+
+            ang = abs(ang)
+
+            if ang < angle_threshold and abs(y1 - y2) <= y_threshold:
+                self.row_segments.append((start, end, color, angle, dist))
+                    
+        x_threshold = self.row_dist
+        angle_threshold = self.set_angle
+        self.column_segments = []  
+        for start, end, color, angle, dist in self.edges:
+            x1, x2 = start[0], end[0]  # Remember: start = (x, y)
+            ang = angle
+            if ang > 90:
+                ang -= 180
+
+            ang = abs(ang)
+
+            if abs(x1 - x2) <= x_threshold and ang > self.set_angle:
+                self.column_segments.append((start, end, color, angle, dist))
+                    
+        
         self.actionShowRows.setCheckable(True)
         self.actionShowColumns.setCheckable(True)
 
@@ -1515,7 +1548,7 @@ class RowsWidget(QWidget):
             # Draw rows segments
             y_threshold = self.row_dist
             angle_threshold = self.set_angle
-            row_segments = []  
+            self.row_segments = []  
             for start, end, color, angle, dist in connections:
                 y1, y2 = start[1], end[1]  
                 ang = angle
@@ -1525,10 +1558,10 @@ class RowsWidget(QWidget):
                 ang = abs(ang)
 
                 if ang < angle_threshold and abs(y1 - y2) <= y_threshold:
-                    row_segments.append((start, end, color, angle, dist))
+                    self.row_segments.append((start, end, color, angle, dist))
                     
                     
-            for i, (start, end, color, angle, dist) in enumerate(row_segments):                    
+            for i, (start, end, color, angle, dist) in enumerate(self.row_segments):                    
                 # pen.setColor(QColor(color[0], color[1], color[2]))
                 # painter.setPen(pen)
                 # print(f"angle of {i} is {angle}")
@@ -1542,7 +1575,7 @@ class RowsWidget(QWidget):
             # Draw column segments
             x_threshold = self.row_dist
             angle_threshold = self.set_angle
-            column_segments = []  
+            self.column_segments = []  
             for start, end, color, angle, dist in connections:
                 x1, x2 = start[0], end[0]  # Remember: start = (x, y)
                 ang = angle
@@ -1552,11 +1585,11 @@ class RowsWidget(QWidget):
                 ang = abs(ang)
 
                 if abs(x1 - x2) <= x_threshold and ang > self.set_angle:
-                    column_segments.append((start, end, color, angle, dist))
+                    self.column_segments.append((start, end, color, angle, dist))
                     
             # print(f"len of filtered segments pre is {len(filterd_segments)}")
                     
-            for i, (start, end, color, angle, dist) in enumerate(column_segments):                    
+            for i, (start, end, color, angle, dist) in enumerate(self.column_segments):                    
                 # pen.setColor(QColor(color[0], color[1], color[2]))
                 # painter.setPen(pen)
                 # print(f"angle of {i} is {angle}")
@@ -1593,6 +1626,8 @@ class RowsWidget(QWidget):
         dialog.skeleton_checkbox.show()
         dialog.branch_points_checkbox.show()
         dialog.edges_checkbox.show()
+        dialog.rows_checkbox.show()
+        dialog.columns_checkbox.show()
         dialog.format_label.show()
         dialog.format_combo.show()
 
@@ -1604,6 +1639,8 @@ class RowsWidget(QWidget):
         dialog.skeleton_checkbox.setChecked(self.skel_checked)
         dialog.branch_points_checkbox.setChecked(self.branch_checked)
         dialog.edges_checkbox.setChecked(self.edges_checked)
+        dialog.rows_checkbox.setChecked(self.rows_checked)
+        dialog.columns_checkbox.setChecked(self.columns_checked)
 
         # Connect format change to onExportFormatChanged method
         # dialog.format_combo.currentTextChanged.connect(
@@ -1625,6 +1662,8 @@ class RowsWidget(QWidget):
         export_skeleton = options.get("export_skeleton", False)
         export_branch_points = options.get("export_branch_points", False)
         export_edges = options.get("export_edges", False)
+        export_rows = options.get("export_rows", False)
+        export_columns = options.get("export_columns", False)
         export_format = options.get("format", "")
         export_success = False
 
@@ -1661,6 +1700,8 @@ class RowsWidget(QWidget):
             dialog.skeleton = self.skeleton if export_skeleton else None
             dialog.branch_points = self.branch_points if export_branch_points else []
             dialog.edges = self.edges if export_edges else []
+            dialog.rows = self.row_segments if export_rows else []
+            dialog.columns = self.column_segments if export_columns else []
             dialog.blobs = self.blob_list if export_blobs else []
 
             georef_filename = None
@@ -1668,7 +1709,7 @@ class RowsWidget(QWidget):
                 georef_filename = self.parent_viewer.image.georef_filename
 
             dialog.DXFExport(
-                file_path, export_skeleton, export_branch_points, export_edges, export_blobs, export_mask, export_lines,
+                file_path, export_skeleton, export_branch_points, export_edges, export_rows, export_columns, export_blobs, export_mask, export_lines,
                 georef=georef_filename, offset=self.off,
                 img_size=(self.parent_viewer.image.width, self.parent_viewer.image.height)
             )
