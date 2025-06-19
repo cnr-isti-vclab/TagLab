@@ -110,12 +110,17 @@ class QtNewDatasetWidget(QWidget):
         ###########################################################
 
         # self.checkOversampling = QCheckBox("Oversampling")
-        self.checkTiles = QCheckBox("Show Exported Tiles")
-        self.checkCoco = QCheckBox("Export In Coco Panoptic Format")
+        self.lblDataFormat = QLabel("Data format:")
+        self.comboDataFormat = QComboBox()
+        self.comboDataFormat.addItem("Tiles")
+        self.comboDataFormat.addItem("COCO")
+        self.comboDataFormat.addItem("YOLO-v5")
+        self.checkShowTiles = QCheckBox("Show exported tiles")
 
         layoutH2 = QHBoxLayout()
-        layoutH2.addWidget(self.checkTiles)
-        layoutH2.addWidget(self.checkCoco)
+        layoutH2.addWidget(self.lblDataFormat)
+        layoutH2.addWidget(self.comboDataFormat)
+        layoutH2.addWidget(self.checkShowTiles)
         layoutH2.addStretch()
 
         ###########################################################

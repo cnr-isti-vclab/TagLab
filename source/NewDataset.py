@@ -36,7 +36,7 @@ import json
 from cv2 import fillPoly
 import datetime
 from skimage.measure import label, regionprops
-from source import Mask
+from source.Blob import Blob
 
 
 class NewDataset(object):
@@ -44,7 +44,7 @@ class NewDataset(object):
 	This class handles the functionalities to create a new dataset.
 	"""
 
-	def __init__(self, ortho_image, labels, image_info, tile_size, step, flag_coco):
+	def __init__(self, ortho_image, labels, image_info, tile_size, step, data_format):
 
 		self.ortho_image = ortho_image  # QImage
 		self.blobs = image_info.annotations.seg_blobs
@@ -65,9 +65,9 @@ class NewDataset(object):
 
 		self.label_image = None
 		self.labels = None
-		self.flag_coco = flag_coco
+		self.data_format = data_format
 
-		self.crop_size = 513
+		self.crop_size = int(tile_size / 2)
 		#self.idmap = None
 		self.id_image = None
 
@@ -84,19 +84,41 @@ class NewDataset(object):
 		self.sP_max = 0.0
 
 
-	def workingAreaCropAndRescale(self, current_pixel_size, target_pixel_size, working_area):
+	def exportAreaCropAndRescale(self, current_pixel_size, target_pixel_size, export_area):
 
-		x = working_area[1]
-		y = working_area[0]
-		width = working_area[2]
-		height = working_area[3]
+		scale = float(current_pixel_size / target_pixel_size)
+
+		w_exp = export_area[2]
+		h_exp = export_area[3]
+
+		w_img = self.ortho_image.width()
+		h_img = self.ortho_image.height()
+
+		if abs(w_exp - w_img) < 100 and abs(h_exp - h_img) < 100:
+			# the selected export area is large, use the entire image
+			x = 0
+			y = 0
+			width = w_img
+			height = h_img
+		else:
+			# the selected export area is adjusted such that the tiles goes inside it
+			tile_size = self.tile_size
+			crop_size = self.crop_size
+
+			w_prime = ((w_exp - crop_size * 2) // tile_size) * tile_size + 2 * tile_size + crop_size // 2 + 10
+			h_prime = ((h_exp - crop_size * 2) // tile_size) * tile_size + 2 * tile_size + crop_size // 2 + 10
+			delta_w = w_prime - w_exp
+			delta_h = h_prime - h_exp
+			y = int(export_area[0] - (delta_h // 2) / scale)
+			x = int(export_area[1] - (delta_w // 2) / scale)
+			width = int(export_area[2] + (delta_w) / scale)
+			height = int(export_area[3] + (delta_h) / scale)
 
 		crop_ortho_image = self.ortho_image.copy(x, y, width, height)
 		crop_label_image = self.label_image.copy(x, y, width, height)
 		#crop_id_image = np.copy(self.idmap)
 		#crop_id_image= crop_id_image[y: y+height, x: x+width]
 
-		scale = float(current_pixel_size / target_pixel_size)
 		w = int(crop_ortho_image.width() * scale)
 		h = int(crop_ortho_image.height() * scale)
 
@@ -109,7 +131,8 @@ class NewDataset(object):
 			self.ortho_image = crop_ortho_image.scaled(w, h, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
 			self.label_image = crop_label_image.scaled(w, h, Qt.IgnoreAspectRatio, Qt.FastTransformation)
 			#self.idmap = cv2.resize(crop_id_image, dsize=(h, w), interpolation=cv2.INTER_NEAREST) this is for a numpy
-			if self.flag_coco:
+
+			if self.data_format == "COCO" or self.data_format == "YOLO-v5":
 				self.crop_id_image = self.id_image.copy(x, y, width, height)
 				self.id_image = self.crop_id_image.scaled(w, h, Qt.IgnoreAspectRatio, Qt.FastTransformation)
 
@@ -543,7 +566,7 @@ class NewDataset(object):
 		painter.end()
 		self.label_image = labelimg
 
-		if self.flag_coco:
+		if self.data_format == "COCO" or self.data_format == "YOLO-v5":
 			self.id_image = np.zeros((h, w), dtype=np.int32)
 
 			for i, blob in enumerate(self.blobs):
@@ -586,7 +609,7 @@ class NewDataset(object):
 
 	def setupAreas(self, mode, target_classes=None):
 		"""
-		mode:
+		The validation and test area is computed according to different modes:
 
 			"UNIFORM (VERTICAL)    : the map is subdivided vertically (70 / 15 / 15)
 			"UNIFORM (HORIZONTAL)  : the map is subdivided horizontally (70 / 15 / 15)
@@ -673,6 +696,43 @@ class NewDataset(object):
 		self.test_area = test_area
 
 
+	def setupAreasModified(self, mode, target_classes=None):
+		"""
+		Only the validation area is computed. Available modes:
+
+			"UNIFORM (VERTICAL)    : the map is subdivided vertically (70 / 30)
+			"UNIFORM (HORIZONTAL)  : the map is subdivided horizontally (70 / 30)
+
+		Note: one of the problem here is that the resulting training/validation areas are not TIGHT to the working area.
+		"""
+
+		# size of the each area is 30% of the entire map
+		map_w = self.ortho_image.width()
+		map_h = self.ortho_image.height()
+
+		val_area = [0, 0, 0, 0]
+		# the train area is represented by the entire map minus the validation and test areas
+
+		if mode == "UNIFORM (VERTICAL)":
+
+			delta = int(self.crop_size / 2)
+			ww_val = map_w - delta*2
+			hh_val = (map_h - delta*2) * 0.3
+			val_area = [delta + (map_h - delta * 2) * 0.7, delta, ww_val, hh_val]
+
+		elif mode == "UNIFORM (HORIZONTAL)":
+
+			delta = int(self.crop_size / 2)
+			ww_val = (map_w - delta*2) * 0.3 - delta
+			hh_val = map_h - delta*2
+			val_area = [delta, delta + (map_w - delta*2) * 0.7, ww_val, hh_val]
+
+		self.val_area = val_area
+		self.test_area = [0,0,0,0]
+
+		print(self.val_area)
+
+
 	def sampleAreaUniformly(self, area, tile_size, step):
 		"""
 		Sample the given area uniformly according to the tile_size and the step size.
@@ -683,6 +743,9 @@ class NewDataset(object):
 
 		area_W = area[2]
 		area_H = area[3]
+
+		if area_W < 10 or area_H < 10:
+			return samples
 
 		tile_cols = 1 + int(area_W / step)
 		tile_rows = 1 + int(area_H / step)
@@ -1006,7 +1069,7 @@ class NewDataset(object):
 					sys.stdout.write(txt)
 
 		tile_size = 1024
-		step = 256
+		step = 512
 
 		tile_cols = 1 + int(area[2] / step)
 		tile_rows = 1 + int(area[3] / step)
@@ -1147,7 +1210,7 @@ class NewDataset(object):
 		imageList = []
 		segmentationList = []
 
-		if self.flag_coco:
+		if self.data_format == "COCO":
 
 			##### info dataset
 
@@ -1217,24 +1280,18 @@ class NewDataset(object):
 			top = cy - half_tile_size
 			left = cx - half_tile_size
 
+			# RGB image
 			cropimg = genutils.cropQImage(self.ortho_image, [top, left, self.tile_size, self.tile_size])
-			croplabel = genutils.cropQImage(self.label_image, [top, left, self.tile_size, self.tile_size])
-
 			filenameRGB = os.path.join(basenameim, tilename + str.format("_{0:04d}", (i)) + ".png")
-			filenameLabel = os.path.join(basenamelab, tilename + str.format("_{0:04d}", (i)) + ".png")
-
 			cropimg.save(filenameRGB)
-			croplabel.save(filenameLabel)
 
-			if self.flag_coco:
+			if self.data_format == "YOLO-v5":
+				# image label
+				croplabel = genutils.cropQImage(self.label_image, [top, left, self.tile_size, self.tile_size])
+				filenameLabel = os.path.join(basenamelab, tilename + str.format("_{0:04d}", (i)) + ".png")
+				croplabel.save(filenameLabel)
 
-				image_dict = {"license": 2,
-						 "file_name": tilename + str.format("_{0:04d}", (i)) + ".png",
-						 "coco_url": filenameRGB,
-						 "height": self.tile_size,
-						 "width": self.tile_size,
-						 "date_captured": self.image_info.acquisition_date,
-						 "id": imagecount_id }
+			if self.data_format == "COCO" or self.data_format == "YOLO-v5":
 
 				cropidlabel = genutils.cropQImage(self.id_image, [top, left, self.tile_size, self.tile_size])
 				cropidlabel = genutils.qimageToNumpyArray(cropidlabel)
@@ -1243,41 +1300,73 @@ class NewDataset(object):
 				regions_map = cropidlabel[:,:,0] + cropidlabel[:,:,1] * 256 + cropidlabel[:,:,2] * 65536
 				regions = measure.regionprops(regions_map)
 
-				for region in regions:
+				if self.data_format == "YOLO-v5":
 
-					tilemask = np.zeros_like(regions_map).astype(np.uint8)
-					tilemask[region.coords[:, 1], region.coords[:, 0]] = 1
-					#segmentation = genutils.binaryMaskToRle(tilemask)
-					segmentation = maskcoco.encode(np.asfortranarray(np.transpose(tilemask)))
+					filenameLabel = os.path.join(basenamelab, tilename + str.format("_{0:04d}", (i)) + ".txt")
+					fp = open(filenameLabel, "wt")
 
-					segmentation["counts"] = segmentation["counts"].decode("utf-8")
+					for region in regions:
+						blob = Blob(region,0,0,0)
+						n = blob.contour.shape[0]
+						txt = "1 "
+						for i in range(n):
+							x = blob.contour[i, 0] / self.tile_size
+							y = blob.contour[i, 1] / self.tile_size
+							value = "{:.6f} {:.6f}".format(x,y)
+							txt += value
+							txt += " "
 
-					category_id = -1
-					for jj in range(10):
-						N = int((jj * region.coords.shape[0]) / 10)
-						rgb = croplabel.pixel(region.coords[N, 1], region.coords[N, 0])
-						color_key = str(qRed(rgb)) + "-" + str(qGreen(rgb)) + "-" + str(qBlue(rgb))
-						if color_key != "0-0-0":
-							category_id = color_to_category_id[color_key]
+						txt = txt[:-1]
+						txt += "\n"
+						fp.write(txt)
 
-					# COCO format for BBOX -> [x,y,width,height]
-					bbox = [region.bbox[1], region.bbox[0], region.bbox[3] - region.bbox[1], region.bbox[2] - region.bbox[0]]
+					fp.close()
 
-					infos = {'segmentation': {}, 'area' : int(region.area), 'iscrowd' : 0,'image_id': imagecount_id, 'bbox': bbox, 'category_id': category_id, "id": segcount_id}
+				if self.data_format == "COCO":
 
-					segcount_id = segcount_id + 1
+					image_dict = {"license": 2,
+							 "file_name": tilename + str.format("_{0:04d}", (i)) + ".png",
+							 "coco_url": filenameRGB,
+							 "height": self.tile_size,
+							 "width": self.tile_size,
+							 "date_captured": self.image_info.acquisition_date,
+							 "id": imagecount_id }
 
-					infos["segmentation"] = segmentation
+					for region in regions:
 
-					if category_id >= 0:
-						segmentationList.append(infos)
+						tilemask = np.zeros_like(regions_map).astype(np.uint8)
+						tilemask[region.coords[:, 1], region.coords[:, 0]] = 1
+						#segmentation = genutils.binaryMaskToRle(tilemask)
+						segmentation = maskcoco.encode(np.asfortranarray(np.transpose(tilemask)))
 
-				imageList.append(image_dict)
+						segmentation["counts"] = segmentation["counts"].decode("utf-8")
 
-				imagecount_id = imagecount_id + 1
+						category_id = -1
+						for jj in range(10):
+							N = int((jj * region.coords.shape[0]) / 10)
+							rgb = croplabel.pixel(region.coords[N, 1], region.coords[N, 0])
+							color_key = str(qRed(rgb)) + "-" + str(qGreen(rgb)) + "-" + str(qBlue(rgb))
+							if color_key != "0-0-0":
+								category_id = color_to_category_id[color_key]
+
+						# COCO format for BBOX -> [x,y,width,height]
+						bbox = [region.bbox[1], region.bbox[0], region.bbox[3] - region.bbox[1], region.bbox[2] - region.bbox[0]]
+
+						infos = {'segmentation': {}, 'area' : int(region.area), 'iscrowd' : 0,'image_id': imagecount_id, 'bbox': bbox, 'category_id': category_id, "id": segcount_id}
+
+						segcount_id = segcount_id + 1
+
+						infos["segmentation"] = segmentation
+
+						if category_id >= 0:
+							segmentationList.append(infos)
+
+					imageList.append(image_dict)
+
+					imagecount_id = imagecount_id + 1
 
 
-		if self.flag_coco:
+		if self.data_format == "COCO":
 
 			jsondata["images"] = imageList
 			jsondata["annotations"] = segmentationList
@@ -1386,6 +1475,13 @@ class NewDataset(object):
 		if show_areas is True:
 
 			pen_width = int(min(self.label_image.width(), self.label_image.height()) / 200.0)
+
+			painter.setBrush(Qt.NoBrush)
+			pen = QPen(Qt.green)
+			pen.setWidth(pen_width)
+			pen.setStyle(Qt.DashDotLine)
+			painter.setPen(pen)
+			painter.drawRect(int(self.crop_size/2), int(self.crop_size/2), self.ortho_image.width() - self.crop_size, self.ortho_image.height() - self.crop_size)
 
 			painter.setBrush(Qt.NoBrush)
 			pen = QPen(Qt.blue)
