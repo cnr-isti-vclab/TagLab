@@ -1292,9 +1292,9 @@ class NewDataset(object):
 
 				labeldict = {
 						"supercategory": "coral",
-						"color": color,
+						"color": self.labels_dict[label_name].fill,
 						"id": i,
-						"name": key}
+						"name": label_name}
 
 				categorieslist.append(labeldict)
 
