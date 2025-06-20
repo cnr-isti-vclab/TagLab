@@ -16,7 +16,17 @@ class Label(object):
         self.border = border
         self.visible = True
 
+    def getColorAsKey(self):
+        """
+        It returns the color of the label as a string in the format "rrr-ggg-bbb".
+        Example: "200-002-015" for r=200, g=2, b=15
+        """
 
+        r = self.fill[0]
+        g = self.fill[1]
+        b = self.fill[2]
+
+        return "{:03d}-{:03d}-{:03d}".format(r,g,b)
 
     def save(self):
 

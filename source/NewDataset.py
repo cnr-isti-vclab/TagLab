@@ -1280,16 +1280,15 @@ class NewDataset(object):
             # a list of dictionaries for classes
 			categorieslist = []
 
-			list_keys = list(self.labels_dict.keys())
-			list_keys.sort()
+			list_names = list(self.labels_dict.keys())
+			list_names.sort()
 
 			# used later to retrieve the category id
 			color_to_category_id = {}
 
-			for i, key in enumerate(list_keys):
+			for i, label_name in enumerate(list_names):
 
-				color = self.labels_dict[key].fill
-				color_key = str(color[0]) + "-" + str(color[1]) + "-" + str(color[2])
+				color_key = self.labels_dict[label_name].getColorAsKey()
 
 				labeldict = {
 						"supercategory": "coral",
