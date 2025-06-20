@@ -501,6 +501,7 @@ class RowsWidget(QWidget):
         self.btnUpdateValues.setEnabled(True)
 
         self.branch_points, self.edges = self.vectorBranchPoints(self.skeleton)
+        print(f"Branch points self len is {len(self.branch_points)}")
 
         # self.connectBranchPoints(self.branch_points, brick_width, brick_dist)
         # print(self.branch_points)
@@ -969,7 +970,7 @@ class RowsWidget(QWidget):
 
         # Branch points: nodes with degree > 2
         branch_points = [node for node in G.nodes if G.degree(node) > 2]
-        print(f"length of branch points pre: {len(branch_points)}")
+        # print(f"length of branch points pre: {len(branch_points)}")
 
         # remove branch points that are too close to each other
         filtered_branch_points = []
@@ -1015,6 +1016,8 @@ class RowsWidget(QWidget):
 
         G = new_G
         branch_points = filtered_branch_points
+
+        # print(f"length of branch points post1: {len(branch_points)}")
 
         # Optional: Visualize
         # plt.imshow(skeleton, cmap='gray')
@@ -1109,6 +1112,7 @@ class RowsWidget(QWidget):
 
         # Recompute branch points: nodes with degree > 2
         branch_points = [node for node in G_segments.nodes if G_segments.degree(node) > 2]
+        # print(f"length of branch points post2: {len(branch_points)}")
 
  
         # # Plot the skeleton
@@ -1621,7 +1625,7 @@ class RowsWidget(QWidget):
                     # painter.drawText(text_x, text_y, angle_text)
 
         if rows:
-            pen = QPen(Qt.red, 3)
+            pen = QPen(QColor(255, 140, 0), 3)  # Orange
             painter.setPen(pen)
 
             # Draw rows segments
@@ -1635,7 +1639,7 @@ class RowsWidget(QWidget):
                     painter.drawLine(start[0], start[1], end[0], end[1])   
 
         if columns:
-            pen = QPen(Qt.black, 3)
+            pen = QPen(QColor(102, 0, 153), 3)  # Deep purple
             painter.setPen(pen)
 
             # Draw column segments
