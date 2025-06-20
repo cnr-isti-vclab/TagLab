@@ -610,4 +610,20 @@ def rgb_to_aci(self, r, g, b):
             min_distance = distance
             closest_aci = aci
 
-    return closest_aci 
+    return closest_aci
+
+
+def getLabelNamesByColor(labels_dict, color):
+    """
+    It returns the label names associated with a color given a labels dictionary.. 
+    """
+
+    label_names = []
+
+    keys = list(labels_dict.keys())
+    for key in keys:
+        c = labels_dict[key].fill
+        if c[0] == color[0] and c[1] == color[1] and c[2] == color[2]:
+            label_names.append(key)
+
+    return label_names

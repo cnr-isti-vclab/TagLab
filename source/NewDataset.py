@@ -1233,8 +1233,13 @@ class NewDataset(object):
 			dataset_yaml_filename = os.path.join(basename, "dataset.yaml")
 			fy = open(dataset_yaml_filename, 'wt')
 			fy.write("names:\n")
+			yolo_class_mapper_inv = {}
+			for i, key in enumerate(self.yolo_class_mapper.keys()):
+				yolo_class_mapper_inv[i] = key
+
 			for i in range(self.yolo_class_counter):
-				txt = ("  {:d}: class{:d}\n").format(i,i+1)
+				label_name = genutils.getLabelNamesByColor(yolo_class_mapper_inv[i])
+				txt = ("  {:d}: {:s}\n").format(i, label_name)
 				fy.write(txt)
 			txt = "path: " + basename + "\n"
 			fy.write(txt)
