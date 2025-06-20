@@ -37,6 +37,7 @@ from cv2 import fillPoly
 import datetime
 from skimage.measure import label, regionprops
 from source.Blob import Blob
+from source.Label import Label
 
 
 class NewDataset(object):
@@ -1362,8 +1363,8 @@ class NewDataset(object):
 						row = region.centroid[0]
 						col = region.centroid[1]
 						rgb = croplabel.pixel(int(col), int(row))
-						color_key = str(qRed(rgb)) + "-" + str(qGreen(rgb)) + "-" + str(qBlue(rgb))
-						if color_key != "0-0-0":
+						color_key = Label.convertColorToKey(qRed(rgb), qGreen(rgb), qBlue(rgb))
+						if color_key != "000-000-000":
 							class_code = self.yolo_class_mapper.get(color_key)
 							if class_code is None:
 								self.yolo_class_mapper[color_key] = self.yolo_class_counter
@@ -1407,8 +1408,8 @@ class NewDataset(object):
 						for jj in range(10):
 							N = int((jj * region.coords.shape[0]) / 10)
 							rgb = croplabel.pixel(region.coords[N, 1], region.coords[N, 0])
-							color_key = str(qRed(rgb)) + "-" + str(qGreen(rgb)) + "-" + str(qBlue(rgb))
-							if color_key != "0-0-0":
+							color_key = Label.convertColorToKey(qRed(rgb), qGreen(rgb), qBlue(rgb))
+							if color_key != "000-000-000":
 								category_id = color_to_category_id[color_key]
 
 						# COCO format for BBOX -> [x,y,width,height]
