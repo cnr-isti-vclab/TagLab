@@ -969,25 +969,89 @@ class RowsWidget(QWidget):
 
         # Branch points: nodes with degree > 2
         branch_points = [node for node in G.nodes if G.degree(node) > 2]
+        print(f"length of branch points pre: {len(branch_points)}")
+
+        # remove branch points that are too close to each other
+        filtered_branch_points = []
+        min_dist = 2
+        taken = set()
+        pt_mapping = {}
+
+        for i, pt1 in enumerate(branch_points):
+            if i in taken:
+                continue
+            group = [pt1]
+            group_indices = [i]
+
+            for j, pt2 in enumerate(branch_points):
+                if j <= i or j in taken:
+                    continue
+                dist = np.hypot(pt1[0] - pt2[0], pt1[1] - pt2[1])
+                if dist < min_dist:
+                    group.append(pt2)
+                    group_indices.append(j)
+
+            # Compute centroid of the group
+            group_arr = np.array(group)
+            
+            # centroid = tuple(np.round(np.mean(group_arr, axis=0)).astype(int))
+            mean = np.mean(group_arr, axis=0)
+            centroid = min(group, key=lambda pt: np.linalg.norm(np.array(pt) - mean))
+
+            filtered_branch_points.append(centroid)
+
+            for pt in group:
+                pt_mapping[pt] = centroid
+
+            taken.update(group_indices)
+
+        # Rewire graph  with filtered branch points
+        new_G = nx.Graph()
+        for u, v in G.edges():
+            u_new = pt_mapping.get(u, u)
+            v_new = pt_mapping.get(v, v)
+            if u_new != v_new:
+                new_G.add_edge(u_new, v_new)
+
+        G = new_G
+        branch_points = filtered_branch_points
 
         # Optional: Visualize
         # plt.imshow(skeleton, cmap='gray')
+
         # for x, y in branch_points:
         #     plt.plot(x, y, 'ro', markersize=3)
         # plt.title('Branch Points')
-        # plt.savefig("arara.png", bbox_inches='tight', pad_inches=0)
+        # plt.savefig("arara1.png", bbox_inches='tight', pad_inches=0)
+        # # plt.show()
+        # plt.close()
+
+
+        # plt.imshow(skeleton, cmap='gray')
+
+        # #Plot filtered branch points
+        # for x, y in filtered_branch_points:
+        #     plt.plot(x, y, 'go', markersize=5)
+
+
+        # plt.title('Filtered Branch Points')
+        # plt.savefig("arara2.png", bbox_inches='tight', pad_inches=0)
         # # plt.show()
         # plt.close()
         
-        # Plot skeleton
+        # # Plot skeleton
         # plt.figure(figsize=(8, 8))
         # plt.imshow(skeleton, cmap='gray')
 
-        # Plot edges (lines between connected nodes)
+        # # Plot edges (lines between connected nodes)
         # for (x1, y1), (x2, y2) in G.edges:
         #     plt.plot([x1, x2], [y1, y2], color='blue', linewidth=0.5)
 
-        # Plot branch points
+        # #Plot filtered branch points
+        # for x, y in filtered_branch_points:
+        #     plt.plot(x, y, 'go', markersize=5)
+
+        # # Plot branch points
         # for x, y in branch_points:
         #     plt.plot(x, y, 'ro', markersize=3)
 
@@ -1002,7 +1066,6 @@ class RowsWidget(QWidget):
         # # plt.show()
         # plt.close()
 
-        
         visited_edges = set()
         segments = []
 
@@ -1029,7 +1092,7 @@ class RowsWidget(QWidget):
                     prev, current = current, next_node
 
                 # Only add if it ends at another branch or endpoint
-                if current in branch_points or G.degree[current] == 1:
+                if path[0] in branch_points and current in branch_points:
                     color = tuple(np.random.randint(0, 256, 3))  # Generate a random RGB color
                     dx = path[-1][0] - path[0][0]
                     dy = path[-1][1] - path[0][1]
@@ -1039,6 +1102,15 @@ class RowsWidget(QWidget):
                     segments.append((path[0], path[-1], color, angle_deg, dist))
                     # segments.append((path[0], path[-1]))
 
+        # Rewire graph only with segments which are between branch points
+        G_segments = nx.Graph()
+        for start, end, *_ in segments:
+            G_segments.add_edge(start, end)
+
+        # Recompute branch points: nodes with degree > 2
+        branch_points = [node for node in G_segments.nodes if G_segments.degree(node) > 2]
+
+ 
         # # Plot the skeleton
         # plt.figure(figsize=(8, 8))
         # # plt.imshow(skeleton, cmap='gray')
