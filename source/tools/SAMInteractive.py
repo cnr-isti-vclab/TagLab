@@ -416,6 +416,21 @@ class SAMInteractive(Tool):
             # Fill in while still small
             mask_resized = ndi.binary_fill_holes(mask_resized).astype(float)
 
+            # Find all connected components in the mask
+            labeled_mask, num_features = ndi.label(mask_resized)
+            if num_features > 1:
+                # Find the largest connected component
+                sizes = ndi.sum(mask_resized, labeled_mask, range(1, num_features + 1))
+                largest_label = np.argmax(sizes) + 1
+                # Keep only the largest component
+                mask_resized = (labeled_mask == largest_label).astype(float)
+
+            
+            # #Save the mask as an image
+            # os.makedirs("masks", exist_ok=True)
+            # mask_filename = os.path.join("masks", "mask_{:06d}.png".format(len(os.listdir("masks"))))
+            # cv2.imwrite(mask_filename, (mask_resized * 255).astype(np.uint8))
+
             # Region contain masked object
             indices = np.argwhere(mask_resized)
 
