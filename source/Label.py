@@ -29,7 +29,7 @@ class Label(object):
         return "{:03d}-{:03d}-{:03d}".format(r,g,b)
 
     @staticmethod
-    def convertColorToKey(self, r, g, b):
+    def convertColorToKey(r, g, b):
 
         return "{:03d}-{:03d}-{:03d}".format(r,g,b)
 

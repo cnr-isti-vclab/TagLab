@@ -1238,8 +1238,16 @@ class NewDataset(object):
 				yolo_class_mapper_inv[i] = key
 
 			for i in range(self.yolo_class_counter):
-				label_name = genutils.getLabelNamesByColor(yolo_class_mapper_inv[i])
-				txt = ("  {:d}: {:s}\n").format(i, label_name)
+				color_key = yolo_class_mapper_inv[i]
+				r = int(color_key.split("-")[0])
+				g = int(color_key.split("-")[1])
+				b = int(color_key.split("-")[2])
+				color = [r, g, b]
+				label_name = genutils.getLabelNamesByColor(self.labels_dict, color)
+				if len(label_name) > 0:
+					txt = ("  {:d}: {:s}\n").format(i, label_name[0])
+				else:
+					txt = ("  {:d}: class{:d}\n").format(i, i+1)
 				fy.write(txt)
 			txt = "path: " + basename + "\n"
 			fy.write(txt)
