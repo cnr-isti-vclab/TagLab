@@ -233,6 +233,13 @@ class QtImageViewer(QGraphicsView):
             return
         zf = self.zoom_factor
 
+        # NOTE: self.img_map is None if image is not loaded
+        # this will cause an exception when calling center() method as the object has no width/height
+        if self.img_map is None:
+            # We do not have access to the logging object.
+            print("Warning: Image not loaded. Cannot center image.")
+            return
+        
         xmap = float(self.img_map.width()) * x
         ymap = float(self.img_map.height()) * y
 

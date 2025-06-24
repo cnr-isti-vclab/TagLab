@@ -483,11 +483,13 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
                 metrics_filename = save_network_as[:len(save_network_as) - 4] + "-val-metrics.txt"
                 saveMetrics(metrics_val, metrics_filename)
 
-            checkpoint_name = save_network_as.replace(".net", "_checkpoint_{:d}.net".format(epoch))
-            checkpoint_filename = os.path.join("C:\\temp2", os.path.basename(checkpoint_name))
-            torch.save(net.state_dict(), os.path.join("C:\\temp2", checkpoint_filename))
-            metrics_filename = checkpoint_filename[:len(checkpoint_filename) - 4] + "-val-metrics.txt"
-            saveMetrics(metrics_val, metrics_filename)
+            # checkpoints
+            #temp_dir = "C:/temp"
+            #checkpoint_name = save_network_as.replace(".net", "_checkpoint_{:d}.net".format(epoch))
+            #checkpoint_filename = os.path.join(temp_dir, os.path.basename(checkpoint_name))
+            #torch.save(net.state_dict(), os.path.join(temp_dir, checkpoint_filename))
+            #metrics_filename = checkpoint_filename[:len(checkpoint_filename) - 4] + "-val-metrics.txt"
+            #saveMetrics(metrics_val, metrics_filename)
 
             print("-> CURRENT BEST ACCURACY ", best_accuracy)
 
