@@ -29,6 +29,7 @@ from scipy.spatial import KDTree
 # import svgwrite
 # from PyQt5.QtSvg import QSvgRenderer
 from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtWidgets import QColorDialog
 # from subprocess import check_call
 
 # from itertools import combinations
@@ -54,7 +55,7 @@ class RowsWidget(QWidget):
             self.setMinimumSize(width, height)
             self.resize(width, height)
             self.IMAGEVIEWER_W = width//2 - 40
-            self.IMAGEVIEWER_H = height - 400
+            self.IMAGEVIEWER_H = height - 500
         else:
             self.setMinimumWidth(1440)
             self.setMinimumHeight(900)   
@@ -222,7 +223,12 @@ class RowsWidget(QWidget):
         self.row_dist = 20
         self.set_angle = 45
 
-        brickdist_label = QLabel(f"Rows/Columns Distance:")
+        if self.scale:
+            unit = "mm"
+        else:
+            unit = "px"
+
+        brickdist_label = QLabel(f"Rows/Columns Distance ({unit}):")
         # self.BrickDistBox = QLineEdit(self)
         # self.BrickDistBox.setReadOnly(False)
         # self.BrickDistBox.setFixedWidth(150)
@@ -236,22 +242,28 @@ class RowsWidget(QWidget):
 
         self.BrickDistSlider = QSlider(Qt.Horizontal)
         self.BrickDistSlider.setMinimum(5)
-        self.BrickDistSlider.setMaximum(200)  # Adjust max as needed
+        self.BrickDistSlider.setMaximum(200) 
         self.BrickDistSlider.setValue(self.row_dist)
         self.BrickDistSlider.setFixedWidth(self.IMAGEVIEWER_W)
         self.BrickDistSlider.setTickPosition(QSlider.TicksBelow)
         self.BrickDistSlider.setTickInterval(2)
         self.BrickDistSlider.setToolTip("Set the distance threshold between rows or columns")
 
-        self.BrickDistValueLabel = QLabel(str(self.row_dist))
-        self.BrickDistSlider.valueChanged.connect(
-            lambda val: self.BrickDistValueLabel.setText(str(val))
-        )
+        if self.scale:
+            self.BrickDistValueLabel = QLabel(str((self.row_dist)* float(self.scale)))
+            self.BrickDistSlider.valueChanged.connect(
+                lambda val: self.BrickDistValueLabel.setText(str(val * float(self.scale)))
+            )
+        else:
+            self.BrickDistValueLabel = QLabel(str(self.row_dist))
+            self.BrickDistSlider.valueChanged.connect(
+                lambda val: self.BrickDistValueLabel.setText(str(val))
+            )           
 
-        angle_label = QLabel(f"Rows/Columns Angle:")
+        angle_label = QLabel(f"Rows/Columns Angle (degree):")
         self.AngleSlider = QSlider(Qt.Horizontal)
         self.AngleSlider.setMinimum(0)
-        self.AngleSlider.setMaximum(90)  # Adjust max as needed
+        self.AngleSlider.setMaximum(90) 
         self.AngleSlider.setValue(self.set_angle)
         self.AngleSlider.setFixedWidth(self.IMAGEVIEWER_W)
         self.AngleSlider.setTickPosition(QSlider.TicksBelow)
@@ -262,10 +274,42 @@ class RowsWidget(QWidget):
         self.AngleSlider.valueChanged.connect(
             lambda val: self.AngleValueLabel.setText(str(val))
         )
+        # Add color palette for skeleton, edges, rows and columns
+        color_layout = QHBoxLayout()
+
+        self.skeleton_color = QColor(0, 0, 255)  # Default blue
+        self.skeletonColorButton = QPushButton("Skeleton Color")
+        self.skeletonColorButton.setToolTip("Select the color for skeleton.")
+        self.skeletonColorButton.setStyleSheet(f"background-color: {self.skeleton_color.name()};")
+        self.skeletonColorButton.clicked.connect(self.chooseSkeletonColor)
+
+        self.edge_color = QColor(0, 255, 0)  # Default green
+        self.edgeColorButton = QPushButton("Edge Color")
+        self.edgeColorButton.setToolTip("Select the color for edge.")
+        self.edgeColorButton.setStyleSheet(f"background-color: {self.edge_color.name()};")
+        self.edgeColorButton.clicked.connect(self.chooseEdgeColor)
+        
+        self.row_color = QColor(255, 140, 0)  # Default orange
+        self.rowColorButton = QPushButton("Row Color")
+        self.rowColorButton.setToolTip("Select the color for row segments.")
+        self.rowColorButton.setStyleSheet(f"background-color: {self.row_color.name()};")
+        self.rowColorButton.clicked.connect(self.chooseRowColor)
+
+        self.column_color = QColor(102, 0, 153)  # Default deep purple
+        self.columnColorButton = QPushButton("Column Color")
+        self.columnColorButton.setToolTip("Select the color for column segments.")
+        self.columnColorButton.setStyleSheet(f"background-color: {self.column_color.name()};")
+        self.columnColorButton.clicked.connect(self.chooseColumnColor)
+
+        # Add color buttons to the layout
+        color_layout.addWidget(self.skeletonColorButton, alignment=Qt.AlignCenter)
+        color_layout.addWidget(self.edgeColorButton, alignment=Qt.AlignCenter)
+        color_layout.addWidget(self.rowColorButton, alignment=Qt.AlignCenter)
+        color_layout.addWidget(self.columnColorButton, alignment=Qt.AlignCenter)
 
         # Add "Update" button
         self.btnUpdateValues = QPushButton("Update")
-        self.btnUpdateValues.setToolTip("Update distance and angle values from the sliders.")
+        self.btnUpdateValues.setToolTip("Update distance and angle values and colors from the sliders.")
         self.btnUpdateValues.clicked.connect(self.updateDistAngle)
 
 
@@ -278,6 +322,8 @@ class RowsWidget(QWidget):
         brickdist_layout.addWidget(self.AngleSlider, alignment=Qt.AlignCenter)
         brickdist_layout.addWidget(self.AngleValueLabel, alignment=Qt.AlignCenter)
         brickdist_layout.setSpacing(2)
+
+        brickdist_layout.addLayout(color_layout)
 
         brickdist_layout.addWidget(self.btnUpdateValues, alignment=Qt.AlignCenter)
         
@@ -349,10 +395,10 @@ class RowsWidget(QWidget):
         slider_layout = QVBoxLayout()
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setMinimum(1)
-        self.slider.setMaximum(50)
-        self.slider.setValue(21)
+        self.slider.setMaximum(101)
+        self.slider.setValue(51)
         self.slider.setTickPosition(QSlider.TicksBelow)
-        self.slider.setTickInterval(1)
+        self.slider.setTickInterval(2)
         self.slider.valueChanged.connect(self.updateStructuringElement)
         self.slider.setFixedHeight(30)
 
@@ -435,8 +481,56 @@ class RowsWidget(QWidget):
         # self.line_viewer.setImg(self.image_cropped)
         # self.skel_viewer.setImg(self.image_cropped)
 
-        self.setLayout(layout)    
+        self.setLayout(layout)
+
+    def chooseSkeletonColor(self):
+        color = QColorDialog.getColor(self.skeleton_color, self, "Select Skeleton Color")
+        if color.isValid():
+            self.skeleton_color = color
+            self.skeletonColorButton.setStyleSheet(f"background-color: {self.skeleton_color.name()};")
+            # Redraw skeletons with new color if visible
+            # if self.skel_checked:
+            #     self.toggleSkelBranchEdges(
+            #         self.skel_checked, self.graphskel_checked, self.branch_checked,
+            #         self.edges_checked, self.rows_checked, self.columns_checked
+            #     )
+
+    def chooseEdgeColor(self):
+        color = QColorDialog.getColor(self.edge_color, self, "Select Edge Color")
+        if color.isValid():
+            self.edge_color = color
+            self.edgeColorButton.setStyleSheet(f"background-color: {self.edge_color.name()};")
+            # Redraw edges with new color if visible
+            # if self.edges_checked:
+            #     self.toggleSkelBranchEdges(
+            #         self.skel_checked, self.graphskel_checked, self.branch_checked,
+            #         self.edges_checked, self.rows_checked, self.columns_checked
+            #     )
     
+    def chooseColumnColor(self):
+        color = QColorDialog.getColor(self.column_color, self, "Select Column Color")
+        if color.isValid():
+            self.column_color = color
+            self.columnColorButton.setStyleSheet(f"background-color: {self.column_color.name()};")
+            # Redraw columns with new color if visible
+            # if self.columns_checked:
+            #     self.toggleSkelBranchEdges(
+            #         self.skel_checked, self.graphskel_checked, self.branch_checked,
+            #         self.edges_checked, self.rows_checked, self.columns_checked
+            #     )
+
+    def chooseRowColor(self):
+            color = QColorDialog.getColor(self.row_color, self, "Select Row Color")
+            if color.isValid():
+                self.row_color = color
+                self.rowColorButton.setStyleSheet(f"background-color: {self.row_color.name()};")
+                # Redraw rows with new color if visible
+                # if self.rows_checked:
+                #     self.toggleSkelBranchEdges(
+                #         self.skel_checked, self.graphskel_checked, self.branch_checked,
+                #         self.edges_checked, self.rows_checked, self.columns_checked
+                #     )
+
     def updateStructuringElement(self, value):
         self.structuring_element_size = value
         if self.scale:
@@ -501,6 +595,7 @@ class RowsWidget(QWidget):
         self.btnUpdateValues.setEnabled(True)
 
         self.branch_points, self.edges = self.vectorBranchPoints(self.skeleton)
+        print(f"Branch points self len is {len(self.branch_points)}")
 
         # self.connectBranchPoints(self.branch_points, brick_width, brick_dist)
         # print(self.branch_points)
@@ -914,7 +1009,12 @@ class RowsWidget(QWidget):
         # thickness_img.save("thickness_image.png", "PNG")
         
         self.thickness_image = thickness_img
+        
+        self.thickness_checked = True
         self.actionShowThickness.setCheckable(True)
+        self.actionShowThickness.setChecked(True)
+
+        self.toggleShowThickness(self.thickness_checked)
         # return thickness_img
     
     def updateThicknessTextBox(self, thickness_data, color='white'):
@@ -969,7 +1069,7 @@ class RowsWidget(QWidget):
 
         # Branch points: nodes with degree > 2
         branch_points = [node for node in G.nodes if G.degree(node) > 2]
-        print(f"length of branch points pre: {len(branch_points)}")
+        # print(f"length of branch points pre: {len(branch_points)}")
 
         # remove branch points that are too close to each other
         filtered_branch_points = []
@@ -1015,6 +1115,8 @@ class RowsWidget(QWidget):
 
         G = new_G
         branch_points = filtered_branch_points
+
+        # print(f"length of branch points post1: {len(branch_points)}")
 
         # Optional: Visualize
         # plt.imshow(skeleton, cmap='gray')
@@ -1109,6 +1211,7 @@ class RowsWidget(QWidget):
 
         # Recompute branch points: nodes with degree > 2
         branch_points = [node for node in G_segments.nodes if G_segments.degree(node) > 2]
+        # print(f"length of branch points post2: {len(branch_points)}")
 
  
         # # Plot the skeleton
@@ -1579,7 +1682,8 @@ class RowsWidget(QWidget):
         painter = QPainter(branch_image)
 
         if skel:
-            pen = QPen(Qt.blue, 2)
+            # pen = QPen(Qt.blue, 2)
+            pen = QPen(self.skeleton_color, 3)  # Custom skeleton color
             painter.setPen(pen)
 
             h, w = skeleton.shape
@@ -1602,13 +1706,15 @@ class RowsWidget(QWidget):
 
             # for (y, x) in zip(*np.where(skeleton)):
             #     painter.drawPoint(x, y)
-        
+
         if conn: 
-            pen = QPen(Qt.green, 3)
+            # pen = QPen(Qt.green, 3)
+            pen = QPen(self.edge_color, 3)  # Custom edge color
+            painter.setPen(pen)
     
             for i, (start, end, color, angle, dist) in enumerate(connections):                    
-                pen.setColor(QColor(color[0], color[1], color[2]))
-                painter.setPen(pen)
+                # pen.setColor(QColor(color[0], color[1], color[2]))
+                # painter.setPen(pen)
                 if dist > 2:
                     painter.drawLine(start[0], start[1], end[0], end[1])
 
@@ -1621,7 +1727,8 @@ class RowsWidget(QWidget):
                     # painter.drawText(text_x, text_y, angle_text)
 
         if rows:
-            pen = QPen(Qt.red, 3)
+            # pen = QPen(QColor(255, 140, 0), 3)  # Orange
+            pen = QPen(self.row_color, 3)  # Custom row color
             painter.setPen(pen)
 
             # Draw rows segments
@@ -1635,7 +1742,8 @@ class RowsWidget(QWidget):
                     painter.drawLine(start[0], start[1], end[0], end[1])   
 
         if columns:
-            pen = QPen(Qt.black, 3)
+            # pen = QPen(QColor(102, 0, 153), 3)  # Deep purple
+            pen = QPen(self.column_color, 3)  # Custom column color
             painter.setPen(pen)
 
             # Draw column segments

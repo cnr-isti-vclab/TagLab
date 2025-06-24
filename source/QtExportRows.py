@@ -172,49 +172,17 @@ class ExportDialog(QDialog):
             doc.layers.add("BranchPoints", color=2)
         
             # #Draw ALL the branch points
-            # for (y, x) in self.branch_points:
-            #     x_global = x + offset_x
-            #     y_global = y + offset_y
-            #     y_flipped = img_height - y_global
-            #     msp.add_circle((x_global, y_flipped), radius=1, dxfattribs={"layer": "BranchPoints"})
-            
-            # Draw branch points, if points are closer than 2 pixels, draw only one at the median position
-            remaining_points = list(self.branch_points)
-            drawn_points = []
-            while remaining_points:
-                (y, x) = remaining_points.pop(0)
-                close_points = [(y, x)]
-                to_remove = []
-                for idx, (yy, xx) in enumerate(remaining_points):
-                    if np.hypot(x - xx, y - yy) < 10:
-                        close_points.append((yy, xx))
-                        to_remove.append(idx)
-                # Remove close points from remaining_points
-                for idx in reversed(to_remove):
-                    remaining_points.pop(idx)
-                # Compute median position
-                ys, xs = zip(*close_points)
-                median_y = int(np.median(ys))
-                median_x = int(np.median(xs))
-                # Apply offset and flip y
-                median_x_global = median_x + offset_x
-                median_y_global = median_y + offset_y
-                # median_y_flipped = img_height - median_y_global
-                # # Empty circle
-                # msp.add_circle((median_x_global, median_y_flipped), radius=1, dxfattribs={"layer": "BranchPoints"})
-                # drawn_points.append((median_y_global, median_x_global))
-
-                # msp.add_circle((median_x, median_y), radius=1, dxfattribs={"layer": "BranchPoints"})
-                # drawn_points.append((median_y, median_x))
-
+            for (y, x) in self.branch_points:
+                x_global = x + offset_x
+                y_global = y + offset_y
+                # y_flipped = img_height - y_global
                 if transform is not None:
-                    center = transform * (median_x_global, median_y_global)
+                    center = transform * (x_global, y_global)
                     radius = 1 * text_height_scale
                 else:
-                    center = (median_x_global, img_height - median_y_global)
+                    center = (x_global, img_height - y_global)
                     radius = 1
                 msp.add_circle(center, radius=radius, dxfattribs={"layer": "BranchPoints"})
-
 
         # Edges layer
         if edges:
