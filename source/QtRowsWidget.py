@@ -487,49 +487,25 @@ class RowsWidget(QWidget):
         color = QColorDialog.getColor(self.skeleton_color, self, "Select Skeleton Color")
         if color.isValid():
             self.skeleton_color = color
-            self.skeletonColorButton.setStyleSheet(f"background-color: {self.skeleton_color.name()};")
-            # Redraw skeletons with new color if visible
-            # if self.skel_checked:
-            #     self.toggleSkelBranchEdges(
-            #         self.skel_checked, self.graphskel_checked, self.branch_checked,
-            #         self.edges_checked, self.rows_checked, self.columns_checked
-            #     )
+            self.skeletonColorButton.setStyleSheet(f"background-color: {self.skeleton_color.name()};")            
 
     def chooseEdgeColor(self):
         color = QColorDialog.getColor(self.edge_color, self, "Select Edge Color")
         if color.isValid():
             self.edge_color = color
-            self.edgeColorButton.setStyleSheet(f"background-color: {self.edge_color.name()};")
-            # Redraw edges with new color if visible
-            # if self.edges_checked:
-            #     self.toggleSkelBranchEdges(
-            #         self.skel_checked, self.graphskel_checked, self.branch_checked,
-            #         self.edges_checked, self.rows_checked, self.columns_checked
-            #     )
+            self.edgeColorButton.setStyleSheet(f"background-color: {self.edge_color.name()};")           
     
     def chooseColumnColor(self):
         color = QColorDialog.getColor(self.column_color, self, "Select Column Color")
         if color.isValid():
             self.column_color = color
             self.columnColorButton.setStyleSheet(f"background-color: {self.column_color.name()};")
-            # Redraw columns with new color if visible
-            # if self.columns_checked:
-            #     self.toggleSkelBranchEdges(
-            #         self.skel_checked, self.graphskel_checked, self.branch_checked,
-            #         self.edges_checked, self.rows_checked, self.columns_checked
-            #     )
 
     def chooseRowColor(self):
             color = QColorDialog.getColor(self.row_color, self, "Select Row Color")
             if color.isValid():
                 self.row_color = color
                 self.rowColorButton.setStyleSheet(f"background-color: {self.row_color.name()};")
-                # Redraw rows with new color if visible
-                # if self.rows_checked:
-                #     self.toggleSkelBranchEdges(
-                #         self.skel_checked, self.graphskel_checked, self.branch_checked,
-                #         self.edges_checked, self.rows_checked, self.columns_checked
-                #     )
 
     def updateStructuringElement(self, value):
         self.structuring_element_size = value
@@ -1871,7 +1847,9 @@ class RowsWidget(QWidget):
             dialog.DXFExport(
                 file_path, export_skeleton, export_branch_points, export_edges, export_rows, export_columns, export_blobs, export_mask, export_lines,
                 georef=georef_filename, offset=self.off,
-                img_size=(self.parent_viewer.image.width, self.parent_viewer.image.height)
+                img_size=(self.parent_viewer.image.width, self.parent_viewer.image.height),
+                skeleton_color=self.skeleton_color, edge_color=self.edge_color,
+                row_color=self.row_color, column_color=self.column_color
             )
             export_success = True
 
