@@ -242,7 +242,7 @@ class RowsWidget(QWidget):
 
         self.BrickDistSlider = QSlider(Qt.Horizontal)
         self.BrickDistSlider.setMinimum(5)
-        self.BrickDistSlider.setMaximum(200)  # Adjust max as needed
+        self.BrickDistSlider.setMaximum(200) 
         self.BrickDistSlider.setValue(self.row_dist)
         self.BrickDistSlider.setFixedWidth(self.IMAGEVIEWER_W)
         self.BrickDistSlider.setTickPosition(QSlider.TicksBelow)
@@ -263,7 +263,7 @@ class RowsWidget(QWidget):
         angle_label = QLabel(f"Rows/Columns Angle (degree):")
         self.AngleSlider = QSlider(Qt.Horizontal)
         self.AngleSlider.setMinimum(0)
-        self.AngleSlider.setMaximum(90)  # Adjust max as needed
+        self.AngleSlider.setMaximum(90) 
         self.AngleSlider.setValue(self.set_angle)
         self.AngleSlider.setFixedWidth(self.IMAGEVIEWER_W)
         self.AngleSlider.setTickPosition(QSlider.TicksBelow)
@@ -309,7 +309,7 @@ class RowsWidget(QWidget):
 
         # Add "Update" button
         self.btnUpdateValues = QPushButton("Update")
-        self.btnUpdateValues.setToolTip("Update distance and angle values from the sliders.")
+        self.btnUpdateValues.setToolTip("Update distance and angle values and colors from the sliders.")
         self.btnUpdateValues.clicked.connect(self.updateDistAngle)
 
 
@@ -395,10 +395,10 @@ class RowsWidget(QWidget):
         slider_layout = QVBoxLayout()
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setMinimum(1)
-        self.slider.setMaximum(50)
-        self.slider.setValue(21)
+        self.slider.setMaximum(101)
+        self.slider.setValue(51)
         self.slider.setTickPosition(QSlider.TicksBelow)
-        self.slider.setTickInterval(1)
+        self.slider.setTickInterval(2)
         self.slider.valueChanged.connect(self.updateStructuringElement)
         self.slider.setFixedHeight(30)
 
@@ -1009,7 +1009,12 @@ class RowsWidget(QWidget):
         # thickness_img.save("thickness_image.png", "PNG")
         
         self.thickness_image = thickness_img
+        
+        self.thickness_checked = True
         self.actionShowThickness.setCheckable(True)
+        self.actionShowThickness.setChecked(True)
+
+        self.toggleShowThickness(self.thickness_checked)
         # return thickness_img
     
     def updateThicknessTextBox(self, thickness_data, color='white'):
@@ -1424,7 +1429,7 @@ class RowsWidget(QWidget):
 
                 ang_deg = np.rad2deg(ang)
                 # ang = round(ang, 4)
-                # ang_deg = round(ang_deg, 4)
+                ang_deg = round(ang_deg, 4)
 
                 self.updateAngleTextBox([ang_deg], i, color=f'rgb({color[0]},{color[1]},{color[2]})')
         elif self.set_anglebox == False and self.set_thickbox == False:
@@ -1457,7 +1462,7 @@ class RowsWidget(QWidget):
 
                     ang_deg = np.rad2deg(ang)
                     # ang = round(ang, 4)
-                    # ang_deg = round(ang_deg, 4)
+                    ang_deg = round(ang_deg, 4)
 
                     self.updateAngleTextBox([ang_deg], i, color=f'rgb({color[0]},{color[1]},{color[2]})')
                     self.set_anglebox = True
