@@ -1,6 +1,5 @@
 from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal
-from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QHBoxLayout, QVBoxLayout, QCheckBox, QLineEdit, QFrame
-
+from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QHBoxLayout, QVBoxLayout, QCheckBox, QLineEdit, QFrame, QComboBox, QMessageBox
 
 class QtSelectByPropertiesWidget(QWidget):
 
@@ -51,10 +50,15 @@ class QtSelectByPropertiesWidget(QWidget):
         class_layout.addWidget(self.classCheckBox)
         class_layout.addStretch()
         # add a dropdown field for the class name
-        
+        self.classNameInput = QComboBox()
+        classList = ["-- CURRENT --"]
+        # add all labels in the dictionary of the parent labels widget
+        for label in self.parent.project.labels:
+            classList.append(label)
+        self.classNameInput.addItems(classList)
+        class_layout.addWidget(self.classNameInput)
         main_layout.addLayout(class_layout)
 
-             
         # add horizontal line separator to main layout
         separator1 = QFrame()
         separator1.setFrameShape(QFrame.HLine)
@@ -105,24 +109,25 @@ class QtSelectByPropertiesWidget(QWidget):
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint | Qt.WindowStaysOnTopHint)
         self.setMinimumWidth(500)
 
-        # Set the initial value of the thresholds
+        # Set the initial value of the thresholds based on the current blobs
+        pxmm = self.parent.activeviewer.px_to_mm
+        pxmm2 = pxmm * pxmm        
         self.areaThreshold = [1000000000.0, -1000000000.0]
         for blob in self.activeviewer.image.annotations.seg_blobs:
             if blob.area < self.areaThreshold[0]:
                 self.areaThreshold[0] = blob.area
             if blob.area > self.areaThreshold[1]:
                 self.areaThreshold[1] = blob.area
-        self.areaThresholdInput0.setText(str(self.areaThreshold[0] / 100.0))  # Convert to square cm
-        self.areaThresholdInput1.setText(str(self.areaThreshold[1] / 100.0))  # Convert to square cm
+        self.areaThresholdInput0.setText(str(self.areaThreshold[0] * pxmm2 / 100.0))  # Convert to square cm
+        self.areaThresholdInput1.setText(str(self.areaThreshold[1] * pxmm2 / 100.0))  # Convert to square cm
         self.perimeterThreshold = [1000000000.0, -1000000000.0]
         for blob in self.activeviewer.image.annotations.seg_blobs:
             if blob.perimeter < self.perimeterThreshold[0]:
                 self.perimeterThreshold[0] = blob.perimeter
             if blob.perimeter > self.perimeterThreshold[1]:
                 self.perimeterThreshold[1] = blob.perimeter
-        self.perimeterThresholdInput0.setText(str(self.perimeterThreshold[0] / 10)) # Convert to cm
-        self.perimeterThresholdInput1.setText(str(self.perimeterThreshold[1] / 10)) # Convert to cm
-
+        self.perimeterThresholdInput0.setText(str(self.perimeterThreshold[0] * pxmm / 10)) # Convert to cm
+        self.perimeterThresholdInput1.setText(str(self.perimeterThreshold[1] * pxmm / 10)) # Convert to cm
 
 
     # close the widget
@@ -130,10 +135,12 @@ class QtSelectByPropertiesWidget(QWidget):
         self.closewidget.emit()
         super(QtSelectByPropertiesWidget, self).closeEvent(event)
 
+
     # Update the label with the number of selected blobs
     def updateSelectedLabel(self):
         self.selectedCount.setText(f"Total: {len(self.activeviewer.image.annotations.seg_blobs)} Selected: {len(self.activeviewer.selected_blobs)}")
         self.selectedCount.adjustSize()
+
 
     # Methods for the all/none/invert buttons
     def all(self):
@@ -146,6 +153,7 @@ class QtSelectByPropertiesWidget(QWidget):
         self.activeviewer.selectInverseBlobs()
         self.updateSelectedLabel()
 
+
     # Method to add or remove blobs based on the selected checkboxes and thresholds
     def addRemove(self, add=True):
         #if all checkboxes are unchecked, do nothing
@@ -153,16 +161,18 @@ class QtSelectByPropertiesWidget(QWidget):
             return
         
         # Get the threshold values from the input fields
+        pxmm = self.parent.activeviewer.px_to_mm
+        pxmm2 = pxmm * pxmm
         try:
-            self.areaThreshold[0] = float(self.areaThresholdInput0.text()) * 100.0  # Convert to square mm
-            self.areaThreshold[1] = float(self.areaThresholdInput1.text()) * 100.0  # Convert to square mm
-            self.perimeterThreshold[0] = float(self.perimeterThresholdInput0.text()) * 10 # Convert to mm
-            self.perimeterThreshold[1] = float(self.perimeterThresholdInput1.text()) * 10 # Convert to mm
+            self.areaThreshold[0] = float(self.areaThresholdInput0.text()) * 100.0 / pxmm2 # Convert to square mm
+            self.areaThreshold[1] = float(self.areaThresholdInput1.text()) * 100.0 / pxmm2 # Convert to square mm
+            self.perimeterThreshold[0] = float(self.perimeterThresholdInput0.text()) * 10 / pxmm # Convert to mm
+            self.perimeterThreshold[1] = float(self.perimeterThresholdInput1.text()) * 10 / pxmm # Convert to mm
         except ValueError:
-            print("Invalid input for thresholds")
+            QMessageBox.critical(self, "Error", "Invalid input for thresholds. Please enter valid numbers.")
             return
         if (self.areaThreshold[0] > self.areaThreshold[1]) or (self.perimeterThreshold[0] > self.perimeterThreshold[1]):
-            print("Min should be less than or equal to Max")
+            QMessageBox.critical(self, "Error", "Minimum threshold should be less than or equal to maximum threshold.")
             return
 
         for blob in self.activeviewer.image.annotations.seg_blobs:
@@ -176,8 +186,13 @@ class QtSelectByPropertiesWidget(QWidget):
                 if blob.perimeter < self.perimeterThreshold[0] or blob.perimeter > self.perimeterThreshold[1]:
                     isValid = False
             if self.classCheckBox.isChecked():
-                print("choosing regions with class filter (not implemented)")
-                # Implement class filtering logic here if needed
+                print(f"choosing regions with class: {self.classNameInput.currentText()}")
+                if self.classNameInput.currentText() == "-- CURRENT --": # Use the currently active label
+                    if (self.parent.labels_widget.getActiveLabelName() != blob.class_name):
+                        isValid = False
+                else: # Use the selected class from the dropdown
+                    if (self.classNameInput.currentText() != blob.class_name):
+                        isValid = False
 
             # If any of the conditions are not met, skip this blob
             if not isValid: 
