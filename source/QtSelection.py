@@ -1,5 +1,5 @@
 from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal
-from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QHBoxLayout, QVBoxLayout, QCheckBox, QLineEdit, QFrame, QComboBox, QMessageBox
+from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QHBoxLayout, QVBoxLayout, QCheckBox, QLineEdit, QFrame, QComboBox, QMessageBox, QRadioButton
 
 class QtSelectByPropertiesWidget(QWidget):
 
@@ -59,6 +59,38 @@ class QtSelectByPropertiesWidget(QWidget):
         class_layout.addWidget(self.classNameInput)
         main_layout.addLayout(class_layout)
 
+        # by position
+        position_layout = QVBoxLayout()
+        pr1l = QHBoxLayout()
+        pr1l.setAlignment(Qt.AlignLeft)
+        self.positionCheckBox = QCheckBox("POSITION")
+        self.positionMinXInput = QLineEdit()
+        self.positionMaxXInput = QLineEdit()
+        pr1l.addWidget(self.positionCheckBox)
+        pr1l.addStretch()
+        pr1l.addWidget(QLabel("X:"))
+        pr1l.addWidget(self.positionMinXInput)
+        pr1l.addWidget(self.positionMaxXInput)
+        pr2l = QHBoxLayout()
+        pr2l.setAlignment(Qt.AlignLeft)
+        self.positionMinYInput = QLineEdit()
+        self.positionMaxYInput = QLineEdit()
+        pr2l.addStretch()
+        pr2l.addWidget(QLabel("Y:"))
+        pr2l.addWidget(self.positionMinYInput)
+        pr2l.addWidget(self.positionMaxYInput)
+        pr3l = QHBoxLayout()
+        pr3l.setAlignment(Qt.AlignLeft)        
+        self.positionCheck = QComboBox()
+        self.positionCheck.addItems(["Centroid", "Bounding Box"])
+        pr3l.addStretch()
+        pr3l.addWidget(QLabel("Check:"))        
+        pr3l.addWidget(self.positionCheck)
+        position_layout.addLayout(pr1l)
+        position_layout.addLayout(pr2l)
+        position_layout.addLayout(pr3l)
+        main_layout.addLayout(position_layout)
+
         # add horizontal line separator to main layout
         separator1 = QFrame()
         separator1.setFrameShape(QFrame.HLine)
@@ -111,23 +143,31 @@ class QtSelectByPropertiesWidget(QWidget):
 
         # Set the initial value of the thresholds based on the current blobs
         pxmm = self.parent.activeviewer.px_to_mm
-        pxmm2 = pxmm * pxmm        
-        self.areaThreshold = [1000000000.0, -1000000000.0]
+        pxmm2 = pxmm * pxmm
+        thresholdMin = 1000000000.0
+        thresholdMax = -1000000000.0
         for blob in self.activeviewer.image.annotations.seg_blobs:
-            if blob.area < self.areaThreshold[0]:
-                self.areaThreshold[0] = blob.area
-            if blob.area > self.areaThreshold[1]:
-                self.areaThreshold[1] = blob.area
-        self.areaThresholdInput0.setText(str(self.areaThreshold[0] * pxmm2 / 100.0))  # Convert to square cm
-        self.areaThresholdInput1.setText(str(self.areaThreshold[1] * pxmm2 / 100.0))  # Convert to square cm
-        self.perimeterThreshold = [1000000000.0, -1000000000.0]
+            if blob.area < thresholdMin:
+                thresholdMin = blob.area
+            if blob.area > thresholdMax:
+                thresholdMax = blob.area
+        self.areaThresholdInput0.setText(str(thresholdMin * pxmm2 / 100.0))  # Convert to square cm
+        self.areaThresholdInput1.setText(str(thresholdMax * pxmm2 / 100.0))  # Convert to square cm
+        thresholdMin = 1000000000.0
+        thresholdMax = -1000000000.0
         for blob in self.activeviewer.image.annotations.seg_blobs:
-            if blob.perimeter < self.perimeterThreshold[0]:
-                self.perimeterThreshold[0] = blob.perimeter
-            if blob.perimeter > self.perimeterThreshold[1]:
-                self.perimeterThreshold[1] = blob.perimeter
-        self.perimeterThresholdInput0.setText(str(self.perimeterThreshold[0] * pxmm / 10)) # Convert to cm
-        self.perimeterThresholdInput1.setText(str(self.perimeterThreshold[1] * pxmm / 10)) # Convert to cm
+            if blob.perimeter < thresholdMin:
+                thresholdMin = blob.perimeter
+            if blob.perimeter > thresholdMax:
+                thresholdMax = blob.perimeter
+        self.perimeterThresholdInput0.setText(str(thresholdMin * pxmm / 10)) # Convert to cm
+        self.perimeterThresholdInput1.setText(str(thresholdMax * pxmm / 10)) # Convert to cm
+
+        # Set the initial value of the position inputs based on the current image size
+        self.positionMinXInput.setText("0")
+        self.positionMinYInput.setText("0")
+        self.positionMaxXInput.setText(str(self.parent.activeviewer.image.width))
+        self.positionMaxYInput.setText(str(self.parent.activeviewer.image.height))
 
 
     # close the widget
@@ -157,48 +197,72 @@ class QtSelectByPropertiesWidget(QWidget):
     # Method to add or remove blobs based on the selected checkboxes and thresholds
     def addRemove(self, add=True):
         #if all checkboxes are unchecked, do nothing
-        if not (self.areaCheckBox.isChecked() or self.perimeterCheckBox.isChecked() or self.classCheckBox.isChecked()):
+        if not (self.areaCheckBox.isChecked() or self.perimeterCheckBox.isChecked() or self.classCheckBox.isChecked() or self.positionCheckBox.isChecked()):
             return
-        
-        # Get the threshold values from the input fields
+
+        # scale factors
         pxmm = self.parent.activeviewer.px_to_mm
         pxmm2 = pxmm * pxmm
+        # get thresholds
         try:
-            self.areaThreshold[0] = float(self.areaThresholdInput0.text()) * 100.0 / pxmm2 # Convert to square mm
-            self.areaThreshold[1] = float(self.areaThresholdInput1.text()) * 100.0 / pxmm2 # Convert to square mm
-            self.perimeterThreshold[0] = float(self.perimeterThresholdInput0.text()) * 10 / pxmm # Convert to mm
-            self.perimeterThreshold[1] = float(self.perimeterThresholdInput1.text()) * 10 / pxmm # Convert to mm
+            areaMin = float(self.areaThresholdInput0.text()) * 100.0 / pxmm2 # Convert to square mm
+            areaMax = float(self.areaThresholdInput1.text()) * 100.0 / pxmm2 # Convert to square mm
         except ValueError:
-            QMessageBox.critical(self, "Error", "Invalid input for thresholds. Please enter valid numbers.")
+            QMessageBox.critical(self, "Error", "Invalid input for area limits.")
             return
-        if (self.areaThreshold[0] > self.areaThreshold[1]) or (self.perimeterThreshold[0] > self.perimeterThreshold[1]):
-            QMessageBox.critical(self, "Error", "Minimum threshold should be less than or equal to maximum threshold.")
+        if (areaMin > areaMax):
+            QMessageBox.critical(self, "Error", "Area minimum limit should be less than or equal to maximum limit.")
             return
+        # print(f"area thresholds: {areaMin} - {areaMax}")
+        try:
+            perimeterMin = float(self.perimeterThresholdInput0.text()) * 10 / pxmm # Convert to mm
+            perimeterMax = float(self.perimeterThresholdInput1.text()) * 10 / pxmm # Convert to mm
+        except ValueError:
+            QMessageBox.critical(self, "Error", "Invalid input for perimeter limits.")
+            return
+        if (perimeterMin > perimeterMax):
+            QMessageBox.critical(self, "Error", "Perimeter minimum limit should be less than or equal to maximum limit.")
+            return
+        # print(f"perimeter thresholds: {perimeterMin} - {perimeterMax}")
+        try:
+            posMinX = float(self.positionMinXInput.text())
+            posMinY = float(self.positionMinYInput.text())
+            posMaxX = float(self.positionMaxXInput.text())
+            posMaxY = float(self.positionMaxYInput.text())
+        except ValueError:
+            QMessageBox.critical(self, "Error", "Invalid input for position.")
+            return
+        if (posMinX > posMaxX or posMinY > posMaxY):
+            QMessageBox.critical(self, "Error", "Position minimum values should be less than or equal to maximum values.")
+            return
+        # print(f"position thresholds: {posMinX} - {posMaxX}, {posMinY} - {posMaxY}")
 
         for blob in self.activeviewer.image.annotations.seg_blobs:
-            isValid = True
             if self.areaCheckBox.isChecked():
-                print(f"choosing regions with area thresholds: {self.areaThreshold[0]} - {self.areaThreshold[1]}")
-                if blob.area < self.areaThreshold[0] or blob.area > self.areaThreshold[1]:
-                    isValid = False
+                if blob.area < areaMin or blob.area > areaMax:
+                    continue
             if self.perimeterCheckBox.isChecked():
-                print(f"choosing regions with perimeter thresholds: {self.perimeterThreshold[0]} - {self.perimeterThreshold[1]}")
-                if blob.perimeter < self.perimeterThreshold[0] or blob.perimeter > self.perimeterThreshold[1]:
-                    isValid = False
+                if blob.perimeter < perimeterMin or blob.perimeter > perimeterMax:
+                    continue
             if self.classCheckBox.isChecked():
-                print(f"choosing regions with class: {self.classNameInput.currentText()}")
                 if self.classNameInput.currentText() == "-- CURRENT --": # Use the currently active label
                     if (self.parent.labels_widget.getActiveLabelName() != blob.class_name):
-                        isValid = False
+                        continue
                 else: # Use the selected class from the dropdown
                     if (self.classNameInput.currentText() != blob.class_name):
-                        isValid = False
+                        continue
+            if self.positionCheckBox.isChecked():
+                if self.positionCheck.currentText() == "Centroid":
+                    if (blob.centroid[0] < posMinX or blob.centroid[0] > posMaxX or blob.centroid[1] < posMinY or blob.centroid[1] > posMaxY):
+                        continue
+                elif self.positionCheck.currentText() == "Bounding Box":  #warning: bbox is in (min_row, min_col, max_row, max_col) format
+                    if (blob.bbox[0] < posMinY or blob.bbox[2] > posMaxY or
+                        blob.bbox[1] < posMinX or blob.bbox[3] > posMaxX):
+                        #print(f"Blob {blob.id} does not meet the bounding box position criteria.")
+                        #print(f"Blob bbox: ({blob.bbox[1]}, {blob.bbox[0]}), ({blob.bbox[3]}, {blob.bbox[2]})")
+                        continue
 
-            # If any of the conditions are not met, skip this blob
-            if not isValid: 
-                continue
-            
-            # If we reach here, the blob meets all the conditions
+            # If we reach here, the blob meets all the conditions. Add or remove the blob from the selected blobs list depending on the add parameter
             if add:
                 if blob not in self.activeviewer.selected_blobs:
                     self.activeviewer.selected_blobs.append(blob)
