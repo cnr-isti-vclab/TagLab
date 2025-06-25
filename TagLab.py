@@ -92,6 +92,8 @@ from source.QtRegionAttributesWidget import QtRegionAttributesWidget
 from source.QtShapefileAttributeWidget import QtAttributeWidget
 from source.QtGeometricInfoWidget import QtGeometricInfoWidget
 
+from source.QtSelection import QtSelectByPropertiesWidget
+
 # from source.QtDXFfileAttributeWidget import QtDXFExportWidget
 import ezdxf
 from ezdxf.enums import TextEntityAlignment
@@ -345,6 +347,7 @@ class TagLab(QMainWindow):
         self.selectInvertAction        = self.newAction("Invert Selection",          "Ctrl+I", self.selectInvert)
         self.selectByClassAction       = self.newAction("Select by Class",           "",       self.selectByClass)
         self.selectByWorkingAreaAction = self.newAction("Select by Working Area",    "",       self.selectByWorkingArea)
+        self.selectByPropertiesAction  = self.newAction("Select by Properties",     "",       self.selectByProperties)
 
         # VIEWERPLUS
 
@@ -1211,8 +1214,8 @@ class TagLab(QMainWindow):
         self.selectmenu.addAction(self.selectInvertAction)
         self.selectmenu.addSeparator()
         self.selectmenu.addAction(self.selectByClassAction)
-        #self.selectmenu.addAction(self.selectByAttributeAction)
         self.selectmenu.addAction(self.selectByWorkingAreaAction)
+        self.selectmenu.addAction(self.selectByPropertiesAction)
         self.selectmenu.addSeparator()
 
         ###### REGIONS MENU
@@ -2965,6 +2968,22 @@ class TagLab(QMainWindow):
         view.selectByWorkingArea(wa)
         logfile.info("[OP-SELECT] Blobs in the working area have been selected.")
 
+    def selectByProperties(self):
+        """
+        Select blobs by properties.
+        """
+        view = self.activeviewer
+        if view is None:
+            return
+        if self.project is None or len(self.project.images) == 0:
+            return
+        
+        if not hasattr(self, "selectByProperties_widget"):  # in this way there is only one instance of the widget, that preserve the last values used
+            self.selectByProperties_widget = QtSelectByPropertiesWidget(view, parent=self)
+        self.selectByProperties_widget.setWindowModality(Qt.NonModal)
+        self.selectByProperties_widget.show()
+        logfile.info("[OP-SELECT] Blobs have been selected by properties.")
+
     #OPERATIONS
 
     def assignOperation(self):
@@ -3165,9 +3184,9 @@ class TagLab(QMainWindow):
             msgBox.exec()
             return
 
-        self.geometricInfo_widget = QtGeometricInfoWidget(view, parent = self)
-        self.geometricInfo_widget.setWindowModality(Qt.ApplicationModal)
-        self.geometricInfo_widget.show()
+        geometricInfo_widget = QtGeometricInfoWidget(view, parent = self)
+        geometricInfo_widget.setWindowModality(Qt.ApplicationModal)
+        geometricInfo_widget.show()
 
     def dilate(self):
         """
