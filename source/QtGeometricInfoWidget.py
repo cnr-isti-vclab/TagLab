@@ -152,9 +152,9 @@ class QtGeometricInfoWidget(QWidget):
             data.append(line)
             line = ["maximum"] + [str(self.geometricStats[prop]["max"]) for prop in self.properties]
             data.append(line)
-            line = ["average"] + [str(round(self.geometricStats[prop]["average"],3)) for prop in self.properties]
+            line = ["average"] + [str(self.geometricStats[prop]["average"]) for prop in self.properties]
             data.append(line)
-            line = ["std."] + [str(round(self.geometricStats[prop]["std"],3)) for prop in self.properties]
+            line = ["std."] + [str(self.geometricStats[prop]["std"]) for prop in self.properties]
             data.append(line)
             line = ["median"] + [str(self.geometricStats[prop]["median"]) for prop in self.properties]
             data.append(line)
@@ -199,10 +199,10 @@ class QtGeometricInfoWidget(QWidget):
                       "label": "PERIMETER",
                       "calculable": True,
                       "round": 1},
-        "solidity": {"name": "Solidity",
-                     "label": "SOLIDITY",
-                     "calculable": True,
-                     "round": 3},                      
+        #"solidity": {"name": "Solidity",        # solidity is a derived measuree, it is area/area_convex, so it could be computed later
+        #             "label": "SOLIDITY",       # if I change my mind, I'll add it back in another set of derived properties
+        #             "calculable": True,
+        #             "round": 3},
         "areaConvex": {"name": "Area of Convex Hull (mm2)",
                        "label": "CONVEX\nAREA",
                        "calculable": True,
@@ -252,7 +252,7 @@ class QtGeometricInfoWidget(QWidget):
             self.geometricData[blob.id]["centroidy"] = round(self.parent.activeviewer.image.height - blob.centroid[1], self.properties["centroidy"]["round"]) # warning, image Y coordinate is inverted
             self.geometricData[blob.id]["area"] = round(blob.area * pxmm2, self.properties["area"]["round"])            
             self.geometricData[blob.id]["perimeter"] = round(blob.perimeter * pxmm, self.properties["perimeter"]["round"])
-            self.geometricData[blob.id]["solidity"] = round(blobMeasure[0].solidity, self.properties["solidity"]["round"])
+            #self.geometricData[blob.id]["solidity"] = round(blobMeasure[0].solidity, self.properties["solidity"]["round"])  # see comment above about solidity and why is hidden
             # convex hull
             self.geometricData[blob.id]["areaConvex"] = round(blobMeasure[0].area_convex * pxmm2, self.properties["areaConvex"]["round"])
             # bbox fit
@@ -265,9 +265,8 @@ class QtGeometricInfoWidget(QWidget):
             self.geometricData[blob.id]["major_axis_length"] = round(blobMeasure[0].major_axis_length * pxmm, self.properties["major_axis_length"]["round"])
             self.geometricData[blob.id]["minor_axis_length"] = round(blobMeasure[0].minor_axis_length * pxmm, self.properties["minor_axis_length"]["round"])
             # rectangle fit
-            
 
-        # compute the stats        
+        # compute the stats
         self.geometricStats = {}
         for key in self.properties:
             if self.properties[key]["calculable"]:
