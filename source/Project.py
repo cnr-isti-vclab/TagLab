@@ -25,7 +25,8 @@ from source.tools import Cut
 
 def replacePaths(old_path, new_path, images, current_dir):
     """
-    Replace the old_path with the new_path in the project images.
+    Replace the old_path with the new_path in the project images. The new paths are assigned
+    if and only if the corresponding files exist (otherwise this means that are not moved).
     The current directory is used to find the relative path.
     """
 
@@ -35,12 +36,14 @@ def replacePaths(old_path, new_path, images, current_dir):
             path = os.path.abspath(os.path.dirname(channel.filename))
             if os.path.samefile(old_path, path):
                 filename = os.path.join(new_path, os.path.basename(channel.filename))
-                channel.filename = current_dir.relativeFilePath(filename)
+                if os.path.exists(filename):
+                    channel.filename = current_dir.relativeFilePath(filename)
 
         path = os.path.abspath(os.path.dirname(image.georef_filename))
         if os.path.samefile(old_path, path):
-            basename = os.path.basename(image.georef_filename)
-            image.georef_filename = current_dir.relativeFilePath(os.path.join(new_path, basename))
+            filename = os.path.join(new_path, os.path.basename(image.georef_filename))
+            if os.path.exists(filename):
+                image.georef_filename = current_dir.relativeFilePath(filename)
 
 
 def loadProject(taglab_working_dir, filename, default_dict):
