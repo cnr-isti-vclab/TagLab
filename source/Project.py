@@ -23,6 +23,26 @@ from source.RegionAttributes import RegionAttributes
 from source.Shape import Layer, Shape
 from source.tools import Cut
 
+def replacePaths(old_path, new_path, images, current_dir):
+    """
+    Replace the old_path with the new_path in the project images.
+    The current directory is used to find the relative path.
+    """
+
+    for image in images:
+        for channel in image.channels:
+
+            path = os.path.abspath(os.path.dirname(channel.filename))
+            if os.path.samefile(old_path, path):
+                filename = os.path.join(new_path, os.path.basename(channel.filename))
+                channel.filename = current_dir.relativeFilePath(filename)
+
+        path = os.path.abspath(os.path.dirname(image.georef_filename))
+        if os.path.samefile(old_path, path):
+            basename = os.path.basename(image.georef_filename)
+            image.georef_filename = current_dir.relativeFilePath(os.path.join(new_path, basename))
+
+
 def loadProject(taglab_working_dir, filename, default_dict):
     dir = QDir(taglab_working_dir)
     abspath = os.path.join(taglab_working_dir, dir.relativeFilePath(filename))
@@ -47,34 +67,22 @@ def loadProject(taglab_working_dir, filename, default_dict):
     project.filename = filename
 
     # check if a file exist for each image and each channel
-    new_dir = None
     dir = QDir(taglab_working_dir)
     for image in project.images:
         for channel in image.channels:
             if not os.path.exists(channel.filename) and len(channel.filename) > 4:
 
-                if new_dir is None:
+                current_dir = os.path.abspath(os.path.dirname(channel.filename))
 
-                    (filename, filter) = QFileDialog.getOpenFileName(None,
-                                                                     "Couldn't find " + channel.filename + " please select it:",
-                                                                     taglab_working_dir,
-                                                                     "Image Files (*.png *.jpg *.jpeg *.tif *.tiff)")
+                (filename, filter) = QFileDialog.getOpenFileName(None,
+                                                                 "Couldn't find " + channel.filename + " please select it:",
+                                                                 taglab_working_dir,
+                                                                 "Image Files (*.png *.jpg *.jpeg *.tif *.tiff)")
 
-                    new_dir = os.path.dirname(filename)
+                new_dir = os.path.abspath(os.path.dirname(filename))
 
-                else:
+                replacePaths(current_dir, new_dir, project.images, dir)
 
-                    filename = channel.filename
-                    filename = os.path.basename(filename)
-                    filename = os.path.join(new_dir, filename)
-
-                channel.filename = dir.relativeFilePath(filename)
-
-                if image.georef_filename != "":
-                    basename = os.path.basename(image.georef_filename)
-                    image.georef_filename = dir.relativeFilePath(os.path.join(new_dir, basename))
-
-                image.georef_filename = ""
 
     # load geo-reference information
     for im in project.images:
