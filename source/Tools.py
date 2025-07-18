@@ -180,10 +180,10 @@ class Tools(QObject):
             return
         self.tools[self.tool].rightReleased(x, y)
 
-    def wheel(self, delta, mods):
+    def wheel(self, delta, mods=None):
         if self.tool == "MOVE":
             return
-        self.tools[self.tool].wheel(delta)
+        self.tools[self.tool].wheel(delta, mods)
 
     def applyTool(self):
         if self.tool == "MOVE":

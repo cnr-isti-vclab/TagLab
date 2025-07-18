@@ -1114,7 +1114,7 @@ class QtImageViewerPlus(QtImageViewer):
         if self.tools.tool == "WATERSHED" and mods & Qt.ShiftModifier:
             
             self.tools.tools["WATERSHED"].scribbles.setScaleFactor(self.zoom_factor)
-            self.tools.wheel(event.angleDelta())
+            self.tools.wheel(event.angleDelta(), mods)
             return
 
         #added zooming rectangle with shift key

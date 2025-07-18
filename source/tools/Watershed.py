@@ -65,7 +65,7 @@ class Watershed(Tool):
         if mods &  Qt.ShiftModifier:
             self.scribbles.move(x, y)
 
-    def wheel(self, delta):
+    def wheel(self, delta, mods=None):
         increase = float(delta.y()) / 10.0
         if 0.0 < increase < 1.0:
             increase = 1

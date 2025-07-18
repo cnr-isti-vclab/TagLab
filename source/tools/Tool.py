@@ -31,7 +31,7 @@ class Tool(QObject):
         pass
     def rightReleased(self, x, y):
         pass
-    def wheel(self, delta):
+    def wheel(self, delta, mods=None):
         pass
     def apply(self):
         pass
