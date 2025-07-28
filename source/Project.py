@@ -24,7 +24,7 @@ from source.RegionAttributes import RegionAttributes
 from source.Shape import Layer, Shape
 from source.tools import Cut
 
-def replacePaths(old_path, new_path, images, current_dir):
+def replacePaths(old_path, new_path, images, taglab_dir):
     """
     Replace the old_path with the new_path in the project images. The new paths are assigned
     if and only if the corresponding files exist (otherwise this means that are not moved).
@@ -38,13 +38,13 @@ def replacePaths(old_path, new_path, images, current_dir):
             if os.path.samefile(old_path, path):
                 filename = os.path.join(new_path, os.path.basename(channel.filename))
                 if os.path.exists(filename):
-                    channel.filename = current_dir.relativeFilePath(filename)
+                    channel.filename = taglab_dir.relativeFilePath(filename)
 
         path = os.path.abspath(os.path.dirname(image.georef_filename))
         if os.path.samefile(old_path, path):
             filename = os.path.join(new_path, os.path.basename(image.georef_filename))
             if os.path.exists(filename):
-                image.georef_filename = current_dir.relativeFilePath(filename)
+                image.georef_filename = taglab_dir.relativeFilePath(filename)
 
 
 def loadProject(taglab_working_dir, filename, default_dict):
@@ -71,21 +71,24 @@ def loadProject(taglab_working_dir, filename, default_dict):
     project.filename = filename
 
     # check if a file exist for each image and each channel
-    dir = QDir(taglab_working_dir)
+    taglab_dir = QDir(taglab_working_dir)
     for image in project.images:
         for channel in image.channels:
             if not os.path.exists(channel.filename) and len(channel.filename) > 4:
 
-                current_dir = os.path.abspath(os.path.dirname(channel.filename))
+                current_abs_path = os.path.abspath(channel.filename)
 
                 (filename, filter) = QFileDialog.getOpenFileName(None,
                                                                  "Couldn't find " + channel.filename + " please select it:",
                                                                  taglab_working_dir,
                                                                  "Image Files (*.png *.jpg *.jpeg *.tif *.tiff)")
 
-                new_dir = os.path.abspath(os.path.dirname(filename))
+                new_abs_path = os.path.abspath(filename)
 
-                replacePaths(current_dir, new_dir, project.images, dir)
+                current_path = os.path.dirname(current_abs_path)  # remove the name of the file
+                new_path = os.path.dirname(new_abs_path)          # remove the name of the file
+
+                replacePaths(current_path, new_path, project.images, taglab_dir)
 
 
     # load geo-reference information
