@@ -35,13 +35,13 @@ def replacePaths(old_path, new_path, images, taglab_dir):
         for channel in image.channels:
 
             path = os.path.abspath(os.path.dirname(channel.filename))
-            if os.path.samefile(old_path, path):
+            if os.path.normpath(old_path) == os.path.normpath(path):
                 filename = os.path.join(new_path, os.path.basename(channel.filename))
                 if os.path.exists(filename):
                     channel.filename = taglab_dir.relativeFilePath(filename)
 
         path = os.path.abspath(os.path.dirname(image.georef_filename))
-        if os.path.samefile(old_path, path):
+        if os.path.normpath(old_path) == os.path.normpath(path):
             filename = os.path.join(new_path, os.path.basename(image.georef_filename))
             if os.path.exists(filename):
                 image.georef_filename = taglab_dir.relativeFilePath(filename)
