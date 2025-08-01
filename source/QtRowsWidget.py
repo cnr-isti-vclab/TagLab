@@ -41,12 +41,12 @@ class RowsWidget(QWidget):
     closeRowsWidget = pyqtSignal()
 
     # def __init__(self, image_cropped, created_blobs, offset, parent=None):
-    def __init__(self, cropped_image, mask_array, blobs, rect, parent = None, screen_size = None):    
+    def __init__(self, cropped_image, mask_array, work_blobs, work_area, parent = None, screen_size = None):    
         super(RowsWidget, self).__init__(parent)
 
-        # self.q_skel = None
+        self.setWindowTitle("Rows Analysis")
+        self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowTitleHint)
 
-        # i = 0
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         if screen_size is not None:   
@@ -62,20 +62,17 @@ class RowsWidget(QWidget):
             self.IMAGEVIEWER_W = 640
             self.IMAGEVIEWER_H = 480  
 
-        self.setWindowTitle("Rows Analysis")
-        self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowTitleHint)
-
         self.parent_viewer = None
         if parent:
             self.parent_viewer = parent
             self.scale = self.parent_viewer.image.map_px_to_mm_factor
             # print(f"Scale is {self.scale}")
-            self.blob_list = blobs
-            rettangolo = self.parent_viewer.dragSelectionRect.rect()
-            self.off = [rettangolo.x(), rettangolo.y()]
-        
+
+        # offset value to be used to align the cropped image
+        tl = work_area.rect().topLeft()
+        self.offset = [tl.x(), tl.y()]
+
         self.image_cropped = cropped_image
-        # self.image_mask = image_mask
         self.maschera = mask_array
         self.masch = None
         self.blob_image = None
@@ -90,10 +87,10 @@ class RowsWidget(QWidget):
         self.row_segments = []
         self.column_segments = []
 
-        self.rect = rect
-        self.blob_list = blobs
+        self.rect = work_area
+        self.blob_list = work_blobs
         self.centroids = []
-        self.bboxes = []        
+        self.bboxes = []
 
         self.set_anglebox = False
         self.set_thickbox = False
@@ -1311,7 +1308,7 @@ class RowsWidget(QWidget):
                 cx, cy = blob.centroid
                 # print(f" centroid is {blob.centroid}")
 
-                mapped_centroid = [cx - self.off[0], cy - self.off[1]]
+                mapped_centroid = [cx - self.offset[0], cy - self.offset[1]]
                 # print(f"mapped centroid is {mapped_centroid}")
 
                 # Draw the centroid on the image
@@ -1322,7 +1319,7 @@ class RowsWidget(QWidget):
                 
                 # x, y, width, height = blob.bbox  # blob boundingbox 
                 # print(f"original is {blob.bbox}")
-                # mapped = [int(x - self.off[1]), int(y - self.off[0])] 
+                # mapped = [int(x - self.offset[1]), int(y - self.offset[0])] 
                 # print(f"mapped is {mapped}")
                 # painter.drawRect(mapped[1], mapped[0], width, height)
 
@@ -1331,7 +1328,7 @@ class RowsWidget(QWidget):
                 if contour is not None and len(contour) > 1:
                     # Map the contour points to the viewer's coordinate system
                     mapped_contour = [
-                        QPointF(point[0] - self.off[0], point[1] - self.off[1]) for point in contour
+                        QPointF(point[0] - self.offset[0], point[1] - self.offset[1]) for point in contour
                     ]
 
                     # Create a QPolygonF from the mapped contour
@@ -1748,7 +1745,7 @@ class RowsWidget(QWidget):
 
     def addMaskToProject(self):
         if self.parent_viewer:
-            self.parent_viewer.exportMaskAsBlob(self.masch, offset=self.off, class_name="Empty")
+            self.parent_viewer.addMaskAsBlob(self.masch, offset=self.offset, class_name="Empty")
         return
 
     # Unified export function for both line and skeleton data.
@@ -1846,7 +1843,7 @@ class RowsWidget(QWidget):
 
             dialog.DXFExport(
                 file_path, export_skeleton, export_branch_points, export_edges, export_rows, export_columns, export_blobs, export_mask, export_lines,
-                georef=georef_filename, offset=self.off,
+                georef=georef_filename, offset=self.offset,
                 img_size=(self.parent_viewer.image.width, self.parent_viewer.image.height),
                 skeleton_color=self.skeleton_color, edge_color=self.edge_color,
                 row_color=self.row_color, column_color=self.column_color

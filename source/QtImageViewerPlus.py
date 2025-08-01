@@ -1817,7 +1817,7 @@ class QtImageViewerPlus(QtImageViewer):
         self.logfile.info(message2)
         self.logfile.info(message3)
 
-    def exportMaskAsBlob(self, mask, offset=(0, 0), class_name="Empty"):
+    def addMaskAsBlob(self, mask, offset=(0, 0), class_name="Empty"):
         #Export a binary mask as a Blob and add it to the current image's annotations.
         #:param mask: 2D numpy array (binary mask)
         #:param offset: (x, y) offset to place the blob in global coordinates
@@ -1838,7 +1838,7 @@ class QtImageViewerPlus(QtImageViewer):
             else:
                 new_id = 1
 
-            blob = Blob(region, offset[0] - 1, offset[1] - 1, new_id)
+            blob = Blob(region, offset[0], offset[1], new_id)
             blob.class_name = class_name
             # Add to annotations
             self.image.annotations.seg_blobs.append(blob)

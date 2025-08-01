@@ -1,15 +1,10 @@
 from source.tools.Tool import Tool
-
 import numpy as np
-
-
-from source.genutils import qimageToNumpyArray
-
 
 import matplotlib.pyplot as plt
 from scipy.ndimage import binary_dilation
 
-from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal, QT_VERSION_STR
+from PyQt5.QtCore import Qt, pyqtSlot, QRect, QRectF, pyqtSignal, QT_VERSION_STR
 from PyQt5.QtGui import  QPainterPath, QPen, QBrush, QColor
 
 from PyQt5.QtWidgets import QApplication
@@ -23,139 +18,144 @@ class Rows(Tool):
     def __init__(self, viewerplus):
         super(Rows, self).__init__(viewerplus)
 
-        # self.viewerplus.mouseMoved.connect(self.handlemouseMove)
-        
+        # dialog for the rows tool
         self.struct_widget = None
 
-        self.offset = [0, 0]
-
-        self.rect_item = None
-        self.blobs_inside_work_area = []
-
-        self.work_area_item = None
-        self.work_area_rect = None
+        # area of the image that is selected for processing
         self.work_area_set = False
-        self.shadow_item = None
-
+        self.work_area = None
+        self.offset = [0, 0]
+        # regions to be processed
+        self.blobs_inside_work_area = []
+        # cropped image (for drawing in dialog)
         self.image_cropped = None
-        self.image_cropped_np = None
+        # working mask 
+        self.work_mask = None
+        # rectangle and shadow for the work area to display the work area in the viewer
+        self.work_area_rect = None
+        self.work_area_shadow = None
 
+        # display startup instructions for the tool
         message = "<p><i>ROWS TOOL </i></p>"
         message += "<p>Choose the work-area:<br/>\
-                    - CTRL + LMB: drag on the map to set the working area<br/></p>"
+                    - SHIFT + LMB: drag on the map to set the working area<br/></p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
     def leftReleased(self, x, y):
+        if self.work_area_set == True:
+            return  # If the work area is already set, do nothing
+        if self.viewerplus.dragSelectionRect is None:
+            return  # If there is no drag selection rectangle, do nothing
+        
         try:
-            self.rect_item = self.viewerplus.dragSelectionRect
-
-            self.setWorkArea()
+            self.setWorkArea(self.viewerplus.dragSelectionRect)
 
         except Exception as e:
+            print(f"Error in leftReleased: {e}")
+            self.reset()
+            self.viewerplus.resetSelection()
             pass
-            
+
+
     def reset(self):
-        
-        self.image_cropped = None
-
-        self.viewerplus.scene.removeItem(self.work_area_rect)
         self.work_area_set = False
-        self.work_area_item = None
-        self.work_area_rect = None
-        self.rect_item = None
-        
-        if self.shadow_item is not None:
-            self.viewerplus.scene.removeItem(self.shadow_item)
-            self.shadow_item = None
+        self.work_area = None
+        self.offset = [0, 0]
+        self.image_cropped = None
+        self.work_mask = None
+        self.blobs_inside_work_area = []
+        if self.work_area_rect is not None:
+            self.viewerplus.scene.removeItem(self.work_area_rect)
+            self.work_area_rect = None
+        if self.work_area_shadow is not None:
+            self.viewerplus.scene.removeItem(self.work_area_shadow)
+            self.work_area_shadow = None
+        if self.viewerplus.struct_widget is not None:
+            self.viewerplus.struct_widget.close()
+            self.viewerplus.struct_widget = None
 
-        self.viewerplus.struct_widget = None
-        # self.viewerplus.scene.addItem(self.rect_item)
 
-    def setWorkArea(self):
+    def setWorkArea(self, dragSelectionRect):
         """
         Set the work area based on the location of points
         """
-        # Display to GUI
+        # pos is the position of the dragged selection rectangle in the scene
+        pos = dragSelectionRect.pos()
+        # Get the bounding rect of the dragged selection rectangle
+        # and normalize it to ensure it is within the scene rect
+        self.work_area = dragSelectionRect.boundingRect()
+        self.work_area = QRectF(self.work_area.toRect())  # snap to integral coordinates by converting to QRect then back to QRectF
+        self.work_area = self.work_area.normalized()
+        self.work_area = self.work_area.intersected(self.viewerplus.sceneRect())
+        offset = pos
+        self.offset = [offset.x(), offset.y()]
+
+        # add the blobs inside the original selection rectangle
+        self.addBlobsInsideWorkArea(self.work_area)
+        # If no blobs are inside the work area, do not proceed
+        if len(self.blobs_inside_work_area) == 0:
+            print("No blobs inside the work area. Please select a different area.")
+            self.reset()
+            self.viewerplus.resetSelection()
+            return
+
+        # now, we enlarge the selection rectangle by 20 pixels
+        # to ensure we have a margin around the blobs and to avoid cropping the dilated mask at the edges
+        self.work_area.adjust(-20, -20, 20, 20)
+        # Ensure the rectangle is still within the scene rect
+        self.work_area = self.work_area.normalized()
+        self.work_area = self.work_area.intersected(self.viewerplus.sceneRect())
+
+        #area is now set
+        self.work_area_set = True
+
+        # Display the selected area in the window
         brush = QBrush(Qt.NoBrush)
         pen = QPen(Qt.DashLine)
         pen.setWidth(2)
         pen.setColor(Qt.white)
         pen.setCosmetic(True)
-        # From the current view, crop the image
-        rect = self.rect_item.boundingRect()
-        
-
-        pos = self.rect_item.pos()
-        # rect.moveTopLeft(pos)
-        rect = rect.normalized()
-        rect = rect.intersected(self.viewerplus.sceneRect())
-        self.work_area_rect = self.viewerplus.scene.addRect(rect, pen, brush)
+        self.work_area_rect = self.viewerplus.scene.addRect(self.work_area, pen, brush)
         self.work_area_rect.setPos(pos)
-        
-        # work_area_bbox = (rect.top(), rect.left(), rect.width(), rect.height())
-
-        self.work_area_item = rect
-
-        offset = self.work_area_rect.pos()
-        self.offset = [offset.x(), offset.y()]
-
-        image_cropped = self.viewerplus.img_map.copy(rect.toRect())
-        
-        # Crop the image based on the work area
-        self.image_cropped = image_cropped
-        # Save the cropped image
-        # image_cropped.save("cropped_image.png")
-        
-        self.image_cropped_np = qimageToNumpyArray(image_cropped)
-
-        # self.viewerplus.scene.removeItem(self.rect_item)
-
         # Create a semi-transparent overlay
         shadow_brush = QBrush(QColor(0, 0, 0, 75))  # Semi-transparent black
         shadow_path = QPainterPath()
         shadow_path.addRect(self.viewerplus.sceneRect())  # Cover the entire scene
-        shadow_path.addRect(rect)  # Add the work area rect
-
-        # Subtract the work area from the overlay
-        shadow_path = shadow_path.simplified()
-
-        # Add the overlay to the scene
-        self.shadow_item = self.viewerplus.scene.addPath(shadow_path, QPen(Qt.NoPen), shadow_brush)
-
-        self.work_area_set = True
-
-        rect_bbox = (0, 0, int(rect.width()), int(rect.height()))
-        rect_mask = np.zeros((int(rect.height()), int(rect.width())), dtype=np.uint8)       
+        shadow_path.addRect(self.work_area)  # Add the work area rect
+        shadow_path = shadow_path.simplified()  # Simplify the path to avoid overlaps
+        self.work_area_shadow = self.viewerplus.scene.addPath(shadow_path, QPen(Qt.NoPen), shadow_brush)
         
-        self.saveBlobsInsideWorkArea()
+        # From the current view, crop the image 
+        self.image_cropped = self.viewerplus.img_map.copy(self.work_area.toRect())
+        # DEBUG Save the cropped image
+        # self.image_cropped.save("cropped_image.png")
 
+        # Create a mask for the work area, initialized with zeros. The mask will be the same size as the work area rectangle
+        self.work_mask = np.zeros((int(self.work_area.height()), int(self.work_area.width())), dtype=np.uint8)       
         for blob in self.blobs_inside_work_area:
             bbox = blob.bbox
             top = bbox[0]
-            # print(f"blob_bbox top is {top}")
             left = bbox[1]
-            # print(f"blob_bbox left is {left}")
             right = bbox[1] + bbox[2]
             bottom = bbox[0] + bbox[3]
 
             blob_mask = blob.getMask()
             blob_mask = binary_erosion(blob_mask, structure=np.ones((3, 3)), border_value=0)
-            
-            # rect_mask[top - int(rect.top()):bottom - int(rect.top()), left - int(rect.left()):right - int(rect.left())] = blob_mask
-            rect_mask[top - int(rect.top()):bottom - int(rect.top()), left - int(rect.left()):right - int(rect.left())] |= blob_mask
+
+            self.work_mask[top - int(self.work_area.top()):bottom - int(self.work_area.top()), left - int(self.work_area.left()):right - int(self.work_area.left())] |= blob_mask
 
 
-        # Save the rect_mask as a matplotlib figure
+        # Save the work_mask as a matplotlib figure
         # plt.figure(figsize=(10, 10))
-        # plt.imshow(rect_mask, cmap='gray')
+        # plt.imshow(self.work_mask, cmap='gray')
         # plt.axis('off')
-        # plt.savefig("rect_mask.png", bbox_inches='tight', pad_inches=0)
+        # plt.savefig("work_mask.png", bbox_inches='tight', pad_inches=0)
         # plt.close()
 
-        # rect_mask[rect_mask == 0] = 255
-        # rect_mask[rect_mask == 1] = 0
+        # self.work_mask[self.work_mask == 0] = 255
+        # self.work_mask[self.work_mask == 1] = 0
         #GROW DEI BLOB, LA MALTA È QUELLA CHE DISTA x PIXEL DAL BLOB
-        # rect_mask_grow = rect_mask.copy()
+        # rect_mask_grow = self.work_mask.copy()
 
         # # Create a structuring element that defines the neighborhood
         # # 21x21 to cover 10 positions around each 1 (10 positions
@@ -173,39 +173,22 @@ class Rows(Tool):
         # plt.savefig("rect_mask_grow.png", bbox_inches='tight', pad_inches=0)
         # plt.close()
 
-        # rect_mask = rect_mask_grow
-        
-        self.structWidget(image_cropped, rect_mask, self.blobs_inside_work_area, self.work_area_rect)
+        # self.work_mask = rect_mask_grow
 
-    def isBlobInsideWorkArea(self, blob):
-       
-        #Check if a blob is inside the work area.
-       
-        if self.work_area_rect is None:
-            return False
+        self.structWidget(self.image_cropped, self.work_mask, self.blobs_inside_work_area, self.work_area_rect)
 
-        rect = self.work_area_rect.boundingRect()
-        # rect.moveTopLeft(self.work_area_rect.pos())
-        rect = rect.normalized()
 
-        bbox = blob.bbox
-        top = bbox[0]
-        left = bbox[1]
-        right = bbox[1] + bbox[2]
-        bottom = bbox[0] + bbox[3]
-
-        if left >= rect.left() and right <= rect.right() and top >= rect.top() and bottom <= rect.bottom():
-            return blob
-
-    def saveBlobsInsideWorkArea(self):
+    def addBlobsInsideWorkArea(self, rect):
         # Save the blobs inside the work area to a variable.
         
         self.blobs_inside_work_area = []
         if self.viewerplus.annotations.seg_blobs is None:
-            return
+            return  # No blobs to check
 
         for blob in self.viewerplus.annotations.seg_blobs:
-            if self.isBlobInsideWorkArea(blob):
+            # Check if a blob is inside the work area.
+            bbox = blob.bbox
+            if bbox[1] >= rect.left() and (bbox[1] + bbox[2]) <= rect.right() and bbox[0] >= rect.top() and (bbox[0] + bbox[3]) <= rect.bottom():
                 self.blobs_inside_work_area.append(blob)
 
         print(f"Number of blobs inside work area: {len(self.blobs_inside_work_area)}")
