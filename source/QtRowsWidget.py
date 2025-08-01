@@ -73,8 +73,8 @@ class RowsWidget(QWidget):
         self.offset = [tl.x(), tl.y()]
 
         self.image_cropped = cropped_image
-        self.maschera = mask_array
-        self.masch = None
+        self.original_mask = mask_array
+        self.work_mask = None
         self.blob_image = None
         self.image_overlay = None
         self.skeleton = None
@@ -391,29 +391,20 @@ class RowsWidget(QWidget):
         # Add slider for structuring element size
         slider_layout = QVBoxLayout()
         self.slider = QSlider(Qt.Horizontal)
-        self.slider.setMinimum(1)
-        self.slider.setMaximum(101)
-        self.slider.setValue(51)
+        self.slider.setMinimum(5)
+        self.slider.setMaximum(25)
+        self.slider.setValue(13)
         self.slider.setTickPosition(QSlider.TicksBelow)
-        self.slider.setTickInterval(2)
-        self.slider.valueChanged.connect(self.updateStructuringElement)
+        self.slider.setTickInterval(1)
         self.slider.setFixedHeight(30)
-
-        value = self.slider.value()
-
-        if self.scale:
-            self.slider_label = QLabel(f"Joint Thickness (mm): {((value-1)//2) * float(self.scale)}")
-        else:
-            self.slider_label = QLabel(f"Joint Thickness (px): {((value-1)//2)}")
-        
-
+        self.slider_label = QLabel("")
         self.slider_label.setFixedHeight(30)
-        
-        slider_layout.addWidget(self.slider_label)
         slider_layout.addWidget(self.slider)
+        slider_layout.addWidget(self.slider_label)
 
-        self.structuring_element_size = self.slider.value()
-
+        self.slider.valueChanged.connect(self.updateStructuringElement)
+        self.updateStructuringElement(self.slider.value())
+        
         # buttons for data processing
         data_button_layout = QHBoxLayout()
         
@@ -421,7 +412,7 @@ class RowsWidget(QWidget):
         self.btnCompute.clicked.connect(self.computeRows)
         
         self.btnThickness = QPushButton("Compute Thickness Map")
-        self.btnThickness.clicked.connect(lambda: self.thicknessMap(self.masch))
+        self.btnThickness.clicked.connect(lambda: self.thicknessMap(self.work_mask))
         
         data_button_layout.setAlignment(Qt.AlignLeft)
         data_button_layout.addWidget(self.btnCompute)
@@ -505,11 +496,11 @@ class RowsWidget(QWidget):
                 self.rowColorButton.setStyleSheet(f"background-color: {self.row_color.name()};")
 
     def updateStructuringElement(self, value):
-        self.structuring_element_size = value
+        self.structuring_element_size = value*2  # The slider value is multiplied by 2 to always have even expansion
         if self.scale:
-            self.slider_label.setText(f"Joint Thickness (mm): {((value-1)//2) * float(self.scale)}")
+            self.slider_label.setText(f"Joint Thickness (mm): {(value*2) * float(self.scale)}")
         else:
-            self.slider_label.setText(f"Joint Thickness (px): {((value-1)//2)}")
+            self.slider_label.setText(f"Joint Thickness (px): {(value*2)}")
             
     def updateDistAngle(self):
         #Update self.row_dist and self.set_angle from the sliders.
@@ -526,14 +517,14 @@ class RowsWidget(QWidget):
         self.btnBlob.setEnabled(True)
         self.btnExport.setEnabled(True)
 
-        _, self.masch = self.maskGrow(self.maschera, self.structuring_element_size)
-        # self.houghTansformation(final_mask)
-        self.lines = self.houghTansformation(self.masch)
+        # grow the original mask to create the working one
+        self.work_mask = self.maskGrow(self.original_mask, self.structuring_element_size)
 
-        # i += 1
-        self.skeleton = self.applySkeletonization(self.masch)
+        # hough transformation to detect lines
+        self.lines = self.houghTransformation(self.work_mask)
 
-        # self.thickness_image = self.thicknessMap(self.masch)
+        # skeletonize the work_mask
+        self.skeleton = self.applySkeletonization(self.work_mask)
 
         self.actionShowLines.setCheckable(True)
         self.actionShowMask.setCheckable(True)
@@ -598,46 +589,50 @@ class RowsWidget(QWidget):
         self.close()
 
     def maskGrow(self, mask, value):
-        #GROW DEI BLOB, LA MALTA È QUELLA CHE DISTA x PIXEL DAL BLOB
-        rect_mask_grow = mask.copy()
-
-        # Create a structuring element that defines the neighborhood
-        # 21x21 to cover 10 positions around each 1 (10 positions
+        # Create structuring elements for dilation and erosion 
         structuring_element = np.ones((value, value), dtype=np.uint8)
         structuring_element_half = np.ones((value//2, value//2), dtype=np.uint8)
-        print(f"Structuring element size: {value}")
-        rect_mask_grow = binary_dilation(mask, structure=structuring_element)
-        rect_mask_grow_sub = rect_mask_grow - mask
 
-        # rect_mask_grow = rect_mask_grow - mask
-
-        # Save the rect_mask_grow as a matplotlib figure
+        # DEBUG: Save the work_mask as a matplotlib figure
         # plt.figure(figsize=(10, 10))
-        # plt.imshow(rect_mask_grow_sub, cmap='gray')
+        # plt.imshow(mask, cmap='gray')
         # plt.axis('off')
-        # plt.savefig("rect_mask_grow.png", bbox_inches='tight', pad_inches=0)
+        # plt.savefig("work_mask_original.png", bbox_inches='tight', pad_inches=0)
         # plt.close()
 
-        rect_mask_eroded = binary_erosion(rect_mask_grow, structure=structuring_element_half)
-
-        # Save the rect_mask_eroded as a matplotlib figure
+        # Dilate the mask to create a work_mask
+        work_mask = binary_dilation(mask, structure=structuring_element)
+       
+        # DEBUG: Save the work_mask as a matplotlib figure
         # plt.figure(figsize=(10, 10))
-        # plt.imshow(rect_mask_eroded, cmap='gray')
+        # plt.imshow(work_mask, cmap='gray')
         # plt.axis('off')
-        # plt.savefig("rect_mask_eroded.png", bbox_inches='tight', pad_inches=0)
+        # plt.savefig("work_mask_dilated.png", bbox_inches='tight', pad_inches=0)
         # plt.close()
 
-        rect_mask_final = rect_mask_eroded - mask
+        # Erode the dilated mask to create a work_mask
+        work_mask = binary_erosion(work_mask, structure=structuring_element_half)
 
-        # Save the rect_mask_eroded as a matplotlib figure
+        # DEBUG: Save the work_mask as a matplotlib figure
         # plt.figure(figsize=(10, 10))
-        # plt.imshow(rect_mask_final, cmap='gray')
+        # plt.imshow(work_mask, cmap='gray')
         # plt.axis('off')
-        # plt.savefig("rect_mask_final.png", bbox_inches='tight', pad_inches=0)
+        # plt.savefig("work_mask_eroded.png", bbox_inches='tight', pad_inches=0)
         # plt.close()
 
-        return rect_mask_grow_sub, rect_mask_final
+        # Subtract the original mask to get the final work_mask
+        work_mask = work_mask - mask
+
+        # DEBUG: Save the work_mask as a matplotlib figure
+        # plt.figure(figsize=(10, 10))
+        # plt.imshow(work_mask, cmap='gray')
+        # plt.axis('off')
+        # plt.savefig("work_mask_final.png", bbox_inches='tight', pad_inches=0)
+        # plt.close()
+
+        return work_mask
     
+
     def updateAngleTextBox(self, angles, index, color='red'):
         current_text = self.angleTextBox.toHtml()
         new_text = ''.join([f'<div style="color: {color};">line {str(index+1)}: {angle}</div>' for angle in angles])
@@ -684,9 +679,21 @@ class RowsWidget(QWidget):
             # Line does not intersect the non-zero mask area
             return None
     
-    def houghTansformation(self, mask):
+    # converts the angle found by hough transformation to a value in degrees where 0 is horizontal and positive is counter-clockwise
+    def hougAngleToValue(self, angle, decimal_places=2):
+        # Convert angle in radians to degrees
+        angle_deg = np.rad2deg(angle)
+        angle_deg -= 90
+        angle_deg = -angle_deg
+        angle_deg = round(angle_deg, decimal_places)
+        return angle_deg
+
+    def houghTransformation(self, mask):
+
+        # Range of angles from 75 to 105 degrees
+        range = np.linspace(np.pi/180*75, np.pi/180*105, 180)
         # Apply the Hough Line Transformation
-        h, theta, d = hough_line(mask)
+        h, theta, d = hough_line(mask, range)
 
         # Visualize the Hough Transform accumulator
         # plt.figure(figsize=(10, 6))
@@ -708,8 +715,8 @@ class RowsWidget(QWidget):
             # Calculate line endpoints
             try:
                 # Points for the line at the left and right image boundaries
-                y0 = (dist - 0 * np.cos(angle)) / np.sin(angle)  # y-intercept at x=0
-                y1 = (dist - width * np.cos(angle)) / np.sin(angle)  # y-intercept at x=width
+                y0 = (dist - (0 * np.cos(angle))) / np.sin(angle)  # y-intercept at x=0
+                y1 = (dist - (width * np.cos(angle))) / np.sin(angle)  # y-intercept at x=width
 
                 # Check for valid values within the image bounds
                 if np.isfinite(y0) and np.isfinite(y1):  # Ensure values are not infinite
@@ -721,6 +728,7 @@ class RowsWidget(QWidget):
                         # print(point1, point2)
                         if point1 and point2:
                             lines.append((point1, point2, angle))
+                            print(f"Line detected: {point1}, {point2}, angle: {self.hougAngleToValue(angle)}")
 
                     # if 0 <= y0 < height and 0 <= y1 < height:  # Clamp to image bounds
                     #     lines.append(((0, int(y0)), (width, int(y1)), angle))
@@ -1266,12 +1274,7 @@ class RowsWidget(QWidget):
             mid_x = int((x0 + x1) / 2)
             mid_y = int((y0 + y1) / 2) - 10  # Slightly above the line
 
-            # Convert angle to degrees and format
-            if angle < 0:
-                angle_disp = np.pi/2 + angle
-            else:
-                angle_disp = angle - np.pi/2
-            angle_deg = np.rad2deg(angle_disp)
+            angle_deg = self.hougAngleToValue(angle)
             angle_text = f"{angle_deg:.2f}°"
 
             painter.drawText(mid_x, mid_y, angle_text)
@@ -1393,18 +1396,9 @@ class RowsWidget(QWidget):
         if self.set_thickbox == False and self.set_anglebox == True:
             self.resetAngleTextBox()
             self.angleTextBox.setHtml('<div style="color: white;"><b>Slopes:</b></div>')
-            for i, (_, _, ang, color) in enumerate(self.lines):
-            # for i, (_, _,ang, color) in enumerate(sorted_lines_with_color):            
-                if ang < 0:
-                    ang = np.pi/2 + ang  
-                else:
-                    ang = ang - np.pi/2
-
-                ang_deg = np.rad2deg(ang)
-                # ang = round(ang, 4)
-                ang_deg = round(ang_deg, 4)
-
-                self.updateAngleTextBox([ang_deg], i, color=f'rgb({color[0]},{color[1]},{color[2]})')
+            for i, (_, _, angle, color) in enumerate(self.lines):
+                angle_deg = self.hougAngleToValue(angle,4)
+                self.updateAngleTextBox([angle_deg], i, color=f'rgb({color[0]},{color[1]},{color[2]})')
         elif self.set_anglebox == False and self.set_thickbox == False:
             self.resetAngleTextBox()
         self.toggleMaskLines(self.line_checked, self.mask_checked, self.thickness_checked, self.blobs_checked)
@@ -1426,17 +1420,9 @@ class RowsWidget(QWidget):
 
             if self.set_anglebox == False:
                 self.angleTextBox.setHtml('<div style="color: white;"><b>Slopes:</b></div>')
-                for i, (_, _, ang, color) in enumerate(self.lines):
-                # for i, (_, _,ang, color) in enumerate(sorted_lines_with_color):            
-                    if ang < 0:
-                        ang = np.pi/2 + ang  
-                    else:
-                        ang = ang - np.pi/2
-
-                    ang_deg = np.rad2deg(ang)
-                    # ang = round(ang, 4)
-                    ang_deg = round(ang_deg, 4)
-
+                for i, (_, _, angle, color) in enumerate(self.lines):
+                # for i, (_, _,ang, color) in enumerate(sorted_lines_with_color):
+                    ang_deg = self.hougAngleToValue(angle)
                     self.updateAngleTextBox([ang_deg], i, color=f'rgb({color[0]},{color[1]},{color[2]})')
                     self.set_anglebox = True
         else:
@@ -1456,7 +1442,7 @@ class RowsWidget(QWidget):
 
     def toggleMaskLines(self, line_checked, mask_checked, thickness_checked, blobs_checked):
         if line_checked  == True and mask_checked == True:
-            qmask = genutils.maskToQImage(self.masch)
+            qmask = genutils.maskToQImage(self.work_mask)
             mask_with_lines = self.paintLinesImage(qmask, self.lines)
 
             self.line_viewer.setOpacity(0.7)
@@ -1490,7 +1476,7 @@ class RowsWidget(QWidget):
             self.line_viewer.setOverlayImage(image_with_lines)
         
         elif line_checked == False and mask_checked == True:
-            qmask = genutils.maskToQImage(self.masch)
+            qmask = genutils.maskToQImage(self.work_mask)
             
             self.line_viewer.setOpacity(0.7)
             self.line_viewer.setOverlayImage(qmask)
@@ -1745,7 +1731,7 @@ class RowsWidget(QWidget):
 
     def addMaskToProject(self):
         if self.parent_viewer:
-            self.parent_viewer.addMaskAsBlob(self.masch, offset=self.offset, class_name="Empty")
+            self.parent_viewer.addMaskAsBlob(self.work_mask, offset=self.offset, class_name="Empty")
         return
 
     # Unified export function for both line and skeleton data.
@@ -1806,11 +1792,7 @@ class RowsWidget(QWidget):
             with open(angles_filename, "w") as angle_file:
                 angle_file.write("Line Index,Angle (degrees)\n")
                 for i, (_, _, angle, _) in enumerate(self.lines):
-                    if angle < 0:
-                        angle = np.pi/2 + angle  
-                    else:
-                        angle = angle - np.pi/2
-                    angle_deg = np.rad2deg(angle)
+                    angle_deg = self.hougAngleToValue(angle)
                     angle_file.write(f"{i + 1},{angle_deg:.2f}\n")
             export_success = True
 
@@ -1828,7 +1810,7 @@ class RowsWidget(QWidget):
         if export_format == ".dxf":
             if not file_path.lower().endswith(".dxf"):
                 file_path += ".dxf"
-            dialog.mask = self.masch if export_mask else None
+            dialog.mask = self.work_mask if export_mask else None
             dialog.lines = self.lines if export_lines else []
             dialog.skeleton = self.skeleton if export_skeleton else None
             dialog.branch_points = self.branch_points if export_branch_points else []
@@ -1855,13 +1837,13 @@ class RowsWidget(QWidget):
             if export_mask:
                 mask_filename = f"{file_path}_mask.png"
                 if self.line_checked and hasattr(self, "lines"):
-                    qmask = genutils.maskToQImage(self.masch)
+                    qmask = genutils.maskToQImage(self.work_mask)
                     mask_with_lines = self.paintLinesImage(qmask, self.lines)
                     # self.blob_image = mask_with_lines
                     self.blob_image = self.paintLinesImage(self.image_cropped,self.lines)
                     mask_with_lines.save(mask_filename)
                 else:
-                    mask_image = genutils.maskToQImage(self.masch)
+                    mask_image = genutils.maskToQImage(self.work_mask)
                     mask_image.save(mask_filename)
                 export_success = True
 
