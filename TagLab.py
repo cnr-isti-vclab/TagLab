@@ -75,6 +75,7 @@ from source.QtNewDatasetWidget import QtNewDatasetWidget
 from source.QtSampleWidget import QtSampleWidget
 from source.QtTrainingResultsWidget import QtTrainingResultsWidget
 from source.QtTYNWidget import QtTYNWidget
+from source.QtDatasetManagerWidget import QtDatasetManagerWidget
 from source.QtComparePanel import QtComparePanel
 from source.QtTablePanel import QtTablePanel
 from source.QtExportAnnAsTable import QtExportAnnAsTable
@@ -221,6 +222,7 @@ class TagLab(QMainWindow):
         self.message_widget = None
 
         self.trainYourNetworkWidget = None
+        self.datasetManagerWidget = None
         self.trainResultsWidget = None
         self.progress_bar = None
         self.gridWidget = None
@@ -1114,6 +1116,10 @@ class TagLab(QMainWindow):
         trainYourNetworkAct.setStatusTip("Export A new training dataset and, eventually, train your network on it")
         trainYourNetworkAct.triggered.connect(self.trainYourNetwork)
 
+        filterDatasetAct = QAction("Dataset Manager", self)
+        filterDatasetAct.setStatusTip("Filter the tiles of a training dataset")
+        filterDatasetAct.triggered.connect(self.openDatasetManager)
+
         settingsAct = QAction("Settings..", self)
         settingsAct.setStatusTip("")
         settingsAct.triggered.connect(self.settings)
@@ -1187,6 +1193,7 @@ class TagLab(QMainWindow):
         self.submenuExport.addAction(exportHistogramAct)
         self.submenuExport.addAction(exportTrainingDatasetAct)
         self.filemenu.addSeparator()
+        self.filemenu.addAction(filterDatasetAct)
         self.filemenu.addAction(trainYourNetworkAct)
         self.filemenu.addSeparator()
         self.filemenu.addAction(settingsAct)
@@ -2586,6 +2593,7 @@ class TagLab(QMainWindow):
         self.classifierWidget = None
         self.newDatasetWidget = None
         self.trainYourNetworkWidget = None
+        self.datasetManagerWidget = None
         self.trainResultsWidget = None
         self.progress_bar = None
         self.classifier_name = None
@@ -4480,6 +4488,12 @@ class TagLab(QMainWindow):
             del self.trainYourNetworkWidget
             self.trainYourNetworkWidget = None
 
+    def deleteDatasetManagerWidget(self):
+
+        if self.datasetManagerWidget:
+            self.datasetManagerWidget.close()
+            del self.datasetManagerWidget
+            self.datasetManagerWidget = None
 
     @pyqtSlot()
     def report(self):
@@ -5422,6 +5436,16 @@ class TagLab(QMainWindow):
             self.trainYourNetworkWidget.setWindowModality(Qt.WindowModal)
             self.trainYourNetworkWidget.launchTraining.connect(self.trainNewNetwork)
         self.trainYourNetworkWidget.show()
+
+
+    @pyqtSlot()
+    def openDatasetManager(self):
+
+        if self.datasetManagerWidget is None:
+            self.datasetManagerWidget = QtDatasetManagerWidget(self.project.labels, self.TAGLAB_VERSION, parent=self)
+            self.datasetManagerWidget.setWindowModality(Qt.WindowModal)
+            # self.trainYourNetworkWidget.launchTraining.connect(self.trainNewNetwork)
+        self.datasetManagerWidget.show()
 
     @pyqtSlot()
     def exportClippedRaster(self):
