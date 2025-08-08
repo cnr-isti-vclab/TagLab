@@ -1107,18 +1107,16 @@ class TagLab(QMainWindow):
         exportGeoRefImgAct.triggered.connect(self.exportGeoRefImage)
 
         exportTrainingDatasetAct = QAction("Export New Training Dataset", self)
-        #exportTrainingDatasetAct.setShortcut('Ctrl+??')
         exportTrainingDatasetAct.setStatusTip("Export A new training dataset based on the current annotations")
         exportTrainingDatasetAct.triggered.connect(self.exportAnnAsTrainingDataset)
-
-        trainYourNetworkAct = QAction("Train Your Network", self)
-        #exportTrainingDatasetAct.setShortcut('Ctrl+??')
-        trainYourNetworkAct.setStatusTip("Export A new training dataset and, eventually, train your network on it")
-        trainYourNetworkAct.triggered.connect(self.trainYourNetwork)
 
         filterDatasetAct = QAction("Dataset Manager", self)
         filterDatasetAct.setStatusTip("Filter the tiles of a training dataset")
         filterDatasetAct.triggered.connect(self.openDatasetManager)
+
+        trainYourNetworkAct = QAction("Train Your Network", self)
+        trainYourNetworkAct.setStatusTip("Export A new training dataset and, eventually, train your network on it")
+        trainYourNetworkAct.triggered.connect(self.trainYourNetwork)
 
         settingsAct = QAction("Settings..", self)
         settingsAct.setStatusTip("")
@@ -1192,9 +1190,6 @@ class TagLab(QMainWindow):
         self.submenuExport.addAction(exportGeoRefImgAct)
         self.submenuExport.addAction(exportHistogramAct)
         self.submenuExport.addAction(exportTrainingDatasetAct)
-        self.filemenu.addSeparator()
-        self.filemenu.addAction(filterDatasetAct)
-        self.filemenu.addAction(trainYourNetworkAct)
         self.filemenu.addSeparator()
         self.filemenu.addAction(settingsAct)
 
@@ -1291,7 +1286,7 @@ class TagLab(QMainWindow):
         self.pointmenu.addAction(self.openCoralNetToolboxAct)
 
 
-        ###### DEM MENU
+        ##### DEM MENU
 
         calculateSurfaceAreaAct = QAction("Calculate Surface Area", self)
         calculateSurfaceAreaAct.setStatusTip("Estimate surface area using slope derived from the DEM")
@@ -1342,6 +1337,16 @@ class TagLab(QMainWindow):
         exportGenetCSV.triggered.connect(self.exportGenetCSV)
 
 
+        ##### TRAIN MENU
+
+        self.trainmenu = menubar.addMenu("&Train")
+        self.trainmenu.addAction(exportTrainingDatasetAct)
+        self.trainmenu.addAction(filterDatasetAct)
+        self.trainmenu.addAction(trainYourNetworkAct)
+
+
+        ##### COMPARE MENU
+
         self.comparemenu = menubar.addMenu("&Compare")
         self.comparemenu.setStyleSheet(styleMenu)
         self.comparemenu.addAction(splitScreenAction)
@@ -1357,12 +1362,17 @@ class TagLab(QMainWindow):
         self.comparemenu.addAction(clearComparisonTable)
 
 
+        ##### VIEW MENU
+
         self.viewmenu = menubar.addMenu("&View")
         self.viewmenu.addAction(self.labelsdock.toggleViewAction())
         self.viewmenu.addAction(self.layersdock.toggleViewAction())
         self.viewmenu.addAction(self.blobdock.toggleViewAction())
         self.viewmenu.addAction(self.mapdock.toggleViewAction())
         self.viewmenu.addAction(self.datadock.toggleViewAction())
+
+
+        ##### HELP MENU
 
         self.helpmenu = menubar.addMenu("&Help")
         self.helpmenu.setStyleSheet(styleMenu)
