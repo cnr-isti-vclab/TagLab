@@ -32,7 +32,7 @@ class QtNewDatasetWidget(QWidget):
         super(QtNewDatasetWidget, self).__init__(parent)
 
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
-        TEXT_SPACE = 150
+        TEXT_SPACE = 180
         LINEWIDTH = 300
 
         ###########################################################
@@ -50,6 +50,9 @@ class QtNewDatasetWidget(QWidget):
         self.lblTargetScale = QLabel("Target pixel size:")
         self.lblTargetScale.setFixedWidth(TEXT_SPACE)
         self.lblTargetScale.setAlignment(Qt.AlignRight)
+        self.lblDataFormat = QLabel("Data format:")
+        self.lblDataFormat.setFixedWidth(TEXT_SPACE)
+        self.lblDataFormat.setAlignment(Qt.AlignRight)
 
 
         layoutH0a = QVBoxLayout()
@@ -58,6 +61,7 @@ class QtNewDatasetWidget(QWidget):
         layoutH0a.addWidget(self.lblExportArea)
         layoutH0a.addWidget(self.lblSplitMode)
         layoutH0a.addWidget(self.lblTargetScale)
+        layoutH0a.addWidget(self.lblDataFormat)
 
         ###########################################################
 
@@ -69,7 +73,7 @@ class QtNewDatasetWidget(QWidget):
         self.editExportArea.setMinimumWidth(LINEWIDTH)
         self.comboSplitMode = QComboBox()
         self.comboSplitMode.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        self.comboSplitMode.setFixedWidth(LINEWIDTH)
+        self.comboSplitMode.setMinimumWidth(LINEWIDTH)
         self.comboSplitMode.addItem("Uniform (vertical)")
         self.comboSplitMode.addItem("Uniform (horizontal)")
         # self.comboSplitMode.addItem("Random")
@@ -81,12 +85,20 @@ class QtNewDatasetWidget(QWidget):
         self.area_to_export = [0, 0, 0, 0]
         self.setAreaToExport(export_area[0], export_area[1], export_area[2], export_area[3])
 
+        # self.checkOversampling = QCheckBox("Oversampling")
+        self.comboDataFormat = QComboBox()
+        self.comboDataFormat.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        self.comboDataFormat.addItem("Tiles")
+        self.comboDataFormat.addItem("COCO")
+        self.comboDataFormat.addItem("YOLO-v5")
+
         layoutH0b = QVBoxLayout()
         layoutH0b.setAlignment(Qt.AlignLeft)
         layoutH0b.addWidget(self.editDatasetFolder)
         layoutH0b.addWidget(self.editExportArea)
         layoutH0b.addWidget(self.comboSplitMode)
         layoutH0b.addWidget(self.editTargetScale)
+        layoutH0b.addWidget(self.comboDataFormat)
 
         ###############################################################
 
@@ -109,28 +121,18 @@ class QtNewDatasetWidget(QWidget):
 
         ###########################################################
 
-        # self.checkOversampling = QCheckBox("Oversampling")
-        self.lblDataFormat = QLabel("Data format:")
-        self.comboDataFormat = QComboBox()
-        self.comboDataFormat.addItem("Tiles")
-        self.comboDataFormat.addItem("COCO")
-        self.comboDataFormat.addItem("YOLO-v5")
-        self.checkShowTiles = QCheckBox("Show exported tiles")
-
         layoutH2 = QHBoxLayout()
-        layoutH2.addWidget(self.lblDataFormat)
-        layoutH2.addWidget(self.comboDataFormat)
+        self.checkShowTiles = QCheckBox("Show exported tiles")
+        layoutH2.addStretch()
         layoutH2.addWidget(self.checkShowTiles)
         layoutH2.addStretch()
 
         ###########################################################
 
         layoutH3 = QHBoxLayout()
-
         self.btnCancel = QPushButton("Cancel")
         self.btnCancel.clicked.connect(self.close)
         self.btnExport = QPushButton("Export")
-
         layoutH3.setAlignment(Qt.AlignRight)
         layoutH3.addStretch()
         layoutH3.addWidget(self.btnCancel)
@@ -146,6 +148,9 @@ class QtNewDatasetWidget(QWidget):
 
         self.setWindowTitle("Export New Training Dataset - Settings")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
+
+        # default widget size is not so accurate in this case..
+        self.update()
 
     @pyqtSlot()
     def chooseDatasetFolder(self):
