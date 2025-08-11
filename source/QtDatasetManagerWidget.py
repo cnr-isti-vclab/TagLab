@@ -490,8 +490,8 @@ class QtDatasetManagerWidget(QWidget):
         Can be customized, the moment the specific class is set to Background
         """
 
-        pos_x = self.pos().x() + self.radio_SubsampleBackground.pos().x() + self.radio_SubsampleBackground.width()
-        pos_y = self.pos().y() + (self.editOutputDatasetFolder.pos().y() + self.btnFilter.pos().y()) / 2
+        pos_x = self.pos().x() + self.btnHelp.pos().x() - 80
+        pos_y = self.pos().y() + self.editAmount1.pos().y() + self.editAmount1.height()
 
         self.progress_bar.move(int(pos_x), int(pos_y))
         self.progress_bar.setMessage("Filtering..")
