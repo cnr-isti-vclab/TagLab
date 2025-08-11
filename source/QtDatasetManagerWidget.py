@@ -22,7 +22,7 @@ import os
 from PyQt5.Qt import QDesktopServices
 from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal, QUrl
 from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QLineEdit, QLabel, QPushButton, \
-    QHBoxLayout, QVBoxLayout, QMessageBox, QGroupBox, QGridLayout, QCheckBox, QSizePolicy, QRadioButton
+    QHBoxLayout, QVBoxLayout, QMessageBox, QGroupBox, QGridLayout, QSizePolicy, QRadioButton, QCheckBox
 import os
 import glob
 from PIL import Image
@@ -34,6 +34,9 @@ import random
 
 import models.training as training
 from models.coral_dataset import CoralsDataset
+from source.QtProgressBarCustom import QtProgressBarCustom
+
+
 class QtDatasetManagerWidget(QWidget):
 
     launchTraining = pyqtSignal()
@@ -49,7 +52,7 @@ class QtDatasetManagerWidget(QWidget):
 
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
 
-        TEXT_SPACE = 200
+        TEXT_SPACE = 240
 
         ###### Labels
 
@@ -57,11 +60,11 @@ class QtDatasetManagerWidget(QWidget):
         lblDatasetInputFolder.setMinimumWidth(TEXT_SPACE)
         lblDatasetInputFolder.setAlignment(Qt.AlignRight)
 
-        lblTargetClasses = QLabel("Classes to recognize: ")
+        lblTargetClasses = QLabel("Target classes: ")
         lblTargetClasses.setMinimumWidth(TEXT_SPACE)
         lblTargetClasses.setAlignment(Qt.AlignRight)
 
-        lblDatasetOutputFolder = QLabel("Dataset Output folder: ")
+        lblDatasetOutputFolder = QLabel("Dataset output folder: ")
         lblDatasetOutputFolder.setMinimumWidth(TEXT_SPACE)
         lblDatasetOutputFolder.setAlignment(Qt.AlignRight)
 
@@ -75,8 +78,12 @@ class QtDatasetManagerWidget(QWidget):
         #### Checkboxes
 
         self.checkRemove = QRadioButton("Remove No data tile")
-        self.radio_ThresholdBackground  = QRadioButton("Threshold tiles where the Background class exceeds:")
-        self.radio_SubsampleBackground = QRadioButton("Randomly subsamples the background class by:")
+        self.radio_ThresholdBackground  = QRadioButton("Threshold tiles where the background classes exceeds:")
+        self.radio_ThresholdBackground.setStyleSheet("QToolTip { background-color: rgb(80,80,80); color: white; border: 1px solid rgb(100,100,100); }")
+        self.radio_ThresholdBackground.setToolTip("The background classes are all the non-selected classes.")
+        self.radio_SubsampleBackground = QRadioButton("Randomly subsamples the background classes by:")
+        self.radio_SubsampleBackground.setStyleSheet("QToolTip { background-color: rgb(80,80,80); color: white; border: 1px solid rgb(100,100,100); }")
+        self.radio_SubsampleBackground.setToolTip("The background classes are all the non-selected classes.")
 
 
         ##### Edits
@@ -85,25 +92,25 @@ class QtDatasetManagerWidget(QWidget):
         self.editInputDatasetFolder = QLineEdit("")
         self.editInputDatasetFolder.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editInputDatasetFolder.setMinimumWidth(LINEWIDTH)
-        self.editInputDatasetFolder.setPlaceholderText("Insert here the dataset folder")
+        self.editInputDatasetFolder.setReadOnly(True)
+        self.editInputDatasetFolder.setPlaceholderText("Select the path of the input dataset")
         self.editOutputDatasetFolder = QLineEdit("")
         self.editOutputDatasetFolder.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editOutputDatasetFolder.setMinimumWidth(LINEWIDTH)
-        self.editOutputDatasetFolder.setPlaceholderText("Insert here the dataset folder")
+        self.editOutputDatasetFolder.setPlaceholderText("Select the output folder")
+        self.editOutputDatasetFolder.setReadOnly(True)
         self.groupbox_classes = self.createClassesToRecognizeWidgets()
-        self.editEpochs = QLineEdit("10")
-        self.editEpochs.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        self.editEpochs.setMinimumWidth(LINEWIDTH)
-        self.editEpochs.setReadOnly(False)
         self.editAmount1 = QLineEdit()
         self.editAmount1.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editAmount1.setReadOnly(False)
         self.editAmount1.setMinimumWidth(LINEWIDTH)
+        self.editAmount1.setMaximumWidth(LINEWIDTH+150)
         self.editAmount1.setPlaceholderText("Type an integer between 1 and 100")
         self.editAmount2 = QLineEdit()
         self.editAmount2.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editAmount2.setReadOnly(False)
         self.editAmount2.setMinimumWidth(LINEWIDTH)
+        self.editAmount2.setMaximumWidth(LINEWIDTH+150)
         self.editAmount2.setPlaceholderText("Type an integer between 1 and 100")
 
         ###### Buttons
@@ -119,52 +126,60 @@ class QtDatasetManagerWidget(QWidget):
 
         ###### Layouts
 
-        layoutInputDataset = QHBoxLayout()
-        layoutInputDataset.addWidget(lblDatasetInputFolder)
-        layoutInputDataset.addWidget(self.editInputDatasetFolder)
-        layoutInputDataset.addWidget(self.btnChooseDatasetInputFolder)
+        layoutLbls = QVBoxLayout()
+        layoutLbls.addWidget(lblDatasetInputFolder)
+        layoutLbls.addWidget(lblTargetClasses)
+        layoutLbls.addWidget(lblDatasetOutputFolder)
 
+        layoutEdits = QVBoxLayout()
+        layoutEdits.addWidget(self.editInputDatasetFolder)
         self.layoutClasses = QHBoxLayout()
-        self.layoutClasses.addWidget(lblTargetClasses)
         self.layoutClasses.addWidget(self.groupbox_classes)
+        layoutEdits.addLayout(self.layoutClasses)
+        layoutEdits.addWidget(self.editOutputDatasetFolder)
 
-        layoutOutputDataset = QHBoxLayout()
-        layoutOutputDataset.addWidget(lblDatasetOutputFolder)
-        layoutOutputDataset.addWidget(self.editOutputDatasetFolder)
-        layoutOutputDataset.addWidget(self.btnChooseDatasetOutputFolder)
+        layoutBtns = QVBoxLayout()
+        spaceButton = QPushButton(" ")
+        spaceButton.hide()
+        layoutBtns.addWidget(self.btnChooseDatasetInputFolder)
+        layoutBtns.addStretch()
+        layoutBtns.addWidget(self.btnChooseDatasetOutputFolder)
+
+        self.layoutIO = QHBoxLayout()
+        self.layoutIO.addLayout(layoutLbls)
+        self.layoutIO.addLayout(layoutEdits)
+        self.layoutIO.addLayout(layoutBtns)
+
+        # filtering options
 
         layoutAmount1 = QHBoxLayout()
         layoutAmount1.addWidget(lblAmount)
         layoutAmount1.addWidget(self.editAmount1)
+        layoutAmount1.addStretch()
 
         layoutAmount2 = QHBoxLayout()
         layoutAmount2.addWidget(lblAmount2)
         layoutAmount2.addWidget(self.editAmount2)
+        layoutAmount2.addStretch()
 
 
         layoutOptions = QVBoxLayout()
+        layoutOptions.setAlignment(Qt.AlignLeft)
         layoutOptions.addWidget(self.checkRemove)
         layoutOptions.addWidget(self.radio_ThresholdBackground)
         layoutOptions.addLayout(layoutAmount1)
         layoutOptions.addWidget(self.radio_SubsampleBackground)
         layoutOptions.addLayout(layoutAmount2)
 
+        self.layoutFilters = QHBoxLayout()
+        self.layoutFilters.addWidget(lblFiltering)
+        self.layoutFilters.addLayout(layoutOptions)
 
-        self.layoutfilters = QHBoxLayout()
-        self.layoutfilters.addWidget(lblFiltering)
-        self.layoutfilters.addLayout(layoutOptions)
+        self.layoutMain = QVBoxLayout()
+        self.layoutMain.addLayout(self.layoutIO)
+        self.layoutMain.addSpacing(12)
+        self.layoutMain.addLayout(self.layoutFilters)
 
-
-        self.layoutInputs = QVBoxLayout()
-        self.layoutInputs.addLayout(layoutInputDataset)
-        self.layoutInputs.addLayout(self.layoutClasses)
-        self.layoutInputs.addLayout(layoutOutputDataset)
-        self.layoutInputs.addSpacing(30)
-        self.layoutInputs.addLayout(self.layoutfilters)
-        ##### Main layout
-
-        self.layoutMain = QHBoxLayout()
-        self.layoutMain.addLayout(self.layoutInputs)
 
         ###########################################################
 
@@ -187,11 +202,17 @@ class QtDatasetManagerWidget(QWidget):
 
         layoutFinal = QVBoxLayout()
         layoutFinal.addLayout(self.layoutMain)
+        layoutFinal.addSpacing(6)
         layoutFinal.addLayout(layoutBottomButtons)
         self.setLayout(layoutFinal)
 
         self.setWindowTitle("Dataset Manager - Tiles Filtering Options")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
+
+        self.progress_bar = QtProgressBarCustom(parent=self)
+        self.progress_bar.setWindowFlags(Qt.ToolTip | Qt.CustomizeWindowHint)
+        self.progress_bar.setWindowModality(Qt.NonModal)
+        self.progress_bar.hide()
 
         self.checkboxes = []
 
@@ -217,7 +238,7 @@ class QtDatasetManagerWidget(QWidget):
             self.groupbox_classes.setParent(None)
             self.groupbox_classes = None
             self.groupbox_classes = self.createClassesToRecognizeWidgets()
-            self.layoutClasses.insertWidget(1, self.groupbox_classes)
+            self.layoutClasses.insertWidget(0,self.groupbox_classes)
 
     @pyqtSlot()
     def chooseDatasetOutputFolder(self):
@@ -236,24 +257,6 @@ class QtDatasetManagerWidget(QWidget):
     def getInputDatasetFolder(self):
 
         return self.editInputDatasetFolder.text()
-
-    def getTargetClasses(self):
-
-        target_classes = self.target_classes.copy()
-
-        for checkbox in self.checkboxes:
-            if not checkbox.isChecked():
-                key = checkbox.text()
-                del target_classes[key]
-
-        del target_classes["Background"]
-        count = 1
-        for key in target_classes.keys():
-            target_classes[key] = count
-            count += 1
-        target_classes["Background"] = 0
-
-        return target_classes
 
     def createClassesToRecognizeWidgets(self):
 
@@ -364,15 +367,9 @@ class QtDatasetManagerWidget(QWidget):
             green = img[:, :, 1]
             blue = img[:, :, 2]
 
-            red_nononzero = red[red != 0]
-            if len(red_nononzero) > 0:
-                red_var = np.var(red_nononzero)
-            green_nononzero = green[green != 0]
-            if len(green_nononzero) > 0:
-                green_var = np.var(green_nononzero)
-            blue_nononzero = blue[blue != 0]
-            if len(blue_nononzero) > 0:
-                blue_var = np.var(blue_nononzero)
+            red_var = np.var(red)
+            green_var = np.var(green)
+            blue_var = np.var(blue)
 
             total_var = red_var + green_var + blue_var
 
@@ -490,7 +487,27 @@ class QtDatasetManagerWidget(QWidget):
         If perc=100 all the tiles that not contain a specific class are removed.
         Can be customized, the moment the specific class is set to Background
         """
-        target_class_color = [0, 0, 0]
+
+        self.progress_bar.move(self.pos().x() - 100, self.pos().y() -80)
+        self.progress_bar.setMessage("Filtering..")
+        self.progress_bar.show()
+        QApplication.processEvents()
+
+        target_classes = self.target_classes.copy()
+        for checkbox in self.checkboxes:
+            if not checkbox.isChecked():
+                key = checkbox.text()
+                del target_classes[key]
+
+        target_classes_color = []
+        for key in target_classes:
+            if key == "Background":
+                color = [0,0,0]
+            else:
+                label = self.project_labels[key]
+                color = label.fill
+            target_classes_color.append(color)
+
         labels_names = glob.glob(os.path.join(TRAINING_FOLDER_LABELS, '*.png'))
         self.flag= flag
 
@@ -504,6 +521,7 @@ class QtDatasetManagerWidget(QWidget):
             labels_names[j] = labels_names[i]
             labels_names[i] = temp_name
 
+        i = 0
         for label_path in labels_names:
 
             pil_img = Image.open(label_path)
@@ -511,11 +529,13 @@ class QtDatasetManagerWidget(QWidget):
 
             npixels = img.shape[0] * img.shape[1]
 
-            condition = np.where((img[:, :, 0] == target_class_color[0]) & (img[:, :, 1] == target_class_color[1]) & (
-                        img[:, :, 2] == target_class_color[2]))
+            pixels = 0
+            for color in target_classes_color:
+                M = (img[:, :, 0] == color[0]) & (img[:, :, 1] == color[1]) & (img[:, :, 2] == color[2])
+                pixels += np.count_nonzero(M)
 
-            pixels = len(list(zip(condition[0], condition[1])))
-            p = pixels / npixels
+            background_pixels = npixels - pixels
+            p = background_pixels / npixels
             coin = random.randint(0, 99)
 
             if self.flag == 1 and p > int(self.editAmount1.text())/100:
@@ -531,7 +551,6 @@ class QtDatasetManagerWidget(QWidget):
                 shutil.move(img_src, img_dest)
                 shutil.move(label_src, label_dest)
 
-
             elif (self.flag == 2) and (p > 0.999) and (coin < int(self.editAmount2.text())):
 
                 image_filename = os.path.basename(label_path)
@@ -545,6 +564,15 @@ class QtDatasetManagerWidget(QWidget):
                 shutil.move(img_src, img_dest)
                 shutil.move(label_src, label_dest)
 
+            i = i + 1
+
+            if i % 25 == 0:
+                perc = (i * 100.0) / N_tiles
+                self.progress_bar.setProgress(perc)
+                QApplication.processEvents()
+
+        self.progress_bar.hide()
+        QApplication.processEvents()
 
     @pyqtSlot()
     def updateStatistics(self):
@@ -567,4 +595,4 @@ class QtDatasetManagerWidget(QWidget):
             self.groupbox_classes.setParent(None)
             self.groupbox_classes = None
             self.groupbox_classes = self.createClassesToRecognizeWidgets()
-            self.layoutClasses.insertWidget(1, self.groupbox_classes)
+            self.layoutClasses.insertWidget(0, self.groupbox_classes)

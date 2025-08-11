@@ -1340,6 +1340,7 @@ class TagLab(QMainWindow):
         ##### TRAIN MENU
 
         self.trainmenu = menubar.addMenu("&Train")
+        self.trainmenu.setStyleSheet(styleMenu)
         self.trainmenu.addAction(exportTrainingDatasetAct)
         self.trainmenu.addAction(filterDatasetAct)
         self.trainmenu.addAction(trainYourNetworkAct)
@@ -1353,11 +1354,9 @@ class TagLab(QMainWindow):
         self.comparemenu.addAction(autoMatchLabels)
         self.comparemenu.addAction(manualMatchLabels)
         self.comparemenu.addAction(exportMatchLabels)
-
         self.comparemenu.addSeparator()
         self.comparemenu.addAction(exportGenetSVG)
         self.comparemenu.addAction(exportGenetCSV)
-
         self.comparemenu.addSeparator()
         self.comparemenu.addAction(clearComparisonTable)
 
@@ -1365,6 +1364,7 @@ class TagLab(QMainWindow):
         ##### VIEW MENU
 
         self.viewmenu = menubar.addMenu("&View")
+        self.viewmenu.setStyleSheet(styleMenu)
         self.viewmenu.addAction(self.labelsdock.toggleViewAction())
         self.viewmenu.addAction(self.layersdock.toggleViewAction())
         self.viewmenu.addAction(self.blobdock.toggleViewAction())
