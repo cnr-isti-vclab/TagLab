@@ -128,7 +128,9 @@ class QtDatasetManagerWidget(QWidget):
 
         layoutLbls = QVBoxLayout()
         layoutLbls.addWidget(lblDatasetInputFolder)
+        layoutLbls.addStretch()
         layoutLbls.addWidget(lblTargetClasses)
+        layoutLbls.addStretch()
         layoutLbls.addWidget(lblDatasetOutputFolder)
 
         layoutEdits = QVBoxLayout()
@@ -488,25 +490,31 @@ class QtDatasetManagerWidget(QWidget):
         Can be customized, the moment the specific class is set to Background
         """
 
-        self.progress_bar.move(self.pos().x() - 100, self.pos().y() -80)
+        pos_x = self.pos().x() + self.radio_SubsampleBackground.pos().x() + self.radio_SubsampleBackground.width()
+        pos_y = self.pos().y() + (self.editOutputDatasetFolder.pos().y() + self.btnFilter.pos().y()) / 2
+
+        self.progress_bar.move(int(pos_x), int(pos_y))
         self.progress_bar.setMessage("Filtering..")
         self.progress_bar.show()
         QApplication.processEvents()
 
-        target_classes = self.target_classes.copy()
+        background_classes = self.target_classes.copy()
         for checkbox in self.checkboxes:
             if not checkbox.isChecked():
                 key = checkbox.text()
-                del target_classes[key]
+                del background_classes[key]
 
-        target_classes_color = []
-        for key in target_classes:
+        # re-add Background
+        background_classes["Background"] = [0,0,0]
+
+        background_classes_color = []
+        for key in background_classes:
             if key == "Background":
                 color = [0,0,0]
             else:
                 label = self.project_labels[key]
                 color = label.fill
-            target_classes_color.append(color)
+            background_classes_color.append(color)
 
         labels_names = glob.glob(os.path.join(TRAINING_FOLDER_LABELS, '*.png'))
         self.flag= flag
@@ -529,16 +537,15 @@ class QtDatasetManagerWidget(QWidget):
 
             npixels = img.shape[0] * img.shape[1]
 
-            pixels = 0
-            for color in target_classes_color:
+            background_pixels = 0
+            for color in background_classes_color:
                 M = (img[:, :, 0] == color[0]) & (img[:, :, 1] == color[1]) & (img[:, :, 2] == color[2])
-                pixels += np.count_nonzero(M)
+                background_pixels += np.count_nonzero(M)
 
-            background_pixels = npixels - pixels
             p = background_pixels / npixels
-            coin = random.randint(0, 99)
+            coin = random.randint(0, 9999) / 100
 
-            if self.flag == 1 and p > int(self.editAmount1.text())/100:
+            if self.flag == 1 and p > int(self.editAmount1.text()) / 100.0:
 
                 image_filename = os.path.basename(label_path)
 
@@ -566,7 +573,7 @@ class QtDatasetManagerWidget(QWidget):
 
             i = i + 1
 
-            if i % 25 == 0:
+            if i % 20 == 0:
                 perc = (i * 100.0) / N_tiles
                 self.progress_bar.setProgress(perc)
                 QApplication.processEvents()
