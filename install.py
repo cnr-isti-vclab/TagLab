@@ -244,8 +244,8 @@ install_requires = [
     'selenium',
     'webdriver_manager',
 
-    #forcing numpy 1.24.2 version
-    'numpy==1.24.4',
+    # numpy
+    'numpy',
 ]
 
 if flag_install_SAM:
