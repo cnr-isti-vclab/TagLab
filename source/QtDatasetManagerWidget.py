@@ -365,6 +365,9 @@ class QtDatasetManagerWidget(QWidget):
         path = os.path.join(TRAINING_FOLDER_IMAGES)
 
         images_names = [x for x in glob.glob(os.path.join(path, '*.png'))]
+        N_tiles = len(images_names)
+
+        i = 0
         for image_name in images_names:
 
             pil_img = Image.open(image_name)
@@ -389,8 +392,14 @@ class QtDatasetManagerWidget(QWidget):
                 inlabel= os.path.join(TRAINING_FOLDER_LABELS, basename)
                 outlabel = os.path.join(TRAINING_OUTPUT_LABELS, basename)
 
-                shutil.move(image_name, outimg)
-                shutil.move(inlabel, outlabel)
+                shutil.copy(image_name, outimg)
+                shutil.copy(inlabel, outlabel)
+
+            i = i + 1
+            if i % 10 == 0:
+                perc = (i * 100.0) / N_tiles
+                self.progress_bar.setProgress(perc)
+                QApplication.processEvents()
 
         return tiles_removed
 
@@ -399,6 +408,16 @@ class QtDatasetManagerWidget(QWidget):
         # we only filter the training tiles (test and validation are copied in the filtered dataset)
 
         tiles_discarded = 0
+
+        # set up progress bar
+        pos_x = self.pos().x() + self.btnHelp.pos().x() - 80
+        pos_y = self.pos().y() + self.editAmount1.pos().y() + self.editAmount1.height()
+
+        self.progress_bar.move(int(pos_x), int(pos_y))
+        self.progress_bar.setMessage("Initializing..")
+        self.progress_bar.hidePerc()
+        self.progress_bar.show()
+        QApplication.processEvents()
 
         input_folder = self.editInputDatasetFolder.text()
         output_folder = self.editOutputDatasetFolder.text()
@@ -443,6 +462,9 @@ class QtDatasetManagerWidget(QWidget):
             os.mkdir(TRAINING_OUTPUT_LABELS)
 
         if self.checkRemove.isChecked():
+            self.progress_bar.showPerc()
+            self.progress_bar.setMessage("Removing no data tiles..")
+            QApplication.processEvents()
             tiles_discarded += self.discard_image_tiles_with_uniform_colors(TRAINING_FOLDER_IMAGES, TRAINING_FOLDER_LABELS, TRAINING_OUTPUT_IMAGES, TRAINING_OUTPUT_LABELS)
 
         if self.radio_ThresholdBackground.isChecked():
@@ -493,17 +515,19 @@ class QtDatasetManagerWidget(QWidget):
             self.editInputDatasetFolder.setText(self.editOutputDatasetFolder.text())
             self.editOutputDatasetFolder.setText("")
 
+            self.progress_bar.hidePerc()
+            self.progress_bar.setMessage("Copying tiles..")
+
             VALIDATION_FOLDER = os.path.join(input_folder, "validation")
             VALIDATION_OUTPUT_FOLDER = os.path.join(output_folder, "validation")
-            shutil.copytree(VALIDATION_FOLDER, VALIDATION_OUTPUT_FOLDER)
+            shutil.copytree(VALIDATION_FOLDER, VALIDATION_OUTPUT_FOLDER, dirs_exist_ok=True)
 
             TEST_FOLDER = os.path.join(input_folder, "test")
             TEST_OUTPUT_FOLDER = os.path.join(output_folder, "test")
-            shutil.copytree(TEST_FOLDER, TEST_OUTPUT_FOLDER)
+            shutil.copytree(TEST_FOLDER, TEST_OUTPUT_FOLDER, dirs_exist_ok=True)
 
-            PIXEL_SIZE_FILE = os.path.join(input_folder, "target_pixel_size.txt")
-            OUTPUT_PIXEL_SIZE_FILE = os.path.join(output_folder, "target_pixel_size.txt")
-            shutil.move(PIXEL_SIZE_FILE, OUTPUT_PIXEL_SIZE_FILE)
+            PIXEL_SIZE_FILE = os.path.join(input_folder, "target-pixel-size.txt")
+            shutil.copy(PIXEL_SIZE_FILE, output_folder)
 
             self.updateStatistics()
         else:
@@ -527,14 +551,6 @@ class QtDatasetManagerWidget(QWidget):
 
         tiles_removed = 0
 
-        pos_x = self.pos().x() + self.btnHelp.pos().x() - 80
-        pos_y = self.pos().y() + self.editAmount1.pos().y() + self.editAmount1.height()
-
-        self.progress_bar.move(int(pos_x), int(pos_y))
-        self.progress_bar.setMessage("Filtering..")
-        self.progress_bar.show()
-        QApplication.processEvents()
-
         background_classes = self.target_classes.copy()
         for checkbox in self.checkboxes:
             if not checkbox.isChecked():
@@ -554,7 +570,16 @@ class QtDatasetManagerWidget(QWidget):
             background_classes_color.append(color)
 
         labels_names = glob.glob(os.path.join(TRAINING_FOLDER_LABELS, '*.png'))
-        self.flag= flag
+        self.flag = flag
+
+        self.progress_bar.showPerc()
+        if self.flag == 1:
+            self.progress_bar.setMessage("Removing tiles..")
+
+        if self.flag == 2:
+            self.progress_bar.setMessage("Subsampling background tiles..")
+
+        QApplication.processEvents()
 
         ##### SHUFFLE LABELS NAMES
 
@@ -594,8 +619,8 @@ class QtDatasetManagerWidget(QWidget):
                 label_src = os.path.join(TRAINING_FOLDER_LABELS, image_filename)
                 label_dest = os.path.join(TRAINING_OUTPUT_LABELS, image_filename)
 
-                shutil.move(img_src, img_dest)
-                shutil.move(label_src, label_dest)
+                shutil.copy(img_src, img_dest)
+                shutil.copy(label_src, label_dest)
 
             if (self.flag == 2) and (p > 0.999) and (coin < int(self.editAmount2.text())):
                 tiles_removed += 1  # tile not copied in the new dataset
@@ -609,12 +634,11 @@ class QtDatasetManagerWidget(QWidget):
                 label_src = os.path.join(TRAINING_FOLDER_LABELS, image_filename)
                 label_dest = os.path.join(TRAINING_OUTPUT_LABELS, image_filename)
 
-                shutil.move(img_src, img_dest)
-                shutil.move(label_src, label_dest)
+                shutil.copy(img_src, img_dest)
+                shutil.copy(label_src, label_dest)
 
             i = i + 1
-
-            if i % 20 == 0:
+            if i % 10 == 0:
                 perc = (i * 100.0) / N_tiles
                 self.progress_bar.setProgress(perc)
                 QApplication.processEvents()
