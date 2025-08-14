@@ -89,7 +89,7 @@ class QtProgressBarCustom(QWidget):
         painter.setBrush(QBrush(QColor(qRgb(0, 201, 209))))
         painter.drawRect(0, 0, int(w), 30)
         painter.setPen(QPen(Qt.white))
-        painter.setFont(QFont("Roboto", 12, QFont.Bold))
+        painter.setFont(QFont("Roboto", 10, QFont.Bold))
         painter.drawText(QRect(0, 0, self.bar_width, 30), Qt.AlignCenter, txt)
 
         painter.end()
