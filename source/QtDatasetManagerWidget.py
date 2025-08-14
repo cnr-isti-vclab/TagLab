@@ -78,7 +78,7 @@ class QtDatasetManagerWidget(QWidget):
         #### Checkboxes
 
         self.checkRemove = QRadioButton("Remove No data tile")
-        self.radio_ThresholdBackground  = QRadioButton("Threshold tiles where the background classes exceeds:")
+        self.radio_ThresholdBackground  = QRadioButton("Remove tiles where the background classes exceeds:")
         self.radio_ThresholdBackground.setStyleSheet("QToolTip { background-color: rgb(80,80,80); color: white; border: 1px solid rgb(100,100,100); }")
         self.radio_ThresholdBackground.setToolTip("The background classes are all the non-selected classes.")
         self.radio_SubsampleBackground = QRadioButton("Randomly subsamples the background classes by:")
@@ -97,7 +97,7 @@ class QtDatasetManagerWidget(QWidget):
         self.editOutputDatasetFolder = QLineEdit("")
         self.editOutputDatasetFolder.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editOutputDatasetFolder.setMinimumWidth(LINEWIDTH)
-        self.editOutputDatasetFolder.setPlaceholderText("Select the output folder")
+        self.editOutputDatasetFolder.setPlaceholderText("Select the path of the filtered dataset")
         self.editOutputDatasetFolder.setReadOnly(True)
         self.groupbox_classes = self.createClassesToRecognizeWidgets()
         self.editAmount1 = QLineEdit()
@@ -355,7 +355,12 @@ class QtDatasetManagerWidget(QWidget):
         self.target_classes = target_classes
         self.freq_classes = freq_classes
 
-    def discard_image_tiles_with_uniform_background(self, TRAINING_FOLDER_IMAGES, TRAINING_FOLDER_LABELS, TRAINING_TRASH_IMAGES, TRAINING_TRASH_LABELS):
+    def discard_image_tiles_with_uniform_colors(self, TRAINING_FOLDER_IMAGES, TRAINING_FOLDER_LABELS, TRAINING_OUTPUT_IMAGES, TRAINING_OUTPUT_LABELS):
+        """
+        Discard "flat" RGB images.
+        """
+
+        tiles_removed = 0
 
         path = os.path.join(TRAINING_FOLDER_IMAGES)
 
@@ -375,19 +380,25 @@ class QtDatasetManagerWidget(QWidget):
 
             total_var = red_var + green_var + blue_var
 
-            if total_var < 10.0:
+            if total_var < 100.0:
+                tiles_removed += 1  # tiles not copied in the new dataset
+            else:
+                # copy in new training dataset
                 basename = os.path.basename(image_name)
-                outimg = os.path.join(TRAINING_TRASH_IMAGES, basename)
+                outimg = os.path.join(TRAINING_OUTPUT_IMAGES, basename)
                 inlabel= os.path.join(TRAINING_FOLDER_LABELS, basename)
-                outlabel = os.path.join(TRAINING_TRASH_LABELS, basename)
+                outlabel = os.path.join(TRAINING_OUTPUT_LABELS, basename)
 
                 shutil.move(image_name, outimg)
                 shutil.move(inlabel, outlabel)
 
+        return tiles_removed
 
     def filter(self):
 
-        #we only filter the training tiles
+        # we only filter the training tiles (test and validation are copied in the filtered dataset)
+
+        tiles_discarded = 0
 
         input_folder = self.editInputDatasetFolder.text()
         output_folder = self.editOutputDatasetFolder.text()
@@ -416,30 +427,30 @@ class QtDatasetManagerWidget(QWidget):
         TRAINING_FOLDER_IMAGES = os.path.join(TRAINING_FOLDER, "images")
         TRAINING_FOLDER_LABELS = os.path.join(TRAINING_FOLDER, "labels")
 
-        TRAINING_TRASH = os.path.join(output_folder, "training")
-        TRAINING_TRASH_IMAGES = os.path.join(TRAINING_TRASH, "images")
-        TRAINING_TRASH_LABELS = os.path.join(TRAINING_TRASH, "labels")
+        TRAINING_OUTPUT = os.path.join(output_folder, "training")
+        TRAINING_OUTPUT_IMAGES = os.path.join(TRAINING_OUTPUT, "images")
+        TRAINING_OUTPUT_LABELS = os.path.join(TRAINING_OUTPUT, "labels")
 
         # create output folders
 
-        if not os.path.exists(TRAINING_TRASH):
-            os.mkdir(TRAINING_TRASH)
+        if not os.path.exists(TRAINING_OUTPUT):
+            os.mkdir(TRAINING_OUTPUT)
 
-        if not os.path.exists(TRAINING_TRASH_IMAGES):
-            os.mkdir(TRAINING_TRASH_IMAGES)
+        if not os.path.exists(TRAINING_OUTPUT_IMAGES):
+            os.mkdir(TRAINING_OUTPUT_IMAGES)
 
-        if not os.path.exists(TRAINING_TRASH_LABELS):
-            os.mkdir(TRAINING_TRASH_LABELS)
+        if not os.path.exists(TRAINING_OUTPUT_LABELS):
+            os.mkdir(TRAINING_OUTPUT_LABELS)
 
         if self.checkRemove.isChecked():
-            self.discard_image_tiles_with_uniform_background(TRAINING_FOLDER_IMAGES, TRAINING_FOLDER_LABELS, TRAINING_TRASH_IMAGES, TRAINING_TRASH_LABELS)
+            tiles_discarded += self.discard_image_tiles_with_uniform_colors(TRAINING_FOLDER_IMAGES, TRAINING_FOLDER_LABELS, TRAINING_OUTPUT_IMAGES, TRAINING_OUTPUT_LABELS)
 
         if self.radio_ThresholdBackground.isChecked():
             perc = self.editAmount1.text()
             if perc.isdigit():
                 value = int(perc)
                 if 1 <= value <= 100:
-                    self.subsample(TRAINING_FOLDER_IMAGES, TRAINING_FOLDER_LABELS, TRAINING_TRASH_IMAGES, TRAINING_TRASH_LABELS, flag=1)
+                    tiles_discarded += self.subsample(TRAINING_FOLDER_IMAGES, TRAINING_FOLDER_LABELS, TRAINING_OUTPUT_IMAGES, TRAINING_OUTPUT_LABELS, flag=1)
                 else:
                     box = QMessageBox()
                     box.setWindowTitle(self.TAGLAB_VERSION)
@@ -460,8 +471,8 @@ class QtDatasetManagerWidget(QWidget):
             if perc.isdigit():
                 value = int(perc)
                 if 1 <= value <= 100:
-                    self.subsample(TRAINING_FOLDER_IMAGES, TRAINING_FOLDER_LABELS, TRAINING_TRASH_IMAGES,
-                                   TRAINING_TRASH_LABELS, flag=2)
+                    self.subsample(TRAINING_FOLDER_IMAGES, TRAINING_FOLDER_LABELS, TRAINING_OUTPUT_IMAGES,
+                                   TRAINING_OUTPUT_LABELS, flag=2)
                 else:
                     box = QMessageBox()
                     box.setWindowTitle(self.TAGLAB_VERSION)
@@ -476,19 +487,45 @@ class QtDatasetManagerWidget(QWidget):
                 box.exec()
                 self.editAmount2.clear()
                 return
-        self.updateStatistics()
+
+        if tiles_discarded > 0:
+            # the input dataset becomes the new dataset
+            self.editInputDatasetFolder.setText(self.editOutputDatasetFolder.text())
+            self.editOutputDatasetFolder.setText("")
+
+            VALIDATION_FOLDER = os.path.join(input_folder, "validation")
+            VALIDATION_OUTPUT_FOLDER = os.path.join(output_folder, "validation")
+            shutil.copytree(VALIDATION_FOLDER, VALIDATION_OUTPUT_FOLDER)
+
+            TEST_FOLDER = os.path.join(input_folder, "test")
+            TEST_OUTPUT_FOLDER = os.path.join(output_folder, "test")
+            shutil.copytree(TEST_FOLDER, TEST_OUTPUT_FOLDER)
+
+            PIXEL_SIZE_FILE = os.path.join(input_folder, "target_pixel_size.txt")
+            OUTPUT_PIXEL_SIZE_FILE = os.path.join(output_folder, "target_pixel_size.txt")
+            shutil.move(PIXEL_SIZE_FILE, OUTPUT_PIXEL_SIZE_FILE)
+
+            self.updateStatistics()
+        else:
+            box = QMessageBox()
+            box.setWindowTitle(self.TAGLAB_VERSION)
+            box.setText("WARNING! No tiles have been discarded. The new dataset is equal to the original one.")
+            box.exec()
+
         self.editAmount1.clear()
         self.editAmount2.clear()
 
 
     @pyqtSlot()
-    def subsample(self, TRAINING_FOLDER_IMAGES, TRAINING_FOLDER_LABELS, TRAINING_TRASH_IMAGES, TRAINING_TRASH_LABELS, flag):
+    def subsample(self, TRAINING_FOLDER_IMAGES, TRAINING_FOLDER_LABELS, TRAINING_OUTPUT_IMAGES, TRAINING_OUTPUT_LABELS, flag):
 
         """
         Remove a percentage of the tiles that not contains a specific class.
         If perc=100 all the tiles that not contain a specific class are removed.
         Can be customized, the moment the specific class is set to Background
         """
+
+        tiles_removed = 0
 
         pos_x = self.pos().x() + self.btnHelp.pos().x() - 80
         pos_y = self.pos().y() + self.editAmount1.pos().y() + self.editAmount1.height()
@@ -546,27 +583,31 @@ class QtDatasetManagerWidget(QWidget):
             coin = random.randint(0, 9999) / 100
 
             if self.flag == 1 and p > int(self.editAmount1.text()) / 100.0:
+                tiles_removed += 1  # tile not copied in the new dataset
+            else:
 
                 image_filename = os.path.basename(label_path)
 
                 img_src = os.path.join(TRAINING_FOLDER_IMAGES, image_filename)
-                img_dest = os.path.join(TRAINING_TRASH_IMAGES , image_filename)
+                img_dest = os.path.join(TRAINING_OUTPUT_IMAGES , image_filename)
 
                 label_src = os.path.join(TRAINING_FOLDER_LABELS, image_filename)
-                label_dest = os.path.join(TRAINING_TRASH_LABELS, image_filename)
+                label_dest = os.path.join(TRAINING_OUTPUT_LABELS, image_filename)
 
                 shutil.move(img_src, img_dest)
                 shutil.move(label_src, label_dest)
 
-            elif (self.flag == 2) and (p > 0.999) and (coin < int(self.editAmount2.text())):
+            if (self.flag == 2) and (p > 0.999) and (coin < int(self.editAmount2.text())):
+                tiles_removed += 1  # tile not copied in the new dataset
+            else:
 
                 image_filename = os.path.basename(label_path)
 
                 img_src = os.path.join(TRAINING_FOLDER_IMAGES, image_filename)
-                img_dest = os.path.join(TRAINING_TRASH_IMAGES , image_filename)
+                img_dest = os.path.join(TRAINING_OUTPUT_IMAGES , image_filename)
 
                 label_src = os.path.join(TRAINING_FOLDER_LABELS, image_filename)
-                label_dest = os.path.join(TRAINING_TRASH_LABELS, image_filename)
+                label_dest = os.path.join(TRAINING_OUTPUT_LABELS, image_filename)
 
                 shutil.move(img_src, img_dest)
                 shutil.move(label_src, label_dest)
@@ -580,6 +621,8 @@ class QtDatasetManagerWidget(QWidget):
 
         self.progress_bar.hide()
         QApplication.processEvents()
+
+        return tiles_removed
 
     @pyqtSlot()
     def updateStatistics(self):
