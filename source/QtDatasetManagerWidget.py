@@ -31,7 +31,6 @@ import shutil
 import sys
 import random
 
-
 import models.training as training
 from models.coral_dataset import CoralsDataset
 from source.QtProgressBarCustom import QtProgressBarCustom
@@ -77,13 +76,18 @@ class QtDatasetManagerWidget(QWidget):
 
         #### Checkboxes
 
-        self.checkRemove = QRadioButton("Remove No data tile")
+        self.checkRemoveNoData = QRadioButton("Remove 'no data' tiles")
+        self.checkRemoveNoData.setStyleSheet("QToolTip { background-color: rgb(80,80,80); color: white; border: 1px solid rgb(100,100,100); }")
+        self.checkRemoveNoData.setToolTip("The <em>no data</em> tiles are tiles with flat colors (poor RGB information).")
+        self.checkRemoveNoLabels = QRadioButton("Remove tiles without target classes")
+        self.checkRemoveNoLabels.setStyleSheet("QToolTip { background-color: rgb(80,80,80); color: white; border: 1px solid rgb(100,100,100); }")
+        self.checkRemoveNoLabels.setToolTip("The <em>target classes</em>: are the class recognized by the classifier, i.e. the selected ones plus the Background class.")
         self.radio_ThresholdBackground  = QRadioButton("Remove tiles where the background classes exceeds:")
         self.radio_ThresholdBackground.setStyleSheet("QToolTip { background-color: rgb(80,80,80); color: white; border: 1px solid rgb(100,100,100); }")
-        self.radio_ThresholdBackground.setToolTip("The background classes are all the non-selected classes.")
+        self.radio_ThresholdBackground.setToolTip("The <em>background classes</em> are the non-selected classes plus the 'Background' class.")
         self.radio_SubsampleBackground = QRadioButton("Randomly subsamples the background classes by:")
         self.radio_SubsampleBackground.setStyleSheet("QToolTip { background-color: rgb(80,80,80); color: white; border: 1px solid rgb(100,100,100); }")
-        self.radio_SubsampleBackground.setToolTip("The background classes are all the non-selected classes.")
+        self.radio_SubsampleBackground.setToolTip("The <em>background classes</em> are the non-selected classes plus the 'Background' class.")
 
 
         ##### Edits
@@ -167,7 +171,8 @@ class QtDatasetManagerWidget(QWidget):
 
         layoutOptions = QVBoxLayout()
         layoutOptions.setAlignment(Qt.AlignLeft)
-        layoutOptions.addWidget(self.checkRemove)
+        layoutOptions.addWidget(self.checkRemoveNoData)
+        layoutOptions.addWidget(self.checkRemoveNoLabels)
         layoutOptions.addWidget(self.radio_ThresholdBackground)
         layoutOptions.addLayout(layoutAmount1)
         layoutOptions.addWidget(self.radio_SubsampleBackground)
@@ -409,16 +414,6 @@ class QtDatasetManagerWidget(QWidget):
 
         tiles_discarded = 0
 
-        # set up progress bar
-        pos_x = self.pos().x() + self.btnHelp.pos().x() - 80
-        pos_y = self.pos().y() + self.editAmount1.pos().y() + self.editAmount1.height()
-
-        self.progress_bar.move(int(pos_x), int(pos_y))
-        self.progress_bar.setMessage("Initializing..")
-        self.progress_bar.hidePerc()
-        self.progress_bar.show()
-        QApplication.processEvents()
-
         input_folder = self.editInputDatasetFolder.text()
         output_folder = self.editOutputDatasetFolder.text()
 
@@ -461,19 +456,41 @@ class QtDatasetManagerWidget(QWidget):
         if not os.path.exists(TRAINING_OUTPUT_LABELS):
             os.mkdir(TRAINING_OUTPUT_LABELS)
 
-        if self.checkRemove.isChecked():
+        # set up progress bar
+        pos_x = self.pos().x() + self.btnHelp.pos().x() - 80
+        pos_y = self.pos().y() + self.radio_ThresholdBackground.pos().y() + self.radio_ThresholdBackground.height()
+
+        self.progress_bar.move(int(pos_x), int(pos_y))
+        self.progress_bar.setMessage("Initializing..")
+        self.progress_bar.hidePerc()
+        self.progress_bar.show()
+        QApplication.processEvents()
+
+        if self.checkRemoveNoData.isChecked():
             self.progress_bar.showPerc()
             self.progress_bar.setMessage("Removing no data tiles..")
             QApplication.processEvents()
-            tiles_discarded += self.discard_image_tiles_with_uniform_colors(TRAINING_FOLDER_IMAGES, TRAINING_FOLDER_LABELS, TRAINING_OUTPUT_IMAGES, TRAINING_OUTPUT_LABELS)
+            tiles_discarded += self.discard_image_tiles_with_uniform_colors(TRAINING_FOLDER_IMAGES,
+                                                                            TRAINING_FOLDER_LABELS,
+                                                                            TRAINING_OUTPUT_IMAGES,
+                                                                            TRAINING_OUTPUT_LABELS)
+
+        if self.checkRemoveNoLabels.isChecked():
+            self.progress_bar.showPerc()
+            self.progress_bar.setMessage("Removing tiles with no labels..")
+            QApplication.processEvents()
+            tiles_discarded += self.subsample(TRAINING_FOLDER_IMAGES, TRAINING_FOLDER_LABELS, TRAINING_OUTPUT_IMAGES,
+                                              TRAINING_OUTPUT_LABELS, flag=1)
+
 
         if self.radio_ThresholdBackground.isChecked():
             perc = self.editAmount1.text()
             if perc.isdigit():
                 value = int(perc)
                 if 1 <= value <= 100:
-                    tiles_discarded += self.subsample(TRAINING_FOLDER_IMAGES, TRAINING_FOLDER_LABELS, TRAINING_OUTPUT_IMAGES, TRAINING_OUTPUT_LABELS, flag=1)
+                    tiles_discarded += self.subsample(TRAINING_FOLDER_IMAGES, TRAINING_FOLDER_LABELS, TRAINING_OUTPUT_IMAGES, TRAINING_OUTPUT_LABELS, flag=2)
                 else:
+                    self.progress_bar.hide()
                     box = QMessageBox()
                     box.setWindowTitle(self.TAGLAB_VERSION)
                     box.setText("Please enter a number between 1 and 100r")
@@ -481,6 +498,7 @@ class QtDatasetManagerWidget(QWidget):
                     self.editAmount1.clear()
                     return
             else:
+                self.progress_bar.hide()
                 box = QMessageBox()
                 box.setWindowTitle(self.TAGLAB_VERSION)
                 box.setText("Please enter a positive integer")
@@ -493,16 +511,19 @@ class QtDatasetManagerWidget(QWidget):
             if perc.isdigit():
                 value = int(perc)
                 if 1 <= value <= 100:
-                    self.subsample(TRAINING_FOLDER_IMAGES, TRAINING_FOLDER_LABELS, TRAINING_OUTPUT_IMAGES,
-                                   TRAINING_OUTPUT_LABELS, flag=2)
+                    tiles_discarded += self.subsample(TRAINING_FOLDER_IMAGES, TRAINING_FOLDER_LABELS, TRAINING_OUTPUT_IMAGES,
+                                   TRAINING_OUTPUT_LABELS, flag=3)
                 else:
+                    self.progress_bar.hide()
                     box = QMessageBox()
                     box.setWindowTitle(self.TAGLAB_VERSION)
                     box.setText("Please enter a number between 1 and 100r")
                     box.exec()
                     self.editAmount2.clear()
+                    self.progress_bar.hide()
                     return
             else:
+                self.progress_bar.hide()
                 box = QMessageBox()
                 box.setWindowTitle(self.TAGLAB_VERSION)
                 box.setText("Please enter a positive integer")
@@ -529,8 +550,12 @@ class QtDatasetManagerWidget(QWidget):
             PIXEL_SIZE_FILE = os.path.join(input_folder, "target-pixel-size.txt")
             shutil.copy(PIXEL_SIZE_FILE, output_folder)
 
+            self.progress_bar.hide()
             self.updateStatistics()
         else:
+
+            self.progress_bar.hide()
+
             box = QMessageBox()
             box.setWindowTitle(self.TAGLAB_VERSION)
             box.setText("WARNING! No tiles have been discarded. The new dataset is equal to the original one.")
@@ -553,7 +578,7 @@ class QtDatasetManagerWidget(QWidget):
 
         background_classes = self.target_classes.copy()
         for checkbox in self.checkboxes:
-            if not checkbox.isChecked():
+            if checkbox.isChecked():
                 key = checkbox.text()
                 del background_classes[key]
 
@@ -573,10 +598,10 @@ class QtDatasetManagerWidget(QWidget):
         self.flag = flag
 
         self.progress_bar.showPerc()
-        if self.flag == 1:
+        if self.flag == 2:
             self.progress_bar.setMessage("Removing tiles..")
 
-        if self.flag == 2:
+        if self.flag == 3:
             self.progress_bar.setMessage("Subsampling background tiles..")
 
         QApplication.processEvents()
@@ -607,24 +632,23 @@ class QtDatasetManagerWidget(QWidget):
             p = background_pixels / npixels
             coin = random.randint(0, 9999) / 100
 
-            if self.flag == 1 and p > int(self.editAmount1.text()) / 100.0:
-                tiles_removed += 1  # tile not copied in the new dataset
+            flag_copy = True
+
+            if self.flag == 1:
+                threshold = 0.999
             else:
+                # given threshold (option 2)
+                threshold = int(self.editAmount1.text()) / 100.0
 
-                image_filename = os.path.basename(label_path)
-
-                img_src = os.path.join(TRAINING_FOLDER_IMAGES, image_filename)
-                img_dest = os.path.join(TRAINING_OUTPUT_IMAGES , image_filename)
-
-                label_src = os.path.join(TRAINING_FOLDER_LABELS, image_filename)
-                label_dest = os.path.join(TRAINING_OUTPUT_LABELS, image_filename)
-
-                shutil.copy(img_src, img_dest)
-                shutil.copy(label_src, label_dest)
-
-            if (self.flag == 2) and (p > 0.999) and (coin < int(self.editAmount2.text())):
-                tiles_removed += 1  # tile not copied in the new dataset
+            if (self.flag == 1 or self.flag == 2) and p > threshold:
+                tiles_removed += 1
+                flag_copy = False  # this tile will not be copy in the new dataset
             else:
+                if (self.flag == 3) and (p > 0.999) and (coin < int(self.editAmount2.text())):
+                    tiles_removed += 1
+                    flag_copy = False  # this tile will not be copy in the new dataset
+
+            if flag_copy:
 
                 image_filename = os.path.basename(label_path)
 
