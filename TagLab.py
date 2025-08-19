@@ -356,7 +356,7 @@ class TagLab(QMainWindow):
         # main viewer
         self.viewerplus = QtImageViewerPlus(self.taglab_dir)
         self.viewerplus.logfile = logfile
-        self.viewerplus.viewUpdated.connect(self.updateViewInfo)
+        self.viewerplus.viewUpdated.connect(self.updateViewInfo, type=Qt.UniqueConnection)
         self.viewerplus.activated.connect(self.setActiveViewer)
         self.viewerplus.updateInfoPanel.connect(self.updatePanelInfo)
         self.viewerplus.activeImageChanged[Image].connect(self.setActiveImage)
@@ -367,7 +367,7 @@ class TagLab(QMainWindow):
         # secondary viewer in SPLIT MODE
         self.viewerplus2 = QtImageViewerPlus(self.taglab_dir)
         self.viewerplus2.logfile = logfile
-        self.viewerplus2.viewUpdated.connect(self.updateViewInfo)
+        self.viewerplus2.viewUpdated.connect(self.updateViewInfo, type=Qt.UniqueConnection)
         self.viewerplus2.activated.connect(self.setActiveViewer)
         self.viewerplus2.updateInfoPanel.connect(self.updatePanelInfo)
         self.viewerplus2.mouseMoved[float, float].connect(self.updateMousePos)
@@ -596,11 +596,11 @@ class TagLab(QMainWindow):
         self.mapviewer.setMinimumHeight(200)
         self.mapviewer.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.MinimumExpanding)
 
-        self.viewerplus.viewUpdated[QRectF].connect(self.mapviewer.drawOverlayImage)
+        self.viewerplus.viewUpdated[QRectF].connect(self.mapviewer.drawOverlayImage, type=Qt.UniqueConnection)
         self.mapviewer.leftMouseButtonPressed[float, float].connect(self.viewerplus.center)
         self.mapviewer.mouseMoveLeftPressed[float, float].connect(self.viewerplus.center)
         self.mapviewer.setStyleSheet("background-color: rgb(40,40,40); border:none")
-        self.viewerplus2.viewUpdated[QRectF].connect(self.mapviewer.drawOverlayImage)
+        self.viewerplus2.viewUpdated[QRectF].connect(self.mapviewer.drawOverlayImage, type=Qt.UniqueConnection)
 
 
         # DOCK
@@ -708,8 +708,8 @@ class TagLab(QMainWindow):
 
         self.connectProject()
 
-        self.viewerplus.viewHasChanged[float, float, float].connect(self.viewerplus2.setViewParameters)
-        self.viewerplus2.viewHasChanged[float, float, float].connect(self.viewerplus.setViewParameters)
+        self.viewerplus.viewHasChanged[float, float, float].connect(self.viewerplus2.setViewParameters, type=Qt.UniqueConnection)
+        self.viewerplus2.viewHasChanged[float, float, float].connect(self.viewerplus.setViewParameters, type=Qt.UniqueConnection)
 
         self.viewerplus.customContextMenuRequested.connect(self.openContextMenu)
         self.viewerplus2.customContextMenuRequested.connect(self.openContextMenu)
@@ -718,6 +718,9 @@ class TagLab(QMainWindow):
 
         # SWITCH IMAGES
         self.current_image_index = 0
+
+        # current views parameters
+        self.views_parameters = []
 
         # menu options
         self.mapActionList = []
@@ -745,6 +748,9 @@ class TagLab(QMainWindow):
         self.split_screen_flag = False
         self.update_panels_flag = True
         self.disableSplitScreen()
+
+        self.viewerplus.setObjectName("viewer 1")
+        self.viewerplus2.setObjectName("viewer 2")
 
         self.setGuiPreferences()
 
@@ -2041,7 +2047,10 @@ class TagLab(QMainWindow):
                 splitScreenAction.setText("Enable Split Screen")
 
         # just in case..
-        self.viewerplus2.viewUpdated[QRectF].connect(self.mapviewer.drawOverlayImage)
+        try:
+            self.viewerplus2.viewUpdated[QRectF].connect(self.mapviewer.drawOverlayImage, Qt.UniqueConnection)
+        except:
+            pass
 
         # disconnect viewer 2 slots
         self.viewerplus2.viewUpdated[QRectF].disconnect()
@@ -2051,6 +2060,10 @@ class TagLab(QMainWindow):
 
         self.activeviewer = self.viewerplus
         self.updatePanels()
+
+        if self.viewerplus.image is not None:
+            # when the split screen is disabled the image should be re-set
+            self.viewerplus.setImage(self.viewerplus.image)
 
     def enableSplitScreen(self):
 
@@ -2099,7 +2112,10 @@ class TagLab(QMainWindow):
             self.comboboxTargetImage.show()
             self.viewerplus.viewChanged()
 
-            self.viewerplus2.viewUpdated[QRectF].connect(self.mapviewer.drawOverlayImage)
+            try:
+                self.viewerplus2.viewUpdated[QRectF].connect(self.mapviewer.drawOverlayImage, type=Qt.UniqueConnection)
+            except:
+                pass
 
             if self.comparemenu is not None:
                 splitScreenAction = self.comparemenu.actions()[0]
@@ -2474,12 +2490,45 @@ class TagLab(QMainWindow):
         self.comboboxTargetImage.setCurrentIndex(index)
         self.comboboxTargetImage.currentIndexChanged.connect(self.targetImageChanged)
 
+    def storeCurrentViewsParameters(self):
+        """
+        Store the current view parameters (both left and right views).
+        """
+        posx1 = self.viewerplus.horizontalScrollBar().value()
+        posy1 = self.viewerplus.verticalScrollBar().value()
+        zoom1 = self.viewerplus.zoom_factor / self.viewerplus.px_to_mm
+        posx2 = self.viewerplus2.horizontalScrollBar().value()
+        posy2 = self.viewerplus2.verticalScrollBar().value()
+        zoom2 = self.viewerplus2.zoom_factor / self.viewerplus2.px_to_mm
+
+        self.views_parameters = []
+        self.views_parameters.append((posx1, posy1, zoom1))
+        self.views_parameters.append((posx2, posy2, zoom2))
+
+        print(self.views_parameters)
+
+    def resetViewsParameters(self):
+        """
+        Re-assign the previously stored view parameters.
+        """
+
+        view1 = self.views_parameters[0]
+        self.viewerplus.setViewParameters(view1[0], view1[1], view1[2])
+        view2 = self.views_parameters[1]
+        self.viewerplus2.setViewParameters(view2[0], view2[1], view2[2])
+
     @pyqtSlot(int)
     def sourceImageChanged(self, index1):
 
         N = len(self.project.images)
         if index1 == -1 or index1 >= N:
             return
+
+        # store view parameters
+        self.storeCurrentViewsParameters()
+
+        self.viewerplus.viewHasChanged.disconnect(self.viewerplus2.setViewParameters)
+        self.viewerplus2.viewHasChanged.disconnect(self.viewerplus.setViewParameters)
 
         image = self.project.images[index1]
         self.viewerplus.clear()
@@ -2504,6 +2553,12 @@ class TagLab(QMainWindow):
         if self.compare_panel.isVisible():
             self.compare_panel.setTable(self.project, index1, index2)
 
+        # set the view parameters as the stored one before the image change
+        self.resetViewsParameters()
+
+        self.viewerplus.viewHasChanged[float, float, float].connect(self.viewerplus2.setViewParameters, type=Qt.UniqueConnection)
+        self.viewerplus2.viewHasChanged[float, float, float].connect(self.viewerplus.setViewParameters, type=Qt.UniqueConnection)
+
 
     @pyqtSlot(int)
     def targetImageChanged(self, index2):
@@ -2511,6 +2566,12 @@ class TagLab(QMainWindow):
         N = len(self.project.images)
         if index2 == -1 or index2 >= N:
             return
+
+        # store view parameters
+        self.storeCurrentViewsParameters()
+
+        self.viewerplus.viewHasChanged.disconnect(self.viewerplus2.setViewParameters)
+        self.viewerplus2.viewHasChanged.disconnect(self.viewerplus.setViewParameters)
 
         self.viewerplus2.clear()
         self.btnGrid.setChecked(False)
@@ -2535,6 +2596,11 @@ class TagLab(QMainWindow):
         if self.compare_panel.isVisible():
             self.compare_panel.setTable(self.project, index1, index2)
 
+        # set the view parameters as the stored one before the image change
+        self.resetViewsParameters()
+
+        self.viewerplus.viewHasChanged[float, float, float].connect(self.viewerplus2.setViewParameters, type=Qt.UniqueConnection)
+        self.viewerplus2.viewHasChanged[float, float, float].connect(self.viewerplus.setViewParameters, type=Qt.UniqueConnection)
 
     @pyqtSlot()
     def sliderTransparencyChanged(self):

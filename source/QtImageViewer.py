@@ -125,6 +125,7 @@ class QtImageViewer(QGraphicsView):
         zoom = self.zoom_factor / self.px_to_mm
         self.viewHasChanged.emit(posx, posy, zoom)
 
+    @pyqtSlot(float, float, float)
     def setViewParameters(self, posx, posy, zoomfactor):
         if not self.isVisible():
             return
@@ -132,6 +133,7 @@ class QtImageViewer(QGraphicsView):
         self.horizontalScrollBar().setValue(int(posx))
         self.verticalScrollBar().setValue(int(posy))
         self.zoom_factor = zoomfactor * self.px_to_mm
+        print(self.objectName(), posx, posy, self.zoom_factor)
         self.updateViewer()
         self.blockSignals(False)
 
