@@ -1844,8 +1844,7 @@ class TagLab(QMainWindow):
 
         elif event.key() == Qt.Key_X:
 
-            for img in self.project.images:
-                print(img.sampling_areas)
+            pass
 
         elif event.key() == Qt.Key_B:
             self.attachBoundaries()
