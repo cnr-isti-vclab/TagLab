@@ -978,7 +978,7 @@ class QtImageViewerPlus(QtImageViewer):
             self.leftMouseButtonPressed.emit(x, y)
 
             if mods & Qt.ShiftModifier and (self.tools.tool == "WATERSHED" or self.tools.tool == "FREEHAND" or self.tools.tool == "EDITBORDER"\
-                 or self.tools.tool == "RULER" or self.tools.tool == "SAM" or self.tools.tool == "SAMINTERACTIVE"):
+                 or self.tools.tool == "CUT" or self.tools.tool == "RULER" or self.tools.tool == "SAM" or self.tools.tool == "SAMINTERACTIVE"):
                 self.tools.leftPressed(x, y, mods)
 
             elif self.tools.tool == "SELECTAREA":
@@ -1514,6 +1514,7 @@ class QtImageViewerPlus(QtImageViewer):
         """
         Reset the selection of blobs and points.
         """
+
         for blob in self.selected_blobs:
             if blob.qpath_gitem is None:
                 print("Selected item with no path!")

@@ -28,6 +28,8 @@ class Cut(Tool):
 
         if len(self.viewerplus.selected_blobs) != 1:
             self.infoMessage.emit("A single selected area is required.")
+            self.viewerplus.resetSelection()
+            self.viewerplus.resetTools()
             return
 
         selected_blob = self.viewerplus.selected_blobs[0]
