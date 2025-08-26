@@ -37,7 +37,7 @@ class FourClicks(Tool):
         message = "<p><i>Segment by marking 4 points on the boundary of an instance:<br/>top - bottom - left - right</i></p>"
         message += "<p>- SHIFT + LMB to add a point<br/>\
                     - CTRL + Z to remove last point</p>"
-        message += "<p>When 4th point is chosen, the segmentation will be applied</p>"
+        message += "<p>When the fourth point is chosen, the segmentation will be applied</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
     def leftPressed(self, x, y, mods):
