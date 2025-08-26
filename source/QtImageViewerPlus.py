@@ -811,7 +811,7 @@ class QtImageViewerPlus(QtImageViewer):
         #calls the toolMessage method to show the tool message window        
         self.tools.toolMessage()
 
-        if tool in ["FREEHAND", "RULER", "FOURCLICKS", "PLACEANNPOINT"] or (tool in ["CUT", "EDITBORDER", "RITM"] and len(self.selected_blobs) > 1):
+        if tool in ["FREEHAND", "RULER", "FOURCLICKS", "PLACEANNPOINT", "ASSIGN"] or (tool in ["CUT", "EDITBORDER", "RITM"] and len(self.selected_blobs) > 1):
             self.resetSelection()
 
         if tool == "RITM" or tool == "SAMINTERACTIVE" or tool == "WATERSHED":
@@ -978,7 +978,7 @@ class QtImageViewerPlus(QtImageViewer):
             self.leftMouseButtonPressed.emit(x, y)
 
             if mods & Qt.ShiftModifier and (self.tools.tool == "WATERSHED" or self.tools.tool == "FREEHAND" or self.tools.tool == "EDITBORDER"\
-                 or self.tools.tool == "CUT" or self.tools.tool == "RULER" or self.tools.tool == "SAM" or self.tools.tool == "SAMINTERACTIVE"):
+                 or self.tools.tool == "CUT" or self.tools.tool == "ASSIGN" or  self.tools.tool == "RULER" or self.tools.tool == "SAM" or self.tools.tool == "SAMINTERACTIVE"):
                 self.tools.leftPressed(x, y, mods)
 
             elif self.tools.tool == "SELECTAREA":
