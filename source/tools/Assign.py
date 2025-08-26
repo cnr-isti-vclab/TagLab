@@ -7,8 +7,7 @@ class Assign(Tool):
 
         message = "<p><i>Assign a class to a region</i></p>"
         message += "<p>Choose the class from the Labels panel</p>"
-        message += "<p>- LMB on a region to assign the class<br/>\
-                    - CTRL + LMB + drag to pan view</p>"
+        message += "<p>- LMB on a region to assign the class</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
 
