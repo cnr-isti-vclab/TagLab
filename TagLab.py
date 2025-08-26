@@ -780,9 +780,9 @@ class TagLab(QMainWindow):
         value = settings.value("gui-checkbox-borders", type=bool, defaultValue=True)
         self.checkBoxBorders.setChecked(value)
         value = settings.value("gui-checkbox-ids", type=bool, defaultValue=True)
-        self.checkBoxGrid.setChecked(value)
-        value = settings.value("gui-checkbox-grid", type=bool, defaultValue=False)
         self.checkBoxIds.setChecked(value)
+        value = settings.value("gui-checkbox-grid", type=bool, defaultValue=False)
+        self.checkBoxGrid.setChecked(value)
 
         # general preferences
         research_field = settings.value("research-field", defaultValue="Marine Ecology/Biology", type=str)
