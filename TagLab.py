@@ -752,7 +752,7 @@ class TagLab(QMainWindow):
         self.viewerplus.setObjectName("viewer 1")
         self.viewerplus2.setObjectName("viewer 2")
 
-        self.setGuiPreferences()
+        self.setPreferences()
 
         self.move()
 
@@ -770,9 +770,11 @@ class TagLab(QMainWindow):
         self.exportCoralNetDataAct.setVisible(not show)
         self.openCoralNetToolboxAct.setVisible(not show)
 
-    def setGuiPreferences(self):
+    def setPreferences(self):
 
         settings = QSettings("VCLAB", "TagLab")
+
+        # GOI preferences
         value = settings.value("gui-checkbox-fill", type=bool, defaultValue=True)
         self.checkBoxFill.setChecked(value)
         value = settings.value("gui-checkbox-borders", type=bool, defaultValue=True)
@@ -781,6 +783,29 @@ class TagLab(QMainWindow):
         self.checkBoxGrid.setChecked(value)
         value = settings.value("gui-checkbox-grid", type=bool, defaultValue=False)
         self.checkBoxIds.setChecked(value)
+
+        # general preferences
+        research_field = settings.value("research-field", defaultValue="Marine Ecology/Biology", type=str)
+        self.researchFieldChanged(research_field)
+
+        interval = settings.value("autosave-interval", type=int, defaultValue=0)
+        self.setAutosave(interval)
+
+        # drawing preferences
+
+        workingarea_pen_color = settings.value("workingarea-pen-color", defaultValue="0-255-0", type=str)
+        workingarea_pen_width = settings.value("workingarea-pen-width", defaultValue=3, type=int)
+        border_pen_color = settings.value("border-pen-color", defaultValue="0-0-0", type=str)
+        border_pen_width = settings.value("border-pen-width", defaultValue=2, type=int)
+        selection_pen_color = settings.value("selection-pen-color", defaultValue="255-255-255", type=str)
+        selection_pen_width = settings.value("selection-pen-width", defaultValue=2, type=int)
+        self.viewerplus.setBorderPen(border_pen_color, border_pen_width)
+        self.viewerplus.setSelectionPen(selection_pen_color, selection_pen_width)
+        self.viewerplus.setWorkingAreaPen(workingarea_pen_color, workingarea_pen_width)
+        self.viewerplus2.setBorderPen(border_pen_color, border_pen_width)
+        self.viewerplus2.setSelectionPen(selection_pen_color, selection_pen_width)
+        self.viewerplus2.setWorkingAreaPen(workingarea_pen_color, workingarea_pen_width)
+
 
     @pyqtSlot()
     def saveGuiPreferences(self):
