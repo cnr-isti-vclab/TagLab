@@ -18,8 +18,13 @@ class SelectArea(Tool):
         self.scene = viewerplus.scene
         self.selected_area_rect = None
         self.released_flag = True
+
+        # default styles
         self.working_area_style = QPen(Qt.green, 3, Qt.DashLine)
-        self.working_area_style.setCosmetic(True)
+        self.export_dataset_area_style = QPen(Qt.magenta, 3, Qt.DashLine)
+        self.sampling_area_style = QPen(Qt.yellow, 2, Qt.DashLine)
+        self.preview_area_style = QPen(Qt.white, 3, Qt.DotLine)
+
         self.area_style = None
 
         self.image_width = 0
@@ -101,13 +106,13 @@ class SelectArea(Tool):
     def setAreaStyle(self, style_name):
 
         if style_name == "WORKING":
-            self.area_style = QPen(Qt.green, 3, Qt.DashLine)
+            self.area_style = self.working_area_style
         elif style_name == "EXPORT_DATASET":
-            self.area_style = QPen(Qt.magenta, 3, Qt.DashLine)
+            self.area_style = QPen(self.export_dataset_area_style)
         elif style_name == "SAMPLING_AREA":
-            self.area_style = QPen(Qt.yellow, 2, Qt.DashLine)
+            self.area_style = QPen(self.sampling_area_style)
         elif style_name == "PREVIEW":
-            self.area_style = QPen(Qt.white, 3, Qt.DotLine)
+            self.area_style = QPen(self.preview_area_style)
         else:
             self.area_style = QPen(Qt.white, 3, Qt.DashLine)
 
