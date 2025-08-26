@@ -9,8 +9,7 @@ class Cut(Tool):
 
         message = "<p><i>Divide an existing region</i></p>"
         message += "<p>Double click to select a region</p>"
-        message += "<p>- LMB + drag to draw a line that bisects the selected region<br/>\
-                    - CTRL + LMB + drag to pan view</p>"
+        message += "<p>- SHIFT + LMB to draw a line that bisects the selected region</p>"
         message += "<p>SPACEBAR to divide the region into two</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 

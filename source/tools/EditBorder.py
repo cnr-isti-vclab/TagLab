@@ -8,8 +8,7 @@ class EditBorder(Tool):
 
         message = "<p><i>Modify the border of an existing region</i></p>"
         message += "<p>Double click to select a region</p>"
-        message += "<p>- LMB + drag to draw a line that intersects the border of the selected region<br/>\
-                    - CTRL + LMB + drag to pan view</p>"
+        message += "<p>- SHIFT + LMB to draw a line that intersects the border of the selected region</p>"
         message += "<p>SPACEBAR to modify the border</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 

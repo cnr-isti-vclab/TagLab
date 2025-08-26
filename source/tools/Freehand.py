@@ -10,7 +10,7 @@ class Freehand(Tool):
         self.edit_points = edit_points
 
         message = "<p><i>Segment by drawing a CLOSED curve on the map</i></p>"
-        message += "<p>- SHIFT + LMB to draw<br/>"
+        message += "<p>- SHIFT + LMB to draw</p>"
         message += "<p>SPACEBAR to apply segmentation</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
