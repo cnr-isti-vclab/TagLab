@@ -131,17 +131,14 @@ class generalSettingsWidget(QWidget):
             self.combo_research_field.setCurrentIndex(0)
             self.settings.setValue("research-field", self.combo_research_field.currentText())
             self.researchFieldChanged.emit(self.combo_research_field.currentText())
-            # self.researchFieldChanged.emit(self.combo_research_field.currentIndex())
         elif field == "Digital Heritage":
             self.combo_research_field.setCurrentIndex(1)
             self.settings.setValue("research-field", self.combo_research_field.currentText())
             self.researchFieldChanged.emit(self.combo_research_field.currentText())
-            # self.researchFieldChanged.emit(self.combo_research_field.currentIndex())
 
     def researchField(self):
 
         return self.comboResearchField.currentText()
-        # return self.combo_research_field.currentIndex()
 
     def setAutosaveInterval(self, interval):
 
