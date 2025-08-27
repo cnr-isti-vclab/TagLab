@@ -12,6 +12,10 @@ class PlaceAnnPoint(Tool):
         super(PlaceAnnPoint, self).__init__(viewerplus)
         self.viewerplus = viewerplus
 
+        message = "<p><i>Place an annotation point</i></p>"
+        message += "<p>- SHIFT + LMB to place the point</p>"
+        self.tool_message = f'<div style="text-align: left;">{message}</div>'
+
 
     def leftPressed(self, x, y, mods):
 

@@ -649,7 +649,8 @@ class SAMInteractive(Tool):
                 box.setText(f"Model weights {self.sam_model_type} cannot be found in models folder.\n"
                             f"If they have not been downloaded, re-run the install script.")
                 box.exec()
-            # Go back to GUI without closing program
+
+                self.viewerplus.resetTools()
 
             else:
                 # Set the device; users should be using a CUDA GPU, otherwise tool is slow

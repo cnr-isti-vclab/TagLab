@@ -342,7 +342,10 @@ class Sam(Tool):
                 # box.exec()
                 QMessageBox.critical(None, "Error", f"Working area is not set.\nPlease define the working area before segmentation.")
             else:
-                print(f"Segmentation failed: {e}")
+                box = QMessageBox()
+                text = "Segmentation failed: {e}".format(e=e)
+                box.exec()
+                self.viewerplus.resetTools()
 
         self.viewerplus.resetTools()
 

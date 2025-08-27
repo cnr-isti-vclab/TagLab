@@ -977,14 +977,11 @@ class QtImageViewerPlus(QtImageViewer):
             (x, y) = self.clipScenePos(scenePos)
             self.leftMouseButtonPressed.emit(x, y)
 
-            if mods & Qt.ShiftModifier and (self.tools.tool == "WATERSHED" or self.tools.tool == "FREEHAND" or self.tools.tool == "EDITBORDER"\
-                 or self.tools.tool == "CUT" or self.tools.tool == "ASSIGN" or  self.tools.tool == "RULER" or self.tools.tool == "SAM" or self.tools.tool == "SAMINTERACTIVE"):
+            if mods & Qt.ShiftModifier and (self.tools.tool in ["WATERSHED", "FREEHAND", "EDITBORDER", "CUT",\
+                "ASSIGN", "RULER", "FOURCLICKS", "RITM", "MATCH", "PLACEANNPOINT", "SAM", "SAMINTERACTIVE"]):
                 self.tools.leftPressed(x, y, mods)
 
             elif self.tools.tool == "SELECTAREA":
-                self.tools.leftPressed(x, y, mods)
-
-            elif self.tools.tool == "MATCH" or self.tools.tool == "RITM" or self.tools.tool == "FOURCLICKS" or self.tools.tool == "PLACEANNPOINT":
                 self.tools.leftPressed(x, y, mods)
 
             elif (self.tools.tool == "WATERSHED" or self.tools.tool == "SAM" or self.tools.tool == "SAMINTERACTIVE"):
