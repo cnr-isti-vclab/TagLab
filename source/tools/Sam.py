@@ -329,21 +329,22 @@ class Sam(Tool):
         print(f"number of sam_seed is {self.num_points}")
 
         try:
-        # Perform segmentation on the cropped image
+            # Perform segmentation on the cropped image
             self.segment(self.image_cropped, self.num_points)
         except Exception as e:
             if not self.work_area_set:
-                print("Work area is not set. Please define the work area before segmentation.")
                 # box = QMessageBox()
                 # box.setIcon(QMessageBox.Critical)
                 # box.setText("Working area is not set.\nPlease define the working area before segmentation.")
                 # box.setWindowTitle("No Working Area")
                 # box.setStandardButtons(QMessageBox.Ok)	
                 # box.exec()
-                QMessageBox.critical(None, "Error", f"Working area is not set.\nPlease define the working area before segmentation.")
+                QMessageBox.critical(None, "Error", f"Work area is not set.\nPlease, define the area where apply the segmentation.")
+                self.viewerplus.resetTools()
             else:
                 box = QMessageBox()
                 text = "Segmentation failed: {e}".format(e=e)
+                box.setText(text)
                 box.exec()
                 self.viewerplus.resetTools()
 
@@ -354,11 +355,8 @@ class Sam(Tool):
         self.infoMessage.emit("Segmentation is ongoing..")
         self.log.emit("[TOOL][SAM] Segmentation begins..")
 
-        QApplication.setOverrideCursor(Qt.WaitCursor)
         if not self.loadNetwork():
             return
-
-        QApplication.restoreOverrideCursor()
 
         mask_generator = SamAutomaticMaskGenerator(
             model=self.sam_net,

@@ -225,7 +225,8 @@ class SAMInteractive(Tool):
         
         if mods == Qt.ShiftModifier:        
             
-            self.loadNetwork()
+            if not self.loadNetwork():
+                return
             
             if not self.work_area_set:
                 self.setWorkArea()
@@ -651,6 +652,7 @@ class SAMInteractive(Tool):
                 box.exec()
 
                 self.viewerplus.resetTools()
+                return False
 
             else:
                 # Set the device; users should be using a CUDA GPU, otherwise tool is slow
@@ -661,6 +663,9 @@ class SAMInteractive(Tool):
                 sam_model.to(device=device)
                 self.sampredictor_net = SamPredictor(sam_model)
                 self.device = device
+                return True
+
+        return True
 
     def resetNetwork(self):
         """

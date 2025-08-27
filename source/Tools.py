@@ -24,6 +24,7 @@ from source.tools.PlaceAnnPoint import PlaceAnnPoint
 
 from PyQt5.QtCore import Qt, QObject, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
 
+import os
 import importlib
 if importlib.util.find_spec("segment_anything"):
     from source.tools.Sam import Sam
@@ -51,7 +52,13 @@ class Tools(QObject):
 
         self.SAM_is_available = False
         if importlib.util.find_spec("segment_anything"):
-            self.SAM_is_available = True
+
+            modelName = "sam_vit_h_4b8939"
+            models_dir = os.path.join(self.viewerplus.taglab_dir, "models")
+            path = os.path.join(models_dir, modelName + '.pth')
+
+            if os.path.exists(path):
+                self.SAM_is_available = True
 
         # DATA FOR THE CREATECRACK TOOL
         self.crackWidget = None

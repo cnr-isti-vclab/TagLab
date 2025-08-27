@@ -681,8 +681,7 @@ class TagLab(QMainWindow):
         # CHECK SEGMENT_ANYTHING AVAILABILITY
 
         self.SAM_is_available = True
-        if importlib.util.find_spec("segment_anything") is None:
-            print("Segment Anything (SAM) is not installed -> Sam generator tool will be not available.")
+        if not self.viewerplus.tools.SAM_is_available:
             self.SAM_is_available = False
             self.btnSam.setVisible(False)
             self.btnSamInteractive.setVisible(False)
@@ -785,7 +784,7 @@ class TagLab(QMainWindow):
         self.checkBoxGrid.setChecked(value)
 
         # general preferences
-        research_field = settings.value("research-field", defaultValue="Marine Ecology/Biology", type=str)
+        research_field = settings.value("research-field", defaultValue="Marine Ecology", type=str)
         self.researchFieldChanged(research_field)
 
         interval = settings.value("autosave-interval", type=int, defaultValue=0)
@@ -1434,13 +1433,13 @@ class TagLab(QMainWindow):
 
     @pyqtSlot(str)
     def researchFieldChanged(self, index):
-        # pass
-        print(f"index is {index}")
+
         if index == "Digital Heritage":
-        # if index == 1:
             self.toggleHeritageButtons(show=True)
         elif index == "Marine Ecology":
-        # elif index == 0:
+            self.toggleHeritageButtons(show=False)
+        else:
+            # if the research field is not properly defined, the 'Heritage' functionalities are disabled
             self.toggleHeritageButtons(show=False)
 
     @pyqtSlot(QAction)

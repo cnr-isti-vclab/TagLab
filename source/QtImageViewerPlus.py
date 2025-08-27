@@ -861,6 +861,8 @@ class QtImageViewerPlus(QtImageViewer):
 
         self.tools.resetTools()
 
+        QApplication.setOverrideCursor(Qt.ArrowCursor)
+
         if self.tools.tool == "FOURCLICKS" or self.tools.tool == "PLACEANNPOINT":
             self.showCrossair = True
         else:
