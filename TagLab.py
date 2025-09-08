@@ -344,12 +344,12 @@ class TagLab(QMainWindow):
         self.computeGeometricInfo = self.newAction("Compute Geometric Info", None, self.computeGeometricInfo)
 
         # SELECTION ACTIONS
-        self.selectAllAction           = self.newAction("Select All",                "Ctrl+A", self.selectAll)
-        self.selectNoneAction          = self.newAction("Select None",               "Ctrl+D", self.selectNone)
-        self.selectInvertAction        = self.newAction("Invert Selection",          "Ctrl+I", self.selectInvert)
-        self.selectByClassAction       = self.newAction("Select by Class",           "",       self.selectByClass)
-        self.selectByWorkingAreaAction = self.newAction("Select by Working Area",    "",       self.selectByWorkingArea)
-        self.selectByPropertiesAction  = self.newAction("Select by Properties",     "",       self.selectByProperties)
+        self.selectAllAction           = self.newAction("Select All",              "Ctrl+A", self.selectAll)
+        self.selectNoneAction          = self.newAction("Select None",             "Ctrl+D", self.selectNone)
+        self.selectInvertAction        = self.newAction("Invert Selection",        "Ctrl+I", self.selectInvert)
+        self.selectByClassAction       = self.newAction("Select by current Class",       "", self.selectByClass)
+        self.selectByWorkingAreaAction = self.newAction("Select by Working Area",        "", self.selectByWorkingArea)
+        self.selectByPropertiesAction  = self.newAction("Select by Properties",          "", self.selectByProperties)
 
         # VIEWERPLUS
 
@@ -3059,6 +3059,7 @@ class TagLab(QMainWindow):
         label_name = self.labels_widget.getActiveLabelName()
         if label_name is None:
             return
+        view.selectNoneBlobs() # first deselect all
         view.selectByClass(label_name)
         logfile.info("[OP-SELECT] Blobs of class '" + label_name + "' have been selected.")
 
