@@ -128,6 +128,11 @@ class QtDatasetManagerWidget(QWidget):
         self.btnChooseDatasetOutputFolder.setMaximumWidth(20)
         self.btnChooseDatasetOutputFolder.clicked.connect(self.chooseDatasetOutputFolder)
 
+        self.lblTotalBackground = QLabel("Cumulative background: ")
+        self.lblTotalBackground.setStyleSheet("QLabel { background-color : rgb(40,40,40); color : white; }")
+        self.lblTotalBackgroundValue = QLabel("")
+        self.lblTotalBackgroundValue.setStyleSheet("QLabel { background-color : rgb(40,40,40); color : white; }")
+
         ###### Layouts
 
         layoutLbls = QVBoxLayout()
@@ -295,7 +300,9 @@ class QtDatasetManagerWidget(QWidget):
                 if key == "Background":
                     checkbox.setAttribute(Qt.WA_TransparentForMouseEvents)
                     checkbox.setFocusPolicy(Qt.NoFocus)
+                    self.lblTotalBackgroundValue.setText(str(perc) + "%")
 
+                checkbox.stateChanged.connect(self.updateCumulativeBackground)
                 self.checkboxes.append(checkbox)
 
                 btnC = QPushButton("")
@@ -327,7 +334,23 @@ class QtDatasetManagerWidget(QWidget):
                 grid_layout.addWidget(checkbox, row, col*2)
                 grid_layout.addLayout(hlayout, row, col*2+1)
 
+            row = int((len(self.freq_classes.keys())-1) / CLASSES_PER_ROW) + 1
+            grid_layout.addWidget(self.lblTotalBackground, row, 0)
+            grid_layout.addWidget(self.lblTotalBackgroundValue, row, 1)
+
         return groupbox
+
+    pyqtSlot()
+    def updateCumulativeBackground(self):
+
+        perc = 0.0
+        for checkbox in self.checkboxes:
+            if not checkbox.isChecked():
+                perc += 100.0 * self.freq_classes[checkbox.text()]
+
+        perc = perc + 100.0 * self.freq_classes["Background"]
+        perc = round(perc, 2)
+        self.lblTotalBackgroundValue.setText(str(perc) + "%")
 
     def analyzeDataset(self):
 

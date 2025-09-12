@@ -369,7 +369,7 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
         reduce_lr_patience = 200
         print("patience increased !")
 
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.25, patience=reduce_lr_patience, verbose=True)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.25, patience=reduce_lr_patience)
 
     best_accuracy = 0.0
     best_jaccard_score = 0.0
@@ -514,8 +514,7 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
             for param in net.decoder.parameters():
                 param.requires_grad = True
 
-            scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.25, patience=reduce_lr_patience,
-                                                             verbose=True)
+            scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.25, patience=reduce_lr_patience)
 
         if epoch == EPOCH_SWITCH_SECOND_UNFREEZE and freeze_strategy is True:
 
@@ -534,8 +533,7 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
             for param in net.parameters():
                 param.requires_grad = True
 
-            scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.25, patience=reduce_lr_patience,
-                                                             verbose=True)
+            scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.25, patience=reduce_lr_patience)
 
 
     # main loop ended
