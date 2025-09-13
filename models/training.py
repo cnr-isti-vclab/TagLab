@@ -251,8 +251,8 @@ def updateProgressBar(progress_bar, prefix_message, num_iter, total_iter):
 
 def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val, labels_folder_val,
                     labels_dictionary, target_classes, output_classes, save_network_as, classifier_name,
-                    epochs, batch_sz, batch_mult, learning_rate, L2_penalty, validation_frequency, loss_to_use,
-                    epochs_switch, epochs_transition, tversky_alpha, tversky_gamma, optimiz,
+                    epochs, epochs_stage1, epochs_stage2, batch_sz, batch_mult, learning_rate, L2_penalty, validation_frequency, loss_to_use,
+                    epochs_switch, epochs_transition, tversky_alpha, tversky_gamma, optimiz, freeze_strategy,
                     flag_shuffle, flag_training_accuracy, progress):
 
     ##### DATA #####
@@ -310,9 +310,14 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
 
     # OPTIMIZER
 
-    freeze_strategy = True             # the last layer of the decoder is first stabilized for EPOCH_SWITCH_FIRST_UNFREEZE epochs
-    EPOCH_SWITCH_FIRST_UNFREEZE = 5   # unfreeze all the decoeder (not only the last layer)
-    EPOCH_SWITCH_SECOND_UNFREEZE = 15  # unfreeze all the DeepLab V3
+    # if freeze_strategy is True:
+    #
+    # Stage 1 - the last layer of the decoder is first stabilized (for EPOCH_SWITCH_FIRST_UNFREEZE)
+    # Stage 2 - unfreeze all the decoeder (not only the last layer) (for EPOCH_SWITCH_SECOND_UNFREEZE)
+    # Stage 3 - unfreeze all the DeeplabV3+ layers
+
+    EPOCH_SWITCH_FIRST_UNFREEZE = epochs_stage1
+    EPOCH_SWITCH_SECOND_UNFREEZE = epochs_stage1 + epochs_stage2
 
     if optimiz == "SGD":
         optimizer = optim.SGD(net.parameters(), lr=learning_rate, weight_decay=L2_penalty, momentum=0.9)
@@ -320,11 +325,11 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
         optimizer = optim.Adam(net.parameters(), lr=learning_rate, weight_decay=L2_penalty)
     elif optimiz == "ADAM" and freeze_strategy is True:
 
-        learning_rate = 0.01
+        # different learning rates are used for different part of the DeepLab in this case
 
-        # different learning rates are used for different part of the DeepLab is also used in this case
-        lr1 = learning_rate / 50.0
-        lr2 = learning_rate / 500.0
+        # base learning_rate = 0.01
+        lr1 = learning_rate * 2.0
+        lr2 = learning_rate / 10.0
 
         optimizer = optim.Adam([{'params': [param for name, param in net.named_parameters() if 'decoder.last_conv' not in name]},
                   {'params': net.decoder.last_conv.parameters(), 'lr': lr1}], lr=lr2, weight_decay=L2_penalty)
@@ -336,11 +341,11 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
 
     elif optimiz == "QHADAM" and freeze_strategy is True:
 
-        learning_rate = 0.01
+        # different learning rates are used for different part of the DeepLab in this case
 
-        # different learning rates are used for different part of the DeepLab is also used in this case
-        lr1 = learning_rate / 100.0
-        lr2 = learning_rate / 500.0
+        # base learning_rate = 0.01
+        lr1 = learning_rate * 2.0
+        lr2 = learning_rate / 10.0
         optimizer = QHAdam([{'params': [param for name, param in net.named_parameters() if 'decoder.last_conv' not in name]},
              {'params': net.decoder.last_conv.parameters(), 'lr': lr1}], lr=lr2, weight_decay=L2_penalty,
                            nus = (0.7, 1.0), betas = (0.99, 0.999))
@@ -499,17 +504,21 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
         # unfreeze after stabilization of the classifier
         if epoch == EPOCH_SWITCH_FIRST_UNFREEZE and freeze_strategy is True:
 
-            lr1 = learning_rate / 100.0
-            lr2 = learning_rate / 500.0
+            # base learning_rate = 0.01
+            lr1 = learning_rate
+            lr2 = learning_rate / 5.0
 
-            optimizer = optim.Adam(
-                [{'params': [param for name, param in net.named_parameters() if 'decoder' not in name]},
-                 {'params': net.decoder.last_conv.parameters(), 'lr': lr1}], lr=lr2, weight_decay=L2_penalty)
-
-            #optimizer = QHAdam(
-            #    [{'params': [param for name, param in net.named_parameters() if 'decoder' not in name]},
-            #     {'params': net.decoder.last_conv.parameters(), 'lr': lr1}], lr=lr2, weight_decay=L2_penalty,
-            #    nus = (0.7, 1.0), betas = (0.99, 0.999))
+            if optimiz == "ADAM":
+                optimizer = optim.Adam(
+                    [{'params': [param for name, param in net.named_parameters() if 'decoder' not in name]},
+                     {'params': net.decoder.last_conv.parameters(), 'lr': lr1}], lr=lr2, weight_decay=L2_penalty)
+            elif optimiz == "QHADAM":
+                optimizer = QHAdam(
+                    [{'params': [param for name, param in net.named_parameters() if 'decoder' not in name]},
+                     {'params': net.decoder.last_conv.parameters(), 'lr': lr1}], lr=lr2, weight_decay=L2_penalty,
+                    nus = (0.7, 1.0), betas = (0.99, 0.999))
+            else:
+                raise Exception("Invalid optimizer name!")
 
             for param in net.decoder.parameters():
                 param.requires_grad = True
@@ -518,17 +527,20 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
 
         if epoch == EPOCH_SWITCH_SECOND_UNFREEZE and freeze_strategy is True:
 
-            lr1 = learning_rate / 100.0
-            lr2 = learning_rate / 500.0
+            lr1 = learning_rate
+            lr2 = learning_rate / 5.0
 
-            optimizer = optim.Adam(
-                [{'params': [param for name, param in net.named_parameters() if 'decoder' not in name]},
-                 {'params': net.decoder.last_conv.parameters(), 'lr': lr1}], lr=lr2, weight_decay=L2_penalty)
-
-            #optimizer = QHAdam(
-            #    [{'params': [param for name, param in net.named_parameters() if 'decoder.last_conv' not in name]},
-            #     {'params': net.decoder.last_conv.parameters(), 'lr': lr1}], lr=lr2, weight_decay=L2_penalty,
-            #   nus = (0.7, 1.0), betas = (0.99, 0.999))
+            if optimiz == "ADAM":
+                optimizer = optim.Adam(
+                    [{'params': [param for name, param in net.named_parameters() if 'decoder' not in name]},
+                     {'params': net.decoder.last_conv.parameters(), 'lr': lr1}], lr=lr2, weight_decay=L2_penalty)
+            elif optimiz == "QHADAM":
+                optimizer = QHAdam(
+                    [{'params': [param for name, param in net.named_parameters() if 'decoder.last_conv' not in name]},
+                     {'params': net.decoder.last_conv.parameters(), 'lr': lr1}], lr=lr2, weight_decay=L2_penalty,
+                   nus = (0.7, 1.0), betas = (0.99, 0.999))
+            else:
+                raise Exception("Invalida optimizer name!")
 
             for param in net.parameters():
                 param.requires_grad = True

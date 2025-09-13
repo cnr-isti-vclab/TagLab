@@ -5426,9 +5426,17 @@ class TagLab(QMainWindow):
 
         # GO TRAINING GO...
         nepochs = self.trainYourNetworkWidget.getEpochs()
+        nepochs_stage1, nepochs_stage2, nepochs_stage3 = self.trainYourNetworkWidget.getEpochsPerStage()
+        training_mode = self.trainYourNetworkWidget.getTrainingMode()
+        optimizer_name = self.trainYourNetworkWidget.getOptimizer().upper()
         lr = self.trainYourNetworkWidget.getLR()
         L2 = self.trainYourNetworkWidget.getWeightDecay()
         batch_size = self.trainYourNetworkWidget.getBatchSize()
+
+        if training_mode == "Standard":
+            freeze_strategy = False
+        else:
+            freeze_strategy = True
 
         classifier_name = self.trainYourNetworkWidget.editNetworkName.text()
         network_name = self.trainYourNetworkWidget.editNetworkName.text() + ".net"
@@ -5447,10 +5455,10 @@ class TagLab(QMainWindow):
                                                                                           images_dir_val, labels_dir_val,
                                                                                           self.project.labels, target_classes, num_classes,
                                                                                           save_network_as=network_filename, classifier_name=classifier_name,
-                                                                                          epochs=nepochs, batch_sz=batch_size, batch_mult=4, validation_frequency=2,
+                                                                                          epochs=nepochs, epochs_stage1=nepochs_stage1, epochs_stage2=nepochs_stage2, batch_sz=batch_size, batch_mult=4, validation_frequency=2,
                                                                                           loss_to_use="FOCAL_TVERSKY", epochs_switch=0, epochs_transition=0,
                                                                                           learning_rate=lr, L2_penalty=L2, tversky_alpha=0.6, tversky_gamma=0.75,
-                                                                                          optimiz="ADAM", flag_shuffle=True, flag_training_accuracy=False,
+                                                                                          optimiz=optimizer_name, freeze_strategy=freeze_strategy, flag_shuffle=True, flag_training_accuracy=False,
                                                                                           progress=self.progress_bar)
 
         ##### TEST

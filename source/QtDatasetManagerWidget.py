@@ -340,7 +340,7 @@ class QtDatasetManagerWidget(QWidget):
 
         return groupbox
 
-    pyqtSlot()
+    @pyqtSlot()
     def updateCumulativeBackground(self):
 
         perc = 0.0

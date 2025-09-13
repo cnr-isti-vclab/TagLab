@@ -22,7 +22,7 @@ import os
 from PyQt5.Qt import QDesktopServices
 from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal, QUrl
 from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QLineEdit, QLabel, QPushButton, \
-    QHBoxLayout, QVBoxLayout, QMessageBox, QGroupBox, QGridLayout, QCheckBox, QSizePolicy
+    QHBoxLayout, QVBoxLayout, QMessageBox, QGroupBox, QGridLayout, QComboBox, QCheckBox, QSizePolicy
 
 from models.coral_dataset import CoralsDataset
 import models.training as training
@@ -43,37 +43,54 @@ class QtTYNWidget(QWidget):
 
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
 
-        TEXT_SPACE = 200
+        TEXT_SPACE = 240
 
         ###### Labels
 
         self.lblNetworkName = QLabel("Network name:")
-        self.lblNetworkName.setMinimumWidth(TEXT_SPACE)
+        self.lblNetworkName.setFixedWidth(TEXT_SPACE)
         self.lblNetworkName.setAlignment(Qt.AlignRight)
 
         self.lblDatasetFolder = QLabel("Dataset folder: ")
-        self.lblDatasetFolder.setMinimumWidth(TEXT_SPACE)
+        self.lblDatasetFolder.setFixedWidth(TEXT_SPACE)
         self.lblDatasetFolder.setAlignment(Qt.AlignRight)
 
         self.lblTargetClasses = QLabel("Classes to recognize: ")
-        self.lblTargetClasses.setMinimumWidth(TEXT_SPACE)
+        self.lblTargetClasses.setFixedWidth(TEXT_SPACE)
         self.lblTargetClasses.setAlignment(Qt.AlignRight)
 
+        self.lblTraining = QLabel("Training:")
+        self.lblTraining.setFixedWidth(TEXT_SPACE)
+        self.lblTraining.setAlignment(Qt.AlignRight)
+
+        self.lblOptimizer = QLabel("Optimizer:")
+        self.lblOptimizer.setFixedWidth(TEXT_SPACE)
+        self.lblOptimizer.setAlignment(Qt.AlignRight)
+
         self.lblEpochs = QLabel("Number of epochs:")
-        self.lblEpochs.setMinimumWidth(TEXT_SPACE)
+        self.lblEpochs.setFixedWidth(TEXT_SPACE)
         self.lblEpochs.setAlignment(Qt.AlignRight)
 
-        self.lblLR = QLabel("Learning Rate: ")
-        self.lblLR.setMinimumWidth(TEXT_SPACE)
+        self.lblEpochsPerStage = QLabel("N. of epochs (per-stage):")
+        self.lblEpochsPerStage.setFixedWidth(TEXT_SPACE)
+        self.lblEpochsPerStage.setAlignment(Qt.AlignRight)
+
+        self.lblLR = QLabel("Learning rate: ")
+        self.lblLR.setFixedWidth(TEXT_SPACE)
         self.lblLR.setAlignment(Qt.AlignRight)
 
-        self.lblL2 = QLabel("L2 Regularization: ")
-        self.lblL2.setMinimumWidth(TEXT_SPACE)
+        self.lblL2 = QLabel("L2 regularization: ")
+        self.lblL2.setFixedWidth(TEXT_SPACE)
         self.lblL2.setAlignment(Qt.AlignRight)
 
         self.lblBS = QLabel("Batch Size: ")
-        self.lblBS.setMinimumWidth(TEXT_SPACE)
+        self.lblBS.setFixedWidth(TEXT_SPACE)
         self.lblBS.setAlignment(Qt.AlignRight)
+
+        self.lblTotalBackground = QLabel("Cumulative background: ")
+        self.lblTotalBackground.setStyleSheet("QLabel { background-color : rgb(40,40,40); color : white; }")
+        self.lblTotalBackgroundValue = QLabel("")
+        self.lblTotalBackgroundValue.setStyleSheet("QLabel { background-color : rgb(40,40,40); color : white; }")
 
         ##### Edits
 
@@ -92,6 +109,25 @@ class QtTYNWidget(QWidget):
         self.editEpochs.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editEpochs.setMinimumWidth(LINEWIDTH)
         self.editEpochs.setReadOnly(False)
+        self.editEpochs.textEdited.connect(self.epochsChanged)
+        self.editEpochsStage1 = QLineEdit("20")
+        self.editEpochsStage1.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        self.editEpochsStage1.setMinimumWidth(int(LINEWIDTH/3))
+        self.editEpochsStage1.setReadOnly(False)
+        self.editEpochsStage1.setToolTip("Number of epochs of the 2nd phase of the fine-tuning.")
+        self.editEpochsStage1.textEdited.connect(self.epochsStagesChanged)
+        self.editEpochsStage2 = QLineEdit("20")
+        self.editEpochsStage2.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        self.editEpochsStage2.setMinimumWidth(int(LINEWIDTH/3))
+        self.editEpochsStage2.setReadOnly(False)
+        self.editEpochsStage2.setToolTip("Number of epochs of the 2nd phase of the fine-tuning.")
+        self.editEpochsStage2.textEdited.connect(self.epochsStagesChanged)
+        self.editEpochsStage3 = QLineEdit("20")
+        self.editEpochsStage3.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        self.editEpochsStage3.setMinimumWidth(int(LINEWIDTH/3))
+        self.editEpochsStage3.setReadOnly(False)
+        self.editEpochsStage3.setToolTip("Number of epochs of the 3rd phase of the fine-tuning.")
+        self.editEpochsStage3.textEdited.connect(self.epochsStagesChanged)
         self.editLR = QLineEdit("0.00005")
         self.editLR.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editLR.setReadOnly(False)
@@ -104,6 +140,26 @@ class QtTYNWidget(QWidget):
         self.editBatchSize.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editBatchSize.setReadOnly(False)
         self.editBatchSize.setMinimumWidth(LINEWIDTH)
+
+
+        self.comboTraining = QComboBox()
+        self.comboTraining.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        self.comboTraining.addItem('Standard')
+        self.comboTraining.addItem('Multi-stage')
+        self.comboTraining.setToolTip("'Standard' mode performs a standard fine-tuning of a DeepLabV3+ pre-trained on Image-Net.\n"
+                                      "'Multi-stage' performs a fine-tuning of the same network subdivided into three different stages. This\n"
+                                      "may provide better performance but it requires more epochs and more data.\n"
+                                      "Default values have been tested to give good results in many cases.\n"
+                                      "More details can be found on the documentation on TagLab web site."
+                                      )
+        self.comboTraining.currentTextChanged.connect(self.updateTrainingParameters)
+
+        self.comboOptimizer = QComboBox()
+        self.comboOptimizer.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        self.comboOptimizer.addItem('Adam')
+        self.comboOptimizer.addItem('QHAdam')
+        self.comboOptimizer.setToolTip("'Adam' is the typical solution, 'QHAdam' is a variant of the Adam optmizer\n"
+                                       "that may provide better performance in some cases.")
 
         ###### Right button
 
@@ -124,13 +180,27 @@ class QtTYNWidget(QWidget):
         self.layoutClasses.addWidget(self.lblTargetClasses)
         self.layoutClasses.addWidget(self.groupbox_classes)
 
-        layoutH4 = QHBoxLayout()
-        layoutH4.addWidget(self.lblEpochs)
-        layoutH4.addWidget(self.editEpochs)
+        self.layoutTraining = QHBoxLayout()
+        self.layoutTraining.addWidget(self.lblTraining)
+        self.layoutTraining.addWidget(self.comboTraining)
 
-        layoutH5 = QHBoxLayout()
-        layoutH5.addWidget(self.lblLR)
-        layoutH5.addWidget(self.editLR)
+        layoutOptimizer = QHBoxLayout()
+        layoutOptimizer.addWidget(self.lblOptimizer)
+        layoutOptimizer.addWidget(self.comboOptimizer)
+
+        layoutEpochs = QHBoxLayout()
+        layoutEpochs.addWidget(self.lblEpochs)
+        layoutEpochs.addWidget(self.editEpochs)
+
+        self.layoutEpochsPerStage = QHBoxLayout()
+        self.layoutEpochsPerStage.addWidget(self.lblEpochsPerStage)
+        self.layoutEpochsPerStage.addWidget(self.editEpochsStage1)
+        self.layoutEpochsPerStage.addWidget(self.editEpochsStage2)
+        self.layoutEpochsPerStage.addWidget(self.editEpochsStage3)
+
+        layoutLR = QHBoxLayout()
+        layoutLR.addWidget(self.lblLR)
+        layoutLR.addWidget(self.editLR)
 
         layoutH6 = QHBoxLayout()
         layoutH6.addWidget(self.lblL2)
@@ -144,8 +214,11 @@ class QtTYNWidget(QWidget):
         self.layoutInputs.addLayout(layoutH1)
         self.layoutInputs.addLayout(layoutH2)
         self.layoutInputs.addLayout(self.layoutClasses)
-        self.layoutInputs.addLayout(layoutH4)
-        self.layoutInputs.addLayout(layoutH5)
+        self.layoutInputs.addLayout(self.layoutTraining)
+        self.layoutInputs.addLayout(layoutOptimizer)
+        self.layoutInputs.addLayout(layoutEpochs)
+        self.layoutInputs.addLayout(self.layoutEpochsPerStage)
+        self.layoutInputs.addLayout(layoutLR)
         self.layoutInputs.addLayout(layoutH6)
         self.layoutInputs.addLayout(layoutH7)
 
@@ -183,6 +256,75 @@ class QtTYNWidget(QWidget):
 
         self.checkboxes = []
 
+        self.updateTrainingParameters("Standard")
+
+    @pyqtSlot(str)
+    def epochsChanged(self, text):
+
+        if text == "":
+            return
+
+        try:
+            number_of_epochs = int(text)
+
+            epochs1 = int(number_of_epochs / 3)
+            epochs2 = int(number_of_epochs / 3)
+            epochs3 = int(number_of_epochs / 3)
+            self.blockSignals(True)
+            self.editEpochsStage1.setText(str(epochs1))
+            self.editEpochsStage2.setText(str(epochs2))
+            self.editEpochsStage3.setText(str(epochs3))
+            self.blockSignals(False)
+        except:
+            pass
+
+    @pyqtSlot(str)
+    def epochsStagesChanged(self, text):
+
+        if text == "":
+            return
+
+        try:
+            number_of_epochs = int(text)
+
+            epochs1 = int(self.editEpochsStage1.text())
+            epochs2 = int(self.editEpochsStage2.text())
+            epochs3 = int(self.editEpochsStage3.text())
+            total_epochs = epochs1 + epochs2 + epochs3
+
+            self.blockSignals(True)
+            self.editEpochs.setText(str(total_epochs))
+            self.blockSignals(False)
+        except:
+            pass
+
+    @pyqtSlot(str)
+    def updateTrainingParameters(self, mode):
+
+        if mode == "Standard":
+            self.lblLR.show()
+            self.editLR.show()
+
+            for i in range(self.layoutEpochsPerStage.count()):
+                item = self.layoutEpochsPerStage.itemAt(i)
+                widget = item.widget()
+                if widget is not None:
+                    widget.hide()
+
+            self.lblEpochs.setText("Number of epochs:")
+        else:
+            for i in range(self.layoutEpochsPerStage.count()):
+                item = self.layoutEpochsPerStage.itemAt(i)
+                widget = item.widget()
+                if widget is not None:
+                    widget.show()
+
+            self.lblLR.hide()
+            self.editLR.hide()
+
+            self.lblEpochs.setText("Total epochs:")
+
+
     @pyqtSlot()
     def chooseDatasetFolder(self):
 
@@ -218,9 +360,21 @@ class QtTYNWidget(QWidget):
 
         return self.editDatasetFolder.text()
 
+    def getTrainingMode(self):
+
+        return self.comboTraining.currentText()
+
+    def getOptimizer(self):
+
+        return self.comboOptimizer.currentText()
+
     def getEpochs(self):
 
         return int(self.editEpochs.text())
+
+    def getEpochsPerStage(self):
+
+        return int(self.editEpochsStage1.text()), int(self.editEpochsStage2.text()), int(self.editEpochsStage3.text())
 
     def getLR(self):
 
@@ -282,7 +436,9 @@ class QtTYNWidget(QWidget):
                 if key == "Background":
                     checkbox.setAttribute(Qt.WA_TransparentForMouseEvents)
                     checkbox.setFocusPolicy(Qt.NoFocus)
+                    self.lblTotalBackgroundValue.setText(str(perc) + "%")
 
+                checkbox.stateChanged.connect(self.updateCumulativeBackground)
                 self.checkboxes.append(checkbox)
 
                 btnC = QPushButton("")
@@ -314,7 +470,23 @@ class QtTYNWidget(QWidget):
                 grid_layout.addWidget(checkbox, row, col*2)
                 grid_layout.addLayout(hlayout, row, col*2+1)
 
+            row = int((len(self.freq_classes.keys())-1) / CLASSES_PER_ROW) + 1
+            grid_layout.addWidget(self.lblTotalBackground, row, 0)
+            grid_layout.addWidget(self.lblTotalBackgroundValue, row, 1)
+
         return groupbox
+
+    @pyqtSlot()
+    def updateCumulativeBackground(self):
+
+        perc = 0.0
+        for checkbox in self.checkboxes:
+            if not checkbox.isChecked():
+                perc += 100.0 * self.freq_classes[checkbox.text()]
+
+        perc = perc + 100.0 * self.freq_classes["Background"]
+        perc = round(perc, 2)
+        self.lblTotalBackgroundValue.setText(str(perc) + "%")
 
     @pyqtSlot()
     def checkBeforeTraining(self):
@@ -335,10 +507,20 @@ class QtTYNWidget(QWidget):
             msgBox.exec()
             return
 
-        if self.getEpochs() < 2:
+        nepochs = self.getEpochs()
+        if nepochs < 2:
             msgBox = QMessageBox()
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
             msgBox.setText("The minimum number of epoch is 2.")
+            msgBox.exec()
+            return
+
+        e1,e2,e3 = self.getEpochsPerStage()
+
+        if e1+e2+e3 != nepochs:
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("The total number of epochs should corresponds with the sum of the number of epochs of different stages.\nThere is something wrong, please check.")
             msgBox.exec()
             return
 
