@@ -5433,7 +5433,7 @@ class TagLab(QMainWindow):
         L2 = self.trainYourNetworkWidget.getWeightDecay()
         batch_size = self.trainYourNetworkWidget.getBatchSize()
 
-        if training_mode == "Standard":
+        if training_mode == "Type 1":
             freeze_strategy = False
         else:
             freeze_strategy = True

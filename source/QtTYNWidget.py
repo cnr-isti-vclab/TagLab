@@ -114,19 +114,19 @@ class QtTYNWidget(QWidget):
         self.editEpochsStage1.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editEpochsStage1.setMinimumWidth(int(LINEWIDTH/3))
         self.editEpochsStage1.setReadOnly(False)
-        self.editEpochsStage1.setToolTip("Number of epochs of the 2nd phase of the fine-tuning.")
+        self.editEpochsStage1.setToolTip("Number of epochs of the 1st phase of the fine-tuning (head unfreeze).")
         self.editEpochsStage1.textEdited.connect(self.epochsStagesChanged)
         self.editEpochsStage2 = QLineEdit("20")
         self.editEpochsStage2.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editEpochsStage2.setMinimumWidth(int(LINEWIDTH/3))
         self.editEpochsStage2.setReadOnly(False)
-        self.editEpochsStage2.setToolTip("Number of epochs of the 2nd phase of the fine-tuning.")
+        self.editEpochsStage2.setToolTip("Number of epochs of the 2nd phase of the fine-tuning (decoder unfreeze, encoder freeze).")
         self.editEpochsStage2.textEdited.connect(self.epochsStagesChanged)
         self.editEpochsStage3 = QLineEdit("20")
         self.editEpochsStage3.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editEpochsStage3.setMinimumWidth(int(LINEWIDTH/3))
         self.editEpochsStage3.setReadOnly(False)
-        self.editEpochsStage3.setToolTip("Number of epochs of the 3rd phase of the fine-tuning.")
+        self.editEpochsStage3.setToolTip("Number of epochs of the 3rd phase of the fine-tuning (all the weights are unfreeze).")
         self.editEpochsStage3.textEdited.connect(self.epochsStagesChanged)
         self.editLR = QLineEdit("0.00005")
         self.editLR.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
@@ -144,13 +144,13 @@ class QtTYNWidget(QWidget):
 
         self.comboTraining = QComboBox()
         self.comboTraining.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        self.comboTraining.addItem('Standard')
-        self.comboTraining.addItem('Multi-stage')
-        self.comboTraining.setToolTip("'Standard' mode performs a standard fine-tuning of a DeepLabV3+ pre-trained on Image-Net.\n"
-                                      "'Multi-stage' performs a fine-tuning of the same network subdivided into three different stages. This\n"
-                                      "may provide better performance but it requires more epochs and more data.\n"
-                                      "Default values have been tested to give good results in many cases.\n"
-                                      "More details can be found on the documentation on TagLab web site."
+        self.comboTraining.addItem('Type 1')
+        self.comboTraining.addItem('Type 2')
+        self.comboTraining.setToolTip("'Type 1' mode makes slight adjustments to all the weights in the DeepLab V3+ model.\n"
+                                      "It is advised to use the recommended learning rate or a lower one.\n"
+                                      "'Type 2' unfreezes the weights of the final layer first, then the decoder layers, and finally the entire encoder.\n" 
+                                      "This approach helps to prevent overfitting.\n" 
+                                      "For more details, please refer to the documentation on the TagLab website."
                                       )
         self.comboTraining.currentTextChanged.connect(self.updateTrainingParameters)
 
@@ -256,7 +256,7 @@ class QtTYNWidget(QWidget):
 
         self.checkboxes = []
 
-        self.updateTrainingParameters("Standard")
+        self.updateTrainingParameters("Type 1")
 
     @pyqtSlot(str)
     def epochsChanged(self, text):
@@ -270,6 +270,10 @@ class QtTYNWidget(QWidget):
             epochs1 = int(number_of_epochs / 3)
             epochs2 = int(number_of_epochs / 3)
             epochs3 = int(number_of_epochs / 3)
+
+            if epochs1 + epochs2 + epochs3 < number_of_epochs:
+                epochs2 += number_of_epochs - epochs1 - epochs2 - epochs3
+
             self.blockSignals(True)
             self.editEpochsStage1.setText(str(epochs1))
             self.editEpochsStage2.setText(str(epochs2))
@@ -301,7 +305,7 @@ class QtTYNWidget(QWidget):
     @pyqtSlot(str)
     def updateTrainingParameters(self, mode):
 
-        if mode == "Standard":
+        if mode == "Type 1":
             self.lblLR.show()
             self.editLR.show()
 
@@ -323,6 +327,8 @@ class QtTYNWidget(QWidget):
             self.editLR.hide()
 
             self.lblEpochs.setText("Total epochs:")
+
+            self.epochsChanged(self.editEpochs.text())
 
 
     @pyqtSlot()
