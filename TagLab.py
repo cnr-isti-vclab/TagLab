@@ -3293,7 +3293,7 @@ class TagLab(QMainWindow):
             return
 
         geometricInfo_widget = QtGeometricInfoWidget(view, parent = self)
-        geometricInfo_widget.setWindowModality(Qt.ApplicationModal)
+        geometricInfo_widget.setWindowModality(Qt.NonModal)
         geometricInfo_widget.show()
 
     def dilate(self):
