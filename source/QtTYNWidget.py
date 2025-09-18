@@ -144,11 +144,11 @@ class QtTYNWidget(QWidget):
 
         self.comboTraining = QComboBox()
         self.comboTraining.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        self.comboTraining.addItem('Type 1')
-        self.comboTraining.addItem('Type 2')
-        self.comboTraining.setToolTip("'Type 1' mode makes slight adjustments to all the weights in the DeepLab V3+ model.\n"
+        self.comboTraining.addItem('Preset 1')
+        self.comboTraining.addItem('Preset 2')
+        self.comboTraining.setToolTip("In 'Preset 1' the training makes slight adjustments to all the weights of a DeepLab V3+ model.\n"
                                       "It is advised to use the recommended learning rate or a lower one.\n"
-                                      "'Type 2' unfreezes the weights of the final layer first, then the decoder layers, and finally the entire encoder.\n" 
+                                      "In 'Preset 2' the training unfreezes the weights of the final layer first, then the decoder layers, and finally the entire encoder.\n" 
                                       "This approach helps to prevent overfitting.\n" 
                                       "For more details, please refer to the documentation on the TagLab website."
                                       )
@@ -256,7 +256,7 @@ class QtTYNWidget(QWidget):
 
         self.checkboxes = []
 
-        self.updateTrainingParameters("Type 1")
+        self.updateTrainingParameters("Preset 1")
 
     @pyqtSlot(str)
     def epochsChanged(self, text):
@@ -305,7 +305,7 @@ class QtTYNWidget(QWidget):
     @pyqtSlot(str)
     def updateTrainingParameters(self, mode):
 
-        if mode == "Type 1":
+        if mode == "Preset 1":
             self.lblLR.show()
             self.editLR.show()
 
