@@ -114,7 +114,7 @@ class QtTYNWidget(QWidget):
         self.editEpochsStage1.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editEpochsStage1.setMinimumWidth(int(LINEWIDTH/3))
         self.editEpochsStage1.setReadOnly(False)
-        self.editEpochsStage1.setToolTip("Number of epochs of the 1st phase of the fine-tuning (last layers are unfrozen).")
+        self.editEpochsStage1.setToolTip("Number of epochs of the 1st phase of the fine-tuning (last layer is unfrozen).")
         self.editEpochsStage1.textEdited.connect(self.epochsStagesChanged)
         self.editEpochsStage2 = QLineEdit("20")
         self.editEpochsStage2.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
