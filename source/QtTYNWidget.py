@@ -521,15 +521,6 @@ class QtTYNWidget(QWidget):
             msgBox.exec()
             return
 
-        e1,e2,e3 = self.getEpochsPerStage()
-
-        if e1+e2+e3 != nepochs:
-            msgBox = QMessageBox()
-            msgBox.setWindowTitle(self.TAGLAB_VERSION)
-            msgBox.setText("The total number of epochs should corresponds with the sum of the number of epochs of different stages.\nThere is something wrong, please check.")
-            msgBox.exec()
-            return
-
         self.launchTraining.emit()
 
     def analyzeDataset(self):
