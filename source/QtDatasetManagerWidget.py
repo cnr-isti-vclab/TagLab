@@ -74,6 +74,9 @@ class QtDatasetManagerWidget(QWidget):
         lblAmount = QLabel("Amount (%): ")
         lblAmount2 = QLabel("Amount (%): ")
 
+        self.lblTotalBackground = None
+        self.lblTotalBackgroundValue = None
+
         #### Checkboxes
 
         self.checkRemoveNoData = QRadioButton("Remove 'no data' tiles")
@@ -127,11 +130,6 @@ class QtDatasetManagerWidget(QWidget):
         self.btnChooseDatasetOutputFolder = QPushButton("...")
         self.btnChooseDatasetOutputFolder.setMaximumWidth(20)
         self.btnChooseDatasetOutputFolder.clicked.connect(self.chooseDatasetOutputFolder)
-
-        self.lblTotalBackground = QLabel("Cumulative background: ")
-        self.lblTotalBackground.setStyleSheet("QLabel { background-color : rgb(40,40,40); color : white; }")
-        self.lblTotalBackgroundValue = QLabel("")
-        self.lblTotalBackgroundValue.setStyleSheet("QLabel { background-color : rgb(40,40,40); color : white; }")
 
         ###### Layouts
 
@@ -283,6 +281,11 @@ class QtDatasetManagerWidget(QWidget):
         else:
             grid_layout = QGridLayout()
             groupbox.setLayout(grid_layout)
+
+            self.lblTotalBackground = QLabel("Cumulative background: ")
+            self.lblTotalBackground.setStyleSheet("QLabel { background-color : rgb(40,40,40); color : white; }")
+            self.lblTotalBackgroundValue = QLabel("")
+            self.lblTotalBackgroundValue.setStyleSheet("QLabel { background-color : rgb(40,40,40); color : white; }")
 
             self.checkboxes = []
             CLASSES_PER_ROW = 3

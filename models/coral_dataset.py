@@ -28,7 +28,7 @@ def augmentation_color(p=0.8):
         ISONoise(always_apply=False, p=0.2, intensity=(0.1, 0.3), color_shift=(0.01, 0.1)),
         FancyPCA(always_apply=False, p=0.05, alpha=0.01),
         Spatter(always_apply=False, p=0.2, mean=(0.65, 0.65), std=(0.3, 0.3), gauss_sigma=(0.72, 0.72),
-                intensity=(0.6, 0.6), cutout_threshold=(0.68, 0.68), mode=['rain']),
+                intensity=(0.6, 0.6), cutout_threshold=(0.68, 0.68), mode='rain'),
         PixelDropout(always_apply=False, p=0.2, dropout_prob=0.02, per_channel=False, drop_value=0.0,
                      mask_drop_value=None)
     ], p=p)
@@ -289,6 +289,7 @@ class CoralsDataset(Dataset):
             data_crop = data[oy:oy + CROP_SIZE, ox:ox + CROP_SIZE]
 
             # a color is transformed into a code
+            data_crop = data_crop.astype(np.int32)
             color_codes = data_crop[:, :, 0] + data_crop[:, :, 1] * 256 + data_crop[:, :, 2] * 65536
             unique_colors = list(np.unique(color_codes))
             for color_code in unique_colors:
