@@ -21,7 +21,7 @@ import os
 
 from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal, QPointF
 from PyQt5.QtGui import QColor, QPen, QBrush, QPolygonF, QPainterPath
-from PyQt5.QtWidgets import QWidget, QTableWidget, QTableWidgetItem, QLabel, QPushButton, QHBoxLayout, QVBoxLayout,  QCheckBox, QRadioButton, QLayout, QFileDialog, QMessageBox, QComboBox, QGraphicsPolygonItem
+from PyQt5.QtWidgets import QWidget, QTableWidget, QTableWidgetItem, QLabel, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout,  QCheckBox, QRadioButton, QLayout, QFileDialog, QMessageBox, QComboBox, QGraphicsPolygonItem
 from skimage import measure
 import math
 import csv
@@ -194,7 +194,6 @@ class QtGeometricInfoWidget(QWidget):
 
         # buttons for additional functions
         button_layout = QHBoxLayout()
-
         self.btnToggleFitted = QPushButton("Show Fitted Shapes")
         self.btnToggleFitted.setToolTip("Show fitted ellipses and minimum rectangles")
         self.btnToggleFitted.clicked.connect(self.toggleFittedShapes)
@@ -210,7 +209,6 @@ class QtGeometricInfoWidget(QWidget):
         self.btnRemoveColor = QPushButton("X")
         self.btnRemoveColor.setToolTip("Remove colorization")
         self.btnRemoveColor.clicked.connect(self.removeColorizedEntities)
-
         button_layout.addStretch()
         button_layout.addWidget(self.btnToggleFitted)
         button_layout.addStretch()
@@ -218,9 +216,23 @@ class QtGeometricInfoWidget(QWidget):
         button_layout.addWidget(self.propertyChooserInput)
         button_layout.addWidget(self.btnRemoveColor)
         button_layout.addStretch()
-
         button_layout.setAlignment(Qt.AlignLeft)
         mainLayout.addLayout(button_layout)
+
+        button_layout2 = QHBoxLayout()
+        self.btnColorize2 = QPushButton("Colorize by squareness/roundness")
+        self.btnColorize2.clicked.connect(self.colorizeByShape)
+        self.thresholdInput0 = QLineEdit()
+        self.thresholdInput0.setText("0.5")
+        self.thresholdInput1 = QLineEdit()
+        self.thresholdInput1.setText("1")
+        button_layout2.addStretch()
+        button_layout2.addWidget(self.btnColorize2)
+        button_layout2.addWidget(self.thresholdInput0)
+        button_layout2.addWidget(self.thresholdInput1)
+        button_layout2.addStretch()
+        button_layout2.setAlignment(Qt.AlignLeft)
+        mainLayout.addLayout(button_layout2)
 
         # add horizontal line separator to layout
         separator2 = QLabel()
@@ -277,10 +289,7 @@ class QtGeometricInfoWidget(QWidget):
         return
 
     @pyqtSlot()
-    def onSelectionChanged(self):
-        # Called when the selection changes in the viewer
-        #self.computeMeasures()
-        print("Selection changed, but not recomputing measures automatically.")
+    def onSelectionChanged(self): # Called when the selection changes in the viewer
         self.btnRecompute.setEnabled(True)
         self.btnRecompute.setText("Selection has changed, update the regions working set")
         self.btnRecompute.setStyleSheet("QPushButton { background-color: rgb(200,50,50); color: white; }")
@@ -493,22 +502,22 @@ class QtGeometricInfoWidget(QWidget):
     def colorizeByProperty(self):
         # determine which property is selected
         selected_property = self.propertyChooserInput.currentText()
-        self.displayColorizedEntities(selected_property)
+        values = [self.geometricData[blob.id][selected_property] for blob in self.workingBlobs]
+        min_value = min(values)
+        max_value = max(values)
+        self.displayColorizedEntities(selected_property, min_value, max_value)
         return
 
     # display colorized shapes in the viewer
-    def displayColorizedEntities(self, property):
+    def displayColorizedEntities(self, property, min_value, max_value):
         self.removeColorizedEntities()  # remove previous colorized entities, if any
-        # get the min and max values for the selected property
-        values = [self.geometricData[blob.id][property] for blob in self.workingBlobs]
-        min_value = min(values)
-        max_value = max(values)
         value_range = max_value - min_value if max_value != min_value else 1.0  # avoid division by zero
         # create a color map from blue (low) to red (high)
         for blob in self.workingBlobs:
             min_row, min_col, _, _ = blob.bbox
             value = self.geometricData[blob.id][property]
             normalized_value = (value - min_value) / value_range
+            # map normalized value to color
             r = int(normalized_value * 255)
             g = 0
             b = int((1 - normalized_value) * 255)
@@ -518,12 +527,42 @@ class QtGeometricInfoWidget(QWidget):
             # draw the blob's filled contour
             contours, _ = cv2.findContours(blob.getMask().astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             cnt = contours[0]
-            polygon = QPolygonF([QPointF(float(point[0][0])+min_col, float(point[0][1])+min_row) for point in cnt])
+            polygon = QPolygonF([QPointF(float(point[0][0])+min_col+0.5, float(point[0][1])+min_row+0.5) for point in cnt])
             newItemC = self.activeviewer.scene.addPolygon(polygon, pen, brush)
             newItemC.setZValue(10)  # Draw above most items
             self.colorizedEntities.append(newItemC)
         return
-        
+    
+    # colorize the shapes by squareness/roundness
+    def colorizeByShape(self):
+        self.removeColorizedEntities()  # remove previous colorized entities, if any
+        for blob in self.workingBlobs:
+            min_row, min_col, _, _ = blob.bbox
+            # compute squareness as... 
+            rectangle_area = self.geometricData[blob.id]["majSideRectangle"] * self.geometricData[blob.id]["minSideRectangle"]
+            value = self.geometricData[blob.id]["area"] / rectangle_area
+            value = max(0.0, min(value, 1.0))  # clamp to [0, 1]
+            tMin = float(self.thresholdInput0.text())
+            tMax = float(self.thresholdInput1.text())
+            value = (value - tMin) / (tMax - tMin)
+            value = max(0.0, min(value, 1.0))  # clamp to [0, 1]
+            # map value to color
+            r = int(value * 255)
+            g = 0
+            b = int((1 - value) * 255)
+            color = QColor(r, g, b, 255)  # fully opaque
+            pen = QPen(Qt.NoPen)
+            brush = QBrush(color)
+            # draw the blob's filled contour
+            contours, _ = cv2.findContours(blob.getMask().astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            cnt = contours[0]
+            polygon = QPolygonF([QPointF(float(point[0][0])+min_col+0.5, float(point[0][1])+min_row+0.5) for point in cnt])
+            newItemC = self.activeviewer.scene.addPolygon(polygon, pen, brush)
+            newItemC.setZValue(10)  # Draw above most items
+            self.colorizedEntities.append(newItemC)
+        return
+
+
     # remove colorized shapes from the viewer
     def removeColorizedEntities(self):
         if self.colorizedEntities:
