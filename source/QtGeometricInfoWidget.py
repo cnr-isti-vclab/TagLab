@@ -544,8 +544,14 @@ class QtGeometricInfoWidget(QWidget):
             value = max(0.0, min(value, 1.0))  # clamp to [0, 1]
             tMin = float(self.thresholdInput0.text())
             tMax = float(self.thresholdInput1.text())
-            value = (value - tMin) / (tMax - tMin)
-            value = max(0.0, min(value, 1.0))  # clamp to [0, 1]
+            # map ramped value to [0, 1] based on thresholds
+            if value <= tMin:
+                value = 0.0
+            elif value >= tMax:
+                value = 1.0
+            else:
+                value = (value - tMin) / (tMax - tMin)
+            value = value * value  # make the ramp quadratic for better visual effect
             # map value to color
             r = int(value * 255)
             g = 0
