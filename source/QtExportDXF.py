@@ -1,88 +1,95 @@
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QRadioButton, QCheckBox, QLabel, QPushButton, QButtonGroup, QSpinBox
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QRadioButton, QComboBox, QCheckBox, QLabel, QPushButton, QButtonGroup, QSpinBox
 from PyQt5.QtCore import Qt
 
-class QtDXFExportOptions(QDialog):  # Change QWidget to QDialog
+class QtDXFExport(QDialog):  # Change QWidget to QDialog
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("DXF Export Options")
         self.adjustSize()
         self.setSizeGripEnabled(True)
 
-        # self.setFixedSize(300, 500)
+        self.setStyleSheet("""
+            QToolTip {
+                background-color: #f0f0f0;
+                color: #333333;
+                border: 1px solid #cccccc;
+                padding: 3px;
+                border-radius: 2px;
+            }
+        """)
 
         # Main layout
         main_layout = QVBoxLayout()
         
-        # Create blobs layout
-        blobs_layout = QVBoxLayout()
-        blobs_layout.setSpacing(5)
-        # Export blobs options
-        blobs_label = QLabel("Export")
-        blobs_layout.addWidget(blobs_label)
-        
+        # Layout for choosing elements
+        elements_layout = QVBoxLayout()
+        self.workspace_checkbox = QCheckBox("Image Workspace")
+        self.workspace_checkbox.setToolTip("Export the image workspace as a rectangle in the DXF file.")
+        self.workspace_checkbox.setChecked(True)
+        elements_layout.addWidget(self.workspace_checkbox)
+        self.workingarea_checkbox = QCheckBox("Working Area")
+        self.workingarea_checkbox.setToolTip("Export the working area as a rectangle in the DXF file.")
+        self.workingarea_checkbox.setChecked(False)
+        self.workingarea_checkbox.setEnabled(False)  # Initially greyed out
+        elements_layout.addWidget(self.workingarea_checkbox)
+        self.grid_checkbox = QCheckBox("Grid")
+        self.grid_checkbox.setToolTip("Export the grid as lines in the DXF file.")
+        self.grid_checkbox.setChecked(False)        
+        self.grid_checkbox.setEnabled(False)  # Initially greyed out        
+        elements_layout.addWidget(self.grid_checkbox)
+        main_layout.addLayout(elements_layout)
 
-        self.blobs_group = QButtonGroup(self)
-        all_blobs_radio = QRadioButton("All Regions")
-        visible_blobs_radio = QRadioButton("Only Visible Regions")
-        all_blobs_radio.setChecked(True)
-        self.blobs_group.addButton(all_blobs_radio)
-        self.blobs_group.addButton(visible_blobs_radio)
-        
-        blobs_layout.addWidget(all_blobs_radio)
-        blobs_layout.addWidget(visible_blobs_radio)
+        # add horizontal line
+        line = QLabel()
+        line.setFrameStyle(QLabel.HLine | QLabel.Sunken)
+        main_layout.addWidget(line)
+
+        # Layout to choose blobs to export
+        blobs_layout = QVBoxLayout()
+        blobs_label = QLabel("Export Regions:")
+        blobs_layout.addWidget(blobs_label)
+        self.exportRegions = QComboBox()
+        self.exportRegions.addItem("All Regions")
+        self.exportRegions.addItem("Visible Regions")
+        self.exportRegions.addItem("Selected Regions")
+        self.exportRegions.setCurrentIndex(0)  # Default to "All Regions"
+        blobs_layout.addWidget(self.exportRegions)
         main_layout.addLayout(blobs_layout)
 
-        main_layout.setSpacing(20)
-        
-        # Export class name options
-        class_layout = QVBoxLayout()
-        class_layout.setSpacing(5)
-        class_name_label = QLabel("Export Labels")
-        class_layout.addWidget(class_name_label)
-        class_layout.setSpacing(5)
+        # layout to choose label naming
+        labels_layout = QVBoxLayout()
+        labels_label = QLabel("Export Labels:")
+        labels_layout.addWidget(labels_label)
+        self.exportLabels = QComboBox()
+        self.exportLabels.addItem("None")
+        self.exportLabels.addItem("Class Name")
+        self.exportLabels.addItem("Region ID")
+        self.exportLabels.setCurrentIndex(1)  # Default to "Class Name"
+        labels_layout.addWidget(self.exportLabels)
+        shorten_layout = QHBoxLayout()
+        self.shorten_checkbox = QCheckBox("Shorten to:")
+        self.shorten_checkbox.setToolTip("Shorten CLASS labels to a specified number of characters.")
+        shorten_layout.addWidget(self.shorten_checkbox)
+        self.shorten_spinbox = QSpinBox()
+        self.shorten_spinbox.setRange(1, 10)
+        self.shorten_spinbox.setValue(5)
+        shorten_layout.addWidget(self.shorten_spinbox)
+        labels_layout.addLayout(shorten_layout)
 
+        main_layout.addLayout(labels_layout)
 
-        self.class_name_group = QButtonGroup(self)
-        full_name_radio = QRadioButton("Full Label Names")
-        shortened_name_radio = QRadioButton("Shortened Label Names")
-        full_name_radio.setChecked(True)
-        self.class_name_group.addButton(full_name_radio)
-        self.class_name_group.addButton(shortened_name_radio)
-
-        class_layout.addWidget(full_name_radio)
-        class_layout.addWidget(shortened_name_radio)
-        class_layout.setSpacing(5)
-
-        # Shortened class name length option
-        self.shortened_length_label = QLabel("Initial characters:")
-        self.shortened_length_label.setEnabled(False)
-        self.shortened_length_spinbox = QSpinBox()
-        self.shortened_length_spinbox.setRange(1, 10)
-        self.shortened_length_spinbox.setValue(5)
-        self.shortened_length_spinbox.setEnabled(False)
-
-        shortened_length_layout = QHBoxLayout()
-        shortened_length_layout.addWidget(self.shortened_length_label)
-        shortened_length_layout.addWidget(self.shortened_length_spinbox)
-        class_layout.addLayout(shortened_length_layout)
-
-        # Enable/disable shortened name length based on selection
-        shortened_name_radio.toggled.connect(self.toggleShortenedNameLength)
-
-        main_layout.addLayout(class_layout)
+        # add horizontal line
+        line2 = QLabel()
+        line2.setFrameStyle(QLabel.HLine | QLabel.Sunken)
+        main_layout.addWidget(line2)
 
         # Others options layout
         others_layout = QVBoxLayout()
-        others_layout.setSpacing(10)
-
         # Georeferencing option
         self.georef_checkbox = QCheckBox("Use Georeferencing")
+        self.georef_checkbox.setToolTip("Use georeferencing information from the image if available.")
         self.georef_checkbox.setEnabled(False)  # Initially greyed out
         others_layout.addWidget(self.georef_checkbox)
-
-        # Export grid option
-        self.grid_checkbox = QCheckBox("Export Grid")
-        others_layout.addWidget(self.grid_checkbox)
 
         main_layout.addLayout(others_layout)
 
@@ -100,11 +107,3 @@ class QtDXFExportOptions(QDialog):  # Change QWidget to QDialog
         self.ok_button.clicked.connect(self.accept)
         self.cancel_button.clicked.connect(self.reject)
 
-    def enable_georeferencing(self, enabled):
-        """Enable or disable the georeferencing checkbox."""
-        self.georef_checkbox.setEnabled(enabled)
-
-    def toggleShortenedNameLength(self, checked):
-        """Enable or disable the shortened name length spinbox."""
-        self.shortened_length_label.setEnabled(checked)
-        self.shortened_length_spinbox.setEnabled(checked)
