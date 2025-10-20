@@ -42,29 +42,6 @@ class QtDXFExport(QDialog):  # Change QWidget to QDialog
 
         # Main layout
         main_layout = QVBoxLayout()
-        
-        # Layout for choosing elements
-        elements_layout = QVBoxLayout()
-        self.workspace_checkbox = QCheckBox("Image Workspace")
-        self.workspace_checkbox.setToolTip("Export the image workspace as a rectangle in the DXF file.")
-        self.workspace_checkbox.setChecked(self.options["export_workspace"])
-        elements_layout.addWidget(self.workspace_checkbox)
-        self.workingarea_checkbox = QCheckBox("Working Area")
-        self.workingarea_checkbox.setToolTip("Export the working area as a rectangle in the DXF file.")
-        self.workingarea_checkbox.setChecked(self.options["export_workingarea"])
-        self.workingarea_checkbox.setEnabled(False)  # Initially greyed out
-        elements_layout.addWidget(self.workingarea_checkbox)
-        self.grid_checkbox = QCheckBox("Grid")
-        self.grid_checkbox.setToolTip("Export the grid as lines in the DXF file.")
-        self.grid_checkbox.setChecked(self.options["export_grid"])
-        self.grid_checkbox.setEnabled(False)  # Initially greyed out        
-        elements_layout.addWidget(self.grid_checkbox)
-        main_layout.addLayout(elements_layout)
-
-        # add horizontal line
-        line = QLabel()
-        line.setFrameStyle(QLabel.HLine | QLabel.Sunken)
-        main_layout.addWidget(line)
 
         # Layout to choose blobs to export
         blobs_layout = QVBoxLayout()
@@ -97,8 +74,32 @@ class QtDXFExport(QDialog):  # Change QWidget to QDialog
         self.shorten_spinbox.setValue(5)
         shorten_layout.addWidget(self.shorten_spinbox)
         labels_layout.addLayout(shorten_layout)
-
         main_layout.addLayout(labels_layout)
+
+        # add horizontal line
+        line = QLabel()
+        line.setFrameStyle(QLabel.HLine | QLabel.Sunken)
+        main_layout.addWidget(line)
+
+        # Layout for choosing elements
+        elements_layout = QVBoxLayout()
+        elements_label = QLabel("Reference Elements:")
+        elements_layout.addWidget(elements_label)
+        self.workspace_checkbox = QCheckBox("Image Workspace")
+        self.workspace_checkbox.setToolTip("Export the image workspace as a rectangle in the DXF file.")
+        self.workspace_checkbox.setChecked(self.options["export_workspace"])
+        elements_layout.addWidget(self.workspace_checkbox)
+        self.workingarea_checkbox = QCheckBox("Working Area")
+        self.workingarea_checkbox.setToolTip("Export the working area as a rectangle in the DXF file.")
+        self.workingarea_checkbox.setChecked(self.options["export_workingarea"])
+        self.workingarea_checkbox.setEnabled(False)  # Initially greyed out
+        elements_layout.addWidget(self.workingarea_checkbox)
+        self.grid_checkbox = QCheckBox("Grid")
+        self.grid_checkbox.setToolTip("Export the grid as lines in the DXF file.")
+        self.grid_checkbox.setChecked(self.options["export_grid"])
+        self.grid_checkbox.setEnabled(False)  # Initially greyed out        
+        elements_layout.addWidget(self.grid_checkbox)
+        main_layout.addLayout(elements_layout)
 
         # add horizontal line
         line2 = QLabel()
@@ -133,7 +134,7 @@ class QtDXFExport(QDialog):  # Change QWidget to QDialog
 
         # Enable/disable checkboxes based on viewer state
         if self.activeviewer.image.georef_filename:
-            optionsDialog.georef_checkbox.setEnabled(True)        
+            self.georef_checkbox.setEnabled(True)      
         if self.project.working_area is not None:
             self.workingarea_checkbox.setEnabled(True)
         if self.activeviewer.image.grid is not None:
@@ -269,7 +270,7 @@ class QtDXFExport(QDialog):  # Change QWidget to QDialog
                             label = label[:self.options["export_shorten_length"]]
                     elif self.options["export_labels"] == 2:  # Region ID
                         label = blob.id
-
+                        
                     x, y = blob.centroid
                     if georef:
                         x, y = transform * (x, y)
