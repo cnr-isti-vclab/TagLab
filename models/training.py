@@ -20,6 +20,22 @@ np.random.seed(997)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
+import glob
+import os
+
+
+def count_png_files(folder_path):
+
+    # WARNING!
+    # Under Windows this returns the DOUBLE of the PNG files, under Linux/Mac the exact number of the files
+
+    pattern = os.path.join(folder_path, '*.png')
+    png_files = glob.glob(pattern)
+
+    pattern_upper = os.path.join(folder_path, '*.PNG')
+    png_files += glob.glob(pattern_upper)
+
+    return len(png_files)
 
 def checkDataset(dataset_folder):
     """
@@ -32,7 +48,9 @@ def checkDataset(dataset_folder):
         for sub in targetdirs:
             subfolder = os.path.join(dataset_folder, sub)
             if os.path.exists(subfolder):
-                if os.listdir(subfolder) == ['images', 'labels'] and len(set(os.listdir(os.path.join(subfolder, os.listdir(subfolder)[0]))) - set(os.listdir(os.path.join(subfolder, os.listdir(subfolder)[1]))))==0:
+                n_images = count_png_files(os.path.join(subfolder, 'images'))
+                n_labels = count_png_files(os.path.join(subfolder, 'labels'))
+                if n_images == n_labels:
                     flag = 0 # Your training dataset is valid
                 else:
                     return 3  # Files mismatch in subfolder
