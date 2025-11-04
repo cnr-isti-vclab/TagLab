@@ -519,7 +519,7 @@ class QtDatasetManagerWidget(QWidget):
                     self.progress_bar.hide()
                     box = QMessageBox()
                     box.setWindowTitle(self.TAGLAB_VERSION)
-                    box.setText("Please enter a number between 1 and 100r")
+                    box.setText("Please enter a number between 1 and 100")
                     box.exec()
                     self.editAmount1.clear()
                     return
@@ -660,9 +660,10 @@ class QtDatasetManagerWidget(QWidget):
 
             flag_copy = True
 
+            threshold = 0.0
             if self.flag == 1:
-                threshold = 0.999
-            else:
+                threshold = 0.9999
+            elif flag == 2:
                 # given threshold (option 2)
                 threshold = int(self.editAmount1.text()) / 100.0
 
@@ -670,7 +671,7 @@ class QtDatasetManagerWidget(QWidget):
                 tiles_removed += 1
                 flag_copy = False  # this tile will not be copy in the new dataset
             else:
-                if (self.flag == 3) and (p > 0.999) and (coin < int(self.editAmount2.text())):
+                if (self.flag == 3) and (p > 0.9999) and (coin < int(self.editAmount2.text())):
                     tiles_removed += 1
                     flag_copy = False  # this tile will not be copy in the new dataset
 
