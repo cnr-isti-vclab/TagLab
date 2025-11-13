@@ -1118,7 +1118,7 @@ class TagLab(QMainWindow):
         exportDataTableAct.setStatusTip("Export annotations as CSV table")
         exportDataTableAct.triggered.connect(self.exportAnnAsDataTable)
 
-        exportMapAct = QAction("Export Regions As Labeled Image", self)
+        exportMapAct = QAction("Export Regions As Labeled Image (PNG)", self)
         #exportMapAct.setShortcut('Ctrl+??')
         exportMapAct.setStatusTip("Export visibile regions as labeled image")
         exportMapAct.triggered.connect(self.exportAnnAsMap)

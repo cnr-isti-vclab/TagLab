@@ -216,10 +216,25 @@ def rgbToQImage(image):
         imgdata[:, :, 2] = image[:, :, 0]
         imgdata[:, :, 1] = image[:, :, 1]
         imgdata[:, :, 0] = image[:, :, 2]
-        imgdata[:, :, 3] = 255
-        qimg = QImage(imgdata.data, w, h, QImage.Format_RGB32)
+        if ch == 4:
+            imgdata[:, :, 3] = image[:, :, 3]  # Preserve alpha channel
+        else:
+            imgdata[:, :, 3] = 255
+        
+        # Use ARGB32 format to support transparency
+        if ch == 4:
+            qimg = QImage(imgdata.data, w, h, QImage.Format_ARGB32)
+        else:
+            qimg = QImage(imgdata.data, w, h, QImage.Format_RGB32)
 
     return qimg.copy()
+
+def rgbaToQImage(image):
+    """
+    Convert RGBA numpy array to QImage with alpha channel support.
+    This is an alias for rgbToQImage which now handles RGBA properly.
+    """
+    return rgbToQImage(image)
 
 def figureToQPixmap(fig, dpi, width, height):
 
