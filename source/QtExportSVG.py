@@ -283,9 +283,9 @@ class QtSVGExport(QDialog):
                 if georef and transform:
                     points = [transform * (x, y) for x, y in blob.contour]
                 else:
-                    points = blob.contour
+                    points = list(blob.contour)
 
-                if points:
+                if len(points) > 0:
                     points_str = ' '.join([f"{x},{y}" for x, y in points])
                     ET.SubElement(blob_group, 'polygon', {
                         'points': points_str,
@@ -300,9 +300,9 @@ class QtSVGExport(QDialog):
                     if georef and transform:
                         inner_points = [transform * (x, y) for x, y in inner_contour]
                     else:
-                        inner_points = inner_contour
+                        inner_points = list(inner_contour)
 
-                    if inner_points:
+                    if len(inner_points) > 0:
                         inner_points_str = ' '.join([f"{x},{y}" for x, y in inner_points])
                         ET.SubElement(blob_group, 'polygon', {
                             'points': inner_points_str,
