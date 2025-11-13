@@ -21,7 +21,8 @@
 from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QWidget, QMessageBox, QSizePolicy, QLineEdit, QLabel, QPushButton, \
-    QHBoxLayout, QVBoxLayout
+    QHBoxLayout, QVBoxLayout, QApplication
+import json
 
 
 class QtWorkingAreaWidget(QWidget):
@@ -124,21 +125,25 @@ class QtWorkingAreaWidget(QWidget):
         self.edit_X.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_X.setFixedWidth(100)
         self.edit_X.textEdited[str].connect(self.notifyAreaChanged)
+        self.edit_X.installEventFilter(self)
 
         self.edit_Y = QLineEdit()
         self.edit_Y.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_Y.setFixedWidth(100)
         self.edit_Y.textEdited[str].connect(self.notifyAreaChanged)
+        self.edit_Y.installEventFilter(self)
 
         self.edit_W = QLineEdit()
         self.edit_W.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_W.setFixedWidth(100)
         self.edit_W.textEdited[str].connect(self.notifyAreaChanged)
+        self.edit_W.installEventFilter(self)
 
         self.edit_H = QLineEdit()
         self.edit_H.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_H.setFixedWidth(100)
         self.edit_H.textEdited[str].connect(self.notifyAreaChanged)
+        self.edit_H.installEventFilter(self)
 
         # Create layout for pixels
         layout_h1 = QHBoxLayout()
@@ -216,6 +221,102 @@ class QtWorkingAreaWidget(QWidget):
     def closeEvent(self, event):
         self.closed.emit()
         super(QtWorkingAreaWidget, self).closeEvent(event)
+
+    def eventFilter(self, obj, event):
+        """
+        Event filter to intercept Ctrl+C and Ctrl+V in line edits
+        """
+        if event.type() == event.KeyPress:
+            if event.key() == Qt.Key_C and event.modifiers() == Qt.ControlModifier:
+                # Check if any text is selected in the line edit
+                if obj in [self.edit_X, self.edit_Y, self.edit_W, self.edit_H]:
+                    if obj.hasSelectedText():
+                        # Let the line edit handle the copy
+                        return False
+                    else:
+                        # No selection, copy working area to clipboard
+                        self.copyWorkingAreaToClipboard()
+                        return True
+            elif event.key() == Qt.Key_V and event.modifiers() == Qt.ControlModifier:
+                # Check if the clipboard contains JSON working area data
+                clipboard = QApplication.clipboard()
+                text = clipboard.text()
+                try:
+                    data = json.loads(text)
+                    if "x" in data and "y" in data and "width" in data and "height" in data:
+                        # Clipboard has working area JSON, paste it
+                        self.pasteWorkingAreaFromClipboard()
+                        return True
+                except:
+                    # Not JSON or not working area data, let line edit handle it
+                    pass
+                return False
+        return super(QtWorkingAreaWidget, self).eventFilter(obj, event)
+
+    def keyPressEvent(self, event):
+        """
+        Handle keyboard shortcuts for copy (Ctrl+C) and paste (Ctrl+V)
+        """
+        if event.key() == Qt.Key_C and event.modifiers() == Qt.ControlModifier:
+            self.copyWorkingAreaToClipboard()
+        elif event.key() == Qt.Key_V and event.modifiers() == Qt.ControlModifier:
+            self.pasteWorkingAreaFromClipboard()
+        else:
+            super(QtWorkingAreaWidget, self).keyPressEvent(event)
+
+    def copyWorkingAreaToClipboard(self):
+        """
+        Copy the current working area parameters to clipboard in JSON format
+        """
+        try:
+            x = int(self.edit_X.text()) if self.edit_X.text() else 0
+            y = int(self.edit_Y.text()) if self.edit_Y.text() else 0
+            w = int(self.edit_W.text()) if self.edit_W.text() else 0
+            h = int(self.edit_H.text()) if self.edit_H.text() else 0
+            
+            working_area_data = {
+                "x": x,
+                "y": y,
+                "width": w,
+                "height": h
+            }
+            
+            json_string = json.dumps(working_area_data, indent=2)
+            clipboard = QApplication.clipboard()
+            clipboard.setText(json_string)
+            
+            # Optional: show a brief message
+            print(f"Working area copied to clipboard: {json_string}")
+        except Exception as e:
+            print(f"Error copying working area: {e}")
+
+    def pasteWorkingAreaFromClipboard(self):
+        """
+        Paste working area parameters from clipboard JSON format
+        """
+        try:
+            clipboard = QApplication.clipboard()
+            json_string = clipboard.text()
+            
+            working_area_data = json.loads(json_string)
+            
+            x = int(working_area_data.get("x", 0))
+            y = int(working_area_data.get("y", 0))
+            w = int(working_area_data.get("width", 0))
+            h = int(working_area_data.get("height", 0))
+            
+            self.updateAreaValues(x, y, w, h)
+            self.areaChanged.emit(x, y, w, h)
+            
+            print(f"Working area pasted from clipboard: x={x}, y={y}, w={w}, h={h}")
+        except json.JSONDecodeError:
+            msgBox = QMessageBox()
+            msgBox.setText("Invalid JSON format in clipboard.")
+            msgBox.exec()
+        except Exception as e:
+            msgBox = QMessageBox()
+            msgBox.setText(f"Error pasting working area: {str(e)}")
+            msgBox.exec()
 
     def updateAreaValues(self, x, y, w, h):
         """
