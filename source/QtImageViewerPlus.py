@@ -936,6 +936,9 @@ class QtImageViewerPlus(QtImageViewer):
         If the distance of the point is higher than a threshold None is returned.
         """
 
+        if self.image is None:
+            return None
+
         dist_min = 1000000.0
         for sampling_area in self.image.sampling_areas:
             dist = distance_point_AABB(x, y, sampling_area)
