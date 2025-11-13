@@ -37,6 +37,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QFileDialog, QCo
     QDialog
 
 from source.QtExportDXF import QtDXFExport  # Import the dxf export dialog
+from source.QtExportSVG import QtSVGExport  # Import the svg export dialog
 
 
 
@@ -1124,6 +1125,10 @@ class TagLab(QMainWindow):
         exportDXFfilesAct.setStatusTip("Export visible regions as DXF")
         exportDXFfilesAct.triggered.connect(self.exportAnnAsDXF)
 
+        exportSVGfilesAct = QAction("Export Regions As SVG", self)
+        exportSVGfilesAct.setStatusTip("Export visible regions as SVG")
+        exportSVGfilesAct.triggered.connect(self.exportAnnAsSVG)
+
         exportGeoRefLabelMapAct = QAction("Export Regions As A GeoTiff", self)
         exportGeoRefLabelMapAct.setStatusTip("Create a label image and export it as a GeoTiff")
         exportGeoRefLabelMapAct.triggered.connect(self.exportGeoRefLabelMap)
@@ -1212,6 +1217,7 @@ class TagLab(QMainWindow):
         self.submenuExport.addAction(exportMapAct)
         self.submenuExport.addAction(exportShapefilesAct)
         self.submenuExport.addAction(exportDXFfilesAct)
+        self.submenuExport.addAction(exportSVGfilesAct)
         self.submenuExport.addAction(exportGeoRefLabelMapAct)
         self.submenuExport.addAction(exportGeoRefImgAct)
         self.submenuExport.addAction(exportHistogramAct)
@@ -5003,6 +5009,18 @@ class TagLab(QMainWindow):
             return
         # Show the DXF export dialog
         optionsDialog = QtDXFExport(self)
+        optionsDialog.setWindowModality(Qt.WindowModal)
+        optionsDialog.show()
+
+    @pyqtSlot()
+    def exportAnnAsSVG(self):
+        # Check if activeviewer is set and contains necessary data
+        if self.activeviewer is None:
+            return
+        if self.activeviewer.image is None:
+            return
+        # Show the SVG export dialog
+        optionsDialog = QtSVGExport(self)
         optionsDialog.setWindowModality(Qt.WindowModal)
         optionsDialog.show()
 
