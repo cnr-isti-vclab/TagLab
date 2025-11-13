@@ -443,6 +443,14 @@ class TagLab(QMainWindow):
         self.checkBoxGrid.stateChanged[int].connect(self.viewerplus2.toggleGrid)
         self.checkBoxGrid.stateChanged[int].connect(self.saveGuiPreferences)
 
+        self.checkBoxMap = QCheckBox("Map")
+        self.checkBoxMap.setChecked(True)
+        self.checkBoxMap.setMinimumWidth(60)
+        self.checkBoxMap.setFocusPolicy(Qt.NoFocus)
+        self.checkBoxMap.stateChanged[int].connect(self.viewerplus.toggleImage)
+        self.checkBoxMap.stateChanged[int].connect(self.viewerplus2.toggleImage)
+        self.checkBoxMap.stateChanged[int].connect(self.saveGuiPreferences)
+
         self.labelZoom = QLabel("Zoom:")
         self.labelMouseLeft = QLabel("x:")
         self.labelMouseTop = QLabel("y:")
@@ -467,6 +475,7 @@ class TagLab(QMainWindow):
         layout_header.addWidget(self.checkBoxBorders)
         layout_header.addWidget(self.checkBoxIds)
         layout_header.addWidget(self.checkBoxGrid)
+        layout_header.addWidget(self.checkBoxMap)
         layout_header.addStretch()
         layout_header.addWidget(self.labelZoom)
         layout_header.addWidget(self.labelZoomInfo)
@@ -779,6 +788,8 @@ class TagLab(QMainWindow):
         self.checkBoxIds.setChecked(value)
         value = settings.value("gui-checkbox-grid", type=bool, defaultValue=False)
         self.checkBoxGrid.setChecked(value)
+        value = settings.value("gui-checkbox-image", type=bool, defaultValue=True)
+        self.checkBoxMap.setChecked(value)
 
         # general preferences
         research_field = settings.value("research-field", defaultValue="Marine Ecology", type=str)
@@ -811,6 +822,7 @@ class TagLab(QMainWindow):
         settings.setValue("gui-checkbox-borders", self.checkBoxBorders.isChecked())
         settings.setValue("gui-checkbox-ids", self.checkBoxIds.isChecked())
         settings.setValue("gui-checkbox-grid", self.checkBoxGrid.isChecked())
+        settings.setValue("gui-checkbox-image", self.checkBoxMap.isChecked())
 
     def checkNewVersion(self):
 

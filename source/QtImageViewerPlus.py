@@ -465,6 +465,14 @@ class QtImageViewerPlus(QtImageViewer):
         else:
             self.showGrid()
 
+    @pyqtSlot(int)
+    def toggleImage(self, checked):
+        """
+        Toggle the visibility of the base image.
+        """
+        if self.pixmapitem is not None:
+            self.pixmapitem.setVisible(checked != 0)
+
     def enableFill(self):
 
         for blob in self.annotations.seg_blobs:
