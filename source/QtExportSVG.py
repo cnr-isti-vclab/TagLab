@@ -211,12 +211,9 @@ class QtSVGExport(QDialog):
                 'width': str(viewbox_width),
                 'height': str(viewbox_height)
             })
-
-            # Add a group for each layer type
-            workspace_group = ET.SubElement(svg, 'g', {'id': 'workspace'})
-            workingarea_group = ET.SubElement(svg, 'g', {'id': 'working_area'})
-            grid_group = ET.SubElement(svg, 'g', {'id': 'grid'})
-            regions_group = ET.SubElement(svg, 'g', {'id': 'regions'})
+            
+            # Dictionary to hold class-specific layers
+            class_layers = {}
 
             # Determine which blobs to export
             if self.options["export_regions"] == 0:  # All Regions
@@ -229,55 +226,19 @@ class QtSVGExport(QDialog):
             elif self.options["export_regions"] == 2:  # Selected Regions
                 exported_blobs = self.activeviewer.selected_blobs
 
-            # Add workspace outline if selected
-            if self.options["export_workspace"]:
-                map_outline = [
-                    (0, 0),
-                    (self.activeviewer.image.width, 0),
-                    (self.activeviewer.image.width, self.activeviewer.image.height),
-                    (0, self.activeviewer.image.height)
-                ]
-                if georef and transform:
-                    map_outline = [transform * (x, y) for x, y in map_outline]
-                
-                points_str = ' '.join([f"{x},{y}" for x, y in map_outline])
-                ET.SubElement(workspace_group, 'polygon', {
-                    'points': points_str,
-                    'fill': 'none',
-                    'stroke': '#888888',
-                    'stroke-width': '3'
-                })
-
-            # Add working area outline if selected
-            if self.options["export_workingarea"] and self.project.working_area is not None:
-                map_outline = [
-                    (self.project.working_area[1], self.project.working_area[0]),
-                    (self.project.working_area[1] + self.project.working_area[2], self.project.working_area[0]),
-                    (self.project.working_area[1] + self.project.working_area[2], self.project.working_area[0] + self.project.working_area[3]),
-                    (self.project.working_area[1], self.project.working_area[0] + self.project.working_area[3])
-                ]
-                if georef and transform:
-                    map_outline = [transform * (x, y) for x, y in map_outline]
-                
-                points_str = ' '.join([f"{x},{y}" for x, y in map_outline])
-                ET.SubElement(workingarea_group, 'polygon', {
-                    'points': points_str,
-                    'fill': 'none',
-                    'stroke': '#00ff00',
-                    'stroke-width': '3',
-                    'stroke-dasharray': '10,5'
-                })
-
             # Add blobs
             for blob in exported_blobs:
                 layer_name = blob.class_name
                 col = self.project.labels[blob.class_name].fill
                 color_hex = self.rgb_to_hex(col)
 
-                # Create a group for this blob
-                blob_group = ET.SubElement(regions_group, 'g', {
-                    'class': layer_name,
-                    'id': f'blob_{blob.id}'
+                # Create class layer if it doesn't exist
+                if layer_name not in class_layers:
+                    class_layers[layer_name] = ET.SubElement(svg, 'g', {'id': layer_name})
+                
+                # Create a group for this blob with region_XXX naming
+                blob_group = ET.SubElement(class_layers[layer_name], 'g', {
+                    'id': f'region_{blob.id}'
                 })
 
                 if georef and transform:
@@ -288,6 +249,7 @@ class QtSVGExport(QDialog):
                 if len(points) > 0:
                     points_str = ' '.join([f"{x},{y}" for x, y in points])
                     ET.SubElement(blob_group, 'polygon', {
+                        'id': f'region_{blob.id}',
                         'points': points_str,
                         'fill': color_hex,
                         'fill-opacity': '0.6',
@@ -296,7 +258,7 @@ class QtSVGExport(QDialog):
                     })
 
                 # Add inner contours (holes)
-                for inner_contour in blob.inner_contours:
+                for hole_idx, inner_contour in enumerate(blob.inner_contours):
                     if georef and transform:
                         inner_points = [transform * (x, y) for x, y in inner_contour]
                     else:
@@ -305,6 +267,7 @@ class QtSVGExport(QDialog):
                     if len(inner_points) > 0:
                         inner_points_str = ' '.join([f"{x},{y}" for x, y in inner_points])
                         ET.SubElement(blob_group, 'polygon', {
+                            'id': f'region_{blob.id}_hole_{hole_idx}',
                             'points': inner_points_str,
                             'fill': 'white',
                             'stroke': color_hex,
@@ -327,6 +290,7 @@ class QtSVGExport(QDialog):
                         x, y = transform * (x, y)
                     
                     text_elem = ET.SubElement(blob_group, 'text', {
+                        'id': f'label_{blob.id}',
                         'x': str(x),
                         'y': str(y),
                         'text-anchor': 'middle',
@@ -337,6 +301,50 @@ class QtSVGExport(QDialog):
                         'stroke-width': '0.5'
                     })
                     text_elem.text = str(label)
+
+            # Add layer 0 for reference elements (workspace, working area, grid) - added last so it renders on top
+            layer_0 = ET.SubElement(svg, 'g', {'id': 'layer_0'})
+
+            # Add workspace outline if selected
+            if self.options["export_workspace"]:
+                map_outline = [
+                    (0, 0),
+                    (self.activeviewer.image.width, 0),
+                    (self.activeviewer.image.width, self.activeviewer.image.height),
+                    (0, self.activeviewer.image.height)
+                ]
+                if georef and transform:
+                    map_outline = [transform * (x, y) for x, y in map_outline]
+                
+                points_str = ' '.join([f"{x},{y}" for x, y in map_outline])
+                ET.SubElement(layer_0, 'polygon', {
+                    'id': 'workspace',
+                    'points': points_str,
+                    'fill': 'none',
+                    'stroke': '#888888',
+                    'stroke-width': '3'
+                })
+
+            # Add working area outline if selected
+            if self.options["export_workingarea"] and self.project.working_area is not None:
+                map_outline = [
+                    (self.project.working_area[1], self.project.working_area[0]),
+                    (self.project.working_area[1] + self.project.working_area[2], self.project.working_area[0]),
+                    (self.project.working_area[1] + self.project.working_area[2], self.project.working_area[0] + self.project.working_area[3]),
+                    (self.project.working_area[1], self.project.working_area[0] + self.project.working_area[3])
+                ]
+                if georef and transform:
+                    map_outline = [transform * (x, y) for x, y in map_outline]
+                
+                points_str = ' '.join([f"{x},{y}" for x, y in map_outline])
+                ET.SubElement(layer_0, 'polygon', {
+                    'id': 'working_area',
+                    'points': points_str,
+                    'fill': 'none',
+                    'stroke': '#00ff00',
+                    'stroke-width': '3',
+                    'stroke-dasharray': '10,5'
+                })
 
             # Add grid if selected
             if self.options["export_grid"]:
@@ -369,7 +377,8 @@ class QtSVGExport(QDialog):
                                     p4 = (x1, y2)
 
                                 points_str = f"{p1[0]},{p1[1]} {p2[0]},{p2[1]} {p3[0]},{p3[1]} {p4[0]},{p4[1]}"
-                                ET.SubElement(grid_group, 'polygon', {
+                                ET.SubElement(layer_0, 'polygon', {
+                                    'id': f'grid_cell_{r}_{c}',
                                     'points': points_str,
                                     'fill': 'none',
                                     'stroke': '#cccccc',
@@ -377,12 +386,13 @@ class QtSVGExport(QDialog):
                                 })
 
                     # Add notes to the SVG file
-                    for note in grid.notes:
+                    for idx, note in enumerate(grid.notes):
                         x, y, text = note["x"], note["y"], note["txt"]
                         if georef and transform:
                             x, y = transform * (x, y)
                         
-                        text_elem = ET.SubElement(grid_group, 'text', {
+                        text_elem = ET.SubElement(layer_0, 'text', {
+                            'id': f'grid_note_{idx}',
                             'x': str(x),
                             'y': str(y),
                             'text-anchor': 'middle',
