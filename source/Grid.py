@@ -136,7 +136,6 @@ class Grid(QObject):
                 txt = note["txt"]
 
                 text_item = MyGText()
-                self.scene.addItem(text_item)
                 text_item.setPlainText(txt)
                 text_item.setFont(font)
                 text_item.setDefaultTextColor(Qt.black)
@@ -144,6 +143,8 @@ class Grid(QObject):
                 text_item.setFlags(QGraphicsItem.ItemIsMovable | QGraphicsItem.ItemIsFocusable)
                 text_item.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextEditable)
                 text_item.setZValue(10)
+                # Add to scene after all properties are set
+                self.scene.addItem(text_item)
                 text_item.focusOut.connect(self.updateNotes)
                 self.text_items.append(text_item)
 

@@ -701,7 +701,8 @@ class SAMInteractive(Tool):
         self.pick_points.reset()
         self.labels = []
         self.resetWorkArea()
-        self.viewerplus.scene.addItem(self.rect_item)
+        if self.rect_item is not None:
+            self.viewerplus.scene.addItem(self.rect_item)
 
 
  #method to display the rectangle on the map
