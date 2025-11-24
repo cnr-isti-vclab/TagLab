@@ -37,6 +37,7 @@ from source.Label import Label
 import source.Mask as Mask
 
 from source.QtImageViewer import QtImageViewer
+from source.QtToolMessagePanel import QtToolMessagePanel
 
 from source.genutils import distance_point_AABB
 
@@ -144,6 +145,10 @@ class QtImageViewerPlus(QtImageViewer):
         self.tools = Tools(self)
         self.tools.createTools()
 
+        # Message panel for tool instructions and status
+        self.toolsMessagePanel = QtToolMessagePanel(self)
+        self.toolsMessagePanel.hide()
+
         self.undo_data = Undo()
 
         self.dragSelectionStart = None
@@ -220,6 +225,23 @@ class QtImageViewerPlus(QtImageViewer):
 
         # tools - additional initialization
         self.tools.tools["SELECTAREA"].setWorkingAreaStyle(self.working_area_pen)
+
+    def showMessage(self, text, status='info', timeout=None):
+        """Show a message in the integrated message panel."""
+        self.toolsMessagePanel.showMessage(text, status, timeout)
+        self.toolsMessagePanel.updatePosition()
+
+    def updateMessage(self, text):
+        """Update the current message text."""
+        self.toolsMessagePanel.updateMessage(text)
+
+    def clearMessage(self):
+        """Clear and hide the message panel."""
+        self.toolsMessagePanel.clear()
+
+    def updateMessagePanelPosition(self):
+        """Position the message panel (delegates to panel's updatePosition)."""
+        self.toolsMessagePanel.updatePosition()
 
     def setProject(self, project):
 
@@ -815,9 +837,6 @@ class QtImageViewerPlus(QtImageViewer):
         QApplication.setOverrideCursor(Qt.ArrowCursor)
 
         self.tools.setTool(tool)
-
-        #calls the toolMessage method to show the tool message window        
-        self.tools.toolMessage()
 
         if tool in ["FREEHAND", "RULER", "FOURCLICKS", "PLACEANNPOINT", "ASSIGN"] or (tool in ["CUT", "EDITBORDER", "RITM"] and len(self.selected_blobs) > 1):
             self.resetSelection()
@@ -1809,6 +1828,7 @@ class QtImageViewerPlus(QtImageViewer):
             self.ZOOM_FACTOR_MIN = min(1.0 * self.width() / self.imgwidth, 1.0 * self.height() / self.imgheight)
         self.updateScaleBar(self.zoom_factor)
         self.updateViewer()
+        self.updateMessagePanelPosition()
         event.accept()
 
 

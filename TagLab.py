@@ -67,7 +67,6 @@ from source.QtCropWidget import QtCropWidget
 from source.QtLayersWidget import QtLayersWidget
 
 from source.QtHelpWidget import QtHelpWidget
-from source.QtMessages import QtMessageWidget
 
 from source.QtProgressBarCustom import QtProgressBarCustom
 from source.QtHistogramWidget import QtHistogramWidget
@@ -215,9 +214,6 @@ class TagLab(QMainWindow):
         self.classifierWidget = None
         self.newDatasetWidget = None
         self.help_widget = None
-        
-        #message widget for help
-        self.message_widget = None
 
         self.trainYourNetworkWidget = None
         self.datasetManagerWidget = None
@@ -383,11 +379,6 @@ class TagLab(QMainWindow):
         # SAM-related tool connections
         #self.viewerplus.tools.tools["SAM"].samEnded.connect(self.resetSam)
         #self.viewerplus2.tools.tools["SAM"].samEnded.connect(self.resetSam)
-        
-        # tool info messages
-        # self.viewerplus.tools.tools["SAM"].tool_message.connect(self.message)
-        # self.viewerplus.tools.tools["WATERSHED"].tool_message.connect(self.message)
-        self.viewerplus.tools.tool_mess.connect(self.message)    
 
         # last activated viewerplus: redirect here context menu commands and keyboard commands
         self.activeviewer = None
@@ -661,10 +652,6 @@ class TagLab(QMainWindow):
         central_widget_layout.addLayout(layout_main_view)
 
         # Add message widget to the central layout
-        if self.message_widget is not None:
-            central_widget_layout.addWidget(self.message_widget)
-            # central_widget_layout.addLayout(self.message_widget.layout)
-
         self.central_widget = QWidget()
         self.central_widget.setLayout(central_widget_layout)
         self.setCentralWidget(self.central_widget)
@@ -4475,32 +4462,6 @@ class TagLab(QMainWindow):
             webbrowser.open_new('https://taglab.isti.cnr.it/docs')
         except:
             print("Fail to launch your web browser. Go to the following link: 'https://taglab.isti.cnr.it/docs'")
-        
-    #slot for the message_widget
-    @pyqtSlot(str)
-    def message(self, new_message):
-                
-        if new_message == "":
-            if self.message_widget is not None:
-                self.message_widget.close()
-                self.message_widget = None
-                
-        else:
-            if self.message_widget is not None:
-                self.message_widget.close()
-                self.message_widget = None
-
-
-            self.message_widget = QtMessageWidget(self.viewerplus)                        
-            # self.setParent(self.viewerplus)
-            self.message_widget.show()
-            
-            self.message_widget.setMessage(new_message)
-
-            #anchor message_widget window to the top left corner of the viewerplus
-            viewerplus_position = self.viewerplus.mapToGlobal(QPoint(0, 0))
-            self.message_widget.move(viewerplus_position.x(), viewerplus_position.y())
-
 
     @pyqtSlot()
     def selectWorkingArea(self):

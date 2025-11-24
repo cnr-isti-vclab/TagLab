@@ -49,6 +49,12 @@ class Ritm(Tool):
 
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
+    def activate(self):
+        self.viewerplus.showMessage(self.tool_message)
+
+    def deactivate(self):
+        self.viewerplus.clearMessage()
+
     def checkPointPosition(self, x, y):
 
         if self.work_area_bbox[2]==0 and self.work_area_bbox[3]==0:

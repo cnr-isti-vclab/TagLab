@@ -21,6 +21,14 @@ class Tool(QObject):
         self.blobInfo[Blob, str].connect(self.viewerplus.logBlobInfo)
 
     # virtual methods
+    def activate(self):
+        """Called when the tool is activated. Override to show messages and initialize."""
+        pass
+    
+    def deactivate(self):
+        """Called when the tool is deactivated. Override to clear messages and cleanup."""
+        pass
+    
     def leftPressed(self, x, y, mods=None):
         pass
     def rightPressed(self, x, y, mods=None):

@@ -89,6 +89,11 @@ class SAMInteractive(Tool):
 
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
+    def activate(self):
+        self.viewerplus.showMessage(self.tool_message)
+
+    def deactivate(self):
+        self.viewerplus.clearMessage()
 
     def setSize(self, delta):
         #increase value got from delta angle of mouse wheel

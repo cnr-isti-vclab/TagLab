@@ -53,25 +53,8 @@ class Sam(Tool):
                     - SHIFT + WHEEL to change the spacing</p>"
         message += "SPACEBAR to apply segmentation</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
-       
 
-        """
-         Sam parameters: 
-            pred_iou_thresh (float): A filtering threshold in [0,1], using the model's predicted mask quality.
-            stability_score_thresh (float): A filtering threshold in [0,1], using the stability of the mask under changes to the cutoff used to binarize  the model's mask predictions.
-            stability_score_offset (float): The amount to shift the cutoff when calculated the stability score.
-            box_nms_thresh (float): The box IoU cutoff used by non-maximal suppression to filter duplicate masks.
-            
-        IDEA: SE ZOOM LEVEL 0 ALLORA FA TUTTA IMMAGINE 
-              SE ZOOM LEVEL E' X >>  1024 AVVISA CHE è GROSSA
-              SE ZOMM LEVEL +- 1024 allora prende 1024
-              se zoom level << 1024 sovracampiona a 1024 (lo fa lui già mi sA) E CONTA 
-            
-        
-        """
-
-        #add working area
-         # User defined points
+        # User defined points
         self.pick_points = pick_points
 
         self.work_area_item = None
@@ -93,6 +76,29 @@ class Sam(Tool):
         self.sam_net = None
         self.device = None
         self.created_blobs = []
+
+    def activate(self):
+        self.viewerplus.showMessage(self.tool_message)
+
+    def deactivate(self):
+        self.viewerplus.clearMessage()
+
+    def handlemouseMove(self, x, y):
+        """
+         Sam parameters: 
+            pred_iou_thresh (float): A filtering threshold in [0,1], using the model's predicted mask quality.
+            stability_score_thresh (float): A filtering threshold in [0,1], using the stability of the mask under changes to the cutoff used to binarize  the model's mask predictions.
+            stability_score_offset (float): The amount to shift the cutoff when calculated the stability score.
+            box_nms_thresh (float): The box IoU cutoff used by non-maximal suppression to filter duplicate masks.
+            
+        IDEA: SE ZOOM LEVEL 0 ALLORA FA TUTTA IMMAGINE 
+              SE ZOOM LEVEL E' X >>  1024 AVVISA CHE è GROSSA
+              SE ZOMM LEVEL +- 1024 allora prende 1024
+              se zoom level << 1024 sovracampiona a 1024 (lo fa lui già mi sA) E CONTA 
+            
+        
+        """
+        #add working area
 
     
     def setWorkArea(self):
