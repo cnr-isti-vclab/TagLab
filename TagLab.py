@@ -3605,7 +3605,7 @@ class TagLab(QMainWindow):
                 view.saveUndo()
 
                 counter += 1
-                print(counter, "of", len(blobs), "refined")
+                # print(counter, "of", len(blobs), "refined")
 
             except Exception as e:
                 print("FAILED!", e)
