@@ -17,9 +17,9 @@
 # GNU General Public License (http://www.gnu.org/licenses/gpl.txt)
 # for more details.
 
-from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal, QPointF, QEvent
-from PyQt5.QtGui import QColor, QPen, QBrush, QPolygonF
-from PyQt5.QtWidgets import QWidget, QTableWidget, QTextEdit, QTableWidgetItem, QLabel, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout
+from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal, QPointF, QEvent, QRectF
+from PyQt5.QtGui import QColor, QPen, QBrush, QPolygonF, QPainterPath, QFont
+from PyQt5.QtWidgets import QWidget, QTableWidget, QTextEdit, QTableWidgetItem, QLabel, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout, QGroupBox, QGraphicsPathItem, QComboBox
 import math
 import cv2
 import numpy as np
@@ -39,13 +39,17 @@ class QtRowAnalysis(QWidget):
         self.activeviewer = viewer
         # the set of working blobs, that contain the blobs being analyzed
         self.workingBlobs = self.activeviewer.selected_blobs[:]
-
-        self.rowsData = None  # data structure to hold recognized rows
+        # data structure to hold recognized rows
+        self.rowsData = None
+        # color mode for displaying regions
+        self.colorMode = "ID"  # Options: "NONE", "ID", "INCLINATION"
 
         # store geometric entities for overlay
         self.colorizedEntities = []
         self.polylineEntities = []
         self.lineSegmentData = []  # Store metadata for each line segment: (row_index, segment_index, point1, point2)
+        self.inclinationLines = []  # Store inclination visualization lines
+        self.segmentInclinationEntities = []  # Store segment-by-segment inclination visualizations
         
         # Cut mode state
         self.cutModeActive = False
@@ -69,23 +73,11 @@ class QtRowAnalysis(QWidget):
         self.setStyleSheet("background-color: rgb(40,40,40); color: white; QToolTip { background-color: rgb(50,50,50); color: white; border: 1px solid rgb(100,100,100); }")
         mainLayout = QVBoxLayout()
 
-        # Log area - text display for output
-        self.logArea = QTextEdit()
-        self.logArea.setReadOnly(True)
-        self.logArea.setStyleSheet("QTextEdit { background-color: rgb(50,50,50); color: white; }")
-        self.logArea.setMinimumHeight(100)
-        self.logArea.setMaximumHeight(120)
-        mainLayout.addWidget(self.logArea)
-
-        # Table widget for row data
-        self.rowsTable = QTableWidget()
-        self.rowsTable.setColumnCount(5)
-        self.rowsTable.setHorizontalHeaderLabels(["Color", "Regions", "Y pos", "Avg Height", "Width"])
-        self.rowsTable.setStyleSheet("QTableWidget { background-color: rgb(50,50,50); color: white; gridline-color: rgb(80,80,80); } QHeaderView::section { background-color: rgb(60,60,60); color: white; }")
-        self.rowsTable.setMinimumHeight(150)
-        self.rowsTable.setEditTriggers(QTableWidget.NoEditTriggers)
-        mainLayout.addWidget(self.rowsTable)
-
+        # GROUP BOX for detection and editing controls
+        controlsGroup = QGroupBox("Row Detection and Editing")
+        controlsGroup.setStyleSheet("QGroupBox { background-color: rgb(45,45,45); color: white; border: 2px solid rgb(80,80,80); border-radius: 5px; margin-top: 10px; padding-top: 10px; font-weight: bold; } QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 5px; }")
+        controlsLayout = QVBoxLayout()
+        
         # Tolerance parameters layout
         tolerance_layout = QHBoxLayout()
         
@@ -122,7 +114,7 @@ class QtRowAnalysis(QWidget):
         tolerance_layout.addWidget(self.editXGapTolerance)
         tolerance_layout.addStretch()
         
-        mainLayout.addLayout(tolerance_layout)
+        controlsLayout.addLayout(tolerance_layout)
 
         # Buttons layout
         button_layout = QHBoxLayout()
@@ -145,7 +137,67 @@ class QtRowAnalysis(QWidget):
         button_layout.addWidget(self.btnMergeRows)
         button_layout.addStretch()
         
-        mainLayout.addLayout(button_layout)
+        controlsLayout.addLayout(button_layout)
+        controlsGroup.setLayout(controlsLayout)
+        mainLayout.addWidget(controlsGroup)
+
+        # Table widget for row data
+        self.rowsTable = QTableWidget()
+        self.rowsTable.setColumnCount(6)
+        self.rowsTable.setHorizontalHeaderLabels(["Color", "Regions", "Y pos", "Avg Height", "Width", "Inclination"])
+        self.rowsTable.setStyleSheet("QTableWidget { background-color: rgb(50,50,50); color: white; gridline-color: rgb(80,80,80); } QHeaderView::section { background-color: rgb(60,60,60); color: white; }")
+        self.rowsTable.setMinimumHeight(150)
+        self.rowsTable.setEditTriggers(QTableWidget.NoEditTriggers)
+        mainLayout.addWidget(self.rowsTable)
+        
+        # GROUP BOX for row analysis
+        analysisGroup = QGroupBox("Row Analysis")
+        analysisGroup.setStyleSheet("QGroupBox { background-color: rgb(45,45,45); color: white; border: 2px solid rgb(80,80,80); border-radius: 5px; margin-top: 10px; padding-top: 10px; font-weight: bold; } QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 5px; }")
+        analysisLayout = QVBoxLayout()
+        
+        # Color mode dropdown
+        color_mode_layout = QHBoxLayout()
+        lblColorMode = QLabel("Color Mode:")
+        self.comboColorMode = QComboBox()
+        self.comboColorMode.addItems(["NONE", "ID", "INCLINATION"])
+        self.comboColorMode.setCurrentText("ID")
+        self.comboColorMode.setToolTip("Select how to colorize regions: NONE (no color), ID (random pastel colors), INCLINATION (color ramp based on row angle)")
+        self.comboColorMode.currentTextChanged.connect(self.onColorModeChanged)
+        self.comboColorMode.setMaximumWidth(150)
+        color_mode_layout.addWidget(lblColorMode)
+        color_mode_layout.addWidget(self.comboColorMode)
+        color_mode_layout.addStretch()
+        analysisLayout.addLayout(color_mode_layout)
+        
+        # Buttons layout
+        buttons_layout = QHBoxLayout()
+        
+        self.btnAnalyzeInclination = QPushButton("Show Inclination")
+        self.btnAnalyzeInclination.setToolTip("Compute and show/hide the inclination angle for each row by fitting a line through all centroids")
+        self.btnAnalyzeInclination.setCheckable(True)
+        self.btnAnalyzeInclination.clicked.connect(self.toggleInclination)
+        
+        self.btnSegmentInclination = QPushButton("Show Segment Angles")
+        self.btnSegmentInclination.setToolTip("Show/hide the inclination angle for each segment between consecutive regions")
+        self.btnSegmentInclination.setCheckable(True)
+        self.btnSegmentInclination.clicked.connect(self.toggleSegmentInclination)
+        
+        buttons_layout.addWidget(self.btnAnalyzeInclination)
+        buttons_layout.addWidget(self.btnSegmentInclination)
+        buttons_layout.addStretch()
+        
+        analysisLayout.addLayout(buttons_layout)
+        
+        analysisGroup.setLayout(analysisLayout)
+        mainLayout.addWidget(analysisGroup)
+
+        # Log area - text display for output
+        self.logArea = QTextEdit()
+        self.logArea.setReadOnly(True)
+        self.logArea.setStyleSheet("QTextEdit { background-color: rgb(50,50,50); color: white; }")
+        self.logArea.setMinimumHeight(100)
+        self.logArea.setMaximumHeight(120)
+        mainLayout.addWidget(self.logArea)
 
         # Bottom row buttons
         bottom_layout = QHBoxLayout()
@@ -173,6 +225,8 @@ class QtRowAnalysis(QWidget):
         # remove colorized shapes and polylines, if any
         self.removeColorizedEntities()
         self.removePolylineEntities()
+        self.removeInclinationLines()
+        self.removeSegmentInclinationEntities()
         # Remove event filter
         self.activeviewer.viewport().removeEventFilter(self)
         # emit the signal to notify the main window
@@ -184,6 +238,18 @@ class QtRowAnalysis(QWidget):
         """Called when the selection changes in the viewer"""
         self.workingBlobs = self.activeviewer.selected_blobs[:]
         self.writeLog("Selection changed. Now {} region(s) selected.".format(len(self.workingBlobs)))
+
+    @pyqtSlot(str)
+    def onColorModeChanged(self, mode):
+        """Called when the color mode dropdown changes"""
+        self.colorMode = mode
+        if self.rowsData is not None and len(self.rowsData) > 0:
+            self.displayRows()
+            # Redisplay inclination and segment angles if active
+            if self.btnAnalyzeInclination.isChecked():
+                self.displayInclinationLines()
+            if self.btnSegmentInclination.isChecked():
+                self.displaySegmentInclination()
 
     def writeLog(self, message):
         """Write a message to the log area"""
@@ -253,12 +319,101 @@ class QtRowAnalysis(QWidget):
         # Log results
         self.writeLog("Found {} row(s)".format(len(self.rowsData)))
         
+        # Compute inclination for all rows automatically
+        self.computeInclination()
+        
         # Populate table with row data
         self.populateRowsTable()
         
         # Display rows
         self.displayRows()
+        
+        # Redisplay visualizations if they were active
+        if self.btnAnalyzeInclination.isChecked():
+            self.displayInclinationLines()
+        if self.btnSegmentInclination.isChecked():
+            self.displaySegmentInclination()
 
+    def computeInclination(self):
+        """
+        Compute the inclination for all rows.
+        """
+        if self.rowsData is None or len(self.rowsData) == 0:
+            return
+        
+        for row in self.rowsData:
+            if row['num_blobs'] < 2:
+                row['inclination_deg'] = 0.0
+                row['inclination_rad'] = 0.0
+                continue
+            
+            # Get all centroids
+            centroids_x = [blob.centroid[0] for blob in row['blobs']]
+            centroids_y = [blob.centroid[1] for blob in row['blobs']]
+            
+            # Fit a line using least squares: y = mx + b
+            # Using numpy polyfit for simplicity
+            coeffs = np.polyfit(centroids_x, centroids_y, 1)
+            slope = coeffs[0]
+            intercept = coeffs[1]
+            
+            # Convert slope to angle in degrees
+            # Negate the slope because image Y-axis points downward
+            # Positive angle = counterclockwise rotation from horizontal
+            angle_rad = math.atan(-slope)
+            angle_deg = math.degrees(angle_rad)
+            
+            row['inclination_deg'] = angle_deg
+            row['inclination_rad'] = angle_rad
+            row['fit_slope'] = slope
+            row['fit_intercept'] = intercept
+    
+    @pyqtSlot()
+    def toggleInclination(self):
+        """
+        Toggle the display of inclination lines.
+        """
+        if self.rowsData is None or len(self.rowsData) == 0:
+            self.writeLog("No rows detected. Please run row detection first.")
+            self.btnAnalyzeInclination.setChecked(False)
+            return
+        
+        if self.btnAnalyzeInclination.isChecked():
+            # Show inclination lines
+            self.displayInclinationLines()
+            
+            # Update button appearance
+            self.btnAnalyzeInclination.setStyleSheet("background-color: rgb(100, 150, 200); color: white; font-weight: bold;")
+            self.btnAnalyzeInclination.setText("Hide Inclination")
+        else:
+            # Hide inclination
+            self.removeInclinationLines()
+            self.btnAnalyzeInclination.setStyleSheet("")
+            self.btnAnalyzeInclination.setText("Show Inclination")
+    
+    @pyqtSlot()
+    def toggleSegmentInclination(self):
+        """
+        Toggle the display of segment-by-segment inclination angles.
+        """
+        if self.rowsData is None or len(self.rowsData) == 0:
+            self.writeLog("No rows detected. Please run row detection first.")
+            self.btnSegmentInclination.setChecked(False)
+            return
+        
+        if self.btnSegmentInclination.isChecked():
+            # Show segment inclination angles
+            self.displaySegmentInclination()
+            
+            # Update button appearance
+            self.btnSegmentInclination.setStyleSheet("background-color: rgb(150, 100, 200); color: white; font-weight: bold;")
+            self.btnSegmentInclination.setText("Hide Segment Angles")
+        else:
+            # Hide segment inclination
+            self.removeSegmentInclinationEntities()
+            self.btnSegmentInclination.setStyleSheet("")
+            self.btnSegmentInclination.setText("Show Segment Angles")
+    
     @pyqtSlot()
     def toggleCutMode(self):
         """
@@ -342,6 +497,11 @@ class QtRowAnalysis(QWidget):
             self.rowsTable.setItem(i, 3, QTableWidgetItem("{:.1f}".format(row['avg_height'])))
             # Width
             self.rowsTable.setItem(i, 4, QTableWidgetItem("{:.1f}".format(row['width'])))
+            # Inclination
+            if 'inclination_deg' in row:
+                self.rowsTable.setItem(i, 5, QTableWidgetItem("{:.2f}°".format(row['inclination_deg'])))
+            else:
+                self.rowsTable.setItem(i, 5, QTableWidgetItem("-"))
         self.rowsTable.resizeColumnsToContents()
 
     ########################################################################################
@@ -499,25 +659,56 @@ class QtRowAnalysis(QWidget):
         self.lineSegmentData = []  # Clear line segment metadata
         self.blobToRowMap = {}  # Clear blob-to-row mapping
         
+        # Calculate max absolute inclination for color ramp
+        max_abs_inclination = 0.0
+        if self.colorMode == "INCLINATION":
+            for row in self.rowsData:
+                if 'inclination_deg' in row:
+                    max_abs_inclination = max(max_abs_inclination, abs(row['inclination_deg']))
+        
         for row_index, row in enumerate(self.rowsData):
-            color = self.getPastelColor(row_index, len(self.rowsData))
-            pen = QPen(Qt.NoPen)
-            brush = QBrush(color)
+            # Determine color based on mode
+            if self.colorMode == "NONE":
+                # Don't draw filled blobs
+                pass
+            elif self.colorMode == "ID":
+                color = self.getPastelColor(row_index, len(self.rowsData))
+                pen = QPen(Qt.NoPen)
+                brush = QBrush(color)
+                
+                # Draw filled blobs
+                for blob in row['blobs']:
+                    min_row, min_col, _, _ = blob.bbox
+                    contours, _ = cv2.findContours(blob.getMask().astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                    cnt = contours[0]
+                    polygon = QPolygonF([QPointF(float(point[0][0])+min_col+0.5, float(point[0][1])+min_row+0.5) for point in cnt])
+                    newItemC = self.activeviewer.scene.addPolygon(polygon, pen, brush)
+                    newItemC.setZValue(10)
+                    self.colorizedEntities.append(newItemC)
+            
+            elif self.colorMode == "INCLINATION":
+                # Get inclination-based color
+                if 'inclination_deg' in row and max_abs_inclination > 0:
+                    color = self.getInclinationColor(row['inclination_deg'], max_abs_inclination)
+                else:
+                    color = QColor(128, 128, 128)  # Grey for no inclination data
+                
+                pen = QPen(Qt.NoPen)
+                brush = QBrush(color)
+                
+                # Draw filled blobs
+                for blob in row['blobs']:
+                    min_row, min_col, _, _ = blob.bbox
+                    contours, _ = cv2.findContours(blob.getMask().astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                    cnt = contours[0]
+                    polygon = QPolygonF([QPointF(float(point[0][0])+min_col+0.5, float(point[0][1])+min_row+0.5) for point in cnt])
+                    newItemC = self.activeviewer.scene.addPolygon(polygon, pen, brush)
+                    newItemC.setZValue(10)
+                    self.colorizedEntities.append(newItemC)
             
             # Build blob-to-row mapping for merge functionality
             for pos, blob in enumerate(row['blobs']):
                 self.blobToRowMap[blob] = (row_index, pos)
-            
-            # Draw filled blobs
-            for blob in row['blobs']:
-                min_row, min_col, _, _ = blob.bbox
-                # draw the blob's filled contour
-                contours, _ = cv2.findContours(blob.getMask().astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                cnt = contours[0]
-                polygon = QPolygonF([QPointF(float(point[0][0])+min_col+0.5, float(point[0][1])+min_row+0.5) for point in cnt])
-                newItemC = self.activeviewer.scene.addPolygon(polygon, pen, brush)
-                newItemC.setZValue(10)  # Draw above most items
-                self.colorizedEntities.append(newItemC)
             
             # Draw line segments connecting consecutive regions
             if len(row['blobs']) > 1:
@@ -590,6 +781,203 @@ class QtRowAnalysis(QWidget):
             for item in self.polylineEntities:
                 self.activeviewer.scene.removeItem(item)
             self.polylineEntities = []
+        return
+    
+    def removeInclinationLines(self):
+        """
+        Remove all inclination lines from the scene.
+        """
+        if self.inclinationLines:
+            for item in self.inclinationLines:
+                self.activeviewer.scene.removeItem(item)
+            self.inclinationLines = []
+        return
+    
+    def removeSegmentInclinationEntities(self):
+        """
+        Remove all segment inclination visualizations from the scene.
+        """
+        if self.segmentInclinationEntities:
+            for item in self.segmentInclinationEntities:
+                self.activeviewer.scene.removeItem(item)
+            self.segmentInclinationEntities = []
+        return
+    
+    def displayInclinationLines(self):
+        """
+        Display inclination lines for each row with angle labels.
+        """
+        self.removeInclinationLines()
+        
+        if self.rowsData is None or len(self.rowsData) == 0:
+            return
+        
+        for row_index, row in enumerate(self.rowsData):
+            if 'fit_slope' not in row or row['num_blobs'] < 2:
+                continue
+            
+            slope = row['fit_slope']
+            intercept = row['fit_intercept']
+            
+            # Calculate line endpoints across the row's extent
+            x_start = row['min_x']
+            x_end = row['max_x']
+            y_start = slope * x_start + intercept
+            y_end = slope * x_end + intercept
+            
+            # Create thick white line with black outline for inclination
+            # Draw black outline first (wider)
+            outline_pen = QPen(QColor(0, 0, 0))
+            outline_pen.setWidth(6)
+            outline_pen.setCosmetic(True)
+            
+            outline_item = self.activeviewer.scene.addLine(x_start, y_start, x_end, y_end, outline_pen)
+            outline_item.setZValue(18)
+            self.inclinationLines.append(outline_item)
+            
+            # Draw white line on top
+            line_pen = QPen(QColor(255, 255, 255))
+            line_pen.setWidth(4)
+            line_pen.setCosmetic(True)
+            
+            line_item = self.activeviewer.scene.addLine(x_start, y_start, x_end, y_end, line_pen)
+            line_item.setZValue(19)
+            self.inclinationLines.append(line_item)
+            
+            # Add angle text at the middle of the line
+            x_mid = (x_start + x_end) / 2
+            y_mid = (y_start + y_end) / 2
+            
+            angle_text = "{:.2f}°".format(row['inclination_deg'])
+            
+            # Create text item to measure size
+            font = QFont()
+            font.setBold(True)
+            
+            # Create simple text item with black color
+            text_item = self.activeviewer.scene.addText(angle_text)
+            text_item.setFont(font)
+            text_item.setDefaultTextColor(QColor(0, 0, 0))  # Black text
+            
+            text_rect = text_item.boundingRect()
+            text_width = text_rect.width()
+            text_height = text_rect.height()
+            
+            # Create background rectangle (half height of font)
+            padding = 3
+            bg_height = text_height / 2 + padding * 2
+            bg_width = text_width + padding * 2
+            bg_x = x_mid - bg_width / 2
+            bg_y = y_mid - bg_height - 5
+            
+            # Draw black outline rectangle
+            outline_rect_pen = QPen(QColor(0, 0, 0))
+            outline_rect_pen.setWidth(2)
+            outline_rect_pen.setCosmetic(True)
+            bg_brush = QBrush(QColor(255, 255, 255))  # White fill
+            
+            bg_rect = self.activeviewer.scene.addRect(bg_x, bg_y, bg_width, bg_height, outline_rect_pen, bg_brush)
+            bg_rect.setZValue(20)
+            self.inclinationLines.append(bg_rect)
+            
+            # Position text centered in the background rectangle
+            text_x = bg_x + padding
+            text_y = bg_y + (bg_height - text_height) / 2
+            text_item.setPos(text_x, text_y)
+            text_item.setZValue(21)
+            self.inclinationLines.append(text_item)
+        
+        return
+    
+    def displaySegmentInclination(self):
+        """
+        Display inclination angles for each segment between consecutive regions in each row.
+        """
+        self.removeSegmentInclinationEntities()
+        
+        if self.rowsData is None or len(self.rowsData) == 0:
+            return
+        
+        # Calculate max absolute inclination across all segments for color normalization
+        max_abs_segment_angle = 0.0
+        for row in self.rowsData:
+            if row['num_blobs'] < 2:
+                continue
+            for i in range(len(row['blobs']) - 1):
+                blob1 = row['blobs'][i]
+                blob2 = row['blobs'][i + 1]
+                dx = blob2.centroid[0] - blob1.centroid[0]
+                dy = blob2.centroid[1] - blob1.centroid[1]
+                angle_rad = math.atan2(-dy, dx)
+                angle_deg = math.degrees(angle_rad)
+                max_abs_segment_angle = max(max_abs_segment_angle, abs(angle_deg))
+        
+        for row_index, row in enumerate(self.rowsData):
+            if row['num_blobs'] < 2:
+                continue
+            
+            # Analyze each segment between consecutive blobs
+            for i in range(len(row['blobs']) - 1):
+                blob1 = row['blobs'][i]
+                blob2 = row['blobs'][i + 1]
+                
+                x1, y1 = blob1.centroid[0], blob1.centroid[1]
+                x2, y2 = blob2.centroid[0], blob2.centroid[1]
+                
+                # Calculate segment inclination
+                dx = x2 - x1
+                dy = y2 - y1
+                
+                # Calculate angle (negate dy for image coordinates)
+                angle_rad = math.atan2(-dy, dx)
+                angle_deg = math.degrees(angle_rad)
+                
+                # Position label at midpoint of segment
+                x_mid = (x1 + x2) / 2
+                y_mid = (y1 + y2) / 2
+                
+                angle_text = "{:.1f}°".format(angle_deg)
+                
+                # Create text item
+                font = QFont()
+                font.setPointSize(8)
+                font.setBold(True)
+                
+                text_item = self.activeviewer.scene.addText(angle_text)
+                text_item.setFont(font)
+                text_item.setDefaultTextColor(QColor(0, 0, 0))  # Black text
+                
+                text_rect = text_item.boundingRect()
+                text_width = text_rect.width()
+                text_height = text_rect.height()
+                
+                # Create compact background rectangle
+                padding = 2
+                bg_height = text_height * 0.6 + padding * 2
+                bg_width = text_width + padding * 2
+                bg_x = x_mid - bg_width / 2
+                bg_y = y_mid - bg_height / 2
+                
+                # Get color based on segment inclination
+                bg_color = self.getInclinationColor(angle_deg, max_abs_segment_angle)
+                
+                # Draw colored background with black outline
+                outline_rect_pen = QPen(QColor(0, 0, 0))
+                outline_rect_pen.setWidth(1)
+                outline_rect_pen.setCosmetic(True)
+                bg_brush = QBrush(bg_color)
+                
+                bg_rect = self.activeviewer.scene.addRect(bg_x, bg_y, bg_width, bg_height, outline_rect_pen, bg_brush)
+                bg_rect.setZValue(22)
+                self.segmentInclinationEntities.append(bg_rect)
+                
+                # Position text centered in background
+                text_x = bg_x + padding
+                text_y = bg_y + (bg_height - text_height) / 2
+                text_item.setPos(text_x, text_y)
+                text_item.setZValue(23)
+                self.segmentInclinationEntities.append(text_item)
+        
         return
 
     ########################################################################################
@@ -730,9 +1118,23 @@ class QtRowAnalysis(QWidget):
         # Sort rows to preserve ordering
         self.sortRows()
         
+        # Recompute inclination for merged rows
+        self.computeInclination()
+        
         # Refresh visualization and table
         self.displayRows()
         self.populateRowsTable()
+        self.removeInclinationLines()  # Clear old inclination lines after merge
+        self.removeSegmentInclinationEntities()  # Clear old segment angles after merge
+        
+        # Redisplay inclination if button is checked
+        if self.btnAnalyzeInclination.isChecked():
+            self.displayInclinationLines()
+        
+        # Redisplay segment angles if button is checked
+        if self.btnSegmentInclination.isChecked():
+            self.displaySegmentInclination()
+        
         self.writeLog("Merge complete. Now {} rows total.".format(len(self.rowsData)))
 
     ########################################################################################
@@ -792,6 +1194,46 @@ class QtRowAnalysis(QWidget):
         color = QColor()
         color.setHsv(h, s, v, 255)  # 255 = fully opaque
         return color
+    
+    def getInclinationColor(self, inclination_deg, max_abs_inclination):
+        """
+        Returns a color based on inclination angle.
+        Grey = 0 degrees
+        Blue-ish = positive angles (counterclockwise)
+        Red-ish = negative angles (clockwise)
+        The intensity increases with the absolute value of the angle.
+        
+        Args:
+            inclination_deg: The inclination angle in degrees
+            max_abs_inclination: The maximum absolute inclination across all rows
+        
+        Returns:
+            QColor representing the inclination
+        """
+        if max_abs_inclination == 0:
+            return QColor(128, 128, 128)  # Grey
+        
+        # Normalize to [-1, 1]
+        normalized = inclination_deg / max_abs_inclination
+        
+        # Base grey color
+        grey = 180
+        
+        if normalized > 0:
+            # Positive angle -> Blue-ish
+            # Interpolate from grey to blue
+            r = int(grey * (1 - normalized))
+            g = int(grey * (1 - normalized * 0.5))
+            b = int(grey + (255 - grey) * normalized)
+        else:
+            # Negative angle -> Red-ish
+            # Interpolate from grey to red
+            abs_normalized = abs(normalized)
+            r = int(grey + (255 - grey) * abs_normalized)
+            g = int(grey * (1 - abs_normalized * 0.5))
+            b = int(grey * (1 - abs_normalized))
+        
+        return QColor(r, g, b, 200)  # Slight transparency
     
     def distancePointToLineSegment(self, px, py, x1, y1, x2, y2):
         """
@@ -886,9 +1328,22 @@ class QtRowAnalysis(QWidget):
         # Sort rows to preserve ordering
         self.sortRows()
         
+        # Recompute inclination for split rows
+        self.computeInclination()
+        
         # Refresh the visualization and table
         self.displayRows()
         self.populateRowsTable()
+        self.removeInclinationLines()  # Clear old inclination lines after split
+        self.removeSegmentInclinationEntities()  # Clear old segment angles after split
+        
+        # Redisplay inclination if button is checked
+        if self.btnAnalyzeInclination.isChecked():
+            self.displayInclinationLines()
+        
+        # Redisplay segment angles if button is checked
+        if self.btnSegmentInclination.isChecked():
+            self.displaySegmentInclination()
         
         # Log the result
         self.writeLog("Row split complete. Now {} rows total.".format(len(self.rowsData)))
