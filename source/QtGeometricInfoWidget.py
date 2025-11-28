@@ -21,7 +21,7 @@ import os
 
 from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal, QPointF
 from PyQt5.QtGui import QColor, QPen, QBrush, QPolygonF, QPainterPath
-from PyQt5.QtWidgets import QWidget, QTableWidget, QTableWidgetItem, QLabel, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout,  QCheckBox, QRadioButton, QLayout, QFileDialog, QMessageBox, QComboBox, QGraphicsPolygonItem
+from PyQt5.QtWidgets import QWidget, QTableWidget, QTableWidgetItem, QLabel, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout,  QCheckBox, QRadioButton, QLayout, QFileDialog, QMessageBox, QComboBox, QGraphicsPolygonItem, QGroupBox
 from skimage import measure
 import math
 import csv
@@ -124,7 +124,8 @@ class QtGeometricInfoWidget(QWidget):
         self.geometricData = {}
         self.geometricStats = {}
         # store geometric entities for overlay
-        self.fittedEntities = []
+        self.fittedRectangleEntities = []
+        self.fittedEllipseEntities = []
         self.colorizedEntities = []
 
         # EVENTS ###########################################################
@@ -187,75 +188,110 @@ class QtGeometricInfoWidget(QWidget):
         self.btnRecompute.setEnabled(False)
         mainLayout.addWidget(self.btnRecompute)
 
-        # add horizontal line separator to layout
-        separator1 = QLabel()
-        separator1.setStyleSheet("QLabel { border-bottom: 1px solid rgb(80,80,80); }")
-        mainLayout.addWidget(separator1)
+        # GROUP BOX for visualization controls
+        visualizationGroup = QGroupBox("Visualization")
+        visualizationGroup.setStyleSheet("QGroupBox { background-color: rgb(45,45,45); color: white; border: 2px solid rgb(80,80,80); border-radius: 5px; margin-top: 10px; padding-top: 10px; font-weight: bold; } QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 5px; }")
+        visualizationLayout = QVBoxLayout()
 
-        # buttons for additional functions
-        button_layout = QHBoxLayout()
-        self.btnToggleFitted = QPushButton("Show Fitted Shapes")
-        self.btnToggleFitted.setToolTip("Show fitted ellipses and minimum rectangles")
-        self.btnToggleFitted.clicked.connect(self.toggleFittedShapes)
+        # First row - fitted shapes buttons
+        fitted_layout = QHBoxLayout()
+        self.btnToggleRectangles = QPushButton("Show Rectangles")
+        self.btnToggleRectangles.setToolTip("Show/hide fitted minimum area rectangles")
+        self.btnToggleRectangles.clicked.connect(self.toggleRectangles)
+        self.btnToggleEllipses = QPushButton("Show Ellipses")
+        self.btnToggleEllipses.setToolTip("Show/hide fitted ellipses with major and minor axes")
+        self.btnToggleEllipses.clicked.connect(self.toggleEllipses)
+        fitted_layout.addWidget(self.btnToggleRectangles)
+        fitted_layout.addWidget(self.btnToggleEllipses)
+        fitted_layout.addStretch()
+        visualizationLayout.addLayout(fitted_layout)
+
+        # Second row - colorize by property
+        colorize_layout1 = QHBoxLayout()
         self.btnColorize1 = QPushButton("Colorize by")
         self.btnColorize1.setToolTip("Colorize the shapes by a specific property")
         self.btnColorize1.clicked.connect(self.colorizeByProperty)
-        self.propertyChooserInput = QComboBox() # add a dropdown with available properties
+        self.propertyChooserInput = QComboBox()
         propertyList = []
         for prop in self.properties:
             if self.properties[prop]["calculable"]:
                 propertyList.append(prop)
         self.propertyChooserInput.addItems(propertyList)
+        self.propertyChooserInput.currentTextChanged.connect(self.onPropertyChanged)
+        
+        self.propertyMinInput = QLineEdit()
+        self.propertyMinInput.setMaximumWidth(80)
+        self.propertyMinInput.setToolTip("Minimum value for color ramp")
+        self.propertyMinInput.editingFinished.connect(self.onColorRangeChanged)
+        
+        self.propertyMaxInput = QLineEdit()
+        self.propertyMaxInput.setMaximumWidth(80)
+        self.propertyMaxInput.setToolTip("Maximum value for color ramp")
+        self.propertyMaxInput.editingFinished.connect(self.onColorRangeChanged)
+
+        lblMinMax = QLabel("<-range->")
+        
+        self.cbCenteredRamp = QCheckBox("Centered on")
+        self.cbCenteredRamp.setToolTip("Use diverging color ramp centered on specified value (gray at center, blue below, red above)")
+        self.cbCenteredRamp.stateChanged.connect(self.onColorRangeChanged)
+        
+        self.propertyCenterInput = QLineEdit()
+        self.propertyCenterInput.setText("0")
+        self.propertyCenterInput.setMaximumWidth(80)
+        self.propertyCenterInput.setToolTip("Center value for diverging color ramp")
+        self.propertyCenterInput.editingFinished.connect(self.onColorRangeChanged)
+
         self.btnRemoveColor = QPushButton("X")
         self.btnRemoveColor.setToolTip("Remove colorization")
         self.btnRemoveColor.clicked.connect(self.removeColorizedEntities)
-        button_layout.addStretch()
-        button_layout.addWidget(self.btnToggleFitted)
-        button_layout.addStretch()
-        button_layout.addWidget(self.btnColorize1)
-        button_layout.addWidget(self.propertyChooserInput)
-        button_layout.addWidget(self.btnRemoveColor)
-        button_layout.addStretch()
-        button_layout.setAlignment(Qt.AlignLeft)
-        mainLayout.addLayout(button_layout)
+        colorize_layout1.addWidget(self.btnColorize1)
+        colorize_layout1.addWidget(self.propertyChooserInput)
+        colorize_layout1.addWidget(self.btnRemoveColor)
+        colorize_layout1.addSpacing(10)
+        colorize_layout1.addWidget(self.propertyMinInput)
+        colorize_layout1.addWidget(lblMinMax)
+        colorize_layout1.addWidget(self.propertyMaxInput)
+        colorize_layout1.addSpacing(10)
+        colorize_layout1.addWidget(self.cbCenteredRamp)
+        colorize_layout1.addWidget(self.propertyCenterInput)
 
-        button_layout2 = QHBoxLayout()
+        colorize_layout1.addStretch()
+        visualizationLayout.addLayout(colorize_layout1)
+
+        # Third row - colorize by squareness/roundness
+        colorize_layout2 = QHBoxLayout()
         self.btnColorize2 = QPushButton("Colorize by squareness/roundness")
         self.btnColorize2.clicked.connect(self.colorizeByShape)
         self.thresholdInput0 = QLineEdit()
         self.thresholdInput0.setText("0.5")
+        self.thresholdInput0.setMaximumWidth(60)
         self.thresholdInput1 = QLineEdit()
         self.thresholdInput1.setText("1")
-        button_layout2.addStretch()
-        button_layout2.addWidget(self.btnColorize2)
-        button_layout2.addWidget(self.thresholdInput0)
-        button_layout2.addWidget(self.thresholdInput1)
-        button_layout2.addStretch()
-        button_layout2.setAlignment(Qt.AlignLeft)
-        mainLayout.addLayout(button_layout2)
+        self.thresholdInput1.setMaximumWidth(60)
+        colorize_layout2.addWidget(self.btnColorize2)
+        colorize_layout2.addWidget(self.thresholdInput0)
+        colorize_layout2.addWidget(self.thresholdInput1)
+        colorize_layout2.addStretch()
+        visualizationLayout.addLayout(colorize_layout2)
 
-        # add horizontal line separator to layout
-        separator2 = QLabel()
-        separator2.setStyleSheet("QLabel { border-bottom: 1px solid rgb(80,80,80); }")
-        mainLayout.addWidget(separator2)
+        visualizationGroup.setLayout(visualizationLayout)
+        mainLayout.addWidget(visualizationGroup)
 
-        # buttons for exporting data
-        export_layout = QHBoxLayout()
+        # GROUP BOX for export controls
+        exportGroup = QGroupBox("Export")
+        exportGroup.setStyleSheet("QGroupBox { background-color: rgb(45,45,45); color: white; border: 2px solid rgb(80,80,80); border-radius: 5px; margin-top: 10px; padding-top: 10px; font-weight: bold; } QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 5px; }")
+        exportLayout = QHBoxLayout()
         self.btnExportCSV = QPushButton("Export to CSV")
         self.btnExportCSV.setToolTip("Export the data to a CSV file")
-        self.btnExportCSV.clicked.connect(self.exportToCSV) 
+        self.btnExportCSV.clicked.connect(self.exportToCSV)
         self.cbIncludeStats = QCheckBox("Include stats")
         self.cbIncludeStats.setToolTip("Include stats in the exported CSV file")
         self.cbIncludeStats.setChecked(False)
-        export_layout.addWidget(self.btnExportCSV)
-        export_layout.addWidget(self.cbIncludeStats)
-        export_layout.setAlignment(Qt.AlignLeft)
-        mainLayout.addLayout(export_layout)
-
-        # add horizontal line separator to layout
-        separatorBottom = QLabel()
-        separatorBottom.setStyleSheet("QLabel { border-bottom: 1px solid rgb(80,80,80); }")
-        mainLayout.addWidget(separatorBottom)
+        exportLayout.addWidget(self.btnExportCSV)
+        exportLayout.addWidget(self.cbIncludeStats)
+        exportLayout.addStretch()
+        exportGroup.setLayout(exportLayout)
+        mainLayout.addWidget(exportGroup)
 
         # bottom row buttons
         bottom_layout = QHBoxLayout()
@@ -281,7 +317,8 @@ class QtGeometricInfoWidget(QWidget):
     closewidget = pyqtSignal()
     def closeEvent(self, event):
         # remove fitted and colorized shapes, if any
-        self.removeFittedShapes()
+        self.removeFittedRectangles()
+        self.removeFittedEllipses()
         self.removeColorizedEntities()
         # emit the signal to notify the main window
         self.closewidget.emit()
@@ -311,7 +348,8 @@ class QtGeometricInfoWidget(QWidget):
     # compute the measures
     def computeMeasures(self):
         # remove previous fitted and colorized shapes, if any
-        self.removeFittedShapes()
+        self.removeFittedRectangles()
+        self.removeFittedEllipses()
         self.removeColorizedEntities()
         # reset the geometric data and stats
         self.geometricData = {}
@@ -423,19 +461,49 @@ class QtGeometricInfoWidget(QWidget):
 # FITTED SHAPES FUNCTIONS
 ########################################################################################
 
-    # toggle the visibility of the fitted shapes in the viewer
-    def toggleFittedShapes(self):    
-        if self.btnToggleFitted.text() == "Show Fitted Shapes":
-            self.btnToggleFitted.setText("Hide Fitted Shapes")
-            self.displayFittedShapes()
+    # toggle the visibility of the fitted rectangles in the viewer
+    def toggleRectangles(self):    
+        if self.btnToggleRectangles.text() == "Show Rectangles":
+            self.btnToggleRectangles.setText("Hide Rectangles")
+            self.displayFittedRectangles()
         else:
-            self.btnToggleFitted.setText("Show Fitted Shapes")
-            self.removeFittedShapes()
+            self.btnToggleRectangles.setText("Show Rectangles")
+            self.removeFittedRectangles()
         return
 
-    # display fitted shapes in the viewer
-    def displayFittedShapes(self):
-        # show the fitted shapes
+    # toggle the visibility of the fitted ellipses in the viewer
+    def toggleEllipses(self):    
+        if self.btnToggleEllipses.text() == "Show Ellipses":
+            self.btnToggleEllipses.setText("Hide Ellipses")
+            self.displayFittedEllipses()
+        else:
+            self.btnToggleEllipses.setText("Show Ellipses")
+            self.removeFittedEllipses()
+        return
+
+    # display fitted rectangles in the viewer
+    def displayFittedRectangles(self):
+        for blob in self.workingBlobs:
+            min_row, min_col, _, _ = blob.bbox
+            ######################################## RECTANGLE
+            contours, _ = cv2.findContours(blob.getMask().astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            rect = cv2.minAreaRect(contours[0])
+            if rect[1][1] >= rect[1][0]:  # swap sides and rotate angle to have major side first
+                rect = (rect[0], (rect[1][1], rect[1][0]), rect[2] - 90.0)
+            box_points = cv2.boxPoints(rect)
+            # Offset box_points by the mask's position in the full image
+            box_points_global = box_points + np.array([min_col + 0.5, min_row + 0.5]) # +0.5 to center the line on the pixel
+            polygon = QPolygonF([QPointF(float(x), float(y)) for x, y in box_points_global])
+            pen = QPen(QColor(255, 0, 0, 191)) # 75% transparent red
+            pen.setWidth(2)
+            pen.setCosmetic(True)
+            newItemR = self.activeviewer.scene.addPolygon(polygon, pen)
+            newItemR.setZValue(10)  # Draw above most items
+            self.fittedRectangleEntities.append(newItemR)
+        return
+
+    # display fitted ellipses with axes in the viewer
+    def displayFittedEllipses(self):
         for blob in self.workingBlobs:
             blobMeasure = measure.regionprops(blob.getMask())
             region = blobMeasure[0]
@@ -468,43 +536,96 @@ class QtGeometricInfoWidget(QWidget):
             pen.setCosmetic(True)
             newItemE = self.activeviewer.scene.addPath(path, pen)
             newItemE.setZValue(10)  # Draw above most items
-            self.fittedEntities.append(newItemE)
-            ######################################## RECTANGLE
-            contours, _ = cv2.findContours(blob.getMask().astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            rect = cv2.minAreaRect(contours[0])
-            if rect[1][1] >= rect[1][0]:  # swap sides and rotate angle to have major side first
-                rect = (rect[0], (rect[1][1], rect[1][0]), rect[2] - 90.0)
-            box_points = cv2.boxPoints(rect)
-            # Offset box_points by the mask's position in the full image
-            box_points_global = box_points + np.array([min_col + 0.5, min_row + 0.5]) # +0.5 to center the line on the pixel
-            polygon = QPolygonF([QPointF(float(x), float(y)) for x, y in box_points_global])
-            pen = QPen(QColor(255, 0, 0, 191)) # 75% transparent red
-            pen.setWidth(2)
-            pen.setCosmetic(True)
-            newItemR = self.activeviewer.scene.addPolygon(polygon, pen)
-            newItemR.setZValue(10)  # Draw above most items
-            self.fittedEntities.append(newItemR)
+            self.fittedEllipseEntities.append(newItemE)
+            
+            ######################################## ELLIPSE AXES
+            # Draw major axis
+            major_half = region.major_axis_length / 2
+            major_x1 = cx_full + major_half * cos_angle
+            major_y1 = cy_full + major_half * sin_angle
+            major_x2 = cx_full - major_half * cos_angle
+            major_y2 = cy_full - major_half * sin_angle
+            
+            major_pen = QPen(QColor(255, 255, 0, 191))  # 75% transparent yellow
+            major_pen.setWidth(2)
+            major_pen.setCosmetic(True)
+            
+            major_axis_item = self.activeviewer.scene.addLine(major_x1, major_y1, major_x2, major_y2, major_pen)
+            major_axis_item.setZValue(11)  # Draw above ellipse
+            self.fittedEllipseEntities.append(major_axis_item)
+            
+            # Draw minor axis
+            minor_half = region.minor_axis_length / 2
+            minor_x1 = cx_full - minor_half * sin_angle
+            minor_y1 = cy_full + minor_half * cos_angle
+            minor_x2 = cx_full + minor_half * sin_angle
+            minor_y2 = cy_full - minor_half * cos_angle
+            
+            minor_pen = QPen(QColor(0, 255, 255, 191))  # 75% transparent cyan
+            minor_pen.setWidth(2)
+            minor_pen.setCosmetic(True)
+            
+            minor_axis_item = self.activeviewer.scene.addLine(minor_x1, minor_y1, minor_x2, minor_y2, minor_pen)
+            minor_axis_item.setZValue(11)  # Draw above ellipse
+            self.fittedEllipseEntities.append(minor_axis_item)
         return
-    # remove fitted shapes from the viewer
-    def removeFittedShapes(self):
-        if self.fittedEntities:
-            for item in self.fittedEntities:
+
+    # remove fitted rectangles from the viewer
+    def removeFittedRectangles(self):
+        if self.fittedRectangleEntities:
+            for item in self.fittedRectangleEntities:
                 self.activeviewer.scene.removeItem(item)
-            self.fittedEntities = []
-            self.btnToggleFitted.setText("Show Fitted Shapes")
+            self.fittedRectangleEntities = []
+            self.btnToggleRectangles.setText("Show Rectangles")
+        return
+
+    # remove fitted ellipses from the viewer
+    def removeFittedEllipses(self):
+        if self.fittedEllipseEntities:
+            for item in self.fittedEllipseEntities:
+                self.activeviewer.scene.removeItem(item)
+            self.fittedEllipseEntities = []
+            self.btnToggleEllipses.setText("Show Ellipses")
         return
 
 ########################################################################################
 # COLORIZE FUNCTIONS
 ########################################################################################
 
+    # called when property selection changes - update min/max fields
+    def onPropertyChanged(self, property_name):
+        """Update min/max input fields when property selection changes"""
+        if property_name and self.workingBlobs and len(self.workingBlobs) > 0:
+            values = [self.geometricData[blob.id][property_name] for blob in self.workingBlobs]
+            min_value = min(values)
+            max_value = max(values)
+            self.propertyMinInput.setText(str(min_value))
+            self.propertyMaxInput.setText(str(max_value))
+        return
+
+    # called when min/max range is manually edited - update colorization
+    def onColorRangeChanged(self):
+        """Re-apply colorization when min/max values are manually changed"""
+        if self.colorizedEntities:  # Only update if currently colorized
+            self.colorizeByProperty()
+        return
+
     # colorize the shapes by a specific property
     def colorizeByProperty(self):
         # determine which property is selected
         selected_property = self.propertyChooserInput.currentText()
-        values = [self.geometricData[blob.id][selected_property] for blob in self.workingBlobs]
-        min_value = min(values)
-        max_value = max(values)
+        
+        # Get min/max from input fields, or calculate if empty
+        try:
+            min_value = float(self.propertyMinInput.text())
+            max_value = float(self.propertyMaxInput.text())
+        except (ValueError, AttributeError):
+            values = [self.geometricData[blob.id][selected_property] for blob in self.workingBlobs]
+            min_value = min(values)
+            max_value = max(values)
+            self.propertyMinInput.setText(str(min_value))
+            self.propertyMaxInput.setText(str(max_value))
+        
         self.displayColorizedEntities(selected_property, min_value, max_value)
         return
 
@@ -512,16 +633,52 @@ class QtGeometricInfoWidget(QWidget):
     def displayColorizedEntities(self, property, min_value, max_value):
         self.removeColorizedEntities()  # remove previous colorized entities, if any
         value_range = max_value - min_value if max_value != min_value else 1.0  # avoid division by zero
-        # create a color map from blue (low) to red (high)
+        
+        # Check if using centered/diverging color ramp
+        use_centered = self.cbCenteredRamp.isChecked()
+        
+        if use_centered:
+            try:
+                center_value = float(self.propertyCenterInput.text())
+            except (ValueError, AttributeError):
+                center_value = 0.0
+                self.propertyCenterInput.setText("0")
+        
+        # create a color map
         for blob in self.workingBlobs:
             min_row, min_col, _, _ = blob.bbox
             value = self.geometricData[blob.id][property]
-            normalized_value = (value - min_value) / value_range
-            # map normalized value to color
-            r = int(normalized_value * 255)
-            g = 0
-            b = int((1 - normalized_value) * 255)
-            color = QColor(r, g, b, 255)  # fully opaque
+            # Clamp value to [min_value, max_value] range
+            value = max(min_value, min(value, max_value))
+            
+            if use_centered:
+                # Diverging color ramp: blue (low) -> gray (center) -> red (high)
+                if value < center_value:
+                    # Below center: interpolate from blue to gray
+                    lower_range = center_value - min_value if center_value > min_value else 1.0
+                    t = (center_value - value) / lower_range  # 1.0 at min, 0.0 at center
+                    r = int(128 * (1 - t))  # 0 to 128
+                    g = int(128 * (1 - t))  # 0 to 128
+                    b = int(128 + 127 * t)  # 128 to 255
+                elif value > center_value:
+                    # Above center: interpolate from gray to red
+                    upper_range = max_value - center_value if max_value > center_value else 1.0
+                    t = (value - center_value) / upper_range  # 0.0 at center, 1.0 at max
+                    r = int(128 + 127 * t)  # 128 to 255
+                    g = int(128 * (1 - t))  # 128 to 0
+                    b = int(128 * (1 - t))  # 128 to 0
+                else:
+                    # Exactly at center: gray
+                    r, g, b = 128, 128, 128
+                color = QColor(r, g, b, 255)
+            else:
+                # Standard sequential ramp: blue (low) to red (high)
+                normalized_value = (value - min_value) / value_range
+                r = int(normalized_value * 255)
+                g = 0
+                b = int((1 - normalized_value) * 255)
+                color = QColor(r, g, b, 255)  # fully opaque
+            
             pen = QPen(Qt.NoPen)
             brush = QBrush(color)
             # draw the blob's filled contour
