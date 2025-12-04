@@ -194,7 +194,7 @@ class TagLab(QMainWindow):
         self.map_acquisition_date = None #"YYYY-MM-DD"
 
         self.recentFileActs = []  #refactor to self.maxRecentProjects
-        self.maxRecentFiles = 4   #refactor to maxRecentProjects
+        self.maxRecentFiles = 6   #refactor to maxRecentProjects
         self.separatorRecentFilesAct = None    #refactor to separatorRecentFiles
         
         ##### INTERFACE #####
@@ -694,9 +694,11 @@ class TagLab(QMainWindow):
         self.settings_widget.drawing_settings.borderPenChanged[str, int].connect(self.viewerplus.setBorderPen)
         self.settings_widget.drawing_settings.selectionPenChanged[str, int].connect(self.viewerplus.setSelectionPen)
         self.settings_widget.drawing_settings.workingAreaPenChanged[str, int].connect(self.viewerplus.setWorkingAreaPen)
+        self.settings_widget.drawing_settings.labelPenChanged[str].connect(self.viewerplus.setLabelPen)
         self.settings_widget.drawing_settings.borderPenChanged[str, int].connect(self.viewerplus2.setBorderPen)
         self.settings_widget.drawing_settings.selectionPenChanged[str, int].connect(self.viewerplus2.setSelectionPen)
         self.settings_widget.drawing_settings.workingAreaPenChanged[str, int].connect(self.viewerplus2.setWorkingAreaPen)
+        self.settings_widget.drawing_settings.labelPenChanged[str].connect(self.viewerplus2.setLabelPen)
 
         self.connectLabelsPanelWithViewers()
 

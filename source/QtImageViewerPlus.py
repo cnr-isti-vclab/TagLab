@@ -195,6 +195,8 @@ class QtImageViewerPlus(QtImageViewer):
         self.sampling_area_pen_selected = QPen(Qt.white, 2)
         self.sampling_area_pen_selected.setCosmetic(True)
 
+        self.label_pen_color = Qt.white
+
         self.showCrossair = False
         self.mouseCoords = QPointF(0.0, 0.0)
         self.crackWidget = None
@@ -670,7 +672,7 @@ class QtImageViewerPlus(QtImageViewer):
         annpoint.id_item = TextItem(str(annpoint.id), QFont("Roboto", font_size, QFont.Bold))
         annpoint.id_item.setPos(annpoint.coordx+ 20, annpoint.coordy+ 20)
         annpoint.id_item.setZValue(2)
-        annpoint.id_item.setBrush(Qt.white)
+        annpoint.id_item.setBrush(QBrush(self.label_pen_color))
         #
         if annpoint in self.selected_annpoints:
             annpoint.id_item.setOpacity(1.0)
@@ -758,7 +760,7 @@ class QtImageViewerPlus(QtImageViewer):
         blob.id_item.setPos(blob.centroid[0], blob.centroid[1])
         blob.id_item.setTransformOriginPoint(QPointF(blob.centroid[0] + 14.0, blob.centroid[1] + 14.0))
         blob.id_item.setZValue(2)
-        blob.id_item.setBrush(Qt.white)
+        blob.id_item.setBrush(QBrush(self.label_pen_color))
 
         if blob in self.selected_blobs:
             blob.id_item.setOpacity(1.0)
@@ -1324,6 +1326,26 @@ class QtImageViewerPlus(QtImageViewer):
 
             if self.working_area_rect is not None:
                 self.working_area_rect.setPen(self.working_area_pen)
+
+    @pyqtSlot(str)
+    def setLabelPen(self, color):
+
+        color_components = color.split("-")
+        if len(color_components) > 2:
+            r = int(color_components[0])
+            g = int(color_components[1])
+            b = int(color_components[2])
+            self.label_pen_color = QColor(r, g, b)
+
+            # Update all existing blob labels
+            for blob in self.annotations.seg_blobs:
+                if blob.id_item is not None:
+                    blob.id_item.setBrush(QBrush(self.label_pen_color))
+
+            # Update all existing point labels
+            for annpoint in self.annotations.annpoints:
+                if annpoint.id_item is not None:
+                    annpoint.id_item.setBrush(QBrush(self.label_pen_color))
 
     def setBlobVisible(self, blob, visibility):
 
