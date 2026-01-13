@@ -13,6 +13,12 @@ class Cut(Tool):
         message += "<p>SPACEBAR to divide the region into two</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
+    def activate(self):
+        self.viewerplus.showMessage(self.tool_message)
+
+    def deactivate(self):
+        self.viewerplus.clearMessage()
+
     def leftPressed(self, x, y, mods=None):
         if self.edit_points.startDrawing(x, y):
             self.log.emit("[TOOL][CUT] DRAWING starts..")

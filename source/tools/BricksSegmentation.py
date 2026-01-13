@@ -5,6 +5,18 @@ from source.tools.Tool import Tool
 class BricksSegmentation(Tool):
     def __init__(self, viewerplus):
         super(BricksSegmentation, self).__init__(viewerplus)
+        
+        message = "Click on an existing blob<br><br>\
+            Set a minimum and a maximum widht/height for bricks/stones<br><br>\
+            Choose if bricks or stones<br><br>\
+            Push Apply button"
+        self.tool_message = f'<div style="text-align: left;">{message}</div>'
+
+    def activate(self):
+        self.viewerplus.showMessage(self.tool_message)
+
+    def deactivate(self):
+        self.viewerplus.clearMessage()
 
     def leftPressed(self, x, y, mods):
 
@@ -23,12 +35,6 @@ class BricksSegmentation(Tool):
             # copy blob, for undo reasons.
             blob = selected_blob.copy()
             self.setupWidget(blob)
-
-        message = "Click on an existing blob<br><br>\
-            Set a minimum and a maximum widht/height for bricks/stones<br><br>\
-            Choose if bricks or stones<br><br>\
-            Push Apply button"
-        self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
     def setupWidget(self, blob):
 

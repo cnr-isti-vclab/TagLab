@@ -168,16 +168,19 @@ class drawingSettingsWidget(QWidget):
     borderPenChanged = pyqtSignal(str, int)
     selectionPenChanged = pyqtSignal(str, int)
     workingAreaPenChanged = pyqtSignal(str, int)
+    labelPenChanged = pyqtSignal(str)
 
     def __init__(self, settings, parent=None):
         super(drawingSettingsWidget, self).__init__(parent)
 
         self.settings = settings
 
+        self.label_pen_color = "255-255-255"
         self.border_pen_color = "0-0-0"
         self.selection_pen_color = "255-255-255"
         self.workingarea_pen_color = "255-255-255"
 
+        self.lbl_label_color = QLabel("Labels color :  ")
         self.lbl_border_color = QLabel("Border color :  ")
         self.lbl_selection_color = QLabel("Selection color :  ")
         self.lbl_workingarea_color = QLabel("Working area color :  ")
@@ -185,6 +188,13 @@ class drawingSettingsWidget(QWidget):
         COLOR_SIZE = 40
 
         text = "QPushButton:flat {background-color: rgb(255,255,255); border: 1px ;}"
+        self.btn_label_color = QPushButton()
+        self.btn_label_color.setFlat(True)
+        self.btn_label_color.setStyleSheet(text)
+        self.btn_label_color.setAutoFillBackground(True)
+        self.btn_label_color.setFixedWidth(COLOR_SIZE)
+        self.btn_label_color.setFixedHeight(COLOR_SIZE)
+
         self.btn_border_color = QPushButton()
         self.btn_border_color.setFlat(True)
         self.btn_border_color.setStyleSheet(text)
@@ -225,6 +235,10 @@ class drawingSettingsWidget(QWidget):
         self.spinbox_workingarea_width.setRange(2, 6)
         self.spinbox_workingarea_width.setValue(3)
 
+        layout_H7 = QHBoxLayout()
+        layout_H7.addWidget(self.lbl_label_color)
+        layout_H7.addWidget(self.btn_label_color)
+
         layout_H1 = QHBoxLayout()
         layout_H1.addWidget(self.lbl_border_color)
         layout_H1.addWidget(self.btn_border_color)
@@ -250,6 +264,7 @@ class drawingSettingsWidget(QWidget):
         layout_H6.addWidget(self.spinbox_workingarea_width)
 
         layout_V1 = QVBoxLayout()
+        layout_V1.addLayout(layout_H7)
         layout_V1.addLayout(layout_H1)
         layout_V1.addLayout(layout_H2)
         layout_V1.addLayout(layout_H3)
@@ -273,6 +288,7 @@ class drawingSettingsWidget(QWidget):
         self.spinbox_selection_width.valueChanged.connect(self.selectionWidthChanged)
         self.btn_workingarea_color.clicked.connect(self.chooseWorkingAreaColor)
         self.spinbox_workingarea_width.valueChanged.connect(self.workingAreaWidthChanged)
+        self.btn_label_color.clicked.connect(self.chooseLabelColor)
 
     @pyqtSlot()
     def chooseBorderColor(self):
@@ -300,6 +316,15 @@ class drawingSettingsWidget(QWidget):
         # convert to string RR-GG-BB
         newcolor = "{:d}-{:d}-{:d}".format(color.red(), color.green(), color.blue())
         self.setWorkingAreaColor(newcolor)
+
+    @pyqtSlot()
+    def chooseLabelColor(self):
+
+        color = QColorDialog.getColor()
+
+        # convert to string RR-GG-BB
+        newcolor = "{:d}-{:d}-{:d}".format(color.red(), color.green(), color.blue())
+        self.setLabelColor(newcolor)
 
     @pyqtSlot(int)
     def borderWidthChanged(self, value):
@@ -409,6 +434,25 @@ class drawingSettingsWidget(QWidget):
 
         return self.spinbox_workingarea_width.value()
 
+    def setLabelColor(self, color):
+
+        color_components = color.split("-")
+        if len(color_components) > 2:
+            r = color_components[0]
+            g = color_components[1]
+            b = color_components[2]
+            text = "QPushButton:flat {background-color: rgb(" + r + "," + g + "," + b + "); border: none ;}"
+            self.btn_label_color.setStyleSheet(text)
+            self.label_pen_color = color
+
+            self.settings.setValue("label-pen-color", self.label_pen_color)
+
+            self.labelPenChanged.emit(self.label_pen_color)
+
+    def labelColor(self):
+
+        return self.label_pen_color
+
 
 class QtSettingsWidget(QWidget):
 
@@ -489,6 +533,7 @@ class QtSettingsWidget(QWidget):
         self.border_pen_width = self.settings.value("border-pen-width", defaultValue=2, type=int)
         self.workingarea_pen_color = self.settings.value("workingarea-pen-color", defaultValue="0-255-0", type=str)
         self.workingarea_pen_width = self.settings.value("workingarea-pen-width", defaultValue=3, type=int)
+        self.label_pen_color = self.settings.value("label-pen-color", defaultValue="255-255-255", type=str)
 
         self.general_settings.setResearchField(self.research_field)
         self.general_settings.setAutosaveInterval(self.autosave_interval)
@@ -499,6 +544,7 @@ class QtSettingsWidget(QWidget):
         self.drawing_settings.setSelectionWidth(self.selection_pen_width)
         self.drawing_settings.setWorkingAreaColor(self.workingarea_pen_color)
         self.drawing_settings.setWorkingAreaWidth(self.workingarea_pen_width)
+        self.drawing_settings.setLabelColor(self.label_pen_color)
 
     @pyqtSlot(int)
     def display(self, i):

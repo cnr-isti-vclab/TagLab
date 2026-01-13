@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run TagLab",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/TagLab.py",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    }
+  ]
+}

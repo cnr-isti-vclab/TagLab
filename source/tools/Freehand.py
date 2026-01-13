@@ -14,6 +14,12 @@ class Freehand(Tool):
         message += "<p>SPACEBAR to apply segmentation</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
+    def activate(self):
+        self.viewerplus.showMessage(self.tool_message)
+
+    def deactivate(self):
+        self.viewerplus.clearMessage()
+
     def leftPressed(self, x, y, mods):
         if mods == Qt.ShiftModifier:
             if self.edit_points.startDrawing(x, y):

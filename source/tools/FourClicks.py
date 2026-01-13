@@ -40,6 +40,12 @@ class FourClicks(Tool):
         message += "<p>When the fourth point is chosen, the segmentation will be applied</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
+    def activate(self):
+        self.viewerplus.showMessage(self.tool_message)
+
+    def deactivate(self):
+        self.viewerplus.clearMessage()
+
     def leftPressed(self, x, y, mods):
 
         points = self.pick_points.points

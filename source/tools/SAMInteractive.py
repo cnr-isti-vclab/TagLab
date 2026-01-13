@@ -89,6 +89,11 @@ class SAMInteractive(Tool):
 
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
+    def activate(self):
+        self.viewerplus.showMessage(self.tool_message)
+
+    def deactivate(self):
+        self.viewerplus.clearMessage()
 
     def setSize(self, delta):
         #increase value got from delta angle of mouse wheel
@@ -701,7 +706,8 @@ class SAMInteractive(Tool):
         self.pick_points.reset()
         self.labels = []
         self.resetWorkArea()
-        self.viewerplus.scene.addItem(self.rect_item)
+        if self.rect_item is not None:
+            self.viewerplus.scene.addItem(self.rect_item)
 
 
  #method to display the rectangle on the map

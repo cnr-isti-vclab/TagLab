@@ -30,7 +30,7 @@ class QtImageViewer(QGraphicsView):
         # local handle to the scene's current image pixmap.
         self.pixmapitem = QGraphicsPixmapItem()
         self.pixmapitem.setZValue(0)
-        self.scene.addItem(self.pixmapitem)
+        # Don't add to scene yet - will be added when pixmap is set in setImg()
 
         # OVERLAY
         self.scene_overlay = QGraphicsScene()
@@ -95,6 +95,10 @@ class QtImageViewer(QGraphicsView):
         else:
             raise RuntimeError("Argument must be a QImage.")
 
+        # Add pixmap item to scene if not already added
+        if self.pixmapitem.scene() is None:
+            self.scene.addItem(self.pixmapitem)
+        
         self.pixmapitem.setPixmap(self.pixmap)
 
         if zoomf < 0.0000001:

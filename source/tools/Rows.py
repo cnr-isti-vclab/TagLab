@@ -41,6 +41,12 @@ class Rows(Tool):
                     - SHIFT + LMB: drag on the map to set the working area<br/></p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
+    def activate(self):
+        self.viewerplus.showMessage(self.tool_message)
+
+    def deactivate(self):
+        self.viewerplus.clearMessage()
+
     def leftReleased(self, x, y):
         if self.work_area_set == True:
             return  # If the work area is already set, do nothing

@@ -53,25 +53,8 @@ class Sam(Tool):
                     - SHIFT + WHEEL to change the spacing</p>"
         message += "SPACEBAR to apply segmentation</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
-       
 
-        """
-         Sam parameters: 
-            pred_iou_thresh (float): A filtering threshold in [0,1], using the model's predicted mask quality.
-            stability_score_thresh (float): A filtering threshold in [0,1], using the stability of the mask under changes to the cutoff used to binarize  the model's mask predictions.
-            stability_score_offset (float): The amount to shift the cutoff when calculated the stability score.
-            box_nms_thresh (float): The box IoU cutoff used by non-maximal suppression to filter duplicate masks.
-            
-        IDEA: SE ZOOM LEVEL 0 ALLORA FA TUTTA IMMAGINE 
-              SE ZOOM LEVEL E' X >>  1024 AVVISA CHE è GROSSA
-              SE ZOMM LEVEL +- 1024 allora prende 1024
-              se zoom level << 1024 sovracampiona a 1024 (lo fa lui già mi sA) E CONTA 
-            
-        
-        """
-
-        #add working area
-         # User defined points
+        # User defined points
         self.pick_points = pick_points
 
         self.work_area_item = None
@@ -93,6 +76,29 @@ class Sam(Tool):
         self.sam_net = None
         self.device = None
         self.created_blobs = []
+
+    def activate(self):
+        self.viewerplus.showMessage(self.tool_message)
+
+    def deactivate(self):
+        self.viewerplus.clearMessage()
+
+    def handlemouseMove(self, x, y):
+        """
+         Sam parameters: 
+            pred_iou_thresh (float): A filtering threshold in [0,1], using the model's predicted mask quality.
+            stability_score_thresh (float): A filtering threshold in [0,1], using the stability of the mask under changes to the cutoff used to binarize  the model's mask predictions.
+            stability_score_offset (float): The amount to shift the cutoff when calculated the stability score.
+            box_nms_thresh (float): The box IoU cutoff used by non-maximal suppression to filter duplicate masks.
+            
+        IDEA: SE ZOOM LEVEL 0 ALLORA FA TUTTA IMMAGINE 
+              SE ZOOM LEVEL E' X >>  1024 AVVISA CHE è GROSSA
+              SE ZOMM LEVEL +- 1024 allora prende 1024
+              se zoom level << 1024 sovracampiona a 1024 (lo fa lui già mi sA) E CONTA 
+            
+        
+        """
+        #add working area
 
     
     def setWorkArea(self):
@@ -175,7 +181,13 @@ class Sam(Tool):
             self.num_points = 64
 
         # Get the updated number of points
-        x_pts, y_pts = build_all_layer_point_grids(self.num_points, 0, 1)[0].T
+        points_tensor = build_all_layer_point_grids(self.num_points, 0, 1)[0]
+        
+        # Ensure tensors are on CPU for coordinate calculations
+        if hasattr(points_tensor, 'cpu'):
+            points_tensor = points_tensor.cpu()
+        
+        x_pts, y_pts = points_tensor.T
 
         left = self.work_area_item.left()
         top = self.work_area_item.top()
@@ -235,14 +247,17 @@ class Sam(Tool):
             network_name = os.path.join(models_dir, sam_checkpoint)
 
             if not torch.cuda.is_available():
-                print("CUDA NOT AVAILABLE!")
+                print("CUDA NOT AVAILABLE! Using CPU.")
                 device = torch.device("cpu")
             else:
                 device = torch.device("cuda")
+                print(f"CUDA available! Using GPU: {torch.cuda.get_device_name()}")
 
             self.device = device
             self.sam_net = sam_model_registry[model_type](checkpoint=network_name)
             self.sam_net.to(device=self.device)
+            
+            print(f"SAM model loaded on device: {self.device}")
 
         return True       
 
@@ -284,17 +299,22 @@ class Sam(Tool):
 
     def reset(self):
 
-        torch.cuda.empty_cache()
+        # Clean up GPU memory properly
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        
         if self.sam_net is not None:
             del self.sam_net
             self.sam_net = None
+            self.device = None
         
         self.image_cropped = None
 
         self.work_area_set = False
         self.work_area_item = None
-        self.viewerplus.scene.removeItem(self.work_area_rect)
-        self.work_area_rect = None
+        if self.work_area_rect is not None:
+            self.viewerplus.scene.removeItem(self.work_area_rect)
+            self.work_area_rect = None
         
         if self.shadow_item is not None:
             self.viewerplus.scene.removeItem(self.shadow_item)
@@ -302,7 +322,8 @@ class Sam(Tool):
         
         self.pick_points.reset()
 
-        self.viewerplus.scene.addItem(self.rect_item)
+        if self.rect_item is not None:
+            self.viewerplus.scene.addItem(self.rect_item)
         
     def handlemouseMove(self, x, y, mods=None):
         # print(f"Mouse moved to ({x}, {y})")

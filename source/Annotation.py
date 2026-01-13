@@ -608,13 +608,12 @@ class Annotation(object):
         """
         Create a label map as a QImage and returns it.
         """
-
-        # create a black canvas of the same size of your map
+        # create a transparent canvas of the same size of your map
         w = size.width()
         h = size.height()
 
         imagebox = [0, 0, h, w]
-        image = np.zeros([h, w, 3], np.uint8)
+        image = np.zeros([h, w, 4], np.uint8)  # 4 channels for RGBA
 
         for i, blob in enumerate(self.seg_blobs):
 
@@ -623,9 +622,10 @@ class Annotation(object):
                     continue
 
             if blob.class_name == "Empty":
-                rgb = [255, 255, 255]
+                rgba = [255, 255, 255, 255]
             else:
                 rgb = labels_dictionary[blob.class_name].fill
+                rgba = [rgb[0], rgb[1], rgb[2], 255]  # Add full opacity
 
             mask = blob.getMask().astype(bool)  # bool is required for bitmask indexing
             box = blob.bbox.copy()  # blob.bbox is top, left, width, height
@@ -638,17 +638,17 @@ class Annotation(object):
                        range[1] - imagebox[1]:range[3] - imagebox[1]]
             submask = mask[range[0] - box[0]:range[2] - box[0], range[1] - box[1]:range[3] - box[1]]
 
-            # use the binary mask to assign a color
-            subimage[submask] = rgb
+            # use the binary mask to assign a color with full opacity
+            subimage[submask] = rgba
 
             # create 1px border: dilate then subtract the mask.
             border = binary_dilation(submask) & ~submask
 
             # select only the border over blobs of the same color and draw the border
-            samecolor = np.all(subimage == rgb, axis=-1)
-            subimage[border & samecolor] = [0, 0, 0]
+            samecolor = np.all(subimage[:, :, :3] == rgba[:3], axis=-1)
+            subimage[border & samecolor] = [0, 0, 0, 255]  # Black border with full opacity
 
-        labelimg = genutils.rgbToQImage(image)
+        labelimg = genutils.rgbaToQImage(image)
 
         if working_area is not None:
             # FIXME: this is inefficient! The working_area should be used during the drawing.

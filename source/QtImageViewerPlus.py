@@ -37,6 +37,7 @@ from source.Label import Label
 import source.Mask as Mask
 
 from source.QtImageViewer import QtImageViewer
+from source.QtToolMessagePanel import QtToolMessagePanel
 
 from source.genutils import distance_point_AABB
 
@@ -144,6 +145,10 @@ class QtImageViewerPlus(QtImageViewer):
         self.tools = Tools(self)
         self.tools.createTools()
 
+        # Message panel for tool instructions and status
+        self.toolsMessagePanel = QtToolMessagePanel(self)
+        self.toolsMessagePanel.hide()
+
         self.undo_data = Undo()
 
         self.dragSelectionStart = None
@@ -190,6 +195,8 @@ class QtImageViewerPlus(QtImageViewer):
         self.sampling_area_pen_selected = QPen(Qt.white, 2)
         self.sampling_area_pen_selected.setCosmetic(True)
 
+        self.label_pen_color = Qt.white
+
         self.showCrossair = False
         self.mouseCoords = QPointF(0.0, 0.0)
         self.crackWidget = None
@@ -220,6 +227,23 @@ class QtImageViewerPlus(QtImageViewer):
 
         # tools - additional initialization
         self.tools.tools["SELECTAREA"].setWorkingAreaStyle(self.working_area_pen)
+
+    def showMessage(self, text, status='info', timeout=None):
+        """Show a message in the integrated message panel."""
+        self.toolsMessagePanel.showMessage(text, status, timeout)
+        self.toolsMessagePanel.updatePosition()
+
+    def updateMessage(self, text):
+        """Update the current message text."""
+        self.toolsMessagePanel.updateMessage(text)
+
+    def clearMessage(self):
+        """Clear and hide the message panel."""
+        self.toolsMessagePanel.clear()
+
+    def updateMessagePanelPosition(self):
+        """Position the message panel (delegates to panel's updatePosition)."""
+        self.toolsMessagePanel.updatePosition()
 
     def setProject(self, project):
 
@@ -465,6 +489,14 @@ class QtImageViewerPlus(QtImageViewer):
         else:
             self.showGrid()
 
+    @pyqtSlot(int)
+    def toggleImage(self, checked):
+        """
+        Toggle the visibility of the base image.
+        """
+        if self.pixmapitem is not None:
+            self.pixmapitem.setVisible(checked != 0)
+
     def enableFill(self):
 
         for blob in self.annotations.seg_blobs:
@@ -640,7 +672,7 @@ class QtImageViewerPlus(QtImageViewer):
         annpoint.id_item = TextItem(str(annpoint.id), QFont("Roboto", font_size, QFont.Bold))
         annpoint.id_item.setPos(annpoint.coordx+ 20, annpoint.coordy+ 20)
         annpoint.id_item.setZValue(2)
-        annpoint.id_item.setBrush(Qt.white)
+        annpoint.id_item.setBrush(QBrush(self.label_pen_color))
         #
         if annpoint in self.selected_annpoints:
             annpoint.id_item.setOpacity(1.0)
@@ -728,7 +760,7 @@ class QtImageViewerPlus(QtImageViewer):
         blob.id_item.setPos(blob.centroid[0], blob.centroid[1])
         blob.id_item.setTransformOriginPoint(QPointF(blob.centroid[0] + 14.0, blob.centroid[1] + 14.0))
         blob.id_item.setZValue(2)
-        blob.id_item.setBrush(Qt.white)
+        blob.id_item.setBrush(QBrush(self.label_pen_color))
 
         if blob in self.selected_blobs:
             blob.id_item.setOpacity(1.0)
@@ -807,9 +839,6 @@ class QtImageViewerPlus(QtImageViewer):
         QApplication.setOverrideCursor(Qt.ArrowCursor)
 
         self.tools.setTool(tool)
-
-        #calls the toolMessage method to show the tool message window        
-        self.tools.toolMessage()
 
         if tool in ["FREEHAND", "RULER", "FOURCLICKS", "PLACEANNPOINT", "ASSIGN"] or (tool in ["CUT", "EDITBORDER", "RITM"] and len(self.selected_blobs) > 1):
             self.resetSelection()
@@ -935,6 +964,9 @@ class QtImageViewerPlus(QtImageViewer):
         It returns the sampling area closest to the given point.
         If the distance of the point is higher than a threshold None is returned.
         """
+
+        if self.image is None:
+            return None
 
         dist_min = 1000000.0
         for sampling_area in self.image.sampling_areas:
@@ -1294,6 +1326,26 @@ class QtImageViewerPlus(QtImageViewer):
 
             if self.working_area_rect is not None:
                 self.working_area_rect.setPen(self.working_area_pen)
+
+    @pyqtSlot(str)
+    def setLabelPen(self, color):
+
+        color_components = color.split("-")
+        if len(color_components) > 2:
+            r = int(color_components[0])
+            g = int(color_components[1])
+            b = int(color_components[2])
+            self.label_pen_color = QColor(r, g, b)
+
+            # Update all existing blob labels
+            for blob in self.annotations.seg_blobs:
+                if blob.id_item is not None:
+                    blob.id_item.setBrush(QBrush(self.label_pen_color))
+
+            # Update all existing point labels
+            for annpoint in self.annotations.annpoints:
+                if annpoint.id_item is not None:
+                    annpoint.id_item.setBrush(QBrush(self.label_pen_color))
 
     def setBlobVisible(self, blob, visibility):
 
@@ -1798,6 +1850,7 @@ class QtImageViewerPlus(QtImageViewer):
             self.ZOOM_FACTOR_MIN = min(1.0 * self.width() / self.imgwidth, 1.0 * self.height() / self.imgheight)
         self.updateScaleBar(self.zoom_factor)
         self.updateViewer()
+        self.updateMessagePanelPosition()
         event.accept()
 
 

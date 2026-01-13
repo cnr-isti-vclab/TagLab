@@ -31,8 +31,7 @@ if importlib.util.find_spec("segment_anything"):
     from source.tools.SAMInteractive import SAMInteractive
 
 # class Tools(object):
-class Tools(QObject):    
-    tool_mess = pyqtSignal(str)
+class Tools(QObject):
     
     def __init__(self, viewerplus):
         
@@ -89,8 +88,16 @@ class Tools(QObject):
 
 
     def setTool(self, tool):
+        # Deactivate the current tool before switching
+        if self.tool in self.tools:
+            self.tools[self.tool].deactivate()
+        
         self.resetTools()      
         self.tool = tool
+        
+        # Activate the new tool
+        if self.tool in self.tools:
+            self.tools[self.tool].activate()
 
 
     def resetTools(self):
@@ -150,17 +157,6 @@ class Tools(QObject):
             self.tools["RITM"].enable(True)
     def disableRITM(self):
             self.tools["RITM"].enable(False)
-      
-
-    #method to select tools for tool message window      
-    def toolMessage(self):
-        if self.tool == "WATERSHED" or self.tool == "SAM" or self.tool == "RITM"\
-              or self.tool == "FREEHAND" or self.tool == "BRICKS" or self.tool == "FOURCLICKS" or\
-              self.tool == "EDITBORDER" or self.tool == "CUT" or self.tool == "ASSIGN" or\
-              self.tool == "SAMINTERACTIVE" or self.tool == "ROWS":
-            self.tool_mess.emit(self.tools[self.tool].tool_message)
-        else:
-            self.tool_mess.emit(None)
             
     def leftPressed(self, x, y, mods=None):
         if self.tool == "MOVE":

@@ -1,10 +1,9 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialog, QFileDialog, QVBoxLayout, QHBoxLayout, QComboBox, QCheckBox, QLabel, QPushButton, QSpinBox, QMessageBox
-import ezdxf
-from ezdxf.enums import TextEntityAlignment
-from ezdxf.entities import Layer
+import xml.etree.ElementTree as ET
+from xml.dom import minidom
 
-class QtDXFExport(QDialog):  # Change QWidget to QDialog
+class QtSVGExport(QDialog):
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -26,7 +25,7 @@ class QtDXFExport(QDialog):  # Change QWidget to QDialog
         # ###############################################################
 
         # GUI ###########################################################
-        self.setWindowTitle("DXF Export Options")
+        self.setWindowTitle("SVG Export Options")
         self.adjustSize()
         self.setSizeGripEnabled(True)
 
@@ -86,16 +85,16 @@ class QtDXFExport(QDialog):  # Change QWidget to QDialog
         elements_label = QLabel("Reference Elements:")
         elements_layout.addWidget(elements_label)
         self.workspace_checkbox = QCheckBox("Image Workspace")
-        self.workspace_checkbox.setToolTip("Export the image workspace as a rectangle in the DXF file.")
+        self.workspace_checkbox.setToolTip("Export the image workspace as a rectangle in the SVG file.")
         self.workspace_checkbox.setChecked(self.options["export_workspace"])
         elements_layout.addWidget(self.workspace_checkbox)
         self.workingarea_checkbox = QCheckBox("Working Area")
-        self.workingarea_checkbox.setToolTip("Export the working area as a rectangle in the DXF file.")
+        self.workingarea_checkbox.setToolTip("Export the working area as a rectangle in the SVG file.")
         self.workingarea_checkbox.setChecked(self.options["export_workingarea"])
         self.workingarea_checkbox.setEnabled(False)  # Initially greyed out
         elements_layout.addWidget(self.workingarea_checkbox)
         self.grid_checkbox = QCheckBox("Grid")
-        self.grid_checkbox.setToolTip("Export the grid as lines in the DXF file.")
+        self.grid_checkbox.setToolTip("Export the grid as lines in the SVG file.")
         self.grid_checkbox.setChecked(self.options["export_grid"])
         self.grid_checkbox.setEnabled(False)  # Initially greyed out        
         elements_layout.addWidget(self.grid_checkbox)
@@ -154,35 +153,67 @@ class QtDXFExport(QDialog):  # Change QWidget to QDialog
         self.options["use_georef"] = self.georef_checkbox.isChecked()
 
         super().accept()    # Call the base class accept method to close the dialog
-        # Proceed with DXF export
-        self.export_dxf()
+        # Proceed with SVG export
+        self.export_svg()
 
 
-    # Function to perform the DXF export based on selected options
-    def export_dxf(self):
+    def rgb_to_hex(self, rgb):
+        """Convert RGB list/tuple to hex color string."""
+        return '#%02x%02x%02x' % tuple(rgb)
+
+
+    # Function to perform the SVG export based on selected options
+    def export_svg(self):
         # Open a file dialog to select the output file
-        filters = "DXF (*.dxf)"
-        output_filename, _ = QFileDialog.getSaveFileName(self, "Save DXF File As", self.taglab_dir, filters)
+        filters = "SVG (*.svg)"
+        output_filename, _ = QFileDialog.getSaveFileName(self, "Save SVG File As", self.taglab_dir, filters)
         if not output_filename: return # no file selected, abort
-        if not output_filename.lower().endswith('.dxf'):
-            output_filename += '.dxf'
+        if not output_filename.lower().endswith('.svg'):
+            output_filename += '.svg'
         
-        # Create a new DXF document
-        doc = ezdxf.new()
-        msp = doc.modelspace()
-        # Remove the default "defpoints" layer if it exists, as we are not using it
-        if doc.layers.has_entry("defpoints"):
-            doc.layers.remove("defpoints")
-
         georef = None # Initialize georef to None
+        transform = None
         text_height_scale = 1.0 # Default text height scale
 
         try:
             # Check if georeferencing information is available and process accordingly
-
             if self.options["use_georef"] and hasattr(self.activeviewer.image, 'georef_filename') and self.activeviewer.image.georef_filename:
+                from source import rasterops
                 georef, transform = rasterops.load_georef(self.activeviewer.image.georef_filename)
                 text_height_scale = max(abs(transform.a), abs(transform.e))
+
+            # Determine SVG dimensions
+            if georef and transform:
+                # Calculate transformed bounds
+                corners = [
+                    transform * (0, 0),
+                    transform * (self.activeviewer.image.width, 0),
+                    transform * (self.activeviewer.image.width, self.activeviewer.image.height),
+                    transform * (0, self.activeviewer.image.height)
+                ]
+                min_x = min(c[0] for c in corners)
+                max_x = max(c[0] for c in corners)
+                min_y = min(c[1] for c in corners)
+                max_y = max(c[1] for c in corners)
+                viewbox_width = max_x - min_x
+                viewbox_height = max_y - min_y
+                viewbox = f"{min_x} {min_y} {viewbox_width} {viewbox_height}"
+            else:
+                viewbox_width = self.activeviewer.image.width
+                viewbox_height = self.activeviewer.image.height
+                viewbox = f"0 0 {viewbox_width} {viewbox_height}"
+
+            # Create SVG root element
+            svg = ET.Element('svg', {
+                'xmlns': 'http://www.w3.org/2000/svg',
+                'version': '1.1',
+                'viewBox': viewbox,
+                'width': str(viewbox_width),
+                'height': str(viewbox_height)
+            })
+            
+            # Dictionary to hold class-specific layers
+            class_layers = {}
 
             # Determine which blobs to export
             if self.options["export_regions"] == 0:  # All Regions
@@ -195,70 +226,53 @@ class QtDXFExport(QDialog):  # Change QWidget to QDialog
             elif self.options["export_regions"] == 2:  # Selected Regions
                 exported_blobs = self.activeviewer.selected_blobs
 
-            # Add workspace outline if selected
-            if self.options["export_workspace"]:
-                map_outline = [
-                    (0, 0),
-                    (self.activeviewer.image.width, 0),
-                    (self.activeviewer.image.width, self.activeviewer.image.height),
-                    (0, self.activeviewer.image.height),
-                    (0, 0)
-                ]
-                if georef:
-                    map_outline = [transform * (x, y) for x, y in map_outline]
-                msp.add_lwpolyline(
-                    map_outline,
-                    close=True,
-                    dxfattribs={'layer': '0', 'linetype': 'SOLID', 'color': 7, 'lineweight': 3}
-                )
-            # Add working area outline if selected
-            if self.options["export_workingarea"] and self.project.working_area is not None:
-                map_outline = [
-                    (self.project.working_area[1], self.project.working_area[0]),
-                    (self.project.working_area[1] + self.project.working_area[2], self.project.working_area[0]),
-                    (self.project.working_area[1] + self.project.working_area[2], self.project.working_area[0] + self.project.working_area[3]),
-                    (self.project.working_area[1], self.project.working_area[0] + self.project.working_area[3]),
-                    (self.project.working_area[1], self.project.working_area[0])
-                ]
-                if georef:
-                    map_outline = [transform * (x, y) for x, y in map_outline]
-                else:
-                    map_outline = [(x, self.activeviewer.image.height - y) for x, y in map_outline] # Invert Y-axis
-                msp.add_lwpolyline(
-                    map_outline,
-                    close=True,
-                    dxfattribs={'layer': '0', 'linetype': 'DASHED', 'color': 3, 'lineweight': 3 }
-                )
-
             # Add blobs
             for blob in exported_blobs:
                 layer_name = blob.class_name
                 col = self.project.labels[blob.class_name].fill
-                color_code = ezdxf.colors.rgb2int(col)
+                color_hex = self.rgb_to_hex(col)
 
-                if not doc.layers.has_entry(layer_name):
-                    doc.layers.new(name=layer_name, dxfattribs={'true_color': color_code})
+                # Create class layer if it doesn't exist
+                if layer_name not in class_layers:
+                    class_layers[layer_name] = ET.SubElement(svg, 'g', {'id': layer_name})
+                
+                # Create a group for this blob with region_XXX naming
+                blob_group = ET.SubElement(class_layers[layer_name], 'g', {
+                    'id': f'region_{blob.id}'
+                })
 
-                if georef:
+                if georef and transform:
                     points = [transform * (x, y) for x, y in blob.contour]
                 else:
-                    points = [(x, self.activeviewer.image.height - y) for x, y in blob.contour] # Invert Y-axis
+                    points = list(blob.contour)
 
-                if points:
-                    msp.add_lwpolyline(
-                        points,
-                        close=True,
-                        dxfattribs={'layer': layer_name}
-                    )
+                if len(points) > 0:
+                    points_str = ' '.join([f"{x},{y}" for x, y in points])
+                    ET.SubElement(blob_group, 'polygon', {
+                        'id': f'region_{blob.id}',
+                        'points': points_str,
+                        'fill': color_hex,
+                        'fill-opacity': '0.6',
+                        'stroke': color_hex,
+                        'stroke-width': '2'
+                    })
 
-                for inner_contour in blob.inner_contours:
-                    if georef:
+                # Add inner contours (holes)
+                for hole_idx, inner_contour in enumerate(blob.inner_contours):
+                    if georef and transform:
                         inner_points = [transform * (x, y) for x, y in inner_contour]
                     else:
-                        inner_points = [(x, self.activeviewer.image.height - y) for x, y in inner_contour] # Invert Y-axis
+                        inner_points = list(inner_contour)
 
-                    if inner_points:
-                        msp.add_lwpolyline(inner_points, close=True, dxfattribs={'layer': layer_name})
+                    if len(inner_points) > 0:
+                        inner_points_str = ' '.join([f"{x},{y}" for x, y in inner_points])
+                        ET.SubElement(blob_group, 'polygon', {
+                            'id': f'region_{blob.id}_hole_{hole_idx}',
+                            'points': inner_points_str,
+                            'fill': 'white',
+                            'stroke': color_hex,
+                            'stroke-width': '2'
+                        })
 
                 # Add labels if selected
                 if self.options["export_labels"] > 0:
@@ -272,24 +286,70 @@ class QtDXFExport(QDialog):  # Change QWidget to QDialog
                         label = blob.id
                         
                     x, y = blob.centroid
-                    if georef:
+                    if georef and transform:
                         x, y = transform * (x, y)
-                    else:
-                        y = self.activeviewer.image.height - y # Invert Y-axis
-                    msp.add_text(
-                        label, height=text_height_scale * 22.0,
-                        dxfattribs={'layer': layer_name}
-                    ).set_placement((x, y), align=TextEntityAlignment.MIDDLE_CENTER)
+                    
+                    text_elem = ET.SubElement(blob_group, 'text', {
+                        'id': f'label_{blob.id}',
+                        'x': str(x),
+                        'y': str(y),
+                        'text-anchor': 'middle',
+                        'dominant-baseline': 'middle',
+                        'font-size': str(text_height_scale * 22.0),
+                        'fill': '#000000',
+                        'stroke': '#ffffff',
+                        'stroke-width': '0.5'
+                    })
+                    text_elem.text = str(label)
+
+            # Add layer 0 for reference elements (workspace, working area, grid) - added last so it renders on top
+            layer_0 = ET.SubElement(svg, 'g', {'id': 'layer_0'})
+
+            # Add workspace outline if selected
+            if self.options["export_workspace"]:
+                map_outline = [
+                    (0, 0),
+                    (self.activeviewer.image.width, 0),
+                    (self.activeviewer.image.width, self.activeviewer.image.height),
+                    (0, self.activeviewer.image.height)
+                ]
+                if georef and transform:
+                    map_outline = [transform * (x, y) for x, y in map_outline]
+                
+                points_str = ' '.join([f"{x},{y}" for x, y in map_outline])
+                ET.SubElement(layer_0, 'polygon', {
+                    'id': 'workspace',
+                    'points': points_str,
+                    'fill': 'none',
+                    'stroke': '#888888',
+                    'stroke-width': '3'
+                })
+
+            # Add working area outline if selected
+            if self.options["export_workingarea"] and self.project.working_area is not None:
+                map_outline = [
+                    (self.project.working_area[1], self.project.working_area[0]),
+                    (self.project.working_area[1] + self.project.working_area[2], self.project.working_area[0]),
+                    (self.project.working_area[1] + self.project.working_area[2], self.project.working_area[0] + self.project.working_area[3]),
+                    (self.project.working_area[1], self.project.working_area[0] + self.project.working_area[3])
+                ]
+                if georef and transform:
+                    map_outline = [transform * (x, y) for x, y in map_outline]
+                
+                points_str = ' '.join([f"{x},{y}" for x, y in map_outline])
+                ET.SubElement(layer_0, 'polygon', {
+                    'id': 'working_area',
+                    'points': points_str,
+                    'fill': 'none',
+                    'stroke': '#00ff00',
+                    'stroke-width': '3',
+                    'stroke-dasharray': '10,5'
+                })
 
             # Add grid if selected
             if self.options["export_grid"]:
                 if self.activeviewer.image.grid is not None:
                     grid = self.activeviewer.image.grid
-                    grid_layer_name = "Grid"
-                    
-                    # Create a new layer for the grid if it doesn't exist
-                    if not doc.layers.has_entry(grid_layer_name):
-                        doc.layers.new(name=grid_layer_name, dxfattribs={'color': 8})  # light gray color for the grid
                     
                     # Get grid dimensions
                     cell_width = grid.width / grid.ncol
@@ -305,53 +365,64 @@ class QtDXFExport(QDialog):  # Change QWidget to QDialog
                                 x2 = x1 + cell_width
                                 y2 = y1 + cell_height
 
-                                if georef:
-                                    # Transform the coordinates if georeferenced
+                                if georef and transform:
                                     p1 = transform * (x1, y1)
                                     p2 = transform * (x2, y1)
                                     p3 = transform * (x2, y2)
                                     p4 = transform * (x1, y2)
                                 else:
-                                    # Invert Y-axis if not georeferenced
-                                    height = self.activeviewer.image.height
-                                    p1 = (x1, height - y1)
-                                    p2 = (x2, height - y1)
-                                    p3 = (x2, height - y2)
-                                    p4 = (x1, height - y2)
+                                    p1 = (x1, y1)
+                                    p2 = (x2, y1)
+                                    p3 = (x2, y2)
+                                    p4 = (x1, y2)
 
-                                # Add the cell as a polyline
-                                msp.add_lwpolyline(
-                                    [p1, p2, p3, p4, p1],  # Close the polyline
-                                    close=True,
-                                    dxfattribs={'layer': grid_layer_name}
-                                )
+                                points_str = f"{p1[0]},{p1[1]} {p2[0]},{p2[1]} {p3[0]},{p3[1]} {p4[0]},{p4[1]}"
+                                ET.SubElement(layer_0, 'polygon', {
+                                    'id': f'grid_cell_{r}_{c}',
+                                    'points': points_str,
+                                    'fill': 'none',
+                                    'stroke': '#cccccc',
+                                    'stroke-width': '1'
+                                })
 
-                    # Add notes to the DXF file
-                    for note in grid.notes:
+                    # Add notes to the SVG file
+                    for idx, note in enumerate(grid.notes):
                         x, y, text = note["x"], note["y"], note["txt"]
-                        if georef:
+                        if georef and transform:
                             x, y = transform * (x, y)
-                        else:
-                            y = self.activeviewer.image.height - y
-                        msp.add_text(
-                            text, height=10.0,  # Adjust text height as needed
-                            dxfattribs={'layer': grid_layer_name}
-                        ).set_placement((x, y), align=TextEntityAlignment.MIDDLE_CENTER)
-                    
-            # Save the DXF file
-            doc.saveas(output_filename)
+                        
+                        text_elem = ET.SubElement(layer_0, 'text', {
+                            'id': f'grid_note_{idx}',
+                            'x': str(x),
+                            'y': str(y),
+                            'text-anchor': 'middle',
+                            'dominant-baseline': 'middle',
+                            'font-size': '10',
+                            'fill': '#000000'
+                        })
+                        text_elem.text = text
+
+            # Convert to pretty-printed string and save
+            rough_string = ET.tostring(svg, encoding='unicode')
+            reparsed = minidom.parseString(rough_string)
+            pretty_xml = reparsed.toprettyxml(indent="  ")
+            
+            # Remove extra blank lines
+            pretty_xml = '\n'.join([line for line in pretty_xml.split('\n') if line.strip()])
+            
+            with open(output_filename, 'w', encoding='utf-8') as f:
+                f.write(pretty_xml)
 
             # Show a confirmation message box
             msgBox = QMessageBox(self)
             msgBox.setWindowTitle("Export Successful")
-            msgBox.setText("DXF file exported successfully!")
+            msgBox.setText("SVG file exported successfully!")
             msgBox.exec()
             return
 
         except Exception as e:
             msgBox = QMessageBox(self)
             msgBox.setWindowTitle("Export Failed")
-            msgBox.setText("Error exporting DXF file: " + str(e))
+            msgBox.setText("Error exporting SVG file: " + str(e))
             msgBox.exec()
             return
-    

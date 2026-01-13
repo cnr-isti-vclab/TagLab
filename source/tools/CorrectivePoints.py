@@ -39,7 +39,7 @@ class CorrectivePoints(object):
         pen = QPen(Qt.white)
         pen.setWidth(1)
         pen.setCosmetic(True)
-        point = self.scene.addEllipse(x, y, self.RADIUS, self.RADIUS, pen, brush)
+        point = self.scene.addEllipse(x-self.RADIUS/2, y-self.RADIUS/2, self.RADIUS, self.RADIUS, pen, brush)
         point.setZValue(5)
         self.markers.append(point)
 
