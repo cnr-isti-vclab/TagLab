@@ -21,12 +21,30 @@ import os
 
 from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal, QPointF
 from PyQt5.QtGui import QColor, QPen, QBrush, QPolygonF, QPainterPath
-from PyQt5.QtWidgets import QWidget, QTableWidget, QTableWidgetItem, QLabel, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout,  QCheckBox, QRadioButton, QLayout, QFileDialog, QMessageBox, QComboBox, QGraphicsPolygonItem, QGroupBox
+from PyQt5.QtWidgets import QWidget, QTableWidget, QTableWidgetItem, QLabel, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout,  QCheckBox, QRadioButton, QLayout, QFileDialog, QMessageBox, QComboBox, QGraphicsPolygonItem, QGroupBox, QDialog
 from skimage import measure
 import math
 import csv
 import cv2
 import numpy as np
+
+# Custom table widget item that sorts by numeric value stored in UserRole
+class NumericTableWidgetItem(QTableWidgetItem):
+    def __lt__(self, other):
+        # Sort by the numeric value stored in UserRole, not the display text
+        self_value = self.data(Qt.UserRole)
+        other_value = other.data(Qt.UserRole)
+        
+        # Handle cases where values might be strings (like class names)
+        if isinstance(self_value, str) or isinstance(other_value, str):
+            return str(self_value) < str(other_value)
+        
+        # For numeric values, compare them directly
+        try:
+            return float(self_value) < float(other_value)
+        except (TypeError, ValueError):
+            return str(self_value) < str(other_value)
+
 
 class QtGeometricInfoWidget(QWidget):
 
@@ -35,23 +53,28 @@ class QtGeometricInfoWidget(QWidget):
         "class": {"name": "Class of region",
                 "label": "CLASS",
                 "calculable": False,
-                "round": 0},
+                "round": 0,
+                "attribute" : False},
         "centroidX": {"name": "Centroid, X coordinate (mm)",
                  "label": "CENTROID\nX",
                  "calculable": True,
-                 "round": 2},
+                 "round": 1,
+                 "attribute" : False},
         "centroidY": {"name": "Centroid, Y coordinate (mm)",
                  "label": "CENTROID\nY",
                  "calculable": True,
-                 "round": 2},
+                 "round": 1,
+                 "attribute" : False},
         "area": {"name": "Area of region (mm2)",
                  "label": "AREA",
                  "calculable": True,
-                 "round": 1},
+                 "round": 1,
+                 "attribute" : False},
         "perimeter": {"name": "Perimeter of region (mm)",
                       "label": "PERIMETER",
                       "calculable": True,
-                      "round": 1},
+                      "round": 1,
+                      "attribute" : False},
         #"solidity": {"name": "Solidity",        # solidity is a derived measuree, it is area/area_convex, so it could be computed later
         #             "label": "SOLIDITY",       # if I change my mind, I'll add it back in another set of derived properties
         #             "calculable": True,
@@ -60,54 +83,66 @@ class QtGeometricInfoWidget(QWidget):
         "areaConvex": {"name": "Area of Convex Hull (mm2)",
                        "label": "CONVEX\nAREA",
                        "calculable": True,
-                       "round": 1},
+                       "round": 1,
+                       "attribute" : True},
 
         "areaBBox": {"name": "Area of Axis-Aligned\nBounding Box (mm2)",
                     "label": "BBOX\nAREA",
                     "calculable": True,
-                    "round": 1},
+                    "round": 1,
+                    "attribute" : True},
         "widthBBox": {"name": "Horizontal size of\nAxis-Aligned Bounding Box (mm)",
                     "label": "BBOX\nWIDTH",
                     "calculable": True,
-                    "round": 1},
+                    "round": 1,
+                    "attribute" : False},
         "heightBBox": {"name": "Vertical size of\nAxis-Aligned Bounding Box (mm)",
                       "label": "BBOX\nHEIGHT",
                       "calculable": True,
-                      "round": 1},
+                      "round": 1,
+                      "attribute" : False},
 
         "areaRectangle": {"name": "Area of Minimum Rectangle (mm2)",
                           "label": "RECTANGLE\nAREA",
                           "calculable": True,
-                          "round": 1},
+                          "round": 1,
+                          "attribute" : False},
         "majSideRectangle": {"name": "Major Side\nof Minimum Rectangle (mm)",
                            "label": "RECTANGLE\nMAJ SIDE",
                            "calculable": True,
-                           "round": 1},
+                           "round": 1,
+                           "attribute" : True},
         "minSideRectangle": {"name": "Minor Side\nof Minimum Rectangle (mm)",
                             "label": "RECTANGLE\nMIN SIDE",
                             "calculable": True,
-                            "round": 1},
+                            "round": 1,
+                            "attribute" : True},
         "orientationRectangle": {"name": "Orientation of Minimum Rectangle\n(degrees, 0=horizontal)",
                            "label": "RECTANGLE\nORIENTATION",
                            "calculable": True,
-                           "round": 1},
+                           "round": 2,
+                           "attribute" : True},
 
         "majAxisEllipse": {"name": "Major Axis Length\nof fitted Ellipse (mm)",
                               "label": "ELLIPSE\nMAJ AXIS",
                               "calculable": True,
-                              "round": 1},
+                              "round": 1,
+                              "attribute" : True},
         "minAxisEllipse": {"name": "Minor Axis Length\nof fitted Ellipse (mm)",
                               "label": "ELLIPSE\nMIN AXIS",
                               "calculable": True,
-                              "round": 1},
+                              "round": 1,
+                              "attribute" : True},
         "orientationEllipse": {"name": "Orientation of fitted Ellipse\n(degrees, 0=horizontal)",
                         "label": "ELLIPSE\nORIENTATION",
                         "calculable": True,
-                        "round": 3},
+                        "round": 2,
+                        "attribute" : True},
         "eccentricityEllipse": {"name": "Eccentricity of fitted Ellipse\n(0=round, 1=elongated)",
                          "label": "ELLIPSE\nECCENTRICITY",
                          "calculable": True,
-                         "round": 3},
+                         "round": 3,
+                         "attribute" : True},
     }
 
 
@@ -127,6 +162,7 @@ class QtGeometricInfoWidget(QWidget):
         self.fittedRectangleEntities = []
         self.fittedEllipseEntities = []
         self.colorizedEntities = []
+        self.highlightedEntity = None  # Store the highlighted region outline
 
         # EVENTS ###########################################################
         # Connect to selectionChanged signal of the activeviewer
@@ -136,7 +172,8 @@ class QtGeometricInfoWidget(QWidget):
         self.closewidget.connect(self.close)
 
         # INTERFACE ###########################################################
-        self.setStyleSheet("background-color: rgb(40,40,40); color: white;")
+        self.setStyleSheet("background-color: rgb(40,40,40); color: white;"
+                          "QToolTip { background-color: rgb(240,240,240); color: black; border: 1px solid rgb(100,100,100); padding: 3px; }")
         mainLayout = QVBoxLayout()
 
         # add a table to show the regions and their measurements
@@ -150,7 +187,7 @@ class QtGeometricInfoWidget(QWidget):
         self.regions_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.regions_table.setSelectionMode(QTableWidget.SingleSelection)
         self.regions_table.setEditTriggers(QTableWidget.NoEditTriggers)
-        self.regions_table.setSortingEnabled(False)
+        self.regions_table.setSortingEnabled(True)
         self.regions_table.setShowGrid(True)
         self.regions_table.setAlternatingRowColors(False)
         self.regions_table.setStyleSheet("QTableWidget { background-color: rgb(50,50,50);  }"
@@ -158,6 +195,9 @@ class QtGeometricInfoWidget(QWidget):
                                         "QToolTip { background-color: rgb(80,80,80); color: white; border: 1px solid rgb(100,100,100); }"                                        
                                         "QTableWidget::item { padding: 5px; color: white;}"
                                         "QTableWidget::item:selected { background-color: rgb(50,50,120);")
+        
+        # Connect to table selection changed signal to highlight selected region
+        self.regions_table.itemSelectionChanged.connect(self.onTableSelectionChanged)
 
         mainLayout.addWidget(self.regions_table)
 
@@ -190,7 +230,7 @@ class QtGeometricInfoWidget(QWidget):
 
         # GROUP BOX for visualization controls
         visualizationGroup = QGroupBox("Visualization")
-        visualizationGroup.setStyleSheet("QGroupBox { background-color: rgb(45,45,45); color: white; border: 2px solid rgb(80,80,80); border-radius: 5px; margin-top: 10px; padding-top: 10px; font-weight: bold; } QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 5px; }")
+        visualizationGroup.setStyleSheet("QGroupBox { background-color: rgb(45,45,45); color: white; border: 2px solid rgb(80,80,80); border-radius: 5px; margin-top: 10px; padding-top: 10px; font-weight: bold; } QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 5px; } QToolTip { background-color: rgb(240,240,240); color: black; border: 1px solid rgb(100,100,100); padding: 3px; }")
         visualizationLayout = QVBoxLayout()
 
         # First row - fitted shapes buttons
@@ -241,7 +281,8 @@ class QtGeometricInfoWidget(QWidget):
         self.propertyCenterInput.setToolTip("Center value for diverging color ramp")
         self.propertyCenterInput.editingFinished.connect(self.onColorRangeChanged)
 
-        self.btnRemoveColor = QPushButton("X")
+        self.btnRemoveColor = QPushButton("🗑️")
+        self.btnRemoveColor.setMaximumWidth(40)
         self.btnRemoveColor.setToolTip("Remove colorization")
         self.btnRemoveColor.clicked.connect(self.removeColorizedEntities)
         colorize_layout1.addWidget(self.btnColorize1)
@@ -279,17 +320,31 @@ class QtGeometricInfoWidget(QWidget):
 
         # GROUP BOX for export controls
         exportGroup = QGroupBox("Export")
-        exportGroup.setStyleSheet("QGroupBox { background-color: rgb(45,45,45); color: white; border: 2px solid rgb(80,80,80); border-radius: 5px; margin-top: 10px; padding-top: 10px; font-weight: bold; } QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 5px; }")
-        exportLayout = QHBoxLayout()
+        exportGroup.setStyleSheet("QGroupBox { background-color: rgb(45,45,45); color: white; border: 2px solid rgb(80,80,80); border-radius: 5px; margin-top: 10px; padding-top: 10px; font-weight: bold; } QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 5px; } QToolTip { background-color: rgb(240,240,240); color: black; border: 1px solid rgb(100,100,100); padding: 3px; }")
+        exportLayout = QVBoxLayout()
+        
+        # First row - Export CSV
+        csv_layout = QHBoxLayout()
         self.btnExportCSV = QPushButton("Export to CSV")
         self.btnExportCSV.setToolTip("Export the data to a CSV file")
         self.btnExportCSV.clicked.connect(self.exportToCSV)
         self.cbIncludeStats = QCheckBox("Include stats")
         self.cbIncludeStats.setToolTip("Include stats in the exported CSV file")
         self.cbIncludeStats.setChecked(False)
-        exportLayout.addWidget(self.btnExportCSV)
-        exportLayout.addWidget(self.cbIncludeStats)
-        exportLayout.addStretch()
+        csv_layout.addWidget(self.btnExportCSV)
+        csv_layout.addWidget(self.cbIncludeStats)
+        csv_layout.addStretch()
+        exportLayout.addLayout(csv_layout)
+        
+        # Second row - Add as Attributes
+        attr_layout = QHBoxLayout()
+        self.btnAddAsAttributes = QPushButton("Add Geometric Measurements as Region Attributes")
+        self.btnAddAsAttributes.setToolTip("Add the computed geometric measurements as attributes to the selected regions")
+        self.btnAddAsAttributes.clicked.connect(self.showAddAttributesDialog)
+        attr_layout.addWidget(self.btnAddAsAttributes)
+        attr_layout.addStretch()
+        exportLayout.addLayout(attr_layout)
+        
         exportGroup.setLayout(exportLayout)
         mainLayout.addWidget(exportGroup)
 
@@ -309,8 +364,11 @@ class QtGeometricInfoWidget(QWidget):
         self.setMinimumWidth(1024)
         self.setMinimumHeight(600)
 
-        # compute measures  and populate the table
-        self.computeMeasures()
+        # compute measures and populate the table
+        if len(self.workingBlobs) > 0:
+            self.computeMeasures()
+        else:
+            QMessageBox.warning(self, "No Selection", "Please select at least one region before opening this widget.")
         return
 
     # close the widget
@@ -320,6 +378,7 @@ class QtGeometricInfoWidget(QWidget):
         self.removeFittedRectangles()
         self.removeFittedEllipses()
         self.removeColorizedEntities()
+        self.removeHighlight()  # Remove highlight when closing
         # emit the signal to notify the main window
         self.closewidget.emit()
         super(QtGeometricInfoWidget, self).closeEvent(event)
@@ -421,16 +480,34 @@ class QtGeometricInfoWidget(QWidget):
 
     # populate the list of regions and attributes
     def populateTable(self):
+        # Temporarily disable sorting while populating
+        self.regions_table.setSortingEnabled(False)
+        
         self.regions_table.setRowCount(len(self.workingBlobs))
         self.regions_table.setVerticalHeaderLabels(["-" for i in range(len(self.workingBlobs))])
         #fill the table with the selected blobs
         for blob in self.workingBlobs:
             row = self.workingBlobs.index(blob)
-            self.regions_table.setItem(row, 0, QTableWidgetItem(str(blob.id)))
-            self.regions_table.item(row, 0).setTextAlignment(Qt.AlignCenter)
+            # ID column
+            id_item = NumericTableWidgetItem(str(blob.id))
+            id_item.setData(Qt.UserRole, blob.id)  # Store numeric value for sorting
+            id_item.setTextAlignment(Qt.AlignCenter)
+            self.regions_table.setItem(row, 0, id_item)
+            
+            # Property columns
             for i, prop in enumerate(self.properties):
-                self.regions_table.setItem(row, i+1, QTableWidgetItem(str(self.geometricData[blob.id][prop])))
-                self.regions_table.item(row, i+1).setTextAlignment(Qt.AlignRight)
+                value = self.geometricData[blob.id][prop]
+                # Format the display text
+                if isinstance(value, (int, float)):
+                    # Format with the specified number of decimals
+                    display_text = f"{value:.{self.properties[prop]['round']}f}"
+                    prop_item = NumericTableWidgetItem(display_text)
+                    prop_item.setData(Qt.UserRole, value)  # Store numeric value for sorting
+                else:
+                    prop_item = NumericTableWidgetItem(str(value))
+                    prop_item.setData(Qt.UserRole, str(value))  # Store string for sorting
+                prop_item.setTextAlignment(Qt.AlignRight)
+                self.regions_table.setItem(row, i+1, prop_item)
 
         # TODO: each set of properties could have a different color, to help visual parsing of the table
         # colorize the columns
@@ -455,6 +532,9 @@ class QtGeometricInfoWidget(QWidget):
         # resize to fit contents
         self.regions_table.resizeColumnsToContents()
         self.stats_table.resizeColumnsToContents()
+        
+        # Re-enable sorting after populating
+        self.regions_table.setSortingEnabled(True)
         return
 
 ########################################################################################
@@ -588,6 +668,69 @@ class QtGeometricInfoWidget(QWidget):
             self.btnToggleEllipses.setText("Show Ellipses")
         return
 
+    # Handle table selection changes to highlight the corresponding region
+    @pyqtSlot()
+    def onTableSelectionChanged(self):
+        """Highlight the region corresponding to the selected table row"""
+        # Remove previous highlight
+        self.removeHighlight()
+        
+        # Get selected row
+        selected_rows = self.regions_table.selectedItems()
+        if not selected_rows:
+            return
+        
+        # Get the blob ID from the first column of the selected row
+        row = selected_rows[0].row()
+        id_item = self.regions_table.item(row, 0)
+        if not id_item:
+            return
+        
+        try:
+            blob_id = int(id_item.text())
+        except (ValueError, AttributeError):
+            return
+        
+        # Find the blob with this ID
+        blob = None
+        for b in self.workingBlobs:
+            if b.id == blob_id:
+                blob = b
+                break
+        
+        if not blob:
+            return
+        
+        try:
+            # Create a thick colored outline for the blob
+            pen = QPen(QColor(255, 255, 0))  # Yellow color
+            pen.setWidth(5)
+            pen.setCosmetic(True)
+            
+            # Create polygon from blob contour
+            points = [QPointF(x, y) for x, y in blob.contour]
+            polygon = QPolygonF(points)
+            
+            # Add to scene
+            outline_item = self.activeviewer.scene.addPolygon(polygon, pen, QBrush())
+            outline_item.setZValue(12)  # Draw on top
+            
+            self.highlightedEntity = outline_item
+        except (AttributeError, RuntimeError):
+            # Blob might have been deleted or scene no longer valid
+            pass
+    
+    # Remove the highlighted region outline
+    def removeHighlight(self):
+        """Remove the highlighted region outline from the scene"""
+        if self.highlightedEntity:
+            try:
+                self.activeviewer.scene.removeItem(self.highlightedEntity)
+            except (AttributeError, RuntimeError):
+                # Scene or item might no longer be valid
+                pass
+            self.highlightedEntity = None
+
 ########################################################################################
 # COLORIZE FUNCTIONS
 ########################################################################################
@@ -612,19 +755,30 @@ class QtGeometricInfoWidget(QWidget):
 
     # colorize the shapes by a specific property
     def colorizeByProperty(self):
+        # Check if there are working blobs
+        if not self.workingBlobs or len(self.workingBlobs) == 0:
+            return
+        
         # determine which property is selected
         selected_property = self.propertyChooserInput.currentText()
+        if not selected_property:
+            return
         
         # Get min/max from input fields, or calculate if empty
         try:
             min_value = float(self.propertyMinInput.text())
             max_value = float(self.propertyMaxInput.text())
         except (ValueError, AttributeError):
-            values = [self.geometricData[blob.id][selected_property] for blob in self.workingBlobs]
-            min_value = min(values)
-            max_value = max(values)
-            self.propertyMinInput.setText(str(min_value))
-            self.propertyMaxInput.setText(str(max_value))
+            try:
+                values = [self.geometricData[blob.id][selected_property] for blob in self.workingBlobs]
+                if not values:
+                    return
+                min_value = min(values)
+                max_value = max(values)
+                self.propertyMinInput.setText(str(min_value))
+                self.propertyMaxInput.setText(str(max_value))
+            except (KeyError, AttributeError):
+                return
         
         self.displayColorizedEntities(selected_property, min_value, max_value)
         return
@@ -761,7 +915,7 @@ class QtGeometricInfoWidget(QWidget):
             line = ["median"] + [str(self.geometricStats[prop]["median"]) for prop in self.properties]
             data.append(line)
         # add the data for each blob
-        for blob in self.activeviewer.workingBlobs:
+        for blob in self.workingBlobs:
             line = [blob.id]
             for prop in self.properties:
                 line.append(self.geometricData[blob.id][prop])
@@ -777,3 +931,114 @@ class QtGeometricInfoWidget(QWidget):
             print(f"Error writing to file: {e}")
             QMessageBox.critical(self, "Error", f"Could not write to file: {e}")
         return
+
+    # Show dialog to select which attributes to add
+    def showAddAttributesDialog(self):
+        # Create a modal dialog
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Select Attributes to Add")
+        dialog.setStyleSheet("background-color: rgb(40,40,40); color: white;")
+        dialog.setMinimumWidth(400)
+        
+        layout = QVBoxLayout()
+        
+        # Add instruction label
+        info_label = QLabel("Select the geometric measurements to add as region attributes:")
+        info_label.setWordWrap(True)
+        layout.addWidget(info_label)
+        
+        # Create checkboxes for each property that has attribute=True
+        self.attribute_checkboxes = {}
+        for prop in self.properties:
+            if self.properties[prop].get("attribute", False):
+                checkbox = QCheckBox(self.properties[prop]["name"])
+                checkbox.setChecked(True)  # Default to checked
+                self.attribute_checkboxes[prop] = checkbox
+                layout.addWidget(checkbox)
+        
+        # Add buttons
+        button_layout = QHBoxLayout()
+        btn_select_all = QPushButton("Select All")
+        btn_select_none = QPushButton("Select None")
+        btn_ok = QPushButton("OK")
+        btn_cancel = QPushButton("Cancel")
+        
+        button_layout.addWidget(btn_select_all)
+        button_layout.addWidget(btn_select_none)
+        button_layout.addStretch()
+        button_layout.addWidget(btn_ok)
+        button_layout.addWidget(btn_cancel)
+        layout.addLayout(button_layout)
+        
+        dialog.setLayout(layout)
+        
+        # Connect buttons
+        btn_select_all.clicked.connect(lambda: self.toggleAllCheckboxes(True))
+        btn_select_none.clicked.connect(lambda: self.toggleAllCheckboxes(False))
+        btn_ok.clicked.connect(dialog.accept)
+        btn_cancel.clicked.connect(dialog.reject)
+        
+        # Show dialog and process result
+        if dialog.exec_() == QDialog.Accepted:
+            self.addAttributesToRegions()
+    
+    def toggleAllCheckboxes(self, checked):
+        """Toggle all attribute checkboxes"""
+        for checkbox in self.attribute_checkboxes.values():
+            checkbox.setChecked(checked)
+    
+    def addAttributesToRegions(self):
+        """Add selected geometric measurements as attributes to regions"""
+        # Get selected attributes
+        selected_attrs = [prop for prop, checkbox in self.attribute_checkboxes.items() if checkbox.isChecked()]
+        
+        if not selected_attrs:
+            QMessageBox.information(self, "No Attributes Selected", "Please select at least one attribute to add.")
+            return
+        
+        # Get the project's region_attributes
+        project = self.activeviewer.project
+        
+        # For each selected attribute, check if it exists in the project's region_attributes
+        # If not, create it
+        attributes_added = []
+        for prop in selected_attrs:
+            if not project.region_attributes.has(prop):
+                # Create a new attribute definition
+                attr_def = {
+                    'name': prop,
+                    'type': 'decimal number',
+                    'min': None,
+                    'max': None,
+                    'keywords': []
+                }
+                project.region_attributes.data.append(attr_def)
+                attributes_added.append(prop)
+        
+        # If new attributes were added, update the UI
+        if attributes_added:
+            # Update the groupbox_blobpanel to show the new attributes
+            parent = self.parent()
+            if parent and hasattr(parent, 'groupbox_blobpanel'):
+                parent.groupbox_blobpanel.updateRegionAttributes(project.region_attributes)
+        
+        # Now add the values to each blob's data dictionary
+        for blob in self.workingBlobs:
+            for prop in selected_attrs:
+                # Get the computed value from geometricData
+                value = self.geometricData[blob.id][prop]
+                # Store it in the blob's data dictionary
+                blob.data[prop] = value
+        
+        # If there's a currently displayed blob in the info panel, refresh it
+        parent = self.parent()
+        if parent and hasattr(parent, 'blob_with_info_displayed') and parent.blob_with_info_displayed:
+            if parent.blob_with_info_displayed in self.workingBlobs:
+                parent.updatePanelInfo(parent.blob_with_info_displayed)
+        
+        # Show success message
+        msg = f"Added {len(selected_attrs)} geometric measurements to {len(self.workingBlobs)} regions."
+        if attributes_added:
+            msg += f"\n\nNew attribute definitions created: {', '.join(attributes_added)}"
+        
+        QMessageBox.information(self, "Success", msg)
