@@ -17,12 +17,14 @@
 # GNU General Public License (http://www.gnu.org/licenses/gpl.txt)
 # for more details.
 
-from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal, QPointF, QEvent, QRectF
+from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal, QPointF, QEvent, QRectF, QDir
 from PyQt5.QtGui import QColor, QPen, QBrush, QPolygonF, QPainterPath, QFont
-from PyQt5.QtWidgets import QWidget, QTableWidget, QTextEdit, QTableWidgetItem, QLabel, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout, QGroupBox, QGraphicsPathItem, QComboBox
+from PyQt5.QtWidgets import QWidget, QTableWidget, QTextEdit, QTableWidgetItem, QLabel, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout, QGroupBox, QGraphicsPathItem, QComboBox, QFileDialog, QMessageBox
 import math
 import cv2
 import numpy as np
+import json
+import os
 
 
 class QtRowAnalysis(QWidget):
@@ -138,6 +140,23 @@ class QtRowAnalysis(QWidget):
         button_layout.addStretch()
         
         controlsLayout.addLayout(button_layout)
+        
+        # Save/Restore buttons layout
+        saveload_layout = QHBoxLayout()
+        
+        self.btnSave = QPushButton("💾 Save State")
+        self.btnSave.setToolTip("Save the current rows state to a JSON file")
+        self.btnSave.clicked.connect(self.saveState)
+        
+        self.btnRestore = QPushButton("📂 Restore State")
+        self.btnRestore.setToolTip("Restore rows state from a JSON file")
+        self.btnRestore.clicked.connect(self.restoreState)
+        
+        saveload_layout.addWidget(self.btnSave)
+        saveload_layout.addWidget(self.btnRestore)
+        saveload_layout.addStretch()
+        
+        controlsLayout.addLayout(saveload_layout)
         controlsGroup.setLayout(controlsLayout)
         mainLayout.addWidget(controlsGroup)
 
@@ -1347,3 +1366,219 @@ class QtRowAnalysis(QWidget):
         
         # Log the result
         self.writeLog("Row split complete. Now {} rows total.".format(len(self.rowsData)))
+
+    ########################################################################################
+    # SAVE/RESTORE STATE FUNCTIONS
+    ########################################################################################
+    
+    @pyqtSlot()
+    def saveState(self):
+        """
+        Save the current state of rows to a JSON file.
+        """
+        if self.rowsData is None or len(self.rowsData) == 0:
+            QMessageBox.warning(self, "No Data", "No rows detected yet. Please run 'Recognize Rows' first.")
+            return
+        
+        # Get the project folder as the default directory
+        default_dir = ""
+        if hasattr(self.activeviewer, 'project') and self.activeviewer.project.filename:
+            project_file = self.activeviewer.project.filename
+            default_dir = os.path.dirname(project_file)
+        
+        # Open file dialog in the project folder
+        filters = "Row Analysis State (*.json)"
+        filename, _ = QFileDialog.getSaveFileName(self, "Save Row Analysis State", default_dir, filters)
+        
+        if not filename:
+            return
+        
+        if not filename.endswith('.json'):
+            filename += '.json'
+        
+        try:
+            # Prepare data to save
+            state_data = {
+                'version': '1.0',
+                'tolerance_params': {
+                    'y_tolerance': self.editYTolerance.text(),
+                    'ytb_tolerance': self.editYTBTolerance.text(),
+                    'height_tolerance': self.editHeightTolerance.text(),
+                    'x_gap_tolerance': self.editXGapTolerance.text()
+                },
+                'color_mode': self.colorMode,
+                'selected_blob_ids': [int(blob.id) for blob in self.workingBlobs],  # Convert to regular int
+                'rows': []
+            }
+            
+            # Save each row's data
+            for row in self.rowsData:
+                row_data = {
+                    'blob_ids': [int(blob.id) for blob in row['blobs']],  # Convert to regular int
+                    'centroid_y': float(row.get('centroid_y', row.get('y_pos', 0.0))),  # Convert to float
+                    'avg_height': float(row['avg_height']),
+                    'width': float(row['width']),
+                    'inclination_deg': float(row.get('inclination_deg', 0.0)),
+                    'inclination_rad': float(row.get('inclination_rad', 0.0)),
+                    'num_blobs': int(row['num_blobs'])
+                }
+                state_data['rows'].append(row_data)
+            
+            # Write to file
+            with open(filename, 'w') as f:
+                json.dump(state_data, f, indent=2)
+            
+            self.writeLog(f"State saved to: {os.path.basename(filename)}")
+            QMessageBox.information(self, "Success", f"Row analysis state saved successfully to:\n{filename}")
+            
+        except Exception as e:
+            self.writeLog(f"Error saving state: {str(e)}")
+            QMessageBox.critical(self, "Error", f"Failed to save state:\n{str(e)}")
+    
+    @pyqtSlot()
+    def restoreState(self):
+        """
+        Restore rows state from a JSON file.
+        """
+        # Get the project folder as the default directory
+        default_dir = ""
+        if hasattr(self.activeviewer, 'project') and self.activeviewer.project.filename:
+            project_file = self.activeviewer.project.filename
+            default_dir = os.path.dirname(project_file)
+        
+        # Open file dialog
+        filters = "Row Analysis State (*.json)"
+        filename, _ = QFileDialog.getOpenFileName(self, "Restore Row Analysis State", default_dir, filters)
+        
+        if not filename:
+            return
+        
+        try:
+            # Read from file
+            with open(filename, 'r') as f:
+                state_data = json.load(f)
+            
+            # Validate version
+            if 'version' not in state_data:
+                QMessageBox.warning(self, "Invalid File", "This file does not appear to be a valid row analysis state file.")
+                return
+            
+            # Restore tolerance parameters
+            if 'tolerance_params' in state_data:
+                params = state_data['tolerance_params']
+                self.editYTolerance.setText(params.get('y_tolerance', '0.3'))
+                self.editYTBTolerance.setText(params.get('ytb_tolerance', '0.3'))
+                self.editHeightTolerance.setText(params.get('height_tolerance', '0.3'))
+                self.editXGapTolerance.setText(params.get('x_gap_tolerance', '3.0'))
+            
+            # Restore color mode
+            if 'color_mode' in state_data:
+                self.colorMode = state_data['color_mode']
+                self.comboColorMode.setCurrentText(self.colorMode)
+            
+            # Get all available blobs from the image
+            all_blobs = self.activeviewer.annotations.seg_blobs
+            blob_dict = {blob.id: blob for blob in all_blobs}
+            
+            # Restore selected blobs - validate IDs
+            missing_selected = []
+            if 'selected_blob_ids' in state_data:
+                selected_ids = state_data['selected_blob_ids']
+                self.workingBlobs = []
+                for bid in selected_ids:
+                    if bid in blob_dict:
+                        self.workingBlobs.append(blob_dict[bid])
+                    else:
+                        missing_selected.append(bid)
+                
+                if missing_selected:
+                    self.writeLog(f"Warning: {len(missing_selected)} selected region(s) not found: {missing_selected}")
+            
+            # Restore rows - validate blob IDs and check for missing/partial rows
+            if 'rows' in state_data:
+                self.rowsData = []
+                total_missing_blobs = 0
+                skipped_rows = 0
+                
+                for row_idx, row_data in enumerate(state_data['rows']):
+                    blob_ids = row_data['blob_ids']
+                    row_blobs = []
+                    missing_in_row = []
+                    
+                    # Validate each blob ID in the row
+                    for bid in blob_ids:
+                        if bid in blob_dict:
+                            row_blobs.append(blob_dict[bid])
+                        else:
+                            missing_in_row.append(bid)
+                            total_missing_blobs += 1
+                    
+                    # Only restore row if at least some blobs were found
+                    if len(row_blobs) > 0:
+                        # Recalculate row properties if some blobs are missing
+                        if missing_in_row:
+                            row = self.createRowData(row_blobs)
+                            # Keep the saved inclination if it exists
+                            row['inclination_deg'] = row_data.get('inclination_deg', 0.0)
+                            row['inclination_rad'] = row_data.get('inclination_rad', 0.0)
+                            self.writeLog(f"Row {row_idx}: {len(missing_in_row)} blob(s) missing, recalculated properties")
+                        else:
+                            # All blobs found, use saved data
+                            row = {
+                                'blobs': row_blobs,
+                                'centroid_y': row_data.get('centroid_y', row_data.get('y_pos', 0.0)),  # Support both field names
+                                'avg_height': row_data['avg_height'],
+                                'width': row_data['width'],
+                                'inclination_deg': row_data.get('inclination_deg', 0.0),
+                                'inclination_rad': row_data.get('inclination_rad', 0.0),
+                                'num_blobs': len(row_blobs)
+                            }
+                        self.rowsData.append(row)
+                    else:
+                        # All blobs in this row are missing
+                        self.writeLog(f"Warning: Row {row_idx} skipped - all {len(blob_ids)} blob(s) missing: {blob_ids}")
+                        skipped_rows += 1
+                
+                # Summary of restoration issues
+                if total_missing_blobs > 0 or skipped_rows > 0:
+                    summary = f"Restoration issues: {total_missing_blobs} blob(s) missing across rows"
+                    if skipped_rows > 0:
+                        summary += f", {skipped_rows} row(s) completely skipped"
+                    self.writeLog(summary)
+            
+            # Update displays
+            self.logArea.clear()
+            self.writeLog(f"State restored from: {os.path.basename(filename)}")
+            self.writeLog(f"Loaded {len(self.rowsData)} row(s) with {len(self.workingBlobs)} region(s)")
+            
+            # Report validation results
+            if missing_selected:
+                self.writeLog(f"⚠ {len(missing_selected)} selected region(s) no longer exist in project")
+            
+            total_restored = sum(len(row['blobs']) for row in self.rowsData)
+            total_expected = sum(len(row_data['blob_ids']) for row_data in state_data.get('rows', []))
+            if total_restored < total_expected:
+                self.writeLog(f"⚠ {total_expected - total_restored} region(s) from rows no longer exist in project")
+            
+            # Recompute fit_slope and fit_intercept for inclination display
+            self.computeInclination()
+            
+            # Populate table and display
+            self.populateRowsTable()
+            self.displayRows()
+            
+            # Redisplay visualizations if they were active
+            if self.btnAnalyzeInclination.isChecked():
+                self.displayInclinationLines()
+            if self.btnSegmentInclination.isChecked():
+                self.displaySegmentInclination()
+            
+            QMessageBox.information(self, "Success", f"Row analysis state restored successfully from:\n{filename}")
+            
+        except json.JSONDecodeError as e:
+            self.writeLog(f"Error: Invalid JSON file: {str(e)}")
+            QMessageBox.critical(self, "Error", f"Failed to parse JSON file:\n{str(e)}")
+        except Exception as e:
+            self.writeLog(f"Error restoring state: {str(e)}")
+            QMessageBox.critical(self, "Error", f"Failed to restore state:\n{str(e)}")
+
