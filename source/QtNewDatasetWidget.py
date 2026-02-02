@@ -43,6 +43,9 @@ class QtNewDatasetWidget(QWidget):
         self.lblExportArea = QLabel("Area to export: ")
         self.lblExportArea.setFixedWidth(TEXT_SPACE)
         self.lblExportArea.setAlignment(Qt.AlignRight)
+        self.lblTilePrefix = QLabel("Tile name prefix: ")
+        self.lblTilePrefix.setFixedWidth(TEXT_SPACE)
+        self.lblTilePrefix.setAlignment(Qt.AlignRight)
 
         self.lblSplitMode = QLabel("Dataset split:")
         self.lblSplitMode.setFixedWidth(TEXT_SPACE)
@@ -59,6 +62,7 @@ class QtNewDatasetWidget(QWidget):
         layoutH0a.setAlignment(Qt.AlignRight)
         layoutH0a.addWidget(self.lblDatasetFolder)
         layoutH0a.addWidget(self.lblExportArea)
+        layoutH0a.addWidget(self.lblTilePrefix)
         layoutH0a.addWidget(self.lblSplitMode)
         layoutH0a.addWidget(self.lblTargetScale)
         layoutH0a.addWidget(self.lblDataFormat)
@@ -71,6 +75,9 @@ class QtNewDatasetWidget(QWidget):
         self.editExportArea = QLineEdit("")
         self.editExportArea.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editExportArea.setMinimumWidth(LINEWIDTH)
+        self.editTilePrefix = QLineEdit("")
+        self.editTilePrefix.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        self.editTilePrefix.setMinimumWidth(LINEWIDTH)
         self.comboSplitMode = QComboBox()
         self.comboSplitMode.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.comboSplitMode.setMinimumWidth(LINEWIDTH)
@@ -96,6 +103,7 @@ class QtNewDatasetWidget(QWidget):
         layoutH0b.setAlignment(Qt.AlignLeft)
         layoutH0b.addWidget(self.editDatasetFolder)
         layoutH0b.addWidget(self.editExportArea)
+        layoutH0b.addWidget(self.editTilePrefix)
         layoutH0b.addWidget(self.comboSplitMode)
         layoutH0b.addWidget(self.editTargetScale)
         layoutH0b.addWidget(self.comboDataFormat)
@@ -112,6 +120,7 @@ class QtNewDatasetWidget(QWidget):
         layoutH0c = QVBoxLayout()
         layoutH0c.addWidget(self.btnChooseDatasetFolder)
         layoutH0c.addWidget(self.btnChooseExportArea)
+        layoutH0c.addSpacing(self.editTilePrefix.sizeHint().height())
         layoutH0c.addStretch()
 
         layoutH1 = QHBoxLayout()
@@ -184,5 +193,13 @@ class QtNewDatasetWidget(QWidget):
     def getTargetScale(self):
 
         return float(self.editTargetScale.text())
+
+    def getTilePrefix(self):
+
+        return self.editTilePrefix.text()
+
+    def setTilePrefix(self, prefix):
+
+        self.editTilePrefix.setText(prefix)
 
 

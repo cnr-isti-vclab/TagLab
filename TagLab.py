@@ -5111,6 +5111,9 @@ class TagLab(QMainWindow):
 
                     annotations = self.activeviewer.annotations
                     self.newDatasetWidget = QtNewDatasetWidget(self.activeviewer.image.export_dataset_area, parent=self)
+                    # Set default tile prefix to current image name (without extension)
+                    default_prefix = os.path.splitext(self.activeviewer.image.name)[0]
+                    self.newDatasetWidget.setTilePrefix(default_prefix)
                     self.newDatasetWidget.setWindowModality(Qt.NonModal)
                     self.newDatasetWidget.btnChooseExportArea.clicked.connect(self.enableAreaSelection)
                     self.newDatasetWidget.btnExport.clicked.connect(self.exportNewDataset)
@@ -5213,7 +5216,7 @@ class TagLab(QMainWindow):
             QApplication.processEvents()
 
             basename = self.newDatasetWidget.getDatasetFolder()
-            tilename = os.path.splitext(self.activeviewer.image.name)[0]
+            tilename = self.newDatasetWidget.getTilePrefix()
             new_dataset.export_tiles(basename=basename, tilename=tilename)
 
             # save the target pixel size
