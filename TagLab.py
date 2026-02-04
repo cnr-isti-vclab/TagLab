@@ -1070,7 +1070,7 @@ class TagLab(QMainWindow):
         newMapAct.triggered.connect(self.setMapToLoad)
 
         projectEditorAct = QAction("Maps Editor...", self)
-        projectEditorAct.setShortcut('Ctrl+L')
+        projectEditorAct.setShortcut('Ctrl+M')
         projectEditorAct.setStatusTip("Open project editor dialog")
         projectEditorAct.triggered.connect(self.openProjectEditor)
 
