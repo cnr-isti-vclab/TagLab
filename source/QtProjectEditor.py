@@ -74,7 +74,8 @@ class QtProjectEditor(QWidget):
 
             self.text = QTextEdit()
             map_widget.setProperty("class", "map-item")
-            self.text.setMinimumWidth(1000)
+            self.text.setReadOnly(True)
+            self.text.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
 
             date = self.convertDate(img.acquisition_date)
             day = date.day()
