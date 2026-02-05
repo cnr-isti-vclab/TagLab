@@ -173,6 +173,10 @@ class QtDXFExport(QDialog):  # Change QWidget to QDialog
         # Remove the default "defpoints" layer if it exists, as we are not using it
         if doc.layers.has_entry("defpoints"):
             doc.layers.remove("defpoints")
+        
+        # Register application for XDATA
+        if 'TAGLAB' not in doc.appids:
+            doc.appids.new('TAGLAB')
 
         georef = None # Initialize georef to None
         text_height_scale = 1.0 # Default text height scale
@@ -245,11 +249,25 @@ class QtDXFExport(QDialog):  # Change QWidget to QDialog
                     points = [(x, self.activeviewer.image.height - y) for x, y in blob.contour] # Invert Y-axis
 
                 if points:
-                    msp.add_lwpolyline(
+                    polyline = msp.add_lwpolyline(
                         points,
                         close=True,
                         dxfattribs={'layer': layer_name}
                     )
+                    
+                    # Add XDATA with notes and custom attributes
+                    xdata = [(1001, 'TAGLAB'), (1000, f'region_id:{blob.id}')]
+                    
+                    # Add note if it exists
+                    if blob.note and blob.note.strip():
+                        xdata.append((1000, f'note:{blob.note}'))
+                    
+                    # Add custom attributes from blob.data
+                    if blob.data:
+                        for key, value in blob.data.items():
+                            xdata.append((1000, f'{key}:{value}'))
+                    
+                    polyline.set_xdata('TAGLAB', xdata)
 
                 for inner_contour in blob.inner_contours:
                     if georef:
