@@ -237,9 +237,22 @@ class QtSVGExport(QDialog):
                     class_layers[layer_name] = ET.SubElement(svg, 'g', {'id': layer_name})
                 
                 # Create a group for this blob with region_XXX naming
-                blob_group = ET.SubElement(class_layers[layer_name], 'g', {
-                    'id': f'region_{blob.id}'
-                })
+                # Include custom attributes as data-* attributes
+                blob_attrs = {'id': f'region_{blob.id}'}
+                
+                # Add custom region attributes from blob.data dictionary
+                if blob.data:
+                    for key, value in blob.data.items():
+                        # Convert key to valid data attribute name (replace spaces with underscores, lowercase)
+                        data_key = f"data-{key.replace(' ', '_').lower()}"
+                        blob_attrs[data_key] = str(value)
+                
+                blob_group = ET.SubElement(class_layers[layer_name], 'g', blob_attrs)
+                
+                # Add note as a description element if it exists
+                if blob.note and blob.note.strip():
+                    desc_elem = ET.SubElement(blob_group, 'desc')
+                    desc_elem.text = blob.note
 
                 if georef and transform:
                     points = [transform * (x, y) for x, y in blob.contour]
