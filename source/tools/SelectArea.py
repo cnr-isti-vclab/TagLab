@@ -11,7 +11,7 @@ class SelectArea(Tool):
     rectChanged = pyqtSignal(int, int, int, int)
     released = pyqtSignal()
 
-    def __init__(self, viewerplus, pick_points ):
+    def __init__(self, viewerplus, pick_points):
         super(SelectArea, self).__init__(viewerplus)
 
         self.pick_points = pick_points

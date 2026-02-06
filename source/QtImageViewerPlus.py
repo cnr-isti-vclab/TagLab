@@ -848,7 +848,7 @@ class QtImageViewerPlus(QtImageViewer):
         else:
             self.setContextMenuPolicy(Qt.CustomContextMenu)
 
-        if tool == "SELECTAREA" or tool == "RITM" or tool == "RULER":
+        if tool == "SELECTPOINTS" or tool == "SELECTAREA" or tool == "RITM" or tool == "RULER":
             QApplication.setOverrideCursor(Qt.CrossCursor)
 
         if tool == "WATERSHED":
@@ -1015,7 +1015,7 @@ class QtImageViewerPlus(QtImageViewer):
                 "ASSIGN", "RULER", "FOURCLICKS", "RITM", "MATCH", "PLACEANNPOINT", "SAM", "SAMINTERACTIVE"]):
                 self.tools.leftPressed(x, y, mods)
 
-            elif self.tools.tool == "SELECTAREA":
+            elif self.tools.tool == "SELECTPOINTS" or self.tools.tool == "SELECTAREA":
                 self.tools.leftPressed(x, y, mods)
 
             elif (self.tools.tool == "WATERSHED" or self.tools.tool == "SAM" or self.tools.tool == "SAMINTERACTIVE"):

@@ -23,7 +23,7 @@ import os
 import math
 import numpy as np
 from PyQt5.QtGui import QPainter, QImage, QPen, QBrush, QColor, qRgb, qRed, qGreen, qBlue
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QPointF
 import random as rnd
 from source import Image
 from source import genutils
@@ -50,9 +50,16 @@ class NewDataset(object):
 		self.ortho_image = ortho_image  # QImage
 		self.blobs = image_info.annotations.seg_blobs
 		self.tile_size = tile_size
-		self.step = step
+		self.crop_size = int(tile_size / 2)  # the centered crop is HALF of the tile size
+		self.step = step                     # step should be the same or a submultiple of crop_size
 		self.labels_dict = labels
 		self.image_info = image_info
+
+		# area to consider for the tiles cutting operation
+		# export for DeepLab -> the export area is adjusted such that the cropped tiles MUST BE inside the export area
+		# export for YOLO -> the export area is adjusted to maximize the pixels used during the tiling
+		# export for COCO -> it is assumed that an external model will be trained, so the YOLO approach is adopted
+		self.adjusted_export_area = [0, 0, 0, 0]
 
 		# stored as (top, left, width, height)
 		self.val_area = [0, 0, 0, 0]
@@ -60,6 +67,7 @@ class NewDataset(object):
 		# the training area is given by the entire map minus the validation and the test area
 
 		# stored as a list of (x,y) coordinates
+		self.samples = []
 		self.training_tiles = []
 		self.validation_tiles = []
 		self.test_tiles = []
@@ -68,7 +76,6 @@ class NewDataset(object):
 		self.labels = None
 		self.data_format = data_format
 
-		self.crop_size = int(tile_size / 2)
 		#self.idmap = None
 		self.id_image = None
 
@@ -93,36 +100,44 @@ class NewDataset(object):
 
 		scale = float(current_pixel_size / target_pixel_size)
 
-		w_exp = export_area[2]
-		h_exp = export_area[3]
-
 		w_img = self.ortho_image.width()
 		h_img = self.ortho_image.height()
 
-		if abs(w_exp - w_img) < 100 and abs(h_exp - h_img) < 100:
-			# the selected export area is large, use the entire image
-			x = 0
-			y = 0
-			width = w_img
-			height = h_img
+		x = export_area[1]
+		y = export_area[0]
+		w_exp = export_area[2]
+		h_exp = export_area[3]
+		w_scaled = int(w_exp * scale)
+		h_scaled = int(h_exp * scale)
+
+		tile_size = self.tile_size
+		crop_size = self.crop_size
+
+		if self.data_format == "COCO" or self.data_format == "YOLO-v5":
+			# the area for the tiling is adjusted maximizing the pixels used
+			horz_tiles = 1 + int(w_scaled / tile_size)
+			vert_tiles = 1 + int(h_scaled / tile_size)
+			w_prime = horz_tiles * tile_size
+			h_prime = vert_tiles * tile_size
+			top = (h_scaled - h_prime) // 2
+			left = (w_scaled - w_prime) // 2
+			self.adjusted_export_area = [top, left, w_prime, h_prime]
 		else:
-			# the selected export area is adjusted such that the tiles goes inside it
-			tile_size = self.tile_size
-			crop_size = self.crop_size
+			# the export area is adjusted such that the cropped tiles are inside the given export area
+			horz_cropped_tiles = int(w_scaled / crop_size)
+			vert_cropped_tiles = int(h_scaled / crop_size)
+			w_prime = horz_cropped_tiles * crop_size
+			h_prime = vert_cropped_tiles * crop_size
+			top = (h_scaled - h_prime) // 2
+			left = (w_scaled - w_prime) // 2
+			self.adjusted_export_area = [top, left, w_prime, h_prime]
 
-			w_prime = ((w_exp - crop_size * 2) // tile_size) * tile_size + 2 * tile_size + crop_size // 2 + 10
-			h_prime = ((h_exp - crop_size * 2) // tile_size) * tile_size + 2 * tile_size + crop_size // 2 + 10
-			delta_w = w_prime - w_exp
-			delta_h = h_prime - h_exp
-			y = int(export_area[0] - (delta_h // 2) / scale)
-			x = int(export_area[1] - (delta_w // 2) / scale)
-			width = int(export_area[2] + (delta_w) / scale)
-			height = int(export_area[3] + (delta_h) / scale)
-
-		crop_ortho_image = self.ortho_image.copy(x, y, width, height)
-		crop_label_image = self.label_image.copy(x, y, width, height)
+		crop_ortho_image = self.ortho_image.copy(x, y, w_exp, h_exp)
+		crop_label_image = self.label_image.copy(x, y, w_exp, h_exp)
 		#crop_id_image = np.copy(self.idmap)
 		#crop_id_image= crop_id_image[y: y+height, x: x+width]
+
+		print("ADJUSTED EXPORT AREA: ", self.adjusted_export_area)
 
 		w = int(crop_ortho_image.width() * scale)
 		h = int(crop_ortho_image.height() * scale)
@@ -138,7 +153,7 @@ class NewDataset(object):
 			#self.idmap = cv2.resize(crop_id_image, dsize=(h, w), interpolation=cv2.INTER_NEAREST) this is for a numpy
 
 			if self.data_format == "COCO" or self.data_format == "YOLO-v5":
-				self.crop_id_image = self.id_image.copy(x, y, width, height)
+				self.crop_id_image = self.id_image.copy(x, y, w_exp,h_exp)
 				self.id_image = self.crop_id_image.scaled(w, h, Qt.IgnoreAspectRatio, Qt.FastTransformation)
 
 			return True
@@ -622,86 +637,84 @@ class NewDataset(object):
 			"BIOLOGICALLY-INSPIRED": the map is subdivided according to the spatial distribution of the classes
 		"""
 
-		# size of the each area is 15% of the entire map
-		map_w = self.ortho_image.width()
-		map_h = self.ortho_image.height()
+		top = self.adjusted_export_area[0]
+		left = self.adjusted_export_area[1]
+		map_w = self.adjusted_export_area[2]
+		map_h = self.adjusted_export_area[3]
 
 		val_area = [0, 0, 0, 0]
 		test_area = [0, 0, 0, 0]
 		# the train area is represented by the entire map minus the validation and test areas
 
-		if mode == "UNIFORM (VERTICAL)":
+		if self.data_format == "COCO" or self.data_format == "YOLO-v5":
+			self.setupAreasForYOLO(mode)
+		else:
+			if mode == "UNIFORM (VERTICAL)":
 
-			delta = int(self.crop_size / 2)
-			ww_val = map_w - delta*2
-			hh_val = (map_h - delta*2) * 0.15 - delta
-			ww_test = ww_val
-			hh_test = (map_h - delta*2) * 0.15 - delta
-			val_area = [delta + (map_h - delta * 2) * 0.7, delta, ww_val, hh_val]
-			test_area = [2*delta + (map_h - delta*2) * 0.85, delta, ww_test, hh_test]
+				hh = int(map_h * 0.15)
+				val_area = [top + int(map_h * 0.7), left, map_w, hh]
+				test_area = [top + int(map_h * 0.85), left, map_w, hh]
 
-		elif mode == "UNIFORM (HORIZONTAL)":
+			elif mode == "UNIFORM (HORIZONTAL)":
 
-			delta = int(self.crop_size / 2)
-			ww_val = (map_w - delta*2) * 0.15 - delta
-			hh_val = map_h - delta*2
-			ww_test = (map_w - delta*2) * 0.15 - delta
-			hh_test = hh_val
-			val_area = [delta, delta + (map_w - delta*2) * 0.7, ww_val, hh_val]
-			test_area = [delta, 2* delta + (map_w - delta*2) * 0.85, ww_test, hh_test]
+				ww = int(map_w * 0.15)
+				val_area = [top, left + int(map_w*0.7), ww, map_h]
+				test_area = [top, left + int(map_w*0.85), ww, map_h]
 
-		elif mode == "RANDOM":
+			elif mode == "RANDOM":
 
-			ncrops_w = int((float)(map_w - self.crop_size*2) / float(self.crop_size))
-			ncrops_h = int((float)(map_h - self.crop_size*2) / float(self.crop_size))
-			ncrops_ref = round(ncrops_w * ncrops_h * 0.12)
+				# TODO - REVISE
 
-			valid_comb = []
-			for j in range(1, ncrops_w):
-				for k in range(1, ncrops_h):
-					if j * k == ncrops_ref:
-						valid_comb.append([j,k])
+				ncrops_w = int((float)(map_w - self.crop_size*2) / float(self.crop_size))
+				ncrops_h = int((float)(map_h - self.crop_size*2) / float(self.crop_size))
+				ncrops_ref = round(ncrops_w * ncrops_h * 0.12)
 
-			delta = int(self.crop_size/2)
-			min_intersection = map_w * map_h
-			# initialize the random number generator using the system time
-			rnd.seed()
-			for j in range(30000):
+				valid_comb = []
+				for j in range(1, ncrops_w):
+					for k in range(1, ncrops_h):
+						if j * k == ncrops_ref:
+							valid_comb.append([j,k])
 
-				comb = valid_comb[rnd.randint(0, len(valid_comb)-1)]
-				area_w1 = int(comb[0] * self.crop_size)
-				area_h1 = int(comb[1] * self.crop_size)
-				px1 = rnd.randint(delta, map_w - delta - area_w1 - 1)
-				py1 = rnd.randint(delta, map_h - delta - area_h1 - 1)
+				delta = int(self.crop_size/2)
+				min_intersection = map_w * map_h
+				# initialize the random number generator using the system time
+				rnd.seed()
+				for j in range(30000):
 
-				comb = valid_comb[rnd.randint(0, len(valid_comb)-1)]
-				area_w2 = int(comb[0] * self.crop_size)
-				area_h2 = int(comb[1] * self.crop_size)
-				px2 = rnd.randint(delta, map_w - delta - area_w2 - 1)
-				py2 = rnd.randint(delta, map_h - delta - area_h2 - 1)
+					comb = valid_comb[rnd.randint(0, len(valid_comb)-1)]
+					area_w1 = int(comb[0] * self.crop_size)
+					area_h1 = int(comb[1] * self.crop_size)
+					px1 = rnd.randint(delta, map_w - delta - area_w1 - 1)
+					py1 = rnd.randint(delta, map_h - delta - area_h1 - 1)
 
-				area1 = [py1, px1, area_w1, area_h1]
-				area2 = [py2, px2, area_w2, area_h2]
+					comb = valid_comb[rnd.randint(0, len(valid_comb)-1)]
+					area_w2 = int(comb[0] * self.crop_size)
+					area_h2 = int(comb[1] * self.crop_size)
+					px2 = rnd.randint(delta, map_w - delta - area_w2 - 1)
+					py2 = rnd.randint(delta, map_h - delta - area_h2 - 1)
 
-				intersection = self.bbox_intersection(area1, area2)
+					area1 = [py1, px1, area_w1, area_h1]
+					area2 = [py2, px2, area_w2, area_h2]
 
-				if intersection < min_intersection:
-					val_area = area1
-					test_area = area2
-					min_intersection = intersection
+					intersection = self.bbox_intersection(area1, area2)
 
-		elif mode == "BIOLOGICALLY-INSPIRED":
+					if intersection < min_intersection:
+						val_area = area1
+						test_area = area2
+						min_intersection = intersection
 
-			val_area, test_area = self.findAreas(target_classes=target_classes)
+			elif mode == "BIOLOGICALLY-INSPIRED":
 
-			print(val_area)
-			print(test_area)
+				val_area, test_area = self.findAreas(target_classes=target_classes)
 
-		self.val_area = val_area
-		self.test_area = test_area
+				print(val_area)
+				print(test_area)
+
+			self.val_area = val_area
+			self.test_area = test_area
 
 
-	def setupAreasModified(self, mode, target_classes=None):
+	def setupAreasForYOLO(self, mode):
 		"""
 		Only the validation area is computed. Available modes:
 
@@ -711,26 +724,23 @@ class NewDataset(object):
 		Note: one of the problem here is that the resulting training/validation areas are not TIGHT to the working area.
 		"""
 
-		# size of the each area is 30% of the entire map
-		map_w = self.ortho_image.width()
-		map_h = self.ortho_image.height()
+		top = self.adjusted_export_area[0]
+		left = self.adjusted_export_area[1]
+		map_w = self.adjusted_export_area[2]
+		map_h = self.adjusted_export_area[3]
 
 		val_area = [0, 0, 0, 0]
 		# the train area is represented by the entire map minus the validation and test areas
 
 		if mode == "UNIFORM (VERTICAL)":
 
-			delta = int(self.crop_size / 2)
-			ww_val = map_w - delta*2
-			hh_val = (map_h - delta*2) * 0.3
-			val_area = [delta + (map_h - delta * 2) * 0.7, delta, ww_val, hh_val]
+			hh = int(map_h * 0.3)
+			val_area = [top + int(map_h * 0.7), left, map_w, hh]
 
 		elif mode == "UNIFORM (HORIZONTAL)":
 
-			delta = int(self.crop_size / 2)
-			ww_val = (map_w - delta*2) * 0.3 - delta
-			hh_val = map_h - delta*2
-			val_area = [delta, delta + (map_w - delta*2) * 0.7, ww_val, hh_val]
+			ww = int(map_w * 0.3)
+			val_area = [top, left + int(map_w * 0.7), ww, map_h]
 
 		self.val_area = val_area
 		self.test_area = [0,0,0,0]
@@ -738,43 +748,74 @@ class NewDataset(object):
 		print(self.val_area)
 
 
-	def sampleAreaUniformly(self, area, tile_size, step):
+	def sampleAreaUniformly(self):
 		"""
-		Sample the given area uniformly according to the tile_size and the step size.
-		The tiles are fully inside the given area. The area is stored as (top, left, width, height).
-		The functions returns a list of (x,y) coordinates.
+		Sample the adjusted export area uniformly according to the tile_size and the step size.
+		The functions stores a list of (x,y) coordinates.
 		"""
-		samples = []
+		self.samples = []
 
-		area_W = area[2]
-		area_H = area[3]
+		step = self.step
 
-		if area_W < 10 or area_H < 10:
-			return samples
+		if self.data_format == "COCO" or self.data_format == "YOLO-v5":
 
-		tile_cols = 1 + int(area_W / step)
-		tile_rows = 1 + int(area_H / step)
+			tile_rows = 1 + (self.adjusted_export_area[3] - self.tile_size) // step
+			tile_cols = 1 + (self.adjusted_export_area[2] - self.tile_size) // step
+			area_top = self.adjusted_export_area[0] + self.tile_size // 2
+			area_left = self.adjusted_export_area[1] + self.tile_size // 2
 
-		deltaW = (area_W - tile_cols * step) / 2.0
-		deltaH = (area_H - tile_rows * step) / 2.0
-		deltaW = int(deltaW)
-		deltaH = int(deltaH)
+		else:
 
-		area_top = area[0] + deltaH - int((tile_size - self.crop_size) / 2)
-		area_left = area[1] + deltaW - int((tile_size - self.crop_size) / 2)
+			tile_rows = 1 + (self.adjusted_export_area[3] - self.crop_size) // step
+			tile_cols = 1 + (self.adjusted_export_area[2] - self.crop_size) // step
+			area_top = self.adjusted_export_area[0] + self.crop_size // 2
+			area_left = self.adjusted_export_area[1] + self.crop_size // 2
 
 		for row in range(tile_rows):
 			for col in range(tile_cols):
-				top = area_top + row * step
-				left = area_left + col * step
+				cx = area_left + col * step
+				cy = area_top + row * step
+				self.samples.append((cx, cy))
 
-				cy = top + tile_size / 2
-				cx = left + tile_size / 2
+	def assignTiles(self):
 
-				samples.append((cx, cy))
+		bbox = [0, 0, 0, 0]
 
-		return samples
+		if self.data_format == "COCO" or self.data_format == "YOLO-v5":
+			# the intersection should take into account the entire tile
+			half_size = self.tile_size // 2
+			area_tile = float(self.tile_size * self.tile_size)
+			th1 = 30.0
+			th2 = 50.0
+		else:
+			# only the center cropped part of the tile matter
+			half_size = self.crop_size // 2
+			area_tile = float(self.crop_size * self.crop_size)
+			th1 = 10.0
+			th2 = 20.0
 
+		area_test = 0.0
+		for tile in self.samples:
+
+			bbox[0] = tile[1] - half_size
+			bbox[1] = tile[0] - half_size
+			bbox[2] = half_size * 2
+			bbox[3] = half_size * 2
+
+			area = self.bbox_intersection(self.val_area, bbox)
+			area_val = (100.0 * area) / area_tile
+
+			if self.test_area[2] > 100.0:
+				area = self.bbox_intersection(self.test_area, bbox)
+				area_test = (100.0 * area) / area_tile
+
+			if area_val > th1 or area_test > th1 or (area_test + area_val > th2):
+				if area_test > area_val:
+					self.test_tiles.append(tile)
+				else:
+					self.validation_tiles.append(tile)
+			else:
+				self.training_tiles.append(tile)
 
 	def cleanTrainingTiles(self, training_tiles):
 		"""
@@ -1102,51 +1143,16 @@ class NewDataset(object):
 		"""
 		Cut the ortho into tiles.
 		The cutting can be regular or depending on the area and shape of the corals (oversampling).
+		Classes_to_sample is reserved for oversampling.
+		Base radius is reserved for importance sampling.
 		"""
 
-		w = self.ortho_image.width()
-		h = self.ortho_image.height()
-
-		delta = int(self.crop_size / 2)
-
 		if regular is True:
-			self.validation_tiles = self.sampleAreaUniformly(self.val_area, self.tile_size, self.step)
-			self.test_tiles = self.sampleAreaUniformly(self.test_area, self.tile_size, self.step)
-			self.training_tiles = self.sampleAreaUniformly([delta, delta, w-delta*2, h-delta*2], self.tile_size, self.step)
+			self.sampleAreaUniformly()
+			self.assignTiles()
 
 		if oversampling is True:
-
-			validation_oversampled = False
-
-			if validation_oversampled is False:
-				self.validation_tiles = self.sampleAreaUniformly(self.val_area, self.tile_size, self.step)
-				self.test_tiles = self.sampleAreaUniformly(self.test_area, self.tile_size, self.step)
-				self.training_tiles = self.oversamplingBlobsWPoissonDisk([delta, delta, w-delta*2,  h-delta*2],
-																	 classes_to_sample, radii)
-			else:
-				self.test_tiles = self.sampleAreaUniformly(self.test_area, self.tile_size, self.step)
-				tiles = self.oversamplingBlobsWPoissonDisk([delta, delta, w-delta*2,  h-delta*2],
-																	 classes_to_sample, radii)
-
-				bbox = [0, 0, 0, 0]
-				half_size = int(self.crop_size + 4) / 2
-				self.validation_tiles = []
-				self.training_tiles = []
-				for tile in tiles:
-					bbox[0] = tile[1] - half_size
-					bbox[1] = tile[0] - half_size
-					bbox[2] = half_size * 2
-					bbox[3] = half_size * 2
-					perc = (100.0 * self.bbox_intersection(self.val_area, bbox)) / float(half_size * half_size * 4)
-					if perc > 95.0:
-						self.validation_tiles.append(tile)
-					else:
-						self.training_tiles.append(tile)
-
-		self.training_tiles = self.cleanTrainingTiles(self.training_tiles)
-
-		if oversampling is True:
-			self.validation_tiles = self.cleaningValidationTiles(self.validation_tiles)
+			pass  # oversampling must be re-implemented !
 
 
 	def export_tiles(self, basename, tilename):
@@ -1336,7 +1342,7 @@ class NewDataset(object):
 
 			jsondata = {'info': info, 'categories': categorieslist}
 
-		half_tile_size = self.tile_size / 2
+		half_tile_size = self.tile_size // 2
 
 		for i, sample in enumerate(tiles):
 
@@ -1359,6 +1365,7 @@ class NewDataset(object):
 
 				cropidlabel = genutils.cropQImage(self.id_image, [top, left, self.tile_size, self.tile_size])
 				cropidlabel = genutils.qimageToNumpyArray(cropidlabel)
+				cropidlabel = cropidlabel.astype(np.int32)
 
 				# decode ids
 				regions_map = np.zeros((cropidlabel.shape[0], cropidlabel.shape[1]), dtype=np.int32)
@@ -1458,11 +1465,23 @@ class NewDataset(object):
         Save a figure to show the samples in the different areas.
         """
 
-		labelimg = self.label_image.copy()
+		if self.data_format == "COCO" or self.data_format == "YOLO-v5":
 
+			offx = self.adjusted_export_area[1]
+			offy = self.adjusted_export_area[0]
+			W = self.adjusted_export_area[2]
+			H = self.adjusted_export_area[3]
+
+		else:
+
+			W = self.label_image.width()
+			H = self.label_image.height()
+			offx = 0
+			offy = 0
+
+		labelimg = QImage(W, H, QImage.Format_RGB32)
 		painter = QPainter(labelimg)
-
-		half_tile_size = self.tile_size / 2
+		painter.drawImage(QPointF(-offx, -offy), self.label_image)
 
 		SAMPLE_SIZE = 20
 		HALF_SAMPLE_SIZE = SAMPLE_SIZE / 2
@@ -1477,20 +1496,7 @@ class NewDataset(object):
 		for sample in self.training_tiles:
 			cx = sample[0] - HALF_SAMPLE_SIZE
 			cy = sample[1] - HALF_SAMPLE_SIZE
-			painter.drawEllipse(int(cx), int(cy), int(SAMPLE_SIZE), int(SAMPLE_SIZE))
-
-		# brush = QBrush(Qt.NoBrush)
-		# brush.setColor(Qt.green)
-		# painter.setBrush(brush)
-		# pen = QPen(Qt.white)
-		# pen.setWidth(3)
-		# painter.setPen(pen)
-		# for sample in self.training_tiles:
-		# 	cx = sample[0]
-		# 	cy = sample[1]
-		# 	r = int(radii[self.labels[cy,cx]])
-		# 	if r < 61.0:
-		# 		painter.drawEllipse(cx - r, cy - r, r*2, r*2)
+			painter.drawEllipse(int(cx - offx), int(cy - offy), int(SAMPLE_SIZE), int(SAMPLE_SIZE))
 
 		# VALIDATION
 		brush = QBrush(Qt.SolidPattern)
@@ -1499,7 +1505,7 @@ class NewDataset(object):
 		for sample in self.validation_tiles:
 			cx = sample[0] - HALF_SAMPLE_SIZE
 			cy = sample[1] - HALF_SAMPLE_SIZE
-			painter.drawEllipse(int(cx), int(cy), int(SAMPLE_SIZE), int(SAMPLE_SIZE))
+			painter.drawEllipse(int(cx - offx), int(cy - offy), int(SAMPLE_SIZE), int(SAMPLE_SIZE))
 
 		# TEST
 		brush = QBrush(Qt.SolidPattern)
@@ -1508,14 +1514,18 @@ class NewDataset(object):
 		for sample in self.test_tiles:
 			cx = sample[0] - HALF_SAMPLE_SIZE
 			cy = sample[1] - HALF_SAMPLE_SIZE
-			painter.drawEllipse(int(cx), int(cy), int(SAMPLE_SIZE), int(SAMPLE_SIZE))
+			painter.drawEllipse(int(cx - offx), int(cy - offy), int(SAMPLE_SIZE), int(SAMPLE_SIZE))
 
 		if show_tiles is True:
 
-			size = self.crop_size
-			half_size = int(size / 2)
+			if self.data_format == "COCO" or self.data_format == "YOLO-v5":
+				size = self.tile_size
+				half_size = int(size / 2)
+			else:
+				size = self.crop_size
+				half_size = int(size / 2)
 
-			PEN_WIDTH = 20
+			PEN_WIDTH = 10
 
 			painter.setBrush(Qt.NoBrush)
 			pen = QPen(Qt.green)
@@ -1526,7 +1536,7 @@ class NewDataset(object):
 				cy = sample[1]
 				top = cy - half_size
 				left = cx - half_size
-				painter.drawRect(int(left), int(top), int(size), int(size))
+				painter.drawRect(int(left - offx), int(top - offy), int(size), int(size))
 
 			pen = QPen(Qt.blue)
 			pen.setWidth(PEN_WIDTH)
@@ -1536,7 +1546,7 @@ class NewDataset(object):
 				cy = sample[1]
 				top = cy - half_size
 				left = cx - half_size
-				painter.drawRect(int(left), int(top), int(size), int(size))
+				painter.drawRect(int(left - offx), int(top - offy), int(size), int(size))
 
 			pen = QPen(Qt.red)
 			pen.setWidth(PEN_WIDTH)
@@ -1546,32 +1556,25 @@ class NewDataset(object):
 				cy = sample[1]
 				top = cy - half_size
 				left = cx - half_size
-				painter.drawRect(int(left), int(top), int(size), int(size))
+				painter.drawRect(int(left - offx), int(top - offy), int(size), int(size))
 
 		if show_areas is True:
 
 			pen_width = int(min(self.label_image.width(), self.label_image.height()) / 200.0)
 
 			painter.setBrush(Qt.NoBrush)
-			pen = QPen(Qt.green)
-			pen.setWidth(pen_width)
-			pen.setStyle(Qt.DashDotLine)
-			painter.setPen(pen)
-			painter.drawRect(int(self.crop_size/2), int(self.crop_size/2), self.ortho_image.width() - self.crop_size, self.ortho_image.height() - self.crop_size)
-
-			painter.setBrush(Qt.NoBrush)
 			pen = QPen(Qt.blue)
 			pen.setWidth(pen_width)
 			pen.setStyle(Qt.DashDotLine)
 			painter.setPen(pen)
-			painter.drawRect(int(self.val_area[1]), int(self.val_area[0]), int(self.val_area[2]), int(self.val_area[3]))
+			painter.drawRect(int(self.val_area[1] - offx), int(self.val_area[0] - offy), int(self.val_area[2]), int(self.val_area[3]))
 
 			painter.setBrush(Qt.NoBrush)
 			pen = QPen(Qt.red)
 			pen.setWidth(pen_width)
 			pen.setStyle(Qt.DashDotLine)
 			painter.setPen(pen)
-			painter.drawRect(int(self.test_area[1]), int(self.test_area[0]), int(self.test_area[2]), int(self.test_area[3]))
+			painter.drawRect(int(self.test_area[1] - offx), int(self.test_area[0] - offy), int(self.test_area[2]), int(self.test_area[3]))
 
 		painter.end()
 

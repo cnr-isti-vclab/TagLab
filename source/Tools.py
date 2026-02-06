@@ -18,6 +18,7 @@ from source.tools.Freehand import Freehand
 from source.tools.Ruler import Ruler
 from source.tools.FourClicks import FourClicks
 from source.tools.Match import Match
+from source.tools.SelectPoints import SelectPoints
 from source.tools.SelectArea import SelectArea
 from source.tools.Ritm import Ritm
 from source.tools.PlaceAnnPoint import PlaceAnnPoint
@@ -78,6 +79,7 @@ class Tools(QObject):
             "FOURCLICKS": FourClicks(self.viewerplus, self.pick_points),
             "PLACEANNPOINT": PlaceAnnPoint(self.viewerplus),
             "MATCH": Match(self.viewerplus),
+            "SELECTPOINTS": SelectPoints(self.viewerplus, self.pick_points),
             "SELECTAREA": SelectArea(self.viewerplus, self.pick_points),
             "RITM": Ritm(self.viewerplus, self.corrective_points),
             "ROWS": Rows(self.viewerplus),
@@ -111,6 +113,7 @@ class Tools(QObject):
         # reset each tool
         self.tools["FOURCLICKS"].reset()
         self.tools["RITM"].reset()
+        self.tools["SELECTPOINTS"].reset()
         self.tools["SELECTAREA"].reset()
         self.tools["WATERSHED"].reset()
         self.tools["ROWS"].reset()

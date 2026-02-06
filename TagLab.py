@@ -73,6 +73,7 @@ from source.QtHistogramWidget import QtHistogramWidget
 from source.QtClassifierWidget import QtClassifierWidget
 from source.QtNewDatasetWidget import QtNewDatasetWidget
 from source.QtSampleWidget import QtSampleWidget
+from source.QtGeoreferencingWidget import QtGeoreferencingWidget
 from source.QtTrainingResultsWidget import QtTrainingResultsWidget
 from source.QtTYNWidget import QtTYNWidget
 from source.QtDatasetManagerWidget import QtDatasetManagerWidget
@@ -205,6 +206,7 @@ class TagLab(QMainWindow):
         self.align_tool_widget = None
         self.edit_project_widget = None
         self.sample_point_widget = None
+        self.georeferencing_tool_widget = None
         self.scale_widget = None
         self.dictionary_widget = None
         self.working_area_widget = None
@@ -1079,6 +1081,9 @@ class TagLab(QMainWindow):
         createDicAct = QAction("Labels Dictionary Editor...", self)
         createDicAct.triggered.connect(self.createDictionary)
 
+        georeferencingToolAct = QAction("Georeferencing Tool", self)
+        georeferencingToolAct.triggered.connect(self.openGeoreferencingTool)
+
         alignToolAct = QAction("Alignment Tool", self)
         alignToolAct.triggered.connect(self.openAlignmentTool)
 
@@ -1143,6 +1148,10 @@ class TagLab(QMainWindow):
         exportTrainingDatasetAct = QAction("Export New Training Dataset", self)
         exportTrainingDatasetAct.setStatusTip("Export A new training dataset based on the current annotations")
         exportTrainingDatasetAct.triggered.connect(self.exportAnnAsTrainingDataset)
+
+        exportForReefArchive = QAction("Export data for Reef Archive Lab platform", self)
+        exportForReefArchive.setStatusTip("Export the current map for the upload in the Reef Archive Lab platform")
+        exportForReefArchive.triggered.connect(self.exportDataForReefArchive)
 
         filterDatasetAct = QAction("Dataset Manager", self)
         filterDatasetAct.setStatusTip("Filter the tiles of a training dataset")
@@ -1223,6 +1232,7 @@ class TagLab(QMainWindow):
         self.submenuExport.addAction(exportSVGfilesAct)
         self.submenuExport.addAction(exportGeoRefLabelMapAct)
         self.submenuExport.addAction(exportGeoRefImgAct)
+        self.submenuExport.addAction(exportForReefArchive)
         self.submenuExport.addAction(exportHistogramAct)
         self.submenuExport.addAction(exportTrainingDatasetAct)
         self.filemenu.addSeparator()
@@ -1234,6 +1244,7 @@ class TagLab(QMainWindow):
         self.projectmenu.setStyleSheet(styleMenu)
         self.projectmenu.addAction(newMapAct)
         self.projectmenu.addAction(projectEditorAct)
+        self.projectmenu.addAction(georeferencingToolAct)
         self.projectmenu.addSeparator()
         self.projectmenu.addAction(setWorkingAreaAct)
         self.projectmenu.addSeparator()
@@ -1629,6 +1640,26 @@ class TagLab(QMainWindow):
         self.toggleRGBDEM(self.viewerplus)
         if self.split_screen_flag:
             self.toggleRGBDEM(self.viewerplus2)
+
+    @pyqtSlot()
+    def exportDataForReefArchive(self):
+        """
+        Export data for the Reef Archive Lab platform. The data exported for the current map are:
+        the current map as a GeoTiff image, the Working Area as a shapefile, the annotations as a shapefile.
+        """
+
+        if self.activeviewer is not None:
+            if self.activeviewer.image is not None:
+                image = self.activeviewer.image
+                if image.georef_filename == "":
+                    # Georeferencing information are not available.
+                    QMessageBox.warning(self,
+                                        "Warning",
+                                        f"Georeferencing information are not available for this map, and they are necessary to upload data in Reef Archive Lab.\n"
+                                        f"Use the Georefering Tool to georeference the current map.")
+                else:
+                    # export data
+                    pass
 
     @pyqtSlot()
     def exportGenetSVG(self):
@@ -2585,8 +2616,8 @@ class TagLab(QMainWindow):
         # set the view parameters as the stored one before the image change
         self.resetViewsParameters()
 
-        self.viewerplus.viewHasChanged[float, float, float].connect(self.viewerplus2.setViewParameters, type=Qt.UniqueConnection)
-        self.viewerplus2.viewHasChanged[float, float, float].connect(self.viewerplus.setViewParameters, type=Qt.UniqueConnection)
+        #self.viewerplus.viewHasChanged[float, float, float].connect(self.viewerplus2.setViewParameters, type=Qt.UniqueConnection)
+        #self.viewerplus2.viewHasChanged[float, float, float].connect(self.viewerplus.setViewParameters, type=Qt.UniqueConnection)
 
 
     @pyqtSlot(int)
@@ -3826,6 +3857,140 @@ class TagLab(QMainWindow):
         self.groupbox_blobpanel.region_attributes = self.project.region_attributes
 
     @pyqtSlot()
+    def openGeoreferencingTool(self):
+        if self.activeviewer is not None:
+            if self.activeviewer.image is not None:
+                if self.georeferencing_tool_widget is None:
+                    self.disableSplitScreen()
+                    self.georeferencing_tool_widget = QtGeoreferencingWidget(self.project, parent=self)
+                    self.georeferencing_tool_widget.setWindowModality(Qt.NonModal)
+                    self.georeferencing_tool_widget.show()
+                    self.georeferencing_tool_widget.validchoices.connect(self.applyGeoreferencing)
+                    self.georeferencing_tool_widget.closewidget.connect(self.closeGeoreferencingTool)
+
+                    self.georeferencing_tool_widget.btn_pick_point_1.clicked.connect(self.enablePointsSelection)
+                    self.georeferencing_tool_widget.btn_pick_point_2.clicked.connect(self.enablePointsSelection)
+                    select_points_tool = self.activeviewer.tools.tools["SELECTPOINTS"]
+                    select_points_tool.setNumberOfPointsToSelect(1)
+
+                    genutils.disconnectSignal(self.georeferencing_tool_widget, "pointsToPickChanged", self.georeferencing_tool_widget.pointsToPickChanged)
+                    self.georeferencing_tool_widget.pointsToPickChanged[int].connect(self.numberOfPointsToSelectChanged)
+
+                    genutils.disconnectSignal(select_points_tool, "lastSelectedPoint", select_points_tool.lastSelectedPoint)
+                    select_points_tool.lastSelectedPoint[float, float].connect(self.georeferencing_tool_widget.updatePointsPicked)
+
+                else:
+                    self.georeferencing_tool_widget.show()
+
+    @pyqtSlot(int)
+    def numberOfPointsToSelectChanged(self, number_of_points):
+        if number_of_points == 0:
+            self.disablePointsSelection()
+        else:
+            self.activeviewer.tools.tools["SELECTPOINTS"].setNumberOfPointsToSelect(number_of_points)
+
+    @pyqtSlot()
+    def closeGeoreferencingTool(self):
+        self.georeferencing_tool_widget.close()
+        self.georeferencing_tool_widget = None
+        self.setTool("MOVE")
+
+    @pyqtSlot()
+    def applyGeoreferencing(self):
+        """
+        Assign georeferencing information to the current map.
+        """
+
+        active_image = self.activeviewer.image
+        qimg = self.activeviewer.channel.qimage
+        active_channel = self.activeviewer.channel
+        filename = active_channel.filename
+        output_filename = os.path.splitext(filename)[0] + ".tif"
+        img = genutils.qimageToNumpyArray(qimg)
+
+        box = QMessageBox()
+
+        if self.georeferencing_tool_widget.radio_maps.isChecked():
+            # georeferencing transfer
+            name = self.georeferencing_tool_widget.combobox_input_map.currentText()
+            for image in self.project.images:
+                if image.name == name:
+                    self.image.georef_filename = name
+
+            message = "Now, the current image has been georeferenced.\nRemember to save your project to finalize the georeferencing information assignment."
+            box.setText(message)
+            box.exec()
+
+        elif self.georeferencing_tool_widget.radio_one_gcp.isChecked():
+            # georeferencing using one known point
+            print("one GCP")
+            x = float(self.georeferencing_tool_widget.edit_coord_pixel_x_1.text())
+            y = float(self.georeferencing_tool_widget.edit_coord_pixel_y_1.text())
+            latitude = float(self.georeferencing_tool_widget.edit_coord_wgs84_lat_1.text())
+            longitude = float(self.georeferencing_tool_widget.edit_coord_wgs84_lon_1.text())
+            rasterops.georeferencingImage(img, active_image.pixelSize(), x, y, latitude, longitude, output_filename)
+
+            message = "The georeferenced image has been saved as " + output_filename + ".\nDo you want to replace your current ortho with this image?"
+            box = box.question(self, "Georeferencing Tool", message, QMessageBox.Yes | QMessageBox.No)
+            reply = box.exec()
+            if (reply == QMessageBox.Yes):
+                active_channel.filename = output_filename
+                active_image.georef_filename = output_filename
+                active_channel.qimage = None
+                self.activeviewer.setChannel(active_channel)
+
+        elif self.georeferencing_tool_widget.radio_two_gcp.isChecked():
+            # georeferencing using two known point
+            print("Two GCP")
+            x1 = float(self.georeferencing_tool_widget.edit_coord_pixel_x_1.text())
+            y1 = float(self.georeferencing_tool_widget.edit_coord_pixel_y_1.text())
+            latitude1 = float(self.georeferencing_tool_widget.edit_coord_wgs84_lat_1.text())
+            longitude1 = float(self.georeferencing_tool_widget.edit_coord_wgs84_lon_1.text())
+            x2 = float(self.georeferencing_tool_widget.edit_coord_pixel_x_2.text())
+            y2 = float(self.georeferencing_tool_widget.edit_coord_pixel_y_2.text())
+            latitude2 = float(self.georeferencing_tool_widget.edit_coord_wgs84_lat_2.text())
+            longitude2 = float(self.georeferencing_tool_widget.edit_coord_wgs84_lon_2.text())
+
+            pixel_coordinates = [y1,x1,y2,x2]
+            geo_coordinates = [longitude1, latitude1, longitude2, latitude2]
+
+            rasterops.georeferencingImageUsingGCPs(img, active_image.pixelSize(), pixel_coordinates, geo_coordinates, output_filename)
+
+            message = "The georeferenced image has been saved as " + output_filename + ".\nDo you want to replace your current ortho with this image?"
+            box = box.question(self, "Georeferencing Tool", message, QMessageBox.Yes | QMessageBox.No)
+            reply = box.exec()
+            if (reply == QMessageBox.Yes):
+                active_channel.filename = output_filename
+                active_image.georef_filename = output_filename
+                active_channel.qimage = None
+                self.activeviewer.setChannel(active_channel)
+
+        elif self.georeferencing_tool_widget.radio_choose.isChecked():
+            # georeferencing using the GPS coordinates of a location
+            gps_coord_txt = self.georeferencing_tool_widget.edit_gps_coordinates.text()
+            lat_txt = gps_coord_txt.split(",")[0]
+            lon_txt = gps_coord_txt.split(",")[1]
+            lat_txt = lat_txt.strip()
+            lon_txt = lon_txt.strip()
+            latitude = float(lat_txt)
+            longitude = float(lon_txt)
+            rasterops.georeferencingImage(img, 0, 0, latitude, longitude, output_filename)
+
+            message = "The georeferenced image has been saved as " + output_filename + ".\nDo you want to replace your current ortho with this image?"
+            box = box.question(self, "Georeferencing Tool", message, QMessageBox.Yes | QMessageBox.No)
+            reply = box.exec()
+            if (reply == QMessageBox.Yes):
+                active_channel.filename = output_filename
+                active_image.georef_filename = output_filename
+                active_channel.qimage = None
+                self.activeviewer.setChannel(active_channel)
+
+        else:
+            print("Georeferencing tool - Unknown option")
+
+        self.closeGeoreferencingTool()
+
+    @pyqtSlot()
     def chooseSampling(self):
         if self.activeviewer is not None:
             if self.activeviewer.image is not None:
@@ -4541,6 +4706,18 @@ class TagLab(QMainWindow):
             self.setTool("MOVE")
 
     @pyqtSlot()
+    def enablePointsSelection(self):
+        if self.activeviewer is not None:
+            if self.activeviewer.image is not None:
+                self.activeviewer.setTool("SELECTPOINTS")
+                image = self.activeviewer.image
+                self.activeviewer.tools.tools["SELECTPOINTS"].setImageSize(image.width, image.height)
+
+    @pyqtSlot()
+    def disablePointsSelection(self):
+        self.setTool("MOVE")
+
+    @pyqtSlot()
     def enableAreaSelection(self):
         if self.activeviewer is not None:
             if self.activeviewer.image is not None:
@@ -5205,7 +5382,7 @@ class TagLab(QMainWindow):
 
             flag_save = self.newDatasetWidget.checkShowTiles.isChecked()
             if flag_save:
-                new_dataset.save_samples("tiles_cutted.png", show_tiles=True, show_areas=True, radii=None)
+                new_dataset.save_samples("tiles_cut.png", show_tiles=True, show_areas=True, radii=None)
 
             # export the tiles
             self.progress_bar.setMessage("Export tiles (it could take long)..")

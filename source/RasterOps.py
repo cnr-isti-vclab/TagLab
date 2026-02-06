@@ -1,21 +1,114 @@
 
 import numpy as np
 import json
-import ast
+import math
 
 from osgeo import gdal, osr
 import osgeo.ogr as ogr
 import rasterio as rio
 from rasterio.plot import reshape_as_raster
 from rasterio.mask import mask
+from rasterio.control import GroundControlPoint
+from rasterio.transform import from_origin, from_gcps
 import pandas as pd
 from source.Blob import Blob
-
 from source.Shape import Shape
 from source.Mask import subtract
-from numpy.linalg import inv
-import shapely
 from shapely.geometry import Polygon
+
+
+def mm_to_degrees(mm_pixel_size, center_lat):
+    """
+    This function converts the length in latitude and longitude degrees.
+    One degree of Latitude is always approximately 111.1 km.
+    The distance of one degree of Longitude shrinks as you move away from the Equator.
+    """
+
+    # Constants
+    KM_PER_DEGREE_LAT = 111.1
+    KM_PER_DEGREE_LON_EQUATOR = 111.32
+
+    # Convert mm to km
+    km_pixel_size = mm_pixel_size / 1000000.0
+
+    # Calculate degrees
+    deg_lat = km_pixel_size / KM_PER_DEGREE_LAT
+
+    # Adjust longitude for the curvature of the Earth
+    # np.radians is required because cos() takes radians
+    deg_lon = km_pixel_size / (KM_PER_DEGREE_LON_EQUATOR * math.cos(math.radians(center_lat)))
+
+    return deg_lon, deg_lat
+
+def georeferencingImageUsingGCPs(img, pixel_size, pix_coords, geo_coords, output_file):
+    """
+    Assign the georeferencing information to the input image given a set of Ground Control Points.
+    """
+
+    # If input_image is (H, W, C), we need to reshape it to (C, H, W) for Rasterio
+    width = img.shape[0]
+    height = img.shape[1]
+    count = img.ndim
+    if count == 3 or count == 4:
+        img = img.transpose(2, 0, 1)
+
+    # Define GCPs (x=Longitude, y=Latitude)
+    gcp1 = GroundControlPoint(row=pix_coords[0], col=pix_coords[1], x=geo_coords[0], y=geo_coords[1])
+    gcp2 = GroundControlPoint(row=pix_coords[2], col=pix_coords[3], x=geo_coords[2], y=geo_coords[3])
+    transform = from_gcps([gcp1, gcp2])
+
+    # save to a GeoTIFF
+    output_path = "memory_to_disk.tif"
+
+    with rio.open(
+        output_path,
+        'w',
+        driver='GTiff',
+        height=height,
+        width=width,
+        count=count,
+        dtype=img.dtype,
+        crs=rio.crs.from_epsg(4326), # explicitly setting Lat/Long
+        transform=transform,
+    ) as dst:
+        dst.write(img)
+
+
+def georeferencingImage(img, pixel_size, anchor_x, anchor_y, anchor_lat, anchor_lon, output_file):
+    """
+    Given an image without georeferencing information assign georeferencing using WGS EPSG:4326 coordinates.
+    """
+
+    # If input_image is (H, W, C), we need to reshape it to (C, H, W) for Rasterio
+    width = img.shape[0]
+    height = img.shape[1]
+    count = img.ndim
+    if count == 3 or count == 4:
+        img = img.transpose(2, 0, 1)
+    pixel_size = img.pixelSize()
+
+    # Calculate the latitude and the longitude of the top-left corner of the image
+    lon_res, lat_res = mm_to_degrees(pixel_size, anchor_lat)
+    lon_origin = anchor_lon - (anchor_x * lon_res)
+    lat_origin = anchor_lat + (anchor_y * lat_res)
+
+    # create the geotransform
+    transform = from_origin(lon_origin, lat_origin, lon_res, lat_res)
+
+    # write a GeoTiff
+    with rio.open(
+            'output_file',
+            'w',
+            driver='GTiff',
+            height=height,
+            width=width,
+            count=count,
+            dtype=img.dtype,
+            crs='EPSG:4326',
+            transform=transform,
+    ) as dst:
+        dst.write(img)
+
 
 def changeFormat(contour, transform):
     """

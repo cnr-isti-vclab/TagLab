@@ -18,13 +18,11 @@
 # for more details.
 
 
-from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal, QEvent, QDate
-from PyQt5.QtWidgets import QGridLayout, QWidget, QScrollArea,QGroupBox, QColorDialog, QMessageBox, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, \
-    QHBoxLayout, QVBoxLayout, QTextEdit, QTableWidget, QTableWidgetItem, QFrame
+from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal, QDate
+from PyQt5.QtWidgets import QWidget, QScrollArea, QMessageBox, QSizePolicy, QLabel, QPushButton, \
+    QHBoxLayout, QVBoxLayout, QTextEdit
 import rasterio as rio
-import os, json, re
-from source.RegionAttributes import RegionAttributes
-from copy import deepcopy
+from osgeo import osr
 
 class QtProjectEditor(QWidget):
     closed = pyqtSignal()
@@ -150,7 +148,6 @@ class QtProjectEditor(QWidget):
     def closeEvent(self, event):
         self.closed.emit()
 
-
     def georefAvailable(self, path):
 
         if path == "":
@@ -159,7 +156,6 @@ class QtProjectEditor(QWidget):
             img = rio.open(path)
             geoinfo = img.crs
 
-            from osgeo import osr
             srs = osr.SpatialReference()
             srs.ImportFromWkt(geoinfo.to_wkt())
             pretty_wkt = srs.ExportToPrettyWkt()
