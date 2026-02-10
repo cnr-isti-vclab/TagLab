@@ -92,7 +92,7 @@ from source.QtDictionaryWidget import QtDictionaryWidget
 from source.QtRegionAttributesWidget import QtRegionAttributesWidget
 from source.QtShapefileAttributeWidget import QtAttributeWidget
 from source.QtGeometricInfoWidget import QtGeometricInfoWidget
-from source.QtRowAnalysis import QtRowAnalysis
+from source.QtCourseAnalysis import QtCourseAnalysis
 
 from source.QtSelection import QtSelectByPropertiesWidget
 
@@ -336,7 +336,7 @@ class TagLab(QMainWindow):
         self.fillAction         = self.newAction("Fill Region",               "F",   self.fillLabel)
         self.createNegative = self.newAction("Create a Background Region using the WA", "N", self.createNegative)
         self.computeGeometricInfo = self.newAction("Compute Geometric Info", None, self.computeGeometricInfo)
-        self.rowAnalysis = self.newAction("Row Analysis", None, self.rowAnalysis)
+        self.rowAnalysis = self.newAction("Course Analysis", None, self.rowAnalysis)
 
         # SELECTION ACTIONS
         self.selectAllAction           = self.newAction("Select All",              "Ctrl+A", self.selectAll)
@@ -3304,7 +3304,7 @@ class TagLab(QMainWindow):
 
     def rowAnalysis(self):
         """
-        Open the Row Analysis widget.
+        Open the Course Analysis widget.
         """
         view = self.activeviewer
 
@@ -3318,7 +3318,7 @@ class TagLab(QMainWindow):
             msgBox.exec()
             return
 
-        rowAnalysis_widget = QtRowAnalysis(view, parent = self)
+        rowAnalysis_widget = QtCourseAnalysis(view, parent = self)
         rowAnalysis_widget.setWindowModality(Qt.NonModal)
         rowAnalysis_widget.show()
 

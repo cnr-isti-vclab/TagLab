@@ -27,29 +27,29 @@ import json
 import os
 
 
-class QtRowAnalysis(QWidget):
+class QtCourseAnalysis(QWidget):
     """
-    Widget for row analysis functionality.
+    Widget for course analysis functionality.
     Provides three command buttons and a log area to display information.
     """
 
     def __init__(self, viewer, parent=None):
-        super(QtRowAnalysis, self).__init__(parent)
+        super(QtCourseAnalysis, self).__init__(parent)
 
         # DATA ##########################################################
         # active viewer
         self.activeviewer = viewer
         # the set of working blobs, that contain the blobs being analyzed
         self.workingBlobs = self.activeviewer.selected_blobs[:]
-        # data structure to hold recognized rows
-        self.rowsData = None
+        # data structure to hold recognized courses
+        self.coursesData = None
         # color mode for displaying regions
         self.colorMode = "ID"  # Options: "NONE", "ID", "INCLINATION"
 
         # store geometric entities for overlay
         self.colorizedEntities = []
         self.polylineEntities = []
-        self.lineSegmentData = []  # Store metadata for each line segment: (row_index, segment_index, point1, point2)
+        self.lineSegmentData = []  # Store metadata for each line segment: (course_index, segment_index, point1, point2)
         self.inclinationLines = []  # Store inclination visualization lines
         self.segmentInclinationEntities = []  # Store segment-by-segment inclination visualizations
         
@@ -60,7 +60,7 @@ class QtRowAnalysis(QWidget):
         self.mergeModeActive = False
         self.firstMergeBlob = None  # First blob selected for merge
         self.firstMergeBlobHighlight = None  # Highlight graphics for first blob
-        self.blobToRowMap = {}  # Map blob to (row_index, position_in_row)
+        self.blobToCourseMap = {}  # Map blob to (course_index, position_in_course)
 
 
         # EVENTS ###########################################################
@@ -76,7 +76,7 @@ class QtRowAnalysis(QWidget):
         mainLayout = QVBoxLayout()
 
         # GROUP BOX for detection and editing controls
-        controlsGroup = QGroupBox("Row Detection and Editing")
+        controlsGroup = QGroupBox("Courses Detection and Editing")
         controlsGroup.setStyleSheet("QGroupBox { background-color: rgb(45,45,45); color: white; border: 2px solid rgb(80,80,80); border-radius: 5px; margin-top: 10px; padding-top: 10px; font-weight: bold; } QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 5px; }")
         controlsLayout = QVBoxLayout()
         
@@ -101,7 +101,7 @@ class QtRowAnalysis(QWidget):
         lblXGapTolerance = QLabel("X Gap:")
         self.editXGapTolerance = QLineEdit("3.0")
         self.editXGapTolerance.setMaximumWidth(60)
-        self.editXGapTolerance.setToolTip("Maximum X gap (relative to average blob width in row)")
+        self.editXGapTolerance.setToolTip("Maximum X gap (relative to average blob width in course)")
         
         tolerance_layout.addWidget(lblYTolerance)
         tolerance_layout.addWidget(self.editYTolerance)
@@ -121,16 +121,16 @@ class QtRowAnalysis(QWidget):
         # Buttons layout
         button_layout = QHBoxLayout()
         
-        self.btnRecognize = QPushButton("Recognize Rows")
-        self.btnRecognize.clicked.connect(self.recognizeRows)
+        self.btnRecognize = QPushButton("Recognize Courses")
+        self.btnRecognize.clicked.connect(self.recognizeCourses)
         
-        self.btnCutRow = QPushButton("✂ Cut Row")
-        self.btnCutRow.setToolTip("Click to activate cut mode, then click near a polyline to split the row")
+        self.btnCutRow = QPushButton("✂ Cut Course")
+        self.btnCutRow.setToolTip("Click to activate cut mode, then click near a polyline to split the course")
         self.btnCutRow.setCheckable(True)
         self.btnCutRow.clicked.connect(self.toggleCutMode)
         
-        self.btnMergeRows = QPushButton("🔗 Merge Rows")
-        self.btnMergeRows.setToolTip("Click to activate merge mode, then click on first/last regions of two different rows to connect them")
+        self.btnMergeRows = QPushButton("🔗 Merge Courses")
+        self.btnMergeRows.setToolTip("Click to activate merge mode, then click on first/last regions of two different courses to connect them")
         self.btnMergeRows.setCheckable(True)
         self.btnMergeRows.clicked.connect(self.toggleMergeMode)
         
@@ -145,11 +145,11 @@ class QtRowAnalysis(QWidget):
         saveload_layout = QHBoxLayout()
         
         self.btnSave = QPushButton("💾 Save State")
-        self.btnSave.setToolTip("Save the current rows state to a JSON file")
+        self.btnSave.setToolTip("Save the current courses state to a JSON file")
         self.btnSave.clicked.connect(self.saveState)
         
         self.btnRestore = QPushButton("📂 Restore State")
-        self.btnRestore.setToolTip("Restore rows state from a JSON file")
+        self.btnRestore.setToolTip("Restore courses state from a JSON file")
         self.btnRestore.clicked.connect(self.restoreState)
         
         saveload_layout.addWidget(self.btnSave)
@@ -160,17 +160,17 @@ class QtRowAnalysis(QWidget):
         controlsGroup.setLayout(controlsLayout)
         mainLayout.addWidget(controlsGroup)
 
-        # Table widget for row data
-        self.rowsTable = QTableWidget()
-        self.rowsTable.setColumnCount(6)
-        self.rowsTable.setHorizontalHeaderLabels(["Color", "Regions", "Y pos", "Avg Height", "Width", "Inclination"])
-        self.rowsTable.setStyleSheet("QTableWidget { background-color: rgb(50,50,50); color: white; gridline-color: rgb(80,80,80); } QHeaderView::section { background-color: rgb(60,60,60); color: white; }")
-        self.rowsTable.setMinimumHeight(150)
-        self.rowsTable.setEditTriggers(QTableWidget.NoEditTriggers)
-        mainLayout.addWidget(self.rowsTable)
+        # Table widget for course data
+        self.coursesTable = QTableWidget()
+        self.coursesTable.setColumnCount(6)
+        self.coursesTable.setHorizontalHeaderLabels(["Color", "Regions", "Y pos", "Avg Height", "Width", "Inclination"])
+        self.coursesTable.setStyleSheet("QTableWidget { background-color: rgb(50,50,50); color: white; gridline-color: rgb(80,80,80); } QHeaderView::section { background-color: rgb(60,60,60); color: white; }")
+        self.coursesTable.setMinimumHeight(150)
+        self.coursesTable.setEditTriggers(QTableWidget.NoEditTriggers)
+        mainLayout.addWidget(self.coursesTable)
         
-        # GROUP BOX for row analysis
-        analysisGroup = QGroupBox("Row Analysis")
+        # GROUP BOX for course analysis
+        analysisGroup = QGroupBox("Course Analysis")
         analysisGroup.setStyleSheet("QGroupBox { background-color: rgb(45,45,45); color: white; border: 2px solid rgb(80,80,80); border-radius: 5px; margin-top: 10px; padding-top: 10px; font-weight: bold; } QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 5px; }")
         analysisLayout = QVBoxLayout()
         
@@ -180,7 +180,7 @@ class QtRowAnalysis(QWidget):
         self.comboColorMode = QComboBox()
         self.comboColorMode.addItems(["NONE", "ID", "INCLINATION"])
         self.comboColorMode.setCurrentText("ID")
-        self.comboColorMode.setToolTip("Select how to colorize regions: NONE (no color), ID (random pastel colors), INCLINATION (color ramp based on row angle)")
+        self.comboColorMode.setToolTip("Select how to colorize regions: NONE (no color), ID (random pastel colors), INCLINATION (color ramp based on course angle)")
         self.comboColorMode.currentTextChanged.connect(self.onColorModeChanged)
         self.comboColorMode.setMaximumWidth(150)
         color_mode_layout.addWidget(lblColorMode)
@@ -192,7 +192,7 @@ class QtRowAnalysis(QWidget):
         buttons_layout = QHBoxLayout()
         
         self.btnAnalyzeInclination = QPushButton("Show Inclination")
-        self.btnAnalyzeInclination.setToolTip("Compute and show/hide the inclination angle for each row by fitting a line through all centroids")
+        self.btnAnalyzeInclination.setToolTip("Compute and show/hide the inclination angle for each course by fitting a line through all centroids")
         self.btnAnalyzeInclination.setCheckable(True)
         self.btnAnalyzeInclination.clicked.connect(self.toggleInclination)
         
@@ -229,7 +229,7 @@ class QtRowAnalysis(QWidget):
 
         # set the layout and window properties
         self.setLayout(mainLayout)
-        self.setWindowTitle("Row Analysis")
+        self.setWindowTitle("Course Analysis")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint | Qt.WindowStaysOnTopHint)
         self.setMinimumWidth(600)
         self.setMinimumHeight(400)
@@ -250,7 +250,7 @@ class QtRowAnalysis(QWidget):
         self.activeviewer.viewport().removeEventFilter(self)
         # emit the signal to notify the main window
         self.closewidget.emit()
-        super(QtRowAnalysis, self).closeEvent(event)
+        super(QtCourseAnalysis, self).closeEvent(event)
 
     @pyqtSlot()
     def onSelectionChanged(self):
@@ -262,8 +262,8 @@ class QtRowAnalysis(QWidget):
     def onColorModeChanged(self, mode):
         """Called when the color mode dropdown changes"""
         self.colorMode = mode
-        if self.rowsData is not None and len(self.rowsData) > 0:
-            self.displayRows()
+        if self.coursesData is not None and len(self.coursesData) > 0:
+            self.displayCourses()
             # Redisplay inclination and segment angles if active
             if self.btnAnalyzeInclination.isChecked():
                 self.displayInclinationLines()
@@ -291,7 +291,7 @@ class QtRowAnalysis(QWidget):
                 self.handleMergeClick(scenePos.x(), scenePos.y())
                 return True  # Event handled
         
-        return super(QtRowAnalysis, self).eventFilter(obj, event)
+        return super(QtCourseAnalysis, self).eventFilter(obj, event)
 
     def logSelectedRegions(self):
         num_selected = len(self.workingBlobs)
@@ -308,16 +308,16 @@ class QtRowAnalysis(QWidget):
     ########################################################################################
 
     @pyqtSlot()
-    def recognizeRows(self):
+    def recognizeCourses(self):
         """
-        Recognize rows using incremental algorithm.
+        Recognize courses using incremental algorithm.
         """
         if len(self.workingBlobs) == 0:
             self.writeLog("No regions selected!")
             return
 
         self.logArea.clear()
-        self.writeLog("Recognizing rows...")
+        self.writeLog("Recognizing courses...")
         
         # Read tolerance values from input fields
         try:
@@ -332,20 +332,20 @@ class QtRowAnalysis(QWidget):
             height_tolerance_factor = 0.3
             x_gap_factor = 3.0
         
-        # Detect rows using incremental method
-        self.rowsData = self.detectRowsIncremental(y_tolerance_factor, ytb_tolerance_factor, height_tolerance_factor, x_gap_factor)
+        # Detect courses using incremental method
+        self.coursesData = self.detectCoursesIncremental(y_tolerance_factor, ytb_tolerance_factor, height_tolerance_factor, x_gap_factor)
         
         # Log results
-        self.writeLog("Found {} row(s)".format(len(self.rowsData)))
+        self.writeLog("Found {} course(s)".format(len(self.coursesData)))
         
-        # Compute inclination for all rows automatically
+        # Compute inclination for all courses automatically
         self.computeInclination()
         
-        # Populate table with row data
-        self.populateRowsTable()
+        # Populate table with course data
+        self.populateCoursesTable()
         
-        # Display rows
-        self.displayRows()
+        # Display courses
+        self.displayCourses()
         
         # Redisplay visualizations if they were active
         if self.btnAnalyzeInclination.isChecked():
@@ -355,20 +355,20 @@ class QtRowAnalysis(QWidget):
 
     def computeInclination(self):
         """
-        Compute the inclination for all rows.
+        Compute the inclination for all courses.
         """
-        if self.rowsData is None or len(self.rowsData) == 0:
+        if self.coursesData is None or len(self.coursesData) == 0:
             return
         
-        for row in self.rowsData:
-            if row['num_blobs'] < 2:
-                row['inclination_deg'] = 0.0
-                row['inclination_rad'] = 0.0
+        for course in self.coursesData:
+            if course['num_blobs'] < 2:
+                course['inclination_deg'] = 0.0
+                course['inclination_rad'] = 0.0
                 continue
             
             # Get all centroids
-            centroids_x = [blob.centroid[0] for blob in row['blobs']]
-            centroids_y = [blob.centroid[1] for blob in row['blobs']]
+            centroids_x = [blob.centroid[0] for blob in course['blobs']]
+            centroids_y = [blob.centroid[1] for blob in course['blobs']]
             
             # Fit a line using least squares: y = mx + b
             # Using numpy polyfit for simplicity
@@ -382,18 +382,18 @@ class QtRowAnalysis(QWidget):
             angle_rad = math.atan(-slope)
             angle_deg = math.degrees(angle_rad)
             
-            row['inclination_deg'] = angle_deg
-            row['inclination_rad'] = angle_rad
-            row['fit_slope'] = slope
-            row['fit_intercept'] = intercept
+            course['inclination_deg'] = angle_deg
+            course['inclination_rad'] = angle_rad
+            course['fit_slope'] = slope
+            course['fit_intercept'] = intercept
     
     @pyqtSlot()
     def toggleInclination(self):
         """
         Toggle the display of inclination lines.
         """
-        if self.rowsData is None or len(self.rowsData) == 0:
-            self.writeLog("No rows detected. Please run row detection first.")
+        if self.coursesData is None or len(self.coursesData) == 0:
+            self.writeLog("No courses detected. Please run course detection first.")
             self.btnAnalyzeInclination.setChecked(False)
             return
         
@@ -415,8 +415,8 @@ class QtRowAnalysis(QWidget):
         """
         Toggle the display of segment-by-segment inclination angles.
         """
-        if self.rowsData is None or len(self.rowsData) == 0:
-            self.writeLog("No rows detected. Please run row detection first.")
+        if self.coursesData is None or len(self.coursesData) == 0:
+            self.writeLog("No courses detected. Please run course detection first.")
             self.btnSegmentInclination.setChecked(False)
             return
         
@@ -441,9 +441,9 @@ class QtRowAnalysis(QWidget):
         self.cutModeActive = self.btnCutRow.isChecked()
         
         if self.cutModeActive:
-            # Check if there are rows to cut
-            if self.rowsData is None or len(self.rowsData) == 0:
-                self.writeLog("No rows detected. Please run row detection first.")
+            # Check if there are courses to cut
+            if self.coursesData is None or len(self.coursesData) == 0:
+                self.writeLog("No courses detected. Please run course detection first.")
                 self.btnCutRow.setChecked(False)
                 self.cutModeActive = False
                 return
@@ -456,7 +456,7 @@ class QtRowAnalysis(QWidget):
                 self.clearMergeSelection()
             
             self.btnCutRow.setStyleSheet("background-color: rgb(200, 100, 100); color: white; font-weight: bold;")
-            self.writeLog("Cut mode activated. Click near a polyline to split the row.")
+            self.writeLog("Cut mode activated. Click near a polyline to split the course.")
             self.activeviewer.setCursor(Qt.SizeHorCursor)
         else:
             self.btnCutRow.setStyleSheet("")
@@ -471,9 +471,9 @@ class QtRowAnalysis(QWidget):
         self.mergeModeActive = self.btnMergeRows.isChecked()
         
         if self.mergeModeActive:
-            # Check if there are rows to merge
-            if self.rowsData is None or len(self.rowsData) == 0:
-                self.writeLog("No rows detected. Please run row detection first.")
+            # Check if there are courses to merge
+            if self.coursesData is None or len(self.coursesData) == 0:
+                self.writeLog("No courses detected. Please run course detection first.")
                 self.btnMergeRows.setChecked(False)
                 self.mergeModeActive = False
                 return
@@ -486,7 +486,7 @@ class QtRowAnalysis(QWidget):
             
             self.btnMergeRows.setStyleSheet("background-color: rgb(100, 150, 200); color: white; font-weight: bold;")
             self.clearMergeSelection()
-            self.writeLog("Merge mode activated. Click on the first/last region of a row.")
+            self.writeLog("Merge mode activated. Click on the first/last region of a course.")
             self.activeviewer.setCursor(Qt.PointingHandCursor)
         else:
             self.btnMergeRows.setStyleSheet("")
@@ -494,69 +494,69 @@ class QtRowAnalysis(QWidget):
             self.writeLog("Merge mode deactivated.")
             self.activeviewer.setCursor(Qt.ArrowCursor)
     
-    def populateRowsTable(self):
+    def populateCoursesTable(self):
         """
-        Populate the table with detected rows data.
+        Populate the table with detected courses data.
         """
-        if self.rowsData is None or len(self.rowsData) == 0:
-            self.rowsTable.setRowCount(0)
+        if self.coursesData is None or len(self.coursesData) == 0:
+            self.coursesTable.setRowCount(0)
             return
-        self.rowsTable.setRowCount(len(self.rowsData))
-        for i, row in enumerate(self.rowsData):
+        self.coursesTable.setRowCount(len(self.coursesData))
+        for i, course in enumerate(self.coursesData):
             # Color indicator
-            color = self.getPastelColor(i, len(self.rowsData))
+            color = self.getPastelColor(i, len(self.coursesData))
             color_item = QTableWidgetItem("")
             color_item.setBackground(QBrush(color))
-            self.rowsTable.setItem(i, 0, color_item)
+            self.coursesTable.setItem(i, 0, color_item)
             # Number of regions
-            self.rowsTable.setItem(i, 1, QTableWidgetItem(str(row['num_blobs'])))
+            self.coursesTable.setItem(i, 1, QTableWidgetItem(str(course['num_blobs'])))
             # Y position
-            self.rowsTable.setItem(i, 2, QTableWidgetItem("{:.1f}".format(row['centroid_y'])))
+            self.coursesTable.setItem(i, 2, QTableWidgetItem("{:.1f}".format(course['centroid_y'])))
             # Average height
-            self.rowsTable.setItem(i, 3, QTableWidgetItem("{:.1f}".format(row['avg_height'])))
+            self.coursesTable.setItem(i, 3, QTableWidgetItem("{:.1f}".format(course['avg_height'])))
             # Width
-            self.rowsTable.setItem(i, 4, QTableWidgetItem("{:.1f}".format(row['width'])))
+            self.coursesTable.setItem(i, 4, QTableWidgetItem("{:.1f}".format(course['width'])))
             # Inclination
-            if 'inclination_deg' in row:
-                self.rowsTable.setItem(i, 5, QTableWidgetItem("{:.2f}°".format(row['inclination_deg'])))
+            if 'inclination_deg' in course:
+                self.coursesTable.setItem(i, 5, QTableWidgetItem("{:.2f}°".format(course['inclination_deg'])))
             else:
-                self.rowsTable.setItem(i, 5, QTableWidgetItem("-"))
-        self.rowsTable.resizeColumnsToContents()
+                self.coursesTable.setItem(i, 5, QTableWidgetItem("-"))
+        self.coursesTable.resizeColumnsToContents()
 
     ########################################################################################
-    # ROW DETECTION ALGORITHM
+    # COURSE DETECTION ALGORITHM
 
-    def detectRowsIncremental(self, y_tolerance_factor=0.3, ytb_tolerance_factor=0.3, height_tolerance_factor=0.3, x_gap_factor=3.0):
+    def detectCoursesIncremental(self, y_tolerance_factor=0.3, ytb_tolerance_factor=0.3, height_tolerance_factor=0.3, x_gap_factor=3.0):
         """
-        Detect rows incrementally by building rows one at a time.
-        A blob is added to a row if it's compatible with the last (rightmost) blob in the row:
+        Detect courses incrementally by building courses one at a time.
+        A blob is added to a course if it's compatible with the last (rightmost) blob in the course:
         - Its centroid Y is within tolerance of the last blob's Y (tolerance based on last blob's height)
         - Its top and bottom Y positions are within tolerance (tolerance based on last blob's height)
         - Its height is within tolerance of the last blob's height
-        - The X gap is not too large (tolerance based on average blob width in row)
+        - The X gap is not too large (tolerance based on average blob width in course)
         
         Args:
             y_tolerance_factor: Tolerance for Y centroid position (relative to last blob height)
             ytb_tolerance_factor: Tolerance for Y top/bottom position (relative to last blob height)
             height_tolerance_factor: Tolerance for height variation (relative to last blob height)
-            x_gap_factor: Maximum X gap (relative to average blob width in row)
+            x_gap_factor: Maximum X gap (relative to average blob width in course)
             
         Returns:
-            List of row objects, each containing blobs and metadata
+            List of course objects, each containing blobs and metadata
         """
         if len(self.workingBlobs) == 0:
             return []
         
         # Keep track of unassigned blobs
         unassigned = self.workingBlobs[:]
-        rows = []
+        courses = []
         
         while unassigned:
-            # Start a new row with the first unassigned blob (leftmost by X)
+            # Start a new course with the first unassigned blob (leftmost by X)
             unassigned.sort(key=lambda b: b.centroid[0])
             first_blob = unassigned.pop(0)
             
-            current_row = {
+            current_course = {
                 'blobs': [first_blob],
                 'centroid_y': first_blob.centroid[1],
                 'avg_height': first_blob.bbox[3],
@@ -564,10 +564,10 @@ class QtRowAnalysis(QWidget):
                 'max_y': first_blob.bbox[0] + first_blob.bbox[3]
             }
             
-            # Try to add more blobs to this row
+            # Try to add more blobs to this course
             while unassigned:
-                # Get the rightmost (last) blob in the current row
-                last_blob = current_row['blobs'][-1]
+                # Get the rightmost (last) blob in the current course
+                last_blob = current_course['blobs'][-1]
                 last_y = last_blob.centroid[1]
                 last_height = last_blob.bbox[3]
                 last_x = last_blob.centroid[0]
@@ -578,8 +578,8 @@ class QtRowAnalysis(QWidget):
                 y_tolerance = last_height * y_tolerance_factor
                 ytb_tolerance = last_height * ytb_tolerance_factor
                 
-                # Calculate average width of blobs in current row for X gap tolerance
-                avg_width = sum([b.bbox[2] for b in current_row['blobs']]) / len(current_row['blobs'])
+                # Calculate average width of blobs in current course for X gap tolerance
+                avg_width = sum([b.bbox[2] for b in current_course['blobs']]) / len(current_course['blobs'])
                 x_gap_tolerance = avg_width * x_gap_factor
                 
                 # Find the best compatible blob (leftmost among compatible ones that are to the RIGHT)
@@ -625,78 +625,78 @@ class QtRowAnalysis(QWidget):
                     break  # Exit the loop immediately
                 
                 if best_blob is None:
-                    # No more compatible blobs for this row
+                    # No more compatible blobs for this course
                     break
                 
-                # Add the best blob to the current row
-                current_row['blobs'].append(best_blob)
+                # Add the best blob to the current course
+                current_course['blobs'].append(best_blob)
                 unassigned.remove(best_blob)
                 
-                # Update row statistics
-                current_row['centroid_y'] = sum([b.centroid[1] for b in current_row['blobs']]) / len(current_row['blobs'])
-                current_row['avg_height'] = sum([b.bbox[3] for b in current_row['blobs']]) / len(current_row['blobs'])
-                current_row['min_y'] = min(current_row['min_y'], best_blob.bbox[0])
-                current_row['max_y'] = max(current_row['max_y'], best_blob.bbox[0] + best_blob.bbox[3])
+                # Update course statistics
+                current_course['centroid_y'] = sum([b.centroid[1] for b in current_course['blobs']]) / len(current_course['blobs'])
+                current_course['avg_height'] = sum([b.bbox[3] for b in current_course['blobs']]) / len(current_course['blobs'])
+                current_course['min_y'] = min(current_course['min_y'], best_blob.bbox[0])
+                current_course['max_y'] = max(current_course['max_y'], best_blob.bbox[0] + best_blob.bbox[3])
             
-            rows.append(current_row)
+            courses.append(current_course)
         
-        # Sort blobs within each row by X coordinate and compute final metadata
-        for row in rows:
-            row['blobs'].sort(key=lambda b: b.centroid[0])
-            row['num_blobs'] = len(row['blobs'])
-            row['min_x'] = min([b.bbox[1] for b in row['blobs']])
-            row['max_x'] = max([b.bbox[1] + b.bbox[2] for b in row['blobs']])
-            row['height'] = row['max_y'] - row['min_y']
-            row['width'] = row['max_x'] - row['min_x']
+        # Sort blobs within each course by X coordinate and compute final metadata
+        for course in courses:
+            course['blobs'].sort(key=lambda b: b.centroid[0])
+            course['num_blobs'] = len(course['blobs'])
+            course['min_x'] = min([b.bbox[1] for b in course['blobs']])
+            course['max_x'] = max([b.bbox[1] + b.bbox[2] for b in course['blobs']])
+            course['height'] = course['max_y'] - course['min_y']
+            course['width'] = course['max_x'] - course['min_x']
         
-        # Sort rows: primarily by Y position, secondarily by X position for rows at similar Y
+        # Sort courses: primarily by Y position, secondarily by X position for courses at similar Y
         # Use average height as tolerance for "similar Y"
-        avg_row_height = sum([r['avg_height'] for r in rows]) / len(rows) if rows else 0
-        y_tolerance = avg_row_height * 0.5  # Rows within 50% of avg height are considered "same level"
+        avg_course_height = sum([r['avg_height'] for r in courses]) / len(courses) if courses else 0
+        y_tolerance = avg_course_height * 0.5  # Courses within 50% of avg height are considered "same level"
         
-        def row_sort_key(row):
-            # Quantize Y position to group similar rows, then sort by X within groups
-            y_bucket = int(row['centroid_y'] / y_tolerance) if y_tolerance > 0 else row['centroid_y']
-            return (y_bucket, row['min_x'])
+        def course_sort_key(course):
+            # Quantize Y position to group similar courses, then sort by X within groups
+            y_bucket = int(course['centroid_y'] / y_tolerance) if y_tolerance > 0 else course['centroid_y']
+            return (y_bucket, course['min_x'])
         
-        rows.sort(key=row_sort_key)
+        courses.sort(key=course_sort_key)
         
-        return rows
+        return courses
 
 
     ########################################################################################
 
-    def displayRows(self):
+    def displayCourses(self):
         """
-        Display blobs colorized by their row assignment.
+        Display blobs colorized by their course assignment.
         """
-        if self.rowsData is None or len(self.rowsData) == 0:
+        if self.coursesData is None or len(self.coursesData) == 0:
             return
         
         self.removeColorizedEntities()
         self.removePolylineEntities()
         self.lineSegmentData = []  # Clear line segment metadata
-        self.blobToRowMap = {}  # Clear blob-to-row mapping
+        self.blobToCourseMap = {}  # Clear blob-to-course mapping
         
         # Calculate max absolute inclination for color ramp
         max_abs_inclination = 0.0
         if self.colorMode == "INCLINATION":
-            for row in self.rowsData:
-                if 'inclination_deg' in row:
-                    max_abs_inclination = max(max_abs_inclination, abs(row['inclination_deg']))
+            for course in self.coursesData:
+                if 'inclination_deg' in course:
+                    max_abs_inclination = max(max_abs_inclination, abs(course['inclination_deg']))
         
-        for row_index, row in enumerate(self.rowsData):
+        for course_index, course in enumerate(self.coursesData):
             # Determine color based on mode
             if self.colorMode == "NONE":
                 # Don't draw filled blobs
                 pass
             elif self.colorMode == "ID":
-                color = self.getPastelColor(row_index, len(self.rowsData))
+                color = self.getPastelColor(course_index, len(self.coursesData))
                 pen = QPen(Qt.NoPen)
                 brush = QBrush(color)
                 
                 # Draw filled blobs
-                for blob in row['blobs']:
+                for blob in course['blobs']:
                     min_row, min_col, _, _ = blob.bbox
                     contours, _ = cv2.findContours(blob.getMask().astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                     cnt = contours[0]
@@ -707,8 +707,8 @@ class QtRowAnalysis(QWidget):
             
             elif self.colorMode == "INCLINATION":
                 # Get inclination-based color
-                if 'inclination_deg' in row and max_abs_inclination > 0:
-                    color = self.getInclinationColor(row['inclination_deg'], max_abs_inclination)
+                if 'inclination_deg' in course and max_abs_inclination > 0:
+                    color = self.getInclinationColor(course['inclination_deg'], max_abs_inclination)
                 else:
                     color = QColor(128, 128, 128)  # Grey for no inclination data
                 
@@ -716,7 +716,7 @@ class QtRowAnalysis(QWidget):
                 brush = QBrush(color)
                 
                 # Draw filled blobs
-                for blob in row['blobs']:
+                for blob in course['blobs']:
                     min_row, min_col, _, _ = blob.bbox
                     contours, _ = cv2.findContours(blob.getMask().astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                     cnt = contours[0]
@@ -725,21 +725,21 @@ class QtRowAnalysis(QWidget):
                     newItemC.setZValue(10)
                     self.colorizedEntities.append(newItemC)
             
-            # Build blob-to-row mapping for merge functionality
-            for pos, blob in enumerate(row['blobs']):
-                self.blobToRowMap[blob] = (row_index, pos)
+            # Build blob-to-course mapping for merge functionality
+            for pos, blob in enumerate(course['blobs']):
+                self.blobToCourseMap[blob] = (course_index, pos)
             
             # Draw line segments connecting consecutive regions
-            if len(row['blobs']) > 1:
+            if len(course['blobs']) > 1:
                 # Create pen for the lines (contrasting color for visibility)
                 line_pen = QPen(QColor(0, 0, 0))  # Black for high contrast
                 line_pen.setWidth(3)
                 line_pen.setCosmetic(True)
                 
                 # Draw a line from each region to the next one
-                for i in range(len(row['blobs']) - 1):
-                    blob1 = row['blobs'][i]
-                    blob2 = row['blobs'][i + 1]
+                for i in range(len(course['blobs']) - 1):
+                    blob1 = course['blobs'][i]
+                    blob2 = course['blobs'][i + 1]
                     
                     point1 = QPointF(blob1.centroid[0], blob1.centroid[1])
                     point2 = QPointF(blob2.centroid[0], blob2.centroid[1])
@@ -751,14 +751,14 @@ class QtRowAnalysis(QWidget):
                     self.polylineEntities.append(line_item)
                     
                     # Store line segment metadata for cut functionality
-                    self.lineSegmentData.append((row_index, i, point1, point2))
+                    self.lineSegmentData.append((course_index, i, point1, point2))
             
             # Draw white dots at centroids
             dot_pen = QPen(Qt.NoPen)
             dot_brush = QBrush(QColor(255, 255, 255))  # White
             dot_radius = 5
             
-            for blob in row['blobs']:
+            for blob in course['blobs']:
                 center = QPointF(blob.centroid[0], blob.centroid[1])
                 dot_item = self.activeviewer.scene.addEllipse(
                     center.x() - dot_radius, center.y() - dot_radius,
@@ -768,11 +768,11 @@ class QtRowAnalysis(QWidget):
                 dot_item.setZValue(16)  # Draw above lines
                 self.polylineEntities.append(dot_item)
             
-            # Draw row number on first blob (above centroid)
-            first_blob = row['blobs'][0]
+            # Draw course number on first blob (above centroid)
+            first_blob = course['blobs'][0]
             text_x = first_blob.centroid[0]
             
-            text_item = self.activeviewer.scene.addText(str(row_index + 1))
+            text_item = self.activeviewer.scene.addText(str(course_index + 1))
             text_item.setDefaultTextColor(QColor(255, 255, 255))  # White
             
             # Position above the first blob's centroid by text height + 5 pixels
@@ -824,23 +824,23 @@ class QtRowAnalysis(QWidget):
     
     def displayInclinationLines(self):
         """
-        Display inclination lines for each row with angle labels.
+        Display inclination lines for each course with angle labels.
         """
         self.removeInclinationLines()
         
-        if self.rowsData is None or len(self.rowsData) == 0:
+        if self.coursesData is None or len(self.coursesData) == 0:
             return
         
-        for row_index, row in enumerate(self.rowsData):
-            if 'fit_slope' not in row or row['num_blobs'] < 2:
+        for course_index, course in enumerate(self.coursesData):
+            if 'fit_slope' not in course or course['num_blobs'] < 2:
                 continue
             
-            slope = row['fit_slope']
-            intercept = row['fit_intercept']
+            slope = course['fit_slope']
+            intercept = course['fit_intercept']
             
-            # Calculate line endpoints across the row's extent
-            x_start = row['min_x']
-            x_end = row['max_x']
+            # Calculate line endpoints across the course's extent
+            x_start = course['min_x']
+            x_end = course['max_x']
             y_start = slope * x_start + intercept
             y_end = slope * x_end + intercept
             
@@ -867,7 +867,7 @@ class QtRowAnalysis(QWidget):
             x_mid = (x_start + x_end) / 2
             y_mid = (y_start + y_end) / 2
             
-            angle_text = "{:.2f}°".format(row['inclination_deg'])
+            angle_text = "{:.2f}°".format(course['inclination_deg'])
             
             # Create text item to measure size
             font = QFont()
@@ -910,35 +910,35 @@ class QtRowAnalysis(QWidget):
     
     def displaySegmentInclination(self):
         """
-        Display inclination angles for each segment between consecutive regions in each row.
+        Display inclination angles for each segment between consecutive regions in each course.
         """
         self.removeSegmentInclinationEntities()
         
-        if self.rowsData is None or len(self.rowsData) == 0:
+        if self.coursesData is None or len(self.coursesData) == 0:
             return
         
         # Calculate max absolute inclination across all segments for color normalization
         max_abs_segment_angle = 0.0
-        for row in self.rowsData:
-            if row['num_blobs'] < 2:
+        for course in self.coursesData:
+            if course['num_blobs'] < 2:
                 continue
-            for i in range(len(row['blobs']) - 1):
-                blob1 = row['blobs'][i]
-                blob2 = row['blobs'][i + 1]
+            for i in range(len(course['blobs']) - 1):
+                blob1 = course['blobs'][i]
+                blob2 = course['blobs'][i + 1]
                 dx = blob2.centroid[0] - blob1.centroid[0]
                 dy = blob2.centroid[1] - blob1.centroid[1]
                 angle_rad = math.atan2(-dy, dx)
                 angle_deg = math.degrees(angle_rad)
                 max_abs_segment_angle = max(max_abs_segment_angle, abs(angle_deg))
         
-        for row_index, row in enumerate(self.rowsData):
-            if row['num_blobs'] < 2:
+        for course_index, course in enumerate(self.coursesData):
+            if course['num_blobs'] < 2:
                 continue
             
             # Analyze each segment between consecutive blobs
-            for i in range(len(row['blobs']) - 1):
-                blob1 = row['blobs'][i]
-                blob2 = row['blobs'][i + 1]
+            for i in range(len(course['blobs']) - 1):
+                blob1 = course['blobs'][i]
+                blob2 = course['blobs'][i + 1]
                 
                 x1, y1 = blob1.centroid[0], blob1.centroid[1]
                 x2, y2 = blob2.centroid[0], blob2.centroid[1]
@@ -1015,14 +1015,14 @@ class QtRowAnalysis(QWidget):
         """
         Handle a mouse click in merge mode. Find which blob was clicked.
         """
-        if self.rowsData is None or len(self.rowsData) == 0:
-            self.writeLog("No rows to merge!")
+        if self.coursesData is None or len(self.coursesData) == 0:
+            self.writeLog("No courses to merge!")
             return
         
         # Find which blob was clicked
         clicked_blob = None
-        for row in self.rowsData:
-            for blob in row['blobs']:
+        for course in self.coursesData:
+            for blob in course['blobs']:
                 # Check if click is within blob's bounding box
                 bbox = blob.bbox  # [top, left, width, height]
                 if (bbox[1] <= click_x <= bbox[1] + bbox[2] and 
@@ -1035,19 +1035,19 @@ class QtRowAnalysis(QWidget):
         if not clicked_blob:
             return  # Click was not on a blob
         
-        # Check if blob is in our row data
-        if clicked_blob not in self.blobToRowMap:
+        # Check if blob is in our course data
+        if clicked_blob not in self.blobToCourseMap:
             return
         
-        row_index, pos_in_row = self.blobToRowMap[clicked_blob]
-        row = self.rowsData[row_index]
+        course_index, pos_in_course = self.blobToCourseMap[clicked_blob]
+        course = self.coursesData[course_index]
         
-        # Check if it's first or last in the row
-        is_first = (pos_in_row == 0)
-        is_last = (pos_in_row == len(row['blobs']) - 1)
+        # Check if it's first or last in the course
+        is_first = (pos_in_course == 0)
+        is_last = (pos_in_course == len(course['blobs']) - 1)
         
         if not (is_first or is_last):
-            self.writeLog("Click ignored: Region must be first or last in its row.")
+            self.writeLog("Click ignored: Region must be first or last in its course.")
             # If we had a first selection, clear it and restart
             if self.firstMergeBlob:
                 self.clearMergeSelection()
@@ -1059,21 +1059,21 @@ class QtRowAnalysis(QWidget):
             self.firstMergeBlob = clicked_blob
             self.highlightBlob(clicked_blob)
             position = "first" if is_first else "last"
-            self.writeLog("Selected {} region of row {}. Now click on a first/last region of another row.".format(
-                position, row_index + 1))
+            self.writeLog("Selected {} region of course {}. Now click on a first/last region of another course.".format(
+                position, course_index + 1))
         else:
             # This is the second selection
-            first_row_index, first_pos = self.blobToRowMap[self.firstMergeBlob]
+            first_course_index, first_pos = self.blobToCourseMap[self.firstMergeBlob]
             
-            # Check if same row
-            if first_row_index == row_index:
-                self.writeLog("Cannot merge a row with itself!")
+            # Check if same course
+            if first_course_index == course_index:
+                self.writeLog("Cannot merge a course with itself!")
                 self.clearMergeSelection()
                 self.writeLog("Selection cleared. Click on a first/last region to start.")
                 return
             
             # Perform the merge
-            self.mergeRows(first_row_index, first_pos, row_index, pos_in_row)
+            self.mergeCourses(first_course_index, first_pos, course_index, pos_in_course)
             self.clearMergeSelection()
     
     def highlightBlob(self, blob):
@@ -1098,51 +1098,51 @@ class QtRowAnalysis(QWidget):
         self.firstMergeBlobHighlight = self.activeviewer.scene.addPolygon(polygon, pen, brush)
         self.firstMergeBlobHighlight.setZValue(20)  # Draw above everything
     
-    def mergeRows(self, row1_idx, pos1, row2_idx, pos2):
+    def mergeCourses(self, course1_idx, pos1, course2_idx, pos2):
         """
-        Merge two rows by connecting them at the specified positions.
+        Merge two courses by connecting them at the specified positions.
         """
-        row1 = self.rowsData[row1_idx]
-        row2 = self.rowsData[row2_idx]
+        course1 = self.coursesData[course1_idx]
+        course2 = self.coursesData[course2_idx]
         
         is_first1 = (pos1 == 0)
-        is_last1 = (pos1 == len(row1['blobs']) - 1)
+        is_last1 = (pos1 == len(course1['blobs']) - 1)
         is_first2 = (pos2 == 0)
-        is_last2 = (pos2 == len(row2['blobs']) - 1)
+        is_last2 = (pos2 == len(course2['blobs']) - 1)
         
-        # Determine how to connect the rows
-        # Two valid cases: row1_end-row2_start OR row2_end-row1_start
+        # Determine how to connect the courses
+        # Two valid cases: course1_end-course2_start OR course2_end-course1_start
         merged_blobs = None
         
         if is_last1 and is_first2:
-            # row1 ... | ... row2
-            merged_blobs = row1['blobs'] + row2['blobs']
+            # course1 ... | ... course2
+            merged_blobs = course1['blobs'] + course2['blobs']
         elif is_last2 and is_first1:
-            # row2 ... | ... row1
-            merged_blobs = row2['blobs'] + row1['blobs']
+            # course2 ... | ... course1
+            merged_blobs = course2['blobs'] + course1['blobs']
         else:
             self.writeLog("Invalid merge: Cannot connect these positions.")
             return
         
-        # Remove both old rows and add the merged row
-        indices_to_remove = sorted([row1_idx, row2_idx], reverse=True)
-        new_rows = self.rowsData[:]
+        # Remove both old courses and add the merged course
+        indices_to_remove = sorted([course1_idx, course2_idx], reverse=True)
+        new_courses = self.coursesData[:]
         
         for idx in indices_to_remove:
-            del new_rows[idx]
+            del new_courses[idx]
         
-        new_rows.append(self.createRowData(merged_blobs))
-        self.rowsData = new_rows
+        new_courses.append(self.createCourseData(merged_blobs))
+        self.coursesData = new_courses
         
-        # Sort rows to preserve ordering
-        self.sortRows()
+        # Sort courses to preserve ordering
+        self.sortCourses()
         
-        # Recompute inclination for merged rows
+        # Recompute inclination for merged courses
         self.computeInclination()
         
         # Refresh visualization and table
-        self.displayRows()
-        self.populateRowsTable()
+        self.displayCourses()
+        self.populateCoursesTable()
         self.removeInclinationLines()  # Clear old inclination lines after merge
         self.removeSegmentInclinationEntities()  # Clear old segment angles after merge
         
@@ -1154,13 +1154,13 @@ class QtRowAnalysis(QWidget):
         if self.btnSegmentInclination.isChecked():
             self.displaySegmentInclination()
         
-        self.writeLog("Merge complete. Now {} rows total.".format(len(self.rowsData)))
+        self.writeLog("Merge complete. Now {} courses total.".format(len(self.coursesData)))
 
     ########################################################################################
 
-    def createRowData(self, blobs):
+    def createCourseData(self, blobs):
         """
-        Create row metadata dictionary from a list of blobs.
+        Create course metadata dictionary from a list of blobs.
         """
         return {
             'blobs': blobs,
@@ -1175,23 +1175,23 @@ class QtRowAnalysis(QWidget):
             'width': max([b.bbox[1] + b.bbox[2] for b in blobs]) - min([b.bbox[1] for b in blobs])
         }
 
-    def sortRows(self):
+    def sortCourses(self):
         """
-        Sort rows by Y position (top to bottom), then by X position (left to right) for rows at similar Y.
+        Sort courses by Y position (top to bottom), then by X position (left to right) for courses at similar Y.
         """
-        if not self.rowsData or len(self.rowsData) == 0:
+        if not self.coursesData or len(self.coursesData) == 0:
             return
         
         # Use average height as tolerance for "similar Y"
-        avg_row_height = sum([r['avg_height'] for r in self.rowsData]) / len(self.rowsData)
-        y_tolerance = avg_row_height * 0.5  # Rows within 50% of avg height are considered "same level"
+        avg_course_height = sum([r['avg_height'] for r in self.coursesData]) / len(self.coursesData)
+        y_tolerance = avg_course_height * 0.5  # Courses within 50% of avg height are considered "same level"
         
-        def row_sort_key(row):
-            # Quantize Y position to group similar rows, then sort by X within groups
-            y_bucket = int(row['centroid_y'] / y_tolerance) if y_tolerance > 0 else row['centroid_y']
-            return (y_bucket, row['min_x'])
+        def course_sort_key(course):
+            # Quantize Y position to group similar courses, then sort by X within groups
+            y_bucket = int(course['centroid_y'] / y_tolerance) if y_tolerance > 0 else course['centroid_y']
+            return (y_bucket, course['min_x'])
         
-        self.rowsData.sort(key=row_sort_key)
+        self.coursesData.sort(key=course_sort_key)
 
     def getPastelColor(self, index, total):
         """
@@ -1282,14 +1282,14 @@ class QtRowAnalysis(QWidget):
     
     def handleCutClick(self, click_x, click_y):
         """
-        Handle a mouse click in cut mode. Find the closest line segment and split the row.
+        Handle a mouse click in cut mode. Find the closest line segment and split the course.
         """
-        if self.rowsData is None or len(self.rowsData) == 0:
-            self.writeLog("No rows to cut!")
+        if self.coursesData is None or len(self.coursesData) == 0:
+            self.writeLog("No courses to cut!")
             return
         
         if len(self.lineSegmentData) == 0:
-            self.writeLog("No line segments found. Please run row detection first.")
+            self.writeLog("No line segments found. Please run course detection first.")
             return
         
         # Find the closest line segment
@@ -1297,7 +1297,7 @@ class QtRowAnalysis(QWidget):
         closest_segment = None
         
         for segment_info in self.lineSegmentData:
-            row_idx, seg_idx, p1, p2 = segment_info
+            course_idx, seg_idx, p1, p2 = segment_info
             distance = self.distancePointToLineSegment(click_x, click_y, p1.x(), p1.y(), p2.x(), p2.y())
             
             if distance < min_distance:
@@ -1306,53 +1306,53 @@ class QtRowAnalysis(QWidget):
         
         # If click is reasonably close to a line segment (within 50 pixels)
         if closest_segment and min_distance < 50:
-            row_idx, seg_idx, p1, p2 = closest_segment
-            self.splitRow(row_idx, seg_idx)
+            course_idx, seg_idx, p1, p2 = closest_segment
+            self.splitCourse(course_idx, seg_idx)
         else:
             self.writeLog("Click too far from any polyline. Try clicking closer to a line.")
     
-    def splitRow(self, row_index, segment_index):
+    def splitCourse(self, course_index, segment_index):
         """
-        Split a row at the specified segment index.
-        The row is split so that blobs [0...segment_index] go to the first row,
-        and blobs [segment_index+1...] go to the second row.
+        Split a course at the specified segment index.
+        The course is split so that blobs [0...segment_index] go to the first half,
+        and blobs [segment_index+1...] go to the second half.
         """
-        if row_index >= len(self.rowsData):
-            self.writeLog("Invalid row index!")
+        if course_index >= len(self.coursesData):
+            self.writeLog("Invalid course index!")
             return
         
-        row = self.rowsData[row_index]
+        course = self.coursesData[course_index]
         
-        if segment_index >= len(row['blobs']) - 1:
+        if segment_index >= len(course['blobs']) - 1:
             self.writeLog("Cannot split at this position!")
             return
         
         # Split the blob list
-        first_half = row['blobs'][:segment_index + 1]
-        second_half = row['blobs'][segment_index + 1:]
+        first_half = course['blobs'][:segment_index + 1]
+        second_half = course['blobs'][segment_index + 1:]
         
         if len(first_half) == 0 or len(second_half) == 0:
-            self.writeLog("Cannot create empty rows!")
+            self.writeLog("Cannot create empty courses!")
             return
         
-        # Replace the original row with the two new rows
-        new_rows = (
-            self.rowsData[:row_index] +
-            [self.createRowData(first_half), self.createRowData(second_half)] +
-            self.rowsData[row_index + 1:]
+        # Replace the original course with the two new courses
+        new_courses = (
+            self.coursesData[:course_index] +
+            [self.createCourseData(first_half), self.createCourseData(second_half)] +
+            self.coursesData[course_index + 1:]
         )
         
-        self.rowsData = new_rows
+        self.coursesData = new_courses
         
-        # Sort rows to preserve ordering
-        self.sortRows()
+        # Sort courses to preserve ordering
+        self.sortCourses()
         
-        # Recompute inclination for split rows
+        # Recompute inclination for split courses
         self.computeInclination()
         
         # Refresh the visualization and table
-        self.displayRows()
-        self.populateRowsTable()
+        self.displayCourses()
+        self.populateCoursesTable()
         self.removeInclinationLines()  # Clear old inclination lines after split
         self.removeSegmentInclinationEntities()  # Clear old segment angles after split
         
@@ -1365,7 +1365,7 @@ class QtRowAnalysis(QWidget):
             self.displaySegmentInclination()
         
         # Log the result
-        self.writeLog("Row split complete. Now {} rows total.".format(len(self.rowsData)))
+        self.writeLog("Course split complete. Now {} courses total.".format(len(self.coursesData)))
 
     ########################################################################################
     # SAVE/RESTORE STATE FUNCTIONS
@@ -1374,10 +1374,10 @@ class QtRowAnalysis(QWidget):
     @pyqtSlot()
     def saveState(self):
         """
-        Save the current state of rows to a JSON file.
+        Save the current state of courses to a JSON file.
         """
-        if self.rowsData is None or len(self.rowsData) == 0:
-            QMessageBox.warning(self, "No Data", "No rows detected yet. Please run 'Recognize Rows' first.")
+        if self.coursesData is None or len(self.coursesData) == 0:
+            QMessageBox.warning(self, "No Data", "No courses detected yet. Please run 'Recognize Courses' first.")
             return
         
         # Get the project folder as the default directory
@@ -1387,8 +1387,8 @@ class QtRowAnalysis(QWidget):
             default_dir = os.path.dirname(project_file)
         
         # Open file dialog in the project folder
-        filters = "Row Analysis State (*.json)"
-        filename, _ = QFileDialog.getSaveFileName(self, "Save Row Analysis State", default_dir, filters)
+        filters = "Course Analysis State (*.json)"
+        filename, _ = QFileDialog.getSaveFileName(self, "Save Course Analysis State", default_dir, filters)
         
         if not filename:
             return
@@ -1408,28 +1408,28 @@ class QtRowAnalysis(QWidget):
                 },
                 'color_mode': self.colorMode,
                 'selected_blob_ids': [int(blob.id) for blob in self.workingBlobs],  # Convert to regular int
-                'rows': []
+                'courses': []
             }
             
-            # Save each row's data
-            for row in self.rowsData:
-                row_data = {
-                    'blob_ids': [int(blob.id) for blob in row['blobs']],  # Convert to regular int
-                    'centroid_y': float(row.get('centroid_y', row.get('y_pos', 0.0))),  # Convert to float
-                    'avg_height': float(row['avg_height']),
-                    'width': float(row['width']),
-                    'inclination_deg': float(row.get('inclination_deg', 0.0)),
-                    'inclination_rad': float(row.get('inclination_rad', 0.0)),
-                    'num_blobs': int(row['num_blobs'])
+            # Save each course's data
+            for course in self.coursesData:
+                course_data = {
+                    'blob_ids': [int(blob.id) for blob in course['blobs']],  # Convert to regular int
+                    'centroid_y': float(course.get('centroid_y', course.get('y_pos', 0.0))),  # Convert to float
+                    'avg_height': float(course['avg_height']),
+                    'width': float(course['width']),
+                    'inclination_deg': float(course.get('inclination_deg', 0.0)),
+                    'inclination_rad': float(course.get('inclination_rad', 0.0)),
+                    'num_blobs': int(course['num_blobs'])
                 }
-                state_data['rows'].append(row_data)
+                state_data['courses'].append(course_data)
             
             # Write to file
             with open(filename, 'w') as f:
                 json.dump(state_data, f, indent=2)
             
             self.writeLog(f"State saved to: {os.path.basename(filename)}")
-            QMessageBox.information(self, "Success", f"Row analysis state saved successfully to:\n{filename}")
+            QMessageBox.information(self, "Success", f"Course analysis state saved successfully to:\n{filename}")
             
         except Exception as e:
             self.writeLog(f"Error saving state: {str(e)}")
@@ -1438,7 +1438,7 @@ class QtRowAnalysis(QWidget):
     @pyqtSlot()
     def restoreState(self):
         """
-        Restore rows state from a JSON file.
+        Restore courses state from a JSON file.
         """
         # Get the project folder as the default directory
         default_dir = ""
@@ -1447,8 +1447,8 @@ class QtRowAnalysis(QWidget):
             default_dir = os.path.dirname(project_file)
         
         # Open file dialog
-        filters = "Row Analysis State (*.json)"
-        filename, _ = QFileDialog.getOpenFileName(self, "Restore Row Analysis State", default_dir, filters)
+        filters = "Course Analysis State (*.json)"
+        filename, _ = QFileDialog.getOpenFileName(self, "Restore Course Analysis State", default_dir, filters)
         
         if not filename:
             return
@@ -1460,7 +1460,7 @@ class QtRowAnalysis(QWidget):
             
             # Validate version
             if 'version' not in state_data:
-                QMessageBox.warning(self, "Invalid File", "This file does not appear to be a valid row analysis state file.")
+                QMessageBox.warning(self, "Invalid File", "This file does not appear to be a valid course analysis state file.")
                 return
             
             # Restore tolerance parameters
@@ -1494,78 +1494,69 @@ class QtRowAnalysis(QWidget):
                 if missing_selected:
                     self.writeLog(f"Warning: {len(missing_selected)} selected region(s) not found: {missing_selected}")
             
-            # Restore rows - validate blob IDs and check for missing/partial rows
-            if 'rows' in state_data:
-                self.rowsData = []
+            # Restore courses - validate blob IDs and check for missing/partial courses
+            if 'courses' in state_data:
+                self.coursesData = []
                 total_missing_blobs = 0
-                skipped_rows = 0
+                skipped_courses = 0
                 
-                for row_idx, row_data in enumerate(state_data['rows']):
-                    blob_ids = row_data['blob_ids']
-                    row_blobs = []
-                    missing_in_row = []
+                for course_idx, course_data in enumerate(state_data['courses']):
+                    blob_ids = course_data['blob_ids']
+                    course_blobs = []
+                    missing_in_course = []
                     
-                    # Validate each blob ID in the row
+                    # Validate each blob ID in the course
                     for bid in blob_ids:
                         if bid in blob_dict:
-                            row_blobs.append(blob_dict[bid])
+                            course_blobs.append(blob_dict[bid])
                         else:
-                            missing_in_row.append(bid)
+                            missing_in_course.append(bid)
                             total_missing_blobs += 1
                     
-                    # Only restore row if at least some blobs were found
-                    if len(row_blobs) > 0:
-                        # Recalculate row properties if some blobs are missing
-                        if missing_in_row:
-                            row = self.createRowData(row_blobs)
-                            # Keep the saved inclination if it exists
-                            row['inclination_deg'] = row_data.get('inclination_deg', 0.0)
-                            row['inclination_rad'] = row_data.get('inclination_rad', 0.0)
-                            self.writeLog(f"Row {row_idx}: {len(missing_in_row)} blob(s) missing, recalculated properties")
-                        else:
-                            # All blobs found, use saved data
-                            row = {
-                                'blobs': row_blobs,
-                                'centroid_y': row_data.get('centroid_y', row_data.get('y_pos', 0.0)),  # Support both field names
-                                'avg_height': row_data['avg_height'],
-                                'width': row_data['width'],
-                                'inclination_deg': row_data.get('inclination_deg', 0.0),
-                                'inclination_rad': row_data.get('inclination_rad', 0.0),
-                                'num_blobs': len(row_blobs)
-                            }
-                        self.rowsData.append(row)
+                    # Only restore course if at least some blobs were found
+                    if len(course_blobs) > 0:
+                        # Always use createCourseData to ensure all fields are present
+                        course = self.createCourseData(course_blobs)
+                        # Preserve saved inclination values if they exist
+                        course['inclination_deg'] = course_data.get('inclination_deg', 0.0)
+                        course['inclination_rad'] = course_data.get('inclination_rad', 0.0)
+                        
+                        if missing_in_course:
+                            self.writeLog(f"Course {course_idx}: {len(missing_in_course)} blob(s) missing, recalculated properties")
+                        
+                        self.coursesData.append(course)
                     else:
-                        # All blobs in this row are missing
-                        self.writeLog(f"Warning: Row {row_idx} skipped - all {len(blob_ids)} blob(s) missing: {blob_ids}")
-                        skipped_rows += 1
+                        # All blobs in this course are missing
+                        self.writeLog(f"Warning: Course {course_idx} skipped - all {len(blob_ids)} blob(s) missing: {blob_ids}")
+                        skipped_courses += 1
                 
                 # Summary of restoration issues
-                if total_missing_blobs > 0 or skipped_rows > 0:
-                    summary = f"Restoration issues: {total_missing_blobs} blob(s) missing across rows"
-                    if skipped_rows > 0:
-                        summary += f", {skipped_rows} row(s) completely skipped"
+                if total_missing_blobs > 0 or skipped_courses > 0:
+                    summary = f"Restoration issues: {total_missing_blobs} blob(s) missing across courses"
+                    if skipped_courses > 0:
+                        summary += f", {skipped_courses} course(s) completely skipped"
                     self.writeLog(summary)
             
             # Update displays
             self.logArea.clear()
             self.writeLog(f"State restored from: {os.path.basename(filename)}")
-            self.writeLog(f"Loaded {len(self.rowsData)} row(s) with {len(self.workingBlobs)} region(s)")
+            self.writeLog(f"Loaded {len(self.coursesData)} course(s) with {len(self.workingBlobs)} region(s)")
             
             # Report validation results
             if missing_selected:
                 self.writeLog(f"⚠ {len(missing_selected)} selected region(s) no longer exist in project")
             
-            total_restored = sum(len(row['blobs']) for row in self.rowsData)
-            total_expected = sum(len(row_data['blob_ids']) for row_data in state_data.get('rows', []))
+            total_restored = sum(len(course['blobs']) for course in self.coursesData)
+            total_expected = sum(len(course_data['blob_ids']) for course_data in state_data.get('courses', []))
             if total_restored < total_expected:
-                self.writeLog(f"⚠ {total_expected - total_restored} region(s) from rows no longer exist in project")
+                self.writeLog(f"⚠ {total_expected - total_restored} region(s) from courses no longer exist in project")
             
             # Recompute fit_slope and fit_intercept for inclination display
             self.computeInclination()
             
             # Populate table and display
-            self.populateRowsTable()
-            self.displayRows()
+            self.populateCoursesTable()
+            self.displayCourses()
             
             # Redisplay visualizations if they were active
             if self.btnAnalyzeInclination.isChecked():
@@ -1573,7 +1564,7 @@ class QtRowAnalysis(QWidget):
             if self.btnSegmentInclination.isChecked():
                 self.displaySegmentInclination()
             
-            QMessageBox.information(self, "Success", f"Row analysis state restored successfully from:\n{filename}")
+            QMessageBox.information(self, "Success", f"Course analysis state restored successfully from:\n{filename}")
             
         except json.JSONDecodeError as e:
             self.writeLog(f"Error: Invalid JSON file: {str(e)}")
