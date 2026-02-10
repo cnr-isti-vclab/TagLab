@@ -17,9 +17,9 @@
 # GNU General Public License (http://www.gnu.org/licenses/gpl.txt)
 # for more details.
 
-from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal, QPointF, QEvent, QRectF, QDir
-from PyQt5.QtGui import QColor, QPen, QBrush, QPolygonF, QPainterPath, QFont
-from PyQt5.QtWidgets import QWidget, QTableWidget, QTextEdit, QTableWidgetItem, QLabel, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout, QGroupBox, QGraphicsPathItem, QComboBox, QFileDialog, QMessageBox
+from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal, QPointF, QEvent
+from PyQt5.QtGui import QColor, QPen, QBrush, QPolygonF, QFont
+from PyQt5.QtWidgets import QWidget, QTableWidget, QTextEdit, QTableWidgetItem, QLabel, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout, QGroupBox, QComboBox, QFileDialog, QMessageBox
 import math
 import cv2
 import numpy as np
@@ -124,19 +124,19 @@ class QtCourseAnalysis(QWidget):
         self.btnRecognize = QPushButton("Recognize Courses")
         self.btnRecognize.clicked.connect(self.recognizeCourses)
         
-        self.btnCutRow = QPushButton("✂ Cut Course")
-        self.btnCutRow.setToolTip("Click to activate cut mode, then click near a polyline to split the course")
-        self.btnCutRow.setCheckable(True)
-        self.btnCutRow.clicked.connect(self.toggleCutMode)
+        self.btnCutCourse = QPushButton("✂ Cut Course")
+        self.btnCutCourse.setToolTip("Click to activate cut mode, then click near a polyline to split the course")
+        self.btnCutCourse.setCheckable(True)
+        self.btnCutCourse.clicked.connect(self.toggleCutMode)
         
-        self.btnMergeRows = QPushButton("🔗 Merge Courses")
-        self.btnMergeRows.setToolTip("Click to activate merge mode, then click on first/last regions of two different courses to connect them")
-        self.btnMergeRows.setCheckable(True)
-        self.btnMergeRows.clicked.connect(self.toggleMergeMode)
+        self.btnMergeCourses = QPushButton("🔗 Merge Courses")
+        self.btnMergeCourses.setToolTip("Click to activate merge mode, then click on first/last regions of two different courses to connect them")
+        self.btnMergeCourses.setCheckable(True)
+        self.btnMergeCourses.clicked.connect(self.toggleMergeMode)
         
         button_layout.addWidget(self.btnRecognize)
-        button_layout.addWidget(self.btnCutRow)
-        button_layout.addWidget(self.btnMergeRows)
+        button_layout.addWidget(self.btnCutCourse)
+        button_layout.addWidget(self.btnMergeCourses)
         button_layout.addStretch()
         
         controlsLayout.addLayout(button_layout)
@@ -438,28 +438,28 @@ class QtCourseAnalysis(QWidget):
         """
         Toggle cut mode on/off.
         """
-        self.cutModeActive = self.btnCutRow.isChecked()
+        self.cutModeActive = self.btnCutCourse.isChecked()
         
         if self.cutModeActive:
             # Check if there are courses to cut
             if self.coursesData is None or len(self.coursesData) == 0:
                 self.writeLog("No courses detected. Please run course detection first.")
-                self.btnCutRow.setChecked(False)
+                self.btnCutCourse.setChecked(False)
                 self.cutModeActive = False
                 return
             
             # Deactivate merge mode if active
             if self.mergeModeActive:
-                self.btnMergeRows.setChecked(False)
-                self.btnMergeRows.setStyleSheet("")
+                self.btnMergeCourses.setChecked(False)
+                self.btnMergeCourses.setStyleSheet("")
                 self.mergeModeActive = False
                 self.clearMergeSelection()
             
-            self.btnCutRow.setStyleSheet("background-color: rgb(200, 100, 100); color: white; font-weight: bold;")
+            self.btnCutCourse.setStyleSheet("background-color: rgb(200, 100, 100); color: white; font-weight: bold;")
             self.writeLog("Cut mode activated. Click near a polyline to split the course.")
             self.activeviewer.setCursor(Qt.SizeHorCursor)
         else:
-            self.btnCutRow.setStyleSheet("")
+            self.btnCutCourse.setStyleSheet("")
             self.writeLog("Cut mode deactivated.")
             self.activeviewer.setCursor(Qt.ArrowCursor)
     
@@ -468,28 +468,28 @@ class QtCourseAnalysis(QWidget):
         """
         Toggle merge mode on/off.
         """
-        self.mergeModeActive = self.btnMergeRows.isChecked()
+        self.mergeModeActive = self.btnMergeCourses.isChecked()
         
         if self.mergeModeActive:
             # Check if there are courses to merge
             if self.coursesData is None or len(self.coursesData) == 0:
                 self.writeLog("No courses detected. Please run course detection first.")
-                self.btnMergeRows.setChecked(False)
+                self.btnMergeCourses.setChecked(False)
                 self.mergeModeActive = False
                 return
             
             # Deactivate cut mode if active
             if self.cutModeActive:
-                self.btnCutRow.setChecked(False)
-                self.btnCutRow.setStyleSheet("")
+                self.btnCutCourse.setChecked(False)
+                self.btnCutCourse.setStyleSheet("")
                 self.cutModeActive = False
             
-            self.btnMergeRows.setStyleSheet("background-color: rgb(100, 150, 200); color: white; font-weight: bold;")
+            self.btnMergeCourses.setStyleSheet("background-color: rgb(100, 150, 200); color: white; font-weight: bold;")
             self.clearMergeSelection()
             self.writeLog("Merge mode activated. Click on the first/last region of a course.")
             self.activeviewer.setCursor(Qt.PointingHandCursor)
         else:
-            self.btnMergeRows.setStyleSheet("")
+            self.btnMergeCourses.setStyleSheet("")
             self.clearMergeSelection()
             self.writeLog("Merge mode deactivated.")
             self.activeviewer.setCursor(Qt.ArrowCursor)
