@@ -115,7 +115,7 @@ class QtRegionAttributesWidget(QWidget):
 
 
         self.editType = QComboBox()
-        self.editType.addItems(['string', 'integer number', 'decimal number', 'keyword'])
+        self.editType.addItems(['string', 'integer number', 'decimal number', 'boolean', 'keyword'])
         self.editType.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editType.activated[str].connect(self.updateFieldType)
         edit_layout.addWidget(self.editType)
