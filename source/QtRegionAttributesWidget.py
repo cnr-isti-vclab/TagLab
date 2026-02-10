@@ -201,6 +201,24 @@ class QtRegionAttributesWidget(QWidget):
         self.region_attributes.name = self.edit_name.text()
         self.region_attributes.description = self.edit_description.document().toPlainText()
 
+        # Find which attributes were removed
+        old_attribute_names = set(attr['name'] for attr in self.project.region_attributes.data)
+        new_attribute_names = set(attr['name'] for attr in self.region_attributes.data)
+        removed_attributes = old_attribute_names - new_attribute_names
+        
+        # Clean up blob.data dictionaries by removing orphaned attribute keys
+        if removed_attributes:
+            for image in self.project.images:
+                # Clean up regions (blobs)
+                for blob in image.annotations.seg_blobs:
+                    for attr_name in removed_attributes:
+                        blob.data.pop(attr_name, None)
+                
+                # Clean up points
+                for point in image.annotations.annpoints:
+                    for attr_name in removed_attributes:
+                        point.data.pop(attr_name, None)
+
         self.project.region_attributes = deepcopy(self.region_attributes)
         self.close()
 
@@ -214,7 +232,20 @@ class QtRegionAttributesWidget(QWidget):
 
     @pyqtSlot()
     def newRegionAttributes(self):
-        self.labels = RegionAttributes()
+        if len(self.region_attributes.data) > 0:
+            box = QMessageBox()
+            box.setWindowTitle('TagLab')
+            box.setText("This will clear all current attribute definitions. Do you want to continue?")
+            box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            box.setDefaultButton(QMessageBox.No)
+            result = box.exec()
+            if result != QMessageBox.Yes:
+                return
+        
+        self.region_attributes = RegionAttributes()
+        self.edit_name.setText("")
+        self.edit_description.setText("")
+        self.createFields()
 
     @pyqtSlot()
     def loadRegionAttributes(self):
@@ -256,6 +287,7 @@ class QtRegionAttributesWidget(QWidget):
 
     def createFields(self):
         self.table.clearContents()
+        self.table.setRowCount(0)
         for field in self.region_attributes.data:
             self.appendField(field)
 
