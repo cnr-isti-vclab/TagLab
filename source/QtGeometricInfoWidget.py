@@ -194,10 +194,12 @@ class QtGeometricInfoWidget(QWidget):
                                         "QHeaderView::section { background-color: rgb(80,80,80); color: white; }"
                                         "QToolTip { background-color: rgb(80,80,80); color: white; border: 1px solid rgb(100,100,100); }"                                        
                                         "QTableWidget::item { padding: 5px; color: white;}"
-                                        "QTableWidget::item:selected { background-color: rgb(50,50,120);")
+                                        "QTableWidget::item:selected { background-color: rgb(50,50,120); }")
         
         # Connect to table selection changed signal to highlight selected region
         self.regions_table.itemSelectionChanged.connect(self.onTableSelectionChanged)
+        # Install event filter to allow deselection by clicking empty table area
+        self.regions_table.viewport().installEventFilter(self)
 
         mainLayout.addWidget(self.regions_table)
 
@@ -379,10 +381,30 @@ class QtGeometricInfoWidget(QWidget):
         self.removeFittedEllipses()
         self.removeColorizedEntities()
         self.removeHighlight()  # Remove highlight when closing
+        # Remove event filter
+        self.regions_table.viewport().removeEventFilter(self)
         # emit the signal to notify the main window
         self.closewidget.emit()
         super(QtGeometricInfoWidget, self).closeEvent(event)
         return
+
+    def eventFilter(self, obj, event):
+        """
+        Event filter to catch mouse clicks in the table viewport.
+        Allows deselection by clicking on empty areas.
+        """
+        if event.type() == event.MouseButtonPress and event.button() == Qt.LeftButton:
+            if obj == self.regions_table.viewport():
+                # Get the item at the clicked position
+                pos = event.pos()
+                item = self.regions_table.itemAt(pos)
+                if item is None:
+                    # Clicked on empty area - clear selection
+                    self.regions_table.clearSelection()
+                    return False  # Let the table handle it normally
+                return False  # Let normal selection handling proceed
+        
+        return super(QtGeometricInfoWidget, self).eventFilter(obj, event)
 
     @pyqtSlot()
     def onSelectionChanged(self): # Called when the selection changes in the viewer
