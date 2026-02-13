@@ -839,7 +839,7 @@ class Annotation(object):
             key = attribute["name"]
             if attribute['type'] in ['string', 'keyword']:
                 dict[key] = []
-            elif attribute['type'] in ['integer number']:
+            elif attribute['type'] in ['integer number', 'boolean']:
                 dict[key] = np.zeros(number_of_rows, dtype=np.int64)
             elif attribute['type'] in ['decimal number']:
                 dict[key] = np.zeros(number_of_rows, dtype=np.float64)
@@ -886,6 +886,13 @@ class Annotation(object):
                     else:
                         dict[key][i] = 0
 
+                elif attribute['type'] == 'boolean':
+
+                    if value is not None:
+                        dict[key][i] = 1 if value else 0
+                    else:
+                        dict[key][i] = 0
+
                 elif attribute['type'] == 'decimal number':
 
                     if value is not None:
@@ -929,6 +936,13 @@ class Annotation(object):
 
                     if value is not None:
                         dict[key][j] = value
+                    else:
+                        dict[key][j] = 0
+
+                elif attribute['type'] == 'boolean':
+
+                    if value is not None:
+                        dict[key][j] = 1 if value else 0
                     else:
                         dict[key][j] = 0
 

@@ -31,14 +31,21 @@ class Watershed(Tool):
         self.dummy_bounding_box = None
         self.work_area_mask = None
         
+        # State for undo segmentation feature
+        self.just_segmented = False
+        self.last_segmented_blobs = []
+        self.saved_scribbles_state = None
+        
         message = "<p><i>Draw scribbles inside and around an instance</i></p>"
         message += "<p>Select a class and draw positive scribbles INSIDE the instance,<br/>\
                     Then draw negative scribbles OUTSIDE the instance.<br/>\
                     The tool needs both positive and negative scribbles to work.</p>"
         message += "<p>- SHIFT + LMB + drag to draw a positive scribble<br/>\
-                    - SHIFT + RMB + drag to draw a negative scribble</p>"
+                    - SHIFT + RMB + drag to draw a negative scribble<br/>\
+                    - CTRL + Z to remove the last scribble or undo segmentation<br/>\
+                    - ALT + LMB to delete a specific scribble</p>"
         message += "<p>- SHIFT + wheel to set brush size</p>"
-        message += "<p>SPACEBAR to apply segmentation</p>"
+        message += "<p>SPACEBAR to apply segmentation (press CTRL+Z to undo and refine)</p>"
         self.tool_message = f'<div style="text-align: left;">{message}</div>'
 
     def activate(self):
@@ -54,13 +61,35 @@ class Watershed(Tool):
         self.scribbles.setLabel(self.currentLabel)
 
     def leftPressed(self, x, y, mods=None):
-        if mods == Qt.ShiftModifier:
+        if mods and (mods & Qt.AltModifier):
+            # Delete scribble near click
+            index = self.scribbles.findScribbleNear(x, y)
+            if index >= 0:
+                self.scribbles.deleteScribbleByIndex(index)
+                self.log.emit(f"[TOOL][WATERSHED] Scribble deleted (index: {index})")
+            else:
+                self.log.emit("[TOOL][WATERSHED] No scribble found near click")
+        elif mods and (mods & Qt.ShiftModifier):
+            # If we just segmented, clear old scribbles and start fresh
+            if self.just_segmented:
+                self.just_segmented = False
+                self.last_segmented_blobs = []
+                self.scribbles.reset()
+                self.log.emit("[TOOL][WATERSHED] Starting new scribbles")
+            
             self.scribbles.setLabel(self.currentLabel)
             if self.scribbles.startDrawing(x, y):
                 self.log.emit("[TOOL][WATERSHED] DRAWING POSITIVE starts..")
 
     def rightPressed(self, x, y, mods=None):
-        if mods == Qt.ShiftModifier:
+        if mods and (mods & Qt.ShiftModifier):
+            # If we just segmented, clear old scribbles and start fresh
+            if self.just_segmented:
+                self.just_segmented = False
+                self.last_segmented_blobs = []
+                self.scribbles.reset()
+                self.log.emit("[TOOL][WATERSHED] Starting new scribbles")
+            
             fakeLabel = Label("Dummy", "Dummy", fill=[255, 255, 255], border=[0, 0, 0]) 
             self.scribbles.setLabel(fakeLabel)
             if self.scribbles.startDrawing(x, y):
@@ -78,6 +107,26 @@ class Watershed(Tool):
         elif -1.0 < increase < 0.0:
             increase = -1
         self.scribbles.setSize(int(increase))
+
+    def hasPoints(self):
+        """Check if there are any scribbles or if we just segmented."""
+        return len(self.scribbles.points) > 0 or self.just_segmented
+
+    def undo_click(self):
+        """Remove the last scribble or undo segmentation (called by CTRL+Z)."""
+        if self.just_segmented:
+            # Undo the segmentation - remove all created blobs and restore scribbles
+            for blob in self.last_segmented_blobs:
+                self.viewerplus.removeBlob(blob)
+            self.just_segmented = False
+            self.last_segmented_blobs = []
+            # Restore the scribbles from saved state
+            if self.saved_scribbles_state:
+                self.scribbles.restoreState(self.saved_scribbles_state)
+                self.saved_scribbles_state = None
+            self.log.emit("[TOOL][WATERSHED] Segmentation undone, scribbles restored")
+        elif self.scribbles.deleteLastScribble():
+            self.log.emit("[TOOL][WATERSHED] Last scribble deleted")
 
 ############################################################################################################################################################################   
 
@@ -180,7 +229,6 @@ class Watershed(Tool):
        # cv2.imwrite('mask.png', mask)
 
         markers = np.zeros((working_area[3], working_area[2]), dtype='int32')
-        print(f"markers.shape pre is {markers.shape}")
         for label in self.scribbles.label:
             # print(f'label type is {type(label)}')
             # print(f'label is {label}')
@@ -264,29 +312,52 @@ class Watershed(Tool):
             self.infoMessage.emit("You need to draw something for this operation.")
             return
 
+        # If we're applying again after a previous segmentation, clear that state
+        if self.just_segmented:
+            self.just_segmented = False
+            self.last_segmented_blobs = []
+            self.saved_scribbles_state = None
+
+        # Save the scribble state before clearing
+        self.saved_scribbles_state = self.scribbles.saveState()
+
         blobs = self.segmentation()
         
+        created_blobs = []
         for blob in blobs:
             if blob.class_name != "Dummy":
                 try:
                     self.snapBlobBorders(blob)
                     self.viewerplus.addBlob(blob)
+                    created_blobs.append(blob)
                 except Exception as e:
                     if "Empty contour" in str(e):
-                        print(f"Empty contour exception")
+                        # Blob overlaps with existing annotations, subtract and retry
+                        self.log.emit("[TOOL][WATERSHED] Blob overlaps with existing annotation, adjusting boundaries")
                         segmented = self.viewerplus.annotations.seg_blobs
-                        # for seg in self.viewerplus.annotations.seg_blobs:
                         for seg in segmented:
                             if checkIntersection(blob.bbox, seg.bbox):
-                                # print(seg.id)
                                 self.viewerplus.annotations.subtract(seg, blob)
-                        self.viewerplus.addBlob(blob)   
+                        self.viewerplus.addBlob(blob)
+                        created_blobs.append(blob)
                     else:
-                        print(f"Exception: {e}")
-                        
-            
-        self.viewerplus.resetTools()
+                        self.log.emit(f"[TOOL][WATERSHED] Exception during blob creation: {e}")
+        
+        # Store the created blobs and set the state
+        self.last_segmented_blobs = created_blobs
+        self.just_segmented = True
+        
+        # Clear scribbles visually after segmentation
+        self.scribbles.reset()
+        
+        self.log.emit("[TOOL][WATERSHED] Segmentation applied. Press CTRL+Z to undo or draw new scribbles to continue.")
+        
+        # Don't reset tools yet - keep scribbles data for potential undo
+        # self.viewerplus.resetTools()
 
     def reset(self):
         self.scribbles.reset()
         self.current_blobs = []
+        self.just_segmented = False
+        self.last_segmented_blobs = []
+        self.saved_scribbles_state = None

@@ -2,7 +2,7 @@ from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import Qt, QAbstractTableModel, QItemSelectionModel, QSortFilterProxyModel, QRectF, \
     QSize, QModelIndex, pyqtSlot, pyqtSignal
 from PyQt5.QtWidgets import QGridLayout, QWidget, QTableView, QTabWidget, QSpinBox, QLineEdit, QDoubleSpinBox, \
-    QHeaderView, QAbstractItemView, QSizePolicy, QComboBox, QLabel, QVBoxLayout, QTextEdit
+    QHeaderView, QAbstractItemView, QSizePolicy, QComboBox, QLabel, QVBoxLayout, QTextEdit, QCheckBox
 from PyQt5.QtGui import QColor, QPixmap, QPainter, QPainterPath, QBrush, QLinearGradient
 import numpy as np
 from source.Blob import Blob
@@ -318,6 +318,10 @@ class QtPanelInfo(QTabWidget):
                 input.setMinimum(min)
                 input.valueChanged.connect(lambda value, name=name: self.assign(value, name))
 
+            elif attribute['type'] == 'boolean':
+                input = QCheckBox()
+                input.stateChanged.connect(lambda state, name=name: self.assign(state == Qt.Checked, name))
+
             elif attribute['type'] == 'keyword':
                 input = QComboBox()
                 input.addItem('')
@@ -346,7 +350,6 @@ class QtPanelInfo(QTabWidget):
         if self.ann is None:
             return
 
-        print(text)
         self.ann.data[name] = text
 
     def updateNotes(self):
@@ -370,8 +373,8 @@ class QtPanelInfo(QTabWidget):
                 input.clear()
             elif attribute['type'] == 'decimal number':
                 input.clear()
-            # elif attribute['type'] == 'boolean':
-            #     input.setChecked(False)
+            elif attribute['type'] == 'boolean':
+                input.setChecked(False)
             elif attribute['type'] == 'keyword':
                 input.setCurrentText('')
 
@@ -464,7 +467,7 @@ class QtPanelInfo(QTabWidget):
                 input.setValue(value)
             elif attribute['type'] == 'decimal number':
                 input.setValue(value)
-            # elif attribute['type'] == 'boolean':
-            #      input.setChecked(value)
+            elif attribute['type'] == 'boolean':
+                input.setChecked(value if isinstance(value, bool) else value == 'True')
             elif attribute['type'] == 'keyword':
                 input.setCurrentText(value)
