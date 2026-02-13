@@ -1015,6 +1015,9 @@ class QtImageViewerPlus(QtImageViewer):
                 "ASSIGN", "RULER", "FOURCLICKS", "RITM", "MATCH", "PLACEANNPOINT", "SAM", "SAMINTERACTIVE"]):
                 self.tools.leftPressed(x, y, mods)
 
+            elif mods & Qt.AltModifier and self.tools.tool == "WATERSHED":
+                self.tools.leftPressed(x, y, mods)
+
             elif self.tools.tool == "SELECTPOINTS" or self.tools.tool == "SELECTAREA":
                 self.tools.leftPressed(x, y, mods)
 
@@ -1780,6 +1783,10 @@ class QtImageViewerPlus(QtImageViewer):
         
         if self.tools.tool == "FOURCLICKS":
             self.tools.tools["FOURCLICKS"].undo_click()
+            return
+
+        if self.tools.tool == "WATERSHED" and self.tools.tools["WATERSHED"].hasPoints():
+            self.tools.tools["WATERSHED"].undo_click()
             return
 
         if self.tools.tool in ["FREEHAND", "CUT", "EDITBORDER"]:
