@@ -104,8 +104,11 @@ class TableModel(QAbstractTableModel):
 
         if role == Qt.UserRole:
 
-            if index.column() == 0 or index.column() == 1:
-                return ""
+            if index.column() == 0:
+                return int(value)  # Return visibility value for sorting
+            
+            if index.column() == 1:
+                return ""  # Color column not sortable (used for restore)
 
             if index.column() == 2:
                 return str(value)
@@ -197,6 +200,7 @@ height: 0px;
 
         self.model = None
         self.data = None
+        self.original_row_order = None  # Store original order for restore functionality
 
         layout = QVBoxLayout()
         layout.addWidget(self.data_table)
@@ -230,6 +234,17 @@ height: 0px;
            oldindex = self.sortfilter.mapToSource(index)
            self.active_label_name = self.data['Class'][oldindex.row()]
            self.doubleClickLabel.emit(self.active_label_name)
+    
+    @pyqtSlot(int)
+    def headerClicked(self, logicalIndex):
+        """
+        Handle header clicks. Clicking column 1 (Color) restores original order.
+        """
+        if logicalIndex == 1:  # Color column
+            # Restore original order
+            self.sortfilter.sort(-1, Qt.AscendingOrder)  # -1 disables sorting
+            self.data_table.horizontalHeader().setSortIndicator(-1, Qt.AscendingOrder)
+            self.data_table.update()
 
     def setLabels(self, project, img):
 
@@ -268,6 +283,8 @@ height: 0px;
             self.data_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeToContents)
             self.data_table.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeToContents)
 
+            # Update original row order when data changes
+            self.original_row_order = list(range(self.model.rowCount(QModelIndex())))
             self.data_table.horizontalHeader().showSection(0)
             self.data_table.update()
 
@@ -277,6 +294,12 @@ height: 0px;
             self.selectRows(empty_row.index)
 
             self.data_table.selectionModel().selectionChanged.connect(lambda x: self.selectionChanged.emit())
+            
+            # Connect header click to handle restore original order
+            self.data_table.horizontalHeader().sectionClicked.connect(self.headerClicked)
+            
+            # Store original row order
+            self.original_row_order = list(range(self.model.rowCount(QModelIndex())))
         else:
             self.updateTable(self.data)
 
