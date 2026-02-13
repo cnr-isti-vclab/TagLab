@@ -213,7 +213,7 @@ class QtDXFExport(QDialog):  # Change QWidget to QDialog
                 msp.add_lwpolyline(
                     map_outline,
                     close=True,
-                    dxfattribs={'layer': '0', 'linetype': 'SOLID', 'color': 7, 'lineweight': 3}
+                    dxfattribs={'layer': '0', 'linetype': 'CONTINUOUS', 'color': 7, 'lineweight': 3}
                 )
             # Add working area outline if selected
             if self.options["export_workingarea"] and self.project.working_area is not None:
