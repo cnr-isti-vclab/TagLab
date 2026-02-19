@@ -194,8 +194,9 @@ class SAMInteractive(Tool):
             rect.height()
         ]
 
-        offset = self.work_area_rect.pos()
-        self.offset = [offset.x(), offset.y()]
+        # Use the clipped rect's coordinates as offset, not the original position
+        # This ensures correct blob placement when work area extends beyond map borders
+        self.offset = [rect.left(), rect.top()]
 
         image_cropped = self.viewerplus.img_map.copy(rect.toRect())
         
