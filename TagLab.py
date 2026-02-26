@@ -5527,7 +5527,7 @@ class TagLab(QMainWindow):
         self.available_classifiers.append(new_classifier)
         newconfig = dict()
         newconfig["Available Classifiers"] = self.available_classifiers
-        str = json.dumps(newconfig)
+        str = json.dumps(newconfig, indent=2)
         newconfig_filename = os.path.join(self.taglab_dir, "config.json")
         f = open(newconfig_filename, "w")
         f.write(str)

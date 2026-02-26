@@ -276,6 +276,36 @@ class QtTrainingResultsWidget(QWidget):
     @pyqtSlot()
     def SaveCM(self):
 
+        # Generate the confusion matrix pixmap if it hasn't been created yet
+        if self.pxmapCM_HiRes is None:
+            np.set_printoptions(precision=2)
+
+            dict_ordered_by_value = {k: v for k, v in sorted(self.dict_target_classes.items(), key=lambda item: item[1])}
+
+            class_names = []
+            max_characters = 12
+            for item in dict_ordered_by_value.items():
+                name = item[0]
+                if len(name) > max_characters:
+                    name = name[:max_characters-2] + ".."
+                class_names.append(name)
+            disp = ConfusionMatrixDisplay(confusion_matrix=self.metrics["NormConfMatrix"], display_labels=class_names)
+
+            disp.plot(include_values=True,
+                      cmap=plt.cm.Blues, xticks_rotation=45,
+                      values_format='.3g')
+
+            disp.ax_.set_title("Normalized Confusion Matrix")
+
+            fig = disp.figure_
+            fig.set_size_inches(6.0, 6.0)
+
+            plt.tight_layout()
+
+            self.figureCM = fig
+            self.pxmapCM = genutils.figureToQPixmap(fig, dpi=600, width=800, height=800)
+            self.pxmapCM_HiRes = genutils.figureToQPixmap(fig, dpi=600, width=1600, height=1600)
+
         filters = "PNG (*.png)"
         filename, _ = QFileDialog.getSaveFileName(self, "Save the Normalized Confusion Matrix", None, filters)
 
@@ -284,6 +314,10 @@ class QtTrainingResultsWidget(QWidget):
 
     @pyqtSlot()
     def SaveTG(self):
+
+        if self.pxmapTG_HiRes is None:
+            print("Error: Training graphs pixmap not available.")
+            return
 
         filters = "PNG (*.png)"
         filename, _ = QFileDialog.getSaveFileName(self, "Save the Training Graphs", None, filters)
@@ -356,14 +390,27 @@ class QtTrainingResultsWidget(QWidget):
 
         n_epochs = len(self.train_loss_data)
 
+        if n_epochs == 0:
+            print("Warning: No training loss data available")
+            return
+
         fig = plt.figure()
         fig.set_size_inches(6.3, 6.3 / 1.5)
         plt.grid(axis="x")
-        plt.xticks(np.arange(0, n_epochs, 5))
+        plt.xticks(np.arange(0, n_epochs, max(1, 5)))
 
-        x = np.arange(1, n_epochs, 2)
-        plt.plot(x, self.val_loss_data, label='Validation Loss')
+        # Plot validation loss if available
+        if len(self.val_loss_data) > 0:
+            # Create x-axis indices for validation data (only at validation_frequency intervals)
+            val_epochs = len(self.val_loss_data)
+            if val_epochs > 0:
+                # Assume validation_frequency of 2 (could be passed as parameter)
+                x_val = np.arange(0, n_epochs, max(1, n_epochs // val_epochs))
+                # Ensure arrays match in length
+                x_val = x_val[:len(self.val_loss_data)]
+                plt.plot(x_val, self.val_loss_data, label='Validation Loss', marker='o')
 
+        # Plot training loss
         x = np.arange(0, n_epochs)
         plt.plot(x, self.train_loss_data, label='Training Loss')
 
