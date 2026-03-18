@@ -18,6 +18,8 @@
 #GNU General Public License (http://www.gnu.org/licenses/gpl.txt)
 # for more details.
 
+import rasterio as _rio # Early import to fix library load order issues on Windows
+
 import sys
 import os
 import datetime
