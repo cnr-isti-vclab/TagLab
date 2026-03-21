@@ -54,7 +54,7 @@ def isValidDate(txt):
     try:
         datetime.datetime.strptime(txt, '%Y-%m-%d')
 #        datetime.date.fromisoformat(txt)
-    except:
+    except ValueError:
         valid = False
 
     return valid

@@ -1,0 +1,57 @@
+# TagLab Requirements
+# Generated from install.py / install_conda_windows.py
+#
+# PyTorch / torchvision are NOT listed here because the correct version
+# depends on the host CUDA version.  Run install.py (or install_conda_windows.py)
+# to automatically select and install the right torch build.
+#
+# Python 3.11 required (install.py enforces this).
+#
+# CUDA support matrix (handled by install.py):
+#   CUDA 12.4  -> torch==2.5  torchvision==0.20
+#   CUDA 12.1  -> torch==2.5  torchvision==0.20
+#   CUDA 11.8  -> torch==2.5  torchvision==0.20
+#   CUDA 11.6  -> torch==1.13.1+cu116  torchvision==0.14.1+cu116
+#   CPU only   -> torch==2.5  torchvision==0.20
+
+# ── Build tooling ─────────────────────────────────────────────────────────────
+wheel>=0.42.0
+
+# ── GUI ───────────────────────────────────────────────────────────────────────
+PyQt5>=5.15.0,<6.0
+
+# ── Numerical / image processing ─────────────────────────────────────────────
+# Pin NumPy below 2.0 to avoid breaking changes (np.bool_ etc. are safe ≥1.20).
+# TagLab source uses np.bool_; NumPy 2.x removes additional legacy aliases.
+numpy>=1.24.0,<2.0
+opencv-python>=4.8.0
+scikit-image>=0.21.0
+scikit-learn>=1.3.0
+matplotlib>=3.7.0
+
+# ── Data / serialisation ──────────────────────────────────────────────────────
+pandas>=2.0.0
+shapely>=2.0.0
+pycocotools>=2.0.7
+ezdxf>=1.1.0
+
+# ── Deep-learning utilities ───────────────────────────────────────────────────
+albumentations>=1.3.0
+qhoptim>=1.1.0
+segment-anything>=1.0   # optional; skip with: pip install -r requirements.txt --skip segment-anything
+
+# ── Geospatial (Linux/macOS) ──────────────────────────────────────────────────
+# On Windows, install.py downloads pinned wheels for GDAL 3.9.2 and Rasterio 1.3.11.
+# On Linux/macOS gdal is matched to the system library version detected at install time.
+# Uncomment these lines only for Linux/macOS manual installs:
+# gdal>=3.7.0
+# rasterio>=1.3.0
+
+# ── CoralNet Toolbox / web automation ────────────────────────────────────────
+Requests>=2.31.0
+beautifulsoup4>=4.12.0
+selenium>=4.15.0
+webdriver-manager>=4.0.0
+
+# ── Windows runtime (Windows only) ────────────────────────────────────────────
+# msvc-runtime   # install.py adds this automatically on Windows

@@ -146,7 +146,7 @@ class QtGridWidget(QWidget):
             self.grid.setGrid(w, h, int(self.data["number_cell_x"]), int(self.data["number_cell_y"]))
             self.grid.drawGrid()
 
-        except:
+        except (ValueError, TypeError):
             self.grid.undrawGrid()
 
     @pyqtSlot(float, float)

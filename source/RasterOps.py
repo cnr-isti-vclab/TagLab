@@ -360,7 +360,7 @@ def write_shapefile( project, image, blobs, georef_filename, out_shp):
 
             try:
                 value = blob.data[key]
-            except:
+            except KeyError:
                 value = None
 
             if attribute['type'] == 'integer number':

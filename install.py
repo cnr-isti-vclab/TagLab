@@ -79,9 +79,9 @@ use_rocm = False
 cuda_version = ''
 
 if use_cpu == False:
-    result = subprocess.getstatusoutput('nvidia-smi')
-    output = result[1]
-    rc = result[0]
+    _proc = subprocess.run(['nvidia-smi'], capture_output=True, text=True)
+    output = _proc.stdout + _proc.stderr
+    rc = _proc.returncode
     if rc == 0:
         pos = output.find('CUDA Version:')
         if pos >= 0:
@@ -101,9 +101,9 @@ if use_cpu == False:
             print('Could not read CUDA version.\n')
 
     if osused == 'Linux':
-        result = subprocess.getstatusoutput('rocminfo')
-        output = result[1]
-        rc = result[0]
+        _proc = subprocess.run(['rocminfo'], capture_output=True, text=True)
+        output = _proc.stdout + _proc.stderr
+        rc = _proc.returncode
         if rc == 0:
             # if the output contains "is loaded"
             if output.find('is loaded') >= 0:
@@ -141,39 +141,39 @@ if len(torch_install_dict[torch_compute_platform]) > 2:
 gdal_version = ''
 
 if osused == 'Linux' or osused == 'Darwin':
-    result = subprocess.getstatusoutput('gdal-config --version')
-    output = result[1]
-    rc = result[0]
+    _proc = subprocess.run(['gdal-config', '--version'], capture_output=True, text=True)
+    output = _proc.stdout.strip()
+    rc = _proc.returncode
     if rc != 0:
         if osused == 'Linux':
             print('Trying to install libxcb-xinerama0...')
             try:
                 check_call(['sudo', 'apt-get', 'install', '-y', 'libxcb-xinerama0'],
-                   stdout=open(os.devnull, 'wb'), stderr=STDOUT)
-            except:
+                   stdout=subprocess.DEVNULL, stderr=STDOUT)
+            except Exception:
                 print('Impossible to install libxcb-xinerama0. If TagLab does not start, please install manually libxcb-xinerama0.')
 
             print('Trying to install gdal...')
             try:
                 check_call(['sudo', 'apt-get', 'install', '-y', 'libgdal-dev'],
-                        stdout=open(os.devnull, 'wb'), stderr=STDOUT)
-            except:
+                        stdout=subprocess.DEVNULL, stderr=STDOUT)
+            except Exception as e:
                 raise Exception('Impossible to install libgdal-dev. Please install manually libgdal-dev before running '
-                                'this script.\nInstallation aborted.')
-            result = subprocess.getstatusoutput('gdal-config --version')
-            output = result[1]
-            rc = result[0]
+                                'this script.\nInstallation aborted.') from e
+            _proc = subprocess.run(['gdal-config', '--version'], capture_output=True, text=True)
+            output = _proc.stdout.strip()
+            rc = _proc.returncode
         elif osused == 'Darwin':
             print('Trying to install gdal...')
             try:
                 check_call(['brew', 'install', 'gdal'],
-                        stdout=open(os.devnull, 'wb'), stderr=STDOUT)
-            except:
+                        stdout=subprocess.DEVNULL, stderr=STDOUT)
+            except Exception as e:
                 raise Exception('Impossible to install gdal through homebrew. Please install manually gdal before running '
-                                'this script.\nInstallation aborted.')
-            result = subprocess.getstatusoutput('gdal-config --version')
-            output = result[1]
-            rc = result[0]
+                                'this script.\nInstallation aborted.') from e
+            _proc = subprocess.run(['gdal-config', '--version'], capture_output=True, text=True)
+            output = _proc.stdout.strip()
+            rc = _proc.returncode
     if rc == 0:
         gdal_version = output
         print('GDAL version installed: ' + output)
@@ -185,40 +185,42 @@ gdal_package = 'gdal==' + gdal_version
 # build coraline
 if osused != 'Windows':
     try:
-        out = subprocess.getstatusoutput(['cmake', '--version'])
-        if out[0] != 0:
+        out = subprocess.run(['cmake', '--version'], capture_output=True, text=True)
+        if out.returncode != 0:
             if osused == 'Darwin':
                 print('Trying to install cmake...')
                 try:
                     check_call(['brew', 'install', 'cmake'],
-                               stdout=open(os.devnull, 'wb'), stderr=STDOUT)
-                except:
+                               stdout=subprocess.DEVNULL, stderr=STDOUT)
+                except Exception as e:
                     raise Exception('Impossible to install cmake through homebrew. Please install manually cmake before running '
-                                    'this script.\nInstallation aborted.')
+                                    'this script.\nInstallation aborted.') from e
             elif osused == 'Linux':
                 print('Trying to install cmake...')
                 try:
                     check_call(['sudo', 'apt-get', 'install', '-y', 'cmake'],
-                               stdout=open(os.devnull, 'wb'), stderr=STDOUT)
-                except:
+                               stdout=subprocess.DEVNULL, stderr=STDOUT)
+                except Exception as e:
                     raise Exception('Impossible to install cmake. Please install manually cmake before running '
-                                    'this script.\nInstallation aborted.')
+                                    'this script.\nInstallation aborted.') from e
+        _saved_cwd = os.getcwd()
         os.chdir('coraline')
+        try:
+            # if exists CMakeCache.txt file, remove it
+            if os.path.exists('CMakeCache.txt'):
+                os.remove('CMakeCache.txt')
 
-        # if exists CMakeCache.txt file, remove it
-        if os.path.exists('CMakeCache.txt'):
-            os.remove('CMakeCache.txt')
-
-        result = subprocess.getstatusoutput('cmake .')
-        if result[0] == 0:
-            result = subprocess.getstatusoutput('make')
-            if result[0] == 0:
-                print('Coraline built correctly.')
-                os.chdir('..')
+            result = subprocess.run(['cmake', '.'], capture_output=True, text=True)
+            if result.returncode == 0:
+                result = subprocess.run(['make'], capture_output=True, text=True)
+                if result.returncode == 0:
+                    print('Coraline built correctly.')
+                else:
+                    raise Exception('Error while building Coraline library.\nInstallation aborted.')
             else:
-                raise Exception('Error while building Coraline library.\nInstallation aborted.')
-        else:
-            raise Exception('Error while configuring Coraline library.\nInstallation aborted.')
+                raise Exception('Error while configuring Coraline library.\nInstallation aborted.')
+        finally:
+            os.chdir(_saved_cwd)
     except OSError:
         raise Exception('Cmake not found. Coraline library cannot be compiled. Please install cmake '
                         'first.\nInstallation aborted.')
@@ -301,8 +303,8 @@ else:
         urllib.request.urlretrieve(base_url_gdal, this_directory + '/' + filename_gdal)
         slib = 'Rasterio'
         urllib.request.urlretrieve(base_url_rastetio, this_directory + '/' + filename_rasterio)
-    except:
-        raise Exception("Cannot download " + slib + ".")
+    except Exception as e:
+        raise Exception("Cannot download " + slib + ".") from e
 
     # install gdal and rasterio
     subprocess.check_call([sys.executable, "-m", "pip", "install", filename_gdal])
@@ -335,7 +337,7 @@ for net_name in net_file_names:
             opener.addheaders = [('User-agent', 'Mozilla/5.0')]
             urllib.request.install_opener(opener)
             urllib.request.urlretrieve(url_dextr, 'models/' + net_name)
-        except:
-            raise Exception("Cannot download " + net_name + ".")
+        except Exception as e:
+            raise Exception("Cannot download " + net_name + ".") from e
     else:
         print(net_name + ' already exists.')

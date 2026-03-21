@@ -332,7 +332,7 @@ class QtTablePanel(QWidget):
 
         try:
             blobid = int(text)
-        except:
+        except ValueError:
             return
         if blobid > 0:
             row = self.data.index[self.data["Id"] == blobid].to_list()

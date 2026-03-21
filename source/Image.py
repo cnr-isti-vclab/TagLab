@@ -273,7 +273,7 @@ class Image(object):
         try:
             index = self.channels.index(channel)
             return index
-        except:
+        except ValueError:
             return -1
 
     def getRGBChannel(self):

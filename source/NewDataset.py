@@ -1181,15 +1181,8 @@ class NewDataset(object):
 			basenameVim = os.path.join(basename, os.path.join("validation", "images"))
 			basenameVlab = os.path.join(basename, os.path.join("validation", "labels"))
 
-		try:
-			os.makedirs(basenameVim)
-		except:
-			pass
-
-		try:
-			os.makedirs(basenameVlab)
-		except:
-			pass
+		os.makedirs(basenameVim, exist_ok=True)
+		os.makedirs(basenameVlab, exist_ok=True)
 
 		self.cropAndSaveTiles(self.validation_tiles, tilename, basenameVim, basenameVlab)
 
@@ -1199,16 +1192,10 @@ class NewDataset(object):
 		if self.data_format != "YOLO-v5":
 
 			basenameTestIm = os.path.join(basename, os.path.join("test", "images"))
-			try:
-				os.makedirs(basenameTestIm)
-			except:
-				pass
+			os.makedirs(basenameTestIm, exist_ok=True)
 
 			basenameTestLab = os.path.join(basename, os.path.join("test", "labels"))
-			try:
-				os.makedirs(basenameTestLab)
-			except:
-				pass
+			os.makedirs(basenameTestLab, exist_ok=True)
 
 			self.cropAndSaveTiles(self.test_tiles, tilename, basenameTestIm, basenameTestLab)
 
@@ -1222,15 +1209,8 @@ class NewDataset(object):
 			basenameTrainIm = os.path.join(basename, os.path.join("training", "images"))
 			basenameTrainLab = os.path.join(basename, os.path.join("training", "labels"))
 
-		try:
-			os.makedirs(basenameTrainIm)
-		except:
-			pass
-
-		try:
-			os.makedirs(basenameTrainLab)
-		except:
-			pass
+		os.makedirs(basenameTrainIm, exist_ok=True)
+		os.makedirs(basenameTrainLab, exist_ok=True)
 
 		self.cropAndSaveTiles(self.training_tiles, tilename, basenameTrainIm, basenameTrainLab)
 

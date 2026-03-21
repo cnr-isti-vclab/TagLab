@@ -47,11 +47,10 @@ from source.QtAlignmentToolWidget import QtAlignmentToolWidget
 
 try:
     import torch
-    from torch.nn.functional import upsample
+    from torch.nn.functional import interpolate as upsample
 except Exception as e:
     print("Incompatible version between pytorch, cuda and python.\n" +
-          "Knowing working version combinations are\n: Cuda 10.0, pytorch 1.0.0, python 3.6.8" + str(e))
-   # exit()
+          "Known working combinations: CUDA 11.8+, PyTorch 2.x, Python 3.11\n" + str(e))
 
 # CUSTOM
 import csv
@@ -825,13 +824,13 @@ class TagLab(QMainWindow):
 
         # read offline version
         taglab_version_file = os.path.join(os.path.dirname(__file__), "TAGLAB_VERSION")
-        f_off_version = open(taglab_version_file, "r")
-        taglab_offline_version = f_off_version.read()
+        with open(taglab_version_file, "r") as f_off_version:
+            taglab_offline_version = f_off_version.read()
 
         #print('Raw link: ' + raw_link)
         try:
             f_online_version = urllib.request.urlopen(raw_link)
-        except:
+        except Exception:
             return taglab_offline_version, False
 
         taglab_online_version = f_online_version.read().decode('utf-8')
@@ -951,7 +950,7 @@ class TagLab(QMainWindow):
             # disconnect, just in case..
             try:
                 self.timer.timeout.disconnect()
-            except:
+            except TypeError:
                 pass
 
             self.timer.timeout.connect(self.autosave)
@@ -2109,7 +2108,7 @@ class TagLab(QMainWindow):
         # just in case..
         try:
             self.viewerplus2.viewUpdated[QRectF].connect(self.mapviewer.drawOverlayImage, Qt.UniqueConnection)
-        except:
+        except TypeError:
             pass
 
         # disconnect viewer 2 slots
@@ -2174,7 +2173,7 @@ class TagLab(QMainWindow):
 
             try:
                 self.viewerplus2.viewUpdated[QRectF].connect(self.mapviewer.drawOverlayImage, type=Qt.UniqueConnection)
-            except:
+            except TypeError:
                 pass
 
             if self.comparemenu is not None:
@@ -3700,117 +3699,117 @@ class TagLab(QMainWindow):
         if self.labels_widget is not None:
             try:
                 self.project.blobUpdated[Image, Blob, Blob].connect(self.labels_widget.updateBlob, type=Qt.UniqueConnection)
-            except:
+            except TypeError:
                 pass
 
             try:
                 self.project.blobAdded[Image, Blob].connect(self.labels_widget.addBlob, type=Qt.UniqueConnection)
-            except:
+            except TypeError:
                 pass
 
             try:
                 self.project.blobRemoved[Image, Blob].connect(self.labels_widget.removeBlob, type=Qt.UniqueConnection)
-            except:
+            except TypeError:
                 pass
 
             try:
                 self.project.blobClassChanged[Image, str, Blob].connect(self.labels_widget.updateAnnClass, type=Qt.UniqueConnection)
-            except:
+            except TypeError:
                 pass
 
             try:
                 self.project.pointAdded[Image, Point].connect(self.labels_widget.addBlob, type=Qt.UniqueConnection)
-            except:
+            except TypeError:
                 pass
 
             try:
                 self.project.pointRemoved[Image, Point].connect(self.labels_widget.removeBlob, type=Qt.UniqueConnection)
-            except:
+            except TypeError:
                 pass
 
             try:
                 self.project.pointClassChanged[Image, str, Point].connect(self.labels_widget.updateAnnClass, type=Qt.UniqueConnection)
-            except:
+            except TypeError:
                 pass
 
         # data panel
         if self.data_panel is not None:
             try:
                 self.project.blobUpdated[Image, Blob, Blob].connect(self.data_panel.updateBlob, type=Qt.UniqueConnection)
-            except:
+            except TypeError:
                 pass
 
             try:
                 self.project.blobAdded[Image, Blob].connect(self.data_panel.addBlob, type=Qt.UniqueConnection)
-            except:
+            except TypeError:
                 pass
 
             try:
                 self.project.blobRemoved[Image, Blob].connect(self.data_panel.removeBlob, type=Qt.UniqueConnection)
-            except:
+            except TypeError:
                 pass
 
             try:
                 self.project.blobClassChanged[Image, str, Blob].connect(self.data_panel.updateBlobClass, type=Qt.UniqueConnection)
-            except:
+            except TypeError:
                 pass
 
             try:
                 self.project.pointAdded[Image, Point].connect(self.data_panel.addBlob, type=Qt.UniqueConnection)
-            except:
+            except TypeError:
                 pass
 
             try:
                 self.project.pointRemoved[Image, Point].connect(self.data_panel.removeBlob, type=Qt.UniqueConnection)
-            except:
+            except TypeError:
                 pass
 
             try:
                 self.project.pointClassChanged[Image, str, Point].connect(self.data_panel.updatePointClass, type=Qt.UniqueConnection)
-            except:
+            except TypeError:
                 pass
 
         # compare panel
         if self.compare_panel is not None:
             try:
                 self.project.correspTableChanged.connect(self.compare_panel.updateData)
-            except:
+            except TypeError:
                 pass
 
         # information panel
         try:
             self.project.blobUpdated[Image, Blob, Blob].connect(self.updatePanelInfoAfterBlobChange, type=Qt.UniqueConnection)
-        except:
+        except TypeError:
             pass
 
         try:
             self.project.blobAdded[Image, Blob].connect(self.updatePanelInfoAfterAddOperation, type=Qt.UniqueConnection)
-        except:
+        except TypeError:
             pass
 
         try:
             self.project.blobRemoved[Image, Blob].connect(self.resetPanelInfo, type=Qt.UniqueConnection)
-        except:
+        except TypeError:
             pass
 
         try:
             self.project.blobClassChanged[Image, str, Blob].connect(self.updatePanelInfoAfterClassChange, type=Qt.UniqueConnection)
-        except:
+        except TypeError:
             pass
 
         try:
             self.project.pointAdded[Image, Point].connect(self.updatePanelInfoAfterAddOperation, type=Qt.UniqueConnection)
-        except:
+        except TypeError:
             pass
 
         try:
             self.project.pointRemoved[Image, Point].connect(self.resetPanelInfo, type=Qt.UniqueConnection)
-        except:
+        except TypeError:
             pass
 
         try:
             self.project.pointClassChanged[Image, str, Point].connect(self.updatePanelInfoAfterClassChange, type=Qt.UniqueConnection)
-        except:
+        except TypeError:
             pass
 
 
@@ -4627,7 +4626,7 @@ class TagLab(QMainWindow):
         try:
             import webbrowser
             webbrowser.open_new('https://taglab.isti.cnr.it/docs')
-        except:
+        except Exception:
             print("Fail to launch your web browser. Go to the following link: 'https://taglab.isti.cnr.it/docs'")
 
     @pyqtSlot()

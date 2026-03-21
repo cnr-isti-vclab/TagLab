@@ -77,7 +77,7 @@ def overlay_mask(im, ma, colors=None, alpha=0.5):
 
     if ma.ndim == 3:
         assert len(colors) >= ma.shape[0], 'Not enough colors'
-    ma = ma.astype(np.bool)
+    ma = ma.astype(np.bool_)
     im = im.astype(np.float32)
 
     if ma.ndim == 2:
@@ -120,7 +120,7 @@ def overlay_masks(im, masks, alpha=0.5):
     total_ma = np.zeros([im.shape[0], im.shape[1]])
     i = 1
     for ma in masks:
-        ma = ma.astype(np.bool)
+        ma = ma.astype(np.bool_)
         fg = im * alpha+np.ones(im.shape) * (1 - alpha) * colors[i, :3]   # np.array([0,0,255])/255.0
         i = i + 1
         ov[ma == 1] = fg[ma == 1]
@@ -311,7 +311,6 @@ def cstm_normalize(im, max_value):
 
 
 def generate_param_report(logfile, param):
-    log_file = open(logfile, 'w')
-    for key, val in param.items():
-        log_file.write(key+':'+str(val)+'\n')
-    log_file.close()
+    with open(logfile, 'w') as log_file:
+        for key, val in param.items():
+            log_file.write(key+':'+str(val)+'\n')

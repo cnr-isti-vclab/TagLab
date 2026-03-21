@@ -247,7 +247,7 @@ class QtWorkingAreaWidget(QWidget):
                         # Clipboard has working area JSON, paste it
                         self.pasteWorkingAreaFromClipboard()
                         return True
-                except:
+                except (ValueError, KeyError):
                     # Not JSON or not working area data, let line edit handle it
                     pass
                 return False
@@ -362,7 +362,7 @@ class QtWorkingAreaWidget(QWidget):
 
             self.areaChanged.emit(x, y, w, h)
             self.updateAreaValues(x, y, w, h)
-        except:
+        except ValueError:
             pass
 
     @pyqtSlot(str)
@@ -381,7 +381,7 @@ class QtWorkingAreaWidget(QWidget):
 
             self.areaChanged.emit(x, y, w, h)
             self.updateAreaValues(x, y, w, h)
-        except:
+        except (ValueError, ZeroDivisionError):
             pass
 
     @pyqtSlot(int, int, int, int)
@@ -419,7 +419,7 @@ class QtWorkingAreaWidget(QWidget):
             y = int(self.edit_Y.text())
             w = int(self.edit_W.text())
             h = int(self.edit_H.text())
-        except:
+        except ValueError:
             print("CONVERSION ERROR")
 
         return x, y, w, h
