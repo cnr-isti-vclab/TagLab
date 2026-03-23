@@ -93,6 +93,7 @@ from source.QtDictionaryWidget import QtDictionaryWidget
 from source.QtRegionAttributesWidget import QtRegionAttributesWidget
 from source.QtShapefileAttributeWidget import QtAttributeWidget
 from source.QtGeometricInfoWidget import QtGeometricInfoWidget
+from source.QtGeometricClusteringWidget import QtGeometricClusteringWidget
 from source.QtCourseAnalysis import QtCourseAnalysis
 
 from source.QtSelection import QtSelectByPropertiesWidget
@@ -338,6 +339,7 @@ class TagLab(QMainWindow):
         self.fillAction         = self.newAction("Fill Region",               "F",   self.fillLabel)
         self.createNegative = self.newAction("Create a Background Region using the WA", "N", self.createNegative)
         self.computeGeometricInfo = self.newAction("Compute Geometric Info", None, self.computeGeometricInfo)
+        self.geometricClustering = self.newAction("Geometric Clustering", None, self.geometricClustering)
         self.rowAnalysis = self.newAction("Course Analysis", None, self.rowAnalysis)
 
         # SELECTION ACTIONS
@@ -1289,6 +1291,7 @@ class TagLab(QMainWindow):
         self.regionmenu.addSeparator()
         self.regionmenu.addAction(self.createNegative)
         self.regionmenu.addAction(self.computeGeometricInfo)
+        self.regionmenu.addAction(self.geometricClustering)
         self.regionmenu.addAction(self.rowAnalysis)
 
         ###### POINT ANNOTATIONS MENU
@@ -3336,6 +3339,26 @@ class TagLab(QMainWindow):
         geometricInfo_widget = QtGeometricInfoWidget(view, parent = self)
         geometricInfo_widget.setWindowModality(Qt.NonModal)
         geometricInfo_widget.show()
+
+    def geometricClustering(self):
+        """
+        Open the Geometric Clustering widget.
+        """
+        view = self.activeviewer
+
+        if view is None:
+            return
+        
+        if len(view.selected_blobs) == 0:
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("You need to select at least one region for this operation.")
+            msgBox.exec()
+            return
+
+        geometricClustering_widget = QtGeometricClusteringWidget(view, parent = self)
+        geometricClustering_widget.setWindowModality(Qt.NonModal)
+        geometricClustering_widget.show()
 
     def rowAnalysis(self):
         """
