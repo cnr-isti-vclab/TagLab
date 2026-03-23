@@ -2274,6 +2274,10 @@ class TagLab(QMainWindow):
         if self.activeviewer is None:
             return
         
+        # Check if data panel has data
+        if self.data_panel.data is None:
+            return
+        
         selected = self.activeviewer.selected_blobs
 
         rows = []
