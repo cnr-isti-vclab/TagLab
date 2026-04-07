@@ -22,7 +22,7 @@ from PyQt5.QtGui import QColor, QPen, QBrush, QPolygonF
 from PyQt5.QtWidgets import (QWidget, QTextEdit, QPushButton, QHBoxLayout, QVBoxLayout, 
                               QGroupBox, QMessageBox, QComboBox, QCheckBox, QLabel, 
                               QLineEdit, QTableWidget, QTableWidgetItem, QSplitter, QSpinBox,
-                              QApplication, QSizePolicy)
+                              QDoubleSpinBox, QApplication, QSizePolicy)
 from skimage import measure
 import math
 import cv2
@@ -46,6 +46,8 @@ class QtGeometricClusteringWidget(QWidget):
     Widget for geometric clustering functionality.
     Performs clustering analysis on selected regions based on geometric properties.
     """
+
+    closewidget = pyqtSignal()
 
     def __init__(self, viewer, parent=None):
         super(QtGeometricClusteringWidget, self).__init__(parent)
@@ -177,7 +179,7 @@ class QtGeometricClusteringWidget(QWidget):
         self.algoCombo.addItems(["K-Means", "DBSCAN", "Hierarchical"])
         self.algoCombo.currentTextChanged.connect(self.onAlgorithmChanged)
         
-        lblParam = QLabel("Num Clusters:")
+        self.lblParam = QLabel("Num Clusters:")
         self.paramSpin = QSpinBox()
         self.paramSpin.setMinimum(2)
         self.paramSpin.setMaximum(20)
@@ -190,10 +192,22 @@ class QtGeometricClusteringWidget(QWidget):
                 border: 1px solid rgb(100,100,100);
                 padding: 2px;
             }
-            QSpinBox:disabled {
-                background-color: rgb(40,40,40);
-                color: rgb(100,100,100);
-                border: 1px solid rgb(60,60,60);
+        """)
+
+        self.epsSpin = QDoubleSpinBox()
+        self.epsSpin.setMinimum(0.1)
+        self.epsSpin.setMaximum(10.0)
+        self.epsSpin.setSingleStep(0.1)
+        self.epsSpin.setValue(0.5)
+        self.epsSpin.setDecimals(2)
+        self.epsSpin.setToolTip("Eps (neighborhood radius) for DBSCAN; smaller = tighter clusters")
+        self.epsSpin.setVisible(False)
+        self.epsSpin.setStyleSheet("""
+            QDoubleSpinBox {
+                background-color: rgb(60,60,60);
+                color: white;
+                border: 1px solid rgb(100,100,100);
+                padding: 2px;
             }
         """)
         
@@ -211,8 +225,9 @@ class QtGeometricClusteringWidget(QWidget):
         algoLayout.addWidget(lblAlgo)
         algoLayout.addWidget(self.algoCombo)
         algoLayout.addSpacing(20)
-        algoLayout.addWidget(lblParam)
+        algoLayout.addWidget(self.lblParam)
         algoLayout.addWidget(self.paramSpin)
+        algoLayout.addWidget(self.epsSpin)
         algoLayout.addSpacing(20)
         algoLayout.addWidget(self.btnCluster)
         algoLayout.addWidget(self.cbShowClusters)
@@ -294,9 +309,6 @@ class QtGeometricClusteringWidget(QWidget):
         # Set cursor to arrow (in case it was changed by another tool)
         self.activeviewer.setCursor(Qt.ArrowCursor)
 
-    # close the widget
-    closewidget = pyqtSignal()
-    
     def closeEvent(self, event):
         # Remove colorized entities
         self.removeColorizedEntities()
@@ -317,17 +329,23 @@ class QtGeometricClusteringWidget(QWidget):
         self.btnCluster.setEnabled(False)
         self.cbShowClusters.setEnabled(False)
         self.removeColorizedEntities()
+        # Clear stale table and plot
+        self.resultsTable.clear()
+        self.resultsTable.setRowCount(0)
+        self.resultsTable.setColumnCount(0)
+        self.figure.clear()
+        self.canvas.draw()
 
     def onAlgorithmChanged(self, algo_name):
-        """Update parameter label based on selected algorithm"""
+        """Update parameter controls based on selected algorithm"""
         if algo_name == "DBSCAN":
-            # DBSCAN automatically determines number of clusters
-            self.paramSpin.setEnabled(False)
-            self.paramSpin.setToolTip("DBSCAN automatically determines the number of clusters")
+            self.lblParam.setText("Eps:")
+            self.paramSpin.setVisible(False)
+            self.epsSpin.setVisible(True)
         else:
-            # K-Means and Hierarchical use number of clusters
-            self.paramSpin.setEnabled(True)
-            self.paramSpin.setToolTip("Number of clusters for K-Means and Hierarchical")
+            self.lblParam.setText("Num Clusters:")
+            self.paramSpin.setVisible(True)
+            self.epsSpin.setVisible(False)
 
     def writeLog(self, message):
         """Write a message to the log area"""
@@ -364,14 +382,21 @@ class QtGeometricClusteringWidget(QWidget):
         self.geometricData = {}
         
         for blob in self.workingBlobs:
-            blobMeasure = measure.regionprops(blob.getMask())
+            mask = blob.getMask()
+            mask_uint8 = mask.astype(np.uint8)
+            blobMeasure = measure.regionprops(mask_uint8)
+
+            if not blobMeasure:
+                self.writeLog("Warning: blob {} has empty mask, skipping.".format(blob.id))
+                continue
+
             region = blobMeasure[0]
-            
+
             self.geometricData[blob.id] = {}
-            
+
             # Always compute area
             self.geometricData[blob.id]["area"] = blob.area * pxmm2
-            
+
             # Compute width, height, aspect based on fitting method
             if fitting_method == "Axis-Aligned BBox":
                 width = (region.bbox[3] - region.bbox[1]) * pxmm
@@ -379,16 +404,19 @@ class QtGeometricClusteringWidget(QWidget):
                 self.geometricData[blob.id]["width"] = width
                 self.geometricData[blob.id]["height"] = height
                 self.geometricData[blob.id]["aspect"] = width / height if height > 0 else 1.0
-                
+
             elif fitting_method == "Fitted Ellipse":
                 maj_axis = region.major_axis_length * pxmm
                 min_axis = region.minor_axis_length * pxmm
                 self.geometricData[blob.id]["width"] = maj_axis
                 self.geometricData[blob.id]["height"] = min_axis
                 self.geometricData[blob.id]["aspect"] = maj_axis / min_axis if min_axis > 0 else 1.0
-                
+
             elif fitting_method == "Minimum Rectangle":
-                contours, _ = cv2.findContours(blob.getMask().astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                contours, _ = cv2.findContours(mask_uint8, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                if not contours:
+                    self.writeLog("Warning: no contours for blob {}, skipping.".format(blob.id))
+                    continue
                 rect = cv2.minAreaRect(contours[0])
                 if rect[1][1] >= rect[1][0]:  # swap sides to have major side first
                     rect = (rect[0], (rect[1][1], rect[1][0]), rect[2] - 90.0)
@@ -452,20 +480,26 @@ class QtGeometricClusteringWidget(QWidget):
         # Apply clustering algorithm
         algo_name = self.algoCombo.currentText()
         n_clusters = self.paramSpin.value()
-        
+
+        # Guard: cannot have more clusters than samples
+        if algo_name in ("K-Means", "Hierarchical") and n_clusters > len(self.workingBlobs):
+            QMessageBox.warning(self, "Too Many Clusters",
+                "Number of clusters ({}) exceeds the number of regions ({}).".format(
+                    n_clusters, len(self.workingBlobs)))
+            return
+
         try:
             if algo_name == "K-Means":
                 clusterer = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
                 labels = clusterer.fit_predict(X_scaled)
-                
+
             elif algo_name == "DBSCAN":
-                # For DBSCAN, use the spin value as eps (scaled by 0.1 for reasonable range)
-                eps = n_clusters * 0.1
+                eps = self.epsSpin.value()
                 clusterer = DBSCAN(eps=eps, min_samples=2, n_jobs=1)
                 labels = clusterer.fit_predict(X_scaled)
                 n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
                 self.writeLog("DBSCAN found {} clusters (eps={:.2f})".format(n_clusters, eps))
-                
+
             elif algo_name == "Hierarchical":
                 clusterer = AgglomerativeClustering(n_clusters=n_clusters)
                 labels = clusterer.fit_predict(X_scaled)
@@ -515,13 +549,17 @@ class QtGeometricClusteringWidget(QWidget):
         headers = ["Region ID", "Cluster"] + [p.capitalize() for p in properties]
         self.resultsTable.setHorizontalHeaderLabels(headers)
         
-        # Fill table
-        for i, (blob_id, label) in enumerate(zip(blob_ids, labels)):
+        # Fill table sorted by cluster label (DBSCAN noise points at the end)
+        sort_key = np.where(labels == -1, labels.max() + 1 if labels.max() >= 0 else 0, labels)
+        sorted_indices = np.argsort(sort_key, kind='stable')
+        for row, idx in enumerate(sorted_indices):
+            blob_id = blob_ids[idx]
+            label = labels[idx]
             # Region ID
             id_item = QTableWidgetItem(str(blob_id))
             id_item.setTextAlignment(Qt.AlignCenter)
-            self.resultsTable.setItem(i, 0, id_item)
-            
+            self.resultsTable.setItem(row, 0, id_item)
+
             # Cluster label
             cluster_text = str(label) if label != -1 else "Noise"
             cluster_item = QTableWidgetItem(cluster_text)
@@ -530,13 +568,13 @@ class QtGeometricClusteringWidget(QWidget):
             if label != -1:
                 color = self.getClusterColor(label)
                 cluster_item.setBackground(color)
-            self.resultsTable.setItem(i, 1, cluster_item)
-            
+            self.resultsTable.setItem(row, 1, cluster_item)
+
             # Properties
             for j, prop in enumerate(properties):
-                value_item = QTableWidgetItem("{:.2f}".format(X[i, j]))
+                value_item = QTableWidgetItem("{:.2f}".format(X[idx, j]))
                 value_item.setTextAlignment(Qt.AlignRight)
-                self.resultsTable.setItem(i, 2 + j, value_item)
+                self.resultsTable.setItem(row, 2 + j, value_item)
         
         self.resultsTable.resizeColumnsToContents()
 
@@ -557,10 +595,11 @@ class QtGeometricClusteringWidget(QWidget):
         
         # Handle different numbers of features
         if n_features == 1:
-            # Only 1 feature - plot as 1D with jitter, use original values
-            X_plot = np.column_stack([X_original[:, 0], np.random.randn(X_original.shape[0]) * 0.1])
+            # Only 1 feature - plot as 1D with fixed jitter for reproducibility
+            rng = np.random.default_rng(seed=0)
+            X_plot = np.column_stack([X_original[:, 0], rng.standard_normal(X_original.shape[0]) * 0.1])
             xlabel = properties[0].capitalize()
-            ylabel = "Random Jitter"
+            ylabel = "Jitter"
             
         elif n_features == 2:
             # Exactly 2 features - plot directly, use original values
@@ -649,19 +688,21 @@ class QtGeometricClusteringWidget(QWidget):
         labels = self.clusterLabels
         blob_ids = self.clusterData['blob_ids']
         
-        for i, blob in enumerate(self.workingBlobs):
-            blob_idx = blob_ids.index(blob.id)
-            label = labels[blob_idx]
-            
+        id_to_label = dict(zip(blob_ids, labels))
+        for blob in self.workingBlobs:
+            label = id_to_label.get(blob.id, -1)
+
             if label == -1:
                 # Skip noise points
                 continue
-            
+
             color = self.getClusterColor(label)
-            
+
             # Draw the blob's filled contour
             min_row, min_col, _, _ = blob.bbox
             contours, _ = cv2.findContours(blob.getMask().astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            if not contours:
+                continue
             cnt = contours[0]
             polygon = QPolygonF([QPointF(float(point[0][0])+min_col+0.5, float(point[0][1])+min_row+0.5) for point in cnt])
             
