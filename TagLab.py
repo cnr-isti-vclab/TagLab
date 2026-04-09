@@ -162,11 +162,20 @@ class TagLab(QMainWindow):
 
         current_version, need_to_update = self.checkNewVersion()
         if need_to_update:
-            print("--- THERE IS A NEW VERSION AVAILABLE! ---")
-            print("Please, launch update.py")
-            print("if updating from the 29/10/2024 version, also launch install.py")
-            print("-----------------------------------------")            
-            sys.exit(0)
+            if self.getGitBranch() == 'main':
+                print("\033[91m" + "*" * 60)
+                print("** A NEW VERSION OF TAGLAB IS AVAILABLE - PLEASE UPDATE  **")
+                print("** RUN update.py TO UPDATE TAGLAB                        **")
+                print("** (if updating from 29/10/2024, also run install.py)    **")
+                print("*" * 60 + "\033[0m")
+                sys.exit(0)
+            else:
+                branch = self.getGitBranch()
+                print("\033[93m" + "!" * 60)
+                print("!! WARNING: A NEWER VERSION OF TAGLAB IS AVAILABLE       !!")
+                print("!! YOU ARE ON BRANCH: {:39s}!!".format("'" + branch + "'"))
+                print("!! UPDATE CHECK IS SKIPPED - STARTUP WILL CONTINUE       !!")
+                print("!" * 60 + "\033[0m")
 
         ##### DATA INITIALIZATION AND SETUP #####
 
@@ -816,6 +825,18 @@ class TagLab(QMainWindow):
         settings.setValue("gui-checkbox-ids", self.checkBoxIds.isChecked())
         settings.setValue("gui-checkbox-grid", self.checkBoxGrid.isChecked())
         settings.setValue("gui-checkbox-image", self.checkBoxMap.isChecked())
+
+    def getGitBranch(self):
+        """Return the current git branch name, or 'main' if it cannot be determined."""
+        try:
+            git_head = os.path.join(os.path.dirname(__file__), '.git', 'HEAD')
+            with open(git_head, 'r') as f:
+                content = f.read().strip()
+            if content.startswith('ref: refs/heads/'):
+                return content.split('refs/heads/')[-1]
+        except Exception:
+            pass
+        return 'main'
 
     def checkNewVersion(self):
 
