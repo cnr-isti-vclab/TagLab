@@ -86,9 +86,9 @@ class QtGeometricClusteringWidget(QWidget):
 
         mainLayout = QVBoxLayout()
 
-        # GROUP BOX for computation settings
-        computeGroup = QGroupBox("Geometric Properties Computation")
-        computeGroup.setStyleSheet("""
+        # GROUP BOX for property selection
+        propSelGroup = QGroupBox("Properties for Clustering")
+        propSelGroup.setStyleSheet("""
             QGroupBox { 
                 background-color: rgb(45,45,45); 
                 color: white; 
@@ -104,25 +104,56 @@ class QtGeometricClusteringWidget(QWidget):
                 padding: 0 5px; 
             }
         """)
-        computeLayout = QHBoxLayout()
-        
-        lblFitting = QLabel("Fitting Method:")
-        self.fittingCombo = QComboBox()
-        self.fittingCombo.addItems(["Axis-Aligned BBox", "Fitted Ellipse", "Minimum Rectangle"])
-        self.fittingCombo.setToolTip("Choose which fitting method to use for width, height, and aspect ratio")
-        
-        self.btnCompute = QPushButton("Compute Properties")
-        self.btnCompute.setToolTip("Compute geometric properties for all selected regions")
-        self.btnCompute.clicked.connect(self.computeProperties)
-        
-        computeLayout.addWidget(lblFitting)
-        computeLayout.addWidget(self.fittingCombo)
-        computeLayout.addWidget(self.btnCompute)
-        computeLayout.addStretch()
-        
-        computeGroup.setLayout(computeLayout)
-        computeGroup.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        mainLayout.addWidget(computeGroup)
+        propSelLayout = QHBoxLayout()
+
+        prop_groups = [
+            ("Basic", [
+                ("area",          "Area"),
+                ("perimeter",     "Perimeter"),
+            ]),
+            ("Bounding Box", [
+                ("bboxMaj",       "Major Extent"),
+                ("bboxMin",       "Minor Extent"),
+                ("bboxAspect",    "Aspect Ratio"),
+                ("bboxWidth",     "Width (horiz)"),
+                ("bboxHeight",    "Height (vert)"),
+            ]),
+            ("Ellipse", [
+                ("ellipseMaj",    "Maj Axis"),
+                ("ellipseMin",    "Min Axis"),
+                ("ellipseAspect", "Aspect Ratio"),
+                ("ellipseOrient", "Orientation"),
+                ("ellipseEcc",    "Eccentricity"),
+            ]),
+            ("Min Rectangle", [
+                ("rectMaj",       "Maj Side"),
+                ("rectMin",       "Min Side"),
+                ("rectAspect",    "Aspect Ratio"),
+                ("rectOrient",    "Orientation"),
+            ]),
+            ("Convex Hull", [
+                ("convexArea",    "Conv. Area"),
+            ]),
+        ]
+        default_checked = {"area"}
+        self.propCheckboxes = {}
+        for group_name, props in prop_groups:
+            colLayout = QVBoxLayout()
+            lbl = QLabel(group_name)
+            lbl.setStyleSheet("font-weight: bold; color: rgb(200,200,200); padding-bottom: 4px;")
+            colLayout.addWidget(lbl)
+            for key, display in props:
+                cb = QCheckBox(display)
+                cb.setChecked(key in default_checked)
+                self.propCheckboxes[key] = cb
+                colLayout.addWidget(cb)
+            colLayout.addStretch()
+            propSelLayout.addLayout(colLayout)
+
+        propSelLayout.addStretch()
+        propSelGroup.setLayout(propSelLayout)
+        propSelGroup.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        mainLayout.addWidget(propSelGroup)
 
         # GROUP BOX for clustering controls
         controlsGroup = QGroupBox("Clustering Configuration")
@@ -143,33 +174,6 @@ class QtGeometricClusteringWidget(QWidget):
             }
         """)
         controlsLayout = QVBoxLayout()
-
-        # Property selection
-        propLayout = QHBoxLayout()
-        propLayout.addWidget(QLabel("Properties to use:"))
-        
-        self.cbArea = QCheckBox("Area")
-        self.cbArea.setChecked(True)
-        self.cbArea.setToolTip("Use area of region")
-        
-        self.cbWidth = QCheckBox("Width")
-        self.cbWidth.setChecked(True)
-        self.cbWidth.setToolTip("Use width from selected fitting method")
-        
-        self.cbHeight = QCheckBox("Height")
-        self.cbHeight.setChecked(True)
-        self.cbHeight.setToolTip("Use height from selected fitting method")
-        
-        self.cbAspect = QCheckBox("Aspect Ratio")
-        self.cbAspect.setChecked(True)
-        self.cbAspect.setToolTip("Use aspect ratio (width/height)")
-        
-        propLayout.addWidget(self.cbArea)
-        propLayout.addWidget(self.cbWidth)
-        propLayout.addWidget(self.cbHeight)
-        propLayout.addWidget(self.cbAspect)
-        propLayout.addStretch()
-        controlsLayout.addLayout(propLayout)
 
         # Algorithm and parameters
         algoLayout = QHBoxLayout()
@@ -243,6 +247,7 @@ class QtGeometricClusteringWidget(QWidget):
         
         # Results table
         self.resultsTable = QTableWidget()
+        self.resultsTable.verticalHeader().setVisible(False)
         self.resultsTable.setStyleSheet("""
             QTableWidget { 
                 background-color: rgb(50,50,50); 
@@ -261,7 +266,7 @@ class QtGeometricClusteringWidget(QWidget):
         """)
         
         # Matplotlib plot
-        self.figure = Figure(figsize=(5, 4), facecolor='#2a2a2a')
+        self.figure = Figure(figsize=(5, 4), facecolor='#2a2a2a', layout='constrained')
         self.canvas = FigureCanvas(self.figure)
         self.canvas.setStyleSheet("background-color: rgb(42,42,42);")
         
@@ -302,18 +307,21 @@ class QtGeometricClusteringWidget(QWidget):
         self.setMinimumHeight(height)
         self.resize(width, height)
 
-        # Initialize log with selection info
+        # Highlight state
+        self.highlightedEntity = None
+        self._highlightScatter = None
+
+        # Connect table selection to highlight handler
+        self.resultsTable.itemSelectionChanged.connect(self.onTableSelectionChanged)
+
+        # Compute all properties for current selection at startup
         self.logSelectedRegions()
-        self.writeLog("Click 'Compute Properties' to start.")
-        
-        # Set cursor to arrow (in case it was changed by another tool)
-        self.activeviewer.setCursor(Qt.ArrowCursor)
+        self.computeProperties()
 
     def closeEvent(self, event):
-        # Remove colorized entities
+        # Remove highlight and colorized entities
+        self.removeHighlight()
         self.removeColorizedEntities()
-        # Reset cursor to arrow
-        self.activeviewer.setCursor(Qt.ArrowCursor)
         # emit the signal to notify the main window
         self.closewidget.emit()
         super(QtGeometricClusteringWidget, self).closeEvent(event)
@@ -323,11 +331,12 @@ class QtGeometricClusteringWidget(QWidget):
         """Called when the selection changes in the viewer"""
         self.workingBlobs = self.activeviewer.selected_blobs[:]
         self.writeLog("Selection changed. Now {} region(s) selected.".format(len(self.workingBlobs)))
-        # Reset computed data
+        # Reset clustering results
         self.geometricData = {}
         self.clusterLabels = None
         self.btnCluster.setEnabled(False)
         self.cbShowClusters.setEnabled(False)
+        self.removeHighlight()
         self.removeColorizedEntities()
         # Clear stale table and plot
         self.resultsTable.clear()
@@ -335,6 +344,9 @@ class QtGeometricClusteringWidget(QWidget):
         self.resultsTable.setColumnCount(0)
         self.figure.clear()
         self.canvas.draw()
+        # Recompute properties for the new selection
+        if len(self.workingBlobs) > 0:
+            self.computeProperties()
 
     def onAlgorithmChanged(self, algo_name):
         """Update parameter controls based on selected algorithm"""
@@ -368,67 +380,74 @@ class QtGeometricClusteringWidget(QWidget):
     ########################################################################################
 
     def computeProperties(self):
-        """Compute geometric properties for all selected regions"""
+        """Compute all geometric properties for all selected regions"""
         if len(self.workingBlobs) == 0:
-            self.writeLog("No regions selected!")
+            self.btnCluster.setEnabled(False)
             return
 
-        self.writeLog("Computing geometric properties...")
-        
-        fitting_method = self.fittingCombo.currentText()
         pxmm = self.activeviewer.px_to_mm
         pxmm2 = pxmm * pxmm
-        
         self.geometricData = {}
-        
-        for blob in self.workingBlobs:
-            mask = blob.getMask()
-            mask_uint8 = mask.astype(np.uint8)
-            blobMeasure = measure.regionprops(mask_uint8)
 
+        for blob in self.workingBlobs:
+            mask_uint8 = blob.getMask().astype(np.uint8)
+            blobMeasure = measure.regionprops(mask_uint8)
             if not blobMeasure:
                 self.writeLog("Warning: blob {} has empty mask, skipping.".format(blob.id))
                 continue
 
             region = blobMeasure[0]
+            d = {}
 
-            self.geometricData[blob.id] = {}
+            # Basic
+            d['area']      = blob.area * pxmm2
+            d['perimeter'] = blob.perimeter * pxmm
 
-            # Always compute area
-            self.geometricData[blob.id]["area"] = blob.area * pxmm2
+            # Axis-Aligned Bounding Box
+            bboxW = (region.bbox[3] - region.bbox[1]) * pxmm
+            bboxH = (region.bbox[2] - region.bbox[0]) * pxmm
+            d['bboxWidth']  = bboxW
+            d['bboxHeight'] = bboxH
+            bboxMaj = max(bboxW, bboxH)
+            bboxMin = min(bboxW, bboxH)
+            d['bboxMaj']    = bboxMaj
+            d['bboxMin']    = bboxMin
+            d['bboxAspect'] = bboxMaj / bboxMin if bboxMin > 0 else 1.0
 
-            # Compute width, height, aspect based on fitting method
-            if fitting_method == "Axis-Aligned BBox":
-                width = (region.bbox[3] - region.bbox[1]) * pxmm
-                height = (region.bbox[2] - region.bbox[0]) * pxmm
-                self.geometricData[blob.id]["width"] = width
-                self.geometricData[blob.id]["height"] = height
-                self.geometricData[blob.id]["aspect"] = width / height if height > 0 else 1.0
+            # Fitted Ellipse
+            maj  = region.major_axis_length * pxmm
+            min_ = region.minor_axis_length * pxmm
+            d['ellipseMaj']    = maj
+            d['ellipseMin']    = min_
+            d['ellipseAspect'] = maj / min_ if min_ > 0 else 1.0
+            orientation = (region.orientation * 180 / math.pi) - 90.0
+            if orientation < -90:   orientation += 180
+            elif orientation > 90:  orientation -= 180
+            d['ellipseOrient'] = orientation
+            d['ellipseEcc']    = region.eccentricity
 
-            elif fitting_method == "Fitted Ellipse":
-                maj_axis = region.major_axis_length * pxmm
-                min_axis = region.minor_axis_length * pxmm
-                self.geometricData[blob.id]["width"] = maj_axis
-                self.geometricData[blob.id]["height"] = min_axis
-                self.geometricData[blob.id]["aspect"] = maj_axis / min_axis if min_axis > 0 else 1.0
-
-            elif fitting_method == "Minimum Rectangle":
-                contours, _ = cv2.findContours(mask_uint8, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                if not contours:
-                    self.writeLog("Warning: no contours for blob {}, skipping.".format(blob.id))
-                    continue
+            # Minimum Rectangle
+            contours, _ = cv2.findContours(mask_uint8, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            if contours:
                 rect = cv2.minAreaRect(contours[0])
-                if rect[1][1] >= rect[1][0]:  # swap sides to have major side first
+                if rect[1][1] >= rect[1][0]:
                     rect = (rect[0], (rect[1][1], rect[1][0]), rect[2] - 90.0)
-                maj_side = rect[1][0] * pxmm
-                min_side = rect[1][1] * pxmm
-                self.geometricData[blob.id]["width"] = maj_side
-                self.geometricData[blob.id]["height"] = min_side
-                self.geometricData[blob.id]["aspect"] = maj_side / min_side if min_side > 0 else 1.0
-        
-        self.writeLog("Computed properties for {} regions using {}.".format(
-            len(self.workingBlobs), fitting_method))
-        self.writeLog("Ready for clustering.")
+                majSide = rect[1][0] * pxmm
+                minSide = rect[1][1] * pxmm
+                d['rectMaj']    = majSide
+                d['rectMin']    = minSide
+                d['rectAspect'] = majSide / minSide if minSide > 0 else 1.0
+                d['rectOrient'] = -rect[2]
+            else:
+                d['rectMaj'] = d['rectMin'] = d['rectAspect'] = d['rectOrient'] = 0.0
+
+            # Convex Hull
+            d['convexArea'] = region.area_convex * pxmm2
+
+            self.geometricData[blob.id] = d
+
+        self.writeLog("Properties computed for {} regions. Ready for clustering.".format(
+            len(self.geometricData)))
         self.btnCluster.setEnabled(True)
 
     ########################################################################################
@@ -446,18 +465,10 @@ class QtGeometricClusteringWidget(QWidget):
             return
 
         # Check which properties are selected
-        selected_props = []
-        if self.cbArea.isChecked():
-            selected_props.append("area")
-        if self.cbWidth.isChecked():
-            selected_props.append("width")
-        if self.cbHeight.isChecked():
-            selected_props.append("height")
-        if self.cbAspect.isChecked():
-            selected_props.append("aspect")
-        
+        selected_props = [key for key, cb in self.propCheckboxes.items() if cb.isChecked()]
+
         if len(selected_props) == 0:
-            QMessageBox.warning(self, "No Properties Selected", 
+            QMessageBox.warning(self, "No Properties Selected",
                               "Please select at least one property for clustering.")
             return
 
@@ -555,8 +566,9 @@ class QtGeometricClusteringWidget(QWidget):
         for row, idx in enumerate(sorted_indices):
             blob_id = blob_ids[idx]
             label = labels[idx]
-            # Region ID
+            # Region ID — store blob_id in UserRole for row lookup
             id_item = QTableWidgetItem(str(blob_id))
+            id_item.setData(Qt.UserRole, blob_id)
             id_item.setTextAlignment(Qt.AlignCenter)
             self.resultsTable.setItem(row, 0, id_item)
 
@@ -615,26 +627,23 @@ class QtGeometricClusteringWidget(QWidget):
             xlabel = "PC1 ({:.1f}% var)".format(var_explained[0] * 100)
             ylabel = "PC2 ({:.1f}% var)".format(var_explained[1] * 100)
         
-        # Plot each cluster with different color
-        unique_labels = set(labels)
-        for label in unique_labels:
-            if label == -1:
-                # Noise points (for DBSCAN)
-                color_str = 'gray'
-                marker = 'x'
-                edgecolor = None
-                linewidth = 0
-            else:
-                color = self.getClusterColor(label)
-                color_str = color.name()
-                marker = 'o'
-                edgecolor = 'white'
-                linewidth = 0.5
-            
+        # Plot clusters first, then noise on top
+        unique_labels = sorted(set(labels))
+        # Draw clusters first so noise points are rendered on top
+        for label in [l for l in unique_labels if l != -1]:
+            color = self.getClusterColor(label)
+            color_str = color.name()
             mask = labels == label
-            ax.scatter(X_plot[mask, 0], X_plot[mask, 1], 
-                      c=[color_str], label=f'Cluster {label}' if label != -1 else 'Noise',
-                      s=50, alpha=0.7, edgecolors=edgecolor, linewidths=linewidth, marker=marker)
+            ax.scatter(X_plot[mask, 0], X_plot[mask, 1],
+                      c=[color_str], label=f'Cluster {label}',
+                      s=50, alpha=0.7, edgecolors='white', linewidths=0.5, marker='o')
+
+        # Draw noise points as unfilled circles
+        if -1 in unique_labels:
+            mask = labels == -1
+            ax.scatter(X_plot[mask, 0], X_plot[mask, 1],
+                      facecolors='none', edgecolors='gray', linewidths=1.2,
+                      label='Noise', s=60, alpha=0.8, marker='o')
         
         ax.set_xlabel(xlabel, color='white')
         ax.set_ylabel(ylabel, color='white')
@@ -647,7 +656,9 @@ class QtGeometricClusteringWidget(QWidget):
         ax.legend(facecolor='#3a3a3a', edgecolor='white', labelcolor='white')
         ax.grid(True, alpha=0.3, color='gray')
         
-        self.figure.tight_layout()
+        # Store X_plot for scatter-highlight lookup
+        self.clusterData['X_plot'] = X_plot
+
         self.canvas.draw()
 
     def getClusterColor(self, cluster_id):
@@ -718,3 +729,71 @@ class QtGeometricClusteringWidget(QWidget):
             for item in self.colorizedEntities:
                 self.activeviewer.scene.removeItem(item)
             self.colorizedEntities = []
+
+    def removeHighlight(self):
+        """Remove viewer outline highlight and scatter highlight marker"""
+        if self.highlightedEntity is not None:
+            try:
+                self.activeviewer.scene.removeItem(self.highlightedEntity)
+            except (AttributeError, RuntimeError):
+                pass
+            self.highlightedEntity = None
+        if self._highlightScatter is not None:
+            try:
+                self._highlightScatter.remove()
+                if self.figure.axes:
+                    self.canvas.draw()
+            except Exception:
+                pass
+            self._highlightScatter = None
+
+    def onTableSelectionChanged(self):
+        """Highlight the selected region in the scatter plot and in the viewer."""
+        self.removeHighlight()
+        selected = self.resultsTable.selectedItems()
+        if not selected:
+            return
+        row = selected[0].row()
+        id_item = self.resultsTable.item(row, 0)
+        if id_item is None:
+            return
+        blob_id = id_item.data(Qt.UserRole)
+        if blob_id is None:
+            return
+
+        # Find the blob
+        blob = next((b for b in self.workingBlobs if b.id == blob_id), None)
+        if blob is None:
+            return
+
+        # --- Highlight in viewer: draw a thick yellow outline ---
+        min_row, min_col, _, _ = blob.bbox
+        contours, _ = cv2.findContours(
+            blob.getMask().astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if contours:
+            cnt = contours[0]
+            polygon = QPolygonF([
+                QPointF(float(pt[0][0]) + min_col + 0.5, float(pt[0][1]) + min_row + 0.5)
+                for pt in cnt
+            ])
+            pen = QPen(QColor(255, 255, 0))
+            pen.setWidth(5)
+            pen.setCosmetic(True)
+            outline = self.activeviewer.scene.addPolygon(polygon, pen, QBrush())
+            outline.setZValue(12)
+            self.highlightedEntity = outline
+
+        # --- Highlight in scatter plot ---
+        X_plot = self.clusterData.get('X_plot') if self.clusterData else None
+        blob_ids = self.clusterData.get('blob_ids') if self.clusterData else None
+        if X_plot is not None and blob_ids is not None and self.figure.axes:
+            try:
+                idx = list(blob_ids).index(blob_id)
+                ax = self.figure.axes[0]
+                self._highlightScatter = ax.scatter(
+                    [X_plot[idx, 0]], [X_plot[idx, 1]],
+                    s=220, facecolors='none', edgecolors='yellow',
+                    linewidths=2.5, zorder=15)
+                self.canvas.draw()
+            except (ValueError, IndexError):
+                pass
