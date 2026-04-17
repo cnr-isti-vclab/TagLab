@@ -140,7 +140,8 @@ class VOCSegmentation(data.Dataset):
         if not os.path.isfile(_fpath):
             print("{} does not exist".format(_fpath))
             return False
-        _md5c = hashlib.md5(open(_fpath, 'rb').read()).hexdigest()
+        with open(_fpath, 'rb') as _f:
+            _md5c = hashlib.md5(_f.read()).hexdigest()
         if _md5c != self.MD5:
             print(" MD5({}) did not match MD5({}) expected for {}".format(
                 _md5c, self.MD5, _fpath))
@@ -152,7 +153,8 @@ class VOCSegmentation(data.Dataset):
         if not os.path.isfile(_obj_list_file):
             return False
         else:
-            self.obj_dict = json.load(open(_obj_list_file, 'r'))
+            with open(_obj_list_file, 'r') as _f:
+                self.obj_dict = json.load(_f)
 
             return list(np.sort([str(x) for x in self.obj_dict.keys()])) == list(np.sort(self.im_ids))
 
@@ -218,10 +220,9 @@ class VOCSegmentation(data.Dataset):
         # extract file
         cwd = os.getcwd()
         print('Extracting tar file')
-        tar = tarfile.open(_fpath)
-        os.chdir(self.root)
-        tar.extractall()
-        tar.close()
+        with tarfile.open(_fpath) as tar:
+            os.chdir(self.root)
+            tar.extractall()
         os.chdir(cwd)
         print('Done!')
 

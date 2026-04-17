@@ -343,7 +343,7 @@ class Ritm(Tool):
             if self.ritm_net is not None:
                 del self.ritm_net
                 self.ritm_net = None
-        except:
+        except Exception:
             pass
 
     def apply(self):

@@ -15,7 +15,7 @@ def one_hot2dist(seg):
     C = seg.shape[0]
     res = np.zeros_like(seg)
     for c in range(1, C):  # background is excluded (C=0)
-        posmask = seg[c].astype(np.bool)
+        posmask = seg[c].astype(np.bool_)
         if posmask.any():
             negmask = ~posmask
             res[c] = distance(negmask) * negmask - (distance(posmask) - 1) * posmask

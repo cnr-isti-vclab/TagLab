@@ -50,9 +50,9 @@ def replacePaths(old_path, new_path, images, taglab_dir):
 def loadProject(taglab_working_dir, filename, default_dict):
     dir = QDir(taglab_working_dir)
     abspath = os.path.join(taglab_working_dir, dir.relativeFilePath(filename))
-    f = open(abspath, "r")
     try:
-        data = json.load(f)
+        with open(abspath, "r") as f:
+            data = json.load(f)
     except json.JSONDecodeError as e:
         raise Exception(str(e))
 
@@ -62,8 +62,6 @@ def loadProject(taglab_working_dir, filename, default_dict):
         project.region_attributes = RegionAttributes()
     else:
         project = Project(**data)
-
-    f.close()
 
     if project.dictionary_name == "":
         project.dictionary_name = "My dictionary"

@@ -279,7 +279,7 @@ class QtTYNWidget(QWidget):
             self.editEpochsStage2.setText(str(epochs2))
             self.editEpochsStage3.setText(str(epochs3))
             self.blockSignals(False)
-        except:
+        except ValueError:
             pass
 
     @pyqtSlot(str)
@@ -299,7 +299,7 @@ class QtTYNWidget(QWidget):
             self.blockSignals(True)
             self.editEpochs.setText(str(total_epochs))
             self.blockSignals(False)
-        except:
+        except ValueError:
             pass
 
     @pyqtSlot(str)

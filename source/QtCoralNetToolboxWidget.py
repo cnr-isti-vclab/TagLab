@@ -889,7 +889,7 @@ class QtCoralNetToolboxWidget(QWidget):
             # If True (1), delete the folder
             if self.comboDeleteTemp.currentIndex():
                 shutil.rmtree(self.output_folder)
-        except:
+        except OSError:
             # Fail silently, user likely has something open
             pass
 

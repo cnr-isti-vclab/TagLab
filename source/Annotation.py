@@ -101,7 +101,7 @@ class Annotation(object):
             point = blob_or_point
             try:
                 index = self.annpoints.index(point)
-            except:
+            except ValueError:
                 index = -1
 
             if index < 0:
@@ -113,7 +113,7 @@ class Annotation(object):
             blob = blob_or_point
             try:
                 index = self.seg_blobs.index(blob)
-            except:
+            except ValueError:
                 index = -1
 
             if index < 0:
@@ -876,7 +876,7 @@ class Annotation(object):
 
                 try:
                     value = blob.data[key]
-                except:
+                except KeyError:
                     value = None
 
                 if attribute['type'] == 'integer number':
@@ -929,7 +929,7 @@ class Annotation(object):
 
                 try:
                     value = annpoint.data[key]
-                except:
+                except KeyError:
                     value = None
 
                 if attribute['type'] == 'integer number':
