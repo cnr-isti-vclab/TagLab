@@ -38,6 +38,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QFileDialog, QCo
 
 from source.QtExportDXF import QtDXFExport  # Import the dxf export dialog
 from source.QtExportSVG import QtSVGExport  # Import the svg export dialog
+from source.QtExportCOCO import QtCOCOExport  # Import the coco export dialog
 
 
 
@@ -1158,6 +1159,10 @@ class TagLab(QMainWindow):
         exportSVGfilesAct.setStatusTip("Export visible regions as SVG")
         exportSVGfilesAct.triggered.connect(self.exportAnnAsSVG)
 
+        exportCOCOAct = QAction("Export Regions As COCO", self)
+        exportCOCOAct.setStatusTip("Export regions as COCO format annotations")
+        exportCOCOAct.triggered.connect(self.exportAnnAsCOCO)
+
         exportGeoRefLabelMapAct = QAction("Export Regions As A GeoTiff", self)
         exportGeoRefLabelMapAct.setStatusTip("Create a label image and export it as a GeoTiff")
         exportGeoRefLabelMapAct.triggered.connect(self.exportGeoRefLabelMap)
@@ -1251,6 +1256,7 @@ class TagLab(QMainWindow):
         self.submenuExport.addAction(exportShapefilesAct)
         self.submenuExport.addAction(exportDXFfilesAct)
         self.submenuExport.addAction(exportSVGfilesAct)
+        self.submenuExport.addAction(exportCOCOAct)
         self.submenuExport.addAction(exportGeoRefLabelMapAct)
         self.submenuExport.addAction(exportGeoRefImgAct)
         self.submenuExport.addAction(exportForReefArchive)
@@ -5221,6 +5227,18 @@ class TagLab(QMainWindow):
             return
         # Show the SVG export dialog
         optionsDialog = QtSVGExport(self)
+        optionsDialog.setWindowModality(Qt.WindowModal)
+        optionsDialog.show()
+
+    @pyqtSlot()
+    def exportAnnAsCOCO(self):
+        # Check if activeviewer is set and contains necessary data
+        if self.activeviewer is None:
+            return
+        if self.activeviewer.image is None:
+            return
+        # Show the COCO export dialog
+        optionsDialog = QtCOCOExport(self)
         optionsDialog.setWindowModality(Qt.WindowModal)
         optionsDialog.show()
 
