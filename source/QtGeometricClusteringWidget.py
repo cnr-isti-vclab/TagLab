@@ -32,9 +32,10 @@ import os
 # Fix for Windows scikit-learn threading issue
 os.environ["LOKY_MAX_CPU_COUNT"] = "1"
 
-from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering
+from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering, MeanShift, SpectralClustering, estimate_bandwidth
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
+from scipy.stats import gaussian_kde
 
 # Matplotlib for plotting
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -180,7 +181,7 @@ class QtGeometricClusteringWidget(QWidget):
         
         lblAlgo = QLabel("Algorithm:")
         self.algoCombo = QComboBox()
-        self.algoCombo.addItems(["K-Means", "DBSCAN", "Hierarchical"])
+        self.algoCombo.addItems(["K-Means", "DBSCAN", "Hierarchical", "Mean Shift", "Spectral"])
         self.algoCombo.currentTextChanged.connect(self.onAlgorithmChanged)
         
         self.lblParam = QLabel("Num Clusters:")
@@ -214,7 +215,24 @@ class QtGeometricClusteringWidget(QWidget):
                 padding: 2px;
             }
         """)
-        
+
+        self.bandwidthSpin = QDoubleSpinBox()
+        self.bandwidthSpin.setMinimum(0.0)
+        self.bandwidthSpin.setMaximum(100.0)
+        self.bandwidthSpin.setSingleStep(0.1)
+        self.bandwidthSpin.setValue(0.0)
+        self.bandwidthSpin.setDecimals(2)
+        self.bandwidthSpin.setToolTip("Bandwidth for Mean Shift (0 = auto-estimate)")
+        self.bandwidthSpin.setVisible(False)
+        self.bandwidthSpin.setStyleSheet("""
+            QDoubleSpinBox {
+                background-color: rgb(60,60,60);
+                color: white;
+                border: 1px solid rgb(100,100,100);
+                padding: 2px;
+            }
+        """)
+
         self.btnCluster = QPushButton("Run Clustering")
         self.btnCluster.setToolTip("Perform geometric clustering on selected regions")
         self.btnCluster.clicked.connect(self.runClustering)
@@ -232,6 +250,7 @@ class QtGeometricClusteringWidget(QWidget):
         algoLayout.addWidget(self.lblParam)
         algoLayout.addWidget(self.paramSpin)
         algoLayout.addWidget(self.epsSpin)
+        algoLayout.addWidget(self.bandwidthSpin)
         algoLayout.addSpacing(20)
         algoLayout.addWidget(self.btnCluster)
         algoLayout.addWidget(self.cbShowClusters)
@@ -356,14 +375,18 @@ class QtGeometricClusteringWidget(QWidget):
 
     def onAlgorithmChanged(self, algo_name):
         """Update parameter controls based on selected algorithm"""
+        self.paramSpin.setVisible(False)
+        self.epsSpin.setVisible(False)
+        self.bandwidthSpin.setVisible(False)
         if algo_name == "DBSCAN":
             self.lblParam.setText("Eps:")
-            self.paramSpin.setVisible(False)
             self.epsSpin.setVisible(True)
+        elif algo_name == "Mean Shift":
+            self.lblParam.setText("Bandwidth (0=auto):")
+            self.bandwidthSpin.setVisible(True)
         else:
             self.lblParam.setText("Num Clusters:")
             self.paramSpin.setVisible(True)
-            self.epsSpin.setVisible(False)
 
     def writeLog(self, message):
         """Write a message to the log area"""
@@ -499,7 +522,7 @@ class QtGeometricClusteringWidget(QWidget):
         n_clusters = self.paramSpin.value()
 
         # Guard: cannot have more clusters than samples
-        if algo_name in ("K-Means", "Hierarchical") and n_clusters > len(self.workingBlobs):
+        if algo_name in ("K-Means", "Hierarchical", "Spectral") and n_clusters > len(self.workingBlobs):
             QMessageBox.warning(self, "Too Many Clusters",
                 "Number of clusters ({}) exceeds the number of regions ({}).".format(
                     n_clusters, len(self.workingBlobs)))
@@ -520,7 +543,22 @@ class QtGeometricClusteringWidget(QWidget):
             elif algo_name == "Hierarchical":
                 clusterer = AgglomerativeClustering(n_clusters=n_clusters)
                 labels = clusterer.fit_predict(X_scaled)
-                
+
+            elif algo_name == "Mean Shift":
+                bw = self.bandwidthSpin.value()
+                if bw == 0.0:
+                    bw = estimate_bandwidth(X_scaled, quantile=0.2)
+                    self.writeLog("Mean Shift: auto bandwidth = {:.4f}".format(bw))
+                clusterer = MeanShift(bandwidth=bw, bin_seeding=True)
+                labels = clusterer.fit_predict(X_scaled)
+                n_clusters = len(set(labels))
+                self.writeLog("Mean Shift found {} clusters".format(n_clusters))
+
+            elif algo_name == "Spectral":
+                clusterer = SpectralClustering(n_clusters=n_clusters, random_state=42,
+                                               affinity='nearest_neighbors', n_jobs=1)
+                labels = clusterer.fit_predict(X_scaled)
+
         except Exception as e:
             self.writeLog("Error during clustering: {}".format(str(e)))
             QMessageBox.critical(self, "Clustering Error", 
@@ -613,12 +651,60 @@ class QtGeometricClusteringWidget(QWidget):
         
         # Handle different numbers of features
         if n_features == 1:
-            # Only 1 feature - plot as 1D with fixed jitter for reproducibility
-            rng = np.random.default_rng(seed=0)
-            X_plot = np.column_stack([X_original[:, 0], rng.standard_normal(X_original.shape[0]) * 0.1])
-            xlabel = properties[0].capitalize()
-            ylabel = "Jitter"
-            
+            # Distribution view: KDE curve per cluster + rug marks
+            x_vals = X_original[:, 0]
+            pad = max((x_vals.max() - x_vals.min()) * 0.15, 1e-6)
+            x_range = np.linspace(x_vals.min() - pad, x_vals.max() + pad, 400)
+            unique_labels = sorted(set(labels))
+            # Pre-compute densities to find max for rug offset
+            max_density = 0.0
+            if len(x_vals) >= 2:
+                overall_density = gaussian_kde(x_vals)(x_range)
+                max_density = max(max_density, overall_density.max())
+            else:
+                overall_density = None
+            cluster_densities = {}
+            for lbl in [l for l in unique_labels if l != -1]:
+                pts = x_vals[labels == lbl]
+                if len(pts) >= 2:
+                    weight = len(pts) / len(x_vals)
+                    d = gaussian_kde(pts)(x_range) * weight
+                    cluster_densities[lbl] = d
+                    max_density = max(max_density, d.max())
+            rug_y = -0.04 * max_density if max_density > 0 else -0.04
+            # Draw overall distribution first (behind clusters)
+            if overall_density is not None:
+                ax.plot(x_range, overall_density, color='white', lw=2.0,
+                        linestyle='--', alpha=0.6, label='All data')
+            # Draw per-cluster KDE + rug marks
+            for lbl in [l for l in unique_labels if l != -1]:
+                color = self.getClusterColor(lbl)
+                color_str = color.name()
+                pts = x_vals[labels == lbl]
+                if lbl in cluster_densities:
+                    density = cluster_densities[lbl]
+                    ax.fill_between(x_range, density, alpha=0.25, color=color_str)
+                    ax.plot(x_range, density, color=color_str, lw=1.5, label=f'Cluster {lbl}')
+                ax.plot(pts, np.full_like(pts, rug_y), '|',
+                        color=color_str, markersize=12, lw=1.5, clip_on=False)
+            if -1 in unique_labels:
+                noise_pts = x_vals[labels == -1]
+                ax.plot(noise_pts, np.full_like(noise_pts, rug_y), '|',
+                        color='gray', markersize=12, lw=1.5, label='Noise', clip_on=False)
+            ax.set_xlabel(properties[0].capitalize(), color='white')
+            ax.set_ylabel('Density', color='white')
+            ax.set_title('Clustering Results', color='white', fontsize=12, pad=10)
+            ax.tick_params(colors='white')
+            for spine in ax.spines.values():
+                spine.set_color('white')
+            ax.legend(facecolor='#3a3a3a', edgecolor='white', labelcolor='white')
+            ax.grid(True, alpha=0.3, color='gray', axis='x')
+            # X_plot y=0 so highlight ring appears on the rug line
+            X_plot = np.column_stack([x_vals, np.zeros(len(x_vals))])
+            self.clusterData['X_plot'] = X_plot
+            self.canvas.draw()
+            return
+
         elif n_features == 2:
             # Exactly 2 features - plot directly, use original values
             X_plot = X_original
@@ -650,7 +736,27 @@ class QtGeometricClusteringWidget(QWidget):
             ax.scatter(X_plot[mask, 0], X_plot[mask, 1],
                       facecolors='none', edgecolors='gray', linewidths=1.2,
                       label='Noise', s=60, alpha=0.8, marker='o')
-        
+
+        # Rug marks on both axes, color-coded by cluster
+        x_min, x_max = X_plot[:, 0].min(), X_plot[:, 0].max()
+        y_min, y_max = X_plot[:, 1].min(), X_plot[:, 1].max()
+        x_rug_y = y_min - (y_max - y_min) * 0.04
+        y_rug_x = x_min - (x_max - x_min) * 0.04
+        for label in [l for l in unique_labels if l != -1]:
+            color = self.getClusterColor(label)
+            color_str = color.name()
+            mask = labels == label
+            ax.plot(X_plot[mask, 0], np.full(mask.sum(), x_rug_y), '|',
+                    color=color_str, markersize=10, lw=1.2, clip_on=False, alpha=0.7)
+            ax.plot(np.full(mask.sum(), y_rug_x), X_plot[mask, 1], '_',
+                    color=color_str, markersize=10, lw=1.2, clip_on=False, alpha=0.7)
+        if -1 in unique_labels:
+            mask = labels == -1
+            ax.plot(X_plot[mask, 0], np.full(mask.sum(), x_rug_y), '|',
+                    color='gray', markersize=10, lw=1.2, clip_on=False, alpha=0.7)
+            ax.plot(np.full(mask.sum(), y_rug_x), X_plot[mask, 1], '_',
+                    color='gray', markersize=10, lw=1.2, clip_on=False, alpha=0.7)
+
         ax.set_xlabel(xlabel, color='white')
         ax.set_ylabel(ylabel, color='white')
         ax.set_title('Clustering Results', color='white', fontsize=12, pad=10)
