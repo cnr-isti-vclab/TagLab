@@ -319,6 +319,12 @@ class QtGeometricClusteringWidget(QWidget):
         self.computeProperties()
 
     def closeEvent(self, event):
+        # Disconnect viewer signal so selection changes no longer trigger computation
+        if hasattr(self.activeviewer, 'selectionChanged'):
+            try:
+                self.activeviewer.selectionChanged.disconnect(self.onSelectionChanged)
+            except (TypeError, RuntimeError):
+                pass
         # Remove highlight and colorized entities
         self.removeHighlight()
         self.removeColorizedEntities()
