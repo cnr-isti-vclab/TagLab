@@ -39,6 +39,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QFileDialog, QCo
 from source.QtExportDXF import QtDXFExport  # Import the dxf export dialog
 from source.QtExportSVG import QtSVGExport  # Import the svg export dialog
 from source.QtExportCOCO import QtCOCOExport  # Import the coco export dialog
+from source.QtExportWADM import QtWADMExport  # Import the WADM export dialog
 
 
 
@@ -1165,6 +1166,10 @@ class TagLab(QMainWindow):
         exportCOCOAct.setStatusTip("Export regions as COCO format annotations")
         exportCOCOAct.triggered.connect(self.exportAnnAsCOCO)
 
+        exportWADMAct = QAction("Export Regions As WADM", self)
+        exportWADMAct.setStatusTip("Export regions as W3C Web Annotation Data Model (WADM) JSON-LD")
+        exportWADMAct.triggered.connect(self.exportAnnAsWADM)
+
         exportGeoRefLabelMapAct = QAction("Export Regions As A GeoTiff", self)
         exportGeoRefLabelMapAct.setStatusTip("Create a label image and export it as a GeoTiff")
         exportGeoRefLabelMapAct.triggered.connect(self.exportGeoRefLabelMap)
@@ -1259,6 +1264,7 @@ class TagLab(QMainWindow):
         self.submenuExport.addAction(exportDXFfilesAct)
         self.submenuExport.addAction(exportSVGfilesAct)
         self.submenuExport.addAction(exportCOCOAct)
+        self.submenuExport.addAction(exportWADMAct)
         self.submenuExport.addAction(exportGeoRefLabelMapAct)
         self.submenuExport.addAction(exportGeoRefImgAct)
         self.submenuExport.addAction(exportForReefArchive)
@@ -5265,6 +5271,15 @@ class TagLab(QMainWindow):
         optionsDialog.setWindowModality(Qt.WindowModal)
         optionsDialog.show()
 
+    @pyqtSlot()
+    def exportAnnAsWADM(self):
+        if self.activeviewer is None:
+            return
+        if self.activeviewer.image is None:
+            return
+        optionsDialog = QtWADMExport(self)
+        optionsDialog.setWindowModality(Qt.WindowModal)
+        optionsDialog.show()
 
     @pyqtSlot()
     def exportGeoRefLabelMap(self):
