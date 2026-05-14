@@ -82,8 +82,8 @@ class QtRegionAttributesWidget(QWidget):
         #name & description
 
         name_layout = QGridLayout()
-        name_layout.addWidget(QLabel("Attribute Set name:"), 0, 0)
 
+        name_layout.addWidget(QLabel("Attribute Set name:"), 0, 0)
         self.edit_name = QLineEdit()
         self.edit_name.setPlaceholderText("Name of the attribute set")
         self.edit_name.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
@@ -91,16 +91,13 @@ class QtRegionAttributesWidget(QWidget):
         self.edit_name.setText(self.region_attributes.name)
         name_layout.addWidget(self.edit_name, 0, 1, 1, 2)
 
-
         name_layout.addWidget(QLabel("Attribute Set Description:"), 1, 0)
-
         self.edit_description = QTextEdit()
         self.edit_description.setPlaceholderText("A description of your attribute set")
         self.edit_description.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_description.setFixedWidth(350)
         self.edit_description.setMaximumHeight(100)
         self.edit_description.setText(self.region_attributes.description)
-
         name_layout.addWidget(self.edit_description, 1, 1, 1, 2) 
 
         layout.addLayout(name_layout)
@@ -388,10 +385,16 @@ class QtRegionAttributesWidget(QWidget):
         self.editValues.setText("")
         self.updateFieldType()
 
+    RESERVED_NAMES = {'note'}
+
     def validateField(self):
         name = self.editName.text()
         if name == '':
             self.message("Please choose a field name")
+            return False
+
+        if name.lower() in self.RESERVED_NAMES:
+            self.message(f"'{name}' is a reserved attribute name and cannot be used.")
             return False
 
         field = {}
