@@ -18,9 +18,10 @@
 # for more details.
 
 
-from PyQt5.QtCore import Qt, QSize, pyqtSlot, pyqtSignal, QEvent
-from PyQt5.QtWidgets import QGridLayout, QWidget, QScrollArea,QGroupBox, QColorDialog, QMessageBox, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, \
-    QHBoxLayout, QVBoxLayout, QTextEdit, QTableWidget, QTableWidgetItem, QFrame
+from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal
+from PyQt5.QtGui import QColor, QPalette
+from PyQt5.QtWidgets import QGridLayout, QWidget, QGroupBox, QMessageBox, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, \
+    QHBoxLayout, QVBoxLayout, QTextEdit, QTableWidget, QTableWidgetItem, QFrame, QHeaderView, QToolTip
 import os, json, re
 from source.RegionAttributes import RegionAttributes
 from copy import deepcopy
@@ -37,7 +38,20 @@ class QtRegionAttributesWidget(QWidget):
 
         self.region_attributes = deepcopy(project.region_attributes)
 
-        self.setStyleSheet("background-color: rgb(40,40,40); color: white")
+        self.setStyleSheet("""
+            QWidget { background-color: rgb(40,40,40); color: white; }
+            QToolTip {
+                background-color: rgb(50,50,50);
+                color: white;
+                border: 1px solid rgb(100,100,100);
+                padding: 3px;
+            }
+        """)
+
+        tooltip_palette = QPalette()
+        tooltip_palette.setColor(QPalette.ToolTipBase, QColor(50, 50, 50))
+        tooltip_palette.setColor(QPalette.ToolTipText, QColor(255, 255, 255))
+        QToolTip.setPalette(tooltip_palette)
 
         self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.setMinimumWidth(600)
@@ -47,15 +61,18 @@ class QtRegionAttributesWidget(QWidget):
         #top toolbar
         toolbar_layout = QHBoxLayout()
 
-        button_new = QPushButton("New")
+        button_new = QPushButton("New Attribute Set")
+        button_new.setToolTip("Create a new (empty) attribute set")
         button_new.clicked.connect(self.newRegionAttributes)
         toolbar_layout.addWidget(button_new)
 
-        button_load = QPushButton("Load")
+        button_load = QPushButton("Load Attribute Set")
+        button_load.setToolTip("Load an attribute set from a JSON file")
         button_load.clicked.connect(self.loadRegionAttributes)
         toolbar_layout.addWidget(button_load)
 
-        btn_save = QPushButton("Save")
+        btn_save = QPushButton("Save Attribute Set")
+        btn_save.setToolTip("Save the current attribute set to a JSON file")
         btn_save.clicked.connect(self.saveRegionAttributes)
         toolbar_layout.addWidget(btn_save)
 
@@ -75,10 +92,10 @@ class QtRegionAttributesWidget(QWidget):
         name_layout.addWidget(self.edit_name, 0, 1, 1, 2)
 
 
-        name_layout.addWidget(QLabel("Description:"), 1, 0)
+        name_layout.addWidget(QLabel("Attribute Set Description:"), 1, 0)
 
         self.edit_description = QTextEdit()
-        self.edit_description.setPlaceholderText("Type a description of your attributes")
+        self.edit_description.setPlaceholderText("A description of your attribute set")
         self.edit_description.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_description.setFixedWidth(350)
         self.edit_description.setMaximumHeight(100)
@@ -88,82 +105,94 @@ class QtRegionAttributesWidget(QWidget):
 
         layout.addLayout(name_layout)
 
-
-        left_layout = QVBoxLayout()
-
         self.table = QTableWidget()
         self.table.setColumnCount(5)
         self.table.setHorizontalHeaderLabels(["Name", "Type", "Min", "Max", "Keywords"])
+        self.table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.table.cellActivated.connect(self.selectRow)
         self.table.cellClicked.connect(self.selectRow)
-        self.table.currentCellChanged.connect(self.selectRow)
+        self.table.currentCellChanged.connect(lambda row, col, _prev_row, _prev_col: self.selectRow(row, col))
 
         self.table.setStyleSheet("QTableCornerButton::section { background-color: rgb(40,40,40); }"
                                  "QHeaderView::section { background-color: rgb(40,40,40); }")
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
-        left_layout.addWidget(self.table)
+        layout.addWidget(self.table)
 
+        # --- Group box: edit an attribute field ---
+        edit_group = QGroupBox("Edit Attribute")
+        edit_group.setStyleSheet(
+            "QGroupBox { border: 1px solid rgb(90,90,90); border-radius: 4px; margin-top: 8px; padding-top: 4px; }"
+            "QGroupBox::title { subcontrol-origin: margin; left: 8px; color: rgb(180,180,180); }"
+        )
 
-        #edit fields
-        edit_layout = QHBoxLayout()
+        edit_group_layout = QVBoxLayout()
+
+        fields_layout = QHBoxLayout()
 
         self.editName = QLineEdit()
         self.editName.setPlaceholderText("Name")
         self.editName.setMaxLength(10)
         self.editName.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        edit_layout.addWidget(self.editName)
-
+        fields_layout.addWidget(self.editName)
 
         self.editType = QComboBox()
         self.editType.addItems(['string', 'integer number', 'decimal number', 'boolean', 'keyword'])
         self.editType.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editType.activated[str].connect(self.updateFieldType)
-        edit_layout.addWidget(self.editType)
-
+        fields_layout.addWidget(self.editType)
 
         self.editMin = QLineEdit()
         self.editMin.setPlaceholderText("Min")
         self.editMin.setFixedWidth(80)
         self.editMin.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        edit_layout.addWidget(self.editMin)
-
+        fields_layout.addWidget(self.editMin)
 
         self.editMax = QLineEdit()
         self.editMax.setPlaceholderText("Max")
         self.editMax.setFixedWidth(80)
         self.editMax.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        edit_layout.addWidget(self.editMax)
+        fields_layout.addWidget(self.editMax)
 
         self.editValues = QLineEdit()
         self.editValues.setPlaceholderText("List of keywords")
         self.editValues.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        edit_layout.addWidget(self.editValues, 1)
+        fields_layout.addWidget(self.editValues, 1)
 
-        left_layout.addLayout(edit_layout)
+        edit_group_layout.addLayout(fields_layout)
 
-
-        right_layout = QVBoxLayout()
-        right_layout.setAlignment(Qt.AlignBottom)
-
-
-        btnRemove = QPushButton("Delete")
-        btnRemove.clicked.connect(self.removeField)
-        right_layout.addWidget(btnRemove)
+        # action buttons inside the group
+        action_layout = QHBoxLayout()
+        action_layout.addStretch(1)
 
         btnAdd = QPushButton("Add")
+        btnAdd.setToolTip("Add this attribute to the set")
         btnAdd.clicked.connect(self.addField)
-        right_layout.addWidget(btnAdd)
+        action_layout.addWidget(btnAdd)
 
         btnUpdate = QPushButton("Update")
+        btnUpdate.setToolTip("Apply edits to the selected attribute")
         btnUpdate.clicked.connect(self.updateField)
-        right_layout.addWidget(btnUpdate)
+        action_layout.addWidget(btnUpdate)
 
+        btnRemove = QPushButton("Delete")
+        btnRemove.setToolTip("Remove the selected attribute from the set")
+        btnRemove.clicked.connect(self.removeField)
+        action_layout.addWidget(btnRemove)
 
-        bottom_layout = QHBoxLayout()
-        bottom_layout.addLayout(left_layout)
-        bottom_layout.addLayout(right_layout)
+        btnMoveUp = QPushButton("Move Up")
+        btnMoveUp.setToolTip("Move the selected attribute up")
+        btnMoveUp.clicked.connect(self.moveFieldUp)
+        action_layout.addWidget(btnMoveUp)
 
-        layout.addLayout(bottom_layout)
+        btnMoveDown = QPushButton("Move Down")
+        btnMoveDown.setToolTip("Move the selected attribute down")
+        btnMoveDown.clicked.connect(self.moveFieldDown)
+        action_layout.addWidget(btnMoveDown)
+
+        edit_group_layout.addLayout(action_layout)
+        edit_group.setLayout(edit_group_layout)
+        layout.addWidget(edit_group)
 
 
         line = QFrame()
@@ -181,7 +210,7 @@ class QtRegionAttributesWidget(QWidget):
         buttons_layout.addWidget(btn_apply)
 
         btn_cancel = QPushButton("Cancel")
-        btn_cancel.clicked.connect(self.apply)
+        btn_cancel.clicked.connect(self.cancel)
         buttons_layout.addWidget(btn_cancel)
 
         layout.addLayout(buttons_layout)
@@ -189,10 +218,8 @@ class QtRegionAttributesWidget(QWidget):
 #
         self.setLayout(layout)
 
-        self.setWindowTitle("Edit Attribute Field")
+        self.setWindowTitle("Region Attribute Set Editor")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
-
-        self.selection_index = -1
 
         self.createFields()
 
@@ -250,12 +277,19 @@ class QtRegionAttributesWidget(QWidget):
     @pyqtSlot()
     def loadRegionAttributes(self):
 
+        if len(self.region_attributes.data) > 0:
+            box = QMessageBox()
+            box.setWindowTitle('TagLab')
+            box.setText("This will overwrite the current attribute set. Do you want to continue?")
+            box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            box.setDefaultButton(QMessageBox.No)
+            if box.exec() != QMessageBox.Yes:
+                return
+
         filters = "Region attributes (*.json)"
         filename, filter = QFileDialog.getOpenFileName(self, "Region attributes", "", filters)
         if filename == '':
             return
-
-        #self.edit_load.setText(filename)
 
         data = RegionAttributes()
         data.loadFromFile(filename)
@@ -426,10 +460,36 @@ class QtRegionAttributesWidget(QWidget):
         if field == False:
             return
 
+        # Check for duplicate name, ignoring the current row
+        for i, existing in enumerate(self.region_attributes.data):
+            if i != row and existing['name'] == field['name']:
+                self.message("Duplicated field name.")
+                return
+
         self.region_attributes.data[row] = field
         self.setField(row, field)
         if len(self.region_attributes.data) > 0:
             self.selectRow(row, 0)
+
+    @pyqtSlot()
+    def moveFieldUp(self):
+        row = self.selectedRow()
+        if row <= 0:
+            return
+        data = self.region_attributes.data
+        data[row - 1], data[row] = data[row], data[row - 1]
+        self.createFields()
+        self.selectRow(row - 1, 0)
+
+    @pyqtSlot()
+    def moveFieldDown(self):
+        row = self.selectedRow()
+        if row < 0 or row >= len(self.region_attributes.data) - 1:
+            return
+        data = self.region_attributes.data
+        data[row], data[row + 1] = data[row + 1], data[row]
+        self.createFields()
+        self.selectRow(row + 1, 0)
 
     @pyqtSlot()
     def removeField (self):
