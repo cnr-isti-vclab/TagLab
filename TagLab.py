@@ -267,6 +267,7 @@ class TagLab(QMainWindow):
 
         self.btnAssign             = self.newButton("bucket.png",   "Assign class to region",   flatbuttonstyle, self.assign)
         self.btnEditBorder         = self.newButton("edit.png",     "Edit region border",       flatbuttonstyle, self.editBorder)
+        self.btnBrush              = self.newButton("brush.png",    "Brush segmentation / editing",            flatbuttonstyle, self.brushTool)
         self.btnCut                = self.newButton("scissors.png", "Cut region",               flatbuttonstyle, self.cut)
         self.btnRuler              = self.newButton("ruler.png",    "Measure tool",           flatbuttonstyle, self.ruler)
 
@@ -312,6 +313,7 @@ class TagLab(QMainWindow):
         layout_tools.addWidget(self.btnSam)
         layout_tools.addWidget(self.btnSamInteractive)
         layout_tools.addWidget(self.btnRows)
+        layout_tools.addWidget(self.btnBrush)
         layout_tools.addWidget(labelSeparator1) #separator-----------------------------------        
         layout_tools.addWidget(self.btnAssign)        
         layout_tools.addWidget(self.btnEditBorder)
@@ -2803,6 +2805,7 @@ class TagLab(QMainWindow):
         self.btnPoint.setChecked(False)
         self.btnAssign.setChecked(False)
         self.btnEditBorder.setChecked(False)
+        self.btnBrush.setChecked(False)
         self.btnCut.setChecked(False)
         self.btnFreehand.setChecked(False)
         self.btnWatershed.setChecked(False)
@@ -2833,6 +2836,7 @@ class TagLab(QMainWindow):
             "CREATECRACK"  : ["Crack"        , self.btnCreateCrack],
             "ASSIGN"       : ["Assign"       , self.btnAssign],
             "EDITBORDER"   : ["Edit Border"  , self.btnEditBorder],
+            "BRUSH"        : ["Brush segmentation / editing", self.btnBrush],
             "CUT"          : ["Cut"          , self.btnCut],
             "FREEHAND"     : ["Freehand"     , self.btnFreehand],
             "WATERSHED"    : ["Watershed"    , self.btnWatershed],
@@ -2895,6 +2899,13 @@ class TagLab(QMainWindow):
         NOTE: it works one blob at a time (!)
         """
         self.setTool("EDITBORDER")
+
+    @pyqtSlot()
+    def brushTool(self):
+        """
+        Activate the brush tool for pixel-level paint editing of a region.
+        """
+        self.setTool("BRUSH")
 
     @pyqtSlot()
     def cut(self):
@@ -4444,7 +4455,7 @@ class TagLab(QMainWindow):
     @pyqtSlot()
     def updateToolStatus(self):
 
-        for button in [self.btnMove, self.btnPoint, self.btnAssign, self.btnEditBorder, self.btnCut, self.btnFreehand,
+        for button in [self.btnMove, self.btnPoint, self.btnAssign, self.btnEditBorder, self.btnBrush, self.btnCut, self.btnFreehand,
                        self.btnCreateCrack, self.btnWatershed, self.btnBricksSegmentation, self.btnRows, self.btnRuler, self.btnFourClicks,
                        self.btnRitm,self.btnSam, self.btnAutoClassification, self.btnCreateGrid, self.btnGrid]:
             button.setEnabled(len(self.project.images) > 0)

@@ -843,7 +843,7 @@ class QtImageViewerPlus(QtImageViewer):
         if tool in ["FREEHAND", "RULER", "FOURCLICKS", "PLACEANNPOINT", "ASSIGN"] or (tool in ["CUT", "EDITBORDER", "RITM"] and len(self.selected_blobs) > 1):
             self.resetSelection()
 
-        if tool == "RITM" or tool == "SAMINTERACTIVE" or tool == "WATERSHED":
+        if tool in ("RITM", "SAMINTERACTIVE", "WATERSHED", "BRUSH"):
             self.setContextMenuPolicy(Qt.NoContextMenu)
         else:
             self.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -1012,7 +1012,8 @@ class QtImageViewerPlus(QtImageViewer):
             self.leftMouseButtonPressed.emit(x, y)
 
             if mods & Qt.ShiftModifier and (self.tools.tool in ["WATERSHED", "FREEHAND", "EDITBORDER", "CUT",\
-                "ASSIGN", "RULER", "FOURCLICKS", "RITM", "MATCH", "PLACEANNPOINT", "SAM", "SAMINTERACTIVE"]):
+                "ASSIGN", "RULER", "FOURCLICKS", "RITM", "MATCH", "PLACEANNPOINT", "SAM", "SAMINTERACTIVE",
+                "BRUSH"]):
                 self.tools.leftPressed(x, y, mods)
 
             elif mods & Qt.AltModifier and self.tools.tool == "WATERSHED":
@@ -1042,7 +1043,7 @@ class QtImageViewerPlus(QtImageViewer):
 
         if event.button() == Qt.RightButton:
             (x, y) = self.clipScenePos(scenePos)
-            if self.tools.tool == "RITM" or self.tools.tool == "SAMINTERACTIVE" or self.tools.tool == "WATERSHED":
+            if self.tools.tool in ("RITM", "SAMINTERACTIVE", "WATERSHED", "BRUSH"):
                 self.tools.rightPressed(x, y, mods)
 
             else:
@@ -1082,8 +1083,8 @@ class QtImageViewerPlus(QtImageViewer):
 
         if event.button() == Qt.RightButton:
             (x, y) = self.clipScenePos(scenePos)
-            if self.tools.tool == "WATERSHED" :
-                self.tools.rightReleased(x,y)
+            if self.tools.tool in ("WATERSHED", "BRUSH"):
+                self.tools.rightReleased(x, y)
 
     def mouseMoveEvent(self, event):
 
@@ -1116,9 +1117,13 @@ class QtImageViewerPlus(QtImageViewer):
 
         elif event.buttons() == Qt.RightButton:
             (x, y) = self.clipScenePos(scenePos)
-            if self.tools.tool == "WATERSHED":
+            if self.tools.tool in ("WATERSHED", "BRUSH"):
                 self.tools.mouseMove(x, y, mods)
 
+        elif event.buttons() == Qt.NoButton:
+            if self.tools.tool == "BRUSH":
+                (x, y) = self.clipScenePos(scenePos)
+                self.tools.mouseMove(x, y, mods)
 
 
     def mouseDoubleClickEvent(self, event):
@@ -1144,6 +1149,10 @@ class QtImageViewerPlus(QtImageViewer):
         """
 
         mods = event.modifiers()
+
+        if self.tools.tool == "BRUSH" and mods & Qt.ShiftModifier:
+            self.tools.wheel(event.angleDelta(), mods)
+            return
 
         if self.tools.tool == "WATERSHED" and mods & Qt.ShiftModifier:
             

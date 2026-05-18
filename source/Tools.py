@@ -22,6 +22,7 @@ from source.tools.SelectPoints import SelectPoints
 from source.tools.SelectArea import SelectArea
 from source.tools.Ritm import Ritm
 from source.tools.PlaceAnnPoint import PlaceAnnPoint
+from source.tools.BrushTool import BrushTool
 
 from PyQt5.QtCore import Qt, QObject, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
 
@@ -71,6 +72,7 @@ class Tools(QObject):
             "SPLITBLOB": SplitBlob(self.viewerplus, self.pick_points),
             "ASSIGN": Assign(self.viewerplus),
             "EDITBORDER": EditBorder(self.viewerplus, self.edit_points),
+            "BRUSH": BrushTool(self.viewerplus),
             "CUT": Cut(self.viewerplus, self.edit_points),
             "FREEHAND": Freehand(self.viewerplus, self.edit_points),
             "WATERSHED": Watershed(self.viewerplus, self.scribbles),
@@ -116,6 +118,7 @@ class Tools(QObject):
         self.tools["SELECTPOINTS"].reset()
         self.tools["SELECTAREA"].reset()
         self.tools["WATERSHED"].reset()
+        self.tools["BRUSH"].reset()
         self.tools["ROWS"].reset()
         if self.SAM_is_available:
             self.tools["SAM"].reset()
