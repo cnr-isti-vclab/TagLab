@@ -74,7 +74,7 @@ class QtGeoreferencingWidget(QWidget):
         map_layout.addStretch()
         map_layout.addWidget(QLabel("CRS:"))
 
-        self.lbl_crs_info = QLabel("CRS information are reported here\nCRS information are reported here")
+        self.lbl_crs_info = QLabel("                                                            ")
         map_layout.addWidget(self.lbl_crs_info)
         map_layout.addStretch()
         main_layout.addWidget(self.map_group)
@@ -181,7 +181,7 @@ class QtGeoreferencingWidget(QWidget):
         self.radio_two_gcp.clicked.connect(self.enableTwoPoints)
         self.radio_choose.clicked.connect(self.enableChoose)
 
-        self.combobox_map_input.editTextChanged[str].connect(self.mapChanged)
+        self.combobox_map_input.currentTextChanged[str].connect(self.mapChanged)
 
         self.google_btn.clicked.connect(self.openGoogleMaps)
 
@@ -205,11 +205,10 @@ class QtGeoreferencingWidget(QWidget):
 
     @pyqtSlot(str)
     def mapChanged(self, map_name):
-
         for image in self.project.images:
             if map_name == image.name:
                 if image.georef_filename == "":
-                    self.lbl_crs_info.setText("Non georeferenced.")
+                    self.lbl_crs_info.setText("Image not georeferenced.")
                 else:
                     img = rio.open(image.georef_filename)
                     srs = osr.SpatialReference()
@@ -403,7 +402,7 @@ class QtGeoreferencingWidget(QWidget):
             lat_txt1 = self.edit_coord_wgs84_lat_1.text()
             lon_txt1 = self.edit_coord_wgs84_lon_1.text()
             valid, msg = self.validate_lat_long(lat_txt1, lon_txt1)
-            if not self.validate_floats(msg):
+            if not valid:
                 msgBox.setText(msg)
                 msgBox.exec()
                 return

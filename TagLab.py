@@ -1659,6 +1659,14 @@ class TagLab(QMainWindow):
                                         f"Use the Georefering Tool to georeference the current map.")
                 else:
                     # export data
+					#################
+
+					# image is just georeferenced
+
+					# working area as shapefile 
+
+					# annotations as shapefile
+
                     pass
 
     @pyqtSlot()
@@ -3911,19 +3919,24 @@ class TagLab(QMainWindow):
         box = QMessageBox()
 
         if self.georeferencing_tool_widget.radio_maps.isChecked():
-            # georeferencing transfer
-            name = self.georeferencing_tool_widget.combobox_input_map.currentText()
+            # copy georeferencing information from another image
+            name = self.georeferencing_tool_widget.combobox_map_input.currentText()
             for image in self.project.images:
                 if image.name == name:
-                    self.image.georef_filename = name
+                    georef_filename = image.georef_filename
 
-            message = "Now, the current image has been georeferenced.\nRemember to save your project to finalize the georeferencing information assignment."
-            box.setText(message)
-            box.exec()
+            rasterops.copyGeoreferenceInformation(georef_filename, img, output_filename)
+
+            message = "The georeferenced image has been saved as " + output_filename + ".\nDo you want to replace your current ortho with this image?"
+            reply = box.question(self, "Georeferencing Tool", message, QMessageBox.Yes | QMessageBox.No)
+            if (reply == QMessageBox.Yes):
+                active_channel.filename = output_filename
+                active_image.georef_filename = output_filename
+                active_channel.qimage = None
+                self.activeviewer.setChannel(active_channel)
 
         elif self.georeferencing_tool_widget.radio_one_gcp.isChecked():
             # georeferencing using one known point
-            print("one GCP")
             x = float(self.georeferencing_tool_widget.edit_coord_pixel_x_1.text())
             y = float(self.georeferencing_tool_widget.edit_coord_pixel_y_1.text())
             latitude = float(self.georeferencing_tool_widget.edit_coord_wgs84_lat_1.text())
@@ -3931,8 +3944,7 @@ class TagLab(QMainWindow):
             rasterops.georeferencingImage(img, active_image.pixelSize(), x, y, latitude, longitude, output_filename)
 
             message = "The georeferenced image has been saved as " + output_filename + ".\nDo you want to replace your current ortho with this image?"
-            box = box.question(self, "Georeferencing Tool", message, QMessageBox.Yes | QMessageBox.No)
-            reply = box.exec()
+            reply = box.question(self, "Georeferencing Tool", message, QMessageBox.Yes | QMessageBox.No)
             if (reply == QMessageBox.Yes):
                 active_channel.filename = output_filename
                 active_image.georef_filename = output_filename
@@ -3940,8 +3952,7 @@ class TagLab(QMainWindow):
                 self.activeviewer.setChannel(active_channel)
 
         elif self.georeferencing_tool_widget.radio_two_gcp.isChecked():
-            # georeferencing using two known point
-            print("Two GCP")
+            # georeferencing using two known points
             x1 = float(self.georeferencing_tool_widget.edit_coord_pixel_x_1.text())
             y1 = float(self.georeferencing_tool_widget.edit_coord_pixel_y_1.text())
             latitude1 = float(self.georeferencing_tool_widget.edit_coord_wgs84_lat_1.text())
@@ -3951,14 +3962,10 @@ class TagLab(QMainWindow):
             latitude2 = float(self.georeferencing_tool_widget.edit_coord_wgs84_lat_2.text())
             longitude2 = float(self.georeferencing_tool_widget.edit_coord_wgs84_lon_2.text())
 
-            pixel_coordinates = [y1,x1,y2,x2]
-            geo_coordinates = [longitude1, latitude1, longitude2, latitude2]
-
-            rasterops.georeferencingImageUsingGCPs(img, active_image.pixelSize(), pixel_coordinates, geo_coordinates, output_filename)
+            rasterops.georeferencingImageUsingTwoGCPs(img, active_image.pixelSize(), x1, y1, longitude1, latitude1, x2, y2, longitude2, latitude2, output_filename)
 
             message = "The georeferenced image has been saved as " + output_filename + ".\nDo you want to replace your current ortho with this image?"
-            box = box.question(self, "Georeferencing Tool", message, QMessageBox.Yes | QMessageBox.No)
-            reply = box.exec()
+            reply = box.question(self, "Georeferencing Tool", message, QMessageBox.Yes | QMessageBox.No)
             if (reply == QMessageBox.Yes):
                 active_channel.filename = output_filename
                 active_image.georef_filename = output_filename
@@ -3974,17 +3981,17 @@ class TagLab(QMainWindow):
             lon_txt = lon_txt.strip()
             latitude = float(lat_txt)
             longitude = float(lon_txt)
-            rasterops.georeferencingImage(img, 0, 0, latitude, longitude, output_filename)
+            x = active_image.width / 2.0
+            y = active_image.height / 2.0
+            rasterops.georeferencingImage(img, active_image.pixelSize(), x, y, latitude, longitude, output_filename)
 
             message = "The georeferenced image has been saved as " + output_filename + ".\nDo you want to replace your current ortho with this image?"
-            box = box.question(self, "Georeferencing Tool", message, QMessageBox.Yes | QMessageBox.No)
-            reply = box.exec()
+            reply = box.question(self, "Georeferencing Tool", message, QMessageBox.Yes | QMessageBox.No)
             if (reply == QMessageBox.Yes):
                 active_channel.filename = output_filename
                 active_image.georef_filename = output_filename
                 active_channel.qimage = None
                 self.activeviewer.setChannel(active_channel)
-
         else:
             print("Georeferencing tool - Unknown option")
 
@@ -4709,7 +4716,8 @@ class TagLab(QMainWindow):
     def enablePointsSelection(self):
         if self.activeviewer is not None:
             if self.activeviewer.image is not None:
-                self.activeviewer.setTool("SELECTPOINTS")
+                if not self.activeviewer.tools.tool == "SELECTPOINTS":
+                    self.activeviewer.setTool("SELECTPOINTS")
                 image = self.activeviewer.image
                 self.activeviewer.tools.tools["SELECTPOINTS"].setImageSize(image.width, image.height)
 

@@ -32,47 +32,155 @@ def mm_to_degrees(mm_pixel_size, center_lat):
     km_pixel_size = mm_pixel_size / 1000000.0
 
     # Calculate degrees
-    deg_lat = km_pixel_size / KM_PER_DEGREE_LAT
+    res_decimal_degree_lat = km_pixel_size / KM_PER_DEGREE_LAT
 
     # Adjust longitude for the curvature of the Earth
-    # np.radians is required because cos() takes radians
-    deg_lon = km_pixel_size / (KM_PER_DEGREE_LON_EQUATOR * math.cos(math.radians(center_lat)))
+	# This is called Napkin formula, it is an approximation that gives an error of about 0.3%-0.5%
+	# Acceptable for distances in the order of hundreds of meters.
+    res_decimal_degree_lon = km_pixel_size / (KM_PER_DEGREE_LON_EQUATOR * math.cos(math.radians(center_lat)))
 
-    return deg_lon, deg_lat
+    return res_decimal_degree_lon, res_decimal_degree_lat
 
-def georeferencingImageUsingGCPs(img, pixel_size, pix_coords, geo_coords, output_file):
+def georeferencingImageUsingTwoGCPs(img, pixel_size, x1, y1, lon1, lat1, x2, y2, lon2, lat2, output_file):
     """
     Assign the georeferencing information to the input image given a set of Ground Control Points.
     """
 
     # If input_image is (H, W, C), we need to reshape it to (C, H, W) for Rasterio
-    width = img.shape[0]
-    height = img.shape[1]
+    width = img.shape[1]
+    height = img.shape[0]
     count = img.ndim
     if count == 3 or count == 4:
         img = img.transpose(2, 0, 1)
 
-    # Define GCPs (x=Longitude, y=Latitude)
-    gcp1 = GroundControlPoint(row=pix_coords[0], col=pix_coords[1], x=geo_coords[0], y=geo_coords[1])
-    gcp2 = GroundControlPoint(row=pix_coords[2], col=pix_coords[3], x=geo_coords[2], y=geo_coords[3])
-    transform = from_gcps([gcp1, gcp2])
+    # Differences (deltas)
+    dx = x2 - x1
+    dy = y2 - y1
+    dxp = lon2 - lon1
+    dyp = lat2 - lat1
+
+    lon_res, lat_res = mm_to_degrees(pixel_size, lat1)
+    sx = lon_res
+    sy = -lat_res  # the minus sign takes into account the fact that the direction of the latitude is opposite to the image Y coordinates
+
+    # denominator for the rotation components
+    denom = (sx * dx) ** 2 + (sy * dy) ** 2
+
+    if denom < 1e-10:
+        raise ValueError("Points are too close or scale factors are zero.")
+
+    # Calculate rotation components
+    cos_theta = (sx * dx * dxp + sy * dy * dyp) / denom
+    sin_theta = (sx * dx * dyp - sy * dy * dxp) / denom
+
+    # Construct Matrix A: R * S
+    # A = [[sx*cos, -sy*sin], [sx*sin, sy*cos]]
+    a11 = sx * cos_theta
+    a12 = -sy * sin_theta
+    a21 = sx * sin_theta
+    a22 = sy * cos_theta
+
+    A = np.array([
+        [a11, a12],
+        [a21, a22]
+    ])
+
+    # Solve for translation vector b: b = xp1 - A * x1
+    x1_vec = np.array([x1, y1])
+    xp1_vec = np.array([lon1, lat1])
+    b = xp1_vec - A.dot(x1_vec)
+
+    # Return the combined 2x3 matrix [A | b]
+    affine_matrix = np.column_stack((A, b))
+
+    transform = rio.Affine(affine_matrix[0][0], affine_matrix[0][1], affine_matrix[0][2],
+						   affine_matrix[1][0], affine_matrix[1][1], affine_matrix[1][2])
 
     # save to a GeoTIFF
-    output_path = "memory_to_disk.tif"
-
     with rio.open(
-        output_path,
+        output_file,
         'w',
         driver='GTiff',
         height=height,
         width=width,
         count=count,
         dtype=img.dtype,
-        crs=rio.crs.from_epsg(4326), # explicitly setting Lat/Long
+        crs='EPSG:4326',
+        transform=transform
+    ) as dst:
+        dst.write(img)
+
+
+def georeferencingImageUsingGCPs(img, pix_coords, geo_coords, output_file):
+    """
+    Assign the georeferencing information to the input image given a set of Ground Control Points.
+    """
+
+    # If input_image is (H, W, C), we need to reshape it to (C, H, W) for Rasterio
+    width = img.shape[1]
+    height = img.shape[0]
+    count = img.ndim
+    if count == 3 or count == 4:
+        img = img.transpose(2, 0, 1)
+
+    # Define GCPs (x=Longitude, y=Latitude)
+    gcps = []
+    for i in range(int(len(pix_coords)/2)):
+        gcp = GroundControlPoint(row=pix_coords[i*2+1], col=pix_coords[i*2], x=geo_coords[i*2], y=geo_coords[i*2+1])
+        gcps.append(gcp)
+
+    transform = from_gcps(gcps)
+
+    # save to a GeoTIFF
+    with rio.open(
+        output_file,
+        'w',
+        driver='GTiff',
+        height=height,
+        width=width,
+        count=count,
+        dtype=img.dtype,
+        crs='EPSG:4326',
         transform=transform,
     ) as dst:
         dst.write(img)
 
+
+def copyGeoreferenceInformation(source, target, output_file):
+	"""
+	Copy the geoereference image from the source image to the target image, and save it.
+	"""
+
+	# Extract the georef information
+	with rio.open(source) as ref:
+		ref_transform = ref.transform
+		ref_crs = ref.crs
+		ref_meta = ref.meta.copy()
+
+	# Update the metadata dictionary to match the reference
+	# We keep the pixel count/dtype from the target, but take spatial info from ref
+
+	width = target.shape[1]
+	height = target.shape[0]
+	count = target.ndim
+	if count == 3 or count == 4:
+		target = target.transpose(2, 0, 1)
+
+	ref_meta.update({
+		"driver": "GTiff",
+		"height": height,
+		"width": width,
+		"count": count,
+		"dtype": target.dtype,
+		"transform": ref_transform,
+		"crs": ref_crs
+	})
+
+	# Write the new file
+	with rio.open(output_file, "w", **ref_meta) as dest:
+			dest.write(target)
+
+	print(f"Success! Georeferencing copied to {output_file}")
 
 def georeferencingImage(img, pixel_size, anchor_x, anchor_y, anchor_lat, anchor_lon, output_file):
     """
@@ -80,12 +188,11 @@ def georeferencingImage(img, pixel_size, anchor_x, anchor_y, anchor_lat, anchor_
     """
 
     # If input_image is (H, W, C), we need to reshape it to (C, H, W) for Rasterio
-    width = img.shape[0]
-    height = img.shape[1]
+    width = img.shape[1]
+    height = img.shape[0]
     count = img.ndim
     if count == 3 or count == 4:
         img = img.transpose(2, 0, 1)
-    pixel_size = img.pixelSize()
 
     # Calculate the latitude and the longitude of the top-left corner of the image
     lon_res, lat_res = mm_to_degrees(pixel_size, anchor_lat)
@@ -93,11 +200,13 @@ def georeferencingImage(img, pixel_size, anchor_x, anchor_y, anchor_lat, anchor_
     lat_origin = anchor_lat + (anchor_y * lat_res)
 
     # create the geotransform
+    print(lon_origin)
+    print(lat_origin)
     transform = from_origin(lon_origin, lat_origin, lon_res, lat_res)
 
     # write a GeoTiff
     with rio.open(
-            'output_file',
+            output_file,
             'w',
             driver='GTiff',
             height=height,
@@ -283,7 +392,7 @@ def read_geometry(filename, georef_filename):
 
 
 
-def write_shapefile( project, image, blobs, georef_filename, out_shp):
+def write_shapefile(project, image, blobs, georef_filename, out_shp):
     """
     https://gis.stackexchange.com/a/52708/8104
     """
