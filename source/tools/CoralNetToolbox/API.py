@@ -173,7 +173,7 @@ def check_job_status(response, coralnet_token):
             # Try to wait the amount of time requested by Tools
             match = re.search(r'\d+', message)
             wait = int(match.group())
-        except:
+        except (AttributeError, ValueError):
             wait = 30
 
     return current_status, message, wait

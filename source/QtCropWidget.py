@@ -138,7 +138,7 @@ class QtCropWidget(QWidget):
             h = int(self.edit_H.text())
 
             self.areaChanged.emit(x, y, w, h)
-        except:
+        except ValueError:
             pass
 
 
@@ -163,7 +163,7 @@ class QtCropWidget(QWidget):
             y = int(self.edit_Y.text())
             w = int(self.edit_W.text())
             h = int(self.edit_H.text())
-        except:
+        except ValueError:
             print("CONVERSION ERROR")
 
         return x, y, w, h

@@ -132,8 +132,8 @@ if __name__ == '__main__':
     default_dictionary = "dictionaries/scripps.json"
 
     # load existing classifiers
-    f = open("config.json", "r")
-    config_dict = json.load(f)
+    with open("config.json", "r") as f:
+        config_dict = json.load(f)
     available_classifiers = config_dict["Available Classifiers"]
     selected_classifier = None
     for classifier in available_classifiers:

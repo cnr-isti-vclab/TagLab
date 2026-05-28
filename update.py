@@ -59,8 +59,8 @@ if need_to_update:
     downloaded_file = tempfile.gettempdir() + '/' +  filename
     try:
         urllib.request.urlretrieve(url, downloaded_file)
-    except:
-        raise Exception("Cannot download " + url)
+    except Exception as e:
+        raise Exception("Cannot download " + url) from e
 
     print('Downloaded file is: ' + downloaded_file)
 
@@ -136,7 +136,7 @@ for net_name in net_file_names:
             opener.addheaders = [('User-agent', 'Mozilla/5.0')]
             urllib.request.install_opener(opener)
             urllib.request.urlretrieve(url_dextr, 'models/' + net_name)
-        except:
-            raise Exception("Cannot download " + net_name + ".")
+        except Exception as e:
+            raise Exception("Cannot download " + net_name + ".") from e
     else:
         print(net_name + ' already exists.')

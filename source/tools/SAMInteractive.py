@@ -545,7 +545,7 @@ class SAMInteractive(Tool):
             region.bbox = bbox_dst
             region.area = np.sum(mask_dst)
             region.centroid = np.mean(np.argwhere(mask_dst), axis=0)
-        except:
+        except Exception:
             pass
 
         blob_id = self.viewerplus.annotations.getFreeId()

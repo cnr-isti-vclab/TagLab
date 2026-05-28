@@ -146,25 +146,25 @@ class QtScaleWidget(QWidget):
         try:
             val = float(text)/float(self.edit_px.text())
             self.edit_scale.setText("{:.3f}".format(val))
-        except:
+        except (ValueError, ZeroDivisionError):
             pass
 
     @pyqtSlot(str)
     def editScale(self, text):
         try:
             val = float(text)*float(self.edit_px.text())
-            self.edit_mm.setText("{:.1f}".format(val)) 
-        except:
+            self.edit_mm.setText("{:.1f}".format(val))
+        except (ValueError, ZeroDivisionError):
             pass
 
     @pyqtSlot()
     def setNewScale(self):
-        try:        
+        try:
             new_scale = float(self.edit_scale.text())
             if new_scale > 0: # must be a positive value
                 self.setScale(new_scale)
                 self.newscale.emit(new_scale)
-        except:
+        except ValueError:
             pass
 
 

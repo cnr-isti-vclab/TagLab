@@ -463,7 +463,7 @@ height: 0px;
     def selectById(self, text, isSource):
         try:
             blobid = int(text)
-        except:
+        except ValueError:
             return
 
         corr = self.project.getImagePairCorrespondences(self.img1idx, self.img2idx)

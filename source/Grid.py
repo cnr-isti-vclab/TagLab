@@ -215,7 +215,7 @@ class Grid(QObject):
         if new_text == "": # remove the note since no text has been inserted
             try:
                 del self.notes[index]
-            except:
+            except IndexError:
                 pass
         else:
             # get the corresponding note information and update it

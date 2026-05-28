@@ -680,19 +680,19 @@ class QtDictionaryWidget(QWidget):
         if redtext != "":
             try:
                 red = int(self.editR.text())
-            except:
+            except ValueError:
                 flag_conversion_ok = False
 
         if greentext != "":
             try:
                 green = int(self.editG.text())
-            except:
+            except ValueError:
                 flag_conversion_ok = False
 
         if bluetext != "":
             try:
                 blue = int(self.editB.text())
-            except:
+            except ValueError:
                 flag_conversion_ok = False
 
         if flag_conversion_ok is False or red > 255 or green > 255 or blue > 255:

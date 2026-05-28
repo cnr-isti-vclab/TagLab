@@ -29,7 +29,7 @@ class RegionAttributes:
 			self.description = data['description']
 			self.data = data['data']
 
-		except:
+		except KeyError:
 			raise Exception("The custo data file header has not the correct format")
 
 	def has(self, fieldName):

@@ -324,7 +324,7 @@ class QtSampleWidget(QWidget):
             value = float(txt)
             value = round(value * self.active_image.pixelSize(), 2)
             self.edit_offset_cm.setText(str(value))
-        except:
+        except (ValueError, ZeroDivisionError):
             self.edit_offset_cm.setText("")
 
         self.edit_offset_cm.blockSignals(False)
@@ -339,7 +339,7 @@ class QtSampleWidget(QWidget):
             value = float(txt)
             value = round(value * self.active_image.pixelSize(), 2)
             self.edit_offset_px.setText(str(value))
-        except:
+        except (ValueError, ZeroDivisionError):
             self.edit_offset_px.setText("")
 
         self.edit_offset_px.blockSignals(False)
@@ -354,7 +354,7 @@ class QtSampleWidget(QWidget):
             value = float(txt)
             value = round(value * self.active_image.pixelSize(), 2)
             self.edit_width_cm.setText(str(value))
-        except:
+        except (ValueError, ZeroDivisionError):
             self.edit_width_cm.setText("")
 
         self.edit_width_cm.blockSignals(False)
@@ -369,7 +369,7 @@ class QtSampleWidget(QWidget):
             value = float(txt)
             value = round(value * self.active_image.pixelSize(), 2)
             self.edit_height_cm.setText(str(value))
-        except:
+        except (ValueError, ZeroDivisionError):
             self.edit_height_cm.setText("")
 
         self.edit_height_cm.blockSignals(False)
@@ -384,7 +384,7 @@ class QtSampleWidget(QWidget):
             value = float(txt)
             value = round(value / self.active_image.pixelSize(), 0)
             self.edit_width_px.setText(str(value))
-        except:
+        except (ValueError, ZeroDivisionError):
             self.edit_width_px.setText("")
 
         self.edit_width_px.blockSignals(False)
@@ -399,7 +399,7 @@ class QtSampleWidget(QWidget):
             value = float(txt)
             value = round(value / self.active_image.pixelSize(), 0)
             self.edit_height_px.setText(str(value))
-        except:
+        except (ValueError, ZeroDivisionError):
             self.edit_height_px.setText("")
 
         self.edit_height_px.blockSignals(False)

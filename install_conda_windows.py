@@ -20,7 +20,8 @@ if osused != 'Windows':
 # Conda
 # ----------------------------------------------
 # Need conda to install NVCC if it isn't already
-console_output = subprocess.getstatusoutput('conda --version')
+_proc = subprocess.run(['conda', '--version'], capture_output=True, text=True)
+console_output = (_proc.returncode, _proc.stdout + _proc.stderr)
 
 # Returned 1; conda not installed
 if console_output[0]:
@@ -58,7 +59,8 @@ if len(sys.argv) == 2 and sys.argv[1] == 'cpu':
 elif not flag_install_pytorch_cpu:
 
     # Get the version of NVCC
-    console_output = subprocess.getstatusoutput('nvcc --version')
+    _proc = subprocess.run(['nvcc', '--version'], capture_output=True, text=True)
+    console_output = (_proc.returncode, _proc.stdout + _proc.stderr)
 
     # Returned 1; NVCC not installed, install 11.8 cuda nvcc
     if console_output[0]:
@@ -239,7 +241,7 @@ if not os.path.exists(base_url_gdal):
 # See if rasterio and gdal are already installed
 try:
     gdal_is_installed = importutil.find_spec("osgeo.gdal")
-except:
+except ValueError:
     gdal_is_installed = None
 
 if gdal_is_installed is not None:
@@ -268,7 +270,7 @@ if not os.path.exists(base_url_rasterio):
 
 try:
     rasterio_is_installed = importutil.find_spec("rasterio")
-except:
+except ValueError:
     rasterio_is_installed = None
 
 # if so, check versions
@@ -312,8 +314,8 @@ for net_name in net_file_names:
             opener.addheaders = [('User-agent', 'Mozilla/5.0')]
             urllib.request.install_opener(opener)
             urllib.request.urlretrieve(url_dextr, 'models/' + net_name)
-        except:
-            raise Exception("Cannot download " + net_name + ".")
+        except Exception as e:
+            raise Exception("Cannot download " + net_name + ".") from e
     else:
         print(net_name + ' already exists.')
 

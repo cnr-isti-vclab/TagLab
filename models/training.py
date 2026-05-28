@@ -87,16 +87,15 @@ def saveMetrics(metrics, filename):
     Save the computed metrics.
     """
 
-    file = open(filename, 'w')
-    file.write("CONFUSION MATRIX: \n\n")
-    np.savetxt(file, metrics['ConfMatrix'], fmt='%d')
-    file.write("\n")
-    file.write("NORMALIZED CONFUSION MATRIX: \n\n")
-    np.savetxt(file, metrics['NormConfMatrix'], fmt='%.3f')
-    file.write("\n")
-    file.write("ACCURACY      : %.3f\n\n" % metrics['Accuracy'])
-    file.write("Jaccard Score : %.3f\n\n" % metrics['JaccardScore'])
-    file.close()
+    with open(filename, 'w') as file:
+        file.write("CONFUSION MATRIX: \n\n")
+        np.savetxt(file, metrics['ConfMatrix'], fmt='%d')
+        file.write("\n")
+        file.write("NORMALIZED CONFUSION MATRIX: \n\n")
+        np.savetxt(file, metrics['NormConfMatrix'], fmt='%.3f')
+        file.write("\n")
+        file.write("ACCURACY      : %.3f\n\n" % metrics['Accuracy'])
+        file.write("Jaccard Score : %.3f\n\n" % metrics['JaccardScore'])
 
 
 # VALIDATION

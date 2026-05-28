@@ -18,7 +18,7 @@ try:
 	else:
 		lib = None
 
-except:
+except OSError:
 	lib = None
 	
 if lib == None:

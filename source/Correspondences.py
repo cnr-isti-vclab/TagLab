@@ -131,12 +131,12 @@ class Correspondences(object):
 
             try:
                 area1 = float(row['Area1'])
-            except:
+            except (ValueError, TypeError):
                 area1 = 0.0
 
             try:
                 area2 = float(row['Area2'])
-            except:
+            except (ValueError, TypeError):
                 area2 = 0.0
 
             action = row['Action']

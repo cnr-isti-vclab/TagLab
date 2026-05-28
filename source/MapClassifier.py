@@ -292,9 +292,8 @@ class MapClassifier(QObject):
                 if save_scores is True:
                     tilename = str(row) + "_" + str(col) + ".dat"
                     filename = os.path.join(self.temp_dir, tilename)
-                    fileobject = open(filename, 'wb')
-                    pkl.dump(preds_avg, fileobject)
-                    fileobject.close()
+                    with open(filename, 'wb') as fileobject:
+                        pkl.dump(preds_avg, fileobject)
 
                 self.processing_step += 1
                 self.updateProgress.emit( (100.0 * self.processing_step) / self.total_processing_steps )
@@ -308,9 +307,8 @@ class MapClassifier(QObject):
     def loadScores(self):
 
         filename = os.path.join(self.temp_dir, "assembled_scores.dat")
-        fileobject = open(filename, 'rb')
-        self.scores = pkl.load(fileobject)
-        fileobject.close()
+        with open(filename, 'rb') as fileobject:
+            self.scores = pkl.load(fileobject)
 
     def assembleTiles(self, tile_rows, tile_cols, AGGREGATION_WINDOW_SIZE, ass_scores = False):
 
@@ -327,9 +325,8 @@ class MapClassifier(QObject):
                     tilename = str(r) + "_" + str(c) + ".dat"
                     filename = os.path.join(self.temp_dir, tilename)
 
-                    fileobject = open(filename, 'rb')
-                    scores = pkl.load(fileobject)
-                    fileobject.close()
+                    with open(filename, 'rb') as fileobject:
+                        scores = pkl.load(fileobject)
 
                     xoffset = c * AGGREGATION_WINDOW_SIZE
                     yoffset = r * AGGREGATION_WINDOW_SIZE
@@ -340,9 +337,8 @@ class MapClassifier(QObject):
             working_area_scores = assembled_scores[:, 0:self.wa_height, 0: self.wa_width]
 
             filename = os.path.join(self.temp_dir, "assembled_scores.dat")
-            fileobject = open(filename, 'wb')
-            pkl.dump(working_area_scores, fileobject)
-            fileobject.close()
+            with open(filename, 'wb') as fileobject:
+                pkl.dump(working_area_scores, fileobject)
 
         qimglabel = QImage(W, H, QImage.Format_RGB32)
         painter = QPainter(qimglabel)

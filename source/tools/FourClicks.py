@@ -222,7 +222,7 @@ class FourClicks(Tool):
             if self.deepextreme_net is not None:
                 del self.deepextreme_net
                 self.deepextreme_net = None
-        except:
+        except Exception:
             pass
 
     def reset(self):
