@@ -86,6 +86,7 @@ class QtRegionAttributesWidget(QWidget):
         name_layout.addWidget(QLabel("Attribute Set name:"), 0, 0)
         self.edit_name = QLineEdit()
         self.edit_name.setPlaceholderText("Name of the attribute set")
+        self.edit_name.setToolTip("Name of this attribute set.")
         self.edit_name.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_name.setFixedWidth(350)
         self.edit_name.setText(self.region_attributes.name)
@@ -94,6 +95,7 @@ class QtRegionAttributesWidget(QWidget):
         name_layout.addWidget(QLabel("Attribute Set Description:"), 1, 0)
         self.edit_description = QTextEdit()
         self.edit_description.setPlaceholderText("A description of your attribute set")
+        self.edit_description.setToolTip("Description of this attribute set.")
         self.edit_description.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.edit_description.setFixedWidth(350)
         self.edit_description.setMaximumHeight(100)
@@ -131,9 +133,11 @@ class QtRegionAttributesWidget(QWidget):
 
         self.editName = QLineEdit()
         self.editName.setPlaceholderText("Name")
+        self.editName.setToolTip("Attribute field name (unique within this set).")
         self.editName.setMaxLength(10)
         self.editName.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        name_field_layout.addWidget(self.editName)
+        name_field_layout.addWidget(self.editName, 1)
+        name_field_layout.addStretch(2)
 
         edit_group_layout.addLayout(name_field_layout)
 
@@ -141,26 +145,40 @@ class QtRegionAttributesWidget(QWidget):
 
         self.editType = QComboBox()
         self.editType.addItems(['string', 'integer number', 'decimal number', 'boolean', 'keyword'])
+        self.editType.setToolTip("Attribute data type.")
         self.editType.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editType.activated[str].connect(self.updateFieldType)
-        fields_layout.addWidget(self.editType)
+        fields_layout.addWidget(self.editType, 1)
+
+        self.constraintsContainer = QWidget()
+        constraints_layout = QHBoxLayout()
+        constraints_layout.setContentsMargins(0, 0, 0, 0)
+        constraints_layout.setSpacing(6)
 
         self.editMin = QLineEdit()
         self.editMin.setPlaceholderText("Min")
-        self.editMin.setFixedWidth(80)
+        self.editMin.setToolTip("Minimum allowed value for numeric attributes.")
         self.editMin.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        fields_layout.addWidget(self.editMin)
+        constraints_layout.addWidget(self.editMin, 1)
 
         self.editMax = QLineEdit()
         self.editMax.setPlaceholderText("Max")
-        self.editMax.setFixedWidth(80)
+        self.editMax.setToolTip("Maximum allowed value for numeric attributes.")
         self.editMax.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        fields_layout.addWidget(self.editMax)
+        constraints_layout.addWidget(self.editMax, 1)
 
         self.editValues = QLineEdit()
-        self.editValues.setPlaceholderText("List of keywords")
+        self.editValues.setPlaceholderText("List of allowed keywords")
+        self.editValues.setToolTip("Allowed values for keyword attributes (comma or space separated).")
         self.editValues.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        fields_layout.addWidget(self.editValues, 1)
+        constraints_layout.addWidget(self.editValues, 2)
+
+        self.constraintsSpacer = QWidget()
+        self.constraintsSpacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        constraints_layout.addWidget(self.constraintsSpacer, 2)
+
+        self.constraintsContainer.setLayout(constraints_layout)
+        fields_layout.addWidget(self.constraintsContainer, 2)
 
         edit_group_layout.addLayout(fields_layout)
 
@@ -223,6 +241,13 @@ class QtRegionAttributesWidget(QWidget):
 
         self.setWindowTitle("Region Attribute Set Editor")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
+
+        screen = self.screen() if self.screen() is not None else self.windowHandle().screen() if self.windowHandle() is not None else None
+        if screen is not None:
+            available_geometry = screen.availableGeometry()
+            target_width = int(available_geometry.width() * 0.70)
+            target_height = int(available_geometry.height() * 0.70)
+            self.resize(max(self.minimumWidth(), target_width), max(self.minimumHeight(), target_height))
 
         self.createFields()
         self.updateFieldType()
@@ -546,6 +571,7 @@ class QtRegionAttributesWidget(QWidget):
         self.editMin.setVisible(enable_min_max)
         self.editMax.setVisible(enable_min_max)
         self.editValues.setVisible(enable_keywords)
+        self.constraintsSpacer.setVisible(not (enable_min_max or enable_keywords))
 
         self.editMin.setEnabled(enable_min_max)
         self.editMax.setEnabled(enable_min_max)
