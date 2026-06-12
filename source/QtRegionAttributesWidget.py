@@ -18,7 +18,7 @@
 # for more details.
 
 
-from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal
+from PyQt5.QtCore import Qt, QEvent, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QColor, QPalette
 from PyQt5.QtWidgets import QGridLayout, QWidget, QGroupBox, QMessageBox, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, \
     QHBoxLayout, QVBoxLayout, QTextEdit, QTableWidget, QTableWidgetItem, QFrame, QHeaderView, QToolTip
@@ -103,12 +103,14 @@ class QtRegionAttributesWidget(QWidget):
         layout.addLayout(name_layout)
 
         self.table = QTableWidget()
-        self.table.setColumnCount(5)
-        self.table.setHorizontalHeaderLabels(["Name", "Type", "Min", "Max", "Keywords"])
+        self.table.setColumnCount(3)
+        self.table.setHorizontalHeaderLabels(["Name", "Type", "Constraints"])
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.table.cellActivated.connect(self.selectRow)
         self.table.cellClicked.connect(self.selectRow)
         self.table.currentCellChanged.connect(lambda row, col, _prev_row, _prev_col: self.selectRow(row, col))
+        self.table.itemSelectionChanged.connect(self.onTableSelectionChanged)
+        self.table.viewport().installEventFilter(self)
 
         self.table.setStyleSheet("QTableCornerButton::section { background-color: rgb(40,40,40); }"
                                  "QHeaderView::section { background-color: rgb(40,40,40); }")
@@ -125,13 +127,17 @@ class QtRegionAttributesWidget(QWidget):
 
         edit_group_layout = QVBoxLayout()
 
-        fields_layout = QHBoxLayout()
+        name_field_layout = QHBoxLayout()
 
         self.editName = QLineEdit()
         self.editName.setPlaceholderText("Name")
         self.editName.setMaxLength(10)
         self.editName.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        fields_layout.addWidget(self.editName)
+        name_field_layout.addWidget(self.editName)
+
+        edit_group_layout.addLayout(name_field_layout)
+
+        fields_layout = QHBoxLayout()
 
         self.editType = QComboBox()
         self.editType.addItems(['string', 'integer number', 'decimal number', 'boolean', 'keyword'])
@@ -219,6 +225,7 @@ class QtRegionAttributesWidget(QWidget):
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
         self.createFields()
+        self.updateFieldType()
 
     @pyqtSlot()
     def apply(self):
@@ -330,24 +337,32 @@ class QtRegionAttributesWidget(QWidget):
     def setField(self, row, field):
         self.table.setItem(row, 0, QTableWidgetItem(field['name']))
         self.table.setItem(row, 1, QTableWidgetItem(field['type']))
+
+        constraints = ''
+
         min = ''
         if 'min' in field.keys() and field['min'] is not None:
             value = field['min']
             if field['type'] == 'integer number':
                 value = int(value)
             min = str(value)
-        self.table.setItem(row, 2, QTableWidgetItem(min))
         max = ''
         if 'max' in field.keys() and field['max'] is not None:
             value = field['max']
             if field['type'] == 'integer number':
                 value = int(value)
             max = str(value)
-        self.table.setItem(row, 3, QTableWidgetItem(max))
 
         if not 'keywords' in field or field['keywords'] is None:
             field['keywords'] = []
-        self.table.setItem(row, 4, QTableWidgetItem(', '.join(field['keywords'])))
+
+        if field['type'] in ['integer number', 'decimal number']:
+            if min != '' or max != '':
+                constraints = f"{min} .. {max}"
+        elif field['type'] == 'keyword':
+            constraints = ', '.join(field['keywords'])
+
+        self.table.setItem(row, 2, QTableWidgetItem(constraints))
 
     @pyqtSlot(int, int)
     def selectRow(self, row, column):
@@ -384,6 +399,18 @@ class QtRegionAttributesWidget(QWidget):
         self.editMax.setText("")
         self.editValues.setText("")
         self.updateFieldType()
+
+    @pyqtSlot()
+    def onTableSelectionChanged(self):
+        if self.selectedRow() < 0:
+            self.clearField()
+
+    def eventFilter(self, watched, event):
+        if watched == self.table.viewport() and event.type() == QEvent.MouseButtonPress:
+            if not self.table.indexAt(event.pos()).isValid():
+                self.table.clearSelection()
+                self.clearField()
+        return super(QtRegionAttributesWidget, self).eventFilter(watched, event)
 
     RESERVED_NAMES = {'note'}
 
@@ -514,9 +541,15 @@ class QtRegionAttributesWidget(QWidget):
 
         type = self.editType.currentText()
         enable_min_max = (type == "integer number" or type == "decimal number")
+        enable_keywords = (type == "keyword")
+
+        self.editMin.setVisible(enable_min_max)
+        self.editMax.setVisible(enable_min_max)
+        self.editValues.setVisible(enable_keywords)
+
         self.editMin.setEnabled(enable_min_max)
         self.editMax.setEnabled(enable_min_max)
-        self.editValues.setEnabled(type == "keyword")
+        self.editValues.setEnabled(enable_keywords)
 
 
     def selectedRow(self):
