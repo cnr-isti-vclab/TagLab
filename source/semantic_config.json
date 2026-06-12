@@ -1,0 +1,58 @@
+{
+  "_danger_manual_editing": "WARNING: This file is manually editable but dangerous. Invalid JSON or wrong mappings can break semantic URI resolution. Moreover, software updates may remove custom edits. Only edit if you understand the implications and have a backup.",
+  "_manual_edit_instructions": [
+    "Keep valid JSON syntax (double quotes, no trailing commas).",
+    "Edit ontology_prefixes unless you know the code path for other keys.",
+    "Use lowercase keys for prefixes.",
+    "Use full base URIs as values (example: http://purl.org/dc/terms/).",
+    "Create a backup before editing.",
+    "Restart TagLab after editing."
+  ],
+  "ontology_prefixes": {
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "schema": "https://schema.org/",
+    "foaf": "http://xmlns.com/foaf/0.1/",
+
+    "dc": "http://purl.org/dc/elements/1.1/",
+    "dcterms": "http://purl.org/dc/terms/",
+    "dcmi": "http://purl.org/dc/terms/",
+
+    "prov": "http://www.w3.org/ns/prov#",
+    "time": "http://www.w3.org/2006/time#",
+
+    "oa": "http://www.w3.org/ns/oa#",
+
+    "geo": "http://www.opengis.net/ont/geosparql#",
+    "geosparql": "http://www.opengis.net/ont/geosparql#",
+    "sf": "http://www.opengis.net/ont/sf#",
+    "gml": "http://www.opengis.net/gml/",
+    "wgs84": "http://www.w3.org/2003/01/geo/wgs84_pos#",
+
+    "qudt": "http://qudt.org/schema/qudt/",
+    "unit": "http://qudt.org/vocab/unit/",
+
+    "csvw": "http://www.w3.org/ns/csvw#",
+    "dcat": "http://www.w3.org/ns/dcat#",
+
+    "sosa": "http://www.w3.org/ns/sosa/",
+    "ssn": "http://www.w3.org/ns/ssn/",
+
+    "dwc": "http://rs.tdwg.org/dwc/terms/",
+    "obo": "http://purl.obolibrary.org/obo/",
+    "envo": "http://purl.obolibrary.org/obo/ENVO_",
+    "sio": "http://semanticscience.org/resource/",
+
+    "exif": "http://www.w3.org/2003/12/exif/ns#",
+
+    "cidoc": "http://www.cidoc-crm.org/cidoc-crm/",
+    "crm": "http://www.cidoc-crm.org/cidoc-crm/",
+    "ecrm": "http://erlangen-crm.org/current/",
+    "crmdig": "http://www.ics.forth.gr/isl/CRMdig/",
+    "dig": "http://www.ics.forth.gr/isl/CRMdig/"    
+  }
+}

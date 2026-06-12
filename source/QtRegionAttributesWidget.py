@@ -18,12 +18,13 @@
 # for more details.
 
 
-from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal
+from PyQt5.QtCore import Qt, QEvent, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QColor, QPalette
 from PyQt5.QtWidgets import QGridLayout, QWidget, QGroupBox, QMessageBox, QFileDialog, QComboBox, QSizePolicy, QLineEdit, QLabel, QPushButton, \
     QHBoxLayout, QVBoxLayout, QTextEdit, QTableWidget, QTableWidgetItem, QFrame, QHeaderView, QToolTip
-import os, json, re
+import os, re
 from source.RegionAttributes import RegionAttributes
+from source.OntologyResolver import normalize_ontology_term, resolve_ontology_uri, resolve_ontology_term, check_semantic_mappings
 from copy import deepcopy
 
 class QtRegionAttributesWidget(QWidget):
@@ -104,11 +105,13 @@ class QtRegionAttributesWidget(QWidget):
 
         self.table = QTableWidget()
         self.table.setColumnCount(5)
-        self.table.setHorizontalHeaderLabels(["Name", "Type", "Min", "Max", "Keywords"])
+        self.table.setHorizontalHeaderLabels(["Name", "Type", "Constraints", "Ontology Term", "Ontology URI"])
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.table.cellActivated.connect(self.selectRow)
         self.table.cellClicked.connect(self.selectRow)
         self.table.currentCellChanged.connect(lambda row, col, _prev_row, _prev_col: self.selectRow(row, col))
+        self.table.itemSelectionChanged.connect(self.onTableSelectionChanged)
+        self.table.viewport().installEventFilter(self)
 
         self.table.setStyleSheet("QTableCornerButton::section { background-color: rgb(40,40,40); }"
                                  "QHeaderView::section { background-color: rgb(40,40,40); }")
@@ -125,13 +128,17 @@ class QtRegionAttributesWidget(QWidget):
 
         edit_group_layout = QVBoxLayout()
 
-        fields_layout = QHBoxLayout()
+        name_field_layout = QHBoxLayout()
 
         self.editName = QLineEdit()
         self.editName.setPlaceholderText("Name")
         self.editName.setMaxLength(10)
         self.editName.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        fields_layout.addWidget(self.editName)
+        name_field_layout.addWidget(self.editName)
+
+        edit_group_layout.addLayout(name_field_layout)
+
+        fields_layout = QHBoxLayout()
 
         self.editType = QComboBox()
         self.editType.addItems(['string', 'integer number', 'decimal number', 'boolean', 'keyword'])
@@ -157,6 +164,22 @@ class QtRegionAttributesWidget(QWidget):
         fields_layout.addWidget(self.editValues, 1)
 
         edit_group_layout.addLayout(fields_layout)
+
+        semantic_layout = QHBoxLayout()
+
+        self.editOntologyTerm = QLineEdit()
+        self.editOntologyTerm.setPlaceholderText("Ontology term (e.g. DCMI:Title)")
+        self.editOntologyTerm.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        self.editOntologyTerm.editingFinished.connect(self.autoFillOntologyUri)
+        semantic_layout.addWidget(self.editOntologyTerm)
+
+        self.editOntologyUri = QLineEdit()
+        self.editOntologyUri.setPlaceholderText("Ontology URI (e.g. http://purl.org/dc/terms/title)")
+        self.editOntologyUri.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        self.editOntologyUri.editingFinished.connect(self.autoFillOntologyTerm)
+        semantic_layout.addWidget(self.editOntologyUri)
+
+        edit_group_layout.addLayout(semantic_layout)
 
         # action buttons inside the group
         action_layout = QHBoxLayout()
@@ -191,6 +214,24 @@ class QtRegionAttributesWidget(QWidget):
         edit_group.setLayout(edit_group_layout)
         layout.addWidget(edit_group)
 
+        # Semantic mapping validation UI is temporarily hidden.
+        # Keep the underlying validation code available for future reuse.
+        # semantic_check_group = QGroupBox("Semantic Mapping")
+        # semantic_check_group.setStyleSheet(
+        #     "QGroupBox { border: 1px solid rgb(90,90,90); border-radius: 4px; margin-top: 8px; padding-top: 4px; }"
+        #     "QGroupBox::title { subcontrol-origin: margin; left: 8px; color: rgb(180,180,180); }"
+        # )
+        # semantic_check_layout = QHBoxLayout()
+        # semantic_check_layout.addStretch(1)
+
+        # btnCheckSemantic = QPushButton("Check Semantic Mapping")
+        # btnCheckSemantic.setToolTip("Validate ontology term/URI mappings for all attributes")
+        # btnCheckSemantic.clicked.connect(self.checkSemanticMapping)
+        # semantic_check_layout.addWidget(btnCheckSemantic)
+
+        # semantic_check_group.setLayout(semantic_check_layout)
+        # layout.addWidget(semantic_check_group)
+
 
         line = QFrame()
 
@@ -212,13 +253,20 @@ class QtRegionAttributesWidget(QWidget):
 
         layout.addLayout(buttons_layout)
 
-#
         self.setLayout(layout)
 
         self.setWindowTitle("Region Attribute Set Editor")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
+        screen = self.screen() if self.screen() is not None else self.windowHandle().screen() if self.windowHandle() is not None else None
+        if screen is not None:
+            available_geometry = screen.availableGeometry()
+            target_width = int(available_geometry.width() * 0.70)
+            target_height = int(available_geometry.height() * 0.70)
+            self.resize(max(self.minimumWidth(), target_width), max(self.minimumHeight(), target_height))
+
         self.createFields()
+        self.updateFieldType()
 
     @pyqtSlot()
     def apply(self):
@@ -330,24 +378,35 @@ class QtRegionAttributesWidget(QWidget):
     def setField(self, row, field):
         self.table.setItem(row, 0, QTableWidgetItem(field['name']))
         self.table.setItem(row, 1, QTableWidgetItem(field['type']))
+
+        constraints = ''
+
         min = ''
         if 'min' in field.keys() and field['min'] is not None:
             value = field['min']
             if field['type'] == 'integer number':
                 value = int(value)
             min = str(value)
-        self.table.setItem(row, 2, QTableWidgetItem(min))
+
         max = ''
         if 'max' in field.keys() and field['max'] is not None:
             value = field['max']
             if field['type'] == 'integer number':
                 value = int(value)
             max = str(value)
-        self.table.setItem(row, 3, QTableWidgetItem(max))
 
         if not 'keywords' in field or field['keywords'] is None:
             field['keywords'] = []
-        self.table.setItem(row, 4, QTableWidgetItem(', '.join(field['keywords'])))
+
+        if field['type'] in ['integer number', 'decimal number']:
+            if min != '' or max != '':
+                constraints = f"{min} .. {max}"
+        elif field['type'] == 'keyword':
+            constraints = ', '.join(field['keywords'])
+
+        self.table.setItem(row, 2, QTableWidgetItem(constraints))
+        self.table.setItem(row, 3, QTableWidgetItem(field.get('ontology_term', '')))
+        self.table.setItem(row, 4, QTableWidgetItem(field.get('ontology_uri', '')))
 
     @pyqtSlot(int, int)
     def selectRow(self, row, column):
@@ -376,6 +435,8 @@ class QtRegionAttributesWidget(QWidget):
             max = str(field['max'])
         self.editMax.setText(max)
         self.editValues.setText(' '.join(field['keywords']))
+        self.editOntologyTerm.setText(field.get('ontology_term', ''))
+        self.editOntologyUri.setText(field.get('ontology_uri', ''))
 
     def clearField(self):
         self.editName.setText("")
@@ -383,7 +444,43 @@ class QtRegionAttributesWidget(QWidget):
         self.editMin.setText("")
         self.editMax.setText("")
         self.editValues.setText("")
+        self.editOntologyTerm.setText("")
+        self.editOntologyUri.setText("")
         self.updateFieldType()
+
+    @pyqtSlot()
+    def onTableSelectionChanged(self):
+        if self.selectedRow() < 0:
+            self.clearField()
+
+    def eventFilter(self, watched, event):
+        if watched == self.table.viewport() and event.type() == QEvent.MouseButtonPress:
+            if not self.table.indexAt(event.pos()).isValid():
+                self.table.clearSelection()
+                self.clearField()
+        return super(QtRegionAttributesWidget, self).eventFilter(watched, event)
+
+    @pyqtSlot()
+    def autoFillOntologyUri(self):
+        ontology_term = normalize_ontology_term(self.editOntologyTerm.text())
+        self.editOntologyTerm.setText(ontology_term)
+
+        if self.editOntologyUri.text().strip() != '' or ontology_term == '':
+            return
+
+        resolved_uri = resolve_ontology_uri(ontology_term)
+        if resolved_uri != '':
+            self.editOntologyUri.setText(resolved_uri)
+
+    @pyqtSlot()
+    def autoFillOntologyTerm(self):
+        ontology_uri = self.editOntologyUri.text().strip()
+        if self.editOntologyTerm.text().strip() != '' or ontology_uri == '':
+            return
+
+        resolved_term = resolve_ontology_term(ontology_uri)
+        if resolved_term != '':
+            self.editOntologyTerm.setText(resolved_term)
 
     RESERVED_NAMES = {'note'}
 
@@ -423,9 +520,9 @@ class QtRegionAttributesWidget(QWidget):
                 self.message("Max value must be greater than Min value.")
                 return False
 
-        keywords =  self.editValues.text()
+        keywords = self.editValues.text()
         if keywords != '':
-            keywords = re.split(' |,|:|;|\t', keywords)
+            keywords = [k for k in re.split(' |,|:|;|\t', keywords) if k != '']
         else:
             keywords = []
 
@@ -434,6 +531,26 @@ class QtRegionAttributesWidget(QWidget):
             return False
 
         field['keywords'] = keywords
+
+        ontology_term = normalize_ontology_term(self.editOntologyTerm.text())
+        ontology_uri = self.editOntologyUri.text().strip()
+        self.editOntologyTerm.setText(ontology_term)
+
+        if ontology_uri == '' and ontology_term != '':
+            ontology_uri = resolve_ontology_uri(ontology_term)
+            if ontology_uri != '':
+                self.editOntologyUri.setText(ontology_uri)
+        elif ontology_term == '' and ontology_uri != '':
+            ontology_term = resolve_ontology_term(ontology_uri)
+            if ontology_term != '':
+                self.editOntologyTerm.setText(ontology_term)
+
+        if ontology_uri != '' and re.match(r'^[a-zA-Z][a-zA-Z0-9+.-]*:[^\s]+$', ontology_uri) is None:
+            self.message("Ontology URI is not valid.")
+            return False
+
+        field['ontology_term'] = ontology_term
+        field['ontology_uri'] = ontology_uri
         return field
 
     @pyqtSlot()
@@ -495,11 +612,52 @@ class QtRegionAttributesWidget(QWidget):
         self.selectRow(row + 1, 0)
 
     @pyqtSlot()
+    def checkSemanticMapping(self):
+        report = check_semantic_mappings(self.region_attributes.data)
+
+        if not report.get('network_available', True):
+            self.message("Semantic mapping check unavailable: network is unavailable.")
+            return
+
+        lines = []
+        total_errors = 0
+        for item in report.get('items', []):
+            errors = item.get('errors', [])
+            if len(errors) == 0:
+                continue
+
+            total_errors += len(errors)
+            lines.append(f"- {item.get('name', '<unnamed>')}")
+            for err in errors:
+                lines.append(f"  * {err}")
+
+        if total_errors == 0:
+            self.message("Semantic mapping check completed: no errors found.")
+            return
+
+        box = QMessageBox()
+        box.setWindowTitle('TagLab')
+        box.setIcon(QMessageBox.Warning)
+        box.setText(f"Semantic mapping check completed with {total_errors} error(s).")
+        box.setDetailedText("\n".join(lines))
+        box.exec()
+
+    @pyqtSlot()
     def removeField (self):
         row = self.selectedRow()
 
         if row < 0:
             return self.message("Please, select a label to delete")
+
+        field_name = self.region_attributes.data[row]['name']
+        box = QMessageBox()
+        box.setWindowTitle('TagLab')
+        box.setText(f"Delete attribute '{field_name}'?")
+        box.setInformativeText("This will remove the field from the current attribute set.")
+        box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        box.setDefaultButton(QMessageBox.No)
+        if box.exec() != QMessageBox.Yes:
+            return
 
         self.clearField()
         del self.region_attributes.data[row]
@@ -514,9 +672,16 @@ class QtRegionAttributesWidget(QWidget):
 
         type = self.editType.currentText()
         enable_min_max = (type == "integer number" or type == "decimal number")
+        enable_keywords = (type == "keyword")
+
+        # Show only controls relevant to the selected field type.
+        self.editMin.setVisible(enable_min_max)
+        self.editMax.setVisible(enable_min_max)
+        self.editValues.setVisible(enable_keywords)
+
         self.editMin.setEnabled(enable_min_max)
         self.editMax.setEnabled(enable_min_max)
-        self.editValues.setEnabled(type == "keyword")
+        self.editValues.setEnabled(enable_keywords)
 
 
     def selectedRow(self):
