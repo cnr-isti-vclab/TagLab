@@ -387,7 +387,6 @@ class QtRegionAttributesWidget(QWidget):
             if field['type'] == 'integer number':
                 value = int(value)
             min = str(value)
-
         max = ''
         if 'max' in field.keys() and field['max'] is not None:
             value = field['max']
@@ -481,7 +480,6 @@ class QtRegionAttributesWidget(QWidget):
         resolved_term = resolve_ontology_term(ontology_uri)
         if resolved_term != '':
             self.editOntologyTerm.setText(resolved_term)
-
     RESERVED_NAMES = {'note'}
 
     def validateField(self):
@@ -674,7 +672,6 @@ class QtRegionAttributesWidget(QWidget):
         enable_min_max = (type == "integer number" or type == "decimal number")
         enable_keywords = (type == "keyword")
 
-        # Show only controls relevant to the selected field type.
         self.editMin.setVisible(enable_min_max)
         self.editMax.setVisible(enable_min_max)
         self.editValues.setVisible(enable_keywords)
