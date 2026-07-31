@@ -208,17 +208,12 @@ class QtCOCOExport(QDialog):
 
                 # IMAGES section entry
                 rgb_channel = next((c for c in image.channels if c.type == "RGB"), None)
-                if rgb_channel and rgb_channel.filename:
-                    image_filename = os.path.basename(rgb_channel.filename)
-                elif image.name:
-                    image_filename = image.name
-                else:
-                    image_filename = f"image_{img_id}"
+                image_filename = os.path.basename(rgb_channel.filename) if rgb_channel else image.name
                 image_data = {
                     "id": img_id,
                     "file_name": image_filename,
-                    "width": image.width or 0,
-                    "height": image.height or 0,
+                    "width": image.width,
+                    "height": image.height,
                     "date_captured": image.acquisition_date if hasattr(image, 'acquisition_date') else "",
                     "license": 0
                 }
