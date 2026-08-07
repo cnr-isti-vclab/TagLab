@@ -18,7 +18,6 @@
 #GNU General Public License (http://www.gnu.org/licenses/gpl.txt)
 # for more details.
 
-import rasterio 
 import sys
 import os
 import datetime
@@ -30,6 +29,8 @@ import platform
 import pandas as pd
 import importlib
 
+# import PyQt before rasterio causes a crash
+import rasterio 
 from PyQt5.QtCore import Qt, QSize, QMargins, QDir, QPoint, QPointF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo, QModelIndex
 from PyQt5.QtGui import QFontDatabase, QFont, QPixmap, QIcon, QKeySequence, QPen, QImageReader, QImage
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QFileDialog, QComboBox, QMenuBar, QMenu, QSizePolicy, QScrollArea, \
