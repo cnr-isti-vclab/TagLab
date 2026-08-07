@@ -1,6 +1,7 @@
 import platform
 import sys
 import os
+import re
 import subprocess
 from subprocess import STDOUT, check_call
 from pathlib import Path
@@ -10,7 +11,7 @@ if osused != 'Linux' and osused != 'Windows' and osused != 'Darwin':
     raise Exception("Operative System not supported")
 
 # check python version
-if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and (sys.version_info[1] != 11)):
+if sys.version_info < (3, 11):
     raise Exception("Python " + str(sys.version_info[0]) + "." + str(sys.version_info[1]) + " not supported. Please see https://github.com/cnr-isti-vclab/TagLab/wiki/Install-TagLab")
 
 # manage torch
@@ -22,18 +23,20 @@ if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and (sys.version_info[1]
 torch_install_dict = None
 
 win_torch_install_dict = {
-    '11.6': ['torch==1.13.1+cu116', 'torchvision==0.14.1+cu116', '--extra-index-url' + 'https://download.pytorch.org/whl/cu116'],
+    '11.6': ['torch==1.13.1+cu116', 'torchvision==0.14.1+cu116', '--extra-index-url', 'https://download.pytorch.org/whl/cu116'],
     '11.8': ['torch==2.5', 'torchvision==0.20', '--index-url', 'https://download.pytorch.org/whl/cu118'],
     '12.1': ['torch==2.5', 'torchvision==0.20', '--index-url', 'https://download.pytorch.org/whl/cu121'],
     '12.4': ['torch==2.5', 'torchvision==0.20', '--index-url', 'https://download.pytorch.org/whl/cu124'],
+    '13.2': ['torch==2.12.1', 'torchvision==0.27.1', '--index-url', 'https://download.pytorch.org/whl/cu132'],
     'cpu' : ['torch==2.5', 'torchvision==0.20'],
 }
 
 lin_torch_install_dict = {
-    '11.6': ['torch==1.13.1+cu116', 'torchvision==0.14.1+cu116', '--extra-index-url' + 'https://download.pytorch.org/whl/cu116'],
+    '11.6': ['torch==1.13.1+cu116', 'torchvision==0.14.1+cu116', '--extra-index-url', 'https://download.pytorch.org/whl/cu116'],
     '11.8': ['torch==2.5', 'torchvision==0.20', '--index-url', 'https://download.pytorch.org/whl/cu118'],
     '12.1': ['torch==2.5', 'torchvision==0.20', '--index-url', 'https://download.pytorch.org/whl/cu121'],
     '12.4': ['torch==2.5', 'torchvision==0.20'],
+    '13.2': ['torch==2.12.1', 'torchvision==0.27.1', '--index-url', 'https://download.pytorch.org/whl/cu132'],
     'cpu' : ['torch==2.5', 'torchvision==0.20', '--index-url', 'https://download.pytorch.org/whl/cpu'],
     'rocm': ['torch==2.5', 'torchvision==0.20', '--index-url', 'https://download.pytorch.org/whl/rocm6.2'],
 }
@@ -43,7 +46,7 @@ mac_torch_install_dict = {
 }
 
 # supported cuda versions by torch
-torch_cuda_versions = ['12.4', '12.1', '11.8', '11.6']
+torch_cuda_versions = ['13.2', '12.4', '12.1', '11.8', '11.6']
 
 if osused == 'Windows':
     torch_install_dict = win_torch_install_dict
@@ -83,10 +86,9 @@ if use_cpu == False:
     output = result[1]
     rc = result[0]
     if rc == 0:
-        pos = output.find('CUDA Version:')
-        if pos >= 0:
-            pos += 13
-            cuda_version = output[pos:pos+6]
+        cuda_match = re.search(r'CUDA(?:\s+UMD)?\s+Version:\s*(\d+\.\d+)', output)
+        if cuda_match is not None:
+            cuda_version = cuda_match.group(1)
             print('Found CUDA version: ' + cuda_version)
 
             # get the float number of the cuda version
@@ -254,6 +256,17 @@ if flag_install_SAM:
 # if on windows, first install the msvc runtime
 if osused == 'Windows':
     install_requires.insert(0, 'msvc-runtime')
+
+opencv_packages = [
+    'opencv-python',
+    'opencv-contrib-python',
+    'opencv-python-headless',
+    'opencv-contrib-python-headless',
+]
+subprocess.run(
+    [sys.executable, '-m', 'pip', 'uninstall', '-y', *opencv_packages],
+    check=False,
+)
 
 # installing all the packages
 for package in install_requires:

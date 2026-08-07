@@ -29,6 +29,8 @@ import platform
 import pandas as pd
 import importlib
 
+# import PyQt before rasterio causes a crash
+import rasterio 
 from PyQt5.QtCore import Qt, QSize, QMargins, QDir, QPoint, QPointF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo, QModelIndex
 from PyQt5.QtGui import QFontDatabase, QFont, QPixmap, QIcon, QKeySequence, QPen, QImageReader, QImage
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QFileDialog, QComboBox, QMenuBar, QMenu, QSizePolicy, QScrollArea, \
@@ -36,27 +38,11 @@ from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QFileDialog, QCo
     QMessageBox, QGroupBox, QLayout, QHBoxLayout, QVBoxLayout, QFrame, QDockWidget, QTextEdit, QAction, \
     QDialog
 
-from source.QtExportDXF import QtDXFExport  # Import the dxf export dialog
-from source.QtExportSVG import QtSVGExport  # Import the svg export dialog
-
-
-
 import pprint
-# PYTORCH
-from source.QtAlignmentToolWidget import QtAlignmentToolWidget
-
-try:
-    import torch
-    from torch.nn.functional import upsample
-except Exception as e:
-    print("Incompatible version between pytorch, cuda and python.\n" +
-          "Knowing working version combinations are\n: Cuda 10.0, pytorch 1.0.0, python 3.6.8" + str(e))
-   # exit()
 
 # CUSTOM
 import csv
 import source.Mask as Mask
-import source.RasterOps as rasterops
 from source.QtImageViewerPlus import QtImageViewerPlus
 from source.QtMapViewer import QtMapViewer
 from source.QtSettingsWidget import QtSettingsWidget
@@ -69,32 +55,19 @@ from source.QtLayersWidget import QtLayersWidget
 from source.QtHelpWidget import QtHelpWidget
 
 from source.QtProgressBarCustom import QtProgressBarCustom
-from source.QtHistogramWidget import QtHistogramWidget
-from source.QtClassifierWidget import QtClassifierWidget
-from source.QtNewDatasetWidget import QtNewDatasetWidget
-from source.QtSampleWidget import QtSampleWidget
-from source.QtGeoreferencingWidget import QtGeoreferencingWidget
-from source.QtTrainingResultsWidget import QtTrainingResultsWidget
-from source.QtTYNWidget import QtTYNWidget
-from source.QtDatasetManagerWidget import QtDatasetManagerWidget
 from source.QtComparePanel import QtComparePanel
 from source.QtTablePanel import QtTablePanel
 from source.QtExportAnnAsTable import QtExportAnnAsTable
 from source.QtTableLabel import QtTableLabel
 from source.QtProjectWidget import QtProjectWidget
-from source.QtProjectEditor import QtProjectEditor
 from source.Project import Project, loadProject
 from source.Point import Point
 from source.Image import Image
-from source.MapClassifier import MapClassifier
-from source.NewDataset import NewDataset
 from source.QtGridWidget import QtGridWidget
 from source.QtDictionaryWidget import QtDictionaryWidget
 from source.QtRegionAttributesWidget import QtRegionAttributesWidget
 from source.QtShapefileAttributeWidget import QtAttributeWidget
 from source.QtGeometricInfoWidget import QtGeometricInfoWidget
-from source.QtCourseAnalysis import QtCourseAnalysis
-
 from source.QtSelection import QtSelectByPropertiesWidget
 
 import math
@@ -103,18 +76,13 @@ from source.QtPanelInfo import QtPanelInfo
 from source.Sampler import Sampler
 
 from source.QtImportViscoreWidget import QtImportViscoreWidget
-from source.QtCoralNetToolboxWidget import QtCoralNetToolboxWidget
 from source.QtExportCoralNetDataWidget import QtExportCoralNetDataWidget
 
 from source import genutils
 from source.Blob import Blob
 from source.Shape import Layer, Shape
 
-from source.Tools import Tools
-
 # training modules
-from models.coral_dataset import CoralsDataset
-import models.training as training
 
 
 # LOGGING
@@ -3357,6 +3325,8 @@ class TagLab(QMainWindow):
             msgBox.exec()
             return
 
+        from source.QtCourseAnalysis import QtCourseAnalysis
+
         rowAnalysis_widget = QtCourseAnalysis(view, parent = self)
         rowAnalysis_widget.setWindowModality(Qt.NonModal)
         rowAnalysis_widget.show()
@@ -3869,6 +3839,8 @@ class TagLab(QMainWindow):
         if self.activeviewer is not None:
             if self.activeviewer.image is not None:
                 if self.georeferencing_tool_widget is None:
+                    from source.QtGeoreferencingWidget import QtGeoreferencingWidget
+
                     self.disableSplitScreen()
                     self.georeferencing_tool_widget = QtGeoreferencingWidget(self.project, parent=self)
                     self.georeferencing_tool_widget.setWindowModality(Qt.NonModal)
@@ -3908,6 +3880,8 @@ class TagLab(QMainWindow):
         """
         Assign georeferencing information to the current map.
         """
+
+        import source.RasterOps as rasterops
 
         active_image = self.activeviewer.image
         qimg = self.activeviewer.channel.qimage
@@ -4002,6 +3976,8 @@ class TagLab(QMainWindow):
         if self.activeviewer is not None:
             if self.activeviewer.image is not None:
                 if self.sample_point_widget is None:
+                    from source.QtSampleWidget import QtSampleWidget
+
                     self.disableSplitScreen()
                     self.sample_point_widget = QtSampleWidget(active_image=self.activeviewer.image,
                                                               working_area=self.project.working_area,
@@ -4132,6 +4108,8 @@ class TagLab(QMainWindow):
     @pyqtSlot()
     def openProjectEditor(self):
         if self.projectEditor is None:
+            from source.QtProjectEditor import QtProjectEditor
+
             self.projectEditor = QtProjectEditor(self.project, parent=self)
 
         self.projectEditor.fillMaps()
@@ -4156,6 +4134,8 @@ class TagLab(QMainWindow):
             return
 
         if self.align_tool_widget is None:
+            from source.QtAlignmentToolWidget import QtAlignmentToolWidget
+
             self.align_tool_widget = QtAlignmentToolWidget(self.taglab_dir, self.project, parent=self)
             self.align_tool_widget.setWindowModality(Qt.WindowModal)
             self.align_tool_widget.closed.connect(self.closeAlignmentTool)
@@ -4904,6 +4884,8 @@ class TagLab(QMainWindow):
         if not self.shapefile_filename:
             QApplication.restoreOverrideCursor()
             return
+        import source.RasterOps as rasterops
+
         #read only attributes
         data = rasterops.read_attributes(self.shapefile_filename)
         QApplication.restoreOverrideCursor()
@@ -4915,6 +4897,8 @@ class TagLab(QMainWindow):
 
     @pyqtSlot(str,list,list)
     def readShapes(self, shapetype, attributelist, classes_list):
+
+        import source.RasterOps as rasterops
 
         gf = self.activeviewer.image.georef_filename
 
@@ -5149,6 +5133,7 @@ class TagLab(QMainWindow):
     def exportHistogramFromAnn(self):
 
         if self.activeviewer is not None:
+            from source.QtHistogramWidget import QtHistogramWidget
 
             histo_widget = QtHistogramWidget(self.activeviewer.annotations, self.project.labels,
                                              self.activeviewer.image.pixelSize(),
@@ -5173,6 +5158,8 @@ class TagLab(QMainWindow):
         output_filename, _ = QFileDialog.getSaveFileName(self, "Save Shapefile as", self.taglab_dir, filters)
 
         if output_filename:
+            import source.RasterOps as rasterops
+
             blobs = self.activeviewer.annotations.seg_blobs
             gf = self.activeviewer.image.georef_filename
             rasterops.write_shapefile(self.project, self.activeviewer.image, blobs, gf, output_filename)
@@ -5190,6 +5177,8 @@ class TagLab(QMainWindow):
             return
         if self.activeviewer.image is None:
             return
+        from source.QtExportDXF import QtDXFExport  # Import the dxf export dialog
+
         # Show the DXF export dialog
         optionsDialog = QtDXFExport(self)
         optionsDialog.setWindowModality(Qt.WindowModal)
@@ -5202,6 +5191,8 @@ class TagLab(QMainWindow):
             return
         if self.activeviewer.image is None:
             return
+        from source.QtExportSVG import QtSVGExport  # Import the svg export dialog
+
         # Show the SVG export dialog
         optionsDialog = QtSVGExport(self)
         optionsDialog.setWindowModality(Qt.WindowModal)
@@ -5230,6 +5221,8 @@ class TagLab(QMainWindow):
         output_filename, _ = QFileDialog.getSaveFileName(self, "Output GeoTiff", "", filters)
 
         if output_filename:
+
+            import source.RasterOps as rasterops
 
             QApplication.setOverrideCursor(Qt.WaitCursor)
 
@@ -5269,6 +5262,8 @@ class TagLab(QMainWindow):
         output_filename, _ = QFileDialog.getSaveFileName(self, "Output GeoTiff", "", filters)
 
         if output_filename:
+            import source.RasterOps as rasterops
+
             QApplication.setOverrideCursor(Qt.WaitCursor)
 
             myimage_np = genutils.qimageToNumpyArray(self.activeviewer.image.getRGBChannel().qimage)
@@ -5290,6 +5285,7 @@ class TagLab(QMainWindow):
         if self.activeviewer is not None:
             if self.activeviewer.image is not None:
                 if self.newDatasetWidget is None:
+                    from source.QtNewDatasetWidget import QtNewDatasetWidget
 
                     if not self.activeviewer.image.export_dataset_area:
                         self.activeviewer.image.export_dataset_area = [0, 0 , self.activeviewer.img_map.width(), self.activeviewer.img_map.height()]
@@ -5329,6 +5325,9 @@ class TagLab(QMainWindow):
                 msgBox.setText("Please, choose a folder to export the dataset.")
                 msgBox.exec()
                 return
+
+            from source.NewDataset import NewDataset
+            import models.training as training
 
             QApplication.setOverrideCursor(Qt.WaitCursor)
             self.setupProgressBar()
@@ -5419,6 +5418,9 @@ class TagLab(QMainWindow):
 
     @pyqtSlot()
     def trainNewNetwork(self):
+
+        import models.training as training
+        from source.QtTrainingResultsWidget import QtTrainingResultsWidget
 
         dataset_folder = self.trainYourNetworkWidget.getDatasetFolder()
 
@@ -5549,6 +5551,8 @@ class TagLab(QMainWindow):
     def trainYourNetwork(self):
 
         if self.trainYourNetworkWidget is None:
+            from source.QtTYNWidget import QtTYNWidget
+
             self.trainYourNetworkWidget = QtTYNWidget(self.project.labels, self.TAGLAB_VERSION, parent=self)
             self.trainYourNetworkWidget.setWindowModality(Qt.WindowModal)
             self.trainYourNetworkWidget.launchTraining.connect(self.trainNewNetwork)
@@ -5559,6 +5563,8 @@ class TagLab(QMainWindow):
     def openDatasetManager(self):
 
         if self.datasetManagerWidget is None:
+            from source.QtDatasetManagerWidget import QtDatasetManagerWidget
+
             self.datasetManagerWidget = QtDatasetManagerWidget(self.project.labels, self.TAGLAB_VERSION, parent=self)
             self.datasetManagerWidget.setWindowModality(Qt.WindowModal)
             # self.trainYourNetworkWidget.launchTraining.connect(self.trainNewNetwork)
@@ -5587,6 +5593,8 @@ class TagLab(QMainWindow):
         output_filename, _ = QFileDialog.getSaveFileName(self, "Save raster as", self.taglab_dir, filters)
 
         if output_filename:
+
+            import source.RasterOps as rasterops
 
             QApplication.setOverrideCursor(Qt.WaitCursor)
 
@@ -5725,6 +5733,8 @@ class TagLab(QMainWindow):
         Opens the CoralNetToolbox Widget in a new window.
         """
         try:
+            from source.QtCoralNetToolboxWidget import QtCoralNetToolboxWidget
+
             self.coralNetToolbox = QtCoralNetToolboxWidget(self)
             self.coralNetToolbox.show()
         except Exception as e:
@@ -5753,6 +5763,8 @@ class TagLab(QMainWindow):
 
         georef_filename = self.activeviewer.image.georef_filename
         blobs = self.activeviewer.annotations.seg_blobs
+        import source.RasterOps as rasterops
+
         rasterops.calculateAreaUsingSlope(input_tiff, blobs)
 
         QApplication.restoreOverrideCursor()
@@ -5853,7 +5865,12 @@ class TagLab(QMainWindow):
 
     #REFACTOR networks should be moved to a new class
     def resetNetworks(self):
-
+        try:
+            import torch
+        except Exception as e:
+            print("Incompatible version between pytorch, cuda and python.\n" +
+                "Knowing working version combinations are\n: Cuda 10.0, pytorch 1.0.0, python 3.6.8" + str(e))
+        
         torch.cuda.empty_cache()
 
         if self.classifier is not None:
@@ -5881,6 +5898,8 @@ class TagLab(QMainWindow):
             self.btnAutoClassification.setChecked(True)
 
             if self.classifierWidget is None:
+                from source.QtClassifierWidget import QtClassifierWidget
+
                 self.classifierWidget = QtClassifierWidget(self.available_classifiers, parent=self)
                 self.classifierWidget.setAttribute(Qt.WA_DeleteOnClose)
                 self.classifierWidget.btnApply.clicked.connect(self.applyClassifier)
@@ -5957,6 +5976,8 @@ class TagLab(QMainWindow):
             self.resetNetworks()
             self.setupProgressBar()
             QApplication.processEvents()
+
+            from source.MapClassifier import MapClassifier
 
             self.classifier = MapClassifier(classifier_selected, self.project.labels)
             self.classifier.updateProgress.connect(self.progress_bar.setProgress)
@@ -6046,6 +6067,8 @@ class TagLab(QMainWindow):
 
             message = "[AUTOCLASS] Automatic classification STARTS.. (classifier: )" + classifier_selected['Classifier Name']
             logfile.info(message)
+
+            from source.MapClassifier import MapClassifier
 
             self.classifier = MapClassifier(classifier_selected, self.project.labels)
             self.classifier.updateProgress.connect(self.progress_bar.setProgress)
