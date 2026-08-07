@@ -18,6 +18,7 @@
 #GNU General Public License (http://www.gnu.org/licenses/gpl.txt)
 # for more details.
 
+import rasterio 
 import sys
 import os
 import datetime
