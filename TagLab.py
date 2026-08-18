@@ -29,6 +29,13 @@ import platform
 import pandas as pd
 import importlib
 
+# rasterio must be imported before PyQt5 to avoid silent crash on startup
+# see: https://github.com/cnr-isti-vclab/TagLab/issues/216
+try:
+    import rasterio
+except ImportError:
+    pass
+
 from PyQt5.QtCore import Qt, QSize, QMargins, QDir, QPoint, QPointF, QRectF, QTimer, pyqtSlot, pyqtSignal, QSettings, QFileInfo, QModelIndex
 from PyQt5.QtGui import QFontDatabase, QFont, QPixmap, QIcon, QKeySequence, QPen, QImageReader, QImage
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QFileDialog, QComboBox, QMenuBar, QMenu, QSizePolicy, QScrollArea, \
