@@ -18,8 +18,8 @@
 # for more details.
 
 from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal, QPointF, QEvent
-from PyQt5.QtGui import QColor, QPen, QBrush, QPolygonF, QFont
-from PyQt5.QtWidgets import QWidget, QTableWidget, QTextEdit, QTableWidgetItem, QLabel, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout, QGroupBox, QComboBox, QFileDialog, QMessageBox
+from PyQt5.QtGui import QColor, QPen, QBrush, QPolygonF, QFont, QPalette
+from PyQt5.QtWidgets import QWidget, QTableWidget, QTextEdit, QTableWidgetItem, QLabel, QLineEdit, QPushButton, QHBoxLayout, QVBoxLayout, QGroupBox, QComboBox, QFileDialog, QMessageBox, QApplication, QToolTip
 import math
 import cv2
 import numpy as np
@@ -52,6 +52,8 @@ class QtCourseAnalysis(QWidget):
         self.lineSegmentData = []  # Store metadata for each line segment: (course_index, segment_index, point1, point2)
         self.inclinationLines = []  # Store inclination visualization lines
         self.segmentInclinationEntities = []  # Store segment-by-segment inclination visualizations
+        self.curveFitEntities = []  # Store curve fit visualization lines
+        self.highlightedCourseEntities = []  # Store highlighted course outlines
         
         # Cut mode state
         self.cutModeActive = False
@@ -72,7 +74,25 @@ class QtCourseAnalysis(QWidget):
         self.activeviewer.viewport().installEventFilter(self)
 
         # INTERFACE ###########################################################
-        self.setStyleSheet("background-color: rgb(40,40,40); color: white; QToolTip { background-color: rgb(50,50,50); color: white; border: 1px solid rgb(100,100,100); }")
+        self.setStyleSheet("""
+            QWidget {
+                background-color: rgb(40,40,40); 
+                color: white;
+            }
+            QToolTip { 
+                background-color: rgb(50,50,50); 
+                color: white; 
+                border: 1px solid rgb(100,100,100);
+                padding: 3px;
+            }
+        """)
+        
+        # Set tooltip palette globally for this widget's tooltips
+        tooltip_palette = QPalette()
+        tooltip_palette.setColor(QPalette.ToolTipBase, QColor(50, 50, 50))
+        tooltip_palette.setColor(QPalette.ToolTipText, QColor(255, 255, 255))
+        QToolTip.setPalette(tooltip_palette)
+        
         mainLayout = QVBoxLayout()
 
         # GROUP BOX for detection and editing controls
@@ -162,11 +182,36 @@ class QtCourseAnalysis(QWidget):
 
         # Table widget for course data
         self.coursesTable = QTableWidget()
-        self.coursesTable.setColumnCount(6)
-        self.coursesTable.setHorizontalHeaderLabels(["Color", "Regions", "Y pos", "Avg Height", "Width", "Inclination"])
+        self.coursesTable.setColumnCount(9)
+        self.coursesTable.setHorizontalHeaderLabels(["ID", "Regions", "Y pos", "Avg Height", "Width", "Inclination", "RMS Dev", "Max Dev", "Angle Var"])
+        
+        # Set tooltips for column headers
+        header_tooltips = [
+            "Course identification number (click to restore original order)",
+            "Number of regions in this course",
+            "Vertical position of the course (average Y coordinate)",
+            "Average height of regions in this course",
+            "Total horizontal width of the course",
+            "Overall inclination angle (fitted line through centroids)",
+            "RMS deviation from straight line (bending measure)",
+            "Maximum deviation from straight line (largest bending point)",
+            "Angular variation between segments (turning/zigzag measure)"
+        ]
+        for i, tooltip in enumerate(header_tooltips):
+            self.coursesTable.horizontalHeaderItem(i).setToolTip(tooltip)
+        
         self.coursesTable.setStyleSheet("QTableWidget { background-color: rgb(50,50,50); color: white; gridline-color: rgb(80,80,80); } QHeaderView::section { background-color: rgb(60,60,60); color: white; }")
         self.coursesTable.setMinimumHeight(150)
         self.coursesTable.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.coursesTable.setSortingEnabled(False)  # Will enable after populating
+        self.coursesTable.verticalHeader().setVisible(False)  # Hide row numbers
+        self.coursesTable.setSelectionBehavior(QTableWidget.SelectRows)  # Select entire row
+        # Connect header click to restore original order when first column is clicked
+        self.coursesTable.horizontalHeader().sectionClicked.connect(self.onTableHeaderClicked)
+        # Connect table selection to highlight corresponding course
+        self.coursesTable.itemSelectionChanged.connect(self.onTableSelectionChanged)
+        # Connect viewport click to allow deselection by clicking empty area
+        self.coursesTable.viewport().installEventFilter(self)
         mainLayout.addWidget(self.coursesTable)
         
         # GROUP BOX for course analysis
@@ -201,8 +246,14 @@ class QtCourseAnalysis(QWidget):
         self.btnSegmentInclination.setCheckable(True)
         self.btnSegmentInclination.clicked.connect(self.toggleSegmentInclination)
         
+        self.btnShowCurveFit = QPushButton("Show Curve Fit")
+        self.btnShowCurveFit.setToolTip("Show/hide polynomial curve fit for each course to visualize bending")
+        self.btnShowCurveFit.setCheckable(True)
+        self.btnShowCurveFit.clicked.connect(self.toggleCurveFit)
+        
         buttons_layout.addWidget(self.btnAnalyzeInclination)
         buttons_layout.addWidget(self.btnSegmentInclination)
+        buttons_layout.addWidget(self.btnShowCurveFit)
         buttons_layout.addStretch()
         
         analysisLayout.addLayout(buttons_layout)
@@ -241,13 +292,22 @@ class QtCourseAnalysis(QWidget):
     closewidget = pyqtSignal()
     
     def closeEvent(self, event):
+        # Deactivate any active modes and reset cursor
+        self.cutModeActive = False
+        self.mergeModeActive = False
+        self.activeviewer.setCursor(Qt.ArrowCursor)
+        
         # remove colorized shapes and polylines, if any
         self.removeColorizedEntities()
         self.removePolylineEntities()
         self.removeInclinationLines()
         self.removeSegmentInclinationEntities()
-        # Remove event filter
+        self.removeCurveFitEntities()
+        self.removeHighlightedCourse()
+        self.clearMergeSelection()  # Clear merge mode highlight if active
+        # Remove event filters
         self.activeviewer.viewport().removeEventFilter(self)
+        self.coursesTable.viewport().removeEventFilter(self)
         # emit the signal to notify the main window
         self.closewidget.emit()
         super(QtCourseAnalysis, self).closeEvent(event)
@@ -269,27 +329,116 @@ class QtCourseAnalysis(QWidget):
                 self.displayInclinationLines()
             if self.btnSegmentInclination.isChecked():
                 self.displaySegmentInclination()
+            if self.btnShowCurveFit.isChecked():
+                self.displayCurveFit()
 
     def writeLog(self, message):
         """Write a message to the log area"""
         self.logArea.append(message)
     
+    def onTableHeaderClicked(self, logicalIndex):
+        """
+        Handle table header clicks. When the first column (ID) is clicked,
+        restore the original sorting order.
+        """
+        if logicalIndex == 0:
+            # Sort by ID (which contains 1-based sequential numbers matching original order)
+            self.coursesTable.sortItems(0, Qt.AscendingOrder)
+    
+    def onTableSelectionChanged(self):
+        """
+        Highlight the course corresponding to the selected table row.
+        """
+        # Remove previous highlight
+        self.removeHighlightedCourse()
+        
+        # Get selected row
+        selected_items = self.coursesTable.selectedItems()
+        if not selected_items:
+            return
+        
+        # Get the course index from the first column of the selected row
+        row = selected_items[0].row()
+        id_item = self.coursesTable.item(row, 0)
+        if not id_item:
+            return
+        
+        try:
+            # Get the 0-based course index from UserRole data
+            course_index = id_item.data(Qt.UserRole)
+        except (ValueError, AttributeError, TypeError):
+            return
+        
+        # Check if courses data exists and index is valid
+        if not self.coursesData or course_index >= len(self.coursesData):
+            return
+        
+        course = self.coursesData[course_index]
+        
+        try:
+            # Create thick yellow outlines for all blobs in the selected course
+            pen = QPen(QColor(255, 255, 0))  # Yellow color
+            pen.setWidth(6)
+            pen.setCosmetic(True)
+            
+            for blob in course['blobs']:
+                # Create polygon from blob contour
+                points = [QPointF(x, y) for x, y in blob.contour]
+                polygon = QPolygonF(points)
+                
+                # Add to scene
+                outline_item = self.activeviewer.scene.addPolygon(polygon, pen, QBrush())
+                outline_item.setZValue(30)  # Draw on top of everything
+                
+                self.highlightedCourseEntities.append(outline_item)
+        except (AttributeError, RuntimeError):
+            # Blob might have been deleted or scene no longer valid
+            self.removeHighlightedCourse()
+    
+    def removeHighlightedCourse(self):
+        """
+        Remove the highlighted course outlines from the scene.
+        """
+        if self.highlightedCourseEntities:
+            for item in self.highlightedCourseEntities:
+                try:
+                    self.activeviewer.scene.removeItem(item)
+                except (AttributeError, RuntimeError):
+                    # Scene or item might no longer be valid
+                    pass
+            self.highlightedCourseEntities = []
+    
     def eventFilter(self, obj, event):
         """
-        Event filter to catch mouse clicks in the viewer when cut or merge mode is active.
+        Event filter to catch mouse clicks.
+        - In viewer: handle cut/merge mode clicks
+        - In table viewport: handle deselection by clicking empty area
         """
         if event.type() == event.MouseButtonPress and event.button() == Qt.LeftButton:
-            scenePos = self.activeviewer.mapToScene(event.pos())
+            # Check if this is a click in the table viewport
+            if obj == self.coursesTable.viewport():
+                # Get the item at the clicked position
+                pos = event.pos()
+                item = self.coursesTable.itemAt(pos)
+                if item is None:
+                    # Clicked on empty area - clear selection
+                    self.coursesTable.clearSelection()
+                    return False  # Let the table handle it normally
+                return False  # Let normal selection handling proceed
             
-            if self.cutModeActive:
-                # Get click position in scene coordinates
-                self.handleCutClick(scenePos.x(), scenePos.y())
-                return True  # Event handled
-            
-            elif self.mergeModeActive:
-                # Handle merge mode click on blobs
-                self.handleMergeClick(scenePos.x(), scenePos.y())
-                return True  # Event handled
+            # Handle viewer clicks for cut/merge modes
+            if obj == self.activeviewer.viewport():
+                scenePos = self.activeviewer.mapToScene(event.pos())
+                
+                if self.cutModeActive:
+                    # Get click position in scene coordinates
+                    self.handleCutClick(scenePos.x(), scenePos.y())
+                    return True  # Event handled
+                
+                elif self.mergeModeActive:
+                    # Handle merge mode click on blobs
+                    self.handleMergeClick(scenePos.x(), scenePos.y())
+                    return True  # Event handled
         
         return super(QtCourseAnalysis, self).eventFilter(obj, event)
 
@@ -332,6 +481,19 @@ class QtCourseAnalysis(QWidget):
             height_tolerance_factor = 0.3
             x_gap_factor = 3.0
         
+        # Deactivate cut/merge modes if active
+        if self.cutModeActive:
+            self.btnCutCourse.setChecked(False)
+            self.cutModeActive = False
+            self.btnCutCourse.setStyleSheet("")
+            self.activeviewer.setCursor(Qt.ArrowCursor)
+        if self.mergeModeActive:
+            self.btnMergeCourses.setChecked(False)
+            self.mergeModeActive = False
+            self.btnMergeCourses.setStyleSheet("")
+            self.clearMergeSelection()
+            self.activeviewer.setCursor(Qt.ArrowCursor)
+        
         # Detect courses using incremental method
         self.coursesData = self.detectCoursesIncremental(y_tolerance_factor, ytb_tolerance_factor, height_tolerance_factor, x_gap_factor)
         
@@ -340,6 +502,9 @@ class QtCourseAnalysis(QWidget):
         
         # Compute inclination for all courses automatically
         self.computeInclination()
+        
+        # Clear table selection
+        self.coursesTable.clearSelection()
         
         # Populate table with course data
         self.populateCoursesTable()
@@ -352,10 +517,12 @@ class QtCourseAnalysis(QWidget):
             self.displayInclinationLines()
         if self.btnSegmentInclination.isChecked():
             self.displaySegmentInclination()
+        if self.btnShowCurveFit.isChecked():
+            self.displayCurveFit()
 
     def computeInclination(self):
         """
-        Compute the inclination for all courses.
+        Compute the inclination and bending metrics for all courses.
         """
         if self.coursesData is None or len(self.coursesData) == 0:
             return
@@ -364,6 +531,9 @@ class QtCourseAnalysis(QWidget):
             if course['num_blobs'] < 2:
                 course['inclination_deg'] = 0.0
                 course['inclination_rad'] = 0.0
+                course['rms_deviation'] = 0.0
+                course['max_deviation'] = 0.0
+                course['angle_variance'] = 0.0
                 continue
             
             # Get all centroids
@@ -386,6 +556,61 @@ class QtCourseAnalysis(QWidget):
             course['inclination_rad'] = angle_rad
             course['fit_slope'] = slope
             course['fit_intercept'] = intercept
+            
+            # Compute bending metrics
+            # 1. RMS deviation from linear fit
+            deviations = []
+            for x, y in zip(centroids_x, centroids_y):
+                y_fitted = slope * x + intercept
+                # Perpendicular distance from point to line: |ax + by + c| / sqrt(a^2 + b^2)
+                # Line equation: y - mx - b = 0 => -mx + y - b = 0 => a=-m, b=1, c=-b
+                deviation = abs(-slope * x + y - intercept) / math.sqrt(slope**2 + 1)
+                deviations.append(deviation)
+            
+            rms_deviation = math.sqrt(sum(d**2 for d in deviations) / len(deviations))
+            max_deviation = max(deviations)
+            
+            course['rms_deviation'] = rms_deviation
+            course['max_deviation'] = max_deviation
+            course['deviations'] = deviations  # Store for visualization
+            
+            # 2. Angular variation (if more than 2 blobs)
+            if course['num_blobs'] >= 3:
+                segment_angles = []
+                for i in range(len(course['blobs']) - 1):
+                    blob1 = course['blobs'][i]
+                    blob2 = course['blobs'][i + 1]
+                    dx = blob2.centroid[0] - blob1.centroid[0]
+                    dy = blob2.centroid[1] - blob1.centroid[1]
+                    angle_rad = math.atan2(-dy, dx)
+                    angle_deg = math.degrees(angle_rad)
+                    segment_angles.append(angle_deg)
+                
+                # Calculate standard deviation of segment angles
+                if len(segment_angles) > 1:
+                    mean_angle = sum(segment_angles) / len(segment_angles)
+                    variance = sum((a - mean_angle)**2 for a in segment_angles) / len(segment_angles)
+                    angle_variance = math.sqrt(variance)
+                else:
+                    angle_variance = 0.0
+                
+                course['angle_variance'] = angle_variance
+                course['segment_angles'] = segment_angles
+            else:
+                course['angle_variance'] = 0.0
+            
+            # 3. Fit polynomial curve (quadratic for smooth bending, cubic for more complex)
+            if course['num_blobs'] >= 3:
+                # Fit quadratic: y = ax^2 + bx + c
+                coeffs_quad = np.polyfit(centroids_x, centroids_y, min(2, course['num_blobs'] - 1))
+                course['curve_coeffs'] = coeffs_quad
+                
+                # If we have enough points, fit cubic as well
+                if course['num_blobs'] >= 4:
+                    coeffs_cubic = np.polyfit(centroids_x, centroids_y, 3)
+                    course['curve_coeffs_cubic'] = coeffs_cubic
+            else:
+                course['curve_coeffs'] = coeffs
     
     @pyqtSlot()
     def toggleInclination(self):
@@ -432,6 +657,29 @@ class QtCourseAnalysis(QWidget):
             self.removeSegmentInclinationEntities()
             self.btnSegmentInclination.setStyleSheet("")
             self.btnSegmentInclination.setText("Show Segment Angles")
+    
+    @pyqtSlot()
+    def toggleCurveFit(self):
+        """
+        Toggle the display of polynomial curve fit for each course.
+        """
+        if self.coursesData is None or len(self.coursesData) == 0:
+            self.writeLog("No courses detected. Please run course detection first.")
+            self.btnShowCurveFit.setChecked(False)
+            return
+        
+        if self.btnShowCurveFit.isChecked():
+            # Show curve fit
+            self.displayCurveFit()
+            
+            # Update button appearance
+            self.btnShowCurveFit.setStyleSheet("background-color: rgb(200, 150, 100); color: white; font-weight: bold;")
+            self.btnShowCurveFit.setText("Hide Curve Fit")
+        else:
+            # Hide curve fit
+            self.removeCurveFitEntities()
+            self.btnShowCurveFit.setStyleSheet("")
+            self.btnShowCurveFit.setText("Show Curve Fit")
     
     @pyqtSlot()
     def toggleCutMode(self):
@@ -501,26 +749,77 @@ class QtCourseAnalysis(QWidget):
         if self.coursesData is None or len(self.coursesData) == 0:
             self.coursesTable.setRowCount(0)
             return
+        
+        # Disable sorting while populating
+        self.coursesTable.setSortingEnabled(False)
+        
         self.coursesTable.setRowCount(len(self.coursesData))
         for i, course in enumerate(self.coursesData):
-            # Color indicator
+            # ID column with colored background and 1-based ID number
             color = self.getPastelColor(i, len(self.coursesData))
-            color_item = QTableWidgetItem("")
-            color_item.setBackground(QBrush(color))
-            self.coursesTable.setItem(i, 0, color_item)
+            id_item = QTableWidgetItem()
+            id_item.setBackground(QBrush(color))
+            id_item.setData(Qt.EditRole, i + 1)  # Use 1-based ID for display and numeric sorting
+            id_item.setData(Qt.UserRole, i)  # Store 0-based index for original order
+            self.coursesTable.setItem(i, 0, id_item)
             # Number of regions
-            self.coursesTable.setItem(i, 1, QTableWidgetItem(str(course['num_blobs'])))
+            num_item = QTableWidgetItem()
+            num_item.setData(Qt.EditRole, course['num_blobs'])  # Use EditRole for numeric sorting
+            self.coursesTable.setItem(i, 1, num_item)
             # Y position
-            self.coursesTable.setItem(i, 2, QTableWidgetItem("{:.1f}".format(course['centroid_y'])))
+            y_item = QTableWidgetItem()
+            y_item.setData(Qt.EditRole, course['centroid_y'])
+            y_item.setData(Qt.DisplayRole, "{:.1f}".format(course['centroid_y']))
+            self.coursesTable.setItem(i, 2, y_item)
             # Average height
-            self.coursesTable.setItem(i, 3, QTableWidgetItem("{:.1f}".format(course['avg_height'])))
+            h_item = QTableWidgetItem()
+            h_item.setData(Qt.EditRole, course['avg_height'])
+            h_item.setData(Qt.DisplayRole, "{:.1f}".format(course['avg_height']))
+            self.coursesTable.setItem(i, 3, h_item)
             # Width
-            self.coursesTable.setItem(i, 4, QTableWidgetItem("{:.1f}".format(course['width'])))
+            w_item = QTableWidgetItem()
+            w_item.setData(Qt.EditRole, course['width'])
+            w_item.setData(Qt.DisplayRole, "{:.1f}".format(course['width']))
+            self.coursesTable.setItem(i, 4, w_item)
             # Inclination
+            inc_item = QTableWidgetItem()
             if 'inclination_deg' in course:
-                self.coursesTable.setItem(i, 5, QTableWidgetItem("{:.2f}°".format(course['inclination_deg'])))
+                inc_item.setData(Qt.EditRole, course['inclination_deg'])
+                inc_item.setData(Qt.DisplayRole, "{:.2f}°".format(course['inclination_deg']))
             else:
-                self.coursesTable.setItem(i, 5, QTableWidgetItem("-"))
+                inc_item.setData(Qt.EditRole, float('-inf'))  # Sort missing values to beginning
+                inc_item.setData(Qt.DisplayRole, "-")
+            self.coursesTable.setItem(i, 5, inc_item)
+            # RMS Deviation (bending metric)
+            rms_item = QTableWidgetItem()
+            if 'rms_deviation' in course:
+                rms_item.setData(Qt.EditRole, course['rms_deviation'])
+                rms_item.setData(Qt.DisplayRole, "{:.1f}".format(course['rms_deviation']))
+            else:
+                rms_item.setData(Qt.EditRole, float('-inf'))  # Sort missing values to beginning
+                rms_item.setData(Qt.DisplayRole, "-")
+            self.coursesTable.setItem(i, 6, rms_item)
+            # Max Deviation (bending metric)
+            max_item = QTableWidgetItem()
+            if 'max_deviation' in course:
+                max_item.setData(Qt.EditRole, course['max_deviation'])
+                max_item.setData(Qt.DisplayRole, "{:.1f}".format(course['max_deviation']))
+            else:
+                max_item.setData(Qt.EditRole, float('-inf'))  # Sort missing values to beginning
+                max_item.setData(Qt.DisplayRole, "-")
+            self.coursesTable.setItem(i, 7, max_item)
+            # Angle Variance (bending metric)
+            var_item = QTableWidgetItem()
+            if 'angle_variance' in course:
+                var_item.setData(Qt.EditRole, course['angle_variance'])
+                var_item.setData(Qt.DisplayRole, "{:.2f}°".format(course['angle_variance']))
+            else:
+                var_item.setData(Qt.EditRole, float('-inf'))  # Sort missing values to beginning
+                var_item.setData(Qt.DisplayRole, "-")
+            self.coursesTable.setItem(i, 8, var_item)
+        
+        # Enable sorting after populating
+        self.coursesTable.setSortingEnabled(True)
         self.coursesTable.resizeColumnsToContents()
 
     ########################################################################################
@@ -675,6 +974,7 @@ class QtCourseAnalysis(QWidget):
         
         self.removeColorizedEntities()
         self.removePolylineEntities()
+        self.removeHighlightedCourse()  # Clear any selection highlights
         self.lineSegmentData = []  # Clear line segment metadata
         self.blobToCourseMap = {}  # Clear blob-to-course mapping
         
@@ -788,7 +1088,10 @@ class QtCourseAnalysis(QWidget):
     def removeColorizedEntities(self):
         if self.colorizedEntities:
             for item in self.colorizedEntities:
-                self.activeviewer.scene.removeItem(item)
+                try:
+                    self.activeviewer.scene.removeItem(item)
+                except (AttributeError, RuntimeError):
+                    pass
             self.colorizedEntities = []
         return
 
@@ -798,7 +1101,10 @@ class QtCourseAnalysis(QWidget):
         """
         if self.polylineEntities:
             for item in self.polylineEntities:
-                self.activeviewer.scene.removeItem(item)
+                try:
+                    self.activeviewer.scene.removeItem(item)
+                except (AttributeError, RuntimeError):
+                    pass
             self.polylineEntities = []
         return
     
@@ -808,7 +1114,10 @@ class QtCourseAnalysis(QWidget):
         """
         if self.inclinationLines:
             for item in self.inclinationLines:
-                self.activeviewer.scene.removeItem(item)
+                try:
+                    self.activeviewer.scene.removeItem(item)
+                except (AttributeError, RuntimeError):
+                    pass
             self.inclinationLines = []
         return
     
@@ -818,8 +1127,24 @@ class QtCourseAnalysis(QWidget):
         """
         if self.segmentInclinationEntities:
             for item in self.segmentInclinationEntities:
-                self.activeviewer.scene.removeItem(item)
+                try:
+                    self.activeviewer.scene.removeItem(item)
+                except (AttributeError, RuntimeError):
+                    pass
             self.segmentInclinationEntities = []
+        return
+    
+    def removeCurveFitEntities(self):
+        """
+        Remove all curve fit visualizations from the scene.
+        """
+        if self.curveFitEntities:
+            for item in self.curveFitEntities:
+                try:
+                    self.activeviewer.scene.removeItem(item)
+                except (AttributeError, RuntimeError):
+                    pass
+            self.curveFitEntities = []
         return
     
     def displayInclinationLines(self):
@@ -999,6 +1324,105 @@ class QtCourseAnalysis(QWidget):
         
         return
 
+    def displayCurveFit(self):
+        """
+        Display polynomial curve fit for each course to visualize bending.
+        """
+        self.removeCurveFitEntities()
+        
+        if self.coursesData is None or len(self.coursesData) == 0:
+            return
+        
+        for course_index, course in enumerate(self.coursesData):
+            if 'curve_coeffs' not in course or course['num_blobs'] < 3:
+                continue
+            
+            coeffs = course['curve_coeffs']
+            
+            # Generate points along the curve
+            x_start = course['min_x']
+            x_end = course['max_x']
+            num_points = 100  # Number of points to sample along the curve
+            x_values = np.linspace(x_start, x_end, num_points)
+            
+            # Evaluate polynomial at each x value
+            y_values = np.polyval(coeffs, x_values)
+            
+            # Create a smooth curve by drawing line segments between consecutive points
+            # Use a distinctive color - cyan/teal for the curve
+            curve_pen = QPen(QColor(0, 255, 255))  # Cyan
+            curve_pen.setWidth(4)
+            curve_pen.setCosmetic(True)
+            
+            # Draw black outline first (wider)
+            outline_pen = QPen(QColor(0, 0, 0))
+            outline_pen.setWidth(6)
+            outline_pen.setCosmetic(True)
+            
+            for i in range(len(x_values) - 1):
+                x1, y1 = x_values[i], y_values[i]
+                x2, y2 = x_values[i+1], y_values[i+1]
+                
+                # Draw outline
+                outline_item = self.activeviewer.scene.addLine(x1, y1, x2, y2, outline_pen)
+                outline_item.setZValue(24)
+                self.curveFitEntities.append(outline_item)
+                
+                # Draw curve
+                curve_item = self.activeviewer.scene.addLine(x1, y1, x2, y2, curve_pen)
+                curve_item.setZValue(25)
+                self.curveFitEntities.append(curve_item)
+            
+            # Add label showing bending metrics at the middle of the course
+            x_mid = (x_start + x_end) / 2
+            y_mid = float(np.polyval(coeffs, x_mid))
+            
+            # Create label with bending metrics
+            rms_dev = course.get('rms_deviation', 0.0)
+            max_dev = course.get('max_deviation', 0.0)
+            angle_var = course.get('angle_variance', 0.0)
+            
+            label_text = "RMS: {:.1f}\nMax: {:.1f}\nVar: {:.1f}°".format(rms_dev, max_dev, angle_var)
+            
+            # Create text item
+            font = QFont()
+            font.setPointSize(7)
+            font.setBold(True)
+            
+            text_item = self.activeviewer.scene.addText(label_text)
+            text_item.setFont(font)
+            text_item.setDefaultTextColor(QColor(0, 0, 0))  # Black text
+            
+            text_rect = text_item.boundingRect()
+            text_width = text_rect.width()
+            text_height = text_rect.height()
+            
+            # Create background rectangle
+            padding = 4
+            bg_width = text_width + padding * 2
+            bg_height = text_height + padding * 2
+            bg_x = x_mid - bg_width / 2
+            bg_y = y_mid + 10  # Offset below the curve
+            
+            # Draw cyan background with black outline
+            outline_rect_pen = QPen(QColor(0, 0, 0))
+            outline_rect_pen.setWidth(2)
+            outline_rect_pen.setCosmetic(True)
+            bg_brush = QBrush(QColor(200, 255, 255, 220))  # Light cyan with transparency
+            
+            bg_rect = self.activeviewer.scene.addRect(bg_x, bg_y, bg_width, bg_height, outline_rect_pen, bg_brush)
+            bg_rect.setZValue(26)
+            self.curveFitEntities.append(bg_rect)
+            
+            # Position text in background
+            text_x = bg_x + padding
+            text_y = bg_y + padding
+            text_item.setPos(text_x, text_y)
+            text_item.setZValue(27)
+            self.curveFitEntities.append(text_item)
+        
+        return
+
     ########################################################################################
     # MERGE FUNCTIONALITY
     
@@ -1007,7 +1431,11 @@ class QtCourseAnalysis(QWidget):
         Clear the merge selection state and remove highlight.
         """
         if self.firstMergeBlobHighlight:
-            self.activeviewer.scene.removeItem(self.firstMergeBlobHighlight)
+            try:
+                self.activeviewer.scene.removeItem(self.firstMergeBlobHighlight)
+            except (AttributeError, RuntimeError):
+                # Scene or item might no longer be valid
+                pass
             self.firstMergeBlobHighlight = None
         self.firstMergeBlob = None
     
@@ -1063,6 +1491,12 @@ class QtCourseAnalysis(QWidget):
                 position, course_index + 1))
         else:
             # This is the second selection
+            # Verify first blob is still in the map (data might have changed)
+            if self.firstMergeBlob not in self.blobToCourseMap:
+                self.writeLog("First selected region no longer in course data. Clearing selection.")
+                self.clearMergeSelection()
+                return
+            
             first_course_index, first_pos = self.blobToCourseMap[self.firstMergeBlob]
             
             # Check if same course
@@ -1082,21 +1516,28 @@ class QtCourseAnalysis(QWidget):
         """
         # Remove old highlight if exists
         if self.firstMergeBlobHighlight:
-            self.activeviewer.scene.removeItem(self.firstMergeBlobHighlight)
+            try:
+                self.activeviewer.scene.removeItem(self.firstMergeBlobHighlight)
+            except (AttributeError, RuntimeError):
+                pass
         
-        # Draw a thick yellow outline around the blob
-        min_row, min_col, _, _ = blob.bbox
-        contours, _ = cv2.findContours(blob.getMask().astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        cnt = contours[0]
-        polygon = QPolygonF([QPointF(float(point[0][0])+min_col+0.5, float(point[0][1])+min_row+0.5) for point in cnt])
-        
-        pen = QPen(QColor(255, 255, 0))  # Yellow
-        pen.setWidth(5)
-        pen.setCosmetic(True)
-        brush = QBrush(Qt.NoBrush)
-        
-        self.firstMergeBlobHighlight = self.activeviewer.scene.addPolygon(polygon, pen, brush)
-        self.firstMergeBlobHighlight.setZValue(20)  # Draw above everything
+        try:
+            # Draw a thick yellow outline around the blob
+            min_row, min_col, _, _ = blob.bbox
+            contours, _ = cv2.findContours(blob.getMask().astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            cnt = contours[0]
+            polygon = QPolygonF([QPointF(float(point[0][0])+min_col+0.5, float(point[0][1])+min_row+0.5) for point in cnt])
+            
+            pen = QPen(QColor(255, 255, 0))  # Yellow
+            pen.setWidth(5)
+            pen.setCosmetic(True)
+            brush = QBrush(Qt.NoBrush)
+            
+            self.firstMergeBlobHighlight = self.activeviewer.scene.addPolygon(polygon, pen, brush)
+            self.firstMergeBlobHighlight.setZValue(20)  # Draw above everything
+        except (AttributeError, RuntimeError, IndexError):
+            # Blob might have invalid data or scene might no longer be valid
+            self.firstMergeBlobHighlight = None
     
     def mergeCourses(self, course1_idx, pos1, course2_idx, pos2):
         """
@@ -1140,19 +1581,20 @@ class QtCourseAnalysis(QWidget):
         # Recompute inclination for merged courses
         self.computeInclination()
         
+        # Clear table selection before refreshing
+        self.coursesTable.clearSelection()
+        
         # Refresh visualization and table
         self.displayCourses()
         self.populateCoursesTable()
-        self.removeInclinationLines()  # Clear old inclination lines after merge
-        self.removeSegmentInclinationEntities()  # Clear old segment angles after merge
         
-        # Redisplay inclination if button is checked
+        # Redisplay visualizations if they were active
         if self.btnAnalyzeInclination.isChecked():
             self.displayInclinationLines()
-        
-        # Redisplay segment angles if button is checked
         if self.btnSegmentInclination.isChecked():
             self.displaySegmentInclination()
+        if self.btnShowCurveFit.isChecked():
+            self.displayCurveFit()
         
         self.writeLog("Merge complete. Now {} courses total.".format(len(self.coursesData)))
 
@@ -1350,19 +1792,20 @@ class QtCourseAnalysis(QWidget):
         # Recompute inclination for split courses
         self.computeInclination()
         
+        # Clear table selection before refreshing
+        self.coursesTable.clearSelection()
+        
         # Refresh the visualization and table
         self.displayCourses()
         self.populateCoursesTable()
-        self.removeInclinationLines()  # Clear old inclination lines after split
-        self.removeSegmentInclinationEntities()  # Clear old segment angles after split
         
-        # Redisplay inclination if button is checked
+        # Redisplay visualizations if they were active
         if self.btnAnalyzeInclination.isChecked():
             self.displayInclinationLines()
-        
-        # Redisplay segment angles if button is checked
         if self.btnSegmentInclination.isChecked():
             self.displaySegmentInclination()
+        if self.btnShowCurveFit.isChecked():
+            self.displayCurveFit()
         
         # Log the result
         self.writeLog("Course split complete. Now {} courses total.".format(len(self.coursesData)))
@@ -1563,6 +2006,8 @@ class QtCourseAnalysis(QWidget):
                 self.displayInclinationLines()
             if self.btnSegmentInclination.isChecked():
                 self.displaySegmentInclination()
+            if self.btnShowCurveFit.isChecked():
+                self.displayCurveFit()
             
             QMessageBox.information(self, "Success", f"Course analysis state restored successfully from:\n{filename}")
             

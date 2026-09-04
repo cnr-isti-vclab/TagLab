@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, \
                             QCheckBox, QFileDialog, QComboBox, QFrame
+from PyQt5.QtGui import QColor
 # from PyQt5.QtCore import Qt
 import ezdxf 
 from skimage import measure
@@ -60,6 +61,11 @@ class ExportDialog(QDialog):
         self.rows_checkbox = QCheckBox("Export Rows")
 
         self.columns_checkbox = QCheckBox("Export Columns")
+        
+        # New: export top-bottom shortest path
+        self.topbottom_checkbox = QCheckBox("Export Top-Bottom Shortest Path")
+        # New: export top-bottom stats (CSV)
+        self.topbottom_stats_checkbox = QCheckBox("Export Top-Bottom Path Stats (in .csv format)")
 
         
         layout.addWidget(self.mask_checkbox)
@@ -71,7 +77,8 @@ class ExportDialog(QDialog):
         layout.addWidget(self.edges_checkbox)
         layout.addWidget(self.rows_checkbox)
         layout.addWidget(self.columns_checkbox)
-
+        layout.addWidget(self.topbottom_checkbox)
+       
         # Separator
         line1 = QFrame()
         line1.setFrameShape(QFrame.HLine)
@@ -80,6 +87,8 @@ class ExportDialog(QDialog):
 
         layout.addWidget(self.angle_checkbox)
         layout.addWidget(self.thick_checkbox)
+        layout.addWidget(self.topbottom_stats_checkbox)
+
 
         # Separator
         line2 = QFrame()
@@ -107,7 +116,8 @@ class ExportDialog(QDialog):
         self.setLayout(layout)
 
     def DXFExport(self, file_path, skel, branch, edges, rows, columns, blobs, mask, lines, georef, offset = [0, 0], img_size = (0,0),\
-                  skeleton_color = None, edge_color = None, row_color = None , column_color= None):
+                  skeleton_color = None, edge_color = None, row_color = None , column_color= None,
+                  topbottom=False, topbottom_path=None, topbottom_color=None):
 
         # Export skeleton, branch points, and edges to a DXF file, each in a different layer.
         offset_x, offset_y = offset
@@ -349,6 +359,30 @@ class ExportDialog(QDialog):
                 else:
                     msp.add_line(p1, p2, dxfattribs={"layer": "Lines"})
 
+        # Top-Bottom path layer (draw as polyline)
+        if topbottom and topbottom_path:
+            if not doc.layers.has_entry("TopBottom"):
+                doc.layers.new(name="TopBottom", dxfattribs={'color': 1})
+            tb_color = None
+            if topbottom_color is not None:
+                tb_color = [topbottom_color.red(), topbottom_color.green(), topbottom_color.blue()]
+                tb_code = ezdxf.colors.rgb2int(tb_color)
+            # Convert path nodes (list of (y,x)) to global coordinates
+            points = []
+            for (y, x) in topbottom_path:
+                x_global = x + offset_x
+                y_global = y + offset_y
+                if transform is not None:
+                    p = transform * (x_global, y_global)
+                else:
+                    p = (x_global, img_height - y_global)
+                points.append(p)
+            if len(points) > 1:
+                if tb_color is not None:
+                    msp.add_lwpolyline(points, close=False, dxfattribs={"layer": "TopBottom", "true_color": tb_code})
+                else:
+                    msp.add_lwpolyline(points, close=False, dxfattribs={"layer": "TopBottom"})
+
         doc.saveas(file_path)
         print(f"DXF exported to {file_path}")
 
@@ -374,4 +408,6 @@ class ExportDialog(QDialog):
             "export_edges": self.edges_checkbox.isChecked(),
             "export_rows": self.rows_checkbox.isChecked(),
             "export_columns": self.columns_checkbox.isChecked(),
+            "export_topbottom": self.topbottom_checkbox.isChecked(),
+            "export_topbottom_stats": self.topbottom_stats_checkbox.isChecked(),
         }

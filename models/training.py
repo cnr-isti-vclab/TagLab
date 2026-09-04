@@ -210,7 +210,10 @@ def evaluateNetwork(dataset, dataloader, loss_to_use, CEloss, w_for_GDL, tversky
 
     metrics = {'ConfMatrix': CM, 'NormConfMatrix': CMnorm, 'Accuracy': accuracy, 'JaccardScore': jaccard_s}
 
-    mean_loss = sum(loss_values_per_iter) / len(loss_values_per_iter)
+    if len(loss_values_per_iter) > 0:
+        mean_loss = sum(loss_values_per_iter) / len(loss_values_per_iter)
+    else:
+        mean_loss = 0.0
 
     return metrics, mean_loss
 
@@ -286,8 +289,6 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
     freq = 1.0 / datasetTrain.weights
     print(freq)
     print("done.")
-
-    save_classifier_as = save_network_as.replace(".net", ".json")
 
     datasetTrain.enableAugumentation()
 
@@ -367,6 +368,8 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
         optimizer = QHAdam([{'params': [param for name, param in net.named_parameters() if 'decoder.last_conv' not in name]},
              {'params': net.decoder.last_conv.parameters(), 'lr': lr1}], lr=lr2, weight_decay=L2_penalty,
                            nus = (0.7, 1.0), betas = (0.99, 0.999))
+    else:
+        raise Exception(f"Invalid optimizer name: {optimiz}. Must be 'SGD', 'ADAM', or 'QHADAM'.")
 
     USE_CUDA = torch.cuda.is_available()
 
@@ -430,7 +433,7 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
     loss_values_train = []
     loss_values_val = []
 
-    for epoch in range(1, epochs):
+    for epoch in range(0, epochs):
 
         net.train()
         optimizer.zero_grad()
@@ -465,7 +468,15 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
             print(epoch, i, loss.item())
             loss_values_per_iter.append(loss.item())
 
-        mean_loss_train = sum(loss_values_per_iter) / len(loss_values_per_iter)
+        # Apply any remaining gradients after the loop
+        if len(loss_values_per_iter) % batch_mult != 0:
+            optimizer.step()
+            optimizer.zero_grad()
+
+        if len(loss_values_per_iter) > 0:
+            mean_loss_train = sum(loss_values_per_iter) / len(loss_values_per_iter)
+        else:
+            mean_loss_train = 0.0
         print("Epoch: %d , Mean loss = %f" % (epoch, mean_loss_train))
 
         loss_values_train.append(mean_loss_train)
@@ -551,14 +562,14 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
             if optimiz == "ADAM":
                 optimizer = optim.Adam(
                     [{'params': [param for name, param in net.named_parameters() if 'decoder' not in name]},
-                     {'params': net.decoder.last_conv.parameters(), 'lr': lr1}], lr=lr2, weight_decay=L2_penalty)
+                     {'params': net.decoder.parameters(), 'lr': lr1}], lr=lr2, weight_decay=L2_penalty)
             elif optimiz == "QHADAM":
                 optimizer = QHAdam(
-                    [{'params': [param for name, param in net.named_parameters() if 'decoder.last_conv' not in name]},
-                     {'params': net.decoder.last_conv.parameters(), 'lr': lr1}], lr=lr2, weight_decay=L2_penalty,
+                    [{'params': [param for name, param in net.named_parameters() if 'decoder' not in name]},
+                     {'params': net.decoder.parameters(), 'lr': lr1}], lr=lr2, weight_decay=L2_penalty,
                    nus = (0.7, 1.0), betas = (0.99, 0.999))
             else:
-                raise Exception("Invalida optimizer name!")
+                raise Exception("Invalid optimizer name!")
 
             for param in net.parameters():
                 param.requires_grad = True
@@ -567,6 +578,12 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
 
 
     # main loop ended
+    
+    # Ensure the network is saved at least once (in case no improvement occurred)
+    if best_accuracy == 0.0:
+        print("Warning: No validation improvement detected. Saving final network state.")
+        torch.save(net.state_dict(), save_network_as)
+    
     torch.cuda.empty_cache()
     del net
     net = None

@@ -95,9 +95,9 @@ class QtNewDatasetWidget(QWidget):
         # self.checkOversampling = QCheckBox("Oversampling")
         self.comboDataFormat = QComboBox()
         self.comboDataFormat.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        self.comboDataFormat.addItem("Tiles")
+        self.comboDataFormat.addItem("Segmentation Masks for Deeplab-V3+")
         self.comboDataFormat.addItem("COCO")
-        self.comboDataFormat.addItem("YOLO-v5")
+        self.comboDataFormat.addItem("YOLO-v5 Annotations for YOLO-V11")
 
         layoutH0b = QVBoxLayout()
         layoutH0b.setAlignment(Qt.AlignLeft)

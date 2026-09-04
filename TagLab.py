@@ -38,6 +38,10 @@ from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QFileDialog, QCo
 
 from source.QtExportDXF import QtDXFExport  # Import the dxf export dialog
 from source.QtExportSVG import QtSVGExport  # Import the svg export dialog
+from source.QtExportCOCO import QtCOCOExport  # Import the coco export dialog
+from source.QtExportWADM import QtWADMExport  # Import the WADM export dialog
+from source.QtExportVIA2 import QtVIA2Export  # Import the VIA2 export dialog
+from source.QtExportRegionsWidget import QtExportRegionsWidget  # Import the export regions dialog
 
 
 
@@ -93,6 +97,7 @@ from source.QtDictionaryWidget import QtDictionaryWidget
 from source.QtRegionAttributesWidget import QtRegionAttributesWidget
 from source.QtShapefileAttributeWidget import QtAttributeWidget
 from source.QtGeometricInfoWidget import QtGeometricInfoWidget
+from source.QtGeometricClusteringWidget import QtGeometricClusteringWidget
 from source.QtCourseAnalysis import QtCourseAnalysis
 
 from source.QtSelection import QtSelectByPropertiesWidget
@@ -162,11 +167,20 @@ class TagLab(QMainWindow):
 
         current_version, need_to_update = self.checkNewVersion()
         if need_to_update:
-            print("--- THERE IS A NEW VERSION AVAILABLE! ---")
-            print("Please, launch update.py")
-            print("if updating from the 29/10/2024 version, also launch install.py")
-            print("-----------------------------------------")            
-            sys.exit(0)
+            if self.getGitBranch() == 'main':
+                print("\033[91m" + "*" * 60)
+                print("** A NEW VERSION OF TAGLAB IS AVAILABLE - PLEASE UPDATE  **")
+                print("** RUN update.py TO UPDATE TAGLAB                        **")
+                print("** (if updating from 29/10/2024, also run install.py)    **")
+                print("*" * 60 + "\033[0m")
+                sys.exit(0)
+            else:
+                branch = self.getGitBranch()
+                print("\033[93m" + "!" * 60)
+                print("!! WARNING: A NEWER VERSION OF TAGLAB IS AVAILABLE       !!")
+                print("!! YOU ARE ON BRANCH: {:39s}!!".format("'" + branch + "'"))
+                print("!! UPDATE CHECK IS SKIPPED - STARTUP WILL CONTINUE       !!")
+                print("!" * 60 + "\033[0m")
 
         ##### DATA INITIALIZATION AND SETUP #####
 
@@ -338,6 +352,7 @@ class TagLab(QMainWindow):
         self.fillAction         = self.newAction("Fill Region",               "F",   self.fillLabel)
         self.createNegative = self.newAction("Create a Background Region using the WA", "N", self.createNegative)
         self.computeGeometricInfo = self.newAction("Compute Geometric Info", None, self.computeGeometricInfo)
+        self.geometricClustering = self.newAction("Geometric Clustering", None, self.geometricClustering)
         self.rowAnalysis = self.newAction("Course Analysis", None, self.rowAnalysis)
 
         # SELECTION ACTIONS
@@ -817,6 +832,18 @@ class TagLab(QMainWindow):
         settings.setValue("gui-checkbox-grid", self.checkBoxGrid.isChecked())
         settings.setValue("gui-checkbox-image", self.checkBoxMap.isChecked())
 
+    def getGitBranch(self):
+        """Return the current git branch name, or 'main' if it cannot be determined."""
+        try:
+            git_head = os.path.join(os.path.dirname(__file__), '.git', 'HEAD')
+            with open(git_head, 'r') as f:
+                content = f.read().strip()
+            if content.startswith('ref: refs/heads/'):
+                return content.split('refs/heads/')[-1]
+        except Exception:
+            pass
+        return 'main'
+
     def checkNewVersion(self):
 
         github_repo = 'cnr-isti-vclab/TagLab/'
@@ -1137,6 +1164,22 @@ class TagLab(QMainWindow):
         exportSVGfilesAct.setStatusTip("Export visible regions as SVG")
         exportSVGfilesAct.triggered.connect(self.exportAnnAsSVG)
 
+        exportCOCOAct = QAction("Export Regions As COCO", self)
+        exportCOCOAct.setStatusTip("Export regions as COCO format annotations")
+        exportCOCOAct.triggered.connect(self.exportAnnAsCOCO)
+
+        exportWADMAct = QAction("Export Regions As WADM", self)
+        exportWADMAct.setStatusTip("Export regions as W3C Web Annotation Data Model (WADM) JSON-LD")
+        exportWADMAct.triggered.connect(self.exportAnnAsWADM)
+
+        exportVIA2Act = QAction("Export Regions As VIA2", self)
+        exportVIA2Act.setStatusTip("Export regions as VGG Image Annotator v2 (VIA2) JSON format")
+        exportVIA2Act.triggered.connect(self.exportAnnAsVIA2)
+
+        exportRegionImagesAct = QAction("Export Regions As cropped Images", self)
+        exportRegionImagesAct.setStatusTip("Export each selected region as an individual cropped PNG image")
+        exportRegionImagesAct.triggered.connect(self.exportSelectedRegionsAsImages)
+
         exportGeoRefLabelMapAct = QAction("Export Regions As A GeoTiff", self)
         exportGeoRefLabelMapAct.setStatusTip("Create a label image and export it as a GeoTiff")
         exportGeoRefLabelMapAct.triggered.connect(self.exportGeoRefLabelMap)
@@ -1227,9 +1270,13 @@ class TagLab(QMainWindow):
         self.submenuExport = self.filemenu.addMenu("Export")
         self.submenuExport.addAction(exportDataTableAct)
         self.submenuExport.addAction(exportMapAct)
+        self.submenuExport.addAction(exportRegionImagesAct)        
         self.submenuExport.addAction(exportShapefilesAct)
         self.submenuExport.addAction(exportDXFfilesAct)
         self.submenuExport.addAction(exportSVGfilesAct)
+        self.submenuExport.addAction(exportCOCOAct)
+        self.submenuExport.addAction(exportWADMAct)
+        self.submenuExport.addAction(exportVIA2Act)
         self.submenuExport.addAction(exportGeoRefLabelMapAct)
         self.submenuExport.addAction(exportGeoRefImgAct)
         self.submenuExport.addAction(exportForReefArchive)
@@ -1289,6 +1336,7 @@ class TagLab(QMainWindow):
         self.regionmenu.addSeparator()
         self.regionmenu.addAction(self.createNegative)
         self.regionmenu.addAction(self.computeGeometricInfo)
+        self.regionmenu.addAction(self.geometricClustering)
         self.regionmenu.addAction(self.rowAnalysis)
 
         ###### POINT ANNOTATIONS MENU
@@ -2280,6 +2328,10 @@ class TagLab(QMainWindow):
     def showBlobOnTable(self):
 
         if self.activeviewer is None:
+            return
+        
+        # Check if data panel has data
+        if self.data_panel.data is None:
             return
         
         selected = self.activeviewer.selected_blobs
@@ -3340,6 +3392,26 @@ class TagLab(QMainWindow):
         geometricInfo_widget = QtGeometricInfoWidget(view, parent = self)
         geometricInfo_widget.setWindowModality(Qt.NonModal)
         geometricInfo_widget.show()
+
+    def geometricClustering(self):
+        """
+        Open the Geometric Clustering widget.
+        """
+        view = self.activeviewer
+
+        if view is None:
+            return
+        
+        if len(view.selected_blobs) == 0:
+            msgBox = QMessageBox()
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText("You need to select at least one region for this operation.")
+            msgBox.exec()
+            return
+
+        geometricClustering_widget = QtGeometricClusteringWidget(view, parent = self)
+        geometricClustering_widget.setWindowModality(Qt.NonModal)
+        geometricClustering_widget.show()
 
     def rowAnalysis(self):
         """
@@ -5207,6 +5279,271 @@ class TagLab(QMainWindow):
         optionsDialog.setWindowModality(Qt.WindowModal)
         optionsDialog.show()
 
+    @pyqtSlot()
+    def exportAnnAsCOCO(self):
+        # Check if activeviewer is set and contains necessary data
+        if self.activeviewer is None:
+            return
+        if self.activeviewer.image is None:
+            return
+        # Show the COCO export dialog
+        optionsDialog = QtCOCOExport(self)
+        optionsDialog.setWindowModality(Qt.WindowModal)
+        optionsDialog.show()
+
+    @pyqtSlot()
+    def exportAnnAsWADM(self):
+        if self.activeviewer is None:
+            return
+        if self.activeviewer.image is None:
+            return
+        optionsDialog = QtWADMExport(self)
+        optionsDialog.setWindowModality(Qt.WindowModal)
+        optionsDialog.show()
+
+    @pyqtSlot()
+    def exportAnnAsVIA2(self):
+        if self.activeviewer is None:
+            return
+        if self.activeviewer.image is None:
+            return
+        optionsDialog = QtVIA2Export(self)
+        optionsDialog.setWindowModality(Qt.WindowModal)
+        optionsDialog.show()
+
+    @pyqtSlot()
+    def exportSelectedRegionsAsImages(self):
+        """
+        Export each selected region as an individual cropped PNG image.
+        A dialog lets the user configure background, transparency, resize, padding,
+        and WhatsApp sticker mode.  Images are named  <mapname>_<regionID>.png.
+        """
+        if self.activeviewer is None or self.activeviewer.image is None:
+            QMessageBox.warning(self, self.TAGLAB_VERSION,
+                                "Load a map before exporting regions.")
+            return
+
+        selected = self.activeviewer.selected_blobs
+        if not selected:
+            QMessageBox.warning(self, self.TAGLAB_VERSION,
+                                "Please select at least one region to export.")
+            return
+
+        dialog = QtExportRegionsWidget(parent=self)
+        if dialog.exec_() != QDialog.Accepted:
+            return
+
+        options = dialog.getOptions()
+
+        # Enforce WhatsApp sticker settings in code, not only in the UI.
+        if options.get("whatsapp", False):
+            options["transparent"] = True
+            options["target_size"] = 512
+            options["native_square"] = False
+
+        # Check Pillow once to avoid repeating the same error for each selected region.
+        try:
+            from PIL import Image as _PILImage  # noqa: F401
+        except ImportError:
+            QMessageBox.warning(self, self.TAGLAB_VERSION,
+                                "Pillow is required for region export. Install it with: pip install Pillow")
+            return
+
+        folder = QFileDialog.getExistingDirectory(self, "Choose export folder", self.taglab_dir)
+        if not folder:
+            return
+
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        try:
+            map_name = os.path.splitext(os.path.basename(self.activeviewer.image.name))[0]
+            img_map = self.activeviewer.img_map
+            img_w   = self.activeviewer.image.width
+            img_h   = self.activeviewer.image.height
+
+            errors = []
+            for blob in selected:
+                try:
+                    self._exportBlobAsImage(blob, img_map, img_w, img_h, folder, map_name, options)
+                except Exception as e:
+                    errors.append(f"Region {blob.id}: {e}")
+        finally:
+            QApplication.restoreOverrideCursor()
+
+        if errors:
+            QMessageBox.warning(self, self.TAGLAB_VERSION,
+                                "Some regions could not be exported:\n" + "\n".join(errors))
+        else:
+            msgBox = QMessageBox(self)
+            msgBox.setWindowTitle(self.TAGLAB_VERSION)
+            msgBox.setText(f"Exported {len(selected)} region(s) to:\n{folder}")
+            msgBox.exec()
+
+    def _exportBlobAsImage(self, blob, img_map, img_w, img_h, folder, map_name, options):
+        """
+        Crop, mask and save a single blob as a PNG.
+
+        bbox format: [top, left, width, height]
+        getMask()  returns ndarray shape (height, width) with values 0/1
+        """
+        import numpy as np
+        try:
+            from PIL import Image as PILImage
+        except ImportError:
+            raise RuntimeError(
+                "Pillow is required for region export. "
+                "Install it with:  pip install Pillow"
+            )
+
+        padding     = options["padding"]
+        transparent = options["transparent"]
+        bg_color    = options["background"]    # "black" | "white"
+        target_size = options["target_size"]   # None = native, else int (square edge)
+        native_square = options.get("native_square", False)
+        whatsapp    = options["whatsapp"]
+
+        bbox = blob.bbox   # [top, left, width, height]
+
+        # ── Tight crop region around the selected blob ─────────────────────
+        top    = max(0, int(bbox[0]))
+        left   = max(0, int(bbox[1]))
+        bottom = min(img_h, int(bbox[0]) + int(bbox[3]))
+        right  = min(img_w, int(bbox[1]) + int(bbox[2]))
+
+        crop_w = right - left
+        crop_h = bottom - top
+
+        if crop_w <= 0 or crop_h <= 0:
+            raise ValueError("Computed crop area is empty.")
+
+        # ── Crop orthoimage ───────────────────────────────────────────────
+        crop_bbox = [top, left, crop_w, crop_h]
+        img_crop = genutils.cropQImage(img_map, crop_bbox)
+        img_np   = genutils.qimageToNumpyArray(img_crop)   # (H, W, 3) RGB
+
+        # ── Build full-size mask aligned to the padded crop ───────────────
+        blob_mask = blob.getMask()                          # (blob_h, blob_w)  0/1
+
+        mask_full = np.zeros((crop_h, crop_w), dtype=np.uint8)
+
+        # Offset of blob bbox within the tight crop
+        off_top  = int(bbox[0]) - top
+        off_left = int(bbox[1]) - left
+        blob_h   = int(bbox[3])
+        blob_w   = int(bbox[2])
+
+        # Clip ranges for safety
+        dst_r0 = max(0, off_top)
+        dst_c0 = max(0, off_left)
+        dst_r1 = min(crop_h, off_top + blob_h)
+        dst_c1 = min(crop_w, off_left + blob_w)
+
+        src_r0 = dst_r0 - off_top
+        src_c0 = dst_c0 - off_left
+        src_r1 = src_r0 + (dst_r1 - dst_r0)
+        src_c1 = src_c0 + (dst_c1 - dst_c0)
+
+        if dst_r1 > dst_r0 and dst_c1 > dst_c0:
+            mask_full[dst_r0:dst_r1, dst_c0:dst_c1] = \
+                blob_mask[src_r0:src_r1, src_c0:src_c1]
+
+        # ── Compose RGBA image ────────────────────────────────────────────
+        rgba = np.empty((crop_h, crop_w, 4), dtype=np.uint8)
+        rgba[:, :, :3] = img_np
+
+        outside = mask_full == 0
+
+        # Always fill background pixels with the chosen background colour
+        bg_rgb = (0, 0, 0) if bg_color == "black" else (255, 255, 255)
+        rgba[outside, 0] = bg_rgb[0]
+        rgba[outside, 1] = bg_rgb[1]
+        rgba[outside, 2] = bg_rgb[2]
+
+        if transparent or whatsapp:
+            rgba[:, :, 3] = (mask_full * 255).astype(np.uint8)
+        else:
+            rgba[:, :, 3] = 255
+
+        pil_img = PILImage.fromarray(rgba, "RGBA")
+
+        # ── Resize and final padding ──────────────────────────────────────
+        final_size = 512 if whatsapp else target_size
+
+        if final_size is None:
+            # Native modes keep native resolution; optional squared mode uses a square canvas.
+            if native_square:
+                side = max(pil_img.width, pil_img.height) + 2 * padding
+                out_w = side
+                out_h = side
+                x_off = padding + (max(pil_img.width, pil_img.height) - pil_img.width) // 2
+                y_off = padding + (max(pil_img.width, pil_img.height) - pil_img.height) // 2
+            else:
+                out_w = pil_img.width + 2 * padding
+                out_h = pil_img.height + 2 * padding
+                x_off = padding
+                y_off = padding
+
+            if transparent or whatsapp:
+                canvas_bg = (bg_rgb[0], bg_rgb[1], bg_rgb[2], 0)
+            else:
+                canvas_bg = (bg_rgb[0], bg_rgb[1], bg_rgb[2], 255)
+            canvas = PILImage.new("RGBA", (out_w, out_h), canvas_bg)
+            canvas.paste(pil_img, (x_off, y_off), pil_img)
+            pil_img = canvas
+        else:
+            # Square modes: make sure requested padding is in final output pixels.
+            available = final_size - 2 * padding
+            if available <= 0:
+                raise ValueError(
+                    f"Padding {padding}px is too large for {final_size}x{final_size} output."
+                )
+
+            pil_img.thumbnail((available, available), PILImage.LANCZOS)
+
+            if transparent or whatsapp:
+                canvas_bg = (bg_rgb[0], bg_rgb[1], bg_rgb[2], 0)
+            else:
+                canvas_bg = (bg_rgb[0], bg_rgb[1], bg_rgb[2], 255)
+
+            canvas = PILImage.new("RGBA", (final_size, final_size), canvas_bg)
+            x_off = padding + (available - pil_img.width) // 2
+            y_off = padding + (available - pil_img.height) // 2
+            canvas.paste(pil_img, (x_off, y_off), pil_img)
+            pil_img = canvas
+
+        # ── Save ──────────────────────────────────────────────────────────
+        filename = os.path.join(folder, f"{map_name}_{blob.id}.png")
+        if whatsapp:
+            # WhatsApp sticker limit: 500 KB maximum file size.
+            size_limit = 500 * 1024
+            pil_img.save(filename, "PNG", optimize=True, compress_level=9)
+            size_bytes = os.path.getsize(filename)
+
+            if size_bytes > size_limit:
+                compressed = False
+                # Try progressive color quantization to reduce PNG size while
+                # keeping 512x512 dimensions and transparency support.
+                for colors in (256, 128, 64, 32, 16):
+                    try:
+                        quantized = pil_img.quantize(colors=colors)
+                    except Exception:
+                        try:
+                            quantized = pil_img.convert("P", palette=PILImage.ADAPTIVE, colors=colors)
+                        except Exception:
+                            continue
+
+                    quantized.save(filename, "PNG", optimize=True, compress_level=9)
+                    size_bytes = os.path.getsize(filename)
+                    if size_bytes <= size_limit:
+                        compressed = True
+                        break
+
+                if not compressed:
+                    raise ValueError(
+                        f"WhatsApp sticker exceeds 500 KB ({size_bytes / 1024:.1f} KB) "
+                        "even after automatic compression. Try lower padding or simplify the region."
+                    )
+        else:
+            pil_img.save(filename, "PNG")
 
     @pyqtSlot()
     def exportGeoRefLabelMap(self):
@@ -5535,7 +5872,7 @@ class TagLab(QMainWindow):
         self.available_classifiers.append(new_classifier)
         newconfig = dict()
         newconfig["Available Classifiers"] = self.available_classifiers
-        str = json.dumps(newconfig)
+        str = json.dumps(newconfig, indent=2)
         newconfig_filename = os.path.join(self.taglab_dir, "config.json")
         f = open(newconfig_filename, "w")
         f.write(str)

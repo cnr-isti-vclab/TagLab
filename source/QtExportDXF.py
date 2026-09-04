@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QDialog, QFileDialog, QVBoxLayout, QHBoxLayout, QCom
 import ezdxf
 from ezdxf.enums import TextEntityAlignment
 from ezdxf.entities import Layer
+import source.RasterOps as rasterops
 
 class QtDXFExport(QDialog):  # Change QWidget to QDialog
 
@@ -237,7 +238,10 @@ class QtDXFExport(QDialog):  # Change QWidget to QDialog
             # Add blobs
             for blob in exported_blobs:
                 layer_name = blob.class_name
-                col = self.project.labels[blob.class_name].fill
+                label_obj = self.project.labels.get(blob.class_name)
+                if label_obj is None:
+                    continue  # skip blobs with unknown class
+                col = label_obj.fill
                 color_code = ezdxf.colors.rgb2int(col)
 
                 if not doc.layers.has_entry(layer_name):
