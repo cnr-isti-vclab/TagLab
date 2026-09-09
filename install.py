@@ -256,7 +256,6 @@ if osused == 'Windows':
     install_requires.insert(0, 'msvc-runtime')
 
 # installing all the packages
-# installing all the packages
 for package in install_requires:
     try:
         __import__(package)
