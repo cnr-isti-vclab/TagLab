@@ -257,7 +257,14 @@ if osused == 'Windows':
 
 # installing all the packages
 for package in install_requires:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+    try:
+        __import__(package)
+        print(f"'{package}' is already installed.")
+    except ImportError:
+        print(f"'{package}' not found. Installing via pip...")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+        __import__(package)
+        print(f"'{package}' successfully installed and imported.")
 
 # installing torch, gdal and rasterio
 
