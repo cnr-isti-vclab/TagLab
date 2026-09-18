@@ -22,15 +22,17 @@ import os
 from PyQt5.Qt import QDesktopServices
 from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal, QUrl
 from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QLineEdit, QLabel, QPushButton, \
-    QHBoxLayout, QVBoxLayout, QMessageBox, QGroupBox, QGridLayout, QComboBox, QCheckBox, QSizePolicy
-
+    QHBoxLayout, QVBoxLayout, QMessageBox, QGroupBox, QGridLayout, QComboBox, QCheckBox, QSizePolicy, QStackedWidget
 from models.coral_dataset import CoralsDataset
 import models.training as training
+import yaml
 
 
 class QtTYNWidget(QWidget):
 
+
     launchTraining = pyqtSignal()
+
 
     def __init__(self, labels, taglab_version, parent=None):
         super(QtTYNWidget, self).__init__(parent)
@@ -40,6 +42,11 @@ class QtTYNWidget(QWidget):
 
         self.target_classes = None
         self.freq_classes = None
+
+        self.yolo_params = None
+
+        self.last_applied_classes = None
+        self.classes_dirty = False
 
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
 
@@ -92,6 +99,25 @@ class QtTYNWidget(QWidget):
         self.lblTotalBackgroundValue = QLabel("")
         self.lblTotalBackgroundValue.setStyleSheet("QLabel { background-color : rgb(40,40,40); color : white; }")
 
+
+        self.lblEpochsYL = QLabel("Epochs:")
+        self.lblEpochsYL.setFixedWidth(TEXT_SPACE)
+        self.lblEpochsYL.setAlignment(Qt.AlignRight)
+
+        self.lblBatchYL = QLabel("Batch Size:")
+        self.lblBatchYL.setFixedWidth(TEXT_SPACE)
+        self.lblBatchYL.setAlignment(Qt.AlignRight)
+
+        self.lblMaskRatio = QLabel("Mask Ratio:")
+        self.lblMaskRatio.setFixedWidth(TEXT_SPACE)
+        self.lblMaskRatio.setAlignment(Qt.AlignRight)
+
+        self.lblYoloConfig = QLabel("YOLO config:")
+        self.lblYoloConfig.setFixedWidth(TEXT_SPACE)
+        self.lblYoloConfig.setAlignment(Qt.AlignRight)
+
+
+
         ##### Edits
 
         LINEWIDTH = 500
@@ -100,11 +126,10 @@ class QtTYNWidget(QWidget):
         self.editNetworkName.setMinimumWidth(LINEWIDTH)
         self.editNetworkName.setPlaceholderText("Insert here the name of your network")
         self.editNetworkName.setReadOnly(False)
-        self.editDatasetFolder = QLineEdit("")
-        self.editDatasetFolder.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
-        self.editDatasetFolder.setMinimumWidth(LINEWIDTH)
-        self.editDatasetFolder.setPlaceholderText("Insert here the dataset folder")
-        self.groupbox_classes = self.createClassesToRecognizeWidgets()
+        self.editInputDatasetFolder = QLineEdit("")
+        self.editInputDatasetFolder.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
+        self.editInputDatasetFolder.setMinimumWidth(LINEWIDTH)
+        self.editInputDatasetFolder.setPlaceholderText("Insert here the dataset folder")
         self.editEpochs = QLineEdit("10")
         self.editEpochs.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.editEpochs.setMinimumWidth(LINEWIDTH)
@@ -142,6 +167,31 @@ class QtTYNWidget(QWidget):
         self.editBatchSize.setMinimumWidth(LINEWIDTH)
 
 
+        self.editEpochsYL = QLineEdit("100")
+        self.editEpochsYL.setStyleSheet(
+            "background-color: rgb(55,55,55); "
+            "border: 1px solid rgb(90,90,90)"
+        )
+
+        self.editBatchSizeYL = QLineEdit("4")
+        self.editBatchSizeYL.setStyleSheet(
+            "background-color: rgb(55,55,55); "
+            "border: 1px solid rgb(90,90,90)"
+        )
+        self.editMaskRatio = QLineEdit("2")
+        self.editMaskRatio.setStyleSheet(
+            "background-color: rgb(55,55,55); "
+            "border: 1px solid rgb(90,90,90)"
+        )
+
+        self.editYoloConfig = QLineEdit()
+        self.editYoloConfig.setReadOnly(True)
+
+        self.btnChooseYoloConfig = QPushButton("...")
+        self.btnChooseYoloConfig.clicked.connect(
+            self.chooseYoloConfig
+        )
+
         self.comboTraining = QComboBox()
         self.comboTraining.setStyleSheet("background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)")
         self.comboTraining.addItem('Preset 1')
@@ -161,28 +211,41 @@ class QtTYNWidget(QWidget):
         self.comboOptimizer.setToolTip("'Adam' is the typical solution, 'QHAdam' is a variant of the Adam optmizer\n"
                                        "that may provide better performance in some cases.")
 
-        ###### Right button
+        ###### buttons
 
         self.btnChooseDatasetFolder = QPushButton("...")
         self.btnChooseDatasetFolder.setMaximumWidth(20)
-        self.btnChooseDatasetFolder.clicked.connect(self.chooseDatasetFolder)
+        self.btnChooseDatasetFolder.clicked.connect(self.chooseDatasetInputFolder)
 
-        layoutH1 = QHBoxLayout()
-        layoutH1.addWidget(self.lblNetworkName)
-        layoutH1.addWidget(self.editNetworkName)
 
-        layoutH2 = QHBoxLayout()
-        layoutH2.addWidget(self.lblDatasetFolder)
-        layoutH2.addWidget(self.editDatasetFolder)
-        layoutH2.addWidget(self.btnChooseDatasetFolder)
+        # Checkbox
 
-        self.layoutClasses = QHBoxLayout()
-        self.layoutClasses.addWidget(self.lblTargetClasses)
-        self.layoutClasses.addWidget(self.groupbox_classes)
+        self.chkClearYoloCache = QCheckBox("Clear YOLO cache before training")
+        self.chkClearYoloCache.setChecked(False)
 
-        self.layoutTraining = QHBoxLayout()
-        self.layoutTraining.addWidget(self.lblTraining)
-        self.layoutTraining.addWidget(self.comboTraining)
+        self.groupbox_classes_DL = QWidget()
+        self.groupbox_classes_YL = QWidget()
+
+        # ================= DEEPLAB =================
+
+        self.groupboxTargetClassesDL = QGroupBox("Target classes")
+        self.groupbox_classes_DL = QWidget()
+
+        layoutTargetDL = QVBoxLayout()
+        self.layoutTargetDL = layoutTargetDL
+        layoutTargetDL.addWidget(self.groupbox_classes_DL)
+
+        self.groupboxTargetClassesDL.setLayout( layoutTargetDL)
+        self.groupboxDeeplab = QGroupBox("DeepLab-V3+ Settings")
+
+        layoutDLGroup = QVBoxLayout()
+        layoutDLGroup.addWidget( self.groupboxTargetClassesDL)
+
+        self.groupboxDeeplab.setLayout(layoutDLGroup)
+
+        layoutTraining = QHBoxLayout()
+        layoutTraining.addWidget(self.lblTraining)
+        layoutTraining.addWidget(self.comboTraining)
 
         layoutOptimizer = QHBoxLayout()
         layoutOptimizer.addWidget(self.lblOptimizer)
@@ -192,71 +255,154 @@ class QtTYNWidget(QWidget):
         layoutEpochs.addWidget(self.lblEpochs)
         layoutEpochs.addWidget(self.editEpochs)
 
+        layoutLR = QHBoxLayout()
+        layoutLR.addWidget(self.lblLR)
+        layoutLR.addWidget(self.editLR)
+
+        layoutL2 = QHBoxLayout()
+        layoutL2.addWidget(self.lblL2)
+        layoutL2.addWidget(self.editL2)
+
+        layoutBS = QHBoxLayout()
+        layoutBS.addWidget(self.lblBS)
+        layoutBS.addWidget(self.editBatchSize)
+
         self.layoutEpochsPerStage = QHBoxLayout()
         self.layoutEpochsPerStage.addWidget(self.lblEpochsPerStage)
         self.layoutEpochsPerStage.addWidget(self.editEpochsStage1)
         self.layoutEpochsPerStage.addWidget(self.editEpochsStage2)
         self.layoutEpochsPerStage.addWidget(self.editEpochsStage3)
 
-        layoutLR = QHBoxLayout()
-        layoutLR.addWidget(self.lblLR)
-        layoutLR.addWidget(self.editLR)
 
-        layoutH6 = QHBoxLayout()
-        layoutH6.addWidget(self.lblL2)
-        layoutH6.addWidget(self.editL2)
+        self.pageDeepLab = QWidget()
 
-        layoutH7 = QHBoxLayout()
-        layoutH7.addWidget(self.lblBS)
-        layoutH7.addWidget(self.editBatchSize)
+        layoutDeepLabPage = QVBoxLayout()
 
-        self.layoutInputs = QVBoxLayout()
-        self.layoutInputs.addLayout(layoutH1)
-        self.layoutInputs.addLayout(layoutH2)
-        self.layoutInputs.addLayout(self.layoutClasses)
-        self.layoutInputs.addLayout(self.layoutTraining)
-        self.layoutInputs.addLayout(layoutOptimizer)
-        self.layoutInputs.addLayout(layoutEpochs)
-        self.layoutInputs.addLayout(self.layoutEpochsPerStage)
-        self.layoutInputs.addLayout(layoutLR)
-        self.layoutInputs.addLayout(layoutH6)
-        self.layoutInputs.addLayout(layoutH7)
+        layoutDeepLabPage.addWidget( self.groupboxDeeplab)
 
+        layoutDeepLabPage.addLayout(layoutTraining)
+        layoutDeepLabPage.addLayout(layoutOptimizer)
+        layoutDeepLabPage.addLayout( layoutEpochs)
+        layoutDeepLabPage.addLayout( self.layoutEpochsPerStage)
+        layoutDeepLabPage.addLayout( layoutLR)
+        layoutDeepLabPage.addLayout(layoutL2)
+        layoutDeepLabPage.addLayout(layoutBS)
 
-        ##### Main layout
+        layoutDeepLabPage.addStretch()
 
-        self.layoutMain = QHBoxLayout()
-        self.layoutMain.addLayout(self.layoutInputs)
+        self.pageDeepLab.setLayout(
+            layoutDeepLabPage
+        )
+        # ================= YOLO =================
 
-        ###########################################################
+        # GROUPBOX CLASSES
+        self.groupboxYoloClasses = QGroupBox(
+            "Target classes")
+
+        self.layoutTargetYL = QVBoxLayout()
+        self.layoutTargetYL.addWidget(self.groupbox_classes_YL)
+        self.groupboxYoloClasses.setLayout(self.layoutTargetYL)
+
+        # TRAINING OPTIONS
+
+        layoutEpochsYL = QHBoxLayout()
+        layoutEpochsYL.addWidget(self.lblEpochsYL)
+        layoutEpochsYL.addWidget(self.editEpochsYL)
+
+        layoutBatchYL = QHBoxLayout()
+        layoutBatchYL.addWidget( self.lblBatchYL)
+        layoutBatchYL.addWidget(self.editBatchSizeYL)
+
+        layoutMaskRatioYL = QHBoxLayout()
+        layoutMaskRatioYL.addWidget(self.lblMaskRatio)
+        layoutMaskRatioYL.addWidget(self.editMaskRatio)
+
+        layoutYamlYL = QHBoxLayout()
+        layoutYamlYL.addWidget(self.lblYoloConfig)
+        layoutYamlYL.addWidget(self.editYoloConfig)
+        layoutYamlYL.addWidget(self.btnChooseYoloConfig)
+
+        self.groupboxYoloTraining = QGroupBox(
+            "YOLO-V11 Training Settings"
+        )
+
+        layoutYoloTraining = QVBoxLayout()
+
+        layoutYoloTraining.addLayout(layoutEpochsYL)
+        layoutYoloTraining.addLayout(layoutBatchYL)
+        layoutYoloTraining.addLayout(layoutMaskRatioYL)
+        layoutYoloTraining.addLayout(layoutYamlYL)
+        layoutYoloTraining.addWidget(self.chkClearYoloCache)
+
+        self.groupboxYoloTraining.setLayout(
+            layoutYoloTraining
+        )
+
+        layoutYoloPage = QVBoxLayout()
+        layoutYoloPage.addWidget(self.groupboxYoloClasses)
+        layoutYoloPage.addWidget( self.groupboxYoloTraining)
+        layoutYoloPage.addStretch()
+
+        self.pageYolo = QWidget()
+        self.pageYolo.setLayout(layoutYoloPage)
+
+        # ================= STACK =================
+
+        self.modelStack = QStackedWidget()
+        self.modelStack.addWidget(QWidget())  # index 0
+        self.modelStack.addWidget(self.pageDeepLab)
+        self.modelStack.addWidget(self.pageYolo)
+        # MAIN
+
+        self.layoutMain = QVBoxLayout()
+
+        layoutNetwork = QHBoxLayout()
+        layoutNetwork.addWidget(self.lblNetworkName)
+        layoutNetwork.addWidget(self.editNetworkName)
+        self.layoutMain.addLayout(layoutNetwork)
+
+        layoutDataset = QHBoxLayout()
+        layoutDataset.addWidget(self.lblDatasetFolder)
+        layoutDataset.addWidget(self.editInputDatasetFolder)
+        layoutDataset.addWidget(self.btnChooseDatasetFolder)
+        self.layoutMain.addLayout(layoutDataset)
+
+        self.layoutMain.addWidget(self.modelStack)
+
+        # BOTTOM
 
         self.btnHelp = QPushButton("Help")
         self.btnHelp.clicked.connect(self.help)
+
         self.btnCancel = QPushButton("Cancel")
         self.btnCancel.clicked.connect(self.close)
+
         self.btnTrain = QPushButton("Train")
         self.btnTrain.clicked.connect(self.checkBeforeTraining)
 
-        layoutBottomButtons = QHBoxLayout()
-        layoutBottomButtons.setAlignment(Qt.AlignRight)
-        layoutBottomButtons.addStretch()
-        layoutBottomButtons.addWidget(self.btnHelp)
-        layoutBottomButtons.addWidget(self.btnCancel)
-        layoutBottomButtons.addWidget(self.btnTrain)
+        layoutBottom = QHBoxLayout()
+        layoutBottom.addStretch()
+        layoutBottom.addWidget(self.btnHelp)
+        layoutBottom.addWidget(self.btnCancel)
+        layoutBottom.addWidget(self.btnTrain)
 
-        ###########################################################
+        # ================= FINAL =================
 
         layoutFinal = QVBoxLayout()
         layoutFinal.addLayout(self.layoutMain)
-        layoutFinal.addLayout(layoutBottomButtons)
+        layoutFinal.addLayout(layoutBottom)
         self.setLayout(layoutFinal)
+
+        # ================= STATE =================
+
+        self.modelStack.setCurrentIndex(0)
+        self.checkboxes = []
+        self.updateTrainingParameters("Preset 1")
+
 
         self.setWindowTitle("Train Your Network - Settings")
         self.setWindowFlags(Qt.Window | Qt.CustomizeWindowHint | Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
-        self.checkboxes = []
-
-        self.updateTrainingParameters("Preset 1")
 
     @pyqtSlot(str)
     def epochsChanged(self, text):
@@ -281,6 +427,97 @@ class QtTYNWidget(QWidget):
             self.blockSignals(False)
         except:
             pass
+
+    def chooseYoloConfig(self):
+
+        filename, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select YOLO configuration",
+            "",
+            "Yaml (*.yaml *.yml)"
+        )
+
+        if not filename:
+            return
+
+        self.editYoloConfig.setText(filename)
+
+        try:
+            with open(filename, "r") as f:
+                self.yolo_params = yaml.safe_load(f)
+
+        except Exception as e:
+
+            QMessageBox.warning(
+                self,
+                self.TAGLAB_VERSION,
+                f"Cannot read yaml file:\n{e}"
+            )
+
+            self.yolo_params = None
+
+    def getDefaultYoloPreset(self):
+
+        return {
+
+            "degrees": 30.0,
+            "translate": 0.1,
+            "scale": 0.5,
+            "shear": 0.0,
+            "perspective": 0.0,
+
+            "flipud": 0.5,
+            "fliplr": 0.5,
+
+            "hsv_h": 0.015,
+            "hsv_s": 0.5,
+            "hsv_v": 0.4,
+
+            "copy_paste": 0.0,
+            "mosaic": 1.0,
+
+            "box": 7.5,
+            "dfl": 1.5,
+            "cls": 1.0,
+
+            "close_mosaic": 0.0,
+            "dropout": 0.1,
+            "warmup_epochs": 5,
+
+            "label_smoothing": 0.1,
+            "cos_lr": True,
+
+            "patience": 20,
+            "workers": 0,
+
+            "amp": True,
+            "imgsz": 1024,
+            "overlap_mask": True
+        }
+
+    def getYoloTrainingParams(self):
+
+        params = self.getDefaultYoloPreset()
+
+        if self.yolo_params:
+            params.update(self.yolo_params)
+
+        params["name"] = (self.editNetworkName.text())
+        params["selected_classes"] = (self.getSelectedYoloClasses())
+
+        params["dataset_yaml"] = os.path.join(self.editInputDatasetFolder.text(),"dataset.yaml")
+        params["config_yaml"] = (self.editYoloConfig.text().strip())
+
+        params["epochs"] = int(self.editEpochsYL.text())
+        params["batch"] = int(self.editBatchSizeYL.text())
+        params["mask_ratio"] = int(self.editMaskRatio.text())
+        params["config_yaml"] = (self.editYoloConfig.text().strip())
+        params["clear_cache"] = ( self.chkClearYoloCache.isChecked())
+
+
+        return params
+
+
 
     @pyqtSlot(str)
     def epochsStagesChanged(self, text):
@@ -330,31 +567,95 @@ class QtTYNWidget(QWidget):
 
             self.epochsChanged(self.editEpochs.text())
 
+    def chooseDatasetInputFolder(self):
 
-    @pyqtSlot()
-    def chooseDatasetFolder(self):
+        folderName = QFileDialog.getExistingDirectory(
+            self,
+            "Choose Your Dataset Folder",
+            ""
+        )
 
-        folderName = QFileDialog.getExistingDirectory(self, "Choose a Folder to Export the Dataset", "")
-        if folderName:
-            self.editDatasetFolder.setText(folderName)
+        if not folderName:
+            return
 
-            box = QMessageBox()
-            box.setWindowTitle(self.TAGLAB_VERSION)
-            box.setText("The dataset will be analyzed. This may take some minutes, please wait.. ")
-            box.setStandardButtons(QMessageBox.NoButton)
-            box.show()
-            QApplication.processEvents()
-            QApplication.setOverrideCursor(Qt.WaitCursor)
-            self.analyzeDataset()
+        self.resetModelState()
+
+        self.input_folder = folderName
+        self.original_input_folder = folderName
+
+        self.editInputDatasetFolder.setText(
+            folderName
+        )
+
+        box = QMessageBox()
+        box.setWindowTitle(self.TAGLAB_VERSION)
+        box.setText(
+            "Analyzing dataset...\nPlease wait."
+        )
+        box.setStandardButtons(
+            QMessageBox.NoButton
+        )
+
+        box.show()
+
+        QApplication.processEvents()
+        QApplication.setOverrideCursor(
+            Qt.WaitCursor
+        )
+
+        try:
+            self.autoDetectModel()
+
+        finally:
             QApplication.restoreOverrideCursor()
             box.close()
 
-            self.layoutClasses.removeWidget(self.groupbox_classes)
-            self.groupbox_classes.setParent(None)
-            self.groupbox_classes = None
-            self.groupbox_classes = self.createClassesToRecognizeWidgets()
-            self.layoutClasses.insertWidget(1, self.groupbox_classes)
 
+    def autoDetectModel(self):
+
+
+        if self.isValidYoloDataset(self.editInputDatasetFolder.text()):
+            self.modelStack.setCurrentIndex(2)
+            self.runYoloAnalysis()
+            return
+
+        if self.isValidDeepLabDataset(self.editInputDatasetFolder.text()):
+            self.modelStack.setCurrentIndex(1)
+            self.runDeepLabAnalysis()
+            return
+
+        QMessageBox.warning(
+            self,
+            self.TAGLAB_VERSION,
+            "The selected folder is not a valid YOLO or DeepLab dataset."
+        )
+
+        self.modelStack.setCurrentIndex(0)
+
+    def resetModelState(self):
+
+        self.modelStack.setCurrentIndex(0)
+
+        if self.groupbox_classes_YL is not None:
+            old = self.groupbox_classes_YL
+
+            self.groupbox_classes_YL = QWidget()
+            self.layoutTargetYL.replaceWidget(old, self.groupbox_classes_YL)
+
+            old.deleteLater()
+
+        if self.groupbox_classes_DL is not None:
+            old = self.groupbox_classes_DL
+            self.groupbox_classes_DL = QWidget()
+
+            self.layoutTargetDL.replaceWidget(old,self.groupbox_classes_DL)
+            old.deleteLater()
+
+        self.checkboxes = []
+        self.checkboxes_YL = []
+
+        self.freq_classes = None
+        self.target_classes = None
 
     @pyqtSlot()
     def help(self):
@@ -364,7 +665,7 @@ class QtTYNWidget(QWidget):
 
     def getDatasetFolder(self):
 
-        return self.editDatasetFolder.text()
+        return self.editInputDatasetFolder.text()
 
     def getTrainingMode(self):
 
@@ -414,92 +715,357 @@ class QtTYNWidget(QWidget):
 
     def createClassesToRecognizeWidgets(self):
 
-        groupbox = QGroupBox()
-        groupbox.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+        content = QWidget()
+        content.setSizePolicy(
+            QSizePolicy.MinimumExpanding,
+            QSizePolicy.MinimumExpanding
+        )
 
-        if self.freq_classes is None:
-            lbl = QLabel("No class founds in the dataset.")
-            layout = QVBoxLayout()
+        content.lblTotalBackgroundValue = None
+
+        layout = QVBoxLayout(content)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        if not self.freq_classes:
+            lbl = QLabel("No classes found in the dataset.")
             layout.addWidget(lbl)
-            groupbox.setLayout(layout)
-        else:
-            grid_layout = QGridLayout()
-            groupbox.setLayout(grid_layout)
 
-            self.checkboxes = []
-            CLASSES_PER_ROW = 3
-            for i, key in enumerate(self.freq_classes.keys()):
-                perc = round(self.freq_classes[key] * 100.0, 2)
+            return content
 
-                checkbox = QCheckBox(key)
-                checkbox.setChecked(True)
-                lbl_perc = QLabel(" " + str(perc) + "%")
-                if perc < 5.0:
-                    lbl_perc.setStyleSheet("QLabel { background-color : rgb(40,40,40); color : red; }")
-                else:
-                    lbl_perc.setStyleSheet("QLabel { background-color : rgb(40,40,40); color : green; }")
+        grid_layout = QGridLayout()
+        layout.addLayout(grid_layout)
 
-                if key == "Background":
-                    checkbox.setAttribute(Qt.WA_TransparentForMouseEvents)
-                    checkbox.setFocusPolicy(Qt.NoFocus)
-                    self.lblTotalBackgroundValue.setText(str(perc) + "%")
+        self.checkboxes = []
 
-                checkbox.stateChanged.connect(self.updateCumulativeBackground)
-                self.checkboxes.append(checkbox)
+        CLASSES_PER_ROW = 3
 
-                btnC = QPushButton("")
-                btnC.setFlat(True)
+        for i, key in enumerate(self.freq_classes.keys()):
 
-                label = self.project_labels.get(key)
-                if label is not None:
-                    color = label.fill
-                else:
-                    color = [0,0,0]
+            perc = round(
+                self.freq_classes[key] * 100.0,
+                2
+            )
 
-                r = color[0]
-                g = color[1]
-                b = color[2]
-                text = "QPushButton:flat {background-color: rgb(" + str(r) + "," + str(g) + "," + str(
-                    b) + "); border: none ;}"
+            checkbox = QCheckBox(key)
+            checkbox.setChecked(True)
 
-                btnC.setStyleSheet(text)
-                btnC.setAutoFillBackground(True)
-                btnC.setFixedWidth(20)
-                btnC.setFixedHeight(20)
+            lbl_perc = QLabel(f"{perc}%")
 
-                hlayout = QHBoxLayout()
-                hlayout.addWidget(btnC)
-                hlayout.addWidget(lbl_perc)
+            if perc < 5:
+                lbl_perc.setStyleSheet("color:red;")
+            else:
+                lbl_perc.setStyleSheet("color:lightgreen;")
 
-                col = i % CLASSES_PER_ROW
-                row = int(i / CLASSES_PER_ROW)
-                grid_layout.addWidget(checkbox, row, col*2)
-                grid_layout.addLayout(hlayout, row, col*2+1)
+            if key == "Background":
+                checkbox.setAttribute(
+                    Qt.WA_TransparentForMouseEvents
+                )
 
-            row = int((len(self.freq_classes.keys())-1) / CLASSES_PER_ROW) + 1
-            grid_layout.addWidget(self.lblTotalBackground, row, 0)
-            grid_layout.addWidget(self.lblTotalBackgroundValue, row, 1)
+                checkbox.setFocusPolicy(
+                    Qt.NoFocus
+                )
 
-        return groupbox
+                bg_label = QLabel(f"{perc}%")
+
+                content.lblTotalBackgroundValue = bg_label
+
+            checkbox.stateChanged.connect(
+                self.updateCumulativeBackground
+            )
+
+            self.checkboxes.append(checkbox)
+
+            btn = QPushButton()
+            btn.setFixedSize(20, 20)
+            btn.setFlat(True)
+
+            label = self.project_labels.get(key)
+
+            color = label.fill if label else (0, 0, 0)
+
+            btn.setStyleSheet(
+                f"background-color: rgb({color[0]},"
+                f"{color[1]},"
+                f"{color[2]});"
+                f"border:none;"
+            )
+
+            hl = QHBoxLayout()
+            hl.addWidget(btn)
+            hl.addWidget(lbl_perc)
+
+            row = i // CLASSES_PER_ROW
+            col = (i % CLASSES_PER_ROW) * 2
+
+            grid_layout.addWidget(
+                checkbox,
+                row,
+                col
+            )
+
+            grid_layout.addLayout(
+                hl,
+                row,
+                col + 1
+            )
+
+        last_row = (
+                           (len(self.freq_classes) - 1)
+                           // CLASSES_PER_ROW
+                   ) + 1
+
+        if content.lblTotalBackgroundValue:
+            grid_layout.addWidget(
+                QLabel("Cumulative background:"),
+                last_row,
+                0
+            )
+
+            grid_layout.addWidget(
+                content.lblTotalBackgroundValue,
+                last_row,
+                1
+            )
+
+        return content
+
+    def closeEvent(self, event):
+
+        self.editNetworkName.clear()
+        self.editInputDatasetFolder.clear()
+
+        self.editYoloConfig.clear()
+
+        self.yolo_params = None
+
+        self.checkboxes = []
+        self.checkboxes_YL = []
+
+        self.target_classes = None
+        self.freq_classes = None
+
+        self.modelStack.setCurrentIndex(0)
+
+        super().closeEvent(event)
+
+
+
+    def isValidDeepLabDataset(self, folder):
+
+        if not folder or not os.path.exists(folder):
+            return False
+
+        training_dir = os.path.join(folder, "training")
+        images_dir = os.path.join(training_dir, "images")
+        labels_dir = os.path.join(training_dir, "labels")
+
+        return (
+                os.path.isdir(training_dir)
+                and os.path.isdir(images_dir)
+                and os.path.isdir(labels_dir)
+        )
+
+    def isValidYoloDataset(self, folder):
+
+        if not folder or not os.path.exists(folder):
+            return False
+
+        yaml_path = os.path.join(folder, "dataset.yaml")
+
+        if not os.path.isfile(yaml_path):
+            return False
+
+        if not os.path.isdir(os.path.join(folder, "images")):
+            return False
+
+        if not os.path.isdir(os.path.join(folder, "labels")):
+            return False
+
+        try:
+            with open(yaml_path, "r") as f:
+                data = yaml.safe_load(f)
+
+            return (
+                    "names" in data
+                    and isinstance(data["names"], dict)
+            )
+
+        except Exception:
+            return False
 
     @pyqtSlot()
     def updateCumulativeBackground(self):
 
-        perc = 0.0
-        for checkbox in self.checkboxes:
-            if not checkbox.isChecked():
-                perc += 100.0 * self.freq_classes[checkbox.text()]
+        if self.groupbox_classes_DL is None:
+            return
 
-        perc = perc + 100.0 * self.freq_classes["Background"]
-        perc = round(perc, 2)
-        self.lblTotalBackgroundValue.setText(str(perc) + "%")
+        widget = self.groupbox_classes_DL
+
+        if not hasattr(widget,
+                       "lblTotalBackgroundValue"):
+            return
+
+        if widget.lblTotalBackgroundValue is None:
+            return
+
+        perc = 0.0
+
+        for checkbox in self.checkboxes:
+
+            if not checkbox.isChecked():
+                perc += (
+                        100.0 *
+                        self.freq_classes[
+                            checkbox.text()
+                        ]
+                )
+
+        perc += (
+                100.0 *
+                self.freq_classes["Background"]
+        )
+
+        widget.lblTotalBackgroundValue.setText(
+            f"{round(perc, 2)}%"
+        )
+
+
+    def runDeepLabAnalysis(self):
+
+        self.analyzeDataset()
+
+        old_widget = self.groupbox_classes_DL
+
+        self.groupbox_classes_DL = (
+            self.createClassesToRecognizeWidgets()
+        )
+
+        self.layoutTargetDL.replaceWidget(
+            old_widget,
+            self.groupbox_classes_DL
+        )
+
+        old_widget.deleteLater()
+
+    def runYoloAnalysis(self):
+
+        count_classes = self.countYoloInstances(
+            self.editInputDatasetFolder.text()
+        )
+
+        old_widget = self.groupbox_classes_YL
+
+        self.groupbox_classes_YL = (
+            self.createClassesToRecognizeWidgetsYolo(
+                count_classes
+            )
+        )
+
+        self.layoutTargetYL.replaceWidget(
+            old_widget,
+            self.groupbox_classes_YL
+        )
+
+        old_widget.deleteLater()
+    def countYoloInstances(self, folder):
+
+        yaml_path = os.path.join(folder, "dataset.yaml")
+
+        with open(yaml_path) as f:
+            data = yaml.safe_load(f)
+
+        names = data.get("names", {})
+
+        counts = {v: 0 for v in names.values()}
+
+        label_dirs = [
+            os.path.join(folder, "labels", "train"),
+            os.path.join(folder, "labels", "val")
+        ]
+
+        for d in label_dirs:
+            if not os.path.exists(d):
+                continue
+
+            for fname in os.listdir(d):
+                if not fname.endswith(".txt"):
+                    continue
+
+                with open(os.path.join(d, fname)) as f:
+                    for line in f:
+                        if line.strip():
+                            cls_id = int(line.split()[0])
+                            cls_name = names[cls_id]
+                            counts[cls_name] += 1
+
+        return counts
+
+    def createClassesToRecognizeWidgetsYolo(self, count_classes):
+
+        widget = QWidget()
+        grid = QGridLayout(widget)
+
+        CLASSES_PER_ROW = 3
+        self.checkboxes_YL = []
+
+
+        for i, (name, count) in enumerate(count_classes.items()):
+
+            checkbox = QCheckBox(name)
+            checkbox.setChecked(True)
+            self.checkboxes_YL.append(checkbox)
+
+            lbl_count = QLabel(str(count))
+
+            if count == 0:
+                lbl_count.setStyleSheet("color: gray;")
+            elif count < 300:
+                lbl_count.setStyleSheet("color: red;")
+            else:
+                lbl_count.setStyleSheet("color: green;")
+
+            btn = QPushButton()
+            btn.setFixedSize(20, 20)
+            btn.setFlat(True)
+
+            label = self.project_labels.get(name)
+            color = label.fill if label else (0, 0, 0)
+
+            btn.setStyleSheet(
+                f"background-color: rgb({color[0]},{color[1]},{color[2]}); border:none;"
+            )
+
+            hl = QHBoxLayout()
+            hl.addWidget(btn)
+            hl.addWidget(lbl_count)
+
+            row = i // CLASSES_PER_ROW
+            col = (i % CLASSES_PER_ROW) * 2
+
+            grid.addWidget(checkbox, row, col)
+            grid.addLayout(hl, row, col + 1)
+
+        return widget
+
+    def getSelectedYoloClasses(self):
+
+        if not hasattr(self, "checkboxes_YL"):
+            return None
+
+        selected = {
+            cb.text()
+            for cb in self.checkboxes_YL
+            if cb.isChecked()
+        }
+
+        return selected
 
     @pyqtSlot()
     def checkBeforeTraining(self):
 
-        dataset_Folder = self.editDatasetFolder.text()
+        dataset_Folder = self.editInputDatasetFolder.text()
 
-        if not os.path.exists(self.editDatasetFolder.text()):
+        if not os.path.exists(self.editInputDatasetFolder.text()):
             msgBox = QMessageBox()
             msgBox.setWindowTitle(self.TAGLAB_VERSION)
             msgBox.setText("Dataset folder does not exists.")
@@ -513,20 +1079,47 @@ class QtTYNWidget(QWidget):
             msgBox.exec()
             return
 
-        nepochs = self.getEpochs()
-        if nepochs < 2:
-            msgBox = QMessageBox()
-            msgBox.setWindowTitle(self.TAGLAB_VERSION)
-            msgBox.setText("The minimum number of epoch is 2.")
-            msgBox.exec()
+        # DeepLab
+
+        if self.modelStack.currentIndex() == 1:
+            try:
+                epochs = self.getEpochs()
+                if epochs < 2:
+                    QMessageBox.warning(self, self.TAGLAB_VERSION, "The minimum number of epochs is 2.")
+                    return
+
+                self.launchTraining.emit()
+
+            except Exception as e:
+                QMessageBox.warning(self, self.TAGLAB_VERSION,
+                                    f"Invalid DeepLab settings:\n{e}"
+                                    )
+
             return
 
-        self.launchTraining.emit()
+        # YOLO
+        if self.modelStack.currentIndex() == 2:
+            try:
+                epochs = int(self.editEpochsYL.text())
+                if epochs < 2:
+                    QMessageBox.warning(self,self.TAGLAB_VERSION,"The minimum number of epochs is 2.")
+                    return
+
+                self.yolo_training_params = (self.getYoloTrainingParams())
+                self.launchTraining.emit()
+
+            except Exception as e:
+                QMessageBox.warning(
+                    self,
+                    self.TAGLAB_VERSION,
+                    f"Invalid YOLO settings:\n{e}"
+                )
+            return
 
     def analyzeDataset(self):
 
         # check dataset
-        dataset_folder = self.editDatasetFolder.text()
+        dataset_folder = self.editInputDatasetFolder.text()
         check = training.checkDataset(dataset_folder)
         if check > 0:
             msgBox = QMessageBox()

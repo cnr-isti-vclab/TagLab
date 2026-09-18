@@ -120,6 +120,7 @@ from source.Tools import Tools
 # training modules
 from models.coral_dataset import CoralsDataset
 import models.training as training
+import models.trainYolo11 as trainYolo
 
 
 # LOGGING
@@ -5839,6 +5840,30 @@ class TagLab(QMainWindow):
         self.trainResultsWidget.show()
 
     @pyqtSlot()
+    def trainYoloNetwork(self):
+
+        params = (
+            self.trainYourNetworkWidget
+            .getYoloTrainingParams()
+        )
+        self.setupProgressBar()
+        self.progress_bar.hidePerc()
+        self.progress_bar.setMessage( "Training YOLO-v11")
+
+        QApplication.processEvents()
+
+        try:
+
+            trainYolo.trainYOLOSeg(
+                params
+            )
+        finally:
+
+            self.deleteProgressBar()
+            self.deleteTrainYourNetworkWidget()
+
+
+    @pyqtSlot()
     def confirmTraining(self):
         """
         It saves the classifier created with the Train-Your-Network feature.
@@ -5880,9 +5905,20 @@ class TagLab(QMainWindow):
         if self.trainYourNetworkWidget is None:
             self.trainYourNetworkWidget = QtTYNWidget(self.project.labels, self.TAGLAB_VERSION, parent=self)
             self.trainYourNetworkWidget.setWindowModality(Qt.WindowModal)
-            self.trainYourNetworkWidget.launchTraining.connect(self.trainNewNetwork)
+            self.trainYourNetworkWidget.launchTraining.connect(self.launchNetworkTraining)
         self.trainYourNetworkWidget.show()
 
+    @pyqtSlot()
+    def launchNetworkTraining(self):
+        # DeepLab
+        if self.trainYourNetworkWidget.modelStack.currentIndex() == 1:
+            self.trainNewNetwork()
+            return
+        # YOLO
+        if self.trainYourNetworkWidget.modelStack.currentIndex() == 2:
+            self.trainYoloNetwork()
+
+            return
 
     @pyqtSlot()
     def openDatasetManager(self):
@@ -5890,7 +5926,6 @@ class TagLab(QMainWindow):
         if self.datasetManagerWidget is None:
             self.datasetManagerWidget = QtDatasetManagerWidget(self.project.labels, self.TAGLAB_VERSION, parent=self)
             self.datasetManagerWidget.setWindowModality(Qt.WindowModal)
-            # self.trainYourNetworkWidget.launchTraining.connect(self.trainNewNetwork)
         self.datasetManagerWidget.show()
 
     @pyqtSlot()

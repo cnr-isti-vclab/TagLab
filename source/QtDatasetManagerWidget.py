@@ -14,7 +14,7 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#GNU General Public License (http://www.gnu.org/licenses/gpl.txt)
+#GNU General Public License (http://www.gnu.org/livia stacenses/gpl.txt)
 # for more details.
 
 
@@ -55,6 +55,8 @@ class QtDatasetManagerWidget(QDialog):
 
         self.classes_dirty = False
         self.last_applied_classes = None
+        self.single_class_dataset = False
+
 
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")
 
@@ -123,6 +125,7 @@ class QtDatasetManagerWidget(QDialog):
 
         self.btnExportDataset_DL = QPushButton("Export dataset")
         self.btnExportDataset_DL.clicked.connect(self.filter)
+
 
         ####FILTERING OPTIONS (DeepLab)
 
@@ -322,27 +325,25 @@ class QtDatasetManagerWidget(QDialog):
 
         temp_dir = tempfile.mkdtemp(prefix="taglab_pipeline_")
 
-        # copy yaml
-        shutil.copy(
-            os.path.join(self.original_input_folder, "dataset.yaml"),
-            os.path.join(temp_dir, "dataset.yaml")
-        )
+        #copy yaml
 
-        # copy labels
+        shutil.copy( os.path.join(self.original_input_folder, "dataset.yaml"),os.path.join(temp_dir, "dataset.yaml") )
+
         for split in ["train", "val"]:
 
-            src = os.path.join(self.original_input_folder, "labels", split)
-            dst = os.path.join(temp_dir, "labels", split)
+            # labels
+            src = os.path.join(self.original_input_folder,"labels",split)
+            dst = os.path.join(temp_dir,"labels",split)
 
             if os.path.exists(src):
                 os.makedirs(dst, exist_ok=True)
 
                 for fname in os.listdir(src):
                     if fname.endswith(".txt"):
-                        shutil.copy2(
-                            os.path.join(src, fname),
-                            os.path.join(dst, fname)
-                        )
+                        shutil.copy2(os.path.join(src, fname), os.path.join(dst, fname))
+
+            # images folder (empty)
+            os.makedirs(os.path.join(temp_dir, "images", split),exist_ok=True)
 
         return temp_dir
 
@@ -654,18 +655,36 @@ class QtDatasetManagerWidget(QDialog):
                     continue
 
                 label_files = os.listdir(os.path.join(dst_dataset, "labels", split))
+                #
+                # needed_images = set(f.replace(".txt", "") for f in label_files)
 
-                needed_images = set(f.replace(".txt", "") for f in label_files)
+                for label_file in label_files:
+                    label_base = os.path.splitext(label_file)[0]
+                    image_base = label_base
+                    # remove oversampling suffixes
+                    for token in ["_dup", "_bgdup"]:
+                        if token in image_base:
+                            idx = image_base.find(token)
+                            image_base = image_base[:idx]
+                            break
 
-                for fname in os.listdir(src_img):
-                    name, ext = os.path.splitext(fname)
+                    copied = False
+                    for ext in [".jpg", ".jpeg", ".png"]:
 
-                    if name in needed_images:
-                        shutil.copy2(
-                            os.path.join(src_img, fname),
-                            os.path.join(dst_img, fname)
+                        src_image = os.path.join(src_img,image_base + ext)
+
+                        if os.path.exists(src_image):
+                            dst_image = os.path.join(dst_img,label_base + ext)
+
+                            shutil.copy2(src_image,dst_image)
+                            copied = True
+                            break
+
+                    if not copied:
+                        print(
+                            f"⚠ Missing source image for "
+                            f"{label_file}"
                         )
-
             # copy yaml updating path
             yaml_src = os.path.join(self.pipeline_dataset, "dataset.yaml")
             yaml_dst = os.path.join(dst_dataset, "dataset.yaml")
@@ -944,6 +963,7 @@ class QtDatasetManagerWidget(QDialog):
 
         try:
             selected_classes = self.getSelectedYoloClasses()
+
             if not selected_classes:
                 QMessageBox.warning(
                     self,
@@ -997,162 +1017,6 @@ class QtDatasetManagerWidget(QDialog):
             QApplication.restoreOverrideCursor()
             self.btnRemapDataset.setEnabled(True)
 
-    def oversample_background(
-            self,
-            myfolder,
-            base_ratio=0.10,
-            max_ratio=0.20,
-            max_dup_per_image=2):
-
-        import os, shutil, random
-
-        splits = ["train", "val"]
-        found_any = False
-        total_created = 0
-
-        print("\n[BACKGROUND OVERSAMPLING - HEALTH AWARE]")
-
-        # GET BACKGROUND HEALTH
-        try:
-            bg_health = self.yolo_recommended_params["notes"]["background_health"]
-        except Exception:
-            print("⚠️ No background health available, fallback to static ratio.")
-            bg_health = 50.0
-
-        # normalize
-        bg_health = max(0.0, min(100.0, bg_health))
-
-        # how good
-        priority = 1.0 - (bg_health / 100.0)
-
-        target_ratio = base_ratio + (max_ratio - base_ratio) * priority
-
-        print(f"Background health: {bg_health:.1f}")
-        print(f"Priority: {priority:.2f}")
-        print(f"Target ratio: {target_ratio:.2%}")
-
-        for split in splits:
-
-            images_dir = os.path.join(myfolder, "images", split)
-            labels_dir = os.path.join(myfolder, "labels", split)
-
-            if not os.path.isdir(labels_dir) or not os.path.isdir(images_dir):
-                print(f"[{split}] ❌ Missing folders")
-                continue
-
-            found_any = True
-
-            background_labels = []
-            all_labels = []
-
-            # SCAN dataset
-            for fname in os.listdir(labels_dir):
-
-                if not fname.endswith(".txt"):
-                    continue
-
-                path = os.path.join(labels_dir, fname)
-
-                try:
-                    size = os.path.getsize(path)
-                except OSError:
-                    continue
-
-                all_labels.append(fname)
-
-                if size == 0:
-                    background_labels.append(fname)
-
-            n_total = len(all_labels)
-            n_bg = len(background_labels)
-
-            if n_total == 0:
-                print(f"[{split}] ❌ Empty dataset")
-                continue
-
-            current_ratio = n_bg / n_total
-
-            print(f"\n[{split}]")
-            print(f"Total: {n_total}")
-            print(f"Background: {n_bg} ({current_ratio:.2%})")
-
-            if current_ratio >= target_ratio:
-                print(f"[{split}] ✅ Already sufficient")
-                continue
-
-            target_bg = int(target_ratio * n_total)
-            needed = target_bg - n_bg
-
-            print(f"[{split}] Need: {needed}")
-
-            created = 0
-
-            # duplication
-            for label_file in background_labels:
-
-                if created >= needed:
-                    break
-
-                base = os.path.splitext(label_file)[0]
-                img_path = None
-                for ext in [".jpg", ".jpeg", ".png"]:
-                    candidate = os.path.join(images_dir, base + ext)
-                    if os.path.exists(candidate):
-                        img_path = candidate
-                        img_ext = ext
-                        break
-
-                if img_path is None:
-                    continue
-
-                label_path = os.path.join(labels_dir, label_file)
-
-                # duplicate according to priority
-                dynamic_max_dup = max(
-                    1,
-                    min(
-                        max_dup_per_image,
-                        int(max_dup_per_image * (0.5 + priority))
-                    )
-                )
-
-                for i in range(1, dynamic_max_dup + 1):
-
-                    if created >= needed:
-                        break
-
-                    new_base = f"{base}_bgdup{i}"
-
-                    new_img_path = os.path.join(images_dir, new_base + img_ext)
-                    new_lbl_path = os.path.join(labels_dir, new_base + ".txt")
-
-                    # collision
-                    if os.path.exists(new_img_path) or os.path.exists(new_lbl_path):
-                        new_base = f"{base}_bgdup{i}_{random.randint(0, 9999)}"
-                        new_img_path = os.path.join(images_dir, new_base + img_ext)
-                        new_lbl_path = os.path.join(labels_dir, new_base + ".txt")
-
-                    try:
-
-                        os.link(img_path, new_img_path)
-                        shutil.copy2(label_path, new_lbl_path)
-                    except Exception as e:
-                        print(f"[{split}] ⚠️ Copy failed: {e}")
-                        continue
-
-                    created += 1
-                    total_created += 1
-
-            print(f"[{split}] ✅ Created: {created}")
-
-        if not found_any:
-            print("❌ No label folders found.")
-            return
-
-        if total_created == 0:
-            print("⚠️ No background samples added.")
-        else:
-            print(f"\n✅ Done. Created {total_created} samples.")
 
     def onRemapClicked(self):
 
@@ -1207,29 +1071,24 @@ class QtDatasetManagerWidget(QDialog):
     def oversample_background(
             self,
             myfolder,
-            base_ratio=0.10,
-            max_ratio=0.20,
             max_dup_per_image=2):
 
-        import os, shutil, random
 
-        splits = ["train", "val"]
         total_created = 0
+        print("\n[BACKGROUND OVERSAMPLING]")
+        bg_health = self.yolo_recommended_params["notes"]["background_health"]
 
-        print("\n[BACKGROUND OVERSAMPLING - ZERO COPY]")
+        if bg_health >= 100:
+            print("✅ Background coverage already adequate.")
+            return
+        elif bg_health >= 50:
+            target_ratio = 0.10
+        else:
+            target_ratio = 0.15
 
-        try:
-            bg_health = self.yolo_recommended_params["notes"]["background_health"]
-        except:
-            bg_health = 50.0
+        for split in ["train"]:
 
-        bg_health = max(0.0, min(100.0, bg_health))
-        priority = 1.0 - (bg_health / 100.0)
-        target_ratio = base_ratio + (max_ratio - base_ratio) * priority
-
-        for split in splits:
-
-            images_dir = os.path.join(self.original_input_folder, "images", split)
+            src_images_dir = os.path.join(self.original_input_folder,"images", split)
             labels_dir = os.path.join(myfolder, "labels", split)
 
             if not os.path.isdir(labels_dir):
@@ -1239,12 +1098,10 @@ class QtDatasetManagerWidget(QDialog):
             all_labels = []
 
             for fname in os.listdir(labels_dir):
-
                 if not fname.endswith(".txt"):
                     continue
 
                 path = os.path.join(labels_dir, fname)
-
                 all_labels.append(fname)
 
                 if os.path.getsize(path) == 0:
@@ -1257,65 +1114,43 @@ class QtDatasetManagerWidget(QDialog):
                 continue
 
             current_ratio = n_bg / n_total
-
             print(f"\n[{split}] {n_bg}/{n_total} ({current_ratio:.2%})")
 
             if current_ratio >= target_ratio:
                 print("✅ Already sufficient")
                 continue
 
-            target_bg = int(target_ratio * n_total)
-            needed = target_bg - n_bg
-
+            target_bg = int( (target_ratio * n_total - n_bg)/ (1.0 - target_ratio))
+            needed = max(0, target_bg)
             created = 0
+            random.shuffle(background_labels)
 
             for label_file in background_labels:
-
                 if created >= needed:
                     break
-
                 base = os.path.splitext(label_file)[0]
+                image_exists = False
 
-                img_path = None
                 for ext in [".jpg", ".jpeg", ".png"]:
-                    candidate = os.path.join(images_dir, base + ext)
-                    if os.path.exists(candidate):
-                        img_path = candidate
-                        img_ext = ext
+
+                    if os.path.exists(
+                            os.path.join(src_images_dir, base + ext)
+                    ):
+                        image_exists = True
                         break
 
-                if img_path is None:
+                if not image_exists:
                     continue
 
                 label_path = os.path.join(labels_dir, label_file)
 
-                dynamic_max_dup = max(
-                    1,
-                    min(
-                        max_dup_per_image,
-                        int(max_dup_per_image * (0.5 + priority))
-                    )
-                )
-
-                for i in range(1, dynamic_max_dup + 1):
-
+                for i in range(1, max_dup_per_image + 1):
                     if created >= needed:
                         break
-
                     new_base = f"{base}_bgdup{i}"
-
                     new_lbl_path = os.path.join(labels_dir, new_base + ".txt")
-                    new_img_path = os.path.join(images_dir, new_base + img_ext)
-
-                    # ✅ copia label
+                    # copy label
                     shutil.copy2(label_path, new_lbl_path)
-
-                    # ✅ hardlink immagine
-                    try:
-                        if not os.path.exists(new_img_path):
-                            os.link(img_path, new_img_path)
-                    except:
-                        shutil.copy2(img_path, new_img_path)
 
                     created += 1
                     total_created += 1
@@ -1323,9 +1158,12 @@ class QtDatasetManagerWidget(QDialog):
             print(f"[{split}] ✅ Created: {created}")
 
         if total_created == 0:
-            print("⚠️ No background samples added.")
+            self.logWindow.append("ℹ️ Background oversampling skipped. Current background ratio already satisfies\n")
         else:
-            print(f"\n✅ Done. Created {total_created} samples.")
+            self.logWindow.append(f"\n✅ Done. Created {total_created} samples.")
+
+
+
 
     def oversample_imbalanced_classes(
             self,
@@ -1336,8 +1174,9 @@ class QtDatasetManagerWidget(QDialog):
 
         #  temp labels
         labels_dir = os.path.join(myfolder, "labels", split)
-        # original images
-        images_dir = os.path.join(self.original_input_folder, "images", split)
+
+        # directory original images
+        src_images_dir = os.path.join( self.original_input_folder, "images", split)
 
         yaml_path = os.path.join(myfolder, "dataset.yaml")
 
@@ -1348,6 +1187,19 @@ class QtDatasetManagerWidget(QDialog):
             data = yaml.safe_load(f)
 
         names = data.get("names", {})
+
+        # SINGLE CLASS DATASET
+
+        if self.single_class_dataset:
+            print("\n⚠️ OVERSAMPLING SKIPPED\n")
+            print(
+                "Single-class dataset detected.\n"
+                "Class balancing is not applicable.\n"
+                "Use the recommended YOLO parameters instead."
+            )
+
+            return
+
         id_to_name = {k: v for k, v in names.items()}
 
         class_stats = (
@@ -1527,7 +1379,8 @@ class QtDatasetManagerWidget(QDialog):
             # original images
             img_path = None
             for ext in [".jpg", ".jpeg", ".png"]:
-                p = os.path.join(images_dir, base + ext)
+                p = os.path.join(src_images_dir,base + ext)
+
                 if os.path.exists(p):
                     img_path = p
                     img_ext = ext
@@ -1556,16 +1409,10 @@ class QtDatasetManagerWidget(QDialog):
                 new_base = f"{base}_dup{dup_idx}"
 
                 new_lbl_path = os.path.join(labels_dir, new_base + ".txt")
-                new_img_path = os.path.join(images_dir, new_base + img_ext)
+                new_img_path = os.path.join(src_images_dir, new_base + img_ext)
 
                 # copy label
                 shutil.copy2(label_path, new_lbl_path)
-
-                try:
-                    if not os.path.exists(new_img_path):
-                        os.link(img_path, new_img_path)
-                except:
-                    shutil.copy2(img_path, new_img_path)
 
                 total_created += 1
 
@@ -1588,8 +1435,11 @@ class QtDatasetManagerWidget(QDialog):
             print(f"{cls}: +{count}")
 
         print("\n✅ Oversampling completed.")
-        print(f"📈 Created samples: {total_created}")
 
+        if total_created == 0:
+            self.logWindow.append("ℹ️ Class oversampled skipped. No images met the oversampling criteria.\n")
+        else:
+            self.logWindow.append(f"\n✅ Done. Created {total_created} samples.")
 
     def clearLog(self):
         if hasattr(self, "logWindow"):
@@ -1604,10 +1454,10 @@ class QtDatasetManagerWidget(QDialog):
 
         try:
             with contextlib.redirect_stdout(buffer):
-                training_support_index, recommended_params = self.analyzeInstances()
-                self.yolo_recommended_params = recommended_params
-                self.training_support_index= training_support_index
 
+                oversampling_scores, recommended_params = self.analyzeInstances()
+                self.oversampling_scores = oversampling_scores
+                self.yolo_recommended_params = recommended_params
 
 
         except Exception:
@@ -1698,43 +1548,252 @@ class QtDatasetManagerWidget(QDialog):
                 f"Failed to export training parameters:\n{e}"
             )
 
+    def analyzeSingleClassDataset(self,
+                                  stats,
+                                  n_images,
+                                  background_images,
+                                  density_global):
+
+        cls = next(iter(stats))
+        s = stats[cls]
+
+        coverage_fraction = ( s["img_count"] /  max(1, n_images))
+        negative_fraction = ( background_images /max(1, n_images))
+        micro_ratio = (s["micro_ratio"])
+        scale_variability = (s["side_median_px"] /max(1.0, s["side_p10_px"]))
+        background_health = min(100.0, 100.0 * negative_fraction / 0.10)
+        ar_cv = s["ar_cv"]
+
+        if coverage_fraction < 0.20:
+            copy_paste = 0.50
+
+        elif coverage_fraction < 0.40:
+            copy_paste = 0.30
+
+        elif coverage_fraction < 0.60:
+            copy_paste = 0.15
+
+        else:
+            copy_paste = 0.0
+
+
+        extra_epochs = 0.0
+
+        if ar_cv > 0.8:
+
+            extra_epochs += 0.10
+
+        elif ar_cv > 0.6:
+
+            extra_epochs += 0.05
+
+        if coverage_fraction < 0.20:
+            extra_epochs += 0.50
+
+        elif coverage_fraction < 0.40:
+            extra_epochs += 0.25
+
+        elif coverage_fraction < 0.60:
+            extra_epochs += 0.10
+
+        if micro_ratio > 0.20:
+            extra_epochs += 0.25
+
+        elif micro_ratio > 0.10:
+            extra_epochs += 0.10
+
+        # BOX / DFL
+
+        median_side = (s["side_median_px"])
+
+        if median_side < 20:
+            box = 18.0
+            dfl = 2.5
+
+        elif median_side < 35:
+            box = 12.0
+            dfl = 2.0
+
+        else:
+            box = 7.5
+            dfl = 1.5
+
+
+        if micro_ratio > 0.10:
+            scale_min = 0.8
+
+        elif scale_variability < 2.0:
+            scale_min = 0.8
+
+        else:
+            scale_min = 0.5
+
+
+        if micro_ratio > 0.20:
+            close_mosaic = 40
+
+        elif micro_ratio > 0.10:
+            close_mosaic = 20
+
+        else:
+            close_mosaic = 0
+
+        dataset_support = (0.50 * coverage_fraction + 0.25 * min( 1.0, median_side / 40.0 ) + 0.25 * min( 1.0, background_health / 100.0)) * 100.0
+
+        fragmentation = s["fragmentation"]
+
+        oversampling_score = (0.7 * (1.0 - coverage_fraction) - 0.3 * min(1.0,fragmentation / 20.0))
+
+        print("\n[SINGLE CLASS ANALYSIS]\n")
+
+        print(f"Class               : {cls}")
+        print(f"Coverage Fraction   : {coverage_fraction:.1%}")
+        print( f"Fragmentation : "f"{fragmentation:.1f}"f" (high >20, moderate 5-20, low <5)")
+        print(f"Geometric Variability : "f"{ar_cv:.2f}"f" (high >0.6, moderate 0.3-0.6, low <0.3)")
+        print(f"Median Size         : {median_side:.1f}px")
+        print(f"Size Variability    : {scale_variability:.2f} "f"(high >2.5, moderate 1.5-2.5, low <1.5)")
+        print(f"Micro Objects       : {micro_ratio:.1%}"f"(high >15%, moderate 5-15%, low <5%)")
+
+        print("\n[RECOMMENDED YOLO PARAMETERS]\n")
+
+        print(f"copy_paste   = {copy_paste}")
+        print(f"extra epochs = +{int(extra_epochs * 100)}%")
+        print(f"box loss     = {box}")
+        print(f"DFL          = {dfl}")
+        print(f"scale        = [{scale_min}, 1.5]")
+        print(f"close_mosaic = {close_mosaic}")
+
+        print("\n[TRAINING NOTES]\n")
+
+        if coverage_fraction < 0.20:
+
+            print(
+                "Target class appears in very few images. "
+                "Strong copy-paste and additional acquisitions recommended."
+            )
+
+        elif coverage_fraction < 0.40:
+
+            print(
+                "Image coverage is limited. "
+                "Copy-paste and oversampling are recommended."
+            )
+
+        elif coverage_fraction < 0.60:
+
+            print(
+                "Coverage is moderate. "
+                "Additional image diversity may improve generalization."
+            )
+
+        else:
+
+            print( "Coverage is adequate." )
+
+        if ar_cv > 0.40:
+
+            print(
+                "High geometric variability detected. "
+                "Additional epochs may improve convergence."
+            )
+
+        if negative_fraction < 0.05:
+
+            print(
+                "Very few background-only images detected. "
+                "Acquire additional negative tiles."
+            )
+
+        elif negative_fraction < 0.10:
+
+            print(
+                "Background coverage is somewhat limited."
+            )
+
+        if micro_ratio > 0.20:
+
+            print(
+                "High micro-object ratio detected. "
+                "Increase localization focus and avoid aggressive down-scaling."
+            )
+
+        elif micro_ratio > 0.10:
+
+            print(
+                "Moderate micro-object ratio detected."
+            )
+
+        if scale_variability < 2.0:
+            print(
+                "Object scale diversity is limited. "
+                "Stronger scale augmentation is recommended."
+            )
+
+        if s["fragmentation"] > 25:
+            print(
+                "Annotations are concentrated in relatively few images. "
+                "Acquire new locations rather than adding more annotations."
+            )
+
+        print(
+            "Single-class dataset detected. "
+        )
+
+        return oversampling_score, {
+
+            "copy_paste":copy_paste,
+            "extra_epochs_factor":extra_epochs,
+            "box": box,
+            "dfl": dfl,
+            "scale": (scale_min, 1.5),
+            "close_mosaic": close_mosaic,
+            "notes": { "single_class_dataset": True,
+
+                "coverage_fraction":
+                    coverage_fraction,
+
+                "negative_fraction":
+                    negative_fraction,
+
+                # "background_health":
+                #     background_health,
+
+                "dataset_support":
+                    dataset_support,
+
+                "dataset_density":
+                    density_global,
+
+                "micro_ratio":
+                    micro_ratio,
+
+                "class_stats":
+                    stats
+            }
+        }
+
     def analyzeInstances(self):
 
         # ----------------------------------------------------
         # LOAD YAML
         # ----------------------------------------------------
 
-        yaml_path = os.path.join(
-            self.input_folder,
-            "dataset.yaml"
-        )
+        yaml_path = os.path.join(self.input_folder,"dataset.yaml" )
 
         with open(yaml_path, "r") as f:
             data = yaml.safe_load(f)
 
         names = data.get("names", {})
 
-        dataset_root = getattr(
-            self,
-            "original_input_folder",
-            self.input_folder
-        )
-
-        image_dir = os.path.join(
-            dataset_root,
-            "images",
-            "train"
-        )
-
+        dataset_root = getattr( self,"original_input_folder",self.input_folder)
+        image_dir = os.path.join( dataset_root, "images","train")
         imgsz = 640
 
         if os.path.exists(image_dir):
 
             imgs = [
                 f for f in os.listdir(image_dir)
-                if f.lower().endswith(
-                    (".jpg", ".jpeg", ".png")
-                )
+                if f.lower().endswith((".jpg", ".jpeg", ".png"))
             ]
 
             if imgs:
@@ -1744,7 +1803,6 @@ class QtDatasetManagerWidget(QDialog):
                     imgsz = im.size[0]
 
         else:
-
             print(
                 f"⚠ Training images folder not found:\n"
                 f"{image_dir}\n"
@@ -1780,10 +1838,7 @@ class QtDatasetManagerWidget(QDialog):
 
                 total_txt += 1
 
-                path = os.path.join(
-                    label_dir,
-                    fname
-                )
+                path = os.path.join( label_dir, fname)
 
                 with open(path) as f:
                     lines = f.readlines()
@@ -1793,13 +1848,9 @@ class QtDatasetManagerWidget(QDialog):
                     continue
 
                 seen_classes = set()
-
                 for line in lines:
 
-                    parts = list(
-                        map(float, line.split())
-                    )
-
+                    parts = list(map(float, line.split()))
                     cls = names[int(parts[0])]
 
                     if len(parts) > 5:
@@ -1831,26 +1882,13 @@ class QtDatasetManagerWidget(QDialog):
                     ar = w / h
 
                     side_px = np.sqrt(area) * imgsz
-
-                    areas.setdefault(
-                        cls, []
-                    ).append(area)
-
-                    aspect_ratios.setdefault(
-                        cls, []
-                    ).append(ar)
-
-                    pixel_sizes.setdefault(
-                        cls, []
-                    ).append(side_px)
-
+                    areas.setdefault(cls, [] ).append(area)
+                    aspect_ratios.setdefault( cls, []).append(ar)
+                    pixel_sizes.setdefault( cls, []).append(side_px)
                     seen_classes.add(cls)
 
                 for cls in seen_classes:
-                    images_per_class[cls] = (
-                            images_per_class.get(cls, 0)
-                            + 1
-                    )
+                    images_per_class[cls] = (images_per_class.get(cls, 0) + 1 )
 
         if not areas:
             raise RuntimeError(
@@ -1862,543 +1900,419 @@ class QtDatasetManagerWidget(QDialog):
         # ----------------------------------------------------
 
         stats = {}
+        n_images = total_txt
 
-        max_instances = max(
-            len(v)
-            for v in areas.values()
-        )
-
+        max_instances = max( len(v)for v in areas.values())
         for cls in areas:
-            arr_area = np.array(
-                areas[cls]
-            )
-
-            arr_ar = np.array(
-                aspect_ratios[cls]
-            )
-
-            arr_px = np.array(
-                pixel_sizes[cls]
-            )
+            arr_area = np.array(areas[cls] )
+            arr_ar = np.array(aspect_ratios[cls])
+            arr_px = np.array(pixel_sizes[cls])
 
             n = len(arr_area)
+            img_count = images_per_class.get(cls, 0)
 
-            img_count = images_per_class.get(
-                cls, 0
-            )
-
-
-            fragmentation = (
-                    n / max(1, img_count)
-            )
-
-            ar_mean = max(
-                np.mean(arr_ar),
-                1e-6
-            )
-
-            scarcity_score = (
-                    1.0
-                    -
-                    n / max_instances
-            )
-
-            image_penalty = (
-                    1.0
-                    -
-                    min(
-                        img_count / 100.0,
-                        1.0
-                    )
-            )
-
-            oversampling_score = (
-                    0.6 * scarcity_score
-                    +
-                    0.4 * image_penalty
-            )
+            fragmentation = ( n / max(1, img_count))
+            ar_mean = max(np.mean(arr_ar),1e-6)
+            scarcity_score = (1.0-n / max_instances)
+            image_penalty = (1.0-min(img_count / 100.0,1.0))
+            oversampling_score = (0.6 * scarcity_score+0.4 * image_penalty)
+            coverage = img_count / n_images
 
             stats[cls] = {
 
                 "n": n,
-
                 "img_count": img_count,
-
                 "fragmentation": fragmentation,
-
+                "coverage": coverage,
                 "scarcity_score": scarcity_score,
-
-                "oversampling_score":
-                    oversampling_score,
-
-                "area_median":
-                    float(np.median(arr_area)),
-
-                "area_p10":
-                    float(np.percentile(arr_area, 10)),
-
-                "side_median_px":
-                    float(np.median(arr_px)),
-
-                "side_p10_px":
-                    float(np.percentile(arr_px, 10)),
-
-                "micro_ratio":
-                    float(np.mean(arr_px < 10)),
-
-                "ar_median":
-                    float(np.median(arr_ar)),
-
-                "ar_cv":
-                    float(
-                        np.std(arr_ar)
-                        / ar_mean
-                    )
+                "oversampling_score": oversampling_score,
+                "area_median": float(np.median(arr_area)),
+                "area_p10":float(np.percentile(arr_area, 10)),
+                "side_median_px": float(np.median(arr_px)),
+                "side_p10_px":float(np.percentile(arr_px, 10)),
+                "micro_ratio":float(np.mean(arr_px < 10)),
+                "ar_median":float(np.median(arr_ar)),
+                "ar_cv": float(np.std(arr_ar)/ar_mean)
             }
 
-        # ----------------------------------------------------
+        self.single_class_dataset = (len(stats) == 1)
+
         # DATASET LEVEL STATS
         # ----------------------------------------------------
 
-        n_images = total_txt
 
-        total_instances = sum(
-            s["n"]
-            for s in stats.values()
-        )
-
-        density_global = (
-                total_instances
-                /
-                max(1, n_images)
-        )
-
-        bg_ratio = (
-                background_images
-                /
-                max(1, n_images)
-        )
-
-        instance_counts = [
-            s["n"]
-            for s in stats.values()
-        ]
-
-        imbalance_ratio = (
-                max(instance_counts)
-                /
-                max(1, min(instance_counts))
-        )
+        total_instances = sum(s["n"] for s in stats.values())
+        density_global = (total_instances / max(1, n_images))
+        bg_ratio = (background_images / max(1, n_images))
+        instance_counts = [s["n"] for s in stats.values()]
+        imbalance_ratio = (max(instance_counts) / max(1, min(instance_counts)))
 
 
+        if self.single_class_dataset:
+            return self.analyzeSingleClassDataset(stats,n_images,background_images,density_global)
 
-        # ----------------------------------------------------
-        # OVERVIEW
-        # ----------------------------------------------------
-
-        print("\n[DATASET OVERVIEW]\n")
-
-        print(f"Images: {n_images}")
-        print(f"Instances: {total_instances}")
-        print(f"Average object density: {density_global:.2f}")
-        print(
-            f"Background images: "
-            f"{background_images} "
-            f"({bg_ratio:.1%})"
-        )
-
-        if n_images < 150:
-            print("Dataset is very small: high overfitting risk.")
-        elif n_images < 300:
-            print("Dataset is limited: training may be unstable.")
         else:
-            print("Dataset size is adequate.")
 
-        print("\n[CLASS IMBALANCE ANALYSIS]\n")
+            # ----------------------------------------------------
+            # OVERVIEW
+            # ----------------------------------------------------
 
-        print(f"Max/min ratio: {imbalance_ratio:.1f}:1")
+            print("\n[DATASET OVERVIEW]\n")
 
-        if imbalance_ratio > 50:
-            print("Extreme imbalance detected.")
-        elif imbalance_ratio > 20:
-            print("Severe imbalance detected.")
-        elif imbalance_ratio > 10:
-            print("Moderate imbalance detected.")
-        else:
-            print("Class balance is acceptable.")
-
-        # ----------------------------------------------------
-        # CLASS TABLE
-        # ----------------------------------------------------
-
-        print("\n[CLASS STATISTICS]\n")
-
-        print(
-            f"{'Class':20}"
-            f"{'Inst':>8}"
-            f"{'Images':>8}"
-            f"{'Frag':>8}"
-            f"{'Scar':>8}"
-            f"{'OverS':>8}"
-            f"{'MedPx':>10}"
-            f"{'Micro%':>10}"
-        )
-
-        for cls, s in stats.items():
+            print(f"Images: {n_images}")
+            print(f"Instances: {total_instances}")
+            print(f"Average object density: {density_global:.2f}")
             print(
-                f"{cls:20}"
-                f"{s['n']:8d}"
-                f"{s['img_count']:8d}"
-                f"{s['fragmentation']:8.1f}"
-                f"{s['scarcity_score']:8.2f}"
-                f"{s['oversampling_score']:8.2f}"
-                f"{s['side_median_px']:10.1f}"
-                f"{100 * s['micro_ratio']:10.1f}"
+                f"Background images: "
+                f"{background_images} "
+                f"({bg_ratio:.1%})"
             )
 
-        # ----------------------------------------------------
-        # TRAINING SUPPORT INDEX
-        # ----------------------------------------------------
+            if n_images < 150:
+                print("Dataset is very small: high overfitting risk.")
+            elif n_images < 300:
+                print("Dataset is limited: training may be unstable.")
+            else:
+                print("Dataset size is adequate.")
 
-        print("\n[TRAINING SUPPORT INDEX]\n")
+            print("\n[CLASS IMBALANCE ANALYSIS]\n")
 
-        training_support_index = {}
+            print(f"Max/min ratio: {imbalance_ratio:.1f}:1")
 
-        limiting_class = None
-        lowest_support = 999
+            if imbalance_ratio > 50:
+                print("Extreme imbalance detected.")
+            elif imbalance_ratio > 20:
+                print("Severe imbalance detected.")
+            elif imbalance_ratio > 10:
+                print("Moderate imbalance detected.")
+            else:
+                print("Class balance is acceptable.")
 
-        for cls, s in stats.items():
+            # ----------------------------------------------------
+            # CLASS TABLE
+            # ----------------------------------------------------
 
-            scale_score = min(
-                1.0,
-                s["side_median_px"] / 40.0
-            )
-
-            coverage_score = min(
-                1.0,
-                s["img_count"] / 100.0
-            )
-
-            rarity_support = (
-                    1.0
-                    -
-                    s["scarcity_score"]
-            )
-
-            geometry_score = min(
-                1.0,
-                s["ar_cv"] / 0.5
-            )
-
-            tsi = (
-
-                          0.40 * scale_score
-
-                          +
-
-                          0.30 * coverage_score
-
-                          +
-
-                          0.20 * rarity_support
-
-                          +
-
-                          0.10 * geometry_score
-
-                  ) * 100.0
-
-            training_support_index[cls] = tsi
-
-            if tsi < lowest_support:
-                lowest_support = tsi
-                limiting_class = cls
+            print("\n[CLASS STATISTICS]\n")
 
             print(
-                f"{cls}: "
-                f"{tsi:.1f}/100"
+                f"{'Class':20}"
+                f"{'Inst':>8}"
+                f"{'Images':>8}"
+                f"{'Frag':>10}"
+                f"{'Cover':>10}"
+                f"{'MedPx':>10}"
+                f"{'Micro%':>10}"
             )
 
-        # ----------------------------------------------------
-        # EFFECTIVE IMAGES ANALYSIS
-        # ----------------------------------------------------
-
-        for cls, s in stats.items():
-
-            if s["img_count"] < 20:
+            for cls, s in stats.items():
                 print(
-                    f"⚠ {cls}: "
-                    f"only {s['img_count']} images contain this class."
+                    f"{cls:20}"
+                    f"{s['n']:8d}"
+                    f"{s['img_count']:8d}"
+                    f"{s['fragmentation']:8.1f}"
+                    f"{s['coverage']:10.1%%}"
+                    f"{s['side_median_px']:10.1f}"
+                    f"{100 * s['micro_ratio']:10.1f}"
                 )
 
-        # ----------------------------------------------------
-        # FRAGMENTATION ANALYSIS
-        # ----------------------------------------------------
+            # ----------------------------------------------------
+            # TRAINING SUPPORT INDEX
+            # ----------------------------------------------------
 
-        print("\n[FRAGMENTATION ANALYSIS]\n")
+            print("\n[TRAINING SUPPORT INDEX]\n")
 
-        for cls, s in stats.items():
+            training_support_index = {}
 
-            frag = s["fragmentation"]
+            limiting_class = None
+            lowest_support = 999
 
-            print(
-                f"{cls}: "
-                f"{frag:.1f} instances/image"
-            )
+            for cls, s in stats.items():
 
-            if frag > 50:
-
-                print(
-                    "  Very concentrated class. "
-                    "Many instances come from few images."
+                scale_score = min( 1.0, s["side_median_px"] / 40.0)
+                coverage_score = min( 1.0,s["img_count"] / 100.0)
+                rarity_support = (
+                        1.0
+                        -
+                        s["scarcity_score"]
                 )
 
-            elif frag > 20:
-
-                print(
-                    "  Moderately concentrated class."
+                geometry_score = min(
+                    1.0,
+                    s["ar_cv"] / 0.5
                 )
 
-        # ----------------------------------------------------
-        # MICRO OBJECTS ANALYSIS
-        # ----------------------------------------------------
+                tsi = (0.40 * scale_score + 0.30 * coverage_score + 0.20 * rarity_support + 0.10 * geometry_score) * 100.0
+                training_support_index[cls] = tsi
 
-        print("\n[MICRO OBJECT ANALYSIS]\n")
+                if tsi < lowest_support:
+                    lowest_support = tsi
+                    limiting_class = cls
 
-        worst_micro = 0
+                print(
+                    f"{cls}: "
+                    f"{tsi:.1f}/100"
+                )
 
-        for cls, s in stats.items():
-            micro = s["micro_ratio"]
+            # ----------------------------------------------------
+            # EFFECTIVE IMAGES ANALYSIS
+            # ----------------------------------------------------
 
-            worst_micro = max(
-                worst_micro,
-                micro
+            for cls, s in stats.items():
+
+                if s["img_count"] < 20:
+                    print(
+                        f"⚠ {cls}: "
+                        f"only {s['img_count']} images contain this class."
+                    )
+
+            # ----------------------------------------------------
+            # FRAGMENTATION ANALYSIS
+            # ----------------------------------------------------
+
+            print("\n[FRAGMENTATION ANALYSIS]\n")
+            print(f"Fragmentation : (high >20, moderate 5-20, low <5)")
+
+            for cls, s in stats.items():
+
+                frag = s["fragmentation"]
+
+                print(
+                    f"{cls}: "
+                    f"{frag:.1f} instances/image"
+                )
+
+                if frag > 50:
+
+                    print(
+                    "Very concentrated class. "
+                    "Many instances come from few images. "
+                    "Additional image diversity is recommended to achieve a better generalization"
+                    )
+
+                elif frag > 20:
+
+                    print(
+                        "  Moderately concentrated class."
+                    )
+
+            # ----------------------------------------------------
+            # MICRO OBJECTS ANALYSIS
+            # ----------------------------------------------------
+
+            print("\n[MICRO OBJECT ANALYSIS]\n")
+            print(f"Micro Objects: (high >15%, moderate 5-15%, low <5%)")
+
+            worst_micro = 0
+
+            for cls, s in stats.items():
+                micro = s["micro_ratio"]
+
+                worst_micro = max(
+                    worst_micro,
+                    micro
+                )
+
+                print(
+                    f"{cls}: "
+                    f"{micro:.1%} below 10 px"
+                )
+
+            # ----------------------------------------------------
+            # BACKGROUND ANALYSIS
+            # ----------------------------------------------------
+
+            print("\n[BACKGROUND ANALYSIS]\n")
+
+            bg_ratio = background_images / max(1, n_images)
+            background_health = min(100.0, 100.0 * bg_ratio / 0.10)
+
+            print(f"Background images: {background_images}/{n_images} ({bg_ratio:.1%})")
+            print(f"Background Health Score: {background_health:.1f}/100")
+
+
+            print("\n[RECOMMENDED YOLO PARAMETERS]\n")
+
+            max_scarcity = max(
+                s["scarcity_score"]
+                for s in stats.values()
             )
 
-            print(
-                f"{cls}: "
-                f"{micro:.1%} below 10 px"
+            rare_classes = [
+                cls
+                for cls, s in stats.items()
+                if s["scarcity_score"] > 0.90
+            ]
+
+            low_coverage_classes = [
+                cls
+                for cls, s in stats.items()
+                if s["img_count"] < 30
+            ]
+
+            max_micro_ratio = max(
+                s["micro_ratio"]
+                for s in stats.values()
             )
 
-        # ----------------------------------------------------
-        # BACKGROUND ANALYSIS
-        # ----------------------------------------------------
+            # ----------------------------------------------------
+            # COPY PASTE
+            # ----------------------------------------------------
 
-        print("\n[BACKGROUND ANALYSIS]\n")
+            if max_scarcity > 0.98:
+                copy_paste = 0.50
+            elif max_scarcity > 0.95:
+                copy_paste = 0.30
+            elif max_scarcity > 0.80:
+                copy_paste = 0.15
 
-        bg_ratio = background_images / max(1, n_images)
+            else:
+                copy_paste = 0.0
 
-        score_bg = min(1.0, bg_ratio / 0.1)
-        score_density_bg = max(0.0, 1.0 - density_global / 8.0)
+            # ----------------------------------------------------
+            # EXTRA EPOCHS
+            # ----------------------------------------------------
 
-        background_health = (0.6 * score_bg + 0.4 * score_density_bg) * 100
+            if len(rare_classes) >= 2:
 
-        print(f"Background images: {background_images}/{n_images} ({bg_ratio:.1%})")
-        print(f"Background Health Score: {background_health:.1f}/100")
+                extra_epochs = 0.50
 
+            elif len(rare_classes) == 1:
 
-        print("\n[RECOMMENDED YOLO PARAMETERS]\n")
+                extra_epochs = 0.25
 
-        max_scarcity = max(
-            s["scarcity_score"]
-            for s in stats.values()
-        )
+            else:
+                extra_epochs = 0.0
 
-        rare_classes = [
-            cls
-            for cls, s in stats.items()
-            if s["scarcity_score"] > 0.90
-        ]
+            # ----------------------------------------------------
+            # MOSAIC
+            # ----------------------------------------------------
 
-        low_coverage_classes = [
-            cls
-            for cls, s in stats.items()
-            if s["img_count"] < 30
-        ]
+            if max_micro_ratio > 0.20:
+                close_mosaic = 40
 
-        max_micro_ratio = max(
-            s["micro_ratio"]
-            for s in stats.values()
-        )
+            elif max_micro_ratio > 0.10:
+                close_mosaic = 20
 
-        # ----------------------------------------------------
-        # COPY PASTE
-        # ----------------------------------------------------
+            else:
+                close_mosaic = 0
 
-        if max_scarcity > 0.98:
+            # ----------------------------------------------------
+            # BOX / DFL
+            # ----------------------------------------------------
 
-            copy_paste = 0.50
-
-        elif max_scarcity > 0.95:
-
-            copy_paste = 0.30
-
-        elif max_scarcity > 0.80:
-
-            copy_paste = 0.15
-
-        else:
-
-            copy_paste = 0.0
-
-        # ----------------------------------------------------
-        # EXTRA EPOCHS
-        # ----------------------------------------------------
-
-        if len(rare_classes) >= 2:
-
-            extra_epochs = 0.50
-
-        elif len(rare_classes) == 1:
-
-            extra_epochs = 0.25
-
-        else:
-
-            extra_epochs = 0.0
-
-        # ----------------------------------------------------
-        # MOSAIC
-        # ----------------------------------------------------
-
-        if max_micro_ratio > 0.20:
-
-            close_mosaic = 40
-
-        elif max_micro_ratio > 0.10:
-
-            close_mosaic = 20
-
-        else:
-
-            close_mosaic = 0
-
-        # ----------------------------------------------------
-        # BOX / DFL
-        # ----------------------------------------------------
-
-        smallest_side = min(
-            s["side_median_px"]
-            for s in stats.values()
-        )
-
-        if smallest_side < 20:
-
-            box = 18.0
-            dfl = 2.5
-
-        elif smallest_side < 35:
-
-            box = 12.0
-            dfl = 2.0
-
-        else:
-
-            box = 7.5
-            dfl = 1.5
-
-        # ----------------------------------------------------
-        # SCALE AUGMENTATION
-        # ----------------------------------------------------
-
-        if max_micro_ratio > 0.10:
-
-            scale_min = 0.8
-
-        else:
-
-            scale_min = 0.5
-
-        # ----------------------------------------------------
-        # REPORT
-        # ----------------------------------------------------
-
-        print(f"copy_paste   = {copy_paste}")
-        print(f"extra epochs = +{int(extra_epochs * 100)}%")
-        print(f"box loss     = {box}")
-        print(f"DFL          = {dfl}")
-        print(f"scale        = [{scale_min}, 1.5]")
-        print(f"close_mosaic = {close_mosaic}")
-
-        print("\n[TRAINING NOTES]\n")
-
-        # if rare_classes:
-        #     print(
-        #         "Rare classes detected: "
-        #         + ", ".join(rare_classes)
-        #     )
-
-        if low_coverage_classes:
-            print(
-                "Limited image coverage: "
-                + ", ".join(low_coverage_classes)
+            smallest_side = min(
+                s["side_median_px"]
+                for s in stats.values()
             )
 
-        if max_micro_ratio > 0.10:
-            print(
-                "High micro-object ratio detected."
-            )
+            if smallest_side < 20:
 
-        if background_health < 40:
-            print(
-                "Background coverage is limited."
-            )
+                box = 18.0
+                dfl = 2.5
 
-        oversampling_scores = {
-            cls: s["oversampling_score"]
-            for cls, s in stats.items()
-        }
+            elif smallest_side < 35:
 
-        return oversampling_scores, {
+                box = 12.0
+                dfl = 2.0
 
-            "copy_paste": copy_paste,
+            else:
+                box = 7.5
+                dfl = 1.5
 
-            "extra_epochs_factor":
-                extra_epochs,
+            # ----------------------------------------------------
+            # SCALE AUGMENTATION
+            # ----------------------------------------------------
 
-            "box": box,
+            if max_micro_ratio > 0.10:
 
-            "dfl": dfl,
+                scale_min = 0.8
 
-            "scale":
-                (scale_min, 1.5),
+            else:
+                scale_min = 0.5
 
-            "close_mosaic":
-                close_mosaic,
+            # ----------------------------------------------------
+            # REPORT
+            # ----------------------------------------------------
 
-            "notes": {
+            print(f"copy_paste   = {copy_paste}")
+            print(f"extra epochs = +{int(extra_epochs * 100)}%")
+            print(f"box loss     = {box}")
+            print(f"DFL          = {dfl}")
+            print(f"scale        = [{scale_min}, 1.5]")
+            print(f"close_mosaic = {close_mosaic}")
 
-                "limiting_class":
-                    limiting_class,
 
-                "lowest_training_support":
-                    lowest_support,
+            if low_coverage_classes:
+                print(
+                    "Limited image coverage: "
+                    + ", ".join(low_coverage_classes)
+                )
 
-                "background_health":
-                    background_health,
+            if max_micro_ratio > 0.10:
+                print(
+                    "High micro-object ratio detected."
+                )
 
-                "dataset_density":
-                    density_global,
+            if background_health < 40:
+                print(
+                    "Background coverage is limited."
+                )
 
-                "imbalance_ratio":
-                    imbalance_ratio,
-
-                "micro_ratio":
-                    max(
-                        s["micro_ratio"]
-                        for s in stats.values()
-                    ),
-
-                "class_stats":
-                    stats,
-
-                "training_support":
-                    training_support_index,
-
-                "image_size":
-                    imgsz
+            oversampling_scores = {
+                cls: s["oversampling_score"]
+                for cls, s in stats.items()
             }
-        }
+
+            return oversampling_scores, {
+
+                "copy_paste": copy_paste,
+
+                "extra_epochs_factor":
+                    extra_epochs,
+
+                "box": box,
+
+                "dfl": dfl,
+
+                "scale":
+                    (scale_min, 1.5),
+
+                "close_mosaic":
+                    close_mosaic,
+
+                "notes": {
+
+                    "limiting_class":
+                        limiting_class,
+
+                    "lowest_training_support":
+                        lowest_support,
+
+                    "background_health":
+                        background_health,
+
+                    "dataset_density":
+                        density_global,
+
+                    "imbalance_ratio":
+                        imbalance_ratio,
+
+                    "micro_ratio":
+                        max(
+                            s["micro_ratio"]
+                            for s in stats.values()
+                        ),
+
+                    "class_stats":
+                        stats,
+
+                    "training_support":
+                        training_support_index,
+
+                    "image_size":
+                        imgsz
+                }
+            }
 
     def analyzeYoloDataset(self):
         if not self.input_folder:
@@ -2446,9 +2360,23 @@ class QtDatasetManagerWidget(QDialog):
 
         return count_classes
 
-    def getSelectedYoloClasses(self):
-        return [cb.text() for cb in self.checkboxes_YL if cb.isChecked()]
+    def updateSingleClassFlag(self):
 
+        if self.modelStack.currentIndex() == 2:
+            n_selected = len(self.getSelectedYoloClasses())
+
+        else:
+            n_selected = len([ cb for cb in self.checkboxes if cb.isChecked()])
+
+        self.single_class_dataset = (n_selected == 1)
+
+        return n_selected
+
+    def getSelectedYoloClasses(self):
+
+        selected = [cb.text() for cb in self.checkboxes_YL if cb.isChecked()]
+
+        return selected
     def buildYoloClassMapping(self, selected_classes):
         yaml_path = os.path.join(self.input_folder, "dataset.yaml")
         with open(yaml_path, "r") as f:
@@ -3210,6 +3138,7 @@ class QtDatasetManagerWidget(QDialog):
         self.freq_classes = None
         self.target_classes = None
         self.yolo_class_list = None
+        self.single_class_dataset = False
 
         # reset checkboxes
         self.checkboxes = []
