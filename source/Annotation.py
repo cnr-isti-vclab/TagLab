@@ -898,7 +898,7 @@ class Annotation(object):
                     if value is not None:
                         dict[key][i] = value
                     else:
-                        dict[key][i] = np.NaN
+                        dict[key][i] = np.nan
 
                 else:
                     if value is not None:
@@ -951,7 +951,7 @@ class Annotation(object):
                     if value is not None:
                         dict[key][j] = value
                     else:
-                        dict[key][j] = np.NaN
+                        dict[key][j] = np.nan
 
                 else:
                     if value is not None:
