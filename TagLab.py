@@ -2603,6 +2603,26 @@ class TagLab(QMainWindow):
         self.comboboxTargetImage.setCurrentIndex(index)
         self.comboboxTargetImage.currentIndexChanged.connect(self.targetImageChanged)
 
+    def disconnectViewsSync(self):
+        """
+        Stop mirroring pan/zoom between the left and the right view.
+        """
+        for sender, receiver in [(self.viewerplus, self.viewerplus2), (self.viewerplus2, self.viewerplus)]:
+            try:
+                sender.viewHasChanged.disconnect(receiver.setViewParameters)
+            except TypeError:
+                # not connected, e.g. after a map change that stopped midway
+                pass
+
+    def connectViewsSync(self):
+        """
+        Mirror pan/zoom between the left and the right view.
+        """
+        # Qt.UniqueConnection raises TypeError if the sync is already connected
+        self.disconnectViewsSync()
+        self.viewerplus.viewHasChanged[float, float, float].connect(self.viewerplus2.setViewParameters, type=Qt.UniqueConnection)
+        self.viewerplus2.viewHasChanged[float, float, float].connect(self.viewerplus.setViewParameters, type=Qt.UniqueConnection)
+
     def storeCurrentViewsParameters(self):
         """
         Store the current view parameters (both left and right views).
@@ -2640,37 +2660,36 @@ class TagLab(QMainWindow):
         # store view parameters
         self.storeCurrentViewsParameters()
 
-        self.viewerplus.viewHasChanged.disconnect(self.viewerplus2.setViewParameters)
-        self.viewerplus2.viewHasChanged.disconnect(self.viewerplus.setViewParameters)
+        self.disconnectViewsSync()
+        try:
+            image = self.project.images[index1]
+            self.viewerplus.clear()
 
-        image = self.project.images[index1]
-        self.viewerplus.clear()
+            # target and source image cannot be the same !!
+            index2 = self.comboboxTargetImage.currentIndex()
+            if index1 == index2:
+                index2 = (index1 + 1) % N
 
-        # target and source image cannot be the same !!
-        index2 = self.comboboxTargetImage.currentIndex()
-        if index1 == index2:
-            index2 = (index1 + 1) % N
+                self.doNotUpdatePanels()
+                self.viewerplus2.clear()
+                self.viewerplus2.setProject(self.project)
+                self.viewerplus2.setImage(self.project.images[index2])
+                self.doUpdatePanels()
 
-            self.doNotUpdatePanels()
-            self.viewerplus2.clear()
-            self.viewerplus2.setProject(self.project)
-            self.viewerplus2.setImage(self.project.images[index2])
-            self.doUpdatePanels()
+                self.updateComboboxTargetImage(index2)
 
-            self.updateComboboxTargetImage(index2)
+            self.viewerplus.setProject(self.project)
+            self.viewerplus.setImage(image)
+            self.setBlobVisualization()
+            self.updatePanels()
+            if self.compare_panel.isVisible():
+                self.compare_panel.setTable(self.project, index1, index2)
 
-        self.viewerplus.setProject(self.project)
-        self.viewerplus.setImage(image)
-        self.setBlobVisualization()
-        self.updatePanels()
-        if self.compare_panel.isVisible():
-            self.compare_panel.setTable(self.project, index1, index2)
-
-        # set the view parameters as the stored one before the image change
-        self.resetViewsParameters()
-
-        #self.viewerplus.viewHasChanged[float, float, float].connect(self.viewerplus2.setViewParameters, type=Qt.UniqueConnection)
-        #self.viewerplus2.viewHasChanged[float, float, float].connect(self.viewerplus.setViewParameters, type=Qt.UniqueConnection)
+            # set the view parameters as the stored one before the image change
+            self.resetViewsParameters()
+        finally:
+            # always restore the sync, even if loading the map failed
+            self.connectViewsSync()
 
 
     @pyqtSlot(int)
@@ -2683,37 +2702,36 @@ class TagLab(QMainWindow):
         # store view parameters
         self.storeCurrentViewsParameters()
 
-        self.viewerplus.viewHasChanged.disconnect(self.viewerplus2.setViewParameters)
-        self.viewerplus2.viewHasChanged.disconnect(self.viewerplus.setViewParameters)
+        self.disconnectViewsSync()
+        try:
+            self.viewerplus2.clear()
+            self.btnGrid.setChecked(False)
 
-        self.viewerplus2.clear()
-        self.btnGrid.setChecked(False)
+            # target and source image cannot be the same !!
+            index1 = self.comboboxSourceImage.currentIndex()
+            if index1 == index2:
+                index1 = (index2 - 1) % N
 
-        # target and source image cannot be the same !!
-        index1 = self.comboboxSourceImage.currentIndex()
-        if index1 == index2:
-            index1 = (index2 - 1) % N
+                self.doNotUpdatePanels()
+                self.viewerplus.clear()
+                self.viewerplus.setProject(self.project)
+                self.viewerplus.setImage(self.project.images[index1])
+                self.doUpdatePanels()
 
-            self.doNotUpdatePanels()
-            self.viewerplus.clear()
-            self.viewerplus.setProject(self.project)
-            self.viewerplus.setImage(self.project.images[index1])
-            self.doUpdatePanels()
+                self.updateComboboxSourceImage(index1)
 
-            self.updateComboboxSourceImage(index1)
+            self.viewerplus2.setProject(self.project)
+            self.viewerplus2.setImage(self.project.images[index2])
+            self.setBlobVisualization()
+            self.updatePanels()
+            if self.compare_panel.isVisible():
+                self.compare_panel.setTable(self.project, index1, index2)
 
-        self.viewerplus2.setProject(self.project)
-        self.viewerplus2.setImage(self.project.images[index2])
-        self.setBlobVisualization()
-        self.updatePanels()
-        if self.compare_panel.isVisible():
-            self.compare_panel.setTable(self.project, index1, index2)
-
-        # set the view parameters as the stored one before the image change
-        self.resetViewsParameters()
-
-        self.viewerplus.viewHasChanged[float, float, float].connect(self.viewerplus2.setViewParameters, type=Qt.UniqueConnection)
-        self.viewerplus2.viewHasChanged[float, float, float].connect(self.viewerplus.setViewParameters, type=Qt.UniqueConnection)
+            # set the view parameters as the stored one before the image change
+            self.resetViewsParameters()
+        finally:
+            # always restore the sync, even if loading the map failed
+            self.connectViewsSync()
 
     @pyqtSlot()
     def sliderTransparencyChanged(self):
