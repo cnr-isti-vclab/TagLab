@@ -2,7 +2,6 @@ import numpy as np
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPen, QFont
 from PyQt5.QtWidgets import QGraphicsItem
-from snuggs import number
 
 from source.tools.Tool import Tool
 from PyQt5.QtCore import pyqtSlot, pyqtSignal

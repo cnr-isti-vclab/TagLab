@@ -382,7 +382,7 @@ def write_shapefile( project, image, blobs, georef_filename, out_shp):
                 if value is not None:
                     dict[key][i] = value
                 else:
-                    dict[key][i] = np.NaN
+                    dict[key][i] = np.nan
 
             else:
                 if value is not None:
