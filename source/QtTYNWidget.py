@@ -22,7 +22,7 @@ import os
 from PyQt5.Qt import QDesktopServices
 from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal, QUrl
 from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QLineEdit, QLabel, QPushButton, \
-    QHBoxLayout, QVBoxLayout, QMessageBox, QGroupBox, QGridLayout, QComboBox, QCheckBox, QSizePolicy, QStackedWidget
+    QHBoxLayout, QVBoxLayout, QMessageBox, QGroupBox, QGridLayout, QComboBox, QCheckBox, QSizePolicy, QStackedWidget, QPlainTextEdit
 from models.coral_dataset import CoralsDataset
 import models.training as training
 import yaml
@@ -99,6 +99,13 @@ class QtTYNWidget(QWidget):
         self.lblTotalBackgroundValue = QLabel("")
         self.lblTotalBackgroundValue.setStyleSheet("QLabel { background-color : rgb(40,40,40); color : white; }")
 
+        self.lblYoloModel = QLabel("YOLO model:")
+        self.lblYoloModel.setFixedWidth(TEXT_SPACE)
+        self.lblYoloModel.setAlignment(Qt.AlignRight)
+
+        self.lblYoloVersion = QLabel("YOLO version:")
+        self.lblYoloVersion.setFixedWidth(TEXT_SPACE)
+        self.lblYoloVersion.setAlignment(Qt.AlignRight)
 
         self.lblEpochsYL = QLabel("Epochs:")
         self.lblEpochsYL.setFixedWidth(TEXT_SPACE)
@@ -116,7 +123,18 @@ class QtTYNWidget(QWidget):
         self.lblYoloConfig.setFixedWidth(TEXT_SPACE)
         self.lblYoloConfig.setAlignment(Qt.AlignRight)
 
+        self.yoloLog = QPlainTextEdit()
+        self.yoloLog.setReadOnly(True)
+        self.yoloLog.setMinimumHeight(250)
 
+        self.yoloLog.setStyleSheet("""
+        QPlainTextEdit {
+            background-color: rgb(25,25,25);
+            color: rgb(220,220,220);
+            border: 1px solid rgb(90,90,90);
+            font-family: Consolas;
+        }
+        """)
 
         ##### Edits
 
@@ -167,7 +185,7 @@ class QtTYNWidget(QWidget):
         self.editBatchSize.setMinimumWidth(LINEWIDTH)
 
 
-        self.editEpochsYL = QLineEdit("100")
+        self.editEpochsYL = QLineEdit("50")
         self.editEpochsYL.setStyleSheet(
             "background-color: rgb(55,55,55); "
             "border: 1px solid rgb(90,90,90)"
@@ -210,6 +228,31 @@ class QtTYNWidget(QWidget):
         self.comboOptimizer.addItem('QHAdam')
         self.comboOptimizer.setToolTip("'Adam' is the typical solution, 'QHAdam' is a variant of the Adam optmizer\n"
                                        "that may provide better performance in some cases.")
+
+        self.comboYoloModel = QComboBox()
+        self.comboYoloModel.setStyleSheet(
+            "background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)"
+        )
+
+        self.comboYoloModel.addItem("YOLO Nano")
+        self.comboYoloModel.addItem("YOLO Small")
+        self.comboYoloModel.addItem("YOLO Medium")
+        self.comboYoloModel.addItem("YOLO Large")
+        self.comboYoloModel.addItem("YOLO Extra Large")
+
+        self.comboYoloVersion = QComboBox()
+        self.comboYoloVersion.setStyleSheet(
+            "background-color: rgb(55,55,55); border: 1px solid rgb(90,90,90)"
+        )
+
+        self.comboYoloVersion.addItem("YOLO11")
+        self.comboYoloVersion.addItem("YOLO26")
+
+        # default
+        self.comboYoloVersion.setCurrentText("YOLO11")
+
+        # default
+        self.comboYoloModel.setCurrentText("YOLO Medium")
 
         ###### buttons
 
@@ -305,6 +348,14 @@ class QtTYNWidget(QWidget):
 
         # TRAINING OPTIONS
 
+        layoutVersionYL = QHBoxLayout()
+        layoutVersionYL.addWidget(self.lblYoloVersion)
+        layoutVersionYL.addWidget(self.comboYoloVersion)
+
+        layoutModelYL = QHBoxLayout()
+        layoutModelYL.addWidget(self.lblYoloModel)
+        layoutModelYL.addWidget(self.comboYoloModel)
+
         layoutEpochsYL = QHBoxLayout()
         layoutEpochsYL.addWidget(self.lblEpochsYL)
         layoutEpochsYL.addWidget(self.editEpochsYL)
@@ -327,21 +378,22 @@ class QtTYNWidget(QWidget):
         )
 
         layoutYoloTraining = QVBoxLayout()
-
+        layoutYoloTraining.addLayout(layoutVersionYL)
+        layoutYoloTraining.addLayout(layoutModelYL)
         layoutYoloTraining.addLayout(layoutEpochsYL)
         layoutYoloTraining.addLayout(layoutBatchYL)
         layoutYoloTraining.addLayout(layoutMaskRatioYL)
         layoutYoloTraining.addLayout(layoutYamlYL)
         layoutYoloTraining.addWidget(self.chkClearYoloCache)
 
-        self.groupboxYoloTraining.setLayout(
-            layoutYoloTraining
-        )
+        self.groupboxYoloTraining.setLayout(layoutYoloTraining)
 
         layoutYoloPage = QVBoxLayout()
         layoutYoloPage.addWidget(self.groupboxYoloClasses)
         layoutYoloPage.addWidget( self.groupboxYoloTraining)
-        layoutYoloPage.addStretch()
+
+        layoutYoloPage.addWidget(QLabel("Training Log"))
+        layoutYoloPage.addWidget(self.yoloLog,stretch=1)
 
         self.pageYolo = QWidget()
         self.pageYolo.setLayout(layoutYoloPage)
@@ -482,12 +534,12 @@ class QtTYNWidget(QWidget):
 
             "close_mosaic": 0.0,
             "dropout": 0.1,
-            "warmup_epochs": 5,
+            "warmup_epochs": 3,
 
             "label_smoothing": 0.1,
             "cos_lr": True,
 
-            "patience": 20,
+            "patience": 15,
             "workers": 0,
 
             "amp": True,
@@ -499,12 +551,26 @@ class QtTYNWidget(QWidget):
 
         params = self.getDefaultYoloPreset()
 
+        family_map = {
+            "YOLO11": "yolo11",
+            "YOLO26": "yolo26"
+        }
+        model_map = {
+            "YOLO Nano": "n",
+            "YOLO Small": "s",
+            "YOLO Medium": "m",
+            "YOLO Large": "l",
+            "YOLO Extra Large": "x"
+        }
+
         if self.yolo_params:
             params.update(self.yolo_params)
 
+        params["model_family"] = family_map[self.comboYoloVersion.currentText()]
         params["name"] = (self.editNetworkName.text())
         params["selected_classes"] = (self.getSelectedYoloClasses())
-
+        params["model_size"] = model_map[self.comboYoloModel.currentText()]
+        params["model_name"] = (self.comboYoloModel.currentText())
         params["dataset_yaml"] = os.path.join(self.editInputDatasetFolder.text(),"dataset.yaml")
         params["config_yaml"] = (self.editYoloConfig.text().strip())
 
@@ -610,6 +676,14 @@ class QtTYNWidget(QWidget):
             QApplication.restoreOverrideCursor()
             box.close()
 
+    def appendYoloLog(self, text):
+
+        self.yoloLog.appendPlainText(str(text))
+
+        sb = self.yoloLog.verticalScrollBar()
+        sb.setValue(sb.maximum())
+
+        QApplication.processEvents()
 
     def autoDetectModel(self):
 
@@ -831,6 +905,8 @@ class QtTYNWidget(QWidget):
 
     def closeEvent(self, event):
 
+        print("QtTYNWidget CLOSE EVENT")
+
         self.editNetworkName.clear()
         self.editInputDatasetFolder.clear()
 
@@ -838,7 +914,6 @@ class QtTYNWidget(QWidget):
 
         self.yolo_params = None
 
-        self.checkboxes = []
         self.checkboxes_YL = []
 
         self.target_classes = None
@@ -1060,6 +1135,8 @@ class QtTYNWidget(QWidget):
 
         return selected
 
+
+
     @pyqtSlot()
     def checkBeforeTraining(self):
 
@@ -1106,6 +1183,8 @@ class QtTYNWidget(QWidget):
                     return
 
                 self.yolo_training_params = (self.getYoloTrainingParams())
+                if hasattr(self, "yoloLog"):
+                    self.yoloLog.clear()
                 self.launchTraining.emit()
 
             except Exception as e:
@@ -1115,6 +1194,7 @@ class QtTYNWidget(QWidget):
                     f"Invalid YOLO settings:\n{e}"
                 )
             return
+
 
     def analyzeDataset(self):
 

@@ -5853,10 +5853,8 @@ class TagLab(QMainWindow):
         QApplication.processEvents()
 
         try:
+            trainYolo.trainYOLOSeg(params,log_callback = self.trainYourNetworkWidget.appendYoloLog)
 
-            trainYolo.trainYOLOSeg(
-                params
-            )
         finally:
 
             self.deleteProgressBar()
@@ -5910,12 +5908,16 @@ class TagLab(QMainWindow):
 
     @pyqtSlot()
     def launchNetworkTraining(self):
+
+        self.trainYourNetworkWidget.yoloLog.clear()
+
         # DeepLab
         if self.trainYourNetworkWidget.modelStack.currentIndex() == 1:
             self.trainNewNetwork()
             return
         # YOLO
         if self.trainYourNetworkWidget.modelStack.currentIndex() == 2:
+            self.trainYourNetworkWidget.appendYoloLog("Starting YOLO training...\n")
             self.trainYoloNetwork()
 
             return

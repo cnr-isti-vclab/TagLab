@@ -1163,8 +1163,6 @@ class QtDatasetManagerWidget(QDialog):
             self.logWindow.append(f"\n✅ Done. Created {total_created} samples.")
 
 
-
-
     def oversample_imbalanced_classes(
             self,
             myfolder,
@@ -1188,50 +1186,42 @@ class QtDatasetManagerWidget(QDialog):
 
         names = data.get("names", {})
 
-        # SINGLE CLASS DATASET
-
-        if self.single_class_dataset:
-            print("\n⚠️ OVERSAMPLING SKIPPED\n")
-            print(
-                "Single-class dataset detected.\n"
-                "Class balancing is not applicable.\n"
-                "Use the recommended YOLO parameters instead."
-            )
-
-            return
-
         id_to_name = {k: v for k, v in names.items()}
 
         class_stats = (
             self.yolo_recommended_params["notes"]
             ["class_stats"]
         )
+        # SINGLE CLASS DATASET
 
-        target_classes = set()
-
-        for cls_id, cls_name in id_to_name.items():
-
-            stats = class_stats.get(cls_name)
-
-            if stats is None:
-                continue
-
-            if (
-                    stats["oversampling_score"] > 0.50
-                    and
-                    stats["img_count"] >= 20
-            ):
-                target_classes.add(cls_id)
-
-
-        print(f"\n🎯 Target classes: {[id_to_name[i] for i in target_classes]}")
-        for cls_id in target_classes:
-            cls_name = id_to_name[cls_id]
+        if self.single_class_dataset:
 
             print(
-                f"   {cls_name}: "
-                f"{class_stats[cls_name]['oversampling_score']:.2f}"
+                "\n⚠️ Single-class dataset detected.\n"
+                "Using the only available class as oversampling target.\n"
             )
+
+            target_classes = set(id_to_name.keys())
+
+        else:
+
+            target_classes = set()
+
+            for cls_id, cls_name in id_to_name.items():
+
+                stats = class_stats.get(cls_name)
+                if stats is None:
+                    continue
+
+                if (stats["oversampling_score"] > 0.50 and stats["img_count"] >= 20):
+                    target_classes.add(cls_id)
+
+        for cls_id in target_classes:
+
+            cls_name = id_to_name[cls_id]
+
+            if "oversampling_score" in class_stats[cls_name]:
+                print( f"   {cls_name}: "  f"{class_stats[cls_name]['oversampling_score']:.2f}")
 
         dup_per_class = defaultdict(int)
         img_per_class = defaultdict(int)
@@ -1296,9 +1286,10 @@ class QtDatasetManagerWidget(QDialog):
             if minority_ratio < 0.1:
                 continue
 
-            max_majority_frac = max(counts.values()) / total
-            if max_majority_frac > 0.9:
-                continue
+            if not self.single_class_dataset:
+                max_majority_frac = max(counts.values()) / total
+                if max_majority_frac > 0.9:
+                    continue
 
             # AREA FILTER
             label_path = os.path.join(labels_dir, label_file)
@@ -1409,7 +1400,7 @@ class QtDatasetManagerWidget(QDialog):
                 new_base = f"{base}_dup{dup_idx}"
 
                 new_lbl_path = os.path.join(labels_dir, new_base + ".txt")
-                new_img_path = os.path.join(src_images_dir, new_base + img_ext)
+                # new_img_path = os.path.join(src_images_dir, new_base + img_ext)
 
                 # copy label
                 shutil.copy2(label_path, new_lbl_path)
@@ -1458,6 +1449,7 @@ class QtDatasetManagerWidget(QDialog):
                 oversampling_scores, recommended_params = self.analyzeInstances()
                 self.oversampling_scores = oversampling_scores
                 self.yolo_recommended_params = recommended_params
+                self.btnExportParams.setEnabled(True)
 
 
         except Exception:
@@ -1999,7 +1991,7 @@ class QtDatasetManagerWidget(QDialog):
                 f"{'Inst':>8}"
                 f"{'Images':>8}"
                 f"{'Frag':>10}"
-                f"{'Cover':>10}"
+                f"{'Cover%':>10}"
                 f"{'MedPx':>10}"
                 f"{'Micro%':>10}"
             )
@@ -2010,7 +2002,7 @@ class QtDatasetManagerWidget(QDialog):
                     f"{s['n']:8d}"
                     f"{s['img_count']:8d}"
                     f"{s['fragmentation']:8.1f}"
-                    f"{s['coverage']:10.1%%}"
+                    f"{100 * s['coverage']:10.1f}"
                     f"{s['side_median_px']:10.1f}"
                     f"{100 * s['micro_ratio']:10.1f}"
                 )
