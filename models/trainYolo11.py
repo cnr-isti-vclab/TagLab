@@ -74,15 +74,7 @@ def trainYOLOSeg(params,log_callback=None):
         print("\nClearing YOLO cache...")
         clearYoloCache(params["dataset_yaml"])
 
-    extra_epochs = params.get("extra_epochs", 0)
 
-    # model_file = {
-    #     "n": os.path.join( "models", "yolo11n-seg.pt"),
-    #     "s": os.path.join( "models", "yolo11s-seg.pt"),
-    #     "m": os.path.join( "models", "yolo11m-seg.pt"),
-    #     "l": os.path.join( "models", "yolo11l-seg.pt"),
-    #     "x": os.path.join( "models", "yolo11x-seg.pt"),
-    # }
 
     model_family = params.get(
         "model_family",
@@ -114,6 +106,10 @@ def trainYOLOSeg(params,log_callback=None):
     selected_ids = []
     selected_classes = params.get("selected_classes",[])
 
+    base_epochs = params["epochs"]
+    extra_epochs = params.get("extra_epochs_factor", 0)
+    params["epochs"] = int(round(base_epochs * (1.0 + extra_epochs)))
+
     if selected_classes:
         with open(dataset_yaml, "r") as f:
             dataset_info = yaml.safe_load(f)
@@ -126,7 +122,7 @@ def trainYOLOSeg(params,log_callback=None):
 
     train_args = {
 
-        "epochs": params["epochs"] + extra_epochs,
+        "epochs": params["epochs"],
         "batch": params["batch"],
         "imgsz": params["imgsz"],
 
@@ -166,6 +162,8 @@ def trainYOLOSeg(params,log_callback=None):
         "name": params["name"],
         "save": True,}
 
+
+
     train_args["data"] = temp_yaml
     train_args["close_mosaic"] = int(train_args.get("close_mosaic", 0))
 
@@ -186,6 +184,8 @@ def trainYOLOSeg(params,log_callback=None):
             f"{selected_ids}"
         )
 
+
+    print(train_args)
     print("\nYOLO TRAINING CONFIGURATION")
     old_stdout = sys.stdout
 
