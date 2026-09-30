@@ -5,31 +5,49 @@ from source.tools.EditPoints import EditPoints
 from source.tools.Scribbles import Scribbles
 from source.tools.CorrectivePoints import CorrectivePoints
 
-
-from source.tools.CreateCrack import CreateCrack
-from source.tools.SplitBlob import SplitBlob
-from source.tools.Assign import Assign
-from source.tools.EditBorder import EditBorder
-from source.tools.Watershed import Watershed
-from source.tools.BricksSegmentation import BricksSegmentation
-from source.tools.Rows import Rows
-from source.tools.Cut import Cut
-from source.tools.Freehand import Freehand
-from source.tools.Ruler import Ruler
-from source.tools.FourClicks import FourClicks
-from source.tools.Match import Match
-from source.tools.SelectPoints import SelectPoints
-from source.tools.SelectArea import SelectArea
-from source.tools.Ritm import Ritm
-from source.tools.PlaceAnnPoint import PlaceAnnPoint
-
 from PyQt5.QtCore import Qt, QObject, QPointF, QRectF, QFileInfo, QDir, pyqtSlot, pyqtSignal, QT_VERSION_STR
 
 import os
 import importlib
-if importlib.util.find_spec("segment_anything"):
-    from source.tools.Sam import Sam
-    from source.tools.SAMInteractive import SAMInteractive
+
+
+class _LazyTool:
+
+    def __init__(self, module_name, class_name, *args):
+        object.__setattr__(self, "_module_name", module_name)
+        object.__setattr__(self, "_class_name", class_name)
+        object.__setattr__(self, "_args", args)
+        object.__setattr__(self, "_instance", None)
+
+    def _load(self):
+        if self._instance is None:
+            module = importlib.import_module(self._module_name)
+            tool_class = getattr(module, self._class_name)
+            object.__setattr__(self, "_instance", tool_class(*self._args))
+        return self._instance
+
+    def __getattr__(self, name):
+        return getattr(self._load(), name)
+
+    def __setattr__(self, name, value):
+        if name.startswith("_"):
+            object.__setattr__(self, name, value)
+        else:
+            setattr(self._load(), name, value)
+
+    def deactivate(self):
+        if self._instance is not None:
+            self._instance.deactivate()
+
+    def reset(self):
+        if self._instance is not None:
+            self._instance.reset()
+
+    def enable(self, enabled):
+        if enabled:
+            self._load().enable(True)
+        elif self._instance is not None:
+            self._instance.enable(False)
 
 # class Tools(object):
 class Tools(QObject):
@@ -67,26 +85,26 @@ class Tools(QObject):
     def createTools(self):
         # TOOLS - create all the tools
         self.tools = {
-            "CREATECRACK": CreateCrack(self.viewerplus),
-            "SPLITBLOB": SplitBlob(self.viewerplus, self.pick_points),
-            "ASSIGN": Assign(self.viewerplus),
-            "EDITBORDER": EditBorder(self.viewerplus, self.edit_points),
-            "CUT": Cut(self.viewerplus, self.edit_points),
-            "FREEHAND": Freehand(self.viewerplus, self.edit_points),
-            "WATERSHED": Watershed(self.viewerplus, self.scribbles),
+            "CREATECRACK": _LazyTool("source.tools.CreateCrack", "CreateCrack", self.viewerplus),
+            "SPLITBLOB": _LazyTool("source.tools.SplitBlob", "SplitBlob", self.viewerplus, self.pick_points),
+            "ASSIGN": _LazyTool("source.tools.Assign", "Assign", self.viewerplus),
+            "EDITBORDER": _LazyTool("source.tools.EditBorder", "EditBorder", self.viewerplus, self.edit_points),
+            "CUT": _LazyTool("source.tools.Cut", "Cut", self.viewerplus, self.edit_points),
+            "FREEHAND": _LazyTool("source.tools.Freehand", "Freehand", self.viewerplus, self.edit_points),
+            "WATERSHED": _LazyTool("source.tools.Watershed", "Watershed", self.viewerplus, self.scribbles),
             # "BRICKS": BricksSegmentation(self.viewerplus),
-            "RULER": Ruler(self.viewerplus, self.pick_points),
-            "FOURCLICKS": FourClicks(self.viewerplus, self.pick_points),
-            "PLACEANNPOINT": PlaceAnnPoint(self.viewerplus),
-            "MATCH": Match(self.viewerplus),
-            "SELECTPOINTS": SelectPoints(self.viewerplus, self.pick_points),
-            "SELECTAREA": SelectArea(self.viewerplus, self.pick_points),
-            "RITM": Ritm(self.viewerplus, self.corrective_points),
-            "ROWS": Rows(self.viewerplus),
+            "RULER": _LazyTool("source.tools.Ruler", "Ruler", self.viewerplus, self.pick_points),
+            "FOURCLICKS": _LazyTool("source.tools.FourClicks", "FourClicks", self.viewerplus, self.pick_points),
+            "PLACEANNPOINT": _LazyTool("source.tools.PlaceAnnPoint", "PlaceAnnPoint", self.viewerplus),
+            "MATCH": _LazyTool("source.tools.Match", "Match", self.viewerplus),
+            "SELECTPOINTS": _LazyTool("source.tools.SelectPoints", "SelectPoints", self.viewerplus, self.pick_points),
+            "SELECTAREA": _LazyTool("source.tools.SelectArea", "SelectArea", self.viewerplus, self.pick_points),
+            "RITM": _LazyTool("source.tools.Ritm", "Ritm", self.viewerplus, self.corrective_points),
+            "ROWS": _LazyTool("source.tools.Rows", "Rows", self.viewerplus),
         }
         if self.SAM_is_available:   #just if SAM is available
-            self.tools["SAM"] = Sam(self.viewerplus, self.pick_points)
-            self.tools["SAMINTERACTIVE"] = SAMInteractive(self.viewerplus, self.pick_points)
+            self.tools["SAM"] = _LazyTool("source.tools.Sam", "Sam", self.viewerplus, self.pick_points)
+            self.tools["SAMINTERACTIVE"] = _LazyTool("source.tools.SAMInteractive", "SAMInteractive", self.viewerplus, self.pick_points)
 
 
     def setTool(self, tool):
