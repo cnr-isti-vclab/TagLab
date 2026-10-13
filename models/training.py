@@ -50,6 +50,8 @@ def checkDataset(dataset_folder):
             if os.path.exists(subfolder):
                 n_images = count_png_files(os.path.join(subfolder, 'images'))
                 n_labels = count_png_files(os.path.join(subfolder, 'labels'))
+                if n_images == 0 or n_labels == 0:
+                    return 4  # A dataset split contains no PNG images or labels
                 if n_images == n_labels:
                     flag = 0 # Your training dataset is valid
                 else:
