@@ -1,4 +1,5 @@
 import platform
+import re
 import sys
 import os
 import subprocess
@@ -83,10 +84,9 @@ if use_cpu == False:
     output = result[1]
     rc = result[0]
     if rc == 0:
-        pos = output.find('CUDA Version:')
-        if pos >= 0:
-            pos += 13
-            cuda_version = output[pos:pos+6]
+        match = re.search(r'\bCUDA(?: UMD)? Version:\s*(\d+(?:\.\d+)?)', output)
+        if match:
+            cuda_version = match.group(1)
             print('Found CUDA version: ' + cuda_version)
 
             # get the float number of the cuda version
