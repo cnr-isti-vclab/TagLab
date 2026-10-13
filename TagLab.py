@@ -1708,15 +1708,25 @@ class TagLab(QMainWindow):
                                         f"Use the Georefering Tool to georeference the current map.")
                 else:
                     # export data
-					#################
+                    #################
 
-					# image is just georeferenced
+                    folderName = QFileDialog.getExistingDirectory(self,
+                                                                  "Choose a folder to export your project for the Reef Archive platform",
+                                                                  "")
+                    if folderName:
+                        # image is just georeferenced
 
-					# working area as shapefile 
+                        # working area as shapefile
+                        output_filename = os.path.join(folderName, "working_area.shp")
+                        wa_poly = rasterops.createPolygonFromWorkingArea(self.project.working_area,
+                                                                             image.georef_filename)
+                        rasterops.write_a_single_polygon_as_shapefile(image, wa_poly, image.georef_filename,
+                                                                          output_filename)
 
-					# annotations as shapefile
-
-                    pass
+                        # annotations as shapefile
+                        output_filename = os.path.join(folderName, "annotations.shp")
+                        rasterops.write_annotations_as_shapefile(self.project, image, image.annotations,
+                                                                         image.georef_filename, output_filename)
 
     @pyqtSlot()
     def exportGenetSVG(self):
