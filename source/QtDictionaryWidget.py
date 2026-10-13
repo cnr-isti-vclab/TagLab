@@ -103,6 +103,9 @@ class QtDictionaryWidget(QWidget):
         self.edit_description.setMaximumHeight(100)
         self.edit_description.setText(self.project.dictionary_description)
 
+        self.edit_dname.textChanged.connect(self.updateDictionaryMetadata)
+        self.edit_description.textChanged.connect(self.updateDictionaryMetadata)
+
         self.labels_layout = QVBoxLayout()
         self.labels_widget = QWidget()
 
@@ -248,6 +251,11 @@ class QtDictionaryWidget(QWidget):
     def closeEvent(self, event):
         self.closewidget.emit()
         super(QtDictionaryWidget, self).closeEvent(event)
+
+    @pyqtSlot()
+    def updateDictionaryMetadata(self):
+        self.project.dictionary_name = self.edit_dname.text()
+        self.project.dictionary_description = self.edit_description.toPlainText()
 
     @pyqtSlot()
     def newDictionary(self):
