@@ -1216,6 +1216,10 @@ class QtTYNWidget(QWidget):
                 msgBox.setText("An error occured with your dataset, there is a mismatch between files. "
                                "Please, export a new dataset.")
 
+            if check == 4:
+                msgBox.setText("One of the training, validation or test folders contains no PNG images or labels. "
+                               "Please check the dataset and export it again.")
+
             msgBox.exec()
             return
 
