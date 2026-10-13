@@ -1,3 +1,4 @@
+import os.path
 
 import numpy as np
 import json
@@ -279,19 +280,23 @@ def createPolygon(blob, transform):
             innerPolygon = Polygon(interior)
             inners.append(innerPolygon)
     newPolygon = Polygon(exteriorPolygon.exterior.coords, [inner.exterior.coords for inner in inners])
-
     return newPolygon
 
 
-def createPolygonFromWorkingArea(working_area, transform):
+def createPolygonFromWorkingArea(working_area, georef_filename):
 
-    wa_coord = [(working_area[1], working_area[0]), (working_area[1] + working_area[2], working_area[0]), (working_area[1] + working_area[2] , working_area[0] + working_area[3]),(working_area[1], working_area[0]+ working_area[3])]
+    img = rio.open(georef_filename)
+    transform = img.transform
+
+    wa_coord = [(working_area[1], working_area[0]), (working_area[1] + working_area[2], working_area[0]),
+				(working_area[1] + working_area[2], working_area[0] + working_area[3]),
+				(working_area[1], working_area[0] + working_area[3])]
 
     # load blob.contour and transform coordinate
     wa_coord_change = changeFormat(wa_coord, transform)
-    waPolygon = Polygon(wa_coord_change)
+    wa_polygon = Polygon(wa_coord_change)
 
-    return waPolygon
+    return wa_polygon
 
 
 def read_attributes(filename):
@@ -391,8 +396,122 @@ def read_geometry(filename, georef_filename):
     return shape_list
 
 
+import os
 
-def write_shapefile(project, image, blobs, georef_filename, out_shp):
+
+def rgb_to_hex(rgb_list):
+	"""Converts a list of [R, G, B] integers to a hex color string like '#FF0000'."""
+	return f"#{rgb_list[0]:02X}{rgb_list[1]:02X}{rgb_list[2]:02X}"
+
+
+def generate_sld_from_labels(labels, sld_path, fill_opacity=0.6):
+	"""
+	Generates an SLD XML file with rules dynamically created from a list of Label objects.
+
+	:param labels: List of Label objects (from Label.py)
+	:param sld_path: File path where the SLD will be saved (e.g., "annotations.sld")
+	:param fill_opacity: Opacity for polygon fill (0.0 to 1.0)
+	"""
+	rules_xml = []
+
+	for label in labels:
+
+		class_name = label.name
+		fill_hex = f"#{label.fill[0]:02X}{label.fill[1]:02X}{label.fill[2]:02X}"
+
+		rule = f"""        <!-- Rule for {class_name} -->
+        <Rule>
+          <Name>{class_name}</Name>
+          <Title>{class_name}</Title>
+          <ogc:Filter>
+            <ogc:PropertyIsEqualTo>
+              <ogc:PropertyName>TL_Class</ogc:PropertyName>
+              <ogc:Literal>{class_name}</ogc:Literal>
+            </ogc:PropertyIsEqualTo>
+          </ogc:Filter>
+          <PolygonSymbolizer>
+            <Fill>
+              <CssParameter name="fill">{fill_hex}</CssParameter>
+              <CssParameter name="fill-opacity">{fill_opacity}</CssParameter>
+            </Fill>
+            <Stroke>
+              <CssParameter name="stroke">#000000</CssParameter>
+              <CssParameter name="stroke-width">1</CssParameter>
+            </Stroke>
+          </PolygonSymbolizer>
+        </Rule>"""
+		rules_xml.append(rule)
+
+	# Join all generated rules inside the standard SLD structure
+	joined_rules = "\n".join(rules_xml)
+	sld_template = f"""<?xml version="1.0" encoding="UTF-8"?>
+    <StyledLayerDescriptor version="1.0.0" 
+      xsi:schemaLocation="http://www.opengis.net/sld StyledLayerDescriptor.xsd" 
+      xmlns="http://www.opengis.net/sld" 
+      xmlns:ogc="http://www.opengis.net/ogc" 
+      xmlns:xlink="http://www.w3.org/1999/xlink" 
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <NamedLayer>
+        <Name>polygon</Name>
+        <UserStyle>
+          <Title>Class-based Polygon Style</Title>
+          <FeatureTypeStyle>
+            {joined_rules}
+          </FeatureTypeStyle>
+        </UserStyle>
+      </NamedLayer>
+    </StyledLayerDescriptor>
+    """
+
+	with open(sld_path, "w", encoding="utf-8") as f:
+		f.write(sld_template)
+
+	print(f"SLD file successfully generated at: {sld_path}")
+
+def write_a_single_polygon_as_shapefile(image, polygon, georef_filename, output_filename):
+
+    # Get the ESRI Shapefile driver from OGR
+    driver = ogr.GetDriverByName("ESRI Shapefile")
+
+    # Create the data source (this will create your .shp file)
+    data_source = driver.CreateDataSource(output_filename)
+
+    # Set up the Coordinate Reference System (e.g., WGS84 / EPSG:4326)
+    srs = osr.SpatialReference()
+    srs.ImportFromEPSG(4326)
+
+    basename = os.path.basename(output_filename)
+
+    # Create the layer inside the shapefile
+    # For shapefiles, the layer name usually matches the file name base
+    layer = data_source.CreateLayer(basename, srs, ogr.wkbPolygon)
+
+    # 6. Define attributes (columns) for the shapefile table
+    id_field = ogr.FieldDefn("id", ogr.OFTInteger)
+    layer.CreateField(id_field)
+
+    name_field = ogr.FieldDefn("name", ogr.OFTString)
+    name_field.SetWidth(50)  # Shapefiles need a defined width for strings
+    layer.CreateField(name_field)
+
+    # 7. Create a new Feature (row)
+    feature_defn = layer.GetLayerDefn()
+    feature = ogr.Feature(feature_defn)
+
+    # Set the attribute values
+    feature.SetField("id", 1)
+    feature.SetField("name", "Working area")
+
+    # Convert the Shapely polygon to an OGR geometry via WKT
+    # (This acts as the bridge between Shapely and GDAL)
+    ogr_poly = ogr.CreateGeometryFromWkt(polygon.wkt)
+    feature.SetGeometry(ogr_poly)
+
+    # Create the feature in the layer
+    layer.CreateFeature(feature)
+
+
+def write_annotations_as_shapefile(project, image, blobs, georef_filename, output_filename):
     """
     https://gis.stackexchange.com/a/52708/8104
     """
@@ -508,7 +627,7 @@ def write_shapefile(project, image, blobs, georef_filename, out_shp):
 
     # Now convert them to a shapefile with OGR
     outDriver = ogr.GetDriverByName('Esri Shapefile')
-    outDataSource = outDriver.CreateDataSource(out_shp)
+    outDataSource = outDriver.CreateDataSource(output_filename)
     srs = osr.SpatialReference()
     if geoinfo is not None:
         srs.ImportFromWkt(geoinfo.wkt)
@@ -517,9 +636,8 @@ def write_shapefile(project, image, blobs, georef_filename, out_shp):
     outLayer = outDataSource.CreateLayer("polygon", srs, geom_type=ogr.wkbPolygon)
     OGRTypes = {int: ogr.OFTInteger, str: ogr.OFTString, float: ogr.OFTReal}
     defn = outLayer.GetLayerDefn()
+
     # Create attribute fields according to the data types
-
-
     for key in list(dict.keys()):
 
             if type(dict[key]) == list:
@@ -550,6 +668,15 @@ def write_shapefile(project, image, blobs, georef_filename, out_shp):
 
     # Save and close everything
     ds = layer = feat = geom = None
+
+    # Generate .sld style file with matching base name
+
+    sld_path = output_filename.replace(".shp", ".sld")
+    labels_list = []
+    for key in project.labels.keys():
+        labels_list.append(project.labels[key])
+    generate_sld_from_labels(labels_list, sld_path)
+
 
 def load_georef(image):
     # load georeference information to use
