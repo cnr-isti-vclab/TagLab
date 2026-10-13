@@ -390,6 +390,9 @@ class QtPanelInfo(QTabWidget):
 
         self.ann = ann
 
+        if ann is None:
+            return
+
         if type(ann) == Blob:
             for field in self.fields:
                 value = getattr(ann, field)
