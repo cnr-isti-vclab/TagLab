@@ -466,7 +466,7 @@ class QtSettingsWidget(QWidget):
         default_dict = "dictionaries/scripps.json"
         # Check that the default dictionary isn't None, if it is set it to the default one
         # Otherwise, don't set a default dictionary in registry
-        if not "default-dictionary" in self.settings.allKeys() and os.path.exists(default_dict):
+        if not "default-dictionary" in self.settings.allKeys() and os.path.exists(os.path.join(taglab_dir, default_dict)):
             self.settings.setValue("default-dictionary", default_dict)
 
         self.setStyleSheet("background-color: rgb(40,40,40); color: white")

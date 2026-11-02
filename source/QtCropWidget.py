@@ -20,6 +20,7 @@
 
 from PyQt5.QtCore import Qt, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QIcon
+from source.genutils import taglabPath
 from PyQt5.QtWidgets import QWidget, QMessageBox, QSizePolicy, QLineEdit, QLabel, QPushButton, \
     QHBoxLayout, QVBoxLayout
 
@@ -95,7 +96,7 @@ class QtCropWidget(QWidget):
         self.btnChooseArea = QPushButton()
         self.btnChooseArea.setFixedWidth(32)
         self.btnChooseArea.setFixedHeight(32)
-        ChooseAreaIcon = QIcon("icons\\select_area.png")
+        ChooseAreaIcon = QIcon(taglabPath("icons", "select_area.png"))
         self.btnChooseArea.setIcon(ChooseAreaIcon)
 
         layout_main_horiz = QHBoxLayout()

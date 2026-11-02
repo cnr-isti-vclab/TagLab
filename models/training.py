@@ -13,6 +13,7 @@ from models.coral_dataset import CoralsDataset
 import models.losses as losses
 from PyQt5.QtWidgets import QApplication
 from qhoptim.pyt import QHAdam
+from source.genutils import taglabPath
 
 # SEED
 torch.manual_seed(997)
@@ -317,9 +318,9 @@ def trainingNetwork(images_folder_train, labels_folder_train, images_folder_val,
     net = DeepLab(backbone='resnet', output_stride=16, num_classes=output_classes)
 
     if torch.cuda.is_available():
-        state = torch.load("models/deeplab-resnet.pth.tar", weights_only=False, map_location=torch.device("cuda"))
+        state = torch.load(taglabPath("models", "deeplab-resnet.pth.tar"), weights_only=False, map_location=torch.device("cuda"))
     else:
-        state = torch.load("models/deeplab-resnet.pth.tar", weights_only=False, map_location=torch.device("cpu"))
+        state = torch.load(taglabPath("models", "deeplab-resnet.pth.tar"), weights_only=False, map_location=torch.device("cpu"))
 
     # RE-INIZIALIZE THE CLASSIFICATION LAYER WITH THE RIGHT NUMBER OF CLASSES, DON'T LOAD WEIGHTS OF THE CLASSIFICATION LAYER
     new_dictionary = state['state_dict']

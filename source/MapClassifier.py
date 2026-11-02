@@ -37,6 +37,7 @@ from PyQt5.QtCore import QCoreApplication, Qt, QObject, pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QPainter, QImage, QColor, QPixmap, qRgb, qRed, qGreen, qBlue
 
 from source import genutils
+from source.genutils import taglabPath
 
 
 class MapClassifier(QObject):
@@ -85,12 +86,12 @@ class MapClassifier(QObject):
         self.wa_width = 0
         self.wa_height = 0
 
-        self.temp_dir = "temp"
+        self.temp_dir = taglabPath("temp")
 
 
     def _load_classifier(self, modelName):
 
-        models_dir = "models/"
+        models_dir = taglabPath("models")
 
         network_name = os.path.join(models_dir, modelName)
 

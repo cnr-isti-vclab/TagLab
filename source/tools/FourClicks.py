@@ -22,6 +22,7 @@ from models.dataloaders import helpers as helpers
 from collections import OrderedDict
 
 import time
+from source.genutils import taglabPath
 
 class FourClicks(Tool):
     def __init__(self, viewerplus, pick_points):
@@ -180,7 +181,7 @@ class FourClicks(Tool):
 
     def loadNetwork(self):
 
-        models_dir = "models/"
+        models_dir = taglabPath("models")
 
         if self.deepextreme_net is None:
 
