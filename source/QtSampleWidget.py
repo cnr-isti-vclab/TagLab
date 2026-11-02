@@ -3,6 +3,7 @@ from PyQt5.QtGui import QIcon, QPalette, QColor
 from PyQt5.QtWidgets import QSizePolicy, QCheckBox, QLineEdit, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
 from PyQt5.QtWidgets import QRadioButton, QButtonGroup, QGroupBox, QMessageBox,  QWidget, QComboBox
 from source import genutils
+from source.genutils import taglabPath
 
 class QtSampleWidget(QWidget):
 
@@ -26,7 +27,7 @@ class QtSampleWidget(QWidget):
         self.group_SA = QGroupBox()
         self.radio_SA = QRadioButton("Add a single sampling area")
 
-        area_icon = QIcon("icons\\select_area.png")
+        area_icon = QIcon(taglabPath("icons", "select_area.png"))
         self.btn_select_area_SA = QPushButton("")
         self.btn_select_area_SA.setIcon(area_icon)
         self.btn_select_area_SA.setMinimumWidth(30)
@@ -98,7 +99,7 @@ class QtSampleWidget(QWidget):
         self.combo_method_T.addItem('Equi-spaced')
         self.combo_method_T.addItem('Random')
 
-        line_icon = QIcon("icons\\select_line.png")
+        line_icon = QIcon(taglabPath("icons", "select_line.png"))
         self.btn_select_transect_T = QPushButton("")
         self.btn_select_transect_T.setIcon(line_icon)
         self.btn_select_transect_T.setMinimumWidth(30)

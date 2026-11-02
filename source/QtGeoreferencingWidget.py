@@ -24,6 +24,7 @@ from PyQt5.QtWidgets import QWidget, QGroupBox, QComboBox, QRadioButton, QLineEd
     QHBoxLayout, QVBoxLayout, QGridLayout, QMessageBox
 from osgeo import osr
 import rasterio as rio
+from source.genutils import taglabPath
 
 class QtGeoreferencingWidget(QWidget):
 
@@ -86,7 +87,7 @@ class QtGeoreferencingWidget(QWidget):
         coord_grid.setSpacing(10)
 
 
-        area_icon = QIcon("icons\\select_area.png")
+        area_icon = QIcon(taglabPath("icons", "select_area.png"))
         self.btn_pick_point_1 = QPushButton("")
         self.btn_pick_point_1.setIcon(area_icon)
         self.btn_pick_point_1.setMinimumWidth(30)

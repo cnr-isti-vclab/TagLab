@@ -26,6 +26,7 @@ from source.Annotation import Annotation
 import numpy as np
 
 from source import genutils
+from source.genutils import taglabPath
 
 class QtClassifierWidget(QWidget):
 
@@ -108,7 +109,7 @@ class QtClassifierWidget(QWidget):
         #prev panel
 
         self.btnChooseArea = QPushButton()
-        ChooseAreaIcon = QIcon("icons\\select_area.png")
+        ChooseAreaIcon = QIcon(taglabPath("icons", "select_area.png"))
         self.btnChooseArea.setIcon(ChooseAreaIcon)
         self.chkAutocolor = QCheckBox("Auto color")
         self.chkAutolevel = QCheckBox("Auto contrast")

@@ -20,6 +20,7 @@
 # THIS FILE CONTAINS UTILITY FUNCTIONS, E.G. CONVERSION BETWEEN DATA TYPES, BASIC OPERATIONS, ETC.
 
 import io
+import os
 from PyQt5.QtCore import Qt, QObject, QMetaObject, QMetaMethod
 from PyQt5.QtGui import QImage, QPixmap, qRgb, qRgba
 import numpy as np
@@ -28,6 +29,14 @@ from skimage.draw import line
 import datetime
 
 from source.Mask import checkIntersection, intersectMask
+
+# the directory that contains TagLab.py, icons/, models/, dictionaries/ ... (independent of the working directory)
+TAGLAB_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def taglabPath(*parts):
+    """ Path of a TagLab resource (icon, model, dictionary...), whatever the current working directory is. """
+    return os.path.join(TAGLAB_DIR, *parts)
 
 import math
 
