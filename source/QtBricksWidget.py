@@ -38,6 +38,7 @@ from models.isegm.inference import utils
 from source.genutils import cropQImage, cropImage, qimageToNumpyArray, maskToQImage, rgbToQImage, floatmapToQImage
 from source.Mask import checkIntersection, intersectMask, paintMask
 import random
+from source.genutils import taglabPath, modelPath
 
 class QtBricksWidget(QWidget):
 
@@ -154,7 +155,7 @@ class QtBricksWidget(QWidget):
         self.btnRectangularShape = QPushButton("")
         self.btnRectangularShape.setFixedWidth(BUTTON_SIZE+2)
         self.btnRectangularShape.setFixedHeight(BUTTON_SIZE+2)
-        iconRectangularShape = QIcon("icons/bricks-type-rectangular-shape.png")
+        iconRectangularShape = QIcon(taglabPath("icons", "bricks-type-rectangular-shape.png"))
         self.btnRectangularShape.setIcon(iconRectangularShape)
         self.btnRectangularShape.setIconSize(QSize(BUTTON_SIZE,BUTTON_SIZE))
         self.btnRectangularShape.setCheckable(True)
@@ -163,7 +164,7 @@ class QtBricksWidget(QWidget):
         self.btnIrregularShape = QPushButton("")
         self.btnIrregularShape.setFixedWidth(BUTTON_SIZE+2)
         self.btnIrregularShape.setFixedHeight(BUTTON_SIZE+2)
-        iconIrregularShape = QIcon("icons/bricks-type-irregular-shape.png")
+        iconIrregularShape = QIcon(taglabPath("icons", "bricks-type-irregular-shape.png"))
         self.btnIrregularShape.setIcon(iconIrregularShape)
         self.btnIrregularShape.setIconSize(QSize(BUTTON_SIZE,BUTTON_SIZE))
         self.btnIrregularShape.setCheckable(True)
@@ -384,7 +385,7 @@ class QtBricksWidget(QWidget):
         if self.ritm_net is None:
 
             model_name = 'ritm_corals.pth'
-            model_path = os.path.join("models", model_name)
+            model_path = modelPath(model_name)
 
             if not torch.cuda.is_available():
                 print("CUDA NOT AVAILABLE!")

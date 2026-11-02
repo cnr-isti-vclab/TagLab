@@ -20,6 +20,8 @@
 # THIS FILE CONTAINS UTILITY FUNCTIONS, E.G. CONVERSION BETWEEN DATA TYPES, BASIC OPERATIONS, ETC.
 
 import io
+import os
+import sys
 from PyQt5.QtCore import Qt, QObject, QMetaObject, QMetaMethod
 from PyQt5.QtGui import QImage, QPixmap, qRgb, qRgba
 import numpy as np
@@ -28,6 +30,41 @@ from skimage.draw import line
 import datetime
 
 from source.Mask import checkIntersection, intersectMask
+
+# the directory that contains TagLab.py, icons/, models/, dictionaries/ ... (independent of the working directory)
+TAGLAB_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def taglabPath(*parts):
+    """ Path of a TagLab resource (icon, model, dictionary...), whatever the current working directory is. """
+    return os.path.join(TAGLAB_DIR, *parts)
+
+def modelsDir():
+    """ Folder for downloaded and trained network weights: $TAGLAB_MODELS if set, else models/ in the TagLab folder,
+    or, when that is not writable (e.g. a read-only installation), a per-user data folder. Created if needed. """
+    path = os.environ.get("TAGLAB_MODELS")
+    if not path:
+        path = taglabPath("models")
+        if not os.access(path, os.W_OK):
+            if sys.platform == "win32":
+                base = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~\\AppData\\Local")
+            elif sys.platform == "darwin":
+                base = os.path.expanduser("~/Library/Application Support")
+            else:
+                base = os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share")
+            path = os.path.join(base, "TagLab", "models")
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+def modelPath(name):
+    """ Path of the weights file `name`: the file in the models folder or in the TagLab one if it exists there,
+    else where it would be stored. """
+    path = os.path.join(modelsDir(), name)
+    bundled = taglabPath("models", name)
+    if not os.path.exists(path) and os.path.exists(bundled):
+        return bundled
+    return path
 
 import math
 

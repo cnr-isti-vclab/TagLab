@@ -1,5 +1,6 @@
 
 from ultralytics import YOLO
+from source.genutils import modelPath
 import yaml
 import os
 import sys
@@ -84,19 +85,19 @@ def trainYOLOSeg(params,log_callback=None):
     model_file = {
 
         "yolo11": {
-            "n": os.path.join("models", "yolo11n-seg.pt"),
-            "s": os.path.join("models", "yolo11s-seg.pt"),
-            "m": os.path.join("models", "yolo11m-seg.pt"),
-            "l": os.path.join("models", "yolo11l-seg.pt"),
-            "x": os.path.join("models", "yolo11x-seg.pt"),
+            "n": modelPath("yolo11n-seg.pt"),
+            "s": modelPath("yolo11s-seg.pt"),
+            "m": modelPath("yolo11m-seg.pt"),
+            "l": modelPath("yolo11l-seg.pt"),
+            "x": modelPath("yolo11x-seg.pt"),
         },
 
         "yolo26": {
-            "n": os.path.join("models", "yolo26n-seg.pt"),
-            "s": os.path.join("models", "yolo26s-seg.pt"),
-            "m": os.path.join("models", "yolo26m-seg.pt"),
-            "l": os.path.join("models", "yolo26l-seg.pt"),
-            "x": os.path.join("models", "yolo26x-seg.pt"),
+            "n": modelPath("yolo26n-seg.pt"),
+            "s": modelPath("yolo26s-seg.pt"),
+            "m": modelPath("yolo26m-seg.pt"),
+            "l": modelPath("yolo26l-seg.pt"),
+            "x": modelPath("yolo26x-seg.pt"),
         }
     }
 

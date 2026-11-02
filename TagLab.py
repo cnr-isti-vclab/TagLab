@@ -112,6 +112,7 @@ from source.QtCoralNetToolboxWidget import QtCoralNetToolboxWidget
 from source.QtExportCoralNetDataWidget import QtExportCoralNetDataWidget
 
 from source import genutils
+from source.ModelWeights import ensureModel
 from source.Blob import Blob
 from source.Shape import Layer, Shape
 
@@ -129,7 +130,7 @@ import logging
 # configure the logger
 now = datetime.datetime.now()
 #LOG_FILENAME = "tool" + now.strftime("%Y-%m-%d-%H-%M") + ".log"
-LOG_FILENAME = "TagLab.log"
+LOG_FILENAME = genutils.taglabPath("TagLab.log")
 logging.basicConfig(level=logging.DEBUG, filemode='w', filename=LOG_FILENAME, format = '%(asctime)s %(levelname)-8s %(message)s')
 logfile = logging.getLogger("tool-logger")
 
@@ -185,7 +186,7 @@ class TagLab(QMainWindow):
 
         ##### DATA INITIALIZATION AND SETUP #####
 
-        self.taglab_dir = os.path.dirname(__file__)
+        self.taglab_dir = genutils.TAGLAB_DIR
 
         self.TAGLAB_VERSION = "TagLab " + current_version
 
@@ -285,7 +286,7 @@ class TagLab(QMainWindow):
 
 
         # separator
-        pxmapSeparator = QPixmap("icons/separator.png")
+        pxmapSeparator = QPixmap(genutils.taglabPath("icons", "separator.png"))
         labelSeparator1 = QLabel()
         labelSeparator1.setPixmap(pxmapSeparator.scaled(QSize(35, 30)))
         labelSeparator2 = QLabel()
@@ -525,8 +526,8 @@ class TagLab(QMainWindow):
             self.default_dictionary = self.settings_widget.settings.value("default-dictionary",
                                                                           defaultValue=default_dict,
                                                                           type=str)
-            # Check if previously stored dict actually exists
-            if not os.path.exists(self.default_dictionary):
+            # Check if previously stored dict actually exists (relative paths are relative to the TagLab folder)
+            if not os.path.exists(os.path.join(self.taglab_dir, self.default_dictionary)):
                 QMessageBox.warning(self,
                                     "Warning",
                                     f"Previously loaded dictionary {self.default_dictionary} not found! "
@@ -534,14 +535,14 @@ class TagLab(QMainWindow):
 
                 # If not, check for the scripps dictionary
                 self.default_dictionary = default_dict
-                if not os.path.exists(self.default_dictionary):
+                if not os.path.exists(os.path.join(self.taglab_dir, self.default_dictionary)):
                     raise Exception(f"TagLab default dictionary {self.default_dictionary} not found! "
                                     f"Please re-download it.")
 
             # Re-set the default dictionary
             self.settings_widget.settings.setValue("default-dictionary", self.default_dictionary)
             # Load the dictionary, load the project
-            self.project.loadDictionary(self.default_dictionary)
+            self.project.loadDictionary(os.path.join(self.taglab_dir, self.default_dictionary))
             self.labels_widget.setLabels(self.project, None)
 
         except Exception as e:
@@ -5798,7 +5799,7 @@ class TagLab(QMainWindow):
 
         classifier_name = self.trainYourNetworkWidget.editNetworkName.text()
         network_name = self.trainYourNetworkWidget.editNetworkName.text() + ".net"
-        network_filename = os.path.join(os.path.join(self.taglab_dir, "models"), network_name)
+        network_filename = genutils.modelPath(network_name)
 
         # training folders
         train_folder = os.path.join(dataset_folder, "training")
@@ -6337,6 +6338,10 @@ class TagLab(QMainWindow):
                     msgBox.exec()
                     return
 
+            # download the weights of the classifier if they are missing
+            if ensureModel(classifier_selected['Weights'], self) is None:
+                return
+
             # free GPU memory
             self.resetNetworks()
             self.setupProgressBar()
@@ -6413,6 +6418,10 @@ class TagLab(QMainWindow):
                     msgBox.exec()
                     return
 
+            # download the weights of the classifier if they are missing
+            if ensureModel(classifier_selected['Weights'], self) is None:
+                return
+
             # free GPU memory
             self.resetNetworks()
 
@@ -6463,7 +6472,7 @@ class TagLab(QMainWindow):
                     self.progress_bar.setMessage("Finalizing classification results..")
                     QApplication.processEvents()
 
-                    filename = os.path.join("temp", "labelmap.png")
+                    filename = genutils.taglabPath("temp", "labelmap.png")
 
                     offset = self.classifier.offset
                     scale = [self.classifier.scale_factor, self.classifier.scale_factor]

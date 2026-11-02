@@ -22,6 +22,7 @@ from models.dataloaders import helpers as helpers
 from collections import OrderedDict
 
 import time
+from source.ModelWeights import ensureModel
 
 class FourClicks(Tool):
     def __init__(self, viewerplus, pick_points):
@@ -108,7 +109,9 @@ class FourClicks(Tool):
         self.log.emit("[TOOL][DEEPEXTREME] Segmentation begins..")
 
         # load network if necessary
-        self.loadNetwork()
+        if not self.loadNetwork():
+            QApplication.restoreOverrideCursor()
+            return
 
         pad = 50
         thres = 0.8
@@ -180,20 +183,22 @@ class FourClicks(Tool):
 
     def loadNetwork(self):
 
-        models_dir = "models/"
-
         if self.deepextreme_net is None:
-
-            self.infoMessage.emit("Loading deepextreme network..")
 
             # Initialization
             modelName = 'dextr_corals'
+            model_path = ensureModel(modelName + '.pth', self.viewerplus)
+            if model_path is None:
+                self.infoMessage.emit("Deepextreme network not available.")
+                return False
+
+            self.infoMessage.emit("Loading deepextreme network..")
 
             #  Create the network and load the weights
             self.deepextreme_net = resnet.resnet101(1, nInputChannels=4, classifier='psp')
 
             # dictionary layers' names - weights
-            state_dict_checkpoint = torch.load(os.path.join(models_dir, modelName + '.pth'),
+            state_dict_checkpoint = torch.load(model_path,
                                                map_location=lambda storage, loc: storage)
 
             # Remove the prefix .module from the model when it is trained using DataParallel
@@ -215,6 +220,8 @@ class FourClicks(Tool):
                 device = torch.device("cuda:" + str(gpu_id) if torch.cuda.is_available() else "cpu")
                 self.deepextreme_net.to(device)
                 self.device = device
+
+        return True
 
     def resetNetwork(self):
         try:

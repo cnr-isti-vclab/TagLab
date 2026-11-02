@@ -5,6 +5,7 @@ from PyQt5.QtGui import QPen, QBrush
 from source.tools.Tool import Tool
 from source.Mask import paintMask, jointBox, jointMask, replaceMask, checkIntersection, intersectMask
 from source.genutils import qimageToNumpyArray
+from source.ModelWeights import ensureModel
 from source.genutils import cropQImage, maskToQImage, floatmapToQImage
 
 import os
@@ -227,6 +228,7 @@ class Ritm(Tool):
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
         if not self.loadNetwork():
+            QApplication.restoreOverrideCursor()
             return
 
         QApplication.restoreOverrideCursor()
@@ -313,7 +315,10 @@ class Ritm(Tool):
             self.infoMessage.emit("Loading RITM network..")
 
             model_name = 'ritm_corals.pth'
-            model_path = os.path.join(os.path.join(self.viewerplus.taglab_dir, "models"), model_name)
+            model_path = ensureModel(model_name, self.viewerplus)
+            if model_path is None:
+                self.infoMessage.emit("RITM network not available.")
+                return False
 
             if not torch.cuda.is_available():
                 print("CUDA NOT AVAILABLE!")

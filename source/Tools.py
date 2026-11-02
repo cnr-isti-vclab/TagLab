@@ -50,15 +50,9 @@ class Tools(QObject):
         self.CROSS_LINE_WIDTH = 2
         self.extreme_pick_style = {'width': self.CROSS_LINE_WIDTH, 'color': Qt.red,  'size': 6}
 
-        self.SAM_is_available = False
-        if importlib.util.find_spec("segment_anything"):
-
-            modelName = "sam_vit_h_4b8939"
-            models_dir = os.path.join(self.viewerplus.taglab_dir, "models")
-            path = os.path.join(models_dir, modelName + '.pth')
-
-            if os.path.exists(path):
-                self.SAM_is_available = True
+        # SAM is available when the package is installed; the weights (2.5 GB) are downloaded, after asking,
+        # the first time a SAM tool needs them (see ModelWeights.ensureModel)
+        self.SAM_is_available = importlib.util.find_spec("segment_anything") is not None
 
         # DATA FOR THE CREATECRACK TOOL
         self.crackWidget = None
