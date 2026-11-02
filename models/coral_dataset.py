@@ -16,20 +16,19 @@ from source.Label import Label
 def augmentation_color(p=0.8):
     return Compose([
 
-        CLAHE(clip_limit=3.0, tile_grid_size=(2, 2), always_apply=False, p=0.2),
+        CLAHE(clip_limit=3.0, tile_grid_size=(2, 2), p=0.2),
         RandomBrightnessContrast(brightness_limit=(-0.2, 0.2), contrast_limit=(-0.1, 0.1), p=0.3),
         RGBShift(r_shift_limit=(-10, 10), g_shift_limit=(0, 10), b_shift_limit=(0, 20), p=0.3),
         HueSaturationValue(hue_shift_limit=(0, 10), sat_shift_limit=(0, 10), val_shift_limit=0, p=0.3),
 
         #New
-        CoarseDropout(always_apply=False, p=0.2, max_holes=8, max_height=8, max_width=8, min_holes=8, min_height=8,
-                      min_width=8, fill_value=(0, 0, 0), mask_fill_value=None),
-        Equalize(always_apply=False, p=0.1, mode='cv', by_channels=True),
-        ISONoise(always_apply=False, p=0.2, intensity=(0.1, 0.3), color_shift=(0.01, 0.1)),
-        FancyPCA(always_apply=False, p=0.05, alpha=0.01),
-        Spatter(always_apply=False, p=0.2, mean=(0.65, 0.65), std=(0.3, 0.3), gauss_sigma=(0.72, 0.72),
+        CoarseDropout(p=0.2, num_holes_range=(8, 8), hole_height_range=(8, 8), hole_width_range=(8, 8), fill=0),
+        Equalize(p=0.1, mode='cv', by_channels=True),
+        ISONoise(p=0.2, intensity=(0.1, 0.3), color_shift=(0.01, 0.1)),
+        FancyPCA(p=0.05, alpha=0.01),
+        Spatter(p=0.2, mean=(0.65, 0.65), std=(0.3, 0.3), gauss_sigma=(0.72, 0.72),
                 intensity=(0.6, 0.6), cutout_threshold=(0.68, 0.68), mode='rain'),
-        PixelDropout(always_apply=False, p=0.2, dropout_prob=0.02, per_channel=False, drop_value=0.0,
+        PixelDropout(p=0.2, dropout_prob=0.02, per_channel=False, drop_value=0.0,
                      mask_drop_value=None)
     ], p=p)
 
