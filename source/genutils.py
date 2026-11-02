@@ -20,6 +20,7 @@
 # THIS FILE CONTAINS UTILITY FUNCTIONS, E.G. CONVERSION BETWEEN DATA TYPES, BASIC OPERATIONS, ETC.
 
 import io
+import os
 from PyQt5.QtCore import Qt, QObject, QMetaObject, QMetaMethod
 from PyQt5.QtGui import QImage, QPixmap, qRgb, qRgba
 import numpy as np
@@ -58,6 +59,33 @@ def isValidDate(txt):
         valid = False
 
     return valid
+
+def torchDevice():
+    """
+    Device for the neural networks: CUDA if available, else the Apple GPU (MPS) on Apple-silicon Macs, else the CPU.
+    Set TAGLAB_DEVICE (cpu, mps, cuda) to force one.
+    """
+    import torch
+    forced = os.environ.get("TAGLAB_DEVICE")
+    if forced:
+        return torch.device(forced)
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    mps = getattr(torch.backends, "mps", None)
+    if mps is not None and mps.is_available():
+        return torch.device("mps")
+    return torch.device("cpu")
+
+
+def emptyDeviceCache():
+    """Release cached GPU memory (CUDA or MPS); nothing on the CPU."""
+    import torch
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    mps = getattr(torch, "mps", None)
+    if mps is not None and torch.backends.mps.is_available():
+        mps.empty_cache()
+
 
 def draw_open_polygon(r, c):
     r = np.round(r).astype(int)

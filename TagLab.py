@@ -20,6 +20,9 @@
 
 import sys
 import os
+
+# Apple GPU (MPS): run the few operators it lacks (torchvision nms in automatic SAM) on the CPU. Must be set before torch loads.
+os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 import datetime
 import shutil
 import json
