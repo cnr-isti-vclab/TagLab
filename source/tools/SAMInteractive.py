@@ -1,7 +1,7 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QMessageBox
 from PyQt5.QtGui import QPen, QBrush, QColor, QPainterPath
-from source.genutils import qimageToNumpyArray, cropQImage
+from source.genutils import qimageToNumpyArray, cropQImage, torchDevice, emptyDeviceCache
 
 from source.Blob import Blob
 from source.tools.Tool import Tool
@@ -661,8 +661,8 @@ class SAMInteractive(Tool):
                 return False
 
             else:
-                # Set the device; users should be using a CUDA GPU, otherwise tool is slow
-                device = torch.device("cuda:" + str(0) if torch.cuda.is_available() else "cpu")
+                # CUDA, else the Apple GPU (MPS), else the CPU (slow)
+                device = torchDevice()
 
                 # Loading the model, returning the predictor
                 sam_model = sam_model_registry[self.sam_model_type](checkpoint=path)
@@ -677,7 +677,7 @@ class SAMInteractive(Tool):
         """
         Reset the network
         """
-        torch.cuda.empty_cache()
+        emptyDeviceCache()
         if self.sampredictor_net is not None:
             del self.sampredictor_net
             self.sampredictor_net = None
