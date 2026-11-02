@@ -108,7 +108,6 @@ from source.QtPanelInfo import QtPanelInfo
 from source.Sampler import Sampler
 
 from source.QtImportViscoreWidget import QtImportViscoreWidget
-from source.QtCoralNetToolboxWidget import QtCoralNetToolboxWidget
 from source.QtExportCoralNetDataWidget import QtExportCoralNetDataWidget
 
 from source import genutils
@@ -5929,6 +5928,17 @@ class TagLab(QMainWindow):
 
         self.trainYourNetworkWidget.yoloLog.clear()
 
+        # check the optional packages the chosen training needs before starting
+        try:
+            if self.trainYourNetworkWidget.modelStack.currentIndex() == 2:
+                genutils.requirePackage("ultralytics", "YOLO training")
+            elif self.trainYourNetworkWidget.modelStack.currentIndex() == 1 and \
+                    self.trainYourNetworkWidget.getOptimizer().upper() == "QHADAM":
+                genutils.requirePackage("qhoptim", "The QHAdam optimizer")
+        except genutils.MissingDependency as e:
+            QMessageBox.warning(self, "Missing package", str(e))
+            return
+
         # DeepLab
         if self.trainYourNetworkWidget.modelStack.currentIndex() == 1:
             self.trainNewNetwork()
@@ -6109,8 +6119,15 @@ class TagLab(QMainWindow):
         Opens the CoralNetToolbox Widget in a new window.
         """
         try:
+            # the CoralNet web tools need these packages; they are loaded here so that TagLab starts without them
+            for module_name, pip_name in (("requests", "requests"), ("bs4", "beautifulsoup4"),
+                                          ("selenium", "selenium"), ("webdriver_manager", "webdriver-manager")):
+                genutils.requirePackage(module_name, "The CoralNet Toolbox", pip_name)
+            from source.QtCoralNetToolboxWidget import QtCoralNetToolboxWidget
             self.coralNetToolbox = QtCoralNetToolboxWidget(self)
             self.coralNetToolbox.show()
+        except genutils.MissingDependency as e:
+            QMessageBox.warning(self, "Missing package", str(e))
         except Exception as e:
             print(f"{e}")
 

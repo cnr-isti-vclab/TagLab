@@ -12,7 +12,13 @@ from sklearn.metrics import confusion_matrix
 from models.coral_dataset import CoralsDataset
 import models.losses as losses
 from PyQt5.QtWidgets import QApplication
-from qhoptim.pyt import QHAdam
+from source.genutils import requirePackage
+
+
+def QHAdam(*args, **kwargs):
+    # qhoptim is only needed by the QHAdam optimizer, so it is loaded when first used
+    return requirePackage("qhoptim.pyt", "The QHAdam optimizer", "qhoptim").QHAdam(*args, **kwargs)
+
 
 # SEED
 torch.manual_seed(997)

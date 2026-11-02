@@ -8,12 +8,13 @@ import torch
 from torch.utils.data import Dataset
 from torchvision import transforms
 import glob
-from albumentations import (CLAHE, Blur, HueSaturationValue, Equalize, ISONoise, Spatter, PixelDropout, FancyPCA, RandomToneCurve, CoarseDropout, RGBShift, RandomBrightnessContrast, Compose)
 from source.Label import Label
 
 
 # ALBUMENTATIONS - USED JUST TO PERFORM THE COLOR AUGMENTATION
 def augmentation_color(p=0.8):
+    # albumentations is only needed for training, so it is imported when first used
+    from albumentations import (CLAHE, Blur, HueSaturationValue, Equalize, ISONoise, Spatter, PixelDropout, FancyPCA, RandomToneCurve, CoarseDropout, RGBShift, RandomBrightnessContrast, Compose)
     return Compose([
 
         CLAHE(clip_limit=3.0, tile_grid_size=(2, 2), always_apply=False, p=0.2),

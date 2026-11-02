@@ -20,6 +20,7 @@
 # THIS FILE CONTAINS UTILITY FUNCTIONS, E.G. CONVERSION BETWEEN DATA TYPES, BASIC OPERATIONS, ETC.
 
 import io
+import importlib
 from PyQt5.QtCore import Qt, QObject, QMetaObject, QMetaMethod
 from PyQt5.QtGui import QImage, QPixmap, qRgb, qRgba
 import numpy as np
@@ -642,3 +643,21 @@ def getLabelNamesByColor(labels_dict, color):
             label_names.append(key)
 
     return label_names
+
+
+class MissingDependency(ImportError):
+    """ Raised when a tool needs an optional Python package that is not installed. """
+    pass
+
+
+def requirePackage(module_name, feature, pip_name=None):
+    """
+    Imports an optional package the first time a feature needs it, so that TagLab starts without it.
+    Raises MissingDependency with a message that says what to install if the package is missing.
+    """
+    try:
+        return importlib.import_module(module_name)
+    except ImportError as e:
+        pip_name = pip_name if pip_name is not None else module_name.split(".")[0]
+        raise MissingDependency(feature + " needs the Python package '" + pip_name + "', which is not installed.\n\n"
+                                "Install it with:  pip install " + pip_name) from e

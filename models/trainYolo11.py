@@ -1,5 +1,5 @@
 
-from ultralytics import YOLO
+from source.genutils import requirePackage
 import yaml
 import os
 import sys
@@ -52,6 +52,9 @@ def clearYoloCache(dataset_yaml):
                     )
 
 def trainYOLOSeg(params,log_callback=None):
+
+    # ultralytics (AGPL-3.0) is optional and only needed here, so it is loaded when first used
+    YOLO = requirePackage("ultralytics", "YOLO training").YOLO
 
 
 
