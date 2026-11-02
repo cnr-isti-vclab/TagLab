@@ -112,6 +112,7 @@ from source.QtCoralNetToolboxWidget import QtCoralNetToolboxWidget
 from source.QtExportCoralNetDataWidget import QtExportCoralNetDataWidget
 
 from source import genutils
+from source.ModelWeights import ensureModel
 from source.Blob import Blob
 from source.Shape import Layer, Shape
 
@@ -5798,7 +5799,7 @@ class TagLab(QMainWindow):
 
         classifier_name = self.trainYourNetworkWidget.editNetworkName.text()
         network_name = self.trainYourNetworkWidget.editNetworkName.text() + ".net"
-        network_filename = os.path.join(os.path.join(self.taglab_dir, "models"), network_name)
+        network_filename = genutils.modelPath(network_name)
 
         # training folders
         train_folder = os.path.join(dataset_folder, "training")
@@ -6337,6 +6338,10 @@ class TagLab(QMainWindow):
                     msgBox.exec()
                     return
 
+            # download the weights of the classifier if they are missing
+            if ensureModel(classifier_selected['Weights'], self) is None:
+                return
+
             # free GPU memory
             self.resetNetworks()
             self.setupProgressBar()
@@ -6412,6 +6417,10 @@ class TagLab(QMainWindow):
                     msgBox.setText(txt)
                     msgBox.exec()
                     return
+
+            # download the weights of the classifier if they are missing
+            if ensureModel(classifier_selected['Weights'], self) is None:
+                return
 
             # free GPU memory
             self.resetNetworks()

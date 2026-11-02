@@ -42,6 +42,8 @@ with CUDA enabled.
 
 See the instructions on the [wiki](https://github.com/cnr-isti-vclab/TagLab/wiki/Install-TagLab).
 
+Network weights missing from the `models` folder are downloaded (after asking) the first time a tool needs them. If the TagLab folder is not writable they are stored in a per-user folder; set `TAGLAB_MODELS` to choose another one.
+
 ## Updating TagLab
 
 If you already installed TagLab and you need to update to a new version, you can just run the `update.py` script from 

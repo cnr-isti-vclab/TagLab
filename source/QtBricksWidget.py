@@ -38,7 +38,7 @@ from models.isegm.inference import utils
 from source.genutils import cropQImage, cropImage, qimageToNumpyArray, maskToQImage, rgbToQImage, floatmapToQImage
 from source.Mask import checkIntersection, intersectMask, paintMask
 import random
-from source.genutils import taglabPath
+from source.genutils import taglabPath, modelPath
 
 class QtBricksWidget(QWidget):
 
@@ -385,7 +385,7 @@ class QtBricksWidget(QWidget):
         if self.ritm_net is None:
 
             model_name = 'ritm_corals.pth'
-            model_path = taglabPath("models", model_name)
+            model_path = modelPath(model_name)
 
             if not torch.cuda.is_available():
                 print("CUDA NOT AVAILABLE!")
